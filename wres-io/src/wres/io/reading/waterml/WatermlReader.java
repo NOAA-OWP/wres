@@ -46,6 +46,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.waterml.timeseries.GeographicLocation;
 import wres.io.reading.waterml.timeseries.Method;
 import wres.io.reading.waterml.timeseries.SiteCode;
@@ -105,6 +106,9 @@ public class WatermlReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -135,6 +139,9 @@ public class WatermlReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
 
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WATERML );
+        
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
 

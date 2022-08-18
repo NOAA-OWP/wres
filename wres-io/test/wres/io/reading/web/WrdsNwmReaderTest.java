@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
@@ -213,6 +215,86 @@ class WrdsNwmReaderTest
                                                       .withPath( ANALYSIS_PATH )
                                                       .withMethod( GET ) )
                                     .respond( HttpResponse.response( ANALYSIS_RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + WrdsNwmReaderTest.mockServer.getLocalPort()
+                                  + ANALYSIS_PATH
+                                  + ANALYSIS_PARAMS );
+
+        DataSourceConfig.Source fakeDeclarationSource =
+                new DataSourceConfig.Source( fakeUri,
+                                             InterfaceShortHand.WRDS_NWM,
+                                             null,
+                                             null,
+                                             null );
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+                                               fakeDeclarationSource,
+                                               new DataSourceConfig( null,
+                                                                     List.of( fakeDeclarationSource ),
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               LeftOrRightOrBaseline.LEFT );
+
+        WrdsNwmReader reader = WrdsNwmReader.of();
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .collect( Collectors.toList() );
+
+            Geometry geometry = MessageFactory.getGeometry( Integer.toString( NWM_FEATURE_ID ),
+                                                            null,
+                                                            null,
+                                                            null );
+
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
+                                                                         Instant.parse( "2020-01-12T00:00:00Z" ) ),
+                                                                 null,
+                                                                 "streamflow",
+                                                                 FeatureKey.of( geometry ),
+                                                                 "meter^3 / sec" );
+            TimeSeries<Double> expectedSeries =
+                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),
+                                                                         382.27999145537615 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T02:00:00Z" ),
+                                                                         334.139992531389 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2020-01-12T03:00:00Z" ),
+                                                                         270.9899939429015 ) )
+                                                    .setMetadata( metadata )
+                                                    .build();
+
+            List<TimeSeries<Double>> expected = List.of( expectedSeries );
+
+            assertEquals( expected, actual );
+        }
+    }
+
+    @Test
+    void testReadReturnsOneAnalysisTimeSeriesAfterTwoDroppedConnections()
+    {
+        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
+                                                      .withPath( ANALYSIS_PATH )
+                                                      .withMethod( GET ),
+                                           Times.exactly( 2 ) )
+                                    .error( HttpError.error()
+                                                     .withDropConnection( true ) );
+
+        // On the third time, return the body successfully.
+        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
+                                                      .withPath( ANALYSIS_PATH )
+                                                      .withMethod( "GET" ),
+                                           Times.once() )
+                                    .respond( org.mockserver.model.HttpResponse.response( ANALYSIS_RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
                                   + WrdsNwmReaderTest.mockServer.getLocalPort()

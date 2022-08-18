@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +42,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -58,7 +60,7 @@ public class ReaderUtilities
 
     /** Default WRDS project name, required by the service. Yuck. */
     public static final String DEFAULT_WRDS_PROJ = "UNKNOWN_PROJECT_USING_WRES";
-    
+
     /**
      * Transform a single trace into a {@link TimeSeries} of {@link Double} values
      * @param metadata the metadata of the timeseries
@@ -222,7 +224,6 @@ public class ReaderUtilities
 
     public static TimeScaleOuter getTimeScaleFromUri( URI uri )
     {
-
         TimeScaleOuter returnMe = null;
 
         // Assume that the NWIS "IV" service implies "instantaneous" values
@@ -235,6 +236,70 @@ public class ReaderUtilities
         LOGGER.debug( "Identified {} as a source of time-series data whose time-scale is always {}.", uri, returnMe );
 
         return returnMe;
+    }
+
+    /**
+     * Validates a source as containing a readable file.
+     * @param dataSource the data source
+     * @throws ReadException if there is not a readable file associated with the source
+     */
+
+    public static void validateFileSource( DataSource dataSource )
+    {
+        Objects.requireNonNull( dataSource );
+
+        if ( !dataSource.hasSourcePath() )
+        {
+            throw new ReadException( "Found a file data source with an invalid path: "
+                                     + dataSource );
+        }
+
+        Path path = Paths.get( dataSource.getUri() );
+
+        if ( !Files.exists( path ) )
+        {
+            throw new ReadException( "The path: '" +
+                                     path
+                                     +
+                                     "' was not found." );
+        }
+        else if ( !Files.isReadable( path ) )
+        {
+            throw new ReadException( "The path: '" + path
+                                     + "' was not readable. Please set "
+                                     + "the permissions of that path to "
+                                     + "readable for user '"
+                                     + System.getProperty( "user.name" )
+                                     + "' or run WRES as a user with read"
+                                     + " permissions on that path." );
+        }
+        else if ( !Files.isRegularFile( path ) )
+        {
+            throw new ReadException( "Expected a file source, but the source was not a file: " + dataSource + "." );
+        }
+    }
+
+    /**
+     * Validates the disposition of the source against the disposition of the reader.
+     * @param dataSource the data source
+     * @param readerDisposition the disposition of the reader, one or more
+     * @throws ReadException if the dispositions do not match
+     * @throws NullPointerException if either input is null
+     */
+
+    public static void validateDataDisposition( DataSource dataSource, DataDisposition... readerDisposition )
+    {
+        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( readerDisposition );
+
+        if ( Arrays.stream( readerDisposition )
+                   .noneMatch( next -> next == dataSource.getDisposition() ) )
+        {
+            throw new ReadException( "The disposition of the data source was " + dataSource.getDisposition()
+                                     + ", but the reader expected "
+                                     + Arrays.toString( readerDisposition )
+                                     + "." );
+        }
     }
 
     /**
@@ -317,11 +382,11 @@ public class ReaderUtilities
      * @return whether the source is a WRDS NWM source
      * @throws NullPointerException if the source is null
      */
-    
+
     public static boolean isWrdsNwmSource( DataSource source )
     {
         Objects.requireNonNull( source );
-        
+
         URI uri = source.getUri();
         InterfaceShortHand interfaceShortHand = source.getSource()
                                                       .getInterface();
@@ -331,11 +396,11 @@ public class ReaderUtilities
         }
 
         // Fallback for unspecified interface.
-        return  uri.getPath()
-                   .toLowerCase()
-                   .contains( "nwm" );
+        return uri.getPath()
+                  .toLowerCase()
+                  .contains( "nwm" );
     }
-    
+
     /**
      * @param dataSource the data source
      * @return whether the data source is a NWM source

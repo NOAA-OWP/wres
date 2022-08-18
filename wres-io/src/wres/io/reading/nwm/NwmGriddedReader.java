@@ -41,6 +41,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.retrieval.DataAccessException;
@@ -103,7 +104,13 @@ public class NwmGriddedReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-
+        
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.NETCDF_GRIDDED );
+        
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         int tryCount = 0;
 
         Stream<TimeSeriesTuple> seriesStream;

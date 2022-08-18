@@ -45,7 +45,9 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -94,6 +96,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -123,6 +128,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
+        
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WRDS_AHPS );
 
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );

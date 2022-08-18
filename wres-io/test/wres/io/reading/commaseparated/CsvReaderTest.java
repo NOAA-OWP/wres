@@ -31,6 +31,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 
 /**
  * Tests the {@link CsvReader}.
@@ -86,6 +87,8 @@ class CsvReaderTest
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.CSV_WRES );
 
             CsvReader reader = CsvReader.of();
 
@@ -171,6 +174,8 @@ class CsvReaderTest
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.CSV_WRES );
 
             CsvReader reader = CsvReader.of();
 
@@ -257,6 +262,8 @@ class CsvReaderTest
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
                    .thenReturn( new Variable( QINE, null ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.CSV_WRES );
 
             CsvReader reader = CsvReader.of();
 

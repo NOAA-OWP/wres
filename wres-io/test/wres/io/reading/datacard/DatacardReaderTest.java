@@ -30,6 +30,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 
 /**
  * Tests the {@link DatacardReader}.
@@ -86,6 +87,10 @@ class DatacardReaderTest
                    .thenReturn( new Variable( QINE, null ) );
             Mockito.when( dataSource.getSource() )
                    .thenReturn( new DataSourceConfig.Source( cardPath.toUri(), null, "UTC", null, null ) );
+            Mockito.when( dataSource.hasSourcePath() )
+                   .thenReturn( true );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.DATACARD );
 
             DatacardReader reader = DatacardReader.of();
 
@@ -169,6 +174,8 @@ class DatacardReaderTest
                    .thenReturn( new Variable( QINE, null ) );
             Mockito.when( dataSource.getSource() )
                    .thenReturn( new DataSourceConfig.Source( cardPath.toUri(), null, "UTC", null, null ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.DATACARD );
 
             DatacardReader reader = DatacardReader.of();
 

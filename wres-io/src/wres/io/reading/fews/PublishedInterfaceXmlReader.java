@@ -106,6 +106,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
 
+        // Validate that the source contains a readable file
+        ReaderUtilities.validateFileSource( dataSource );
+        
         try
         {
             Path xmlPath = Paths.get( dataSource.getUri() );
@@ -134,6 +137,11 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
+
+        // Validate the disposition of the data source
+        ReaderUtilities.validateDataDisposition( dataSource,
+                                                 DataDisposition.XML_PI_TIMESERIES,
+                                                 DataDisposition.XML_FI_TIMESERIES );
 
         XMLStreamReader xmlStreamReader = this.getXmlStreamReader( dataSource, inputStream );
 
