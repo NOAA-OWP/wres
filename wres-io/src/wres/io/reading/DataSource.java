@@ -40,22 +40,11 @@ public class DataSource
 
     /**
      * The disposition of the original or generated-from-original source
-     * declaration. This is for software to determine, not the user. The COMPLEX
-     * disposition is for readers that read timeseries from across multiple
-     * streams or multiply one declaration into many streams, e.g. NWM or NWIS.
-     * The FILE_OR_DIRECTORY means the URI protocol made it look like a file or
-     * directory but it has yet to be examined. The bulk of remaining
-     * dispositions can be auto-detected and drive which source or reader class
-     * will handle the data. UNKNOWN indicates the data could not be detected
-     * and should be ignored by WRES.
+     * declaration. This is for software to determine, not the user.
      */
 
     public enum DataDisposition
     {
-        /** The data source involves multiple streams and a complex reader. */
-        COMPLEX,
-        /** The data source is a directory to walk or a file to check. */
-        FILE_OR_DIRECTORY,
         /** The data has been detected as a gzip stream. */
         GZIP,
         /** The data has been detected as a tarball. */
@@ -67,8 +56,10 @@ public class DataSource
         XML_FI_TIMESERIES,
         /** The data has been detected as a datacard stream. */
         DATACARD,
-        /** The data has been detected as a netCDF blob. */
+        /** The data has been detected as a netCDF blob with gridded data. */
         NETCDF_GRIDDED,
+        /** The data has been detected as a netCDF blob with vector data. */
+        NETCDF_VECTOR,
         /** The data has been detected as a json, wrds/nwm stream. */
         JSON_WRDS_NWM,
         /** The data has been detected as a json, wrds/ahps stream. */
@@ -77,7 +68,7 @@ public class DataSource
         JSON_WATERML,
         /** The data has been detected as a csv, wres stream. */
         CSV_WRES,
-        /** The data stream did not fit into any of the other categories. */
+        /** The data type is unknown or to be determined. */
         UNKNOWN
     }
 
@@ -119,13 +110,13 @@ public class DataSource
      */
 
     private final URI uri;
-    
+
     /**
      * Whether the source originates from the left, right or baseline side of the evaluation.
      */
 
     private final LeftOrRightOrBaseline lrb;
-    
+
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
      * create in <code>wres.ProjectSource</code>. If the source is used only once in the
@@ -269,11 +260,11 @@ public class DataSource
     {
         return this.context;
     }
-    
+
     /**
      * @return whether the data source originates from the left, right or baseline side of the evaluation
      */
-    
+
     public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
     {
         return lrb;
@@ -288,11 +279,11 @@ public class DataSource
         return this.getContext()
                    .getVariable();
     }
-    
+
     /**
      * @return whether this data source contains a gridded dataset, which requires special treatment in some contexts
      */
-    
+
     public boolean isGridded()
     {
         return this.getDisposition() == DataDisposition.NETCDF_GRIDDED;
@@ -395,7 +386,7 @@ public class DataSource
                       uri.toString() );
         byte[] firstBytes;
         DataDisposition disposition = DataDisposition.UNKNOWN;
-        
+
         try
         {
             // Do content type detection with tika and get the first 1024 bytes.
@@ -417,7 +408,7 @@ public class DataSource
             }
 
             firstBytes = inputStream.readNBytes( DETECTION_BYTES );
-            
+
             if ( LOGGER.isTraceEnabled() )
             {
                 LOGGER.trace( "Bytes used for content type detection: {} and as UTF-8: {}",
@@ -876,33 +867,35 @@ public class DataSource
 
         return countAgainst == 0 && countFor > 0;
     }
-    
+
     /**
      * Attempts to identify a plain text byte array as {@link DataDisposition#CSV_WRES}.
      * @param firstBytes the bytes to detect
      * @param uri the uri
      * @return whether the format is {@link DataDisposition#CSV_WRES}
      */
-    
+
     private static boolean detectCsvFromTextPlain( byte[] firstBytes, URI uri )
     {
         String start = new String( firstBytes, StandardCharsets.UTF_8 );
         String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
                                             "location", "measurement_unit",
                                             "value" };
-        
+
         for ( String requiredHeader : wresCsvRequiredHeaders )
         {
             if ( !start.contains( requiredHeader ) )
             {
                 LOGGER.debug( "Found a plain text file {} without an expected WRES CSV header field {}, so assuming "
-                        + "this is not WRES CSV or is malformed.", uri, requiredHeader );
-                
+                              + "this is not WRES CSV or is malformed.",
+                              uri,
+                              requiredHeader );
+
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
 }

@@ -51,7 +51,7 @@ class NwmVectorReaderTest
                                              null,
                                              null );
 
-        DataSource fakeSource = DataSource.of( DataDisposition.COMPLEX,  // The designation we use for NWM vectors
+        DataSource fakeSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
                                                fakeDeclarationSource,
                                                new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
                                                                      List.of( fakeDeclarationSource ),

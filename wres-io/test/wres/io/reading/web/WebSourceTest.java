@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertTrue;
-import static wres.io.reading.DataSource.DataDisposition.COMPLEX;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -26,6 +25,7 @@ import wres.config.generated.UrlParameter;
 import wres.io.data.caching.Caches;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.DataSource.DataDisposition;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
@@ -79,7 +79,7 @@ public class WebSourceTest
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( COMPLEX,
+        DataSource dataSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
@@ -131,7 +131,7 @@ public class WebSourceTest
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( COMPLEX,
+        DataSource dataSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
@@ -182,7 +182,7 @@ public class WebSourceTest
                                                               List.of( urlParameterOne, urlParameterTwo ),
                                                               null,
                                                               null );
-        DataSource dataSource = DataSource.of( COMPLEX,
+        DataSource dataSource = DataSource.of( DataDisposition.JSON_WATERML,
                                                source,
                                                sourceConfig,
                                                Collections.emptyList(),
