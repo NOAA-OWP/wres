@@ -34,12 +34,12 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
 import wres.util.Strings;
@@ -79,7 +79,7 @@ public class DatacardReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
+        ReaderUtilities.validateFileSource( dataSource, false );
         
         try
         {
@@ -157,7 +157,7 @@ public class DatacardReader implements TimeSeriesReader
                 if ( !returned.getAndSet( true ) )
                 {
                     TimeSeries<Double> timeSeries = this.readTimeSeriesFromSource( dataSource, reader );
-                    return TimeSeriesTuple.ofSingleValued( timeSeries );
+                    return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
                 }
 
                 // Null sentinel to stop iterating

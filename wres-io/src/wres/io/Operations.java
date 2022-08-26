@@ -2,6 +2,8 @@ package wres.io;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -133,11 +135,6 @@ public final class Operations
 
         try
         {
-            if ( Operations.shouldAnalyze( ingestResults ) )
-            {
-                database.refreshStatistics( false );
-            }
-
             return Projects.getProjectFromIngest( database,
                                                   caches,
                                                   projectConfig,
@@ -202,10 +199,10 @@ public final class Operations
             Objects.requireNonNull( caches );
         }
 
-        ThreadFactory threadFactoryWithNaming = new BasicThreadFactory.Builder()
-                                                                                .namingPattern( "Outer Reading/Ingest Thread %d" )
-                                                                                .build();
-        ThreadPoolExecutor ingestExecutor =
+        ThreadFactory threadFactoryWithNaming =
+                new BasicThreadFactory.Builder().namingPattern( "Outer Reading Thread %d" )
+                                                .build();
+        ThreadPoolExecutor readingExecutor =
                 new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
                                         systemSettings.maximumThreadCount(),
                                         systemSettings.poolObjectLifespan(),
@@ -216,12 +213,12 @@ public final class Operations
                                         // the executor service.
                                         new ArrayBlockingQueue<>( 100_000 ),
                                         threadFactoryWithNaming );
-        ingestExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         List<IngestResult> projectSources = new ArrayList<>();
 
         SourceLoader loader = new SourceLoader( timeSeriesIngester,
                                                 systemSettings,
-                                                ingestExecutor,
+                                                readingExecutor,
                                                 database,
                                                 caches,
                                                 projectConfig,
@@ -229,6 +226,8 @@ public final class Operations
 
         try
         {
+            Instant start = Instant.now();
+
             List<CompletableFuture<List<IngestResult>>> ingestions = loader.load();
 
             // If the count of the list above exceeds the queue in the
@@ -237,7 +236,7 @@ public final class Operations
             // is a delay in exception propagation in some circumstances.
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( ingestions.size() + " direct ingest results." );
+                LOGGER.debug( "{} direct ingest results.", ingestions.size() );
             }
 
             // Give exception on any of these ingests a chance to propagate fast
@@ -250,16 +249,18 @@ public final class Operations
                 List<IngestResult> ingested = task.get();
                 projectSources.addAll( ingested );
             }
+
+            Instant stop = Instant.now();
+
+            LOGGER.info( "Finished loading the declared datasets in {}.", Duration.between( start, stop ) );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted during ingest.", ie );
-            ingestExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
         catch ( CompletionException | IOException | ExecutionException e )
         {
-            ingestExecutor.shutdownNow();
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
         }
@@ -270,13 +271,13 @@ public final class Operations
                 List<IngestResult> leftovers = database.completeAllIngestTasks();
                 if ( LOGGER.isDebugEnabled() )
                 {
-                    LOGGER.debug( leftovers.size() + " indirect ingest results" );
+                    LOGGER.debug( "{} indirect ingest results.", leftovers.size() );
                 }
                 projectSources.addAll( leftovers );
             }
 
             // Close the ingest executor
-            ingestExecutor.shutdownNow();
+            readingExecutor.shutdownNow();
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
@@ -290,7 +291,6 @@ public final class Operations
                                        + "retries were exhausted." );
         }
 
-        // Subtract the yet-to-retry sources, add the completed retried sources.
         List<IngestResult> composedResults = projectSources.stream()
                                                            .collect( Collectors.toList() );
 
@@ -393,23 +393,6 @@ public final class Operations
     {
         IncompleteIngest.removeOrphanedData( database );
         database.refreshStatistics( true );
-    }
-
-    /**
-     * Given a set of ingest results, answer the question "should we analyze?"
-     * @param ingestResults the results of ingest
-     * @return true if we should run an analyze
-     */
-    private static boolean shouldAnalyze( List<IngestResult> ingestResults )
-    {
-        // See if any ill effects still occur when disabling explicit analyze.
-        // The schema and process for ingest is quite different now. See #76787.
-        return false;
-
-        /* 
-        return wres.util.Collections.exists( ingestResults,
-                                             ingestResult -> !ingestResult.wasFoundAlready() );
-        */
     }
 
     public static void createNetCDFOutputTemplate( final String sourceName, final String templateName )

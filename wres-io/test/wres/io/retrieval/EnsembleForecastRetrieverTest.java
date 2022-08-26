@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -55,6 +54,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -128,6 +128,8 @@ public class EnsembleForecastRetrieverTest
                .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
+        Mockito.when( this.mockSystemSettings.maximumThreadCount() )
+               .thenReturn( 7 );
         PairConfig pairConfig = Mockito.mock( PairConfig.class );
         Mockito.when( pairConfig.getGridSelection() )
                .thenReturn( List.of() );
@@ -333,7 +335,7 @@ public class EnsembleForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne ) );
+        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
 
@@ -346,7 +348,7 @@ public class EnsembleForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo ) );
+        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
         IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, leftData )
                                                   .get( 0 );
 

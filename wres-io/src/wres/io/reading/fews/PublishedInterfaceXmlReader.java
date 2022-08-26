@@ -48,7 +48,6 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
@@ -56,6 +55,7 @@ import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.xml.XMLHelper;
@@ -107,8 +107,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
-        
+        ReaderUtilities.validateFileSource( dataSource, false );
+
         try
         {
             Path xmlPath = Paths.get( dataSource.getUri() );
@@ -225,7 +225,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 throw new ReadException( "While reading a PI-XML data source, " + dataSource.getUri() + ".", e );
             }
 
-            // Create the final series, if it hasn't been created already
+            // Create the only or final series, if it hasn't been created already
             if ( !returnedFinal.getAndSet( true ) )
             {
                 return this.getTimeSeries( dataSource,
@@ -297,7 +297,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
                 if ( !traceValues.isEmpty() )
                 {
-                    LOGGER.debug( "Ingesting due to non-empty tracevalues" );
+                    LOGGER.debug( "Creating a time-series from the last structure due to non-empty trace values" );
 
                     timeSeriesTuple = this.getTimeSeries( dataSource,
                                                           currentTimeSeriesMetadata.get(),
@@ -331,6 +331,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             {
                 try
                 {
+                    // This may or may not complete a series
                     timeSeriesTuple = this.parseSeries( reader,
                                                         dataSource,
                                                         zoneOffset.get(),
@@ -341,7 +342,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 catch ( XMLStreamException
                         | ProjectConfigException e )
                 {
-                    String message = "While ingesting timeseries at line "
+                    String message = "While ingesting a timeseries from " + dataSource
+                                     + " at line "
                                      + reader.getLocation().getLineNumber()
                                      + AND_COLUMN
                                      + reader.getLocation().getColumnNumber()
@@ -350,7 +352,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 }
             }
         }
-
+        
         return timeSeriesTuple;
     }
 
@@ -536,7 +538,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
         }
 
-        LOGGER.debug( "Parsed an event: date={}, time={}, value={}.", dateText, timeText, value );
+        LOGGER.trace( "Parsed an event: date={}, time={}, value={}.", dateText, timeText, value );
 
         if ( Objects.isNull( dateText ) || Objects.isNull( timeText ) )
         {
@@ -568,7 +570,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         if ( Objects.isNull( values ) )
         {
-            LOGGER.debug( "Creating new values because trace '{}' not found.",
+            LOGGER.trace( "Creating new values because trace '{}' not found.",
                           currentTraceName );
             values = new TreeMap<>();
             traceValues.put( currentTraceName, values );
@@ -743,7 +745,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         double missing = this.getSpecifiedMissingValue( dataSource, header.missValue );
 
-        LOGGER.debug( "Setting the missing value sentinel to {}.", header.missValue );
+        LOGGER.trace( "Setting the missing value sentinel to {}.", missing );
 
         missingValue.set( missing );
         currentTraceName.set( header.traceName );
@@ -997,6 +999,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
     /**
      * @param dataSource the data source
+     * @param missingValue the missing value read from the header
      * @return The value specifying a value that is missing from the data set
      * originating from the data source configuration.
      */
@@ -1015,7 +1018,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
         }
 
-        return PIXML_DEFAULT_MISSING_VALUE;
+        return missingValue;
     }
 
     /**
@@ -1109,7 +1112,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                                                 dataSource.getUri() );
         }
 
-        return TimeSeriesTuple.of( singleValuedSeries, ensembleSeries );
+        return TimeSeriesTuple.of( singleValuedSeries, ensembleSeries, dataSource );
     }
 
     /**

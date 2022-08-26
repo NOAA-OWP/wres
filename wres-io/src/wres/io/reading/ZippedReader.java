@@ -14,7 +14,6 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
@@ -50,7 +49,7 @@ public class ZippedReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         
         // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
+        ReaderUtilities.validateFileSource( dataSource, false );
 
         Path path = Paths.get( dataSource.getUri() );
 

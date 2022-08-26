@@ -3,8 +3,6 @@ package wres.io.reading;
 import java.io.InputStream;
 import java.util.stream.Stream;
 
-import wres.datamodel.time.TimeSeriesTuple;
-
 /**
  * <p>An API for reading different types of time-series data from a {@link DataSource}. <p>When reading from a stream 
  * supplied by a {@link TimeSeriesReader}, use a try-with-resources block to ensure that the underlying resources are 

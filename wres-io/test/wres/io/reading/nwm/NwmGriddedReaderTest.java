@@ -34,7 +34,8 @@ class NwmGriddedReaderTest
     /**
      * TODO: implement this test fully, writing a small gridded source to an in-memory file system and then reading it.
      * This test will pass currently if using the correct path to the source identified below, which originates from 
-     * system test scenario650. For now, this test is ignored.
+     * system test scenario650. As of 20220824, the gridded cache must be constructed and supplied, so it will not work
+     * until this is done. For now, this test is ignored.
      */
 
     @Disabled( "Until we can write a small grid to an in-memory file system, probably using the UCAR NetCDF API." )
@@ -94,7 +95,8 @@ class NwmGriddedReaderTest
                                                 null,
                                                 null );
 
-        NwmGriddedReader reader = NwmGriddedReader.of( pairConfig );
+        // TODO: create the gridded features cache here, rather than supplying null
+        NwmGriddedReader reader = NwmGriddedReader.of( pairConfig, null );
 
         List<TimeSeries<Double>> actual = reader.read( fakeSource )
                                                 .map( next -> next.getSingleValuedTimeSeries() )

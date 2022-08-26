@@ -39,7 +39,6 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
@@ -49,6 +48,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.Source;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.utilities.DataProvider;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -593,7 +593,8 @@ public class CSVSource implements Source
     {
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
-        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries ) );
+        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries,
+                                                                                     this.getDataSource() ) );
         Future<List<IngestResult>> futureIngestResult =
                 this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( tupleStream,
                                                                                   this.getDataSource() ) );
@@ -612,7 +613,8 @@ public class CSVSource implements Source
     {
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
 
-        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+        Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries,
+                                                                                         this.getDataSource() ) );
         Future<List<IngestResult>> futureIngestResult =
                 this.ingestSaverExecutor.submit( () -> timeSeriesIngester.ingest( tupleStream,
                                                                                   this.getDataSource() ) );

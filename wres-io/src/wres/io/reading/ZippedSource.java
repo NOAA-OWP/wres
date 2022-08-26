@@ -371,6 +371,7 @@ public class ZippedSource implements Source
         try
         {
             bytesRead = archiveInputStream.read( content, 0, content.length );
+            LOGGER.debug( "Read {} bytes of an expected {} bytes from {}.", bytesRead, expectedByteCount, tarName );
         }
         catch ( EOFException eof )
         {

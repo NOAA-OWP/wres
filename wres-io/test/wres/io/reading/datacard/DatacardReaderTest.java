@@ -28,8 +28,8 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**

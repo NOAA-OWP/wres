@@ -241,10 +241,11 @@ public class ReaderUtilities
     /**
      * Validates a source as containing a readable file.
      * @param dataSource the data source
+     * @param allowDirectory is true to allow a directory, otherwise validate as a regular file
      * @throws ReadException if there is not a readable file associated with the source
      */
 
-    public static void validateFileSource( DataSource dataSource )
+    public static void validateFileSource( DataSource dataSource, boolean allowDirectory )
     {
         Objects.requireNonNull( dataSource );
 
@@ -273,7 +274,7 @@ public class ReaderUtilities
                                      + "' or run WRES as a user with read"
                                      + " permissions on that path." );
         }
-        else if ( !Files.isRegularFile( path ) )
+        else if ( !allowDirectory && !Files.isRegularFile( path ) )
         {
             throw new ReadException( "Expected a file source, but the source was not a file: " + dataSource + "." );
         }
@@ -419,9 +420,9 @@ public class ReaderUtilities
             return true;
         }
 
-        LOGGER.warn( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                     + "begin with a case-insensitive \"NWM_\" designation.",
-                     dataSource );
+        LOGGER.debug( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                      + "begin with a case-insensitive \"NWM_\" designation.",
+                      dataSource );
 
         return false;
     }

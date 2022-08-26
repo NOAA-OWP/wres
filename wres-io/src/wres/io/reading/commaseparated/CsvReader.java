@@ -30,11 +30,11 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
@@ -322,7 +322,7 @@ public class CsvReader implements TimeSeriesReader
                                                                        lineNumber,
                                                                        dataSource.getUri() );
 
-            return TimeSeriesTuple.ofSingleValued( timeSeries );
+            return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
         }
         else
         {
@@ -331,7 +331,7 @@ public class CsvReader implements TimeSeriesReader
                                                                                  lineNumber,
                                                                                  dataSource.getUri() );
 
-            return TimeSeriesTuple.ofEnsemble( timeSeries );
+            return TimeSeriesTuple.ofEnsemble( timeSeries, dataSource );
         }
     }
 

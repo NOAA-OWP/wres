@@ -28,7 +28,6 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
@@ -99,7 +98,9 @@ class ZippedReaderTest
                                                    zipPath.toUri(),
                                                    LeftOrRightOrBaseline.LEFT );
 
-            TimeSeriesReaderFactory readerFactory = TimeSeriesReaderFactory.of( null );
+            // Reader for formats within the archive
+            TimeSeriesReaderFactory readerFactory = TimeSeriesReaderFactory.of( null, null, null );
+
             ZippedReader reader = ZippedReader.of( readerFactory );
 
             // No reading yet, we are just opening a pipe to the file here

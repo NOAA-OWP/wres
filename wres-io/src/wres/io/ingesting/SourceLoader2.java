@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -30,9 +31,7 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
@@ -41,83 +40,86 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
-import wres.io.reading.ReaderFactory;
 import wres.io.reading.ReaderUtilities;
-import wres.io.reading.Source;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.nwm.NWMReader;
-import wres.io.reading.web.WebSource;
-import wres.io.removal.IncompleteIngest;
+import wres.io.reading.ReadException;
+import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesReaderFactory;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
 /**
- * Evaluates datasources specified within a project configuration and determines
- * what data should be ingested. Asynchronous tasks for each file needed for
- * ingest are created and sent to the Exector for ingestion.
- * @author Christopher Tubbs
+ * This is where reading of time-series formats meets ingesting of time-series (e.g., into a persistent store). Creates 
+ * one or more {@link DataSource} for reading and ingesting and then reads and ingests them. Reading in this context 
+ * means instantiating a {@link TimeSeriesReader} and supplying the reader with a {@link DataSource} to read, while 
+ * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a 
+ * {@link TimeSeriesIngester}, which is supplied on construction.
+ * 
+ * TODO: Given that {@link TimeSeriesIngester} is an API that may or may not ingest time-series data into a database, 
+ * this class should not make assumptions about the ingest implementation. For example, it should not perform database 
+ * operations or use database ORMs/caches.
+ * 
  * @author James Brown
+ * @author Christopher Tubbs
  * @author Jesse Bickel
  */
-public class SourceLoader
+public class SourceLoader2
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader2.class );
     private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
-    private final SystemSettings systemSettings;
-    private final ExecutorService executor;
+    private final ExecutorService readingExecutor;
+
     private final Database database;
     private final Caches caches;
+    private final SystemSettings systemSettings;
+
+    /** Time-series ingester. **/
     private final TimeSeriesIngester timeSeriesIngester;
+
+    /** Factory for creating time-series readers. **/
+    private final TimeSeriesReaderFactory timeSeriesReaderFactory;
 
     /**
      * The project configuration indicating what data to use
      */
     private final ProjectConfig projectConfig;
-    private final DatabaseLockManager lockManager;
 
-    /** An enumeration of the ingest status of a source. */
+    /** An enumeration of the loading status of a source. */
     private enum SourceStatus
     {
-        /** The status of a source not present in the database at all. */
-        INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
-        /** The status of a source begun and in progress. */
-        INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING,
-        /** The status of a source ingested completely. */
+        /** The status of a source that has not been loaded. */
+        NOT_COMPLETE,
+        /** The status of a source that has been loaded successfully. */
         COMPLETED,
-        /** The status of a source begun but abandoned by the claiming task. */
-        INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
-        /** The status of a source requiring decomposition, e.g. archive|web. */
-        REQUIRES_DECOMPOSITION,
-        /** The status of a source not able to be queried (it is invalid). */
+        /** The status of a source that cannot be loaded. */
         INVALID
     }
 
     /**
      * @param timeSeriesIngester the time-series ingester
      * @param systemSettings The system settings
-     * @param executor The executor
+     * @param readingExecutor The executor for reading
      * @param database The database
      * @param caches The caches
      * @param projectConfig the project configuration
-     * @param lockManager the tool to manage ingest locks, shared per ingest
      * @throws NullPointerException if any required input is null
      */
-    public SourceLoader( TimeSeriesIngester timeSeriesIngester,
-                         SystemSettings systemSettings,
-                         ExecutorService executor,
-                         Database database,
-                         Caches caches,
-                         ProjectConfig projectConfig,
-                         DatabaseLockManager lockManager )
+    public SourceLoader2( TimeSeriesIngester timeSeriesIngester,
+                          SystemSettings systemSettings,
+                          ExecutorService readingExecutor,
+                          Database database,
+                          Caches caches,
+                          ProjectConfig projectConfig )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( executor );
+        Objects.requireNonNull( readingExecutor );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( lockManager );
+        Objects.requireNonNull( projectConfig.getPair() );
 
         if ( !systemSettings.isInMemory() )
         {
@@ -126,44 +128,48 @@ public class SourceLoader
         }
 
         this.systemSettings = systemSettings;
-        this.executor = executor;
+        this.readingExecutor = readingExecutor;
         this.database = database;
         this.caches = caches;
         this.projectConfig = projectConfig;
-        this.lockManager = lockManager;
         this.timeSeriesIngester = timeSeriesIngester;
+        this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( projectConfig.getPair(),
+                                                                   this.getSystemSettings(),
+                                                                   this.getCaches()
+                                                                       .getFeaturesCache() );
     }
 
     /**
-     * Ingest data
-     * @return List of Future file ingest results
+     * Loads the time-series data.
+     * 
+     * @return List of future ingest results
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
      */
     public List<CompletableFuture<List<IngestResult>>> load() throws IOException
     {
-        LOGGER.info( "Parsing the declared datasets. {}{}{}{}{}{}",
+        LOGGER.info( "Loading the declared datasets. {}{}{}{}{}{}",
                      "Depending on many factors (including dataset size, ",
                      "dataset design, data service implementation, service ",
                      "availability, network bandwidth, network latency, ",
                      "storage bandwidth, storage latency, concurrent ",
                      "evaluations on shared resources, concurrent computation ",
                      "on shared resources) this can take a while..." );
-        List<CompletableFuture<List<IngestResult>>> savingSources = new ArrayList<>();
 
-        // Create the sources for which ingest should be attempted, together with
-        // any required links. A link is an additional entry in wres.ProjectSource.
-        // A link is required for each context in which the source appears within
-        // a project. A context means LeftOrRightOrBaseline.
-        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.systemSettings,
-                                                                           this.projectConfig );
+        // Create the sources for which ingest should be attempted, together with any required links. A link is a 
+        // connection between a data source and a context or LeftOrRightOrBaseline. A link is required for each context 
+        // in which the source appears within a project.
+        Set<DataSource> sources = SourceLoader2.createSourcesToLoadAndLink( this.getSystemSettings(),
+                                                                            this.getProjectConfig() );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
         // Load each source and create any additional links required
+        List<CompletableFuture<List<IngestResult>>> savingSources = new ArrayList<>();
         for ( DataSource source : sources )
         {
-            savingSources.addAll( this.loadSource( source ) );
+            List<CompletableFuture<List<IngestResult>>> results = this.loadSource( source );
+            savingSources.addAll( results );
         }
 
         return Collections.unmodifiableList( savingSources );
@@ -175,260 +181,80 @@ public class SourceLoader
      * @param source The data source
      * @return A listing of asynchronous tasks dispatched to ingest data
      * @throws FileNotFoundException when a source file is not found
-     * @throws IOException when a source file was not readable
      */
     private List<CompletableFuture<List<IngestResult>>> loadSource( DataSource source )
-            throws IOException
     {
-        // Try to load non-file source
-        CompletableFuture<List<IngestResult>> nonFileIngest = this.loadNonFileSource( source );
-
-        // When the non-file source is detected, short-circuit the file way.
-        if ( nonFileIngest != null )
+        if ( ReaderUtilities.isWebSource( source ) )
         {
-            return Collections.singletonList( nonFileIngest );
-        }
-
-        // Proceed with files
-        List<CompletableFuture<List<IngestResult>>> savingFiles = new ArrayList<>();
-
-        if ( !source.hasSourcePath() )
-        {
-            throw new FileNotFoundException( "Found a file data source with an invalid path: "
-                                             + source );
-        }
-
-        File sourceFile = Paths.get( source.getUri() ).toFile();
-
-        if ( !sourceFile.exists() )
-        {
-            throw new FileNotFoundException( "The path: '" +
-                                             sourceFile.getCanonicalPath()
-                                             +
-                                             "' was not found." );
-        }
-        else if ( !sourceFile.canRead() )
-        {
-            throw new IOException( "The path: '" + sourceFile.getCanonicalPath()
-                                   + "' was not readable. Please set "
-                                   + "the permissions of that path to "
-                                   + "readable for user '"
-                                   + System.getProperty( "user.name" )
-                                   + "' or run WRES as a user with read"
-                                   + " permissions on that path." );
-        }
-        else if ( sourceFile.isFile() )
-        {
-            List<CompletableFuture<List<IngestResult>>> futureResults =
-                    this.ingestFile( source,
-                                     this.getProjectConfig(),
-                                     this.getLockManager() );
-            savingFiles.addAll( futureResults );
+            return this.loadNonFileSource( source );
         }
         else
         {
-            LOGGER.warn( "'{}' is not a source of valid input data.",
-                         sourceFile.getCanonicalPath() );
-        }
-
-        return Collections.unmodifiableList( savingFiles );
-    }
-
-    /**
-     * Load a given source from a given config, return null if file-like source
-     * 
-     * TODO: create links for a non-file source when it appears in more than 
-     * one context, i.e. {@link LeftOrRightOrBaseline}. 
-     * See {@link #ingestFile(DataSource, ProjectConfig, DatabaseLockManager)}
-     * for how this is done with a file source.
-     * 
-     * See #67774
-     * 
-     * @param source the data source
-     * @return a single future list of results or null if source was file-like
-     */
-
-    private CompletableFuture<List<IngestResult>> loadNonFileSource( DataSource source )
-    {
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
-
-        if ( interfaceShortHand != null )
-        {
-            LOGGER.debug( "The data at '{}' will be re-composed because an interface short-hand was specified.",
-                          source );
-            if ( interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS )
-                 || interfaceShortHand.equals( InterfaceShortHand.WRDS_OBS )
-                 || interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS )
-                 || interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM ) )
-            {
-                WebSource webSource = WebSource.of( this.getTimeSeriesIngester(),
-                                                    this.getSystemSettings(),
-                                                    this.getDatabase(),
-                                                    this.getCaches(),
-                                                    this.getProjectConfig(),
-                                                    source,
-                                                    this.getLockManager() );
-                return CompletableFuture.supplyAsync( webSource::call,
-                                                      this.getExecutor() );
-            }
-            else
-            {
-                // Must be NWM, right?
-                NWMReader nwmReader = new NWMReader( this.getTimeSeriesIngester(),
-                                                     this.getSystemSettings(),
-                                                     this.getProjectConfig(),
-                                                     source );
-                return CompletableFuture.supplyAsync( nwmReader::call,
-                                                      this.getExecutor() );
-            }
-        }
-
-        // See #63493. This method of identification, which is tied to
-        // source format, does not work well. The format should not designate
-        // whether a source originates from a file or from a service. 
-        // Also, there is an absence of consistency in whether a service-like
-        // source requires that the URI is declared. For example, at the time
-        // of writing, it is required for WRDS, but not for USGS NWIS.
-        // As a result, expect some miss-identification of sources as 
-        // originating from services vs. files.
-
-        URI sourceUri = source.getSource()
-                              .getValue();
-
-        if ( sourceUri != null
-             && sourceUri.getScheme() != null
-             && sourceUri.getHost() != null )
-        {
-            WebSource webSource = WebSource.of( this.getTimeSeriesIngester(),
-                                                this.getSystemSettings(),
-                                                this.getDatabase(),
-                                                this.getCaches(),
-                                                this.getProjectConfig(),
-                                                source,
-                                                this.getLockManager() );
-            return CompletableFuture.supplyAsync( webSource::call,
-                                                  this.getExecutor() );
-        }
-        else
-        {
-            // At this point we should have a file, but check first.
-            if ( sourceUri == null )
-            {
-                throw new ProjectConfigException( source.getSource(),
-                                                  "Unable to use the source "
-                                                                      + "because no URI was "
-                                                                      + "specified." );
-            }
-
-            // Null signifies the source was a file-ish source.
-            return null;
+            return this.loadFileSource( source );
         }
     }
 
-
     /**
-     * Ingest data where the hash is known in advance. This is one of the two
-     * innermost versions of the ingestData method.
-     * @param source the source to ingest
-     * @param projectConfig the project configuration causing the ingest
-     * @param lockManager the lock manager to use
-     * @return a list of future lists of ingest results, possibly empty
-     */
-
-    private List<CompletableFuture<List<IngestResult>>> ingestData( DataSource source,
-                                                                    ProjectConfig projectConfig,
-                                                                    DatabaseLockManager lockManager )
-    {
-        Objects.requireNonNull( source );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( lockManager );
-
-        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
-        CompletableFuture<List<IngestResult>> task;
-
-        Source reader = ReaderFactory.getReader( this.getTimeSeriesIngester(),
-                                                 this.getSystemSettings(),
-                                                 this.getDatabase(),
-                                                 this.getCaches(),
-                                                 projectConfig,
-                                                 source,
-                                                 lockManager );
-
-        task = CompletableFuture.supplyAsync( reader::save, this.getExecutor() );
-
-        tasks.add( task );
-        return Collections.unmodifiableList( tasks );
-    }
-
-
-    /**
-     * Ingest data where the the source is known to be a file.
+     * Load data where the source is known to be a file.
      *
      * @param source the source to ingest, must be a file
-     * @param projectConfig the project configuration causing the ingest
-     * @param lockManager the lock manager to use
      * @return a list of future lists of ingest results, possibly empty
      */
-    private List<CompletableFuture<List<IngestResult>>> ingestFile( DataSource source,
-                                                                    ProjectConfig projectConfig,
-                                                                    DatabaseLockManager lockManager )
+    private List<CompletableFuture<List<IngestResult>>> loadFileSource( DataSource source )
     {
         Objects.requireNonNull( source );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( lockManager );
 
-        LOGGER.debug( "ingestFile called: {}", source );
+        LOGGER.debug( "Attempting to load a file-like source: {}", source );
+
+        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
+
+        // Ingest gridded metadata when required - the updated cache will be used by the gridded reader
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.getSystemSettings()
+                                                                               .isInMemory() )
+        {
+            Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
+            CompletableFuture<List<IngestResult>> future =
+                    CompletableFuture.supplyAsync( fakeResult,
+                                                   this.getReadingExecutor() );
+            tasks.add( future );
+            try
+            {
+                // Get the gridded features upfront
+                future.get();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new ReadException( "Could not read the gridded features." );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread()
+                      .interrupt();
+
+                throw new ReadException( "Could not read the gridded features." );
+            }
+        }
 
         URI sourceUri = source.getUri();
-        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
-        FileEvaluation checkIngest = this.shouldIngest( source,
-                                                        lockManager );
+        FileEvaluation checkIngest = this.shouldIngestFileSource( source );
         SourceStatus sourceStatus = checkIngest.getSourceStatus();
 
-        if ( sourceStatus == SourceStatus.REQUIRES_DECOMPOSITION
-             || sourceStatus == SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING
-             || sourceStatus == SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING )
+        if ( sourceStatus == SourceStatus.NOT_COMPLETE )
         {
-            List<CompletableFuture<List<IngestResult>>> futureList =
-                    this.ingestData( source,
-                                     projectConfig,
-                                     lockManager );
+            List<CompletableFuture<List<IngestResult>>> futureList = this.readAndIngestData( source );
             tasks.addAll( futureList );
         }
-        else if ( sourceStatus.equals( SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING ) )
+        else if ( sourceStatus == SourceStatus.COMPLETED )
         {
-            // When the ingest requires retry and also is not in progress,
-            // attempt cleanup: some process trying to ingest the source
-            // died during ingest and data needs to be cleaned out.
-            long surrogateKey = checkIngest.getSurrogateKey();
-            LOGGER.info(
-                         "Another WRES instance started to ingest a source like '{}' identified by '{}' but did not finish, cleaning up...",
-                         sourceUri,
-                         surrogateKey );
-            IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                     this.getCaches()
-                                                         .getDataSourcesCache(),
-                                                     surrogateKey,
-                                                     lockManager );
-            List<CompletableFuture<List<IngestResult>>> futureList =
-                    this.ingestData( source,
-                                     projectConfig,
-                                     lockManager );
-            tasks.addAll( futureList );
-        }
-        else if ( sourceStatus.equals( SourceStatus.COMPLETED ) )
-        {
-            LOGGER.debug(
-                          "Data will not be loaded from '{}'. That data is already in the database",
+            LOGGER.debug( "Data will not be loaded from '{}'. That data was already loaded.",
                           sourceUri );
 
-            // Fake a future, return result immediately.
+            // Fake a future, return result immediately, nothing to read/ingest.
             tasks.add( IngestResult.fakeFutureSingleItemListFrom( source,
                                                                   checkIngest.getSurrogateKey(),
                                                                   !checkIngest.ingestMarkedComplete() ) );
         }
-        else if ( sourceStatus.equals( SourceStatus.INVALID ) )
+        else if ( sourceStatus == SourceStatus.INVALID )
         {
             LOGGER.warn( "Data will not be loaded from invalid URI '{}'",
                          sourceUri );
@@ -441,21 +267,68 @@ public class SourceLoader
                                              + source );
         }
 
-        LOGGER.trace( "ingestData returning tasks {} for URI {}",
+        LOGGER.trace( "Returning tasks {} for URI {}.",
                       tasks,
                       sourceUri );
 
-        // Ingest gridded metadata when required
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.systemSettings.isInMemory() )
+        return Collections.unmodifiableList( tasks );
+    }
+
+    /**
+     * Loads a web-like source.
+     * 
+     * TODO: create links for a non-file source when it appears in more than 
+     * one context, i.e. {@link LeftOrRightOrBaseline}. 
+     * See {@link #loadFileSource(DataSource, ProjectConfig, DatabaseLockManager)}
+     * for how this is done with a file source.
+     * 
+     * See #67774.
+     * 
+     * @param source the data source
+     * @return a single future list of results
+     */
+
+    private List<CompletableFuture<List<IngestResult>>> loadNonFileSource( DataSource source )
+    {
+        LOGGER.debug( "Attempting to load a web-like source: {}", source );
+
+        return this.readAndIngestData( source );
+    }
+
+    /**
+     * This is where reading meets ingest. Instantiates a reader and then passes the stream through to an ingester.
+     * @param source the source to ingest
+     * @return a list of future lists of ingest results, possibly empty
+     */
+
+    private List<CompletableFuture<List<IngestResult>>> readAndIngestData( DataSource source )
+    {
+        Objects.requireNonNull( source );
+
+        TimeSeriesReader reader = this.getTimeSeriesReaderFactory()
+                                      .getReader( source );
+
+        TimeSeriesIngester ingester = this.getTimeSeriesIngester();
+
+        // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. See #51232.
+        if ( source.isGridded() && !this.getSystemSettings()
+                                        .isInMemory() )
         {
-            Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
-            CompletableFuture<List<IngestResult>> future =
-                    CompletableFuture.supplyAsync( fakeResult,
-                                                   this.getExecutor() );
-            tasks.add( future );
+            // Empty stream, which will trigger source ingest only, not time-series reading/ingest
+            Stream<TimeSeriesTuple> emptyStream = Stream.of();
+
+            CompletableFuture<List<IngestResult>> task =
+                    CompletableFuture.supplyAsync( () -> emptyStream, this.getReadingExecutor() )
+                                     .thenApply( timeSeries -> ingester.ingest( timeSeries, source ) );
+
+            return Collections.singletonList( task );
         }
 
-        return Collections.unmodifiableList( tasks );
+        // Create a read/ingest pipeline. The ingester pulls from the reader by advancing the stream
+        CompletableFuture<List<IngestResult>> task =
+                CompletableFuture.supplyAsync( () -> reader.read( source ), this.getReadingExecutor() )
+                                 .thenApply( timeSeries -> ingester.ingest( timeSeries, source ) );
+        return Collections.singletonList( task );
     }
 
     /**
@@ -465,6 +338,9 @@ public class SourceLoader
     private Supplier<List<IngestResult>> ingestGriddedFeatures( DataSource source )
     {
         return () -> {
+            LOGGER.debug( "Checking gridded features for {} to determine whether loading is necessary.",
+                          source.getUri() );
+
             try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
             {
                 this.getCaches()
@@ -483,82 +359,70 @@ public class SourceLoader
     }
 
     /**
-     * Determines whether or not data at an indicated path should be ingested.
-     * archived data will always be further evaluated to determine whether its
-     * individual entries warrent an ingest
-     * As of 5.11 this method needs revisiting because vector data will be
-     * ingested with TimeSeriesIngester and content type detection above will
-     * skip over UNKNOWN data.
+     * Determines whether or not a file-like data source should be ingested. Archived data will always be further 
+     * evaluated to determine whether its individual entries warrant an ingest
+     * 
      * @param dataSource The data source to check
      * @return Whether or not data within the file should be ingested
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private FileEvaluation shouldIngest( DataSource dataSource,
-                                         DatabaseLockManager lockManager )
+    private FileEvaluation shouldIngestFileSource( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( lockManager );
 
         DataDisposition disposition = dataSource.getDisposition();
 
-        // Archives perform their own ingest verification
-        if ( disposition == DataDisposition.GZIP )
+        // Archives should always be further evaluated as they are decomposed prior to ingest
+        if ( disposition == DataDisposition.GZIP || disposition == DataDisposition.TARBALL )
         {
-            LOGGER.debug( "The data at '{}' will be ingested because it has been determined that it is an archive that "
-                          + "will need to be further evaluated.",
+            LOGGER.debug( "The source at '{}' was detected as an archive format whose contents will need to be further "
+                          + "evaluated.",
                           dataSource.getUri() );
-            return new FileEvaluation( SourceStatus.REQUIRES_DECOMPOSITION,
+            return new FileEvaluation( SourceStatus.NOT_COMPLETE,
                                        KEY_NOT_FOUND );
         }
 
         // Is this in-memory, i.e., no ingest required?
-        if ( this.systemSettings.isInMemory() )
+        if ( this.getSystemSettings()
+                 .isInMemory() )
         {
-            return new FileEvaluation( SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING,
+            return new FileEvaluation( SourceStatus.NOT_COMPLETE,
                                        KEY_NOT_FOUND );
         }
 
         boolean ingest = ( disposition != DataDisposition.UNKNOWN );
         SourceStatus sourceStatus = null;
 
-        String hash;
+        // Only require for gridded NetCDF. Remove this when gridded evaluation and vector evaluations are par. See 
+        // #51232. 
+        String sourceHash = null;
 
         if ( ingest )
         {
             try
             {
-                // If the format is Netcdf, we want to possibly bypass traditional hashing
+                // If the format is gridded NetCDF, we want to possibly bypass traditional hashing
                 if ( disposition == DataDisposition.NETCDF_GRIDDED )
                 {
-                    hash = NetCDF.getUniqueIdentifier( dataSource.getUri(),
-                                                       dataSource.getVariable()
-                                                                 .getValue() );
-                }
-                else
-                {
-                    // As of 2020-06-02, readers all use TimeSeriesIngester
-                    // which hashes the TimeSeries instances individually rather
-                    // than files, no need to hash the file at all here now.
-                    hash = null;
+                    sourceHash = NetCDF.getUniqueIdentifier( dataSource.getUri(),
+                                                             dataSource.getVariable()
+                                                                       .getValue() );
                 }
 
-                sourceStatus = this.querySourceStatus( hash, lockManager );
+                sourceStatus = this.querySourceStatus( sourceHash );
 
                 // Added in debugging #58715-116
                 if ( LOGGER.isDebugEnabled() )
                 {
-                    LOGGER.debug( "Determined that a source with URI {} and "
-                                  + "hash {} has the status of "
-                                  + "{}",
+                    LOGGER.debug( "Determined that a source with URI {} and hash {} has the status of {}.",
                                   dataSource.getUri(),
-                                  hash,
+                                  sourceHash,
                                   sourceStatus );
                 }
             }
             catch ( IOException ioe )
             {
-                throw new PreIngestException(
-                                              "Could not determine whether to ingest '"
+                throw new PreIngestException( "Could not determine whether to ingest '"
                                               + dataSource.getUri()
                                               + "'",
                                               ioe );
@@ -566,21 +430,20 @@ public class SourceLoader
         }
         else
         {
-            LOGGER.debug( "The file at '{}' will not be ingested because {}{}",
-                          dataSource.getUri(),
-                          "it has data that could not be detected as readable ",
-                          "by WRES" );
+            LOGGER.debug( "The file at '{}' will not be ingested because it has data that could not be detected as "
+                          + "readable by WRES.",
+                          dataSource.getUri() );
             return new FileEvaluation( SourceStatus.INVALID,
                                        KEY_NOT_FOUND );
         }
 
         if ( sourceStatus == null )
         {
-            throw new IllegalStateException( "Expected sourceStatus to always be set by now." );
+            throw new IllegalStateException( "Expected the source status to be set by now." );
         }
 
         // Get the surrogate key if it exists
-        long surrogateKey = this.getSurrogateKey( hash, dataSource.getUri() );
+        long surrogateKey = this.getSurrogateKey( sourceHash, dataSource.getUri() );
 
         return new FileEvaluation( sourceStatus, surrogateKey );
     }
@@ -618,34 +481,15 @@ public class SourceLoader
         {
             return dataSourceKey;
         }
-        
+
         return KEY_NOT_FOUND;
-    }
-    
-    /**
-     * Determines if the indicated data is currently being ingested by a task
-     * in another process.
-     * @param hash The hash of the data that some task might be ingesting, known
-     *             to exist already.
-     * @return true if a task is detected to be ingesting, false otherwise
-     * @throws SQLException When communication with the database fails.
-     */
-    private boolean ingestInProgress( String hash,
-                                      DatabaseLockManager lockManager )
-            throws SQLException
-    {
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
-        SourceDetails sourceDetails = dataSources.getExistingSource( hash );
-        Long sourceId = sourceDetails.getId();
-        return lockManager.isSourceLocked( sourceId );
     }
 
     /**
-     * Determines if the indicated data already exists within the database
+     * Determines if another task is responsible for source ingest.
      * @param hash The hash of the file that might need to be ingested
      * @return Whether or not another task has claimed responsibility for data
-     * @throws SQLException Thrown if communcation with the database failed in
+     * @throws SQLException Thrown if communication with the database failed in
      * some way
      */
     private boolean anotherTaskIsResponsibleForSource( String hash )
@@ -679,37 +523,6 @@ public class SourceLoader
     }
 
     /**
-     * A result of file evaluation.
-     */
-    private static class FileEvaluation
-    {
-        private final SourceStatus sourceStatus;
-        private final long surrogateKey;
-
-        FileEvaluation( SourceStatus sourceStatus,
-                        long surrogateKey )
-        {
-            this.sourceStatus = sourceStatus;
-            this.surrogateKey = surrogateKey;
-        }
-
-        boolean ingestMarkedComplete()
-        {
-            return this.sourceStatus.equals( SourceStatus.COMPLETED );
-        }
-
-        SourceStatus getSourceStatus()
-        {
-            return this.sourceStatus;
-        }
-
-        long getSurrogateKey()
-        {
-            return this.surrogateKey;
-        }
-    }
-
-    /**
      * <p>Evaluates a project and creates a {@link DataSource} for each 
      * distinct source within the project that needs to
      * be loaded, together with any additional links required. A link is required 
@@ -738,15 +551,15 @@ public class SourceLoader
         Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
-        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
+        SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
 
         // Must have one or more right sources to load and link
-        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getRight() );
+        SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getRight() );
 
         // May have one or more baseline sources to load and link
         if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
         {
-            SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getBaseline() );
+            SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getBaseline() );
         }
 
         // Create a simple entry (DataSource) for each complex entry
@@ -755,10 +568,7 @@ public class SourceLoader
         // Expand any file sources that represent directories and filter any that are not required
         for ( Map.Entry<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
         {
-            // Evaluate the path, which is null for a source that is not file-like
-            Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
-
-            // Allow GC of new empty Sets by letting the links ref empty set.
+            // Allow GC of new empty sets by letting the links ref empty set.
             List<LeftOrRightOrBaseline> links = Collections.emptyList();
 
             if ( !nextSource.getValue()
@@ -774,6 +584,9 @@ public class SourceLoader
 
             LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
 
+            // Evaluate the path, which is null for a source that is not file-like
+            Path path = SourceLoader2.evaluatePath( systemSettings, nextSource.getKey() );
+
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
             {
@@ -785,31 +598,31 @@ public class SourceLoader
                                                    path.toUri(),
                                                    lrb );
 
-                Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
+                Set<DataSource> filesources = SourceLoader2.decomposeFileSource( source );
                 returnMe.addAll( filesources );
             }
             // Not a file-like source
             else
             {
                 // Create a source with unknown disposition as the basis for detection
-                DataSource source = DataSource.of( DataDisposition.UNKNOWN,
-                                                   nextSource.getKey(),
-                                                   dataSourceConfig,
-                                                   links,
-                                                   nextSource.getKey()
-                                                             .getValue(),
-                                                   lrb );
+                DataSource sourceToEvaluate = DataSource.of( DataDisposition.UNKNOWN,
+                                                             nextSource.getKey(),
+                                                             dataSourceConfig,
+                                                             links,
+                                                             nextSource.getKey()
+                                                                       .getValue(),
+                                                             lrb );
 
-                DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( source );
-                DataSource.of( disposition,
-                               nextSource.getKey(),
-                               dataSourceConfig,
-                               links,
-                               nextSource.getKey()
-                                         .getValue(),
-                               lrb );
+                DataDisposition disposition = SourceLoader2.getDispositionOfNonFileSource( sourceToEvaluate );
+                DataSource evaluatedSource = DataSource.of( disposition,
+                                                            nextSource.getKey(),
+                                                            dataSourceConfig,
+                                                            links,
+                                                            nextSource.getKey()
+                                                                      .getValue(),
+                                                            lrb );
 
-                returnMe.add( source );
+                returnMe.add( evaluatedSource );
             }
         }
 
@@ -826,17 +639,21 @@ public class SourceLoader
     {
         if ( ReaderUtilities.isWebSource( dataSource ) )
         {
+            LOGGER.debug( "Identified a source as a web source: {}. Inspecting further...", dataSource );
             if ( ReaderUtilities.isUsgsSource( dataSource ) )
             {
+                LOGGER.debug( "Identified a source as a USGS source: {}.", dataSource );
                 return DataDisposition.JSON_WATERML;
             }
             else if ( ReaderUtilities.isWrdsAhpsSource( dataSource )
                       || ReaderUtilities.isWrdsObservedSource( dataSource ) )
             {
+                LOGGER.debug( "Identified a source as a JSON WRDS AHPS source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_AHPS;
             }
             else if ( ReaderUtilities.isWrdsNwmSource( dataSource ) )
             {
+                LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_NWM;
             }
         }
@@ -877,11 +694,12 @@ public class SourceLoader
             return Set.of( innerSource );
         }
 
-        // Directory: must decompose into sources
+        // Directory: must decompose into file sources whose format(s) must be detected
         if ( file.isDirectory() )
         {
-            return SourceLoader.decomposeDirectorySource( dataSource );
+            return SourceLoader2.decomposeDirectorySource( dataSource );
         }
+        // Regular file, detect the format and return
         else
         {
             DataDisposition disposition = DataSource.detectFormat( dataSource.getUri() );
@@ -1088,39 +906,32 @@ public class SourceLoader
                 sources.put( source, Pair.of( dataSourceConfig, new ArrayList<>() ) );
             }
         }
-
     }
-
 
     /**
      * Returns the likely status of a given source hash based on state in db.
      * @param hash The natural identifier of the source, null if not known yet.
-     * @param lockManager The lock manager to use to query status.
      * @return the source status
      * @throws PreIngestException When communication with the database fails.
      */
 
-    private SourceStatus querySourceStatus( String hash, DatabaseLockManager lockManager )
+    private SourceStatus querySourceStatus( String hash )
     {
-        boolean anotherTaskStartedIngest = false;
-        boolean ingestMarkedComplete = false;
-        boolean ingestInProgress = false;
-
         if ( Objects.isNull( hash ) )
         {
             // When the hash is null, report it as not started, etc.
             // As of 2020-06-02, TimeSeriesIngester will investigate status,
             // so do not bother checking here for files.
-            return SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
+            return SourceStatus.NOT_COMPLETE;
         }
 
         try
         {
-            anotherTaskStartedIngest = this.anotherTaskIsResponsibleForSource( hash );
+            boolean anotherTaskStartedIngest = this.anotherTaskIsResponsibleForSource( hash );
 
             if ( anotherTaskStartedIngest )
             {
-                ingestMarkedComplete = this.wasSourceCompleted( hash );
+                boolean ingestMarkedComplete = this.wasSourceCompleted( hash );
 
                 if ( ingestMarkedComplete )
                 {
@@ -1128,26 +939,12 @@ public class SourceLoader
                 }
                 else
                 {
-                    LOGGER.debug( "Another task is responsible for {} but has not yet finished it.",
-                                  hash );
-                    ingestInProgress = this.ingestInProgress( hash, lockManager );
-                    LOGGER.debug( "Is another task currently ingesting {}? {}",
-                                  hash,
-                                  ingestInProgress );
-                    if ( ingestInProgress )
-                    {
-                        return SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_TASK_CURRENTLY_INGESTING;
-                    }
-                    else
-                    {
-                        return SourceStatus.INCOMPLETE_WITH_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
-                    }
+                    return SourceStatus.NOT_COMPLETE;
                 }
             }
             else
             {
-                // No task claimed this source as of a moment ago
-                return SourceStatus.INCOMPLETE_WITH_NO_TASK_CLAIMING_AND_NO_TASK_CURRENTLY_INGESTING;
+                return SourceStatus.NOT_COMPLETE;
             }
         }
         catch ( SQLException se )
@@ -1163,9 +960,9 @@ public class SourceLoader
         return this.systemSettings;
     }
 
-    private ExecutorService getExecutor()
+    private ExecutorService getReadingExecutor()
     {
-        return this.executor;
+        return this.readingExecutor;
     }
 
     private Database getDatabase()
@@ -1183,14 +980,48 @@ public class SourceLoader
         return this.projectConfig;
     }
 
-    private DatabaseLockManager getLockManager()
-    {
-        return this.lockManager;
-    }
-
     private TimeSeriesIngester getTimeSeriesIngester()
     {
         return this.timeSeriesIngester;
     }
 
+    /**
+     * @return the reader factory
+     */
+
+    private TimeSeriesReaderFactory getTimeSeriesReaderFactory()
+    {
+        return this.timeSeriesReaderFactory;
+    }
+
+    /**
+     * A result of file evaluation.
+     */
+    private static class FileEvaluation
+    {
+        private final SourceStatus sourceStatus;
+        private final long surrogateKey;
+
+        FileEvaluation( SourceStatus sourceStatus,
+                        long surrogateKey )
+        {
+            this.sourceStatus = sourceStatus;
+            this.surrogateKey = surrogateKey;
+        }
+
+        boolean ingestMarkedComplete()
+        {
+            return this.sourceStatus.equals( SourceStatus.COMPLETED );
+        }
+
+        SourceStatus getSourceStatus()
+        {
+            return this.sourceStatus;
+        }
+
+        long getSurrogateKey()
+        {
+            return this.surrogateKey;
+        }
+    }
 }

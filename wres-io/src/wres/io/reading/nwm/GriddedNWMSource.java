@@ -24,7 +24,6 @@ import wres.config.generated.UnnamedFeature;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.grid.client.Fetcher;
@@ -39,6 +38,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.Source;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.DataAccessException;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
@@ -296,7 +296,8 @@ public class GriddedNWMSource implements Source
         for ( Stream<TimeSeries<Double>> nextStream : response.getTimeSeries().values() )
         {
             nextStream.forEach( timeSeries -> this.getTimeSeriesIngester()
-                                                  .ingest( Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) ),
+                                                  .ingest( Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries, 
+                                                                                                      this.getDataSource() ) ),
                                                            this.getDataSource() ) );
         }
     }

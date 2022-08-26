@@ -893,7 +893,7 @@ public class DatabaseProject implements Project
                             + this.getVariableName( lrb )
                             + "' data available for the "
                             + lrb
-                            + "evaluation dataset." );
+                            + " evaluation dataset." );
 
             if ( !availableVariables.isEmpty() )
             {

@@ -28,8 +28,8 @@ import com.google.common.jimfs.Jimfs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 
 /**
  * Tests the {@link WatermlReader}.

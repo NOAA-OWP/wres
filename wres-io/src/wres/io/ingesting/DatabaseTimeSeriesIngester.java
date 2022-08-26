@@ -1,5 +1,6 @@
 package wres.io.ingesting;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -18,11 +19,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +46,6 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.data.caching.Caches;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
@@ -47,8 +55,9 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.nwm.GriddedNWMValueSaver;
-import wres.io.reading.ZippedSource;
+import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.ProgressMonitor;
@@ -59,7 +68,7 @@ import wres.util.NetCDF;
  * Ingests given {@link TimeSeries} data if not already ingested.
  *
  * As of 2019-10-29, only supports data with one or more reference datetime.
- * As of 2019-10-29, uses toString() representation to identify data.
+ * As of 2019-10-29, uses {@link TimeSeries#toString()} to identify data.
  *
  * Identifies data for convenience (and parallelism).
  *
@@ -75,16 +84,13 @@ import wres.util.NetCDF;
  * a baseline time-series and, therefore, appear in two contexts, left and 
  * baseline.
  *
- * Does not preclude the skipping of ingest at a higher level, e.g. when a full
- * PI-XML stream is identified and marked as ingested in wres.source. This class
- * could replace the use of wres.source table with a natural identifier column
- * in the wres.timeseries table. Then sources would not be started/completed,
- * but timeseries would be started/completed. This would present some difficulty
- * in optimizing the case of already-ingested bytestreams but relieves the
- * difficulty where a TimeSeries is not contained in a single bytestream: NWM.
+ * Does not preclude the skipping of ingest at a higher level.
+ * 
+ * @author James Brown
+ * @author Jesse Bickel
  */
 
-public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
+public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger( DatabaseTimeSeriesIngester.class );
@@ -92,14 +98,20 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     /** The maximum number of ingest retries. */
     private static final int MAXIMUM_RETRIES = 10;
 
+    /** The default key value for a data source when not discovered in the cache. */
+    private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
+
     private final SystemSettings systemSettings;
     private final Database database;
     private final Caches caches;
     private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
 
+    /** A thread pool to process ingests. */
+    private final ThreadPoolExecutor executor;
+
     /**
-     * Creates an instance.
+     * Builds an instance incrementally.
      */
 
     public static class Builder
@@ -169,59 +181,53 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
     }
 
-    /**
-     * Creates an instance.
-     * @param builder the builder
-     */
-
-    private DatabaseTimeSeriesIngester( Builder builder )
-    {
-        this.systemSettings = builder.systemSettings;
-        this.database = builder.database;
-        this.caches = builder.caches;
-        this.projectConfig = builder.projectConfig;
-        this.lockManager = builder.lockManager;
-
-        Objects.requireNonNull( this.systemSettings );
-        Objects.requireNonNull( this.database );
-        Objects.requireNonNull( this.caches );
-        Objects.requireNonNull( this.projectConfig );
-        Objects.requireNonNull( this.lockManager );
-    }
-
     @Override
     public List<IngestResult> ingest( Stream<TimeSeriesTuple> timeSeriesTuple,
-                                      DataSource dataSource )
+                                      DataSource outerSource )
     {
         Objects.requireNonNull( timeSeriesTuple );
-        Objects.requireNonNull( dataSource );
+        Objects.requireNonNull( outerSource );
 
         // If this is a gridded dataset, it has special treatment, inserting the sources only. This will disappear
-        // if/when gridded ingest is normalized with other ingest: see #51232
-        if ( dataSource.isGridded() )
+        // if/when gridded ingest is normalized with other ingest: see #51232.
+        if ( outerSource.isGridded() )
         {
-            return this.ingestGriddedData( dataSource );
+            return this.ingestGriddedData( outerSource );
         }
+
+        // A queue of tasks
+        BlockingQueue<Future<List<IngestResult>>> ingestQueue =
+                new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() );
+
+        // Start to get results before the ingest queue overflows
+        CountDownLatch startGettingResults = new CountDownLatch( this.getSystemSettings()
+                                                                     .maximumThreadCount() );
+
+        List<IngestResult> finalResults = new ArrayList<>();
 
         // Read one time-series into memory at a time, closing the stream on completion
         try ( timeSeriesTuple )
         {
-            List<IngestResult> results = new ArrayList<>();
             Iterator<TimeSeriesTuple> tupleIterator = timeSeriesTuple.iterator();
             while ( tupleIterator.hasNext() )
             {
                 TimeSeriesTuple nextTuple = tupleIterator.next();
+
+                DataSource innerSource = nextTuple.getDataSource();
 
                 // Single-valued time-series?
                 if ( nextTuple.hasSingleValuedTimeSeries() )
                 {
                     TimeSeries<Double> nextSeries =
                             this.addReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries() );
-                    List<IngestResult> innerResults =
-                            this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
-                                                                          dataSource );
 
-                    results.addAll( innerResults );
+                    Future<List<IngestResult>> innerResults = this.getExecutor()
+                                                                  .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                                                                                                               innerSource ) );
+
+                    // Add the future ingest results to the ingest queue
+                    ingestQueue.add( innerResults );
+                    startGettingResults.countDown();
                 }
 
                 // Ensemble time-series?
@@ -229,17 +235,50 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                 {
                     TimeSeries<Ensemble> nextSeries =
                             this.addReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries() );
-                    List<IngestResult> innerResults =
-                            this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
-                                                                      dataSource );
 
-                    results.addAll( innerResults );
+                    Future<List<IngestResult>> innerResults = this.getExecutor()
+                                                                  .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                                                                                                           innerSource ) );
+
+                    // Add the future ingest results to the ingest queue
+                    ingestQueue.add( innerResults );
+                    startGettingResults.countDown();
+                }
+
+                // Start to get ingest results?
+                if ( startGettingResults.getCount() <= 0 )
+                {
+                    List<IngestResult> result = ingestQueue.poll()
+                                                           .get();
+                    finalResults.addAll( result );
                 }
             }
 
-            // Arbitrary surrogate key, since this is an in-memory ingest
-            return Collections.unmodifiableList( results );
+            // Get any remaining results
+            for ( Future<List<IngestResult>> next : ingestQueue )
+            {
+                List<IngestResult> nextResults = next.get();
+                finalResults.addAll( nextResults );
+            }
+
+            return Collections.unmodifiableList( finalResults );
         }
+        catch ( ExecutionException e )
+        {
+            throw new IngestException( "Failed to get ingest results.", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new IngestException( "Interrupted while getting ingest results.", e );
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        this.getExecutor()
+            .shutdownNow();
     }
 
     /**
@@ -328,7 +367,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             // Success
             if ( this.isIngestComplete( results ) )
             {
-                LOGGER.trace( "Successfully ingested a time-series with metadata: " + timeSeries.getMetadata() + "." );
+                LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
 
                 return results;
             }
@@ -361,11 +400,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         List<IngestResult> results;
 
+        LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.getUri() );
+
         SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
 
-        // Not found 
+        // Source was inserted, so this is a new source
         if ( source.performedInsert() )
         {
+            // Lock source with an advisory lock. Unlocked by a SourceCompleter.
             this.lockSource( source, timeSeries );
 
             // Ready to ingest, source row was inserted and is (advisory) locked.
@@ -377,13 +419,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                        timeSeries,
                                                        source.getId() );
 
-            // Mark complete
-            results = this.completeSource( source, latches, dataSource );
+            // Finalize, which marks complete and unlocks
+            results = this.finalizeNewSource( source, latches, dataSource );
         }
-        // Found
+        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
         else
         {
-            results = this.completeSource( source, dataSource );
+            results = this.finalizeExistingSource( source, dataSource );
         }
 
         return results;
@@ -432,14 +474,19 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
             }
 
-            List<IngestResult> results = this.ingestEnsembleTimeSeries( timeSeries, dataSource );
+            List<IngestResult> result = this.ingestEnsembleTimeSeries( timeSeries, dataSource );
 
             // Success
-            if ( this.isIngestComplete( results ) )
+            if ( this.isIngestComplete( result ) )
             {
-                LOGGER.trace( "Successfully ingested a time-series with metadata: " + timeSeries.getMetadata() + "." );
+                if ( i > 0 )
+                {
+                    LOGGER.info( "Succesfully ingested a time-series from {} after {} retries.", dataSource, i );
+                }
 
-                return results;
+                LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
+
+                return result;
             }
         }
 
@@ -470,11 +517,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         List<IngestResult> results;
 
+        LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.getUri() );
+
         SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
 
         // Not found
         if ( source.performedInsert() )
         {
+            // Lock source with an advisory lock. Unlocked by a SourceCompleter.
             this.lockSource( source, timeSeries );
 
             // Ready to ingest, source row was inserted and is (advisory) locked.
@@ -486,13 +536,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                    timeSeries,
                                                    source.getId() );
 
-            // Mark complete
-            results = this.completeSource( source, latches, dataSource );
+            // Finalize, which marks complete and unlocks
+            results = this.finalizeNewSource( source, latches, dataSource );
         }
-        // Found
+        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
         else
         {
-            results = this.completeSource( source, dataSource );
+            results = this.finalizeExistingSource( source, dataSource );
         }
 
         return results;
@@ -529,9 +579,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
             if ( Objects.nonNull( sourceDetails ) && Files.exists( Paths.get( sourceDetails.getSourcePath() ) ) )
             {
-                // Was setting the file name important? Seems as though
-                // the filename should be immutable.
-                //this.setFilename( sourceDetails.getSourcePath() );
                 SourceCompletedDetails completedDetails =
                         new SourceCompletedDetails( this.getDatabase(), sourceDetails );
                 boolean completed = completedDetails.wasCompleted();
@@ -544,10 +591,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             // Not present, so save it
             GriddedNWMValueSaver saver = new GriddedNWMValueSaver( this.getSystemSettings(),
                                                                    this.getDatabase(),
-                                                                   this.getCaches()
-                                                                       .getFeaturesCache(),
-                                                                   this.getCaches()
-                                                                       .getMeasurementUnitsCache(),
+                                                                   this.getCaches(),
                                                                    dataSource,
                                                                    hash );
 
@@ -564,7 +608,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     * Attempts to lock a source aka time-series.
+     * Attempts to lock a source aka time-series. Unlocking is managed by a {@link SourceCompleter}.
      * @param <T> the type of time-series event value
      * @param source the source to lock
      * @param timeSeries the time-series
@@ -592,7 +636,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     * Saves the source information associated with the time-series.
+     * Attempts to save the source information associated with the time-series.
      * @param <T> the type of time-series event value
      * @param time-series whose source information should be saved
      * @param uri the data source uri
@@ -637,9 +681,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "Source metadata about '" + uri
-                                       +
-                                       "' could not be stored or retrieved from the database.",
+            throw new IngestException( "Source metadata about '"
+                                       + uri
+                                       + "' could not be stored or retrieved from the database.",
                                        se );
         }
 
@@ -649,21 +693,111 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     * Completes a source.
+     * Creates a list of ingest results for a completed source or an abandoned source that should be retried. If an 
+     * abandoned source is detected, the source is removed safely in preparation for a retry.
+     *  
      * @param source the source details
      * @param dataSource the data source
      * @return the ingest results
      */
 
-    private List<IngestResult> completeSource( SourceDetails source,
-                                               DataSource dataSource )
+    private List<IngestResult> finalizeExistingSource( SourceDetails source,
+                                                       DataSource dataSource )
     {
-        List<IngestResult> results;
+        boolean completed = this.isSourceComplete( source );
+
+        // Completed, no retries needed
+        if ( completed )
+        {
+            LOGGER.trace( "Already ingested and completed data source {}.", dataSource );
+
+            // Already present and completed
+            return IngestResult.singleItemListFrom( dataSource,
+                                                    source.getId(),
+                                                    true,
+                                                    false );
+        }
+        // In progress elsewhere, retry later
+        else if ( this.isIngestInProgress( source.getHash(), this.getLockManager() ) )
+        {
+            LOGGER.debug( "Detected a data source whose ingest is already in progress in another task, {}.",
+                          dataSource );
+
+            // Retry later
+            return IngestResult.singleItemListFrom( dataSource,
+                                                    source.getId(),
+                                                    true,
+                                                    true );
+        }
+        // Started, but not completed (unless in the interim) and not in progress, remove and retry later
+        else
+        {
+            // Check again for completion as it may have happened in the interim
+            if ( this.isSourceComplete( source ) )
+            {
+                LOGGER.trace( "Already ingested and completed data source {}.", dataSource );
+
+                return IngestResult.singleItemListFrom( dataSource,
+                                                        source.getId(),
+                                                        true,
+                                                        false );
+            }
+
+            // First, try to safely remove it, which will again check for completion
+            long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
+            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
+                                                                       this.getCaches()
+                                                                           .getDataSourcesCache(),
+                                                                       surrogateKey,
+                                                                       this.getLockManager() );
+
+            LOGGER.warn( "Another instance started to ingest data source, {}, identified by '{}' but did not finish. "
+                         + "Cleaning up...",
+                         dataSource,
+                         surrogateKey );
+
+            // Removed the source, retry ingest later
+            if ( removed )
+            {
+                LOGGER.debug( "Successfully removed an abandoned data source, {}, identified by '{}'. This source will "
+                              + "be retried at the next opportunity.",
+                              dataSource,
+                              surrogateKey );
+
+                // Retry later
+                return IngestResult.singleItemListFrom( dataSource,
+                                                        source.getId(),
+                                                        true,
+                                                        true );
+            }
+            // Not removed, inspect and retry again later
+            else
+            {
+                LOGGER.debug( "Failed to remove data source {}, identified by '{}'. This source will be reexamined at "
+                              + "the next opportunity.",
+                              dataSource,
+                              surrogateKey );
+
+                // Retry later
+                return IngestResult.singleItemListFrom( dataSource,
+                                                        source.getId(),
+                                                        true,
+                                                        true );
+            }
+        }
+    }
+
+    /**
+     * @param source the source to check
+     * @return true if completed, false otherwise
+     */
+
+    private boolean isSourceComplete( SourceDetails source )
+    {
         SourceCompletedDetails completedDetails = this.createSourceCompletedDetails( source );
-        boolean completed;
         try
         {
-            completed = completedDetails.wasCompleted();
+            return completedDetails.wasCompleted();
         }
         catch ( SQLException se )
         {
@@ -672,53 +806,51 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                           + " was already ingested.",
                                           se );
         }
-
-        if ( completed )
-        {
-            // Already present and completed
-            results = IngestResult.singleItemListFrom( dataSource,
-                                                       source.getId(),
-                                                       true,
-                                                       false );
-
-            // When successfully completed, remove temp files associated.
-            URI uri = dataSource.getUri();
-
-            if ( uri.toString()
-                    .contains( ZippedSource.TEMP_FILE_PREFIX ) )
-            {
-                try
-                {
-                    Files.delete( Paths.get( uri ) );
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Could not remove temp file {}", uri );
-                }
-            }
-        }
-        else
-        {
-            results = IngestResult.singleItemListFrom( dataSource,
-                                                       source.getId(),
-                                                       true,
-                                                       true );
-        }
-
-        return results;
     }
 
     /**
-     * Completes a source.
+     * Determines if the indicated data is currently being ingested by another task. Also see 
+     * {@link IncompleteIngest#removeSourceDataSafely(Database, DataSources, long, DatabaseLockManager)}, which takes a
+     * slightly different route to checking ingest status. TODO: consider normalizing these routes.
+     * 
+     * @param hash The hash of the data that some task might be ingesting, known
+     *             to exist already.
+     * @return true if a task is detected to be ingesting, false otherwise
+     * @throws PreIngestException when communication with the database fails
+     */
+    private boolean isIngestInProgress( String hash,
+                                        DatabaseLockManager lockManager )
+    {
+        DataSources dataSources = this.getCaches()
+                                      .getDataSourcesCache();
+        try
+        {
+            SourceDetails sourceDetails = dataSources.getExistingSource( hash );
+            Long sourceId = sourceDetails.getId();
+
+            LOGGER.debug( "Checking source lock for source {}.", sourceId );
+
+            return lockManager.isSourceLocked( sourceId );
+        }
+        catch ( SQLException e )
+        {
+            throw new PreIngestException( "Failed to determine whether the data source with hash "
+                                          + hash
+                                          + " was currently being ingested." );
+        }
+    }
+
+    /**
+     * Completes a new source.
      * @param source the source details
      * @param latches the latches
      * @param dataSource the data source
      * @return the ingest results
      */
 
-    private List<IngestResult> completeSource( SourceDetails source,
-                                               Set<Pair<CountDownLatch, CountDownLatch>> latches,
-                                               DataSource dataSource )
+    private List<IngestResult> finalizeNewSource( SourceDetails source,
+                                                  Set<Pair<CountDownLatch, CountDownLatch>> latches,
+                                                  DataSource dataSource )
     {
         List<IngestResult> results;
 
@@ -731,6 +863,43 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                    false,
                                                    false );
         return results;
+    }
+
+    /**
+     * @param hash the hash
+     * @param uri the uri to help with messaging
+     * @return the surrogate key or {@link #KEY_NOT_FOUND}
+     */
+    private long getSurrogateKey( String hash, URI uri )
+    {
+        // Get the surrogate key if it exists
+        Long dataSourceKey = null;
+        if ( Objects.nonNull( hash ) )
+        {
+            try
+            {
+                DataSources dataSources = this.getCaches()
+                                              .getDataSourcesCache();
+                dataSourceKey = dataSources.getActiveSourceID( hash );
+            }
+            catch ( SQLException se )
+            {
+                throw new PreIngestException( "While determining if source '"
+                                              + uri
+                                              + "' should be ingested, "
+                                              + "failed to translate natural key '"
+                                              + hash
+                                              + "' to surrogate key.",
+                                              se );
+            }
+        }
+
+        if ( Objects.nonNull( dataSourceKey ) )
+        {
+            return dataSourceKey;
+        }
+
+        return KEY_NOT_FOUND;
     }
 
     /**
@@ -824,6 +993,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         return Collections.unmodifiableSet( latches );
     }
 
+    /**
+     * @param database the database
+     * @param sourceId the source identifier
+     * @param referenceTimes the reference times
+     */
+
     private void insertReferenceTimeRows( Database database,
                                           long sourceId,
                                           Map<ReferenceTimeType, Instant> referenceTimes )
@@ -832,14 +1007,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         if ( rowCount == 0 )
         {
-            throw new PreIngestException( "At least one reference datetime is required until we refactor TSV to permit zero." );
+            throw new PreIngestException( "At least one reference datetime is required until we refactor TSV to "
+                                          + "permit zero." );
         }
 
         if ( rowCount != 1 )
         {
-            throw new PreIngestException( "Exactly one reference datetime is required until we allow callers to declare which one to use at evaluation time." );
+            throw new PreIngestException( "Exactly one reference datetime is required until we allow callers to "
+                                          + "declare which one to use at evaluation time." );
             // TODO: add post-ingest pre-retrieval validation and/or
-            //     optional declaration to disambiguate, then remove this block.
+            // optional declaration to disambiguate, then remove this block.
         }
 
         List<String[]> rows = new ArrayList<>( rowCount );
@@ -870,11 +1047,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     *
-     * @param ensembleName Name of the ensemble trace.
+     * @param ensembleName Name of the ensemble trace
      * @return Raw surrogate key from db
-     * @throws IngestException When any query involved fails.
+     * @throws IngestException When any query involved fails
      */
+
     private long insertOrGetEnsembleId( Ensembles ensemblesCache,
                                         String ensembleName )
     {
@@ -989,6 +1166,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                   valueToAdd );
     }
 
+    /**
+     * @param database the database
+     * @param ensemblesCache the ensemble cache
+     * @param timeSeries the time-series
+     * @param sourceId the source identifier
+     * @return the time-series identity
+     */
+
     private long insertTimeSeriesRow( Database database,
                                       Ensembles ensemblesCache,
                                       TimeSeries<Double> timeSeries,
@@ -1014,6 +1199,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                        se );
         }
     }
+
+    /**
+     * @param database the database
+     * @param timeSeries the time-series
+     * @param ensembleId the ensemble identifier
+     * @param sourceId the source identifier
+     * @return the time-series identity
+     */
 
     private long insertTimeSeriesRowForEnsembleTrace( Database database,
                                                       TimeSeries<Ensemble> timeSeries,
@@ -1043,6 +1236,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
     }
 
+    /**
+     * @param database the database
+     * @param ensembleId the ensemble identifier
+     * @param sourceId the source identifier
+     * @return a time-series for an ensemble trace
+     */
 
     private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace( Database database,
                                                                              long ensembleId,
@@ -1053,6 +1252,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     sourceId );
     }
 
+    /**
+     * @param database the database
+     * @param ensemblesCache the ensemble cache
+     * @param sourceId the source identifier
+     * @return a time-series
+     * @throws SQLException if the time-series could not be created
+     */
+
     private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
                                                              Ensembles ensemblesCache,
                                                              long sourceId )
@@ -1062,6 +1269,12 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                                                     ensemblesCache.getDefaultEnsembleID(),
                                                     sourceId );
     }
+
+    /**
+     * @param <T> the type of time-series event value
+     * @param timeSeries the time-series
+     * @return the first reference time
+     */
 
     private <T> Instant getReferenceDatetime( TimeSeries<T> timeSeries )
     {
@@ -1084,6 +1297,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         return entry.getValue();
     }
 
+    /**
+     * @param measurementUnit the measurement unit
+     * @return the measurement unit identity
+     * @throws SQLException if the measurement unit identity could not be determined
+     */
 
     private long getMeasurementUnitId( String measurementUnit ) throws SQLException
     {
@@ -1092,6 +1310,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         return innerMeasurementUnitsCache.getOrCreateMeasurementUnitId( measurementUnit );
     }
 
+    /**
+     * @param featureKey the the feature key
+     * @return the feature identity
+     * @throws SQLException if the feature identity could not be determined
+     */
 
     private long getFeatureId( FeatureKey featureKey ) throws SQLException
     {
@@ -1100,12 +1323,24 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         return innerFeaturesCache.getOrCreateFeatureId( featureKey );
     }
 
+    /**
+     * @param timeScale the time scale
+     * @return the time scale identity
+     * @throws SQLException if the identity could not be determined
+     */
+
     private long getTimeScaleId( TimeScaleOuter timeScale ) throws SQLException
     {
         TimeScales innerTimeScalesCache = this.getCaches()
                                               .getTimeScalesCache();
         return innerTimeScalesCache.getOrCreateTimeScaleId( timeScale );
     }
+
+    /**
+     * @param timeSeries the time-series
+     * @param additionalIdentifiers additional identifiers
+     * @return the time-series MD5 checksum
+     */
 
     private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,
                                        String additionalIdentifiers )
@@ -1136,7 +1371,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         return hash;
     }
-
 
     /**
      * This method facilitates testing, Pattern 1 at
@@ -1178,18 +1412,86 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         return new SourceCompletedDetails( this.getDatabase(), sourceDetails );
     }
 
+    /**
+     * @return the database
+     */
+
     private Database getDatabase()
     {
         return this.database;
     }
+
+    /**
+     * @return the system settings
+     */
 
     private SystemSettings getSystemSettings()
     {
         return this.systemSettings;
     }
 
+    /**
+     * @return the caches
+     */
+
     private Caches getCaches()
     {
         return this.caches;
+    }
+
+    /**
+     * @return the thread pool executor
+     */
+
+    private ThreadPoolExecutor getExecutor()
+    {
+        return this.executor;
+    }
+
+    /**
+     * @return the database lock manager
+     */
+
+    private DatabaseLockManager getLockManager()
+    {
+        return this.lockManager;
+    }
+
+    /**
+     * Creates an instance.
+     * @param builder the builder
+     */
+
+    private DatabaseTimeSeriesIngester( Builder builder )
+    {
+        this.systemSettings = builder.systemSettings;
+        this.database = builder.database;
+        this.caches = builder.caches;
+        this.projectConfig = builder.projectConfig;
+        this.lockManager = builder.lockManager;
+
+        Objects.requireNonNull( this.systemSettings );
+        Objects.requireNonNull( this.database );
+        Objects.requireNonNull( this.caches );
+        Objects.requireNonNull( this.projectConfig );
+        Objects.requireNonNull( this.lockManager );
+
+        ThreadFactory threadFactoryWithNaming =
+                new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
+                                                .build();
+
+        ThreadPoolExecutor executorInner =
+                new ThreadPoolExecutor( this.systemSettings.maximumThreadCount(),
+                                        this.systemSettings.maximumThreadCount(),
+                                        this.systemSettings.poolObjectLifespan(),
+                                        TimeUnit.MILLISECONDS,
+                                        // Queue should be large enough to allow
+                                        // join() call below to be reached with
+                                        // zero or few rejected submissions to
+                                        // the executor service.
+                                        new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() ),
+                                        threadFactoryWithNaming );
+        executorInner.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        this.executor = executorInner;
     }
 }

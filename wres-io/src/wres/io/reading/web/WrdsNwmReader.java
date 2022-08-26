@@ -43,13 +43,13 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.PairConfig;
 import wres.config.generated.UrlParameter;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
 import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
@@ -635,8 +635,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     private WrdsNwmReader( PairConfig pairConfig )
     {
-        this.pairConfig = pairConfig;
-        if ( Objects.nonNull( this.pairConfig ) )
+        if ( Objects.nonNull( pairConfig ) )
         {
             if ( Objects.isNull( pairConfig.getDates() ) && Objects.isNull( pairConfig.getIssuedDates() ) )
             {
@@ -671,6 +670,8 @@ public class WrdsNwmReader implements TimeSeriesReader
             LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete pair "
                           + "declaration, which will be used to chunk requests by feature and time range." );
         }
+    
+        this.pairConfig = pairConfig;
     }
 
 }

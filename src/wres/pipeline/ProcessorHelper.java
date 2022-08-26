@@ -405,7 +405,6 @@ class ProcessorHelper
 
             // Build the database caches/ORMs, if required
             Caches caches = null;
-            TimeSeriesIngester timeSeriesIngester = null;
             Project project = null;
             SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
@@ -414,33 +413,36 @@ class ProcessorHelper
             {
                 caches = Caches.of( databaseServices.getDatabase(), projectConfig );
                 evaluationDetails.setCaches( caches );
-                timeSeriesIngester =
+                try ( DatabaseTimeSeriesIngester databaseIngester =
                         new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
                                                                 .setDatabase( databaseServices.getDatabase() )
                                                                 .setCaches( caches )
                                                                 .setProjectConfig( projectConfig )
                                                                 .setLockManager( databaseServices.getDatabaseLockManager() )
-                                                                .build();
-                List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
-                                                                      evaluationDetails.getSystemSettings(),
-                                                                      databaseServices.getDatabase(),
-                                                                      executors.getIoExecutor(),
-                                                                      featurefulProjectConfig,
-                                                                      databaseServices.getDatabaseLockManager(),
-                                                                      caches );
+                                                                .build(); )
+                {
+                    List<IngestResult> ingestResults = Operations.ingest( databaseIngester,
+                                                                          evaluationDetails.getSystemSettings(),
+                                                                          databaseServices.getDatabase(),
+                                                                          executors.getIoExecutor(),
+                                                                          featurefulProjectConfig,
+                                                                          databaseServices.getDatabaseLockManager(),
+                                                                          caches );
 
-                // Get the project, which provides an interface to the underlying store of time-series data
-                project = Operations.getProject( databaseServices.getDatabase(),
-                                                 featurefulProjectConfig,
-                                                 caches,
-                                                 ingestResults );
+
+                    // Get the project, which provides an interface to the underlying store of time-series data
+                    project = Operations.getProject( databaseServices.getDatabase(),
+                                                     featurefulProjectConfig,
+                                                     caches,
+                                                     ingestResults );
+                }
             }
             // In memory evaluation
             else
             {
                 TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
                 // Ingest the time-series into the timeSeriesStoreBuilder
-                timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
+                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
 
                 List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
