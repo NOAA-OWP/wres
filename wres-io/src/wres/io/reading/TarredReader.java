@@ -5,30 +5,42 @@ import static wres.io.reading.DataSource.DataDisposition.UNKNOWN;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.system.SystemSettings;
 
 /**
- * Reads from a tarred source or stream.
+ * Reads from a tarred source or stream. Create one reader per source.
  * @author James Brown
  */
 
@@ -37,28 +49,38 @@ public class TarredReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TarredReader.class );
 
+    /** Path delimiter. */
+    private static final String PATH_DELIM = "/";
+
+    /** Error message. */
+    private static final String WHILE_PROCESSING_A_TARRED_ARCHIVE = "While processing a tarred archive.";
+
     /** The readers for the archived data. */
     private final TimeSeriesReaderFactory readerFactory;
 
+    /** A thread pool to read archive entries. */
+    private final ThreadPoolExecutor executor;
+
     /**
      * @param readerFactory a reader factory to help read the archived data
+     * @param systemSettings the system settings
      * @return an instance
-     * @throws NullPointerException if the readerFactory is null
+     * @throws NullPointerException if either input is null
      */
 
-    public static TarredReader of( TimeSeriesReaderFactory readerFactory )
+    public static TarredReader of( TimeSeriesReaderFactory readerFactory, SystemSettings systemSettings )
     {
-        return new TarredReader( readerFactory );
+        return new TarredReader( readerFactory, systemSettings );
     }
 
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        
+
         // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
-        
+        ReaderUtilities.validateFileSource( dataSource, false );
+
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -94,6 +116,8 @@ public class TarredReader implements TimeSeriesReader
                          try
                          {
                              inputStream.close();
+                             this.getExecutor()
+                                 .shutdownNow();
                          }
                          catch ( IOException e )
                          {
@@ -115,64 +139,158 @@ public class TarredReader implements TimeSeriesReader
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              InputStream inputStream )
     {
-        AtomicReference<Iterator<TimeSeriesTuple>> lastTuples = new AtomicReference<>();
+        AtomicReference<List<TimeSeriesTuple>> lastTuples = new AtomicReference<>();
+        Queue<Future<List<TimeSeriesTuple>>> tuples = new LinkedList<>();
         TarArchiveInputStream archiveStream = new TarArchiveInputStream( inputStream );
+        CountDownLatch startGettingOnTasks = new CountDownLatch( this.getExecutor()
+                                                                     .getMaximumPoolSize() );
 
         // Create a supplier that returns a time-series once complete
         return () -> {
 
             // Any tuples from the last pull to return still?
-            Iterator<TimeSeriesTuple> nextTuples = lastTuples.get();
+            List<TimeSeriesTuple> nextTuples = lastTuples.get();
 
-            if ( Objects.nonNull( nextTuples ) && nextTuples.hasNext() )
+            if ( Objects.nonNull( nextTuples ) && !nextTuples.isEmpty() )
             {
                 // Remove and return the next one
-                return nextTuples.next();
+                return nextTuples.remove( 0 );
             }
 
             try
             {
                 TarArchiveEntry archivedSource = archiveStream.getNextTarEntry();
 
+                // Flag to indicate when the loop should stop
+                boolean proceed = true;
+
                 // While there are still archive entries left
-                while ( Objects.nonNull( archivedSource ) )
+                while ( proceed )
                 {
-                    // Find the next one that is a file
-                    if ( archivedSource.isFile() )
+                    TimeSeriesTuple tuple = this.getNextTupleOrIncrementCaches( dataSource,
+                                                                                archivedSource,
+                                                                                archiveStream,
+                                                                                lastTuples,
+                                                                                tuples,
+                                                                                startGettingOnTasks );
+
+                    // Return a tuple if found
+                    if ( Objects.nonNull( tuple ) )
                     {
-                        Stream<TimeSeriesTuple> stream = this.readTarEntry( dataSource,
-                                                                            archivedSource,
-                                                                            archiveStream,
-                                                                            dataSource.getUri() );
-
-                        // Find the next one that produced one or more time-series
-                        if ( Objects.nonNull( stream ) )
-                        {
-                            // Get an iterator for the series
-                            Iterator<TimeSeriesTuple> newTuples = stream.iterator();
-                            lastTuples.set( newTuples );
-
-                            // Find the next one that actually has a time-series and is not an empty file, for example
-                            if ( newTuples.hasNext() )
-                            {
-                                return newTuples.next();
-                            }
-                        }
+                        return tuple;
                     }
 
-                    // Try again until we find the next file with one or more time-series or reach the end
+                    // Try again until we find the next entry with one or more time-series or reach the end
                     archivedSource = archiveStream.getNextTarEntry();
+
+                    // Proceed while there is another archive entry, another future awaiting retrieval or another 
+                    // retrieved tuple awaiting return 
+                    proceed = Objects.nonNull( archivedSource )
+                              || ( Objects.nonNull( lastTuples.get() ) && !lastTuples.get()
+                                                                                     .isEmpty() )
+                              || !tuples.isEmpty();
+
+                    LOGGER.trace( "Archived entry? {}. Last tuples? {}. How many tuples are queued? {}.",
+                                  Objects.nonNull( archivedSource ),
+                                  ( Objects.nonNull( lastTuples.get() ) && !lastTuples.get()
+                                                                                      .isEmpty() ),
+                                  tuples.size() );
                 }
 
                 // Null sentinel to close the stream
                 return null;
-
             }
             catch ( IOException e )
             {
-                throw new ReadException( "While processing a tarred archive.", e );
+                throw new ReadException( WHILE_PROCESSING_A_TARRED_ARCHIVE, e );
             }
         };
+    }
+
+    /**
+     * Returns a time-series or increments the caches to return next time.
+     * @param dataSource the data source
+     * @param archivedSource the metadata of the archive entry that requires reading
+     * @param archiveStream the archive stream from which to read bytes for the next entry
+     * @param lastTuples the last tuples from which to obtain a time-series, if possible
+     * @param tuples the queue of all future tuples to increment
+     * @param startGettingOnTasks a latch indicating when to start getting results
+     * @return a time-series or null
+     */
+
+    private TimeSeriesTuple getNextTupleOrIncrementCaches( DataSource dataSource,
+                                                           TarArchiveEntry archivedSource,
+                                                           TarArchiveInputStream archiveStream,
+                                                           AtomicReference<List<TimeSeriesTuple>> lastTuples,
+                                                           Queue<Future<List<TimeSeriesTuple>>> tuples,
+                                                           CountDownLatch startGettingOnTasks )
+    {
+        // Find the next one that is a file
+        if ( Objects.nonNull( archivedSource ) && archivedSource.isFile() )
+        {
+            // Create the stream, which means reading the bytes but not translating them yet
+            Stream<TimeSeriesTuple> stream = this.readTarEntry( dataSource,
+                                                                archivedSource,
+                                                                archiveStream,
+                                                                dataSource.getUri() );
+
+            // Create the next mutable list of tuples, submitting the task to the executor for delayed execution
+            Future<List<TimeSeriesTuple>> nextTuple =
+                    this.getExecutor()
+                        .submit( () -> {
+
+                            // Find the next one that produced one or more time-series
+                            if ( Objects.nonNull( stream ) )
+                            {
+                                // Close the stream on completion
+                                try ( stream )
+                                {
+                                    // Pull/read from the stream, which means translating the bytes
+                                    return stream.collect( Collectors.toCollection( ArrayList::new ) );
+                                }
+                            }
+
+                            return null;
+                        } );
+
+            // Tasks submitted to count down
+            startGettingOnTasks.countDown();
+            tuples.add( nextTuple );
+        }
+
+        try
+        {
+            // Start getting results if the latch has reached zero or the next archived entry is null, i.e., there
+            // are fewer tasks than the initial latch count
+            if ( startGettingOnTasks.await( 0, TimeUnit.MILLISECONDS ) || Objects.isNull( archivedSource ) )
+            {
+                Future<List<TimeSeriesTuple>> earlierTask = tuples.poll();
+
+                if ( Objects.nonNull( earlierTask ) )
+                {
+                    List<TimeSeriesTuple> result = earlierTask.get();
+
+                    // Result to return? Remove from the immediate cache and return it
+                    if ( Objects.nonNull( result ) && !result.isEmpty() )
+                    {
+                        lastTuples.set( result );
+                        return result.remove( 0 );
+                    }
+                }
+            }
+        }
+        catch ( ExecutionException e )
+        {
+            throw new ReadException( WHILE_PROCESSING_A_TARRED_ARCHIVE, e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread()
+                  .interrupt();
+            throw new ReadException( WHILE_PROCESSING_A_TARRED_ARCHIVE, e );
+        }
+
+        return null;
     }
 
     /**
@@ -188,14 +306,20 @@ public class TarredReader implements TimeSeriesReader
                                                   InputStream archiveInputStream,
                                                   URI tarName )
     {
+        LOGGER.debug( "Attempting to read a tar entry from {}.", dataSource );
+
         int expectedByteCount = (int) archiveEntry.getSize();
-        URI archivedFileName = URI.create( tarName + File.pathSeparator + archiveEntry.getName() );
+        URI archivedFileName = URI.create( tarName + PATH_DELIM + archiveEntry.getName() );
 
         byte[] content = new byte[expectedByteCount];
 
         try
         {
-            archiveInputStream.read( content, 0, content.length );
+            int bytesRead = archiveInputStream.readNBytes( content, 0, expectedByteCount );
+            LOGGER.debug( "Read {} bytes of an expected {} bytes from {}.",
+                          bytesRead,
+                          expectedByteCount,
+                          archivedFileName );
         }
         catch ( EOFException eof )
         {
@@ -266,6 +390,8 @@ public class TarredReader implements TimeSeriesReader
                                                     archivedFileName,
                                                     dataSource.getLeftOrRightOrBaseline() );
 
+        LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
+
         InputStream streamToRead = new ByteArrayInputStream( content );
 
         TimeSeriesReader reader = this.getReaderFactory()
@@ -284,14 +410,40 @@ public class TarredReader implements TimeSeriesReader
     }
 
     /**
-     * Hidden constructor.
-     * @param readerFactory the reader factory, required
-     * @throws NullPointerException if the readerFactory is null
+     * @return the thread pool executor
      */
 
-    private TarredReader( TimeSeriesReaderFactory readerFactory )
+    private ThreadPoolExecutor getExecutor()
+    {
+        return this.executor;
+    }
+
+    /**
+     * Hidden constructor.
+     * @param readerFactory the reader factory, required
+     * @param systemSettings the system settings
+     * @throws NullPointerException if either input is null
+     */
+
+    private TarredReader( TimeSeriesReaderFactory readerFactory, SystemSettings systemSettings )
     {
         Objects.requireNonNull( readerFactory );
+        Objects.requireNonNull( systemSettings );
+
         this.readerFactory = readerFactory;
+
+        ThreadFactory tarredSourceFactory = new BasicThreadFactory.Builder().namingPattern( "Tarred Reading Thread %d" )
+                                                                            .build();
+        BlockingQueue<Runnable> tarredSourceQueue = new ArrayBlockingQueue<>( systemSettings.maximumArchiveThreads() );
+        this.executor = new ThreadPoolExecutor( systemSettings.maximumArchiveThreads(),
+                                                systemSettings.maximumArchiveThreads(),
+                                                systemSettings.poolObjectLifespan(),
+                                                TimeUnit.MILLISECONDS,
+                                                tarredSourceQueue,
+                                                tarredSourceFactory );
+
+        // Abort policy, but it should not be hit because we throttle submission of tasks to the count of maximum 
+        // threads and wait to submit another until after one has get() return.
+        this.executor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
     }
 }

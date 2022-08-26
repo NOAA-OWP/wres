@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -28,8 +29,8 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.system.SystemSettings;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -142,8 +143,16 @@ class TarredReaderTest
                                                    tarPath.toUri(),
                                                    LeftOrRightOrBaseline.RIGHT );
 
-            TimeSeriesReaderFactory readerFactory = TimeSeriesReaderFactory.of( null );
-            TarredReader reader = TarredReader.of( readerFactory );
+            SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+            Mockito.when( systemSettings.maximumArchiveThreads() )
+                   .thenReturn( 5 );
+            Mockito.when( systemSettings.poolObjectLifespan() )
+                   .thenReturn( 30_000 );
+
+            // Generator of internal format readers
+            TimeSeriesReaderFactory readerFactory = TimeSeriesReaderFactory.of( null, systemSettings, null );
+
+            TarredReader reader = TarredReader.of( readerFactory, systemSettings );
 
             // No reading yet, we are just opening a pipe to the file here
             try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
@@ -212,4 +221,5 @@ class TarredReaderTest
             }
         }
     }
+
 }

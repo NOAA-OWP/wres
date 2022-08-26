@@ -34,11 +34,11 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
 import wres.statistics.generated.Geometry;
@@ -90,7 +90,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
+        ReaderUtilities.validateFileSource( dataSource, false );
         
         try
         {
@@ -280,12 +280,12 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         {
             for ( NwmFeature nwmFeature : forecast.getFeatures() )
             {
-                TimeSeriesTuple tuple = this.getTimeSeries( forecast,
+                TimeSeriesTuple tuple = this.getTimeSeries( dataSource,
+                                                            forecast,
                                                             nwmFeature,
                                                             timeScale,
                                                             variableName,
-                                                            measurementUnit,
-                                                            dataSource.getUri() );
+                                                            measurementUnit );
 
                 timeSeriesTuples.add( tuple );
             }
@@ -295,7 +295,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
     }
 
     /**
-     * 
+     * @param dataSource the data source
      * @param forecast the nwm forecast
      * @param nwmFeature the nwm feature
      * @param timeScale the time scale, if available
@@ -305,13 +305,15 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
      * @return the internal time-series
      */
 
-    private TimeSeriesTuple getTimeSeries( NwmForecast forecast,
+    private TimeSeriesTuple getTimeSeries( DataSource dataSource,
+                                           NwmForecast forecast,
                                            NwmFeature nwmFeature,
                                            TimeScaleOuter timeScale,
                                            String variableName,
-                                           String measurementUnit,
-                                           URI uri )
+                                           String measurementUnit )
     {
+        URI uri = dataSource.getUri();
+        
         // Read into an intermediate structure
         SortedMap<String, SortedMap<Instant, Double>> traces = new TreeMap<>();
 
@@ -394,7 +396,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                           series.getEvents()
                                 .size() );
 
-            return TimeSeriesTuple.ofSingleValued( series );
+            return TimeSeriesTuple.ofSingleValued( series, dataSource );
         }
         // Ensemble
         else if ( members.length > 1 )
@@ -405,7 +407,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                           series.getEvents()
                                 .size() );
 
-            return TimeSeriesTuple.ofEnsemble( series );
+            return TimeSeriesTuple.ofEnsemble( series, dataSource );
         }
         // No members
         else

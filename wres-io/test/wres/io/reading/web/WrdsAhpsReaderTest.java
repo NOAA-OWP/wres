@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
@@ -36,10 +37,11 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
+import wres.system.SystemSettings;
 
 /**
  * Tests the {@link WrdsAhpsReader}.
@@ -402,7 +404,13 @@ class WrdsAhpsReaderTest
                                                fakeUri,
                                                LeftOrRightOrBaseline.RIGHT );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of();
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -483,7 +491,7 @@ class WrdsAhpsReaderTest
                                      .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
 
         WrdsAhpsReaderTest.mockServer.when( HttpRequest.request()
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME  )
+                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
                                                        .withQueryStringParameters( parametersThree )
                                                        .withMethod( GET ) )
                                      .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
@@ -536,7 +544,13 @@ class WrdsAhpsReaderTest
                                                 null,
                                                 null );
 
-        WrdsAhpsReader reader = WrdsAhpsReader.of( pairConfig );
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( pairConfig, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

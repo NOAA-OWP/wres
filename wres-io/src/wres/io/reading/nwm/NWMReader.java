@@ -33,12 +33,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
@@ -564,7 +564,8 @@ public class NWMReader implements Callable<List<IngestResult>>
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
-            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( entry.getValue() ) );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( entry.getValue(), 
+                                                                                             this.getDataSource() ) );
             Future<List<IngestResult>> future =
                     this.getExecutor()
                         .submit( () -> ingester.ingest( tupleStream, innerDataSource ) );
@@ -643,7 +644,8 @@ public class NWMReader implements Callable<List<IngestResult>>
             // that must deal with the wres.source table. Use the identifier
             // of the timeseries data as if it were a wres.source.
             TimeSeriesIngester ingester = this.getTimeSeriesIngester();
-            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( entry.getValue() ) );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( entry.getValue(), 
+                                                                                         this.getDataSource() ) );
             Future<List<IngestResult>> future =
                     this.getExecutor()
                         .submit( () -> ingester.ingest( tupleStream, innerDataSource ) );

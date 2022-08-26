@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseLockManagerPostgres implements DatabaseLockManager
 {
+    private static final String MUST_PASS_NAME_OF_PREVIOUSLY_LOCKED_LOCK_NOT = "Must pass name of previously-locked lock, not ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseLockManagerPostgres.class );
 
     private static final Duration REFRESH_FREQUENCY = Duration.ofSeconds( 1 );
@@ -70,7 +72,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * Ingest data, copy/insert data into existing tables but no delete, only
      * to be got exclusively to mark "ingest in progress"
      */
-    private final Integer INGEST_SOURCE_PREFIX = 2;
+    private static final Integer INGEST_SOURCE_PREFIX = 2;
 
     /** Producer that this manager can get new connections from. */
     private final Supplier<Connection> connectionProducer;
@@ -272,7 +274,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /**
      * Lock the back-end database using lockName which is a source id
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
+     *                 than {@link Integer#MAX_VALUE}
      * @throws IllegalArgumentException when lockName less than 1 or is
      * MAX_VALUE
      * @throws DatabaseLockFailed when db reports lock acquisition failed
@@ -381,10 +383,10 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
      * Unlock the back-end database using lockName that was previously locked
      * using lockSource.
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
+     *                 than {@link Integer#MAX_VALUE}, and have been previously
      *                 locked with lock()
      * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE or was not previously locked
+     * {@link Integer#MAX_VALUE} or was not previously locked
      * @throws DatabaseLockFailed when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails on both attempts.
@@ -400,7 +402,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( !this.sourceLockNames.contains( lockName ) )
         {
-            throw new IllegalArgumentException( "Must pass name of previously-locked lock, not "
+            throw new IllegalArgumentException( MUST_PASS_NAME_OF_PREVIOUSLY_LOCKED_LOCK_NOT
                                                 + lockName);
         }
 
@@ -500,9 +502,9 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /**
      * Lock the back-end database using lockName, a shared lock, non-exclusive
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
+     *                 than {@link Integer#MAX_VALUE}
      * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE
+     * {@link Integer#MAX_VALUE}
      * @throws DatabaseLockFailed when db reports lock acquisition failed
      * @throws IllegalStateException when lock already was acquired by any Thread
      * @throws SQLException when database communication fails
@@ -579,10 +581,10 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /**
      * Unlock the back-end database using lockName that was previously locked
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
+     *                 than {@link Integer#MAX_VALUE}, and have been previously
      *                 locked with lock()
      * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE or was not previously locked
+     * {@link Integer#MAX_VALUE} or was not previously locked
      * @throws IllegalStateException when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails
@@ -599,7 +601,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( !this.exclusiveLockNames.contains( lockName ) )
         {
-            throw new IllegalArgumentException( "Must pass name of previously-locked lock, not "
+            throw new IllegalArgumentException( MUST_PASS_NAME_OF_PREVIOUSLY_LOCKED_LOCK_NOT
                                                 + lockName);
         }
 
@@ -658,9 +660,9 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /**
      * Lock the back-end database using lockName, a shared lock, non-exclusive
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
+     *                 than {@link Integer#MAX_VALUE}
      * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE
+     * {@link Integer#MAX_VALUE}
      * @throws IllegalStateException when db reports lock acquisition failed
      * @throws IllegalStateException when lock already was acquired by any Thread
      * @throws SQLException when database communication fails
@@ -732,10 +734,10 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /**
      * Unlock the back-end database using lockName that was previously locked
      * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
+     *                 than {@link Integer#MAX_VALUE}, and have been previously
      *                 locked with lock()
      * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE or was not previously locked
+     * {@link Integer#MAX_VALUE} or was not previously locked
      * @throws IllegalStateException when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails
@@ -752,7 +754,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( !this.sharedLockNames.contains( lockName ) )
         {
-            throw new IllegalArgumentException( "Must pass name of previously-locked lock, not "
+            throw new IllegalArgumentException( MUST_PASS_NAME_OF_PREVIOUSLY_LOCKED_LOCK_NOT
                                                 + lockName);
         }
 
@@ -799,6 +801,15 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
     private boolean isPgSourceLocked( Integer lockName ) throws SQLException
     {
+        // Locked by this manager?
+        // The lock acquisition methods validate against the lock being present in this set of locks
+        boolean isLockedInternal = this.sourceLockNames.contains( lockName );
+        
+        if( isLockedInternal )
+        {
+            return true;
+        }
+        
         boolean oneLocked;
         boolean twoLocked;
 

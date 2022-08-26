@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
@@ -58,6 +57,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -122,6 +122,8 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
+        Mockito.when( this.mockSystemSettings.maximumThreadCount() )
+               .thenReturn( 7 );
         PairConfig pairConfig = Mockito.mock( PairConfig.class );
         Mockito.when( pairConfig.getGridSelection() )
                .thenReturn( List.of() );
@@ -445,7 +447,8 @@ public class SingleValuedRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne ) );
+        Stream<TimeSeriesTuple> tupleStreamOne =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, rightData ) );
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
@@ -457,7 +460,8 @@ public class SingleValuedRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo ) );
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
         IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
 
@@ -470,7 +474,8 @@ public class SingleValuedRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamThree = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree ) );
+        Stream<TimeSeriesTuple> tupleStreamThree =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree, leftData ) );
         IngestResult ingestResultThree =
                 ingesterThree.ingest( tupleStreamThree, leftData )
                              .get( 0 );

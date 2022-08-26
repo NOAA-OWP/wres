@@ -53,6 +53,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.ReadException;
 import wres.statistics.generated.Geometry;
 
 /**
@@ -131,7 +132,7 @@ class NWMTimeSeries implements Closeable
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( referenceTimeType );
-
+        
         this.profile = profile;
         this.referenceDatetime = referenceDatetime;
         this.referenceTimeType = referenceTimeType;
@@ -151,6 +152,11 @@ class NWMTimeSeries implements Closeable
         Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
                                                            referenceDatetime,
                                                            this.baseUri );
+        
+        LOGGER.debug( "Created a NWM time-series reader with these {} URIs to read: {}.",
+                      netcdfUris.size(),
+                      netcdfUris );
+        
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime,
@@ -161,8 +167,6 @@ class NWMTimeSeries implements Closeable
                                                                                .namingPattern( "NWMTimeSeries Reader %d" )
                                                                                .build();
 
-        // See comments in WebSource class regarding the setup of the executor,
-        // queue, and latch.
         BlockingQueue<Runnable> nwmReaderQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         this.readExecutor = new ThreadPoolExecutor( CONCURRENT_READS,
@@ -454,6 +458,11 @@ class NWMTimeSeries implements Closeable
                                                                  String unitName )
             throws InterruptedException, ExecutionException
     {
+        // Check that the executor is still open
+        if( this.readExecutor.isShutdown() )
+        {
+            throw new ReadException( "Cannot read from this NWM time-series because it has been closed: " + this );
+        }
 
         int memberCount = this.getProfile().getMemberCount();
         int validDatetimeCount = this.getProfile().getBlobCount();
@@ -645,9 +654,7 @@ class NWMTimeSeries implements Closeable
     private static DataType getAttributeType( Variable ncVariable,
                                               String attributeName )
     {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
+        for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getShortName()
                           .toLowerCase()
@@ -672,9 +679,7 @@ class NWMTimeSeries implements Closeable
     private static String readAttributeAsString( Variable ncVariable,
                                                  String attributeName )
     {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
+        for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getShortName()
                           .toLowerCase()
@@ -702,9 +707,7 @@ class NWMTimeSeries implements Closeable
     private static double readAttributeAsDouble( Variable ncVariable,
                                                  String attributeName )
     {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
+        for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getShortName()
                           .toLowerCase()
@@ -745,9 +748,7 @@ class NWMTimeSeries implements Closeable
     private static float readAttributeAsFloat( Variable ncVariable,
                                                String attributeName )
     {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
+        for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getShortName()
                           .toLowerCase()
@@ -789,9 +790,7 @@ class NWMTimeSeries implements Closeable
     private static int readAttributeAsInt( Variable ncVariable,
                                            String attributeName )
     {
-        List<Attribute> variableAttributes = ncVariable.getAttributes();
-
-        for ( Attribute attribute : variableAttributes )
+        for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getShortName()
                           .toLowerCase()
@@ -842,10 +841,15 @@ class NWMTimeSeries implements Closeable
                                                                    String unitName )
             throws InterruptedException, ExecutionException
     {
+        // Check that the executor is still open
+        if( this.readExecutor.isShutdown() )
+        {
+            throw new ReadException( "Cannot read from this NWM time-series because it has been closed: " + this );
+        }
+        
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
-        CountDownLatch startGettingResults = new CountDownLatch(
-                                                                 CONCURRENT_READS );
+        CountDownLatch startGettingResults = new CountDownLatch( CONCURRENT_READS );
         Map<Integer, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
 
         for ( int featureId : featureIds )
@@ -863,6 +867,7 @@ class NWMTimeSeries implements Closeable
                                                           this.getReferenceDatetime(),
                                                           this.featureCache,
                                                           false );
+
             Future<NWMDoubleReadOutcome> future = this.readExecutor.submit( reader );
             reads.add( future );
 
@@ -1764,7 +1769,6 @@ class NWMTimeSeries implements Closeable
          * Tracks which netCDF resoruces have had their features validated.
          */
         private final Map<NetcdfFile, AtomicBoolean> validatedFeatures;
-
 
         NWMFeatureCache( Set<NetcdfFile> netcdfUris )
         {

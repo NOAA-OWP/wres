@@ -49,12 +49,12 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.web.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.system.SSLStuffThatTrustsOneCertificate;
@@ -526,7 +526,8 @@ public class ReadValueManager
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
         try
         {
-            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries,
+                                                                                             this.dataSource ) );
             return ingester.ingest( tupleStream, this.dataSource );
         }
         catch ( IngestException ie )

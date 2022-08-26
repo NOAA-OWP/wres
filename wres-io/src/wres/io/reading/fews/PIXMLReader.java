@@ -43,7 +43,6 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
@@ -53,6 +52,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.ReaderUtilities;
+import wres.io.reading.TimeSeriesTuple;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.system.xml.XMLHelper;
@@ -913,7 +913,8 @@ public final class PIXMLReader extends XMLReader
 
         try
         {
-            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries ) );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeries,
+                                                                                         this.getDataSource() ) );
             List<IngestResult> ingestResults = timeSeriesIngester.ingest( tupleStream, this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }
@@ -938,7 +939,8 @@ public final class PIXMLReader extends XMLReader
         TimeSeriesIngester timeSeriesIngester = this.getTimeSeriesIngester();
         try
         {
-            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+            Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries,
+                                                                                             this.getDataSource() ) );
             List<IngestResult> ingestResults = timeSeriesIngester.ingest( tupleStream, this.getDataSource() );
             this.ingested.addAll( ingestResults );
         }

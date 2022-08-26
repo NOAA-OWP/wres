@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestException;
@@ -34,6 +33,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.Source;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.web.WebClient;
 import wres.io.utilities.Database;
 
@@ -164,7 +164,8 @@ public class WaterMLBasicSource implements Source
 
             for ( TimeSeries<Double> timeSeries : transformed )
             {
-                Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries ) );
+                Stream<TimeSeriesTuple> tupleStream = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeries,
+                                                                                                 this.getDataSource() ) );
                 List<IngestResult> result = ingester.ingest( tupleStream, this.getDataSource() );
                 ingestResults.addAll( result );
             }

@@ -153,7 +153,9 @@ public class IncompleteIngest
     }
 
     /**
-     * Given a source, return true if it is currently being ingested.
+     * Given a source, return true if it is currently being ingested. TODO: consider replacing with 
+     * {@link DatabaseLockManager#isSourceLocked(Long)}, which already checks twice, as well as the internal cache of
+     * locks.
      * @param source The source to look for, non-null and with non-null ID.
      * @param lockManager The lock manager to use.
      * @return true if the source is being actively ingested, false otherwise.

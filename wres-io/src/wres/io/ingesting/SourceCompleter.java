@@ -175,7 +175,7 @@ public class SourceCompleter
         {
             try
             {
-                lockManager.unlockSource( this.sourceId );
+                this.lockManager.unlockSource( this.sourceId );
             }
             catch ( SQLException se )
             {

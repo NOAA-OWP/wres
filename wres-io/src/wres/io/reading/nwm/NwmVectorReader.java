@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -31,12 +29,12 @@ import wres.config.generated.PairConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
@@ -104,19 +102,14 @@ public class NwmVectorReader implements TimeSeriesReader
                       referenceTimes );
 
         // Read the time-series
-        List<NWMTimeSeries> resourcesToClose = new ArrayList<>();
-        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource,
-                                                                         referenceTimes,
-                                                                         featureBlocks,
-                                                                         resourcesToClose );
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier2( dataSource,
+                                                                          referenceTimes,
+                                                                          featureBlocks );
 
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
                      .takeWhile( Objects::nonNull )
-                     .onClose( () -> {
-                         LOGGER.debug( "Detected a stream close event, closing all underlying resources." );
-                         resourcesToClose.forEach( NWMTimeSeries::close );
-                     } );
+                     .onClose( () -> LOGGER.debug( "Detected a stream close event." ) );
     }
 
     @Override
@@ -149,10 +142,10 @@ public class NwmVectorReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.NETCDF_VECTOR );
-        
-        // Validate that the source contains a readable file
-        ReaderUtilities.validateFileSource( dataSource );
-        
+
+        // Validate that the source contains a readable file or directory
+        ReaderUtilities.validateFileSource( dataSource, true );
+
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
@@ -241,18 +234,10 @@ public class NwmVectorReader implements TimeSeriesReader
      * @return a time-series supplier
      */
 
-    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
-                                                             Set<Instant> referenceTimes,
-                                                             List<List<Integer>> featureBlocks,
-                                                             List<NWMTimeSeries> resourcesToClose )
+    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier2( DataSource dataSource,
+                                                              Set<Instant> referenceTimes,
+                                                              List<List<Integer>> featureBlocks )
     {
-        SortedSet<Instant> mutableReferenceTimes = new TreeSet<>( referenceTimes );
-        List<List<Integer>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
-        List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
-
-        // An underlying resource of NWM time-series that is opened once per reference time
-        AtomicReference<NWMTimeSeries> nwmTimeSeries = new AtomicReference<>();
-
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
 
@@ -261,77 +246,219 @@ public class NwmVectorReader implements TimeSeriesReader
         ReferenceTimeType referenceTimeType = ConfigHelper.getReferenceTimeType( dataSource.getContext()
                                                                                            .getType() );
 
-        // Create a supplier that returns a time-series once complete
-        // Since many time-series are read at once, they are cached for return, preferentially
+        // Create the smaller suppliers, one per reference time
+        List<Supplier<TimeSeriesTuple>> suppliers = this.getTimeSeriesSuppliers( nwmProfile,
+                                                                                 dataSource,
+                                                                                 referenceTimes,
+                                                                                 referenceTimeType,
+                                                                                 featureBlocks );
+
+        // The current supplier
+        AtomicReference<Supplier<TimeSeriesTuple>> supplier = new AtomicReference<>();
+
+        // Iterate the suppliers
         return () -> {
 
-            // Cached series to return?
-            if ( !cachedSeries.isEmpty() )
+            // Cached supply?
+            if ( Objects.nonNull( supplier.get() ) )
             {
-                LOGGER.debug( "Returning a time-series from the cache. There are {} time-series remaining in the cache.",
-                              cachedSeries.size() - 1 );
+                Supplier<TimeSeriesTuple> nextSupplier = supplier.get();
+                TimeSeriesTuple nextSupply = nextSupplier.get();
 
-                return cachedSeries.remove( 0 );
+                if ( Objects.nonNull( nextSupply ) )
+                {
+                    return nextSupply;
+                }
+                else
+                {
+                    supplier.set( null );
+                }
             }
 
-            // Clean up before sending the null sentinel, which terminates the stream
-            // New rows to increment
-            while ( !mutableReferenceTimes.isEmpty() )
+            // New supplier available
+            while ( !suppliers.isEmpty() )
             {
-                List<Integer> nextFeatures = mutableFeatureBlocks.get( 0 );
-                mutableFeatureBlocks.remove( 0 );
+                Supplier<TimeSeriesTuple> nextSupplier = supplier.get();
 
-                Instant nextReferenceTime = mutableReferenceTimes.first();
-
-                NWMTimeSeries currentTimeSeries = nwmTimeSeries.get();
-
-                // No blobs open? Create a new opener and expose it for future iterations.
-                if ( Objects.isNull( currentTimeSeries ) )
+                // No supplier cached? Get a new one
+                if ( Objects.isNull( nextSupplier ) )
                 {
-                    currentTimeSeries = new NWMTimeSeries( nwmProfile,
-                                                           nextReferenceTime,
-                                                           referenceTimeType,
-                                                           dataSource.getUri() );
-                    nwmTimeSeries.set( currentTimeSeries );
-                    resourcesToClose.add( currentTimeSeries );
+                    Supplier<TimeSeriesTuple> cachedSupplier = suppliers.remove( 0 );
+                    supplier.set( cachedSupplier );
+                    nextSupplier = cachedSupplier;
                 }
 
-                // Create the next series and add them to the cache
-                List<TimeSeriesTuple> nextSeries = this.getTimeSeries( dataSource,
-                                                                       nextFeatures,
-                                                                       currentTimeSeries,
-                                                                       nwmProfile );
-                cachedSeries.addAll( nextSeries );
-
-                // We're at the start of a new reference time on the next iteration, so remove this reference time,
-                // reset the feature blocks and close the last set of blobs
-                if ( mutableFeatureBlocks.isEmpty() )
-                {
-                    mutableFeatureBlocks.addAll( featureBlocks );
-                    mutableReferenceTimes.remove( nextReferenceTime );
-                    nwmTimeSeries.set( null );
-
-                    // This is ultimately closed in the stream close, but try to close early
-                    currentTimeSeries.close();
-                }
+                TimeSeriesTuple nextSupply = nextSupplier.get();
 
                 // Is there a time-series to return?
-                if ( !cachedSeries.isEmpty() )
+                if ( Objects.nonNull( nextSupply ) )
                 {
-                    return cachedSeries.remove( 0 );
+                    return nextSupply;
                 }
-            }
-
-            // This is ultimately closed in the stream close, but try to close early
-            if ( Objects.nonNull( nwmTimeSeries.get() ) )
-            {
-                nwmTimeSeries.get()
-                             .close();
+                else
+                {
+                    supplier.set( null );
+                }
             }
 
             // Null sentinel to close stream
             return null;
         };
+    }
+
+    /**
+     * @param nwmProfile the NWM profile or data shape
+     * @param dataSource the data source
+     * @param referenceTimes the reference times to read
+     * @param referenceTimeType the type of reference time
+     * @param featureBlocks the feature blocks to read
+     * @return the time-series suppliers
+     */
+
+    private List<Supplier<TimeSeriesTuple>> getTimeSeriesSuppliers( NWMProfile nwmProfile,
+                                                                    DataSource dataSource,
+                                                                    Set<Instant> referenceTimes,
+                                                                    ReferenceTimeType referenceTimeType,
+                                                                    List<List<Integer>> featureBlocks )
+    {
+        // Create the smaller suppliers, one per reference time
+        List<Supplier<TimeSeriesTuple>> suppliers = new ArrayList<>();
+
+        // There is one set of time-series blobs per reference time
+        for ( Instant nextReferenceTime : referenceTimes )
+        {
+            Supplier<TimeSeriesTuple> nextSupplier = this.getTimeSeriesSupplier( nwmProfile,
+                                                                                 dataSource,
+                                                                                 nextReferenceTime,
+                                                                                 referenceTimeType,
+                                                                                 featureBlocks );
+            suppliers.add( nextSupplier );
+        }
+
+        // Mutable list
+        return suppliers;
+    }
+
+    /**
+     * Returns a time-series supplier from the inputs.
+     * 
+     * @param nwmProfile the NWM profile or data shape
+     * @param dataSource the data source
+     * @param referenceTimes the reference times to read
+     * @param referenceTimeType the type of reference time
+     * @param featureBlocks the feature blocks to read
+     * @return a time-series supplier
+     */
+
+    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( NWMProfile nwmProfile,
+                                                             DataSource dataSource,
+                                                             Instant referenceTime,
+                                                             ReferenceTimeType referenceTimeType,
+                                                             List<List<Integer>> featureBlocks )
+    {
+        List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
+        List<List<Integer>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
+        AtomicReference<NWMTimeSeries> nwmTimeSeries = new AtomicReference<>();
+
+        // Create a supplier that returns a time-series once complete
+        // Since many time-series are read at once, they are cached for return, preferentially
+        return () -> {
+
+            LOGGER.debug( "Entered the time-series supplier for reference time {}.", referenceTime );
+
+            // Cached series to return?
+            if ( !cachedSeries.isEmpty() )
+            {
+                LOGGER.debug( "Returning a time-series from the cache. There are {} time-series remaining in the "
+                              + "cache.",
+                              cachedSeries.size() - 1 );
+
+                TimeSeriesTuple next = cachedSeries.remove( 0 );
+
+                this.closeNwmTimeSeriesIfCacheIsEmpty( cachedSeries, mutableFeatureBlocks, nwmTimeSeries );
+
+                return next;
+            }
+
+            while ( !mutableFeatureBlocks.isEmpty() )
+            {
+                NWMTimeSeries currentTimeSeries = nwmTimeSeries.get();
+                List<Integer> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
+
+                // No blobs open? Create a new opener and expose it for future iterations.
+                if ( Objects.isNull( currentTimeSeries ) )
+                {
+                    currentTimeSeries = new NWMTimeSeries( nwmProfile,
+                                                           referenceTime,
+                                                           referenceTimeType,
+                                                           dataSource.getUri() );
+
+                    LOGGER.debug( "Opened {}.", currentTimeSeries );
+
+                    nwmTimeSeries.set( currentTimeSeries );
+                }
+
+                List<TimeSeriesTuple> nextSeries = this.getTimeSeries( dataSource,
+                                                                       nextFeatureBlock,
+                                                                       currentTimeSeries,
+                                                                       nwmProfile );
+                cachedSeries.addAll( nextSeries );
+
+                // Is there a time-series to return?
+                if ( !cachedSeries.isEmpty() )
+                {
+                    LOGGER.debug( "Returning a time-series from the cache. There are {} time-series remaining in the "
+                                  + "cache.",
+                                  cachedSeries.size() - 1 );
+
+                    TimeSeriesTuple next = cachedSeries.remove( 0 );
+
+                    if ( mutableFeatureBlocks.isEmpty() )
+                    {
+                        this.closeNwmTimeSeriesIfCacheIsEmpty( cachedSeries, mutableFeatureBlocks, nwmTimeSeries );
+                    }
+
+                    return next;
+                }
+            }
+
+            // Close the time-series
+            if ( Objects.nonNull( nwmTimeSeries.get() ) )
+            {
+                nwmTimeSeries.get()
+                             .close();
+
+                LOGGER.debug( "Closed {}.", nwmTimeSeries.get() );
+
+                nwmTimeSeries.set( null );
+            }
+
+            LOGGER.debug( "Exiting the time-series supplier for reference time {}.", referenceTime );
+
+            // Null sentinel
+            return null;
+        };
+    }
+
+    /**
+     * @param the cache to inspect
+     * @param featureBlocks the feature blocks
+     * @param nwmTimeSeries the time-series to close if the cache is empty and there are no feature blocks remaining
+     */
+
+    private void closeNwmTimeSeriesIfCacheIsEmpty( List<TimeSeriesTuple> cachedSeries,
+                                                   List<List<Integer>> featureBlocks,
+                                                   AtomicReference<NWMTimeSeries> nwmTimeSeries )
+    {
+        if ( cachedSeries.isEmpty() && featureBlocks.isEmpty() && Objects.nonNull( nwmTimeSeries.get() ) )
+        {
+            nwmTimeSeries.get()
+                         .close();
+
+            LOGGER.debug( "Closed {} because there are no cached time-series remaining and no feature blocks remaining "
+                          + "for which to retrieve new time-series.",
+                          nwmTimeSeries.get() );
+        }
     }
 
     /**
@@ -350,6 +477,13 @@ public class NwmVectorReader implements TimeSeriesReader
                                                  NWMTimeSeries nwmTimeSeries,
                                                  NWMProfile nwmProfile )
     {
+        if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
+        {
+            LOGGER.debug( "Found an empty NWM time-series. Skipping it. The series is: {}.", nwmTimeSeries );
+
+            return Collections.emptyList();
+        }
+
         String variableName = dataSource.getVariable()
                                         .getValue()
                                         .strip();
@@ -372,7 +506,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
                 return values.values()
                              .stream()
-                             .map( TimeSeriesTuple::ofSingleValued )
+                             .map( next -> TimeSeriesTuple.ofSingleValued( next, dataSource ) )
                              .collect( Collectors.toUnmodifiableList() );
             }
             // Ensemble series
@@ -384,7 +518,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                 unitName );
                 return values.values()
                              .stream()
-                             .map( TimeSeriesTuple::ofEnsemble )
+                             .map( next -> TimeSeriesTuple.ofEnsemble( next, dataSource ) )
                              .collect( Collectors.toUnmodifiableList() );
             }
             else

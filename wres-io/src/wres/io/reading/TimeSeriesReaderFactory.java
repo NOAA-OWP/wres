@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.PairConfig;
+import wres.io.data.caching.Features;
 import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
@@ -17,9 +18,12 @@ import wres.io.reading.web.WrdsAhpsReader;
 import wres.io.reading.web.WrdsNwmReader;
 import wres.io.reading.wrds.WrdsAhpsJsonReader;
 import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
+import wres.system.SystemSettings;
 
 /**
  * Factory class that creates time-series readers for a {@link DataSource}.
+ * 
+ * TODO: When gridded reading is par with vectors, remove the features cache from this class: #51232.
  * 
  * @author James Brown
  */
@@ -47,23 +51,25 @@ public class TimeSeriesReaderFactory
     /** WRDS NWM JSON reader. */
     private static final WrdsNwmJsonReader WRDS_NWM_JSON_READER = WrdsNwmJsonReader.of();
 
-    /** Zipped reader. Requires an instance of this class for initialization, since it contains formatted data. */
-    private final ZippedReader zippedReader;
-
-    /** Tarred reader. Requires an instance of this class for initialization, since it contains formatted data. */
-    private final TarredReader tarredReader;
-
     /** Pair declaration, which is used to build some readers. */
     private final PairConfig pairConfig;
 
+    /** The system settings. */
+    private final SystemSettings systemSettings;
+
+    /** The features cache, required for gridded reading. */
+    private final Features features;
+
     /**
      * @param pairConfig the pair declaration, which is used to assist in chunking requests from web services, optional
+     * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
+     * @param features the features cache used to read gridded features
      * @return an instance
      */
 
-    public static TimeSeriesReaderFactory of( PairConfig pairConfig )
+    public static TimeSeriesReaderFactory of( PairConfig pairConfig, SystemSettings systemSettings, Features features )
     {
-        return new TimeSeriesReaderFactory( pairConfig );
+        return new TimeSeriesReaderFactory( pairConfig, systemSettings, features );
     }
 
     /**
@@ -94,7 +100,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisReader.of( this.pairConfig );
+                    return NwisReader.of( this.pairConfig, this.systemSettings );
                 }
                 // A reader for USGS-formatted WaterML, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
@@ -107,7 +113,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
                                   dataSource );
-                    return WrdsAhpsReader.of( this.pairConfig );
+                    return WrdsAhpsReader.of( this.pairConfig, this.systemSettings );
                 }
                 // A reader for WRDS-formatted JSON from AHPS, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
@@ -126,11 +132,11 @@ public class TimeSeriesReaderFactory
                               dataSource );
                 return WRDS_NWM_JSON_READER;
             case TARBALL:
-                return this.tarredReader;
+                return TarredReader.of( this, this.systemSettings );
             case GZIP:
-                return this.zippedReader;
+                return ZippedReader.of( this );
             case NETCDF_GRIDDED:
-                return NwmGriddedReader.of( this.pairConfig );
+                return NwmGriddedReader.of( this.pairConfig, this.features );
             case NETCDF_VECTOR:
                 return NwmVectorReader.of( this.pairConfig );
             default:
@@ -144,15 +150,16 @@ public class TimeSeriesReaderFactory
     /**
      * Create an instance.
      * @param pairConfig the pair declaration, which is used to assist in reading some sources
+     * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
+     * @param features the features cache, which is used to read gridded features
      */
 
-    private TimeSeriesReaderFactory( PairConfig pairConfig )
+    private TimeSeriesReaderFactory( PairConfig pairConfig, SystemSettings systemSettings, Features features )
     {
-        this.zippedReader = ZippedReader.of( this );
-        this.tarredReader = TarredReader.of( this );
-
-        // Defer validation that this exists until it is required
+        // Defer validation until it is established as required
         this.pairConfig = pairConfig;
+        this.systemSettings = systemSettings;
+        this.features = features;
 
         if ( LOGGER.isWarnEnabled() && Objects.isNull( pairConfig ) )
         {

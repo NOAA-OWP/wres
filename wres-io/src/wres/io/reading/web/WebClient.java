@@ -44,8 +44,8 @@ public class WebClient
     static
     {
         java.util.logging.Logger.getLogger( OkHttpClient.class
-                                                    .getName() )
-                                .setLevel( Level.FINE);
+                                                              .getName() )
+                                .setLevel( Level.FINE );
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
@@ -80,7 +80,7 @@ public class WebClient
         this.setUserAgent();
     }
 
-    public WebClient( Pair<SSLContext,X509TrustManager> sslGoo, boolean trackTimings )
+    public WebClient( Pair<SSLContext, X509TrustManager> sslGoo, boolean trackTimings )
     {
         Objects.requireNonNull( sslGoo );
         this.httpClient = new OkHttpClient().newBuilder()
@@ -101,7 +101,7 @@ public class WebClient
         this( false );
     }
 
-    public WebClient( Pair<SSLContext,X509TrustManager> sslGoo )
+    public WebClient( Pair<SSLContext, X509TrustManager> sslGoo )
     {
         this( sslGoo, false );
     }
@@ -149,23 +149,23 @@ public class WebClient
         if ( !uri.getScheme().startsWith( "http" ) )
         {
             throw new IllegalArgumentException(
-                    "Must pass an http uri, got " + uri );
+                                                "Must pass an http uri, got " + uri );
         }
 
         LOGGER.debug( "getFromWeb {}", uri );
-        
+
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
-        
+
         try
         {
             Request request = new Request.Builder()
-                    .url( uri.toURL() )
-                    .header( "Accept-Encoding", "gzip" )
-                    .header( "User-Agent", this.getUserAgent()  )
-                    .build();
+                                                   .url( uri.toURL() )
+                                                   .header( "Accept-Encoding", "gzip" )
+                                                   .header( "User-Agent", this.getUserAgent() )
+                                                   .build();
 
             monitorEvent.begin();
-            
+
             Instant start = Instant.now();
             Response httpResponse = tryRequest( request );
 
@@ -205,8 +205,8 @@ public class WebClient
 
             Instant end = Instant.now();
             Duration duration = Duration.between( start, end );
-            
-            monitorEvent.end();  // End, not commit
+
+            monitorEvent.end(); // End, not commit
 
             if ( Objects.nonNull( httpResponse )
                  && Objects.nonNull( httpResponse.body() ) )
@@ -216,17 +216,18 @@ public class WebClient
                 monitorEvent.setHttpResponseCode( httpStatus );
                 monitorEvent.setRetryCount( retryCount );
                 monitorEvent.commit();
-                
+
                 if ( httpStatus >= 200 && httpStatus < 300 )
                 {
                     LOGGER.debug( "Successfully got InputStream from {} in {}",
                                   uri,
                                   duration );
-                    return new ClientResponse(httpResponse);
+                    return new ClientResponse( httpResponse );
                 }
                 else if ( httpStatus >= 400 && httpStatus < 500 )
                 {
-                    LOGGER.debug( "Got client error from {} in {}", uri,
+                    LOGGER.debug( "Got client error from {} in {}",
+                                  uri,
                                   duration );
                     return new ClientResponse( httpResponse );
                 }
@@ -236,7 +237,8 @@ public class WebClient
                                                + uri
                                                + " due to status code "
                                                + httpStatus
-                                               + " after " + duration );
+                                               + " after "
+                                               + duration );
                 }
             }
             else
@@ -252,7 +254,7 @@ public class WebClient
         {
             LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
             Thread.currentThread().interrupt();
-            return new ClientResponse(-1);
+            return new ClientResponse( -1 );
         }
     }
 
@@ -299,7 +301,8 @@ public class WebClient
                 // Unrecoverable. If truly recoverable, add code to the method
                 // called shouldRetryIndividualException().
                 throw new IngestException( "Unrecoverable exception when getting data from "
-                                           + uri, ioe );
+                                           + uri,
+                                           ioe );
             }
         }
         finally
@@ -507,7 +510,7 @@ public class WebClient
             throw new IllegalStateException( "Cannot get timing information when timing was not requested." );
         }
 
-        long[] timings = new long[ this.timingInformation.size() ];
+        long[] timings = new long[this.timingInformation.size()];
 
         long min = Long.MAX_VALUE;
         TimingInformation quickest = null;
@@ -537,14 +540,14 @@ public class WebClient
 
         // Integer division on purpose.
         int medianIndex = timings.length / 2;
-        long medianTiming = 0; 
-        
+        long medianTiming = 0;
+
         // #77007
-        if( timings.length > 0 )
+        if ( timings.length > 0 )
         {
             medianTiming = timings[medianIndex];
         }
-        
+
         String slowestMessage = "slowest response was " + Duration.ofNanos( max );
 
         if ( Objects.nonNull( slowest ) )
@@ -563,36 +566,45 @@ public class WebClient
 
         return "Out of request/response count " + countOfResponses
                + ", median response was "
-               + Duration.ofNanos( medianTiming ) + ", "
-               + quickestMessage + " and "
+               + Duration.ofNanos( medianTiming )
+               + ", "
+               + quickestMessage
+               + " and "
                + slowestMessage;
     }
 
-    public static class ClientResponse implements AutoCloseable {
+    public static class ClientResponse implements AutoCloseable
+    {
         private final int statusCode;
         private final InputStream response;
 
-        public ClientResponse(Response httpResponse) throws IOException {
+        public ClientResponse( Response httpResponse ) throws IOException
+        {
             this.statusCode = httpResponse.code();
             this.response = WebClient.getDecodedInputStream( httpResponse );
         }
 
-        public ClientResponse(int statusCode) {
+        public ClientResponse( int statusCode )
+        {
             this.statusCode = statusCode;
             this.response = InputStream.nullInputStream();
         }
 
-        public int getStatusCode() {
+        public int getStatusCode()
+        {
             return this.statusCode;
         }
 
-        public InputStream getResponse() {
+        public InputStream getResponse()
+        {
             return this.response;
         }
 
         @Override
-        public void close() throws IOException {
-            if (this.response != null) {
+        public void close() throws IOException
+        {
+            if ( this.response != null )
+            {
                 this.response.close();
             }
         }

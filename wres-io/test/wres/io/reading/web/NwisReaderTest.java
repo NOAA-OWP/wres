@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
@@ -33,9 +34,10 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.system.SystemSettings;
 
 /**
  * Tests the {@link NwisReader}.
@@ -209,7 +211,7 @@ class NwisReaderTest
                                            + "}";
 
     private static final String GET = "GET";
-    
+
     @BeforeAll
     static void startServer()
     {
@@ -259,7 +261,13 @@ class NwisReaderTest
                                                fakeUri,
                                                LeftOrRightOrBaseline.LEFT );
 
-        NwisReader reader = NwisReader.of();
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        NwisReader reader = NwisReader.of( systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -386,7 +394,13 @@ class NwisReaderTest
                                                 null,
                                                 null );
 
-        NwisReader reader = NwisReader.of( pairConfig );
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        NwisReader reader = NwisReader.of( pairConfig, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

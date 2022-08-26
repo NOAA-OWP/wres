@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.time.TimeSeriesTuple;
 import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
@@ -59,6 +58,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
+import wres.io.reading.TimeSeriesTuple;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -119,6 +119,8 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( DatabaseType.H2 );
         Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
                .thenReturn( 10 );
+        Mockito.when( this.mockSystemSettings.maximumThreadCount() )
+               .thenReturn( 7 );
         PairConfig pairConfig = Mockito.mock( PairConfig.class );
         Mockito.when( pairConfig.getGridSelection() )
                .thenReturn( List.of() );
@@ -464,7 +466,7 @@ public class EnsembleRetrieverFactoryTest
                                                                     (DataSourceBaselineConfig) baselineData.getContext() );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne ) );
+        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
         TimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -482,7 +484,7 @@ public class EnsembleRetrieverFactoryTest
                                                         .setLockManager( this.lockManager )
                                                         .build();
 
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne ) );
+        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
         IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
                                                   .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
@@ -494,7 +496,8 @@ public class EnsembleRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamThree = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo ) );
+        Stream<TimeSeriesTuple> tupleStreamThree =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
         IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
                                                       .get( 0 );
 

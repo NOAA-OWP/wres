@@ -27,8 +27,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESCallable;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
+import wres.io.data.caching.Caches;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestResult;
@@ -54,8 +53,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                                    .build() );
 
     private SystemSettings systemSettings;
-    private Features featuresCache;
-    private MeasurementUnits measurementUnitsCache;
+    private Caches caches;
     private Database database;
     private DataSource dataSource;
     private URI fileName;
@@ -63,22 +61,19 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private final String hash;
 
     public GriddedNWMValueSaver( SystemSettings systemSettings,
-                          Database database,
-                          Features featuresCache,
-                          MeasurementUnits measurementUnitsCache,
-                          DataSource dataSource,
-                          final String hash )
+                                 Database database,
+                                 Caches caches,
+                                 DataSource dataSource,
+                                 final String hash )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( database );
-        Objects.requireNonNull( featuresCache );
-        Objects.requireNonNull( measurementUnitsCache );
+        Objects.requireNonNull( caches );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( hash );
         this.systemSettings = systemSettings;
         this.database = database;
-        this.featuresCache = featuresCache;
-        this.measurementUnitsCache = measurementUnitsCache;
+        this.caches = caches;
         this.dataSource = dataSource;
         this.fileName = dataSource.getUri();
         this.hash = hash;
@@ -94,21 +89,16 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         return this.database;
     }
 
-    private Features getFeaturesCache()
+    private Caches getCaches()
     {
-        return this.featuresCache;
-    }
-
-    private MeasurementUnits getMeasurementUnitsCache()
-    {
-        return this.measurementUnitsCache;
+        return this.caches;
     }
 
     @Override
     public List<IngestResult> execute() throws IOException, SQLException
     {
         this.ensureFileIsLocal();
-
+        
         try
         {
             Instant referenceTime = NetCDF.getReferenceTime( this.getFile() );
@@ -135,12 +125,14 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
             }
 
             String measurementUnit = ncVariable.getUnitsString();
-            Long measurementUnitId = this.getMeasurementUnitsCache()
+            Long measurementUnitId = this.getCaches()
+                                         .getMeasurementUnitsCache()
                                          .getOrCreateMeasurementUnitId( measurementUnit );
 
             // For now represent all the features in the gridded netCDF blob
             // with a single gridded features placeholder feature in wres.Source
-            Long featureId = this.getFeaturesCache()
+            Long featureId = this.getCaches()
+                                 .getFeaturesCache()
                                  .getOrCreateFeatureId( GRIDDED_FEATURES_PLACEHOLDER );
 
             SourceDetails griddedSource = new SourceDetails();
@@ -176,6 +168,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                                             "reference_time",
                                             "reference_time_type" );
             boolean[] quotedColumns = { false, true, true };
+
             database.copy( "wres.TimeSeriesReferenceTime",
                            columns,
                            referenceDatetimeRows,
