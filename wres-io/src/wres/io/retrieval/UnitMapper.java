@@ -197,6 +197,24 @@ public class UnitMapper
 
         return this.internalMappers.getOrDefault( key, this.getUnitMapperInner( unitName ) );
     }
+    
+    /**
+     * Returns a unit mapper to this UnitMapper's unit from the given unit db id
+     * @param measurementUnitId The surrogate key for the measurement unit.
+     * @return A unit mapper for the prescribed existing units to this unit.
+     * @throws NoSuchUnitConversionException When unable to create a converter.
+     * @throws UnrecognizedUnitException When unable to support given unitName.
+     */
+
+    public DoubleUnaryOperator getUnitMapper( long measurementUnitId )
+    {
+        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
+
+        DoubleUnaryOperator unitMapper = this.getUnitMapper( unitName );
+        return UnitMapper.getNonFiniteFriendlyUnitMapper( unitMapper,
+                                                          unitName,
+                                                          this.getDesiredMeasurementUnitName() );
+    }
 
     /**
      * Returns a unit mapper to this UnitMapper's unit from the given unit name.
@@ -264,24 +282,6 @@ public class UnitMapper
         }
 
         return UnitMapper.getNonFiniteFriendlyUnitMapper( converter::convert,
-                                                          unitName,
-                                                          this.getDesiredMeasurementUnitName() );
-    }
-
-    /**
-     * Returns a unit mapper to this UnitMapper's unit from the given unit db id
-     * @param measurementUnitId The surrogate key for the measurement unit.
-     * @return A unit mapper for the prescribed existing units to this unit.
-     * @throws NoSuchUnitConversionException When unable to create a converter.
-     * @throws UnrecognizedUnitException When unable to support given unitName.
-     */
-
-    public DoubleUnaryOperator getUnitMapper( long measurementUnitId )
-    {
-        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
-
-        DoubleUnaryOperator unitMapper = this.getUnitMapper( unitName );
-        return UnitMapper.getNonFiniteFriendlyUnitMapper( unitMapper,
                                                           unitName,
                                                           this.getDesiredMeasurementUnitName() );
     }

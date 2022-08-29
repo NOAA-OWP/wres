@@ -1,9 +1,10 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static wres.datamodel.time.ReferenceTimeType.T0;
-import static wres.io.retrieval.RetrieverTestConstants.*;
+import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,8 +44,6 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.DataSourceConfig.Variable;
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureTuple;
@@ -59,6 +58,7 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -68,13 +68,13 @@ import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link EnsembleRetrieverFactory}.
+ * Tests the {@link SingleValuedRetrieverFactory}.
  * @author James Brown
  */
 
-public class EnsembleRetrieverFactoryTest
+public class SingleValuedRetrieverFactoryTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleRetrieverFactoryTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedRetrieverFactoryTest.class );
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
@@ -92,7 +92,7 @@ public class EnsembleRetrieverFactoryTest
      * The retriever factory to test.
      */
 
-    private EnsembleRetrieverFactory factoryToTest;
+    private SingleValuedRetrieverFactory factoryToTest;
 
     @BeforeClass
     public static void runOnceBeforeAllTests()
@@ -109,6 +109,10 @@ public class EnsembleRetrieverFactoryTest
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
+
+        // Create the connection and schema
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+        this.testDatabase.createWresSchema( this.rawConnection );
 
         // Substitute our H2 connection pool for both pools:
         Mockito.when( this.mockSystemSettings.getConnectionPool() )
@@ -128,20 +132,17 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
-
-        // Create the connection and schema, set up mock settings
-        this.createTheConnectionAndSchema();
-
-        // Create the tables
-        this.addTheDatabaseAndTables();
         this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 
+        // Create the tables
+        this.addTheDatabaseAndTables();
+
         // Add some data for testing
-        this.addTimeSeriesToDatabase();
+        this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
 
         // Create the retriever factory to test
-        this.createEnsembleRetrieverFactory();
+        this.createSingleValuedRetrieverFactory();
     }
 
     @Test
@@ -167,13 +168,13 @@ public class EnsembleRetrieverFactoryTest
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                       .addEvent( Event.of( T2023_04_01T01_00_00Z, 30.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( T2023_04_01T03_00_00Z, 44.0 ) )
+                       .addEvent( Event.of( T2023_04_01T04_00_00Z, 51.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( T2023_04_01T07_00_00Z, 72.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
@@ -186,6 +187,7 @@ public class EnsembleRetrieverFactoryTest
     @Test
     public void testGetLeftRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
     {
+
         // The time window to select events
         TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
                                                          T2023_04_01T07_00_00Z );
@@ -211,11 +213,11 @@ public class EnsembleRetrieverFactoryTest
         TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
         TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ), 44.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( T2023_04_01T03_00_00Z, 44.0 ) )
+                       .addEvent( Event.of( T2023_04_01T04_00_00Z, 51.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
                        .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( T2023_04_01T07_00_00Z, 72.0 ) )
                        .build();
 
         // Actual series equals expected series
@@ -228,20 +230,20 @@ public class EnsembleRetrieverFactoryTest
 
         // The time window to select events
         TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
-                                                         Instant.parse( "2023-04-01T00:00:00Z" ),
-                                                         Instant.parse( "2023-04-01T01:00:00Z" ),
-                                                         Instant.parse( "2023-04-01T04:00:00Z" ) );
+                                                         T2023_04_01T00_00_00Z,
+                                                         T2023_04_01T01_00_00Z,
+                                                         T2023_04_01T04_00_00Z );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
-        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FEATURE ),
-                                                                                            timeWindow )
-                                                                        .get()
-                                                                        .collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FEATURE ),
+                                                                                          timeWindow )
+                                                                      .get()
+                                                                      .collect( Collectors.toList() );
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
-        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
@@ -251,18 +253,12 @@ public class EnsembleRetrieverFactoryTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        UNIT );
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
-
-        Labels expectedLabels = Labels.of( "123", "456", "567" );
-
-        TimeSeries<Ensemble> expectedSeries =
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( T2023_04_01T03_00_00Z,
-                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( T2023_04_01T04_00_00Z,
-                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                       .addEvent( Event.of( T2023_04_01T03_00_00Z, 44.0 ) )
+                       .addEvent( Event.of( T2023_04_01T04_00_00Z, 51.0 ) )
                        .build();
 
         // Actual series equals expected series
@@ -281,14 +277,14 @@ public class EnsembleRetrieverFactoryTest
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         // Get the actual left series
-        List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FEATURE ),
-                                                                                               timeWindow )
-                                                                        .get()
-                                                                        .collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FEATURE ),
+                                                                                             timeWindow )
+                                                                      .get()
+                                                                      .collect( Collectors.toList() );
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
-        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
@@ -298,18 +294,12 @@ public class EnsembleRetrieverFactoryTest
                                        VARIABLE_NAME,
                                        FEATURE,
                                        UNIT );
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
-
-        Labels expectedLabels = Labels.of( "123", "456", "567" );
-
-        TimeSeries<Ensemble> expectedSeries =
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( T2023_04_01T03_00_00Z,
-                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( T2023_04_01T04_00_00Z,
-                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                       .addEvent( Event.of( T2023_04_01T03_00_00Z, 44.0 ) )
+                       .addEvent( Event.of( T2023_04_01T04_00_00Z, 51.0 ) )
                        .build();
 
         // Actual series equals expected series
@@ -327,19 +317,6 @@ public class EnsembleRetrieverFactoryTest
         this.dataSource = null;
     }
 
-    /**
-     * Does the basic set-up work to create a connection and schema.
-     * @throws SQLException if the set-up failed
-     */
-
-    private void createTheConnectionAndSchema() throws SQLException
-    {
-        // Also mock a plain datasource (which works per test unlike c3p0)
-        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-
-        // Set up a bare bones database with only the schema
-        this.testDatabase.createWresSchema( this.rawConnection );
-    }
 
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.
@@ -366,10 +343,10 @@ public class EnsembleRetrieverFactoryTest
     }
 
     /**
-     * Creates an instance of a {@link EnsembleRetrieverFactory} to test.
+     * Creates an instance of a {@link SingleValuedRetrieverFactory} to test.
      */
 
-    private void createEnsembleRetrieverFactory()
+    private void createSingleValuedRetrieverFactory()
     {
         // Mock the sufficient elements of the ProjectConfig
         PairConfig pairsConfig = new PairConfig( UNIT,
@@ -406,7 +383,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Same right and baseline
         DataSourceBaselineConfig rightAndBaseline =
-                new DataSourceBaselineConfig( DatasourceType.fromValue( "ensemble forecasts" ),
+                new DataSourceBaselineConfig( DatasourceType.fromValue( "single valued forecasts" ),
                                               sourceList,
                                               new Variable( VARIABLE_NAME, null ),
                                               null,
@@ -425,23 +402,24 @@ public class EnsembleRetrieverFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
 
         Set<FeatureTuple> allFeatures = Set.of( featureTuple );
+
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
         Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
         Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getVariableName( Mockito.any( LeftOrRightOrBaseline.class ) ) )
+               .thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() ).thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the factory instance
         UnitMapper unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
-        this.factoryToTest = EnsembleRetrieverFactory.of( project, this.wresDatabase, this.caches, unitMapper );
+        this.factoryToTest = SingleValuedRetrieverFactory.of( project, this.wresDatabase, this.caches, unitMapper );
     }
 
     /**
@@ -451,22 +429,18 @@ public class EnsembleRetrieverFactoryTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addTimeSeriesToDatabase() throws SQLException
+    private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
                                                                     DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
-                                                                     DatasourceType.ENSEMBLE_FORECASTS );
-        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DatasourceType.ENSEMBLE_FORECASTS );
+                                                                     DatasourceType.SINGLE_VALUED_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
         LOGGER.info( "rightData: {}", rightData );
-        LOGGER.info( "baselineData: {}", rightData );
-        ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(),
-                                                                    rightData.getContext(),
-                                                                    (DataSourceBaselineConfig) baselineData.getContext() );
+        ProjectConfig.Inputs fakeInputs =
+                new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
+        TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
         TimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -474,8 +448,12 @@ public class EnsembleRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
+        Stream<TimeSeriesTuple> tupleStreamOne =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, rightData ) );
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
+
         TimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -483,11 +461,12 @@ public class EnsembleRetrieverFactoryTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+
+        TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
         TimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -497,9 +476,10 @@ public class EnsembleRetrieverFactoryTest
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamThree =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
-        IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
-                                                      .get( 0 );
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree, leftData ) );
+        IngestResult ingestResultThree =
+                ingesterThree.ingest( tupleStreamThree, leftData )
+                             .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
@@ -529,5 +509,4 @@ public class EnsembleRetrieverFactoryTest
                                                          results );
         assertTrue( project.save() );
     }
-
 }

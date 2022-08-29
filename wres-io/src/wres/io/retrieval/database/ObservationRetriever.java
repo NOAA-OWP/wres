@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.util.Optional;
 
@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
+import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;

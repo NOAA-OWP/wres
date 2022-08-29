@@ -1,11 +1,11 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
+
+import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static wres.io.retrieval.RetrieverTestConstants.*;
 
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;

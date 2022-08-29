@@ -1,10 +1,10 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static wres.datamodel.time.ReferenceTimeType.*;
-import static wres.io.retrieval.RetrieverTestConstants.*;
+import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -52,7 +52,9 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
+import wres.io.retrieval.DuplicatePolicy;
+import wres.io.retrieval.Retriever;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;

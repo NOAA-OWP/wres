@@ -1,11 +1,11 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static wres.datamodel.time.ReferenceTimeType.T0;
-import static wres.io.retrieval.RetrieverTestConstants.*;
+import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -43,6 +43,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;

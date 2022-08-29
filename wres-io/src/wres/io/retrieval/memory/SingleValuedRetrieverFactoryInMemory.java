@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.memory;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,7 +22,11 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.project.Project;
-import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
+import wres.io.retrieval.CachingRetriever;
+import wres.io.retrieval.DuplicatePolicy;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.RetrieverUtilities;
+import wres.io.retrieval.UnitMapper;
 import wres.statistics.generated.TimeWindow;
 
 /**

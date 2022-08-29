@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -20,6 +20,8 @@ import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.io.retrieval.DataAccessException;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;

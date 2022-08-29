@@ -1,11 +1,11 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import static wres.datamodel.time.ReferenceTimeType.T0;
-import static wres.io.retrieval.RetrieverTestConstants.*;
+import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,8 +13,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -41,12 +41,11 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -55,20 +54,26 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
+import wres.io.retrieval.Retriever;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
+import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
- * Tests the {@link EnsembleForecastRetriever}.
+ * Tests the {@link ObservationRetriever}.
  * @author James Brown
  */
 
-public class EnsembleForecastRetrieverTest
+public class ObservationRetrieverTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleForecastRetrieverTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ObservationRetrieverTest.class );
+    private static final String SECOND_TIME = "2023-04-01T09:00:00Z";
+    private static final String FIRST_TIME = "2023-04-01T03:00:00Z";
+
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
@@ -76,18 +81,19 @@ public class EnsembleForecastRetrieverTest
     private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
+    private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
-    private DatabaseCaches caches;
 
 
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
      */
 
-    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.RIGHT;
+    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.LEFT;
+
 
     /**
      * Unit mapper.
@@ -99,9 +105,8 @@ public class EnsembleForecastRetrieverTest
      * Error message when attempting to retrieve by identifier.
      */
 
-    private static final String NO_IDENTIFIER_ERROR = "Retrieval of ensemble time-series by identifier is not "
-                                                      + "currently possible because there is no identifier for "
-                                                      + "ensemble time-series in the WRES database.";
+    private static final String NO_IDENTIFIER_ERROR = "Retrieval of observed time-series by identifier is not "
+                                                      + "currently possible.";
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -111,7 +116,7 @@ public class EnsembleForecastRetrieverTest
     }
 
     @Before
-    public void setup() throws SQLException, LiquibaseException
+    public void setup() throws Exception
     {
         MockitoAnnotations.openMocks( this );
 
@@ -137,75 +142,121 @@ public class EnsembleForecastRetrieverTest
                .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
+        this.lockManager = new DatabaseLockManagerNoop();
 
-        // Create a connection and schema
-        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
-
-        // Set up a bare bones database with only the schema
-        this.testDatabase.createWresSchema( this.rawConnection );
+        // Create the connection and schema
+        this.createTheConnectionAndSchema();
 
         // Create the tables
         this.addTheDatabaseAndTables();
 
-        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
-        this.lockManager = new DatabaseLockManagerNoop();
-
         // Add some data for testing
-        this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
+        this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
-        // Create the unit mapper
         this.unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
     }
 
     @Test
-    public void testRetrievalOfOneTimeSeriesWithFiveEventsAndThreeMembers()
+    public void testRetrievalOfObservedTimeSeriesWithTenEvents()
     {
         // Build the retriever
-        Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
-                                                       .setDatabase( this.wresDatabase )
-                                                       .setFeaturesCache( this.caches.getFeaturesCache() )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
-                                                       .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        Retriever<TimeSeries<Double>> observedRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
 
         // Get the time-series
-        Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
 
-        // There is one time-series, so assert that
+        // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
-        TimeSeries<Ensemble> actualSeries = actualCollection.get( 0 );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
 
         // Create the expected series
         TimeSeriesMetadata expectedMetadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                               T2023_04_01T00_00_00Z ),
+                TimeSeriesMetadata.of( Collections.emptyMap(),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE,
-                                       this.unitMapper.getDesiredMeasurementUnitName() );
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
-
-        Labels expectedLabels = Labels.of( "123", "456", "567" );
-
-        TimeSeries<Ensemble> expectedSeries =
+                                       UNIT );
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
                 builder.setMetadata( expectedMetadata )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ),
-                                            Ensemble.of( new double[] { 30.0, 100.0, 65.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ),
-                                            Ensemble.of( new double[] { 37.0, 107.0, 72.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T03:00:00Z" ),
-                                            Ensemble.of( new double[] { 44.0, 114.0, 79.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ),
-                                            Ensemble.of( new double[] { 51.0, 121.0, 86.0 }, expectedLabels ) ) )
-                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ),
-                                            Ensemble.of( new double[] { 58.0, 128.0, 93.0 }, expectedLabels ) ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                       .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testRetrievalOfPoolShapedObservedTimeSeriesWithSevenEvents()
+    {
+        // Build the pool boundaries
+        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                         Instant.parse( SECOND_TIME ) );
+        TimeWindowOuter poolBoundaries = TimeWindowOuter.of( inner );
+
+        // Build the retriever
+        Retriever<TimeSeries<Double>> observedRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setTimeWindow( poolBoundaries )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Assert correct number of events
+        assertEquals( 7, actualSeries.getEvents().size() );
+
+        // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       TimeScaleOuter.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE,
+                                       UNIT );
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.setMetadata( expectedMetadata )
+                       .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
                        .build();
 
         // Actual series equals expected series
@@ -216,15 +267,15 @@ public class EnsembleForecastRetrieverTest
     public void testGetAllIdentifiersThrowsExpectedException()
     {
         // Build the retriever
-        Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
-                                                       .setDatabase( this.wresDatabase )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
-                                                       .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
                                                                forecastRetriever::getAllIdentifiers );
@@ -236,15 +287,14 @@ public class EnsembleForecastRetrieverTest
     public void testGetByIdentifierThrowsExpectedException()
     {
         // Build the retriever
-        Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
-                                                       .setDatabase( this.wresDatabase )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
-                                                       .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
                                                                () -> forecastRetriever.get( 123 ) );
@@ -256,15 +306,14 @@ public class EnsembleForecastRetrieverTest
     public void testGetByIdentifierStreamThrowsExpectedException()
     {
         // Build the retriever
-        Retriever<TimeSeries<Ensemble>> forecastRetriever =
-                new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.caches.getEnsemblesCache() )
-                                                       .setDatabase( this.wresDatabase )
-                                                       .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
-                                                       .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
-                                                       .setLeftOrRightOrBaseline( LRB )
-                                                       .build();
+        Retriever<TimeSeries<Double>> forecastRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setUnitMapper( this.unitMapper )
+                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .build();
 
         LongStream longStream = LongStream.of();
 
@@ -283,6 +332,20 @@ public class EnsembleForecastRetrieverTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
+    }
+
+    /**
+     * Does the basic set-up work to create a connection and schema.
+     * @throws SQLException if the set-up failed
+     */
+
+    private void createTheConnectionAndSchema() throws SQLException
+    {
+        // Also mock a plain datasource (which works per test unlike c3p0)
+        this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
+
+        // Set up a bare bones database with only the schema
+        this.testDatabase.createWresSchema( this.rawConnection );
     }
 
     /**
@@ -316,18 +379,18 @@ public class EnsembleForecastRetrieverTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException
+    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
                                                                     DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
-                                                                     DatasourceType.ENSEMBLE_FORECASTS );
+                                                                     DatasourceType.SINGLE_VALUED_FORECASTS );
         LOGGER.info( "leftData: {}", leftData );
         LOGGER.info( "rightData: {}", rightData );
         ProjectConfig.Inputs fakeInputs =
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
+        TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
         TimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -335,11 +398,10 @@ public class EnsembleForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
-        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
+        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, leftData )
                                                   .get( 0 );
-
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
 
         TimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -348,13 +410,15 @@ public class EnsembleForecastRetrieverTest
                                                         .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, leftData )
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo );
 
+        // Print the contents of the source table.
         try ( Statement statement = this.rawConnection.createStatement() )
         {
             ResultSet sourceData =

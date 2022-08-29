@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.time.MonthDay;
 import java.util.Objects;
@@ -26,6 +26,8 @@ import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
 
 /**

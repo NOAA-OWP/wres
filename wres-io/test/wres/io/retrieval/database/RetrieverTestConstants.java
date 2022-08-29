@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.net.URI;
 import java.time.Instant;

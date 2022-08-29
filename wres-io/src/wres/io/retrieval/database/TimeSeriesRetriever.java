@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -42,6 +42,9 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
+import wres.io.retrieval.Retriever;
+import wres.io.retrieval.DataAccessException;
+import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;

@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -13,6 +13,8 @@ import wres.config.generated.DatasourceType;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.retrieval.DuplicatePolicy;
+import wres.io.retrieval.RetrieverUtilities;
 
 /**
  * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
@@ -30,31 +32,6 @@ import wres.datamodel.time.TimeWindowOuter;
 
 class AnalysisRetriever extends TimeSeriesRetriever<Double>
 {
-    /**
-     * Policy for handling duplicates by valid time.
-     */
-
-    enum DuplicatePolicy
-    {
-        /**
-         * Maintain all duplicates.
-         */
-
-        KEEP_ALL,
-
-        /**
-         * Keep only one duplicate by valid time, namely the latest one by reference time.
-         */
-
-        KEEP_LATEST_REFERENCE_TIME,
-
-        /**
-         * Keep only one duplicate by valid time, namely the earliest one by reference time.
-         */
-
-        KEEP_EARLIEST_REFERENCE_TIME;
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger( AnalysisRetriever.class );
 
     private final TimeSeriesRetriever<Double> individualAnalysisRetriever;

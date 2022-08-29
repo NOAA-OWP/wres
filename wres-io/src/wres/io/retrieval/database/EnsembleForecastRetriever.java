@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -14,6 +14,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.Ensembles;
+import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
