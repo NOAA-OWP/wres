@@ -31,7 +31,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -39,22 +38,106 @@ import wres.statistics.generated.TimeWindow;
  * @author James Brown
  */
 
-class RetrieverUtilities
+public class RetrieverUtilities
 {
     /** A logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( RetrieverUtilities.class );
 
     /**
+     * Creates a stream of time-series in an analysis shape.
+     * 
+     * @param <T> the time-series event value type
+     * @param timeSeries the input series to transform, required
+     * @param earliestAnalysisDuration the earliest analysis duration, required
+     * @param latestAnalysisDuration the latest analysis duration, required
+     * @param duplicatePolicy the duplicate policy, required
+     * @param timeWindow the time window, optional
+     * @return one series for each analysis duration
+     * @throws NullPointerException if any required input is null
+     */
+
+    public static <T> Stream<TimeSeries<T>> createAnalysisTimeSeries( Stream<TimeSeries<T>> timeSeries,
+                                                                      Duration earliestAnalysisDuration,
+                                                                      Duration latestAnalysisDuration,
+                                                                      DuplicatePolicy duplicatePolicy,
+                                                                      TimeWindowOuter timeWindow )
+    {
+        Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( earliestAnalysisDuration );
+        Objects.requireNonNull( latestAnalysisDuration );
+        Objects.requireNonNull( duplicatePolicy );
+
+        // All events required?
+        if ( !RetrieverUtilities.addOneTimeSeriesForEachAnalysisDuration( earliestAnalysisDuration,
+                                                                          latestAnalysisDuration ) )
+        {
+            LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
+
+            // Apply a duplicate policy and return
+            return RetrieverUtilities.applyDuplicatePolicy( timeSeries, duplicatePolicy, timeWindow );
+        }
+        else
+        {
+            LOGGER.debug( "Building a single-event timeseries for each analysis duration between {} and {}.",
+                          earliestAnalysisDuration,
+                          latestAnalysisDuration );
+
+            // No duplicate policy here, because we composed each time-series from common durations
+            return RetrieverUtilities.createSeriesPerAnalysisDuration( timeSeries,
+                                                                       earliestAnalysisDuration,
+                                                                       latestAnalysisDuration );
+        }
+    }
+
+    /**
+     * 
+     * @param timeWindow the time window, required
+     * @param dataType the data type, required
+     * @param earliestAnalysisDuration the earliest analysis duration, optional
+     * @param latestAnalysisDuration the latest analysis duration, optional
+     * @return an adjusted time window, if required
+     * @throws NullPointerException if any required input is null
+     */
+
+    public static TimeWindowOuter adjustForAnalysisTypeIfRequired( TimeWindowOuter timeWindow,
+                                                                   DatasourceType dataType,
+                                                                   Duration earliestAnalysisDuration,
+                                                                   Duration latestAnalysisDuration )
+    {
+        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( dataType );
+
+        TimeWindowOuter adjustedWindow = timeWindow;
+
+        // Analysis data? If so, needs special handling on retrieval
+        if ( dataType == DatasourceType.ANALYSES )
+        {
+            TimeWindowOuter analysisWindow = RetrieverUtilities.getAnalysisTimeWindow( adjustedWindow,
+                                                                                       earliestAnalysisDuration,
+                                                                                       latestAnalysisDuration );
+
+            LOGGER.debug( "Adjusted the time window during retrieval for time-series data with a shape of {}. The "
+                          + "original time window was: {}. The adjusted time window is: {}.",
+                          adjustedWindow,
+                          analysisWindow );
+
+            adjustedWindow = analysisWindow;
+        }
+
+        return adjustedWindow;
+    }
+
+    /**
      * Augments the time-scale of the input series, as needed.
      * @param <T> the time-series event value type
      * @param timeSeries the time-series
-     * @param the orientation of the time-series
+     * @param orientation the orientation of the time-series
      * @param dataSource the data source declaration
      * @return the augmented time-series
      */
-    static <T> TimeSeries<T> augmentTimeScale( TimeSeries<T> timeSeries,
-                                               LeftOrRightOrBaseline orientation,
-                                               DataSourceConfig dataSource )
+    public static <T> TimeSeries<T> augmentTimeScale( TimeSeries<T> timeSeries,
+                                                      LeftOrRightOrBaseline orientation,
+                                                      DataSourceConfig dataSource )
     {
         TimeScaleConfig existingTimeScale = dataSource.getExistingTimeScale();
 
@@ -81,51 +164,13 @@ class RetrieverUtilities
      * @return a time-series with mapped units
      */
 
-    static <T> TimeSeries<T> mapUnits( TimeSeries<T> timeSeries, UnaryOperator<T> mapper, String desiredUnits )
+    public static <T> TimeSeries<T> mapUnits( TimeSeries<T> timeSeries, UnaryOperator<T> mapper, String desiredUnits )
     {
         TimeSeriesMetadata meta =
                 new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setUnit( desiredUnits )
                                                                           .build();
         TimeSeries<T> mapped = TimeSeriesSlicer.transform( timeSeries, mapper );
         return TimeSeries.of( meta, mapped.getEvents() );
-    }
-
-    /**
-     * 
-     * @param timeWindow the time window, required
-     * @param dataType the data type, required
-     * @param earliestAnalysisDuration the earliest analysis duration, optional
-     * @param latestAnalysisDuration the latest analysis duration, optional
-     * @return an adjusted time window, if required
-     * @throws NullPOinterException if any required input is null
-     */
-
-    static TimeWindowOuter adjustForAnalysisTypeIfRequired( TimeWindowOuter timeWindow,
-                                                            DatasourceType dataType,
-                                                            Duration earliestAnalysisDuration,
-                                                            Duration latestAnalysisDuration )
-    {
-        Objects.requireNonNull( timeWindow );
-        Objects.requireNonNull( dataType );
-
-        TimeWindowOuter adjustedWindow = timeWindow;
-
-        // Analysis data? If so, needs special handling on retrieval
-        if ( dataType == DatasourceType.ANALYSES )
-        {
-            TimeWindowOuter analysisWindow = RetrieverUtilities.getAnalysisTimeWindow( adjustedWindow,
-                                                                                       earliestAnalysisDuration,
-                                                                                       latestAnalysisDuration );
-
-            LOGGER.debug( "Adjusted the time window during retrieval for time-series data with a shape of {}. The "
-                          + "original time window was: {}. The adjusted time window is: {}.",
-                          adjustedWindow,
-                          analysisWindow );
-
-            adjustedWindow = analysisWindow;
-        }
-
-        return adjustedWindow;
     }
 
     /**
@@ -187,52 +232,6 @@ class RetrieverUtilities
                                                              timeWindow.getEarliestValidTime(),
                                                              timeWindow.getLatestValidTime() );
             return TimeWindowOuter.of( inner );
-        }
-    }
-
-    /**
-     * Creates a stream of time-series in an analysis shape.
-     * 
-     * @param <T> the time-series event value type
-     * @param timeSeries the input series to transform, required
-     * @param earliestAnalysisDuration the earliest analysis duration, required
-     * @param latestAnalysisDuration the latest analysis duration, required
-     * @param duplicatePolicy the duplicate policy, required
-     * @param timeWindow the time window, optional
-     * @return one series for each analysis duration
-     * @throws NullPointerException if any required input is null
-     */
-
-    static <T> Stream<TimeSeries<T>> createAnalysisTimeSeries( Stream<TimeSeries<T>> timeSeries,
-                                                               Duration earliestAnalysisDuration,
-                                                               Duration latestAnalysisDuration,
-                                                               DuplicatePolicy duplicatePolicy,
-                                                               TimeWindowOuter timeWindow )
-    {
-        Objects.requireNonNull( timeSeries );
-        Objects.requireNonNull( earliestAnalysisDuration );
-        Objects.requireNonNull( latestAnalysisDuration );
-        Objects.requireNonNull( duplicatePolicy );
-
-        // All events required?
-        if ( !RetrieverUtilities.addOneTimeSeriesForEachAnalysisDuration( earliestAnalysisDuration,
-                                                                          latestAnalysisDuration ) )
-        {
-            LOGGER.debug( "No discrete analysis times defined. Built a multi-event timeseries from the analysis." );
-
-            // Apply a duplicate policy and return
-            return RetrieverUtilities.applyDuplicatePolicy( timeSeries, duplicatePolicy, timeWindow );
-        }
-        else
-        {
-            LOGGER.debug( "Building a single-event timeseries for each analysis duration between {} and {}.",
-                          earliestAnalysisDuration,
-                          latestAnalysisDuration );
-
-            // No duplicate policy here, because we composed each time-series from common durations
-            return RetrieverUtilities.createSeriesPerAnalysisDuration( timeSeries,
-                                                                       earliestAnalysisDuration,
-                                                                       latestAnalysisDuration );
         }
     }
 

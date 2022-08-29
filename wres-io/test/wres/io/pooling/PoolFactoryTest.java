@@ -30,7 +30,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.SingleValuedRetrieverFactory;
+import wres.io.retrieval.database.SingleValuedRetrieverFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;

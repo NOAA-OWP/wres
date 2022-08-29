@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.retrieval.database;
 
 import java.time.Duration;
 import java.time.MonthDay;
@@ -25,9 +25,12 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
-import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
-import wres.io.retrieval.SingleValuedGriddedRetriever.Builder;
-import wres.io.retrieval.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
+import wres.io.retrieval.DataAccessException;
+import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieval.UnitMapper;
+import wres.io.retrieval.DuplicatePolicy;
+import wres.io.retrieval.database.SingleValuedGriddedRetriever.Builder;
+import wres.io.retrieval.database.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
 import wres.io.utilities.Database;
 
 /**
