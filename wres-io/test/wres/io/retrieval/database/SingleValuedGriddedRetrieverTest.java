@@ -57,20 +57,22 @@ import wres.system.SystemSettings;
 
 public class SingleValuedGriddedRetrieverTest
 {
-    @Mock private SystemSettings mockSystemSettings;
+    @Mock
+    private SystemSettings mockSystemSettings;
     private wres.io.utilities.Database wresDatabase;
-    @Mock private Executor mockExecutor;
+    @Mock
+    private Executor mockExecutor;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
-    @Mock private DatabaseCaches mockCaches;
+    @Mock
+    private DatabaseCaches mockCaches;
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
     /**
      * A feature for testing.
      */
-    private static final FeatureKey FEATURE = FeatureKey.of(
-                                                             MessageFactory.getGeometry( "POINT( 1 2 )",
+    private static final FeatureKey FEATURE = FeatureKey.of( MessageFactory.getGeometry( "POINT( 1 2 )",
                                                                                          null,
                                                                                          4326,
                                                                                          "POINT( 1 2 )" ) );
@@ -142,7 +144,7 @@ public class SingleValuedGriddedRetrieverTest
     public void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
         // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, UNITS );
+        UnitMapper mapper = UnitMapper.of( UNITS );
 
         // Set the time window filter, aka pool boundaries to select a subset of sources
 
@@ -175,6 +177,8 @@ public class SingleValuedGriddedRetrieverTest
                                                                                          .setUnitMapper( mapper )
                                                                                          .setTimeWindow( timeWindow )
                                                                                          .setDatabase( this.wresDatabase )
+                                                                                         .setMeasurementUnitsCache( this.measurementUnitsCache )
+                                                                                         .setFeaturesCache( this.mockCaches.getFeaturesCache() )
                                                                                          .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
                                                                                          .build();
 
@@ -245,9 +249,9 @@ public class SingleValuedGriddedRetrieverTest
         // Add a project 
         Project project =
                 new DatabaseProject( this.wresDatabase,
-                             this.mockCaches,
-                             new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
-                             PROJECT_HASH );
+                                     this.mockCaches,
+                                     new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
+                                     PROJECT_HASH );
         boolean saved = project.save();
 
         assertTrue( saved );
@@ -291,7 +295,7 @@ public class SingleValuedGriddedRetrieverTest
             // Reference time (instant)
             row[1] = nextTime.toString();
 
-                // Reference time type
+            // Reference time type
             row[2] = T0.toString();
             ArrayList<String[]> rows = new ArrayList<>( 1 );
             rows.add( row );

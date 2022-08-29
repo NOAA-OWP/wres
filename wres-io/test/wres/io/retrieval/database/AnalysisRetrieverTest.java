@@ -154,7 +154,7 @@ public class AnalysisRetrieverTest
         this.addThreeAnalysisTimeSeriesToTheDatabase();
 
         // Create the unit mapper
-        this.unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
+        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -169,6 +169,7 @@ public class AnalysisRetrieverTest
                                                .setDatabase( this.wresDatabase )
                                                .setProjectId( PROJECT_ID )
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
+                                               .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )
                                                .setUnitMapper( this.unitMapper )
@@ -256,6 +257,7 @@ public class AnalysisRetrieverTest
                 new AnalysisRetriever.Builder().setLatestAnalysisDuration( Duration.ofHours( 1 ) )
                                                .setDatabase( this.wresDatabase )
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
+                                               .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )
@@ -336,6 +338,7 @@ public class AnalysisRetrieverTest
                                                .setLatestAnalysisDuration( Duration.ofHours( 2 ) )
                                                .setDatabase( this.wresDatabase )
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
+                                               .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )

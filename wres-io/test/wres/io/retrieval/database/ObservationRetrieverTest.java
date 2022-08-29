@@ -154,7 +154,7 @@ public class ObservationRetrieverTest
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
 
-        this.unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
+        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -164,6 +164,7 @@ public class ObservationRetrieverTest
         Retriever<TimeSeries<Double>> observedRetriever =
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
@@ -219,6 +220,7 @@ public class ObservationRetrieverTest
         Retriever<TimeSeries<Double>> observedRetriever =
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
@@ -270,6 +272,7 @@ public class ObservationRetrieverTest
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setUnitMapper( this.unitMapper )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
@@ -289,6 +292,8 @@ public class ObservationRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
@@ -308,6 +313,8 @@ public class ObservationRetrieverTest
         // Build the retriever
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )

@@ -22,7 +22,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
 import wres.datamodel.Units;
 import wres.datamodel.Units.UnrecognizedUnitException;
-import wres.io.data.caching.MeasurementUnits;
 
 /**
  * Replaced UnitMapper, uses javax.measure/indriya instead of db unitconversion.
@@ -30,123 +29,38 @@ import wres.io.data.caching.MeasurementUnits;
 public class UnitMapper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( UnitMapper.class );
-    private final MeasurementUnits measurementUnitsCache;
     private final String desiredMeasurementUnitName;
     private final ConcurrentMap<String, Unit<?>> indriyaUnits;
     private final Object lock = new Object(); // To avoid calculating the indriya unit N times across N threads
     private final Map<String, String> aliases;
     private final Map<Pair<String, String>, DoubleUnaryOperator> internalMappers;
 
-    private UnitMapper( MeasurementUnits measurementUnitsCache,
-                        String desiredMeasurementUnitName,
-                        List<UnitAlias> aliases )
+    /**
+     * Creates an instance.
+     * @param desiredMeasurementUnit the desired measurement unit name
+     * @return an instance
+     * @throws NullPointerException if the desiredMeasurementUnit is null
+     */
+    
+    public static UnitMapper of( String desiredMeasurementUnit )
     {
-        Objects.requireNonNull( measurementUnitsCache );
-        Objects.requireNonNull( desiredMeasurementUnitName );
-        // Version 2 doesn't need direct db access, but does need units cache.
-        this.measurementUnitsCache = measurementUnitsCache;
-
-        if ( desiredMeasurementUnitName.isBlank() )
-        {
-            throw new NoSuchUnitConversionException( "Unit must not be blank." );
-        }
-
-        // Keep the original name supplied for the sake of retaining the public
-        // method getDesiredMeasurementUnitName in original UnitMapper api.
-        this.desiredMeasurementUnitName = desiredMeasurementUnitName;
-        this.indriyaUnits = new ConcurrentHashMap<>( 4 );
-
-        Map<String, String> aliasToUnitStrings = new HashMap<>( aliases.size() );
-
-        for ( UnitAlias alias : aliases )
-        {
-            String existing = aliasToUnitStrings.put( alias.getAlias(),
-                                                      alias.getUnit() );
-
-            if ( existing != null )
-            {
-                throw new ProjectConfigException( alias,
-                                                  "Multiple declarations for a "
-                                                         + "single unit alias are not "
-                                                         + "supported. Found repeated "
-                                                         + "'"
-                                                         + alias.getAlias()
-                                                         + "' alias. Remove all but "
-                                                         + "one declaration for alias "
-                                                         + "'"
-                                                         + alias.getAlias()
-                                                         + "'." );
-            }
-        }
-
-        // Immediately attempt to get a javax.measure.Unit. But only warn.
-        try
-        {
-            Unit<?> desiredUnit = Units.getUnit( desiredMeasurementUnitName,
-                                                 aliasToUnitStrings );
-            this.indriyaUnits.put( desiredMeasurementUnitName, desiredUnit );
-        }
-        catch ( UnrecognizedUnitException uue )
-        {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                // Here we have either an alias name or a UCUM unit name where
-                // the UCUM value for the alias has failed to be recognized or
-                // the unit name itself has failed to be recognized. So it would
-                // be awkward to say either "unit alias" or "UCUM unit" here.
-                LOGGER.warn( "Unrecognized unit '{}' may cause unit "
-                             + "conversion failure if this evaluation requires"
-                             + " a unit conversion.",
-                             desiredMeasurementUnitName );
-            }
-        }
-
-        // Immediately attempt to parse the given javax.measure.Unit, only warn.
-        for ( UnitAlias unitAlias : aliases )
-        {
-            String aliasName = unitAlias.getAlias();
-            String unitName = unitAlias.getUnit();
-
-            // In the case of the desiredMeasurementUnitName, it's already been
-            // added above, so skip here to avoid duplication.
-            if ( !aliasName.equals( desiredMeasurementUnitName ) )
-            {
-                try
-                {
-                    Unit<?> indriyaUnit = Units.getUnit( aliasName,
-                                                         aliasToUnitStrings );
-                    this.indriyaUnits.put( aliasName, indriyaUnit );
-                }
-                catch ( UnrecognizedUnitException uue )
-                {
-                    // Here we definitely have an alias name and UCUM unit at
-                    // hand because we are iterating over declared unit aliases.
-                    LOGGER.warn( "Unit alias declaration with unrecognized UCUM"
-                                 + " unit '{}' (having alias '{}') may cause "
-                                 + "unit conversion failure if this evaluation "
-                                 + "requires a unit conversion.",
-                                 unitName,
-                                 aliasName );
-                }
-            }
-        }
-
-        this.aliases = aliasToUnitStrings;
-        this.internalMappers = this.getInternalMappers();
-    }
-
-    public static UnitMapper of( MeasurementUnits measurementUnitsCache,
-                                 String desiredMeasurementUnit )
-    {
-        return new UnitMapper( measurementUnitsCache,
-                               desiredMeasurementUnit,
+        return new UnitMapper( desiredMeasurementUnit,
                                Collections.emptyList() );
     }
 
-    public static UnitMapper of( MeasurementUnits measurementUnitsCache,
-                                 String desiredMeasurementUnit,
+    /**
+     * Creates an instance.
+     * @param desiredMeasurementUnit the desired measurement unit name
+     * @param projectConfig the project declaration
+     * @return an instance
+     * @throws NullPointerException if either input is null
+     */
+    
+    public static UnitMapper of( String desiredMeasurementUnit,
                                  ProjectConfig projectConfig )
     {
+        Objects.requireNonNull( projectConfig );
+        
         List<UnitAlias> aliases = projectConfig.getPair()
                                                .getUnitAlias();
         if ( aliases == null )
@@ -154,11 +68,14 @@ public class UnitMapper
             aliases = Collections.emptyList();
         }
 
-        return new UnitMapper( measurementUnitsCache,
-                               desiredMeasurementUnit,
+        return new UnitMapper( desiredMeasurementUnit,
                                aliases );
     }
 
+    /**
+     * @return the desired measurement unit name
+     */
+    
     public String getDesiredMeasurementUnitName()
     {
         return this.desiredMeasurementUnitName;
@@ -196,24 +113,6 @@ public class UnitMapper
         }
 
         return this.internalMappers.getOrDefault( key, this.getUnitMapperInner( unitName ) );
-    }
-    
-    /**
-     * Returns a unit mapper to this UnitMapper's unit from the given unit db id
-     * @param measurementUnitId The surrogate key for the measurement unit.
-     * @return A unit mapper for the prescribed existing units to this unit.
-     * @throws NoSuchUnitConversionException When unable to create a converter.
-     * @throws UnrecognizedUnitException When unable to support given unitName.
-     */
-
-    public DoubleUnaryOperator getUnitMapper( long measurementUnitId )
-    {
-        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
-
-        DoubleUnaryOperator unitMapper = this.getUnitMapper( unitName );
-        return UnitMapper.getNonFiniteFriendlyUnitMapper( unitMapper,
-                                                          unitName,
-                                                          this.getDesiredMeasurementUnitName() );
     }
 
     /**
@@ -345,4 +244,105 @@ public class UnitMapper
         return Collections.unmodifiableMap( returnMe );
     }
 
+    /**
+     * @param desiredMeasurementUnitName the desired measurement unit name
+     * @param aliases the aliases
+     * @throws NullPointerException if either input is null
+     */
+    
+    private UnitMapper( String desiredMeasurementUnitName,
+                        List<UnitAlias> aliases )
+    {
+        Objects.requireNonNull( desiredMeasurementUnitName );
+        Objects.requireNonNull( aliases );
+
+        if ( desiredMeasurementUnitName.isBlank() )
+        {
+            throw new NoSuchUnitConversionException( "Unit must not be blank." );
+        }
+
+        // Keep the original name supplied for the sake of retaining the public
+        // method getDesiredMeasurementUnitName in original UnitMapper api.
+        this.desiredMeasurementUnitName = desiredMeasurementUnitName;
+        this.indriyaUnits = new ConcurrentHashMap<>( 4 );
+
+        Map<String, String> aliasToUnitStrings = new HashMap<>( aliases.size() );
+
+        for ( UnitAlias alias : aliases )
+        {
+            String existing = aliasToUnitStrings.put( alias.getAlias(),
+                                                      alias.getUnit() );
+
+            if ( existing != null )
+            {
+                throw new ProjectConfigException( alias,
+                                                  "Multiple declarations for a "
+                                                         + "single unit alias are not "
+                                                         + "supported. Found repeated "
+                                                         + "'"
+                                                         + alias.getAlias()
+                                                         + "' alias. Remove all but "
+                                                         + "one declaration for alias "
+                                                         + "'"
+                                                         + alias.getAlias()
+                                                         + "'." );
+            }
+        }
+
+        // Immediately attempt to get a javax.measure.Unit. But only warn.
+        try
+        {
+            Unit<?> desiredUnit = Units.getUnit( desiredMeasurementUnitName,
+                                                 aliasToUnitStrings );
+            this.indriyaUnits.put( desiredMeasurementUnitName, desiredUnit );
+        }
+        catch ( UnrecognizedUnitException uue )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                // Here we have either an alias name or a UCUM unit name where
+                // the UCUM value for the alias has failed to be recognized or
+                // the unit name itself has failed to be recognized. So it would
+                // be awkward to say either "unit alias" or "UCUM unit" here.
+                LOGGER.warn( "Unrecognized unit '{}' may cause unit "
+                             + "conversion failure if this evaluation requires"
+                             + " a unit conversion.",
+                             desiredMeasurementUnitName );
+            }
+        }
+
+        // Immediately attempt to parse the given javax.measure.Unit, only warn.
+        for ( UnitAlias unitAlias : aliases )
+        {
+            String aliasName = unitAlias.getAlias();
+            String unitName = unitAlias.getUnit();
+
+            // In the case of the desiredMeasurementUnitName, it's already been
+            // added above, so skip here to avoid duplication.
+            if ( !aliasName.equals( desiredMeasurementUnitName ) )
+            {
+                try
+                {
+                    Unit<?> indriyaUnit = Units.getUnit( aliasName,
+                                                         aliasToUnitStrings );
+                    this.indriyaUnits.put( aliasName, indriyaUnit );
+                }
+                catch ( UnrecognizedUnitException uue )
+                {
+                    // Here we definitely have an alias name and UCUM unit at
+                    // hand because we are iterating over declared unit aliases.
+                    LOGGER.warn( "Unit alias declaration with unrecognized UCUM"
+                                 + " unit '{}' (having alias '{}') may cause "
+                                 + "unit conversion failure if this evaluation "
+                                 + "requires a unit conversion.",
+                                 unitName,
+                                 aliasName );
+                }
+            }
+        }
+
+        this.aliases = aliasToUnitStrings;
+        this.internalMappers = this.getInternalMappers();
+    }
+    
 }

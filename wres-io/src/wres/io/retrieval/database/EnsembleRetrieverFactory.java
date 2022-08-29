@@ -25,6 +25,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.UnitMapper;
@@ -44,13 +45,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     /** The project. */
     private final Project project;
-    
+
     /** The database. */
     private final Database database;
 
     /** The caches/ORMs. */
     private final DatabaseCaches caches;
-    
+
     /** Right data declaration. */
     private final DataSourceConfig rightConfig;
 
@@ -96,8 +97,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
-    }    
-    
+    }
+
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
@@ -124,6 +125,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                    .setEnsemblesCache( this.getEnsemblesCache() )
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
+                   .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                    .setProjectId( this.project.getId() )
                    .setFeatures( features )
                    .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.RIGHT ) )
@@ -144,7 +146,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features, 
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features,
                                                                         TimeWindowOuter timeWindow )
     {
         Supplier<Stream<TimeSeries<Ensemble>>> baseline = Stream::of;
@@ -160,6 +162,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                            .setEnsemblesCache( this.getEnsemblesCache() )
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
+                           .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
                            .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.BASELINE ) )
@@ -204,6 +207,15 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private Features getFeaturesCache()
     {
         return this.caches.getFeaturesCache();
+    }
+
+    /**
+     * @return the measurement units cache.
+     */
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.caches.getMeasurementUnitsCache();
     }
 
     /**
