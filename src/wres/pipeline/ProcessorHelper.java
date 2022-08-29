@@ -52,7 +52,6 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
-import wres.io.data.caching.MeasurementUnits;
 import wres.io.geography.FeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -468,10 +467,7 @@ class ProcessorHelper
 
             // Get a unit mapper for the declared or analyzed measurement units
             String desiredMeasurementUnit = project.getMeasurementUnit();
-            MeasurementUnits measurementUnitsCache =
-                    new MeasurementUnits( databaseServices.getDatabase() );
-            UnitMapper unitMapper = UnitMapper.of( measurementUnitsCache,
-                                                   desiredMeasurementUnit,
+            UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                                    projectConfig );
             // Update the evaluation description with any analyzed units and variable names
             wres.statistics.generated.Evaluation evaluationDescription =

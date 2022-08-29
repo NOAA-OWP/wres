@@ -85,7 +85,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      * Builder.
      */
 
-    static class Builder extends TimeSeriesRetrieverBuilder<Double>
+    static class Builder extends TimeSeriesRetriever.Builder<Double>
     {
 
         /**

@@ -6,7 +6,6 @@ import java.util.function.DoubleUnaryOperator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.apache.commons.math3.util.Precision.EPSILON;
@@ -17,18 +16,15 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
-import wres.io.data.caching.MeasurementUnits;
 
 /**
- * The UnitMapper doesn't need a database (db) to test conversions. See also
- * the original/companion class UnitMapperTest for tests of db integration.
- * See also the tests in wres.datamodel.UnitsTest
+ * The UnitMapper doesn't need a database (db) to test conversions. 
+ * @see UnitMapperTest
+ * @see wres.datamodel.UnitsTest
  */
 
 public class UnitMapperTestWithNoDatabase
 {
-    @Mock private MeasurementUnits measurementUnitsCache;
-
     @BeforeEach
     public void setup()
     {
@@ -40,7 +36,7 @@ public class UnitMapperTestWithNoDatabase
     public void testIdentityConversionOfDashUnit()
     {
         String dashUnit = "-";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, dashUnit );
+        UnitMapper mapper = UnitMapper.of( dashUnit );
         DoubleUnaryOperator namedConverter = mapper.getUnitMapper( dashUnit );
         assertEquals( 2579.0, namedConverter.applyAsDouble( 2579.0 ), EPSILON );
     }
@@ -50,7 +46,7 @@ public class UnitMapperTestWithNoDatabase
     public void testIdentityConversionOfNoneUnit()
     {
         String dummyNoneUnit = "NONE";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, dummyNoneUnit );
+        UnitMapper mapper = UnitMapper.of( dummyNoneUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( dummyNoneUnit );
         assertEquals( 2591.0, converter.applyAsDouble( 2591.0 ), EPSILON );
     }
@@ -61,7 +57,7 @@ public class UnitMapperTestWithNoDatabase
     {
         String dummyUnitUpperCase = "BOOGAFLICKLE";
         String dummyUnitLowerCase = dummyUnitUpperCase.toLowerCase( Locale.US );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, dummyUnitUpperCase );
+        UnitMapper mapper = UnitMapper.of( dummyUnitUpperCase );
         assertThrows( RuntimeException.class,
                       () -> mapper.getUnitMapper( dummyUnitLowerCase ) );
     }
@@ -73,7 +69,7 @@ public class UnitMapperTestWithNoDatabase
         // Assumes a default alias map of "C" to degrees celsius, likewise for F
         String fromUnit = "C";
         String toUnit = "F";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
+        UnitMapper mapper = UnitMapper.of( toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 62.6, converter.applyAsDouble( 17.0 ), EPSILON );
     }
@@ -85,7 +81,7 @@ public class UnitMapperTestWithNoDatabase
         // Assumes a default alias map of "C" to degrees celsius, likewise for F
         String fromUnit = "F";
         String toUnit = "C";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
+        UnitMapper mapper = UnitMapper.of( toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( -30.555555555555554, converter.applyAsDouble( -23.0 ), EPSILON );
     }
@@ -99,7 +95,7 @@ public class UnitMapperTestWithNoDatabase
     {
         String fromUnit = "m/s";
         String toUnit = "[ft_i]/min";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
+        UnitMapper mapper = UnitMapper.of( toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
     }
@@ -114,7 +110,7 @@ public class UnitMapperTestWithNoDatabase
     {
         String fromUnit = "1000.[ft_i]3/s";
         String toUnit = "m3/s";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
+        UnitMapper mapper = UnitMapper.of( toUnit );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 73425.583, converter.applyAsDouble( 2593.0 ), 0.001 );
     }
@@ -131,7 +127,7 @@ public class UnitMapperTestWithNoDatabase
 
         // Lumen (luminous flux dimension)
         String toUnit = "lm";
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, toUnit );
+        UnitMapper mapper = UnitMapper.of( toUnit );
         assertThrows( NoSuchUnitConversionException.class,
                       () -> mapper.getUnitMapper( fromUnit ) );
     }
@@ -151,8 +147,7 @@ public class UnitMapperTestWithNoDatabase
         // Here we declare that boogaflickle should be interpreted as "m/s"
         UnitAlias boogaflickleMeansMetersPerSecond = new UnitAlias( BOOGAFLICKLE, "m/s" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( boogaflickleMeansMetersPerSecond ) );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+        UnitMapper mapper = UnitMapper.of( toUnit,
                                            declaration );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
@@ -172,8 +167,7 @@ public class UnitMapperTestWithNoDatabase
         // Here declare that boogaflickle should be interpreted as "[ft_i]/min"
         UnitAlias boogaflickleMeansFeetPerMinute = new UnitAlias( BOOGAFLICKLE, "[ft_i]/min" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( boogaflickleMeansFeetPerMinute ) );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+        UnitMapper mapper = UnitMapper.of( toUnit,
                                            declaration );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
@@ -195,8 +189,7 @@ public class UnitMapperTestWithNoDatabase
         // rather than the WRES convenience alias for Celsius
         UnitAlias coulombMeansCoulomb = new UnitAlias( "C", "C" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( coulombMeansCoulomb ) );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+        UnitMapper mapper = UnitMapper.of( toUnit,
                                            declaration );
         assertThrows( NoSuchUnitConversionException.class,
                       () -> mapper.getUnitMapper( fromUnit ) );
@@ -218,8 +211,7 @@ public class UnitMapperTestWithNoDatabase
         // rather than the WRES convenience alias for Fahrenheit.
         UnitAlias faradMeansFarad = new UnitAlias( "F", "F" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( faradMeansFarad ) );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+        UnitMapper mapper = UnitMapper.of( toUnit,
                                            declaration );
         assertThrows( NoSuchUnitConversionException.class,
                       () -> mapper.getUnitMapper( fromUnit ) );
@@ -238,8 +230,7 @@ public class UnitMapperTestWithNoDatabase
         UnitAlias aliasTwo = new UnitAlias( "F", "nearby" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( aliasOne, aliasTwo ) );
         assertThrows( ProjectConfigException.class,
-                      () -> UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+                      () -> UnitMapper.of( toUnit,
                                            declaration ) );
     }
 
@@ -259,8 +250,7 @@ public class UnitMapperTestWithNoDatabase
         UnitAlias aliasOne = new UnitAlias( FUNKY_MINUTES, "min" );
         UnitAlias aliasTwo = new UnitAlias( FUNKY_SECONDS, "s" );
         ProjectConfig declaration = this.getProjectDeclarationWith( List.of( aliasOne, aliasTwo ) );
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache,
-                                           toUnit,
+        UnitMapper mapper = UnitMapper.of( toUnit,
                                            declaration );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 156540.0, converter.applyAsDouble( 2609.0 ), EPSILON );

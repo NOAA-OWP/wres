@@ -82,7 +82,7 @@ public class UnitMapperTest
     public void testConversionOfCFSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, CMS );
+        UnitMapper mapper = UnitMapper.of( CMS );
 
         // Obtain the measurement units for CFS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -91,7 +91,8 @@ public class UnitMapperTest
         measurement.save( this.wresDatabase );
         Long measurementUnitId = measurement.getId();
 
-        DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
+        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
+        DoubleUnaryOperator converter = mapper.getUnitMapper( unitName );
 
         // 1.0 CFS = 35.3147 CMS. Check with delta 5 d.p.
         assertEquals( 1.0, converter.applyAsDouble( 35.3147 ), 0.00001 );
@@ -109,7 +110,7 @@ public class UnitMapperTest
     public void testIdentityConversionOfCMSToCMS() throws SQLException
     {
         // Create the unit mapper for CMS
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, CMS );
+        UnitMapper mapper = UnitMapper.of( CMS );
 
         // Obtain the measurement units for CMS
         MeasurementDetails measurement = new MeasurementDetails();
@@ -118,7 +119,8 @@ public class UnitMapperTest
         measurement.save( this.wresDatabase );
         Long measurementUnitId = measurement.getId();
 
-        DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
+        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
+        DoubleUnaryOperator converter = mapper.getUnitMapper( unitName );
         assertEquals( 1.0, converter.applyAsDouble( 1.0 ), 0.00001 );
 
         // Test via unit name
@@ -134,7 +136,7 @@ public class UnitMapperTest
     @Test
     public void testIdentityConversionOfNonFiniteMeasurementsWithIdentifiedUnitMapper() throws SQLException
     {
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, CMS );
+        UnitMapper mapper = UnitMapper.of( CMS );
 
         MeasurementDetails measurement = new MeasurementDetails();
         String units = CFS;
@@ -144,7 +146,8 @@ public class UnitMapperTest
 
         // Could break the following into one test per assertion, but using a single test for brevity and because a 
         // single atom of code triggers the non-finite value pathway
-        DoubleUnaryOperator converter = mapper.getUnitMapper( measurementUnitId );
+        String unitName = this.measurementUnitsCache.getUnit( measurementUnitId );
+        DoubleUnaryOperator converter = mapper.getUnitMapper( unitName );
         // assertEquals handles these weird cases out of the box, nice
         assertEquals( Double.NaN, converter.applyAsDouble( Double.NaN ), 0.00001 );
         assertEquals( Double.NEGATIVE_INFINITY, converter.applyAsDouble( Double.NEGATIVE_INFINITY ), 0.00001 );
@@ -158,7 +161,7 @@ public class UnitMapperTest
     @Test
     public void testIdentityConversionOfNonFiniteMeasurementsWithNamedUnitMapper()
     {
-        UnitMapper mapper = UnitMapper.of( this.measurementUnitsCache, CMS );
+        UnitMapper mapper = UnitMapper.of( CMS );
 
         // Could break the following into one test per assertion, but using a single test for brevity and because a 
         // single atom of code triggers the non-finite value pathway
@@ -177,10 +180,10 @@ public class UnitMapperTest
     public void constructWithBlankUnitThrowsExpectedException()
     {
         assertThrows( NoSuchUnitConversionException.class,
-                      () -> UnitMapper.of( this.measurementUnitsCache, "" ) );
+                      () -> UnitMapper.of( "" ) );
 
         assertThrows( NoSuchUnitConversionException.class,
-                      () -> UnitMapper.of( this.measurementUnitsCache, "   " ) );
+                      () -> UnitMapper.of( "   " ) );
     }
 
     @After

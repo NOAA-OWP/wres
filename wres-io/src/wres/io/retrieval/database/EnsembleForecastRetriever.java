@@ -53,7 +53,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * Builder.
      */
 
-    static class Builder extends TimeSeriesRetrieverBuilder<Ensemble>
+    static class Builder extends TimeSeriesRetriever.Builder<Ensemble>
     {
         /**
          * The ensemble cache.

@@ -141,7 +141,7 @@ public class SingleValuedForecastRetrieverTest
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
 
         // Create the unit mapper
-        this.unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
+        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -151,6 +151,7 @@ public class SingleValuedForecastRetrieverTest
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
@@ -236,6 +237,7 @@ public class SingleValuedForecastRetrieverTest
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
@@ -297,6 +299,7 @@ public class SingleValuedForecastRetrieverTest
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
@@ -318,6 +321,7 @@ public class SingleValuedForecastRetrieverTest
         Retriever<TimeSeries<Double>> forecastRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( this.wresDatabase )
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )

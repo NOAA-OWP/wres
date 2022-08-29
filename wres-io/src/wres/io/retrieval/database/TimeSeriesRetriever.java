@@ -42,6 +42,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.retrieval.Retriever;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.UnitMapper;
@@ -83,6 +84,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /** Features cache/orm to allow "get db id from a FeatureKey." */
     private final Features featuresCache;
+
+    /** Measurement units cache/orm. */
+    private final MeasurementUnits measurementUnits;
 
     /** Time window filter. */
     private final TimeWindowOuter timeWindow;
@@ -176,7 +180,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         return this.variableName;
     }
-    
+
     /**
      * Looks in the cache for a unit converter, else creates one.
      * @param unitId the measurement unit id
@@ -189,13 +193,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         if ( Objects.isNull( converter ) )
         {
-            converter = this.unitMapper.getUnitMapper( unitId );
+            String unitName = this.getMeasurementUnitsCache().getUnit( unitId );
+            converter = this.unitMapper.getUnitMapper( unitName );
             this.converterCache.put( unitId, converter );
         }
 
         return converter;
     }
-    
+
     /**
      * Creates one or more {@link TimeSeries} from a script that retrieves time-series data. Assumes that the script
      * returns time-series events that are ordered by time-series id.
@@ -287,6 +292,501 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
+    }
+
+    /**
+     * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as
+     * right-closed.
+     * 
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if the input is null
+     */
+
+    void addTimeWindowClause( DataScripter script, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        // Does the filter exist?
+        if ( this.hasTimeWindow() )
+        {
+            TimeWindowOuter filter = this.getTimeWindow();
+
+            // Forecasts?
+            if ( this.isForecast() )
+            {
+                this.addLeadBoundsToScript( script, filter, tabsIn );
+                this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
+            }
+
+            // Is the time column a reference time?
+            // This is different from forecast vs. observation, because some nominally "observed"
+            // datasets, such as analyses, may have reference times and lead durations
+            if ( this.timeColumnIsAReferenceTime() )
+            {
+                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
+            }
+            else
+            {
+                this.addValidTimeBoundsToScript( script, filter, tabsIn );
+            }
+        }
+    }
+
+    /**
+     * Adds a seasonal constraint to the retrieval script, if available.
+     * 
+     * TODO: reconsider how seasons are applied. Currently, they are applied to forecast reference times, 
+     * which means they would need to be adjusted for observation valid times. Either way, this complexity 
+     * should probably not be delegated to the caller without a much more explicit API. See #40405. 
+     * 
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws NullPointerException if the input is null
+     */
+
+    void addSeasonClause( DataScripter script, int tabsIn )
+    {
+        Objects.requireNonNull( script );
+
+        // Does the filter exist?
+        if ( this.hasSeason() )
+        {
+            String columnName = this.getTimeColumnName();
+
+            String monthOfYearTemplate = "EXTRACT( MONTH FROM " + columnName + " )";
+            String dayOfMonthTemplate = "EXTRACT( DAY FROM " + columnName + " )";
+
+            // Seasons can wrap, so order the start and end correctly
+            MonthDay earliestDay = this.seasonStart;
+            MonthDay latestDay = this.seasonEnd;
+            boolean daysFlipped = false;
+
+            if ( this.seasonStart.isAfter( this.seasonEnd ) )
+            {
+                earliestDay = this.seasonEnd;
+                latestDay = this.seasonStart;
+                daysFlipped = true;
+            }
+
+            if ( daysFlipped )
+            {
+                script.addTab( tabsIn )
+                      .addLine( "AND ( -- The dates should wrap around the end of the year, ",
+                                "so we're going to check for values before the latest ",
+                                "date and after the earliest" );
+                script.addTab( tabsIn + 1 )
+                      .addLine( "( " + monthOfYearTemplate + " < ? OR ( ",
+                                monthOfYearTemplate + AND,
+                                dayOfMonthTemplate + " <= ? ) )",
+                                " -- In the set [1/1, ",
+                                earliestDay.getMonthValue(),
+                                "/",
+                                earliestDay.getDayOfMonth(),
+                                "]" );
+                script.addTab( tabsIn + 1 )
+                      .addLine( "OR ( " + monthOfYearTemplate + " > ? OR ( ",
+                                monthOfYearTemplate + AND,
+                                dayOfMonthTemplate + " >= ? ) )",
+                                " -- Or in the set [",
+                                latestDay.getMonthValue(),
+                                "/",
+                                latestDay.getDayOfMonth(),
+                                ", 12/31]" );
+                script.addTab( tabsIn ).addLine( ")" );
+            }
+            else
+            {
+                script.addTab()
+                      .addLine( "AND ( " + monthOfYearTemplate + " > ? OR ( ",
+                                monthOfYearTemplate + AND,
+                                dayOfMonthTemplate + " >= ? ) )" );
+                script.addTab()
+                      .addLine( "AND ( " + monthOfYearTemplate + " < ? OR ( ",
+                                monthOfYearTemplate + " = ? ",
+                                "AND " + dayOfMonthTemplate + " <= ? ) )" );
+            }
+
+            // Add the parameters in order
+            script.addArgument( earliestDay.getMonthValue() )
+                  .addArgument( earliestDay.getMonthValue() )
+                  .addArgument( earliestDay.getDayOfMonth() )
+                  .addArgument( latestDay.getMonthValue() )
+                  .addArgument( latestDay.getMonthValue() )
+                  .addArgument( latestDay.getDayOfMonth() );
+        }
+    }
+
+    /**
+     * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
+     * {@link #getVariableName()}, {@link #getFeatureId()} and {@link #getLeftOrRightOrBaseline()}. 
+     *
+     * @param script the script to augment
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @throws DataAccessException if the feature identifier could not be found
+     */
+
+    void addProjectFeatureVariableAndMemberConstraints( DataScripter script, int tabsIn )
+    {
+        // Project identifier
+        this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
+
+        // Variable name
+        if ( Objects.nonNull( this.getVariableName() ) )
+        {
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      "S.variable_name = ?",
+                                      this.getVariableName() );
+        }
+
+        // Feature identifier, can be null with no baseline.
+        if ( !this.getFeatures().isEmpty() )
+        {
+            Long[] featureIds = this.getFeatureIds();
+            Object parameter = featureIds;
+            String clause = "S.feature_id = ANY(?)";
+
+            // Simplify script if there is only one
+            if ( featureIds.length == 1 )
+            {
+                parameter = featureIds[0];
+                clause = "S.feature_id = ?";
+            }
+
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      clause,
+                                      parameter );
+        }
+
+        // Member
+        if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
+        {
+            this.addWhereOrAndClause( script,
+                                      tabsIn,
+                                      "PS.member = ?",
+                                      this.getLeftOrRightOrBaseline().toString().toLowerCase() );
+        }
+    }
+
+    /**
+     * Returns the time window constraint.
+     * 
+     * @return the time window filter
+     */
+
+    TimeWindowOuter getTimeWindow()
+    {
+        return this.timeWindow;
+    }
+
+    /**
+     * Returns the desired time scale.
+     * 
+     * @return the desired time scale
+     */
+
+    TimeScaleOuter getDesiredTimeScale()
+    {
+        return this.desiredTimeScale;
+    }
+
+    /**
+     * Returns the declared existing time scale, which may be null.
+     * 
+     * @return the declared existing time scale or null
+     */
+
+    TimeScaleOuter getDeclaredExistingTimeScale()
+    {
+        return this.declaredExistingTimeScale;
+    }
+
+    /**
+     * Returns the <code>wres.Project.project_id</code>.
+     * 
+     * @return the <code>wres.Project.project_id</code>
+     */
+
+    long getProjectId()
+    {
+        return this.projectId;
+    }
+
+    /**
+     * Returns the data type.
+     * 
+     * @return the data type
+     */
+
+    LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    {
+        return this.lrb;
+    }
+
+    /**
+     * Returns the measurement unit mapper.
+     * 
+     * @return the measurement unit mapper.
+     */
+
+    UnitMapper getMeasurementUnitMapper()
+    {
+        return this.unitMapper;
+    }
+
+    /**
+     * @return the measurement units cache
+     */
+
+    MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.measurementUnits;
+    }
+
+    /**
+     * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
+     * 
+     * @return true if a seasonal constraint is defined, otherwise false
+     */
+
+    boolean hasSeason()
+    {
+        return Objects.nonNull( this.seasonStart );
+    }
+
+    /**
+     * Returns <code>true</code> if a time window is defined, otherwise <code>false</code>.
+     * 
+     * @return true if a time window is defined, otherwise false
+     */
+
+    boolean hasTimeWindow()
+    {
+        return Objects.nonNull( this.getTimeWindow() );
+    }
+
+    /**
+     * Returns the {@link ReferenceTimeType} of the retriever instance.
+     * 
+     * @return the reference time type
+     */
+
+    ReferenceTimeType getReferenceTimeType()
+    {
+        return this.referenceTimeType;
+    }
+
+    /**
+     * Adds a clause to a script according to the start of the last available clause. When the last available clause
+     * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
+     * 
+     * @param script the script
+     * @param tabsIn the number of tabs in for the outermost clause
+     * @param clause the clause
+     * @param parameter the parameter
+     */
+
+    void addWhereOrAndClause( DataScripter script, int tabsIn, String clause, Object parameter )
+    {
+        Objects.requireNonNull( script );
+
+        Objects.requireNonNull( clause );
+
+        String existing = script.toString();
+        String[] lines = existing.split( "\\r?\\n" );
+
+        if ( lines.length == 0 )
+        {
+            throw new IllegalStateException( "Cannot add the clause '" + clause
+                                             + "' to the input script, because the script is improperly formed." );
+        }
+
+        String lastLine = lines[lines.length - 1];
+
+        StringJoiner joiner = new StringJoiner( "" );
+        String tab = "    ";
+        for ( int i = 0; i < tabsIn; i++ )
+        {
+            joiner.add( tab );
+        }
+
+        // Last lines starts with a WHERE or an AND at the same tabs
+        String tabs = joiner.toString();
+        if ( lastLine.startsWith( tabs + "WHERE" ) || lastLine.startsWith( tabs + tab + "AND" ) )
+        {
+            script.addTab( tabsIn + 1 ).addLine( "AND ", clause );
+        }
+        else
+        {
+            script.addTab( tabsIn ).addLine( "WHERE ", clause );
+        }
+
+        // Add the parameter
+        if ( Objects.nonNull( parameter ) )
+        {
+            script.addArgument( parameter );
+        }
+    }
+
+    /**
+     * Validates the instance for multi-series retrieval and throws an exception if one or more expected constraints
+     * are not set.
+     * 
+     * @throws DataAccessException if the instance is not properly configured for multi-series retrieval
+     */
+
+    void validateForMultiSeriesRetrieval()
+    {
+        // Check for constraints
+        if ( this.getProjectId() <= 0 )
+        {
+            throw new DataAccessException( "There is no projectId associated with this Data Access Object: "
+                                           + "cannot determine the time-series identifiers without a projectID." );
+        }
+
+        if ( Objects.isNull( this.getLeftOrRightOrBaseline() ) )
+        {
+            throw new DataAccessException( "There is no leftOrRightOrBaseline identifier associated with this Data "
+                                           + "Access Object: cannot determine the time-series identifiers without a "
+                                           + "leftOrRightOrBaseline." );
+        }
+    }
+
+    /**
+     * Logs a script.
+     * @param dataScripter the script to log
+     */
+
+    void logScript( DataScripter dataScripter )
+    {
+        // Log the prepared statement actually used
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( LOG_SCRIPT,
+                          this,
+                          System.lineSeparator(),
+                          dataScripter,
+                          dataScripter.getParameterStrings() );
+        }
+
+        // Log the runnable form of the prepared statement to assist in debugging
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "The following runnable script was obtained from the prepared statement in retriever {}. "
+                          + "As such, this script differs from the original script and is designed to assist in "
+                          + "debugging only. See the DEBUG logging for the original, prepared, statement:{}{}",
+                          this,
+                          System.lineSeparator(),
+                          dataScripter.toStringRunnableForDebugPurposes() );
+        }
+    }
+
+    /**
+     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
+     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
+     * any declared time scale information attached to this instance on construction. In using an existing time scale 
+     * from the project declaration, the principle is to augment, but not override, because the source is canonical
+     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
+     * overridden.
+     * 
+     * @param lastScale the last scale information retrieved
+     * @param period the period of ther current time scale to be retrieved
+     * @param functionString the function string for the current time scale to be retrieved
+     * @param validTime the valid time of the event whose time scale is to be determined, which helps with messaging
+     * @return the current time scale
+     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
+     */
+
+    TimeScaleOuter checkAndGetLatestTimeScale( TimeScaleOuter lastScale,
+                                               Duration period,
+                                               String functionString,
+                                               Instant validTime )
+    {
+        // As of v6.5, the db schema represents a time scale with a period and a function only and does not admit
+        // month-days
+        Duration periodToUse = null;
+        TimeScaleFunction functionToUse = null;
+
+        // Period available?
+        if ( Objects.nonNull( period ) )
+        {
+            periodToUse = period;
+        }
+
+        // Function available?
+        if ( Objects.nonNull( functionString ) )
+        {
+            functionToUse = TimeScaleFunction.valueOf( functionString.toUpperCase() );
+        }
+
+        // Otherwise, existing scale to help augment?
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
+        {
+            TimeScaleOuter declared = this.getDeclaredExistingTimeScale();
+
+            if ( Objects.isNull( periodToUse ) )
+            {
+                periodToUse = declared.getPeriod();
+            }
+
+            // Can override null or TimeScaleFunction.UNKNOWN
+            if ( Objects.nonNull( declared.getFunction() )
+                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
+            {
+                functionToUse = declared.getFunction();
+            }
+        }
+
+        TimeScaleOuter returnMe = null;
+
+        if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
+        {
+            returnMe = TimeScaleOuter.of( periodToUse, functionToUse );
+        }
+
+        // Consistent with any declaration? If not, this is exceptional: #92404
+        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() )
+             && !this.getDeclaredExistingTimeScale().equalsOrInstantaneous( returnMe ) )
+        {
+            throw new DataAccessException( "The time scale information associated with a "
+                                           + this.getLeftOrRightOrBaseline()
+                                           + " event at '"
+                                           + validTime
+                                           + "' was declared as '"
+                                           + this.getDeclaredExistingTimeScale()
+                                           + "' but the time scale recorded in the time-series data is '"
+                                           + returnMe
+                                           + "', which is inconsistent. If the declaration is incorrect, it should be "
+                                           + "fixed. Otherwise, the time-series data was not ingested accurately and "
+                                           + "you should contact the WRES developers for support." );
+        }
+
+        if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
+        {
+            throw new DataAccessException( "The time scale information associated with an event at'" + validTime
+                                           + "' is '"
+                                           + returnMe
+                                           + "' but other events in the same series have a different time "
+                                           + "scale of '"
+                                           + lastScale
+                                           + "', which is not allowed." );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns <code>true</code> if the time column represents a reference time, <code>false</code> if it represents a 
+     * valid time.
+     * 
+     * @return true if the time column is a reference time, false for a valid time
+     */
+
+    private boolean timeColumnIsAReferenceTime()
+    {
+        return Objects.nonNull( this.leadDurationColumn );
     }
 
     /**
@@ -538,492 +1038,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         return Collections.unmodifiableList( replicates );
-    }
-
-    /**
-     * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as
-     * right-closed.
-     * 
-     * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the input is null
-     */
-
-    void addTimeWindowClause( DataScripter script, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        // Does the filter exist?
-        if ( this.hasTimeWindow() )
-        {
-            TimeWindowOuter filter = this.getTimeWindow();
-
-            // Forecasts?
-            if ( this.isForecast() )
-            {
-                this.addLeadBoundsToScript( script, filter, tabsIn );
-                this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
-            }
-
-            // Is the time column a reference time?
-            // This is different from forecast vs. observation, because some nominally "observed"
-            // datasets, such as analyses, may have reference times and lead durations
-            if ( this.timeColumnIsAReferenceTime() )
-            {
-                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
-            }
-            else
-            {
-                this.addValidTimeBoundsToScript( script, filter, tabsIn );
-            }
-        }
-    }
-
-    /**
-     * Adds a seasonal constraint to the retrieval script, if available.
-     * 
-     * TODO: reconsider how seasons are applied. Currently, they are applied to forecast reference times, 
-     * which means they would need to be adjusted for observation valid times. Either way, this complexity 
-     * should probably not be delegated to the caller without a much more explicit API. See #40405. 
-     * 
-     * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws NullPointerException if the input is null
-     */
-
-    void addSeasonClause( DataScripter script, int tabsIn )
-    {
-        Objects.requireNonNull( script );
-
-        // Does the filter exist?
-        if ( this.hasSeason() )
-        {
-            String columnName = this.getTimeColumnName();
-
-            String monthOfYearTemplate = "EXTRACT( MONTH FROM " + columnName + " )";
-            String dayOfMonthTemplate = "EXTRACT( DAY FROM " + columnName + " )";
-
-            // Seasons can wrap, so order the start and end correctly
-            MonthDay earliestDay = this.seasonStart;
-            MonthDay latestDay = this.seasonEnd;
-            boolean daysFlipped = false;
-
-            if ( this.seasonStart.isAfter( this.seasonEnd ) )
-            {
-                earliestDay = this.seasonEnd;
-                latestDay = this.seasonStart;
-                daysFlipped = true;
-            }
-
-            if ( daysFlipped )
-            {
-                script.addTab( tabsIn )
-                      .addLine( "AND ( -- The dates should wrap around the end of the year, ",
-                                "so we're going to check for values before the latest ",
-                                "date and after the earliest" );
-                script.addTab( tabsIn + 1 )
-                      .addLine( "( " + monthOfYearTemplate + " < ? OR ( ",
-                                monthOfYearTemplate + AND,
-                                dayOfMonthTemplate + " <= ? ) )",
-                                " -- In the set [1/1, ",
-                                earliestDay.getMonthValue(),
-                                "/",
-                                earliestDay.getDayOfMonth(),
-                                "]" );
-                script.addTab( tabsIn + 1 )
-                      .addLine( "OR ( " + monthOfYearTemplate + " > ? OR ( ",
-                                monthOfYearTemplate + AND,
-                                dayOfMonthTemplate + " >= ? ) )",
-                                " -- Or in the set [",
-                                latestDay.getMonthValue(),
-                                "/",
-                                latestDay.getDayOfMonth(),
-                                ", 12/31]" );
-                script.addTab( tabsIn ).addLine( ")" );
-            }
-            else
-            {
-                script.addTab()
-                      .addLine( "AND ( " + monthOfYearTemplate + " > ? OR ( ",
-                                monthOfYearTemplate + AND,
-                                dayOfMonthTemplate + " >= ? ) )" );
-                script.addTab()
-                      .addLine( "AND ( " + monthOfYearTemplate + " < ? OR ( ",
-                                monthOfYearTemplate + " = ? ",
-                                "AND " + dayOfMonthTemplate + " <= ? ) )" );
-            }
-
-            // Add the parameters in order
-            script.addArgument( earliestDay.getMonthValue() )
-                  .addArgument( earliestDay.getMonthValue() )
-                  .addArgument( earliestDay.getDayOfMonth() )
-                  .addArgument( latestDay.getMonthValue() )
-                  .addArgument( latestDay.getMonthValue() )
-                  .addArgument( latestDay.getDayOfMonth() );
-        }
-    }
-
-    /**
-     * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
-     * {@link #getVariableName()}, {@link #getFeatureId()} and {@link #getLeftOrRightOrBaseline()}. 
-     *
-     * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @throws DataAccessException if the feature identifier could not be found
-     */
-
-    void addProjectFeatureVariableAndMemberConstraints( DataScripter script, int tabsIn )
-    {
-        // Project identifier
-        this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
-
-        // Variable name
-        if ( Objects.nonNull( this.getVariableName() ) )
-        {
-            this.addWhereOrAndClause( script,
-                                      tabsIn,
-                                      "S.variable_name = ?",
-                                      this.getVariableName() );
-        }
-
-        // Feature identifier, can be null with no baseline.
-        if ( !this.getFeatures().isEmpty() )
-        {
-            Long[] featureIds = this.getFeatureIds();
-            Object parameter = featureIds;
-            String clause = "S.feature_id = ANY(?)";
-
-            // Simplify script if there is only one
-            if ( featureIds.length == 1 )
-            {
-                parameter = featureIds[0];
-                clause = "S.feature_id = ?";
-            }
-
-            this.addWhereOrAndClause( script,
-                                      tabsIn,
-                                      clause,
-                                      parameter );
-        }
-
-        // Member
-        if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
-        {
-            this.addWhereOrAndClause( script,
-                                      tabsIn,
-                                      "PS.member = ?",
-                                      this.getLeftOrRightOrBaseline().toString().toLowerCase() );
-        }
-    }
-
-    /**
-     * Returns the time window constraint.
-     * 
-     * @return the time window filter
-     */
-
-    TimeWindowOuter getTimeWindow()
-    {
-        return this.timeWindow;
-    }
-
-    /**
-     * Returns the desired time scale.
-     * 
-     * @return the desired time scale
-     */
-
-    TimeScaleOuter getDesiredTimeScale()
-    {
-        return this.desiredTimeScale;
-    }
-
-    /**
-     * Returns the declared existing time scale, which may be null.
-     * 
-     * @return the declared existing time scale or null
-     */
-
-    TimeScaleOuter getDeclaredExistingTimeScale()
-    {
-        return this.declaredExistingTimeScale;
-    }
-
-    /**
-     * Returns the <code>wres.Project.project_id</code>.
-     * 
-     * @return the <code>wres.Project.project_id</code>
-     */
-
-    long getProjectId()
-    {
-        return this.projectId;
-    }
-
-    /**
-     * Returns the data type.
-     * 
-     * @return the data type
-     */
-
-    LeftOrRightOrBaseline getLeftOrRightOrBaseline()
-    {
-        return this.lrb;
-    }
-
-    /**
-     * Returns the measurement unit mapper.
-     * 
-     * @return the measurement unit mapper.
-     */
-
-    UnitMapper getMeasurementUnitMapper()
-    {
-        return this.unitMapper;
-    }
-
-    /**
-     * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
-     * 
-     * @return true if a seasonal constraint is defined, otherwise false
-     */
-
-    boolean hasSeason()
-    {
-        return Objects.nonNull( this.seasonStart );
-    }
-
-    /**
-     * Returns <code>true</code> if a time window is defined, otherwise <code>false</code>.
-     * 
-     * @return true if a time window is defined, otherwise false
-     */
-
-    boolean hasTimeWindow()
-    {
-        return Objects.nonNull( this.getTimeWindow() );
-    }
-
-    /**
-     * Returns the {@link ReferenceTimeType} of the retriever instance.
-     * 
-     * @return the reference time type
-     */
-
-    ReferenceTimeType getReferenceTimeType()
-    {
-        return this.referenceTimeType;
-    }
-
-    /**
-     * Adds a clause to a script according to the start of the last available clause. When the last available clause
-     * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
-     * 
-     * @param script the script
-     * @param tabsIn the number of tabs in for the outermost clause
-     * @param clause the clause
-     * @param parameter the parameter
-     */
-
-    void addWhereOrAndClause( DataScripter script, int tabsIn, String clause, Object parameter )
-    {
-        Objects.requireNonNull( script );
-
-        Objects.requireNonNull( clause );
-
-        String existing = script.toString();
-        String[] lines = existing.split( "\\r?\\n" );
-
-        if ( lines.length == 0 )
-        {
-            throw new IllegalStateException( "Cannot add the clause '" + clause
-                                             + "' to the input script, because the script is improperly formed." );
-        }
-
-        String lastLine = lines[lines.length - 1];
-
-        StringJoiner joiner = new StringJoiner( "" );
-        String tab = "    ";
-        for ( int i = 0; i < tabsIn; i++ )
-        {
-            joiner.add( tab );
-        }
-
-        // Last lines starts with a WHERE or an AND at the same tabs
-        String tabs = joiner.toString();
-        if ( lastLine.startsWith( tabs + "WHERE" ) || lastLine.startsWith( tabs + tab + "AND" ) )
-        {
-            script.addTab( tabsIn + 1 ).addLine( "AND ", clause );
-        }
-        else
-        {
-            script.addTab( tabsIn ).addLine( "WHERE ", clause );
-        }
-
-        // Add the parameter
-        if ( Objects.nonNull( parameter ) )
-        {
-            script.addArgument( parameter );
-        }
-    }
-
-    /**
-     * Validates the instance for multi-series retrieval and throws an exception if one or more expected constraints
-     * are not set.
-     * 
-     * @throws DataAccessException if the instance is not properly configured for multi-series retrieval
-     */
-
-    void validateForMultiSeriesRetrieval()
-    {
-        // Check for constraints
-        if ( this.getProjectId() <= 0 )
-        {
-            throw new DataAccessException( "There is no projectId associated with this Data Access Object: "
-                                           + "cannot determine the time-series identifiers without a projectID." );
-        }
-
-        if ( Objects.isNull( this.getLeftOrRightOrBaseline() ) )
-        {
-            throw new DataAccessException( "There is no leftOrRightOrBaseline identifier associated with this Data "
-                                           + "Access Object: cannot determine the time-series identifiers without a "
-                                           + "leftOrRightOrBaseline." );
-        }
-    }
-
-    /**
-     * Logs a script.
-     * @param dataScripter the script to log
-     */
-
-    void logScript( DataScripter dataScripter )
-    {
-        // Log the prepared statement actually used
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( LOG_SCRIPT,
-                          this,
-                          System.lineSeparator(),
-                          dataScripter,
-                          dataScripter.getParameterStrings() );
-        }
-
-        // Log the runnable form of the prepared statement to assist in debugging
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "The following runnable script was obtained from the prepared statement in retriever {}. "
-                          + "As such, this script differs from the original script and is designed to assist in "
-                          + "debugging only. See the DEBUG logging for the original, prepared, statement:{}{}",
-                          this,
-                          System.lineSeparator(),
-                          dataScripter.toStringRunnableForDebugPurposes() );
-        }
-    }
-
-    /**
-     * Returns <code>true</code> if the time column represents a reference time, <code>false</code> if it represents a 
-     * valid time.
-     * 
-     * @return true if the time column is a reference time, false for a valid time
-     */
-
-    private boolean timeColumnIsAReferenceTime()
-    {
-        return Objects.nonNull( this.leadDurationColumn );
-    }
-
-    /**
-     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
-     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
-     * any declared time scale information attached to this instance on construction. In using an existing time scale 
-     * from the project declaration, the principle is to augment, but not override, because the source is canonical
-     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
-     * overridden.
-     * 
-     * @param lastScale the last scale information retrieved
-     * @param period the period of ther current time scale to be retrieved
-     * @param functionString the function string for the current time scale to be retrieved
-     * @param validTime the valid time of the event whose time scale is to be determined, which helps with messaging
-     * @return the current time scale
-     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
-     */
-
-    TimeScaleOuter checkAndGetLatestTimeScale( TimeScaleOuter lastScale,
-                                               Duration period,
-                                               String functionString,
-                                               Instant validTime )
-    {
-        // As of v6.5, the db schema represents a time scale with a period and a function only and does not admit
-        // month-days
-        Duration periodToUse = null;
-        TimeScaleFunction functionToUse = null;
-
-        // Period available?
-        if ( Objects.nonNull( period ) )
-        {
-            periodToUse = period;
-        }
-
-        // Function available?
-        if ( Objects.nonNull( functionString ) )
-        {
-            functionToUse = TimeScaleFunction.valueOf( functionString.toUpperCase() );
-        }
-
-        // Otherwise, existing scale to help augment?
-        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() ) )
-        {
-            TimeScaleOuter declared = this.getDeclaredExistingTimeScale();
-
-            if ( Objects.isNull( periodToUse ) )
-            {
-                periodToUse = declared.getPeriod();
-            }
-
-            // Can override null or TimeScaleFunction.UNKNOWN
-            if ( Objects.nonNull( declared.getFunction() )
-                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
-            {
-                functionToUse = declared.getFunction();
-            }
-        }
-
-        TimeScaleOuter returnMe = null;
-
-        if ( Objects.nonNull( periodToUse ) && Objects.nonNull( functionToUse ) )
-        {
-            returnMe = TimeScaleOuter.of( periodToUse, functionToUse );
-        }
-
-        // Consistent with any declaration? If not, this is exceptional: #92404
-        if ( Objects.nonNull( this.getDeclaredExistingTimeScale() )
-             && !this.getDeclaredExistingTimeScale().equalsOrInstantaneous( returnMe ) )
-        {
-            throw new DataAccessException( "The time scale information associated with a "
-                                           + this.getLeftOrRightOrBaseline()
-                                           + " event at '"
-                                           + validTime
-                                           + "' was declared as '"
-                                           + this.getDeclaredExistingTimeScale()
-                                           + "' but the time scale recorded in the time-series data is '"
-                                           + returnMe
-                                           + "', which is inconsistent. If the declaration is incorrect, it should be "
-                                           + "fixed. Otherwise, the time-series data was not ingested accurately and "
-                                           + "you should contact the WRES developers for support." );
-        }
-
-        if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
-        {
-            throw new DataAccessException( "The time scale information associated with an event at'" + validTime
-                                           + "' is '"
-                                           + returnMe
-                                           + "' but other events in the same series have a different time "
-                                           + "scale of '"
-                                           + lastScale
-                                           + "', which is not allowed." );
-        }
-
-        return returnMe;
     }
 
     /**
@@ -1419,7 +1433,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param <S> the type of time-series to build
      */
 
-    abstract static class TimeSeriesRetrieverBuilder<S>
+    abstract static class Builder<S>
     {
         /**
          * The database used to retrieve data.
@@ -1431,6 +1445,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * The cache/ORM to get feature data from.
          */
         private Features featuresCache;
+
+        /**
+         * The cache/ORM for measurement units.
+         */
+
+        private MeasurementUnits measurementUnits;
 
         /**
          * Time window filter.
@@ -1498,15 +1518,39 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
-        TimeSeriesRetrieverBuilder<S> setDatabase( Database database )
+        /**
+         * Sets the database.
+         * @param database the database
+         * @return the builder
+         */
+
+        Builder<S> setDatabase( Database database )
         {
             this.database = database;
             return this;
         }
 
-        TimeSeriesRetrieverBuilder<S> setFeaturesCache( Features featuresCache )
+        /**
+         * Sets the features cache/ORM.
+         * @param featuresCache the features cache
+         * @return the builder
+         */
+
+        Builder<S> setFeaturesCache( Features featuresCache )
         {
             this.featuresCache = featuresCache;
+            return this;
+        }
+
+        /**
+         * Sets the measurement units cache/ORM.
+         * @param measurementUnits the measurement units cache
+         * @return the builder
+         */
+
+        Builder<S> setMeasurementUnitsCache( MeasurementUnits measurementUnits )
+        {
+            this.measurementUnits = measurementUnits;
             return this;
         }
 
@@ -1517,7 +1561,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setProjectId( long projectId )
+        Builder<S> setProjectId( long projectId )
         {
             this.projectId = projectId;
             return this;
@@ -1530,7 +1574,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setVariableName( String variableName )
+        Builder<S> setVariableName( String variableName )
         {
             this.variableName = variableName;
             return this;
@@ -1543,7 +1587,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setFeatures( Set<FeatureKey> features )
+        Builder<S> setFeatures( Set<FeatureKey> features )
         {
             if ( Objects.nonNull( features ) )
             {
@@ -1560,7 +1604,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
+        Builder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
         {
             this.lrb = lrb;
             return this;
@@ -1573,7 +1617,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setTimeWindow( TimeWindowOuter timeWindow )
+        Builder<S> setTimeWindow( TimeWindowOuter timeWindow )
         {
             this.timeWindow = timeWindow;
             return this;
@@ -1587,7 +1631,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
+        Builder<S> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
         {
             this.desiredTimeScale = desiredTimeScale;
             return this;
@@ -1601,7 +1645,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
+        Builder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
         {
             this.declaredExistingTimeScale = declaredExistingTimeScale;
             return this;
@@ -1614,7 +1658,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setSeasonStart( MonthDay seasonStart )
+        Builder<S> setSeasonStart( MonthDay seasonStart )
         {
             this.seasonStart = seasonStart;
             return this;
@@ -1627,7 +1671,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setSeasonEnd( MonthDay seasonEnd )
+        Builder<S> setSeasonEnd( MonthDay seasonEnd )
         {
             this.seasonEnd = seasonEnd;
             return this;
@@ -1640,7 +1684,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setUnitMapper( UnitMapper unitMapper )
+        Builder<S> setUnitMapper( UnitMapper unitMapper )
         {
             this.unitMapper = unitMapper;
             return this;
@@ -1653,7 +1697,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        TimeSeriesRetrieverBuilder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
+        Builder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
         {
             this.referenceTimeType = referenceTimeType;
             return this;
@@ -1671,7 +1715,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws NullPointerException if any required input is null
      */
 
-    TimeSeriesRetriever( TimeSeriesRetrieverBuilder<T> builder, String timeColumn, String leadDurationColumn )
+    TimeSeriesRetriever( Builder<T> builder, String timeColumn, String leadDurationColumn )
     {
         Objects.requireNonNull( builder );
 
@@ -1690,14 +1734,16 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.referenceTimeType = builder.referenceTimeType;
         this.timeColumn = timeColumn;
         this.leadDurationColumn = leadDurationColumn;
+        this.measurementUnits = builder.measurementUnits;
 
         // Validate
         String validationStart = "Cannot build a time-series retriever without a ";
         Objects.requireNonNull( this.database, "database instance." );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
         Objects.requireNonNull( this.variableName, validationStart + "variable name." );
-
         Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );
+        Objects.requireNonNull( this.getMeasurementUnitsCache(), validationStart + "measurement units cache." );
+        Objects.requireNonNull( this.getFeaturesCache(), validationStart + "features cache." );
 
         if ( Objects.isNull( this.seasonStart ) != Objects.isNull( this.seasonEnd ) )
         {

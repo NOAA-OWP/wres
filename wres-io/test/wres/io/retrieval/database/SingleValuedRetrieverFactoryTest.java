@@ -418,7 +418,7 @@ public class SingleValuedRetrieverFactoryTest
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the factory instance
-        UnitMapper unitMapper = UnitMapper.of( this.caches.getMeasurementUnitsCache(), UNIT );
+        UnitMapper unitMapper = UnitMapper.of( UNIT );
         this.factoryToTest = SingleValuedRetrieverFactory.of( project, this.wresDatabase, this.caches, unitMapper );
     }
 

@@ -24,13 +24,12 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.UnitMapper;
 import wres.io.retrieval.DuplicatePolicy;
-import wres.io.retrieval.database.SingleValuedGriddedRetriever.Builder;
-import wres.io.retrieval.database.TimeSeriesRetriever.TimeSeriesRetrieverBuilder;
 import wres.io.utilities.Database;
 
 /**
@@ -181,7 +180,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                       this.getProject().getId(),
                       features,
                       timeWindow );
-        TimeSeriesRetrieverBuilder<Double> builder;
+        TimeSeriesRetriever.Builder<Double> builder;
 
         boolean isConfiguredAsForecast = ConfigHelper.isForecast( dataSourceConfig );
         String variableName = this.getProject()
@@ -220,6 +219,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         builder.setDatabase( this.getDatabase() )
                .setFeaturesCache( this.getFeaturesCache() )
+               .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                .setProjectId( this.getProject().getId() )
                .setVariableName( variableName )
                .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
@@ -262,6 +262,15 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     {
         return this.caches.getFeaturesCache();
     }
+    
+    /**
+     * @return the measurement units cache.
+     */
+
+    private MeasurementUnits getMeasurementUnitsCache()
+    {
+        return this.caches.getMeasurementUnitsCache();
+    }
 
     /**
      * Returns a builder for a retriever.
@@ -271,7 +280,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private TimeSeriesRetrieverBuilder<Double> getRetrieverBuilder( DatasourceType dataType )
+    private TimeSeriesRetriever.Builder<Double> getRetrieverBuilder( DatasourceType dataType )
     {
 
         Duration earliestAnalysisDuration = this.getProject()
@@ -313,11 +322,11 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         switch ( dataType )
         {
             case SINGLE_VALUED_FORECASTS:
-                return (Builder) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
-                                                                           .setReferenceTimeType( ReferenceTimeType.T0 );
+                return (SingleValuedGriddedRetriever.Builder) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
+                                                                                                        .setReferenceTimeType( ReferenceTimeType.T0 );
             case OBSERVATIONS:
             case SIMULATIONS:
-                return (Builder) new SingleValuedGriddedRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                return (SingleValuedGriddedRetriever.Builder) new SingleValuedGriddedRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
             default:
                 throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
                                                     + "retriever: "

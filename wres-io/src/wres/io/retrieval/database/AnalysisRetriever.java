@@ -62,6 +62,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         this.individualAnalysisRetriever =
                 new SingleValuedForecastRetriever.Builder().setDatabase( super.getDatabase() )
                                                            .setFeaturesCache( super.getFeaturesCache() )
+                                                           .setMeasurementUnitsCache( super.getMeasurementUnitsCache() )
                                                            .setProjectId( super.getProjectId() )
                                                            .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
                                                            .setDesiredTimeScale( super.getDesiredTimeScale() )
@@ -95,7 +96,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         throw new UnsupportedOperationException( "There are no identifiers stored for analysis timeseries." );
     }
 
-    static class Builder extends TimeSeriesRetrieverBuilder<Double>
+    static class Builder extends TimeSeriesRetriever.Builder<Double>
     {
         private Duration earliestAnalysisDuration = TimeWindowOuter.DURATION_MIN;
 
