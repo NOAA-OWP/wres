@@ -22,7 +22,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
@@ -44,7 +44,7 @@ public class WebSourceTest
     private static final String URL_PARAM_VALUE_TWO = "ValueTwo";
     @Mock private SystemSettings mockSystemSettings;
     @Mock private Database mockDatabase;
-    @Mock private Caches mockCaches;
+    @Mock private DatabaseCaches mockCaches;
     private ProjectConfig fakeProjectConfig;
     @Mock private DatabaseLockManager lockManager;
     @Mock TimeSeriesIngester timeSeriesIngester;

@@ -33,7 +33,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.project.ProjectUtilities.VariableNames;
@@ -68,7 +68,7 @@ public class DatabaseProject implements Project
 
     private final ProjectConfig projectConfig;
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
 
     private long projectId;
 
@@ -119,7 +119,7 @@ public class DatabaseProject implements Project
     private TimeScaleOuter desiredTimeScale;
 
     public DatabaseProject( Database database,
-                            Caches caches,
+                            DatabaseCaches caches,
                             ProjectConfig projectConfig,
                             String hash )
     {
@@ -1354,7 +1354,7 @@ public class DatabaseProject implements Project
     /**
      * @return the caches
      */
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

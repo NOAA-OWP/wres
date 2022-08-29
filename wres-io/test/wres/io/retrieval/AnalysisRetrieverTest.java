@@ -44,10 +44,10 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
@@ -81,7 +81,7 @@ public class AnalysisRetrieverTest
     private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
-    private Caches caches;
+    private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -143,7 +143,7 @@ public class AnalysisRetrieverTest
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
         this.lockManager = new DatabaseLockManagerNoop();
-        this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
 
         // Create the tables
         this.addTheDatabaseAndTables();

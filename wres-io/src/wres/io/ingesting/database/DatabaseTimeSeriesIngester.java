@@ -1,4 +1,4 @@
-package wres.io.ingesting;
+package wres.io.ingesting.database;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -46,13 +46,17 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
+import wres.io.ingesting.IngestException;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.PreIngestException;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
@@ -103,7 +107,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
     private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
 
@@ -118,7 +122,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     {
         private SystemSettings systemSettings;
         private Database database;
-        private Caches caches;
+        private DatabaseCaches caches;
         private ProjectConfig projectConfig;
         private DatabaseLockManager lockManager;
 
@@ -146,7 +150,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
          * @param caches the caches to set
          * @return the builder
          */
-        public Builder setCaches( Caches caches )
+        public Builder setCaches( DatabaseCaches caches )
         {
             this.caches = caches;
             return this;
@@ -1434,7 +1438,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return the caches
      */
 
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

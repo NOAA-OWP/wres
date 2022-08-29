@@ -27,7 +27,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.WRESCallable;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.ingesting.IngestResult;
@@ -53,7 +53,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                                    .build() );
 
     private SystemSettings systemSettings;
-    private Caches caches;
+    private DatabaseCaches caches;
     private Database database;
     private DataSource dataSource;
     private URI fileName;
@@ -62,7 +62,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
 
     public GriddedNWMValueSaver( SystemSettings systemSettings,
                                  Database database,
-                                 Caches caches,
+                                 DatabaseCaches caches,
                                  DataSource dataSource,
                                  final String hash )
     {
@@ -89,7 +89,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
         return this.database;
     }
 
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

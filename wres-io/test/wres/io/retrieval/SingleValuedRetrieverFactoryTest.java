@@ -50,10 +50,10 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
@@ -81,7 +81,7 @@ public class SingleValuedRetrieverFactoryTest
     private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
-    private Caches caches;
+    private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -131,7 +131,7 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
-        this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Create the tables

@@ -12,18 +12,17 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.io.reading.DataSource;
 
 /**
- * An IngestResult exclusively for data needing retry of ingest. If no retry is
- * needed, use IngestResultCompact.
+ * An IngestResult exclusively for data needing retry of ingest.
  */
 
-class IngestResultNeedingRetry implements IngestResult
+public class IngestResultNeedingRetry implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultNeedingRetry.class );
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
     private final long surrogateKey;
 
-    IngestResultNeedingRetry( DataSource dataSource,
+    public IngestResultNeedingRetry( DataSource dataSource,
                               long surrogateKey )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
@@ -172,10 +171,9 @@ class IngestResultNeedingRetry implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
-                .append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
-                .append( "dataSource", this.getDataSource() )
-                .append( "surrogateKey", this.getSurrogateKey() )
-                .toString();
+        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
+                                          .append( "dataSource", this.getDataSource() )
+                                          .append( "surrogateKey", this.getSurrogateKey() )
+                                          .toString();
     }
 }

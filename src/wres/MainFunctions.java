@@ -26,10 +26,10 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.utilities.Database;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
@@ -296,7 +296,7 @@ final class MainFunctions
                 lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
                 // Build the database caches/ORMs
-                Caches caches = Caches.of( sharedResources.getDatabase(), projectConfig );
+                DatabaseCaches caches = DatabaseCaches.of( sharedResources.getDatabase(), projectConfig );
                 TimeSeriesIngester timeSeriesIngester =
                         new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.getSystemSettings() )
                                                         .setDatabase( sharedResources.getDatabase() )

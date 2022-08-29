@@ -51,10 +51,10 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
@@ -82,7 +82,7 @@ public class EnsembleRetrieverFactoryTest
     private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
-    private Caches caches;
+    private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
@@ -134,7 +134,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Create the tables
         this.addTheDatabaseAndTables();
-        this.caches = Caches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Add some data for testing

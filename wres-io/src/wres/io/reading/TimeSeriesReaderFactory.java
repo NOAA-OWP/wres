@@ -124,7 +124,7 @@ public class TimeSeriesReaderFactory
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
-                    return WrdsNwmReader.of( this.pairConfig );
+                    return WrdsNwmReader.of( this.pairConfig, this.systemSettings );
                 }
                 // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "

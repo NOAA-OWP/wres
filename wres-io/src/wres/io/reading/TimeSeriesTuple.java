@@ -6,7 +6,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * A small value class that stores a tuple of time series, one of each type.
+ * A small value class that stores a tuple of time series. There is up to one time-series for each type of time-series 
+ * event value.
  * 
  * @author James Brown
  */

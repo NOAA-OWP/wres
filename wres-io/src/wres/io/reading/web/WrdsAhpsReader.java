@@ -77,9 +77,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /** Trust manager for TLS connections to the WRDS services. */
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
 
-    /** A thread pool to process web requests. */
-    private final ThreadPoolExecutor executor;
-
     static
     {
         try
@@ -98,6 +95,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
     private final PairConfig pairConfig;
+
+    /** A thread pool to process web requests. */
+    private final ThreadPoolExecutor executor;
 
     /**
      * @see #of(PairConfig, SystemSettings)
@@ -613,6 +613,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /**
      * Hidden constructor.
      * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
+     * @param systemSettings the system settings, required
      * @throws ProjectConfigException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */

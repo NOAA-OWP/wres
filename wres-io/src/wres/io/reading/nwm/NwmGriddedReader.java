@@ -183,7 +183,7 @@ public class NwmGriddedReader implements TimeSeriesReader
                                                   ConfigHelper.isForecast( dataSourceConfig ),
                                                   timeScale );
 
-        // Acquire the response and ingest the time-series
+        // Acquire the response and return the time-series
         SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
 
         Map<FeatureKey, Stream<TimeSeries<Double>>> timeSeries = response.getTimeSeries();

@@ -1,4 +1,4 @@
-package wres.io.ingesting;
+package wres.io.ingesting.memory;
 
 import java.util.List;
 import java.util.Objects;
@@ -7,6 +7,8 @@ import java.util.stream.Stream;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.time.TimeSeriesStore;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 

@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.reading.commaseparated.CSVSource;
 import wres.io.reading.datacard.DatacardSource;
@@ -27,7 +27,7 @@ public class ReaderFactory
     public static Source getReader( TimeSeriesIngester timeSeriesIngester,
                                     SystemSettings systemSettings,
                                     Database database,
-                                    Caches caches,
+                                    DatabaseCaches caches,
                                     ProjectConfig projectConfig,
                                     DataSource dataSource,
                                     DatabaseLockManager lockManager )

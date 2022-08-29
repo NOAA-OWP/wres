@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -41,6 +42,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
+import wres.system.SystemSettings;
 
 /**
  * Tests the {@link WrdsNwmReader}.
@@ -245,7 +247,13 @@ class WrdsNwmReaderTest
                                                fakeUri,
                                                LeftOrRightOrBaseline.LEFT );
 
-        WrdsNwmReader reader = WrdsNwmReader.of();
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsNwmReader reader = WrdsNwmReader.of( systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -325,7 +333,13 @@ class WrdsNwmReaderTest
                                                fakeUri,
                                                LeftOrRightOrBaseline.LEFT );
 
-        WrdsNwmReader reader = WrdsNwmReader.of();
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsNwmReader reader = WrdsNwmReader.of( systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -449,7 +463,13 @@ class WrdsNwmReaderTest
                                                 null,
                                                 null );
 
-        WrdsNwmReader reader = WrdsNwmReader.of( pairConfig );
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsNwmReader reader = WrdsNwmReader.of( pairConfig, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {

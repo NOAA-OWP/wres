@@ -41,7 +41,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -67,7 +67,7 @@ public class ZippedSource implements Source
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
     private final ThreadPoolExecutor readerService;
     private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
     // After submitting N tasks, call get() on one task prior to next submission
@@ -143,7 +143,7 @@ public class ZippedSource implements Source
         return this.database;
     }
     
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }
@@ -524,7 +524,7 @@ public class ZippedSource implements Source
     ZippedSource( TimeSeriesIngester timeSeriesIngester,
                   SystemSettings systemSettings,
                   Database database,
-                  Caches caches,
+                  DatabaseCaches caches,
                   ProjectConfig projectConfig,
                   DataSource dataSource,
                   DatabaseLockManager lockManager )
