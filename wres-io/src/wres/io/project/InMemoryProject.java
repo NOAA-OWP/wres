@@ -119,6 +119,14 @@ public class InMemoryProject implements Project
         this.setFeaturesAndFeatureGroups();
         this.validateEnsembleConditions();
         this.setVariablesToEvaluate();
+
+        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
+        {
+            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
+                                       + "the variables and other declaration supplied. Please check that the "
+                                       + "declaration is expected to produce some features with time-series data on "
+                                       + "both sides of the pairing." );
+        }
     }
 
     @Override
@@ -289,23 +297,6 @@ public class InMemoryProject implements Project
         }
 
         return this.desiredTimeScale;
-    }
-
-    /**
-     * Performs operations that are needed for the project to run between ingest and evaluation.
-     * 
-     * @throws NoDataException if zero features have intersecting data
-     */
-    @Override
-    public void prepareForExecution()
-    {
-        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
-        {
-            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
-                                       + "the variables and other declaration supplied. Please check that the "
-                                       + "declaration is expected to produce some features with time-series data on "
-                                       + "both sides of the pairing." );
-        }
     }
 
     /**
@@ -689,18 +680,18 @@ public class InMemoryProject implements Project
                                                                          Collections.unmodifiableSet( leftNames ),
                                                                          Collections.unmodifiableSet( rightNames ),
                                                                          Collections.unmodifiableSet( baselineNames ) );
-        
+
         this.leftVariable = variableNames.getLeftVariableName();
         this.rightVariable = variableNames.getRightVariableName();
         this.baselineVariable = variableNames.getBaselineVariableName();
-        
+
         ProjectUtilities.validateVariableNames( this.getDeclaredLeftVariableName(),
                                                 this.getDeclaredRightVariableName(),
                                                 this.getDeclaredBaselineVariableName(),
                                                 this.getLeftVariableName(),
                                                 this.getRightVariableName(),
                                                 this.getBaselineVariableName(),
-                                                this.hasBaseline() );    
+                                                this.hasBaseline() );
     }
 
     /**
@@ -1093,7 +1084,7 @@ public class InMemoryProject implements Project
     private String getDeclaredBaselineVariableName()
     {
         String variableName = null;
-        
+
         if ( this.hasBaseline() )
         {
             variableName = ConfigHelper.getVariableName( this.getBaseline() );

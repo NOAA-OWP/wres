@@ -56,15 +56,6 @@ public interface Project
     TimeScaleOuter getDesiredTimeScale();
 
     /**
-     * Performs operations that are needed for the project to run between ingest and evaluation.
-     * 
-     * @throws DataAccessException if retrieval of data fails
-     * @throws NoDataException if zero features have intersecting data
-     */
-    
-    void prepareForExecution();
-
-    /**
      * Returns the set of {@link FeatureTuple} for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
      * the configuration, all locations that have been ingested are retrieved

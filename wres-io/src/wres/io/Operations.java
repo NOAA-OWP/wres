@@ -34,13 +34,11 @@ import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
-import wres.io.retrieval.DataAccessException;
 import wres.io.project.InMemoryProject;
 import wres.io.project.Project;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.SystemSettings;
 
@@ -54,34 +52,7 @@ public final class Operations
     private static final Logger LOGGER = LoggerFactory.getLogger( Operations.class );
 
     /**
-     * Prepares IO operations for evaluation execution checks if evaluations
-     * are valid/possible
-     * @param project The project to evaluate
-     * @throws IOException if the preparation fails for any reason
-     */
-
-    public static void prepareForExecution( Project project ) throws IOException
-    {
-        Objects.requireNonNull( project );
-
-        LOGGER.info( "Loading preliminary metadata..." );
-
-        try
-        {
-            project.prepareForExecution();
-        }
-        catch ( DataAccessException | NoDataException exception )
-        {
-            throw new IOException( "This project could not be prepared for "
-                                   + "execution.",
-                                   exception );
-        }
-
-        LOGGER.info( "Preliminary metadata loading is complete." );
-    }
-
-    /**
-     * Ingests for an evaluation project and returns state regarding the same.
+     * Ingests for an evaluation project that requires a database and returns the ingest results.
      * @param timeSeriesIngester The time-series ingester
      * @param systemSettings The system settings
      * @param database The database
@@ -113,6 +84,31 @@ public final class Operations
     }
 
     /**
+     * Ingests for an evaluation project that is running in-memory and returns the ingest results.
+     * @param timeSeriesIngester The time-series ingester
+     * @param systemSettings The system settings
+     * @param executor The executor
+     * @param projectConfig the projectConfig for the evaluation
+     * @return the ingest results
+     * @throws NullPointerException if any required input is null
+     * @throws IngestException when anything else goes wrong
+     */
+
+    public static List<IngestResult> ingest( TimeSeriesIngester timeSeriesIngester,
+                                             SystemSettings systemSettings,
+                                             Executor executor,
+                                             ProjectConfig projectConfig )
+    {
+        return Operations.doIngestWork( timeSeriesIngester,
+                                        systemSettings,
+                                        null,
+                                        executor,
+                                        projectConfig,
+                                        null,
+                                        null );
+    }
+
+    /**
      * Creates an {@link Project} backed by a database.
      * @param database The database to use
      * @param projectConfig the projectConfig to ingest
@@ -123,10 +119,10 @@ public final class Operations
      * @throws NullPointerException if any input is null
      * @throws IngestException when anything else goes wrong
      */
-    public static Project getDatabaseProject( Database database,
-                                              ProjectConfig projectConfig,
-                                              DatabaseCaches caches,
-                                              List<IngestResult> ingestResults )
+    public static Project getProject( Database database,
+                                      ProjectConfig projectConfig,
+                                      DatabaseCaches caches,
+                                      List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );
@@ -147,15 +143,15 @@ public final class Operations
     }
 
     /**
-     * Creates an {@link Project} backed by a {@link TimeSeriesStore}.
+     * Creates an {@link Project} backed by an in-memory {@link TimeSeriesStore}.
      * @param projectConfig the projectConfig
      * @param timeSeriesStore the store of time-series data
      * @param ingestResults the ingest results
      * @return the project
      */
-    public static Project getInMemoryProject( ProjectConfig projectConfig,
-                                              TimeSeriesStore timeSeriesStore,
-                                              List<IngestResult> ingestResults )
+    public static Project getProject( ProjectConfig projectConfig,
+                                      TimeSeriesStore timeSeriesStore,
+                                      List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( timeSeriesStore );
@@ -190,13 +186,13 @@ public final class Operations
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( executor );
-        Objects.requireNonNull( lockManager );
         Objects.requireNonNull( timeSeriesIngester );
 
         if ( !systemSettings.isInMemory() )
         {
             Objects.requireNonNull( database );
             Objects.requireNonNull( caches );
+            Objects.requireNonNull( lockManager );
         }
 
         ThreadFactory threadFactoryWithNaming =

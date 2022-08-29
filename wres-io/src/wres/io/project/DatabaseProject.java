@@ -335,9 +335,11 @@ public class DatabaseProject implements Project
      * @throws DataAccessException if retrieval of data fails
      * @throws NoDataException if zero features have intersecting data
      */
-    @Override
-    public void prepareForExecution()
+    
+    void prepareAndValidate()
     {
+        LOGGER.info( "Validating the project and loading preliminary metadata..." );
+        
         LOGGER.trace( "prepareForExecution() entered" );
         Database db = this.getDatabase();
 
@@ -364,6 +366,8 @@ public class DatabaseProject implements Project
 
         // Determine and set the variables to evaluate
         this.setVariablesToEvaluate();
+
+        LOGGER.info( "Project validation and metadata loading is complete." );
     }
 
     /**
@@ -372,7 +376,7 @@ public class DatabaseProject implements Project
      * the configuration, all locations that have been ingested are retrieved
      * @return A set of all feature tuples involved in the project
      * cannot be retrieved from the database
-     * @throws IllegalStateException if the features have not been set. Call {@link #prepareForExecution()} first.
+     * @throws IllegalStateException if the features have not been set. Call {@link #prepareAndValidate()} first.
      */
     @Override
     public Set<FeatureTuple> getFeatures()
@@ -388,7 +392,7 @@ public class DatabaseProject implements Project
     /**
      * Returns the set of {@link FeatureGroup} for the project.
      * @return A set of all feature groups involved in the project
-     * @throws IllegalStateException if the features have not been set. Call {@link #prepareForExecution()} first.
+     * @throws IllegalStateException if the features have not been set. Call {@link #prepareAndValidate()} first.
      */
     @Override
     public Set<FeatureGroup> getFeatureGroups()
@@ -695,7 +699,7 @@ public class DatabaseProject implements Project
                           this.getId(),
                           this.performedInsert );
         }
-
+        
         return this.performedInsert;
     }
 
@@ -1179,6 +1183,7 @@ public class DatabaseProject implements Project
 
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
+                
                 singletons.addAll( innerSingletons );
                 LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
                               + "{} features.",

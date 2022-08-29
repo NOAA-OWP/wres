@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
+import wres.config.generated.Feature;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -139,6 +140,7 @@ public class AnalysisRetrieverTest
         PairConfig pairConfig = Mockito.mock( PairConfig.class );
         Mockito.when( pairConfig.getGridSelection() )
                .thenReturn( List.of() );
+
         Mockito.when( this.mockProjectConfig.getPair() )
                .thenReturn( pairConfig );
 
@@ -514,7 +516,25 @@ public class AnalysisRetrieverTest
         LOGGER.info( "rightData: {}", rightData );
         ProjectConfig.Inputs fakeInputs =
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
+        PairConfig pairConfig = new PairConfig( null,
+                                                null,
+                                                null,
+                                                List.of( new Feature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );
         TimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
