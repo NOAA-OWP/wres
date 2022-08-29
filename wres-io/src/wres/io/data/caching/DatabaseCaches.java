@@ -11,7 +11,7 @@ import wres.io.utilities.Database;
  * @author James Brown
  */
 
-public class Caches
+public class DatabaseCaches
 {
     /** Cache of data sources. */
     private final DataSources dataSourcesCache;
@@ -34,9 +34,9 @@ public class Caches
      * @throws NullPointerException if either input is null
      */
 
-    public static Caches of( Database database, ProjectConfig projectConfig )
+    public static DatabaseCaches of( Database database, ProjectConfig projectConfig )
     {
-        return new Caches( database, projectConfig );
+        return new DatabaseCaches( database, projectConfig );
     }
 
     /**
@@ -102,7 +102,7 @@ public class Caches
      * @param projectConfig the project declaration, required
      * @throws NullPointerException if either input is null
      */
-    private Caches( Database database, ProjectConfig projectConfig )
+    private DatabaseCaches( Database database, ProjectConfig projectConfig )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );

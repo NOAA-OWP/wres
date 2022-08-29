@@ -32,7 +32,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.project.Project;
 import wres.io.retrieval.EnsembleRetrieverFactory;
 import wres.io.retrieval.RetrieverFactory;
@@ -55,7 +55,7 @@ public class PoolsGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
 
     private @Mock Database wresDatabase;
-    private @Mock Caches caches;
+    private @Mock DatabaseCaches caches;
     private @Mock UnitMapper unitMapper;
 
     @Before

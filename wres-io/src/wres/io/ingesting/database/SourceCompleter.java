@@ -1,4 +1,4 @@
-package wres.io.ingesting;
+package wres.io.ingesting.database;
 
 import java.sql.SQLException;
 import java.time.Duration;
@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceCompletedDetails;
+import wres.io.ingesting.IngestException;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 

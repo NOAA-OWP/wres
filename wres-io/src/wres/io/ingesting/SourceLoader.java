@@ -36,7 +36,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -69,7 +69,7 @@ public class SourceLoader
     private final SystemSettings systemSettings;
     private final ExecutorService executor;
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
     private final TimeSeriesIngester timeSeriesIngester;
 
     /**
@@ -109,7 +109,7 @@ public class SourceLoader
                          SystemSettings systemSettings,
                          ExecutorService executor,
                          Database database,
-                         Caches caches,
+                         DatabaseCaches caches,
                          ProjectConfig projectConfig,
                          DatabaseLockManager lockManager )
     {
@@ -1173,7 +1173,7 @@ public class SourceLoader
         return this.database;
     }
 
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

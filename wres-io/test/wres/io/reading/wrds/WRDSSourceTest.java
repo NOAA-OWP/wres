@@ -35,7 +35,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.ingesting.DatabaseTimeSeriesIngester;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.reading.DataSource;
 import wres.system.SystemSettings;
 

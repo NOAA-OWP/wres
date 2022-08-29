@@ -22,7 +22,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
@@ -47,7 +47,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private final Database database;
 
     /** The caches/ORMs. */
-    private final Caches caches;
+    private final DatabaseCaches caches;
     
     /** Right data declaration. */
     private final DataSourceConfig rightConfig;
@@ -83,7 +83,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     public static EnsembleRetrieverFactory of( Project project,
                                                Database database,
-                                               Caches caches,
+                                               DatabaseCaches caches,
                                                UnitMapper unitMapper )
     {
         return new EnsembleRetrieverFactory( project, database, caches, unitMapper );
@@ -268,7 +268,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     private EnsembleRetrieverFactory( Project project,
                                       Database database,
-                                      Caches caches,
+                                      DatabaseCaches caches,
                                       UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );

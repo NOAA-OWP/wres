@@ -22,7 +22,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.project.Project;
 import wres.io.retrieval.AnalysisRetriever.DuplicatePolicy;
@@ -56,7 +56,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private final Database database;
 
     /** The caches/ORMs. */
-    private final Caches caches;
+    private final DatabaseCaches caches;
 
     /** Left data declaration. */
     private final DataSourceConfig leftConfig;
@@ -92,7 +92,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     public static SingleValuedRetrieverFactory of( Project project,
                                                    Database database,
-                                                   Caches caches,
+                                                   DatabaseCaches caches,
                                                    UnitMapper unitMapper )
     {
         return new SingleValuedRetrieverFactory( project,
@@ -367,7 +367,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private SingleValuedRetrieverFactory( Project project,
                                           Database database,
-                                          Caches caches,
+                                          DatabaseCaches caches,
                                           UnitMapper unitMapper )
     {
         Objects.requireNonNull( project );

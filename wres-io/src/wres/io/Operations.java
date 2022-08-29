@@ -26,7 +26,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -90,7 +90,7 @@ public final class Operations
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
      * @return the ingest results
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any required input is null
      * @throws IllegalStateException when another process already holds lock
      * @throws IngestException when anything else goes wrong
      */
@@ -101,7 +101,7 @@ public final class Operations
                                              Executor executor,
                                              ProjectConfig projectConfig,
                                              DatabaseLockManager lockManager,
-                                             Caches caches )
+                                             DatabaseCaches caches )
     {
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
@@ -123,10 +123,10 @@ public final class Operations
      * @throws NullPointerException if any input is null
      * @throws IngestException when anything else goes wrong
      */
-    public static Project getProject( Database database,
-                                      ProjectConfig projectConfig,
-                                      Caches caches,
-                                      List<IngestResult> ingestResults )
+    public static Project getDatabaseProject( Database database,
+                                              ProjectConfig projectConfig,
+                                              DatabaseCaches caches,
+                                              List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );
@@ -153,9 +153,9 @@ public final class Operations
      * @param ingestResults the ingest results
      * @return the project
      */
-    public static Project getProject( ProjectConfig projectConfig,
-                                      TimeSeriesStore timeSeriesStore,
-                                      List<IngestResult> ingestResults )
+    public static Project getInMemoryProject( ProjectConfig projectConfig,
+                                              TimeSeriesStore timeSeriesStore,
+                                              List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( timeSeriesStore );
@@ -185,7 +185,7 @@ public final class Operations
                                                     Executor executor,
                                                     ProjectConfig projectConfig,
                                                     DatabaseLockManager lockManager,
-                                                    Caches caches )
+                                                    DatabaseCaches caches )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );

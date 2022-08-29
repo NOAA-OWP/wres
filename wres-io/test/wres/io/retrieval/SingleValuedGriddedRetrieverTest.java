@@ -37,7 +37,7 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
@@ -61,7 +61,7 @@ public class SingleValuedGriddedRetrieverTest
     @Mock private Executor mockExecutor;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
-    @Mock private Caches mockCaches;
+    @Mock private DatabaseCaches mockCaches;
     private HikariDataSource dataSource;
     private Connection rawConnection;
 

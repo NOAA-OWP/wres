@@ -50,7 +50,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UrlParameter;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -101,7 +101,7 @@ public class WebSource implements Callable<List<IngestResult>>
 
     private final SystemSettings systemSettings;
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
     private final ProjectConfig projectConfig;
     private final DataSource dataSource;
     private final DatabaseLockManager lockManager;
@@ -116,7 +116,7 @@ public class WebSource implements Callable<List<IngestResult>>
     public static WebSource of( TimeSeriesIngester timeSeriesIngester,
                          SystemSettings systemSettings,
                          Database database,
-                         Caches caches,
+                         DatabaseCaches caches,
                          ProjectConfig projectConfig,
                          DataSource dataSource,
                          DatabaseLockManager lockManager )
@@ -134,7 +134,7 @@ public class WebSource implements Callable<List<IngestResult>>
     WebSource( TimeSeriesIngester timeSeriesIngester,
                SystemSettings systemSettings,
                Database database,
-               Caches caches,
+               DatabaseCaches caches,
                ProjectConfig projectConfig,
                DataSource dataSource,
                DatabaseLockManager lockManager,
@@ -213,7 +213,7 @@ public class WebSource implements Callable<List<IngestResult>>
         return this.database;
     }
     
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

@@ -41,7 +41,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.concurrency.Executor;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.FeatureDetails;
@@ -79,7 +79,7 @@ class DatabaseProjectTest
 
     private wres.io.utilities.Database wresDatabase;
     @Mock
-    private Caches mockCaches;
+    private DatabaseCaches mockCaches;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;

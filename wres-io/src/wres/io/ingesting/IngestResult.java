@@ -7,14 +7,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.io.reading.DataSource;
 
 /**
- * High-level result for a single fragment of ingest, namely a timeseries.
- * One can be used multiple times in a single dataset (witness scenario400).
- *
- * Due to the history of this class, it has been split into two implementations
- * and modes: one for retry and one not for retry. The caller must test by
- * calling requiresRetry() before calling getDataSource() or
- * getLeftOrRightOrBaseline() because when requiresRetry() is false, those
- * methods are unsupported and will throw UnsupportedOperationException.
+ * High-level result for a single fragment of ingest, namely a time-series.
  */
 
 public interface IngestResult

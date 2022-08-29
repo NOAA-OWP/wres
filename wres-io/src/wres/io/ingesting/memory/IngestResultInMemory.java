@@ -1,10 +1,12 @@
-package wres.io.ingesting;
+package wres.io.ingesting.memory;
 
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.IngestResultNeedingRetry;
 import wres.io.reading.DataSource;
 
 /**
@@ -13,15 +15,20 @@ import wres.io.reading.DataSource;
 
 public class IngestResultInMemory implements IngestResult
 {
+    /** Composes a similar implementation of an ingest fragment for convenience, overriding only a subset of methods. */
     private final IngestResultNeedingRetry innerResult;
 
+    /**
+     * Creates an instance.
+     * 
+     * @param dataSource the data source
+     */
     public IngestResultInMemory( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
         this.innerResult = new IngestResultNeedingRetry( dataSource, 1 );
     }
-
 
     @Override
     public DataSource getDataSource()
@@ -74,8 +81,7 @@ public class IngestResultInMemory implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
-                                          .append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
+        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
                                           .append( "dataSource", this.getDataSource() )
                                           .toString();
     }

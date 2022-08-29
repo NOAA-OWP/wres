@@ -35,7 +35,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -60,7 +60,8 @@ import wres.util.NetCDF;
  * 
  * TODO: Given that {@link TimeSeriesIngester} is an API that may or may not ingest time-series data into a database, 
  * this class should not make assumptions about the ingest implementation. For example, it should not perform database 
- * operations or use database ORMs/caches.
+ * operations or use database ORMs/caches. May need to extend the {@link TimeSeriesIngester} and add a more general 
+ * caching API.
  * 
  * @author James Brown
  * @author Christopher Tubbs
@@ -74,7 +75,7 @@ public class SourceLoader2
     private final ExecutorService readingExecutor;
 
     private final Database database;
-    private final Caches caches;
+    private final DatabaseCaches caches;
     private final SystemSettings systemSettings;
 
     /** Time-series ingester. **/
@@ -112,7 +113,7 @@ public class SourceLoader2
                           SystemSettings systemSettings,
                           ExecutorService readingExecutor,
                           Database database,
-                          Caches caches,
+                          DatabaseCaches caches,
                           ProjectConfig projectConfig )
     {
         Objects.requireNonNull( timeSeriesIngester );
@@ -208,7 +209,7 @@ public class SourceLoader2
 
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
 
-        // Ingest gridded metadata when required - the updated cache will be used by the gridded reader
+        // Ingest gridded metadata/features when required - the updated cache will be used by the gridded reader
         if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.getSystemSettings()
                                                                                .isInMemory() )
         {
@@ -970,7 +971,7 @@ public class SourceLoader2
         return this.database;
     }
 
-    private Caches getCaches()
+    private DatabaseCaches getCaches()
     {
         return this.caches;
     }

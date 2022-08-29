@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Caches;
+import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -34,37 +34,6 @@ public class Projects
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
 
-    private static Pair<Project,Boolean> getProject( Database database,
-                                                     Caches caches,
-                                                     ProjectConfig projectConfig,
-                                                     String[] leftHashes,
-                                                     String[] rightHashes,
-                                                     String[] baselineHashes )
-            throws SQLException
-    {
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( caches );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( leftHashes );
-        Objects.requireNonNull( rightHashes );
-        Objects.requireNonNull( baselineHashes );
-        String identity = ConfigHelper.hashProject(
-                leftHashes,
-                rightHashes,
-                baselineHashes
-        );
-
-        Project details = new DatabaseProject( database,
-                                               caches,
-                                               projectConfig,
-                                               identity );
-        boolean thisCallCausedInsert = details.save();
-        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
-                      thisCallCausedInsert );
-
-        return Pair.of( details, thisCallCausedInsert );
-    }
-
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
      * @param database The database
@@ -78,7 +47,7 @@ public class Projects
      * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
     public static Project getProjectFromIngest( Database database,
-                                                Caches caches,
+                                                DatabaseCaches caches,
                                                 ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
             throws SQLException
@@ -119,8 +88,39 @@ public class Projects
                                                      countOfIngestResults );
     }
 
+    private static Pair<Project,Boolean> getProject( Database database,
+                                                     DatabaseCaches caches,
+                                                     ProjectConfig projectConfig,
+                                                     String[] leftHashes,
+                                                     String[] rightHashes,
+                                                     String[] baselineHashes )
+            throws SQLException
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( caches );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( leftHashes );
+        Objects.requireNonNull( rightHashes );
+        Objects.requireNonNull( baselineHashes );
+        String identity = ConfigHelper.hashProject(
+                leftHashes,
+                rightHashes,
+                baselineHashes
+        );
+
+        Project details = new DatabaseProject( database,
+                                               caches,
+                                               projectConfig,
+                                               identity );
+        boolean thisCallCausedInsert = details.save();
+        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
+                      thisCallCausedInsert );
+
+        return Pair.of( details, thisCallCausedInsert );
+    }
+    
     private static Project getProjectFromIngestStepTwo( Database database,
-                                                        Caches caches,
+                                                        DatabaseCaches caches,
                                                         ProjectConfig projectConfig,
                                                         long[] leftIds,
                                                         long[] rightIds,

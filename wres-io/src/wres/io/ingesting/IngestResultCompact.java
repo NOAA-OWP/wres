@@ -167,12 +167,11 @@ class IngestResultCompact implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this )
-                .append( "surrogateKey", surrogateKey )
-                .append( "leftCount", leftCount )
-                .append( "rightCount", rightCount )
-                .append( "baselineCount", baselineCount )
-                .append( "foundAlready", foundAlready )
-                .toString();
+        return new ToStringBuilder( this ).append( "surrogateKey", surrogateKey )
+                                          .append( "leftCount", leftCount )
+                                          .append( "rightCount", rightCount )
+                                          .append( "baselineCount", baselineCount )
+                                          .append( "foundAlready", foundAlready )
+                                          .toString();
     }
 }
