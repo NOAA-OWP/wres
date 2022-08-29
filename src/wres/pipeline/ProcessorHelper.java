@@ -402,15 +402,14 @@ class ProcessorHelper
 
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
-            // Build the database caches/ORMs, if required
-            DatabaseCaches caches = null;
             Project project = null;
             SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
-            // Is the evaluation in-memory? If no, use implementations that support a persistence store/database
+            // Is the evaluation in-memory? If not, use implementations that support a persistence store/database
             if ( !systemSettings.isInMemory() )
             {
-                caches = DatabaseCaches.of( databaseServices.getDatabase(), projectConfig );
+                // Build the database caches/ORMs, if required
+                DatabaseCaches caches = DatabaseCaches.of( databaseServices.getDatabase(), projectConfig );
                 evaluationDetails.setCaches( caches );
                 try ( DatabaseTimeSeriesIngester databaseIngester =
                         new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
@@ -430,37 +429,33 @@ class ProcessorHelper
 
 
                     // Get the project, which provides an interface to the underlying store of time-series data
-                    project = Operations.getDatabaseProject( databaseServices.getDatabase(),
-                                                             featurefulProjectConfig,
-                                                             caches,
-                                                             ingestResults );
+                    project = Operations.getProject( databaseServices.getDatabase(),
+                                                     featurefulProjectConfig,
+                                                     caches,
+                                                     ingestResults );
                 }
             }
             // In memory evaluation
             else
             {
                 TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
+
                 // Ingest the time-series into the timeSeriesStoreBuilder
                 TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
 
                 List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
-                                                                      databaseServices.getDatabase(),
                                                                       executors.getIoExecutor(),
-                                                                      featurefulProjectConfig,
-                                                                      databaseServices.getDatabaseLockManager(),
-                                                                      caches );
+                                                                      featurefulProjectConfig );
 
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
                 evaluationDetails.setTimeSeriesStore( timeSeriesStore );
-                project = Operations.getInMemoryProject( featurefulProjectConfig,
-                                                         timeSeriesStore,
-                                                         ingestResults );
+                project = Operations.getProject( featurefulProjectConfig,
+                                                 timeSeriesStore,
+                                                 ingestResults );
             }
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
-
-            Operations.prepareForExecution( project );
 
             evaluationDetails.setProject( project );
             projectHash = project.getHash();
@@ -585,7 +580,7 @@ class ProcessorHelper
             // Return an evaluation that was opened
             return Pair.of( evaluation, projectHash );
         }
-        catch ( IOException | RuntimeException internalError )
+        catch ( RuntimeException internalError )
         {
             if ( Objects.nonNull( evaluation ) )
             {

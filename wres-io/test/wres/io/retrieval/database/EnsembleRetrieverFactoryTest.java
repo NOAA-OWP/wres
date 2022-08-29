@@ -39,6 +39,7 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -465,7 +466,27 @@ public class EnsembleRetrieverFactoryTest
         ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(),
                                                                     rightData.getContext(),
                                                                     (DataSourceBaselineConfig) baselineData.getContext() );
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
+        PairConfig pairConfig = new PairConfig( null,
+                                                null,
+                                                null,
+                                                List.of( new Feature( FEATURE.getName(),
+                                                                      FEATURE.getName(),
+                                                                      FEATURE.getName() ) ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
         Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
         TimeSeriesIngester ingesterOne =

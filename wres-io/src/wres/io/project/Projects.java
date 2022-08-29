@@ -32,7 +32,7 @@ import wres.io.utilities.NoDataException;
  */
 public class Projects
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( Projects.class );
 
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
@@ -79,53 +79,28 @@ public class Projects
 
         // Permit the List<IngestResult> to be garbage collected here, which
         // should leave space on heap for creating collections in the following.
-        return Projects.getProjectFromIngestStepTwo( database,
-                                                     caches,
-                                                     projectConfig,
-                                                     leftIds,
-                                                     rightIds,
-                                                     baselineIds,
-                                                     countOfIngestResults );
+        DatabaseProject project = Projects.getProjectFromIngestStepTwo( database,
+                                                                        caches,
+                                                                        projectConfig,
+                                                                        leftIds,
+                                                                        rightIds,
+                                                                        baselineIds,
+                                                                        countOfIngestResults );
+
+
+        // Validate the saved project
+        project.prepareAndValidate();
+
+        return project;
     }
 
-    private static Pair<Project,Boolean> getProject( Database database,
-                                                     DatabaseCaches caches,
-                                                     ProjectConfig projectConfig,
-                                                     String[] leftHashes,
-                                                     String[] rightHashes,
-                                                     String[] baselineHashes )
-            throws SQLException
-    {
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( caches );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( leftHashes );
-        Objects.requireNonNull( rightHashes );
-        Objects.requireNonNull( baselineHashes );
-        String identity = ConfigHelper.hashProject(
-                leftHashes,
-                rightHashes,
-                baselineHashes
-        );
-
-        Project details = new DatabaseProject( database,
-                                               caches,
-                                               projectConfig,
-                                               identity );
-        boolean thisCallCausedInsert = details.save();
-        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
-                      thisCallCausedInsert );
-
-        return Pair.of( details, thisCallCausedInsert );
-    }
-    
-    private static Project getProjectFromIngestStepTwo( Database database,
-                                                        DatabaseCaches caches,
-                                                        ProjectConfig projectConfig,
-                                                        long[] leftIds,
-                                                        long[] rightIds,
-                                                        long[] baselineIds,
-                                                        int countOfIngestResults )
+    private static DatabaseProject getProjectFromIngestStepTwo( Database database,
+                                                                DatabaseCaches caches,
+                                                                ProjectConfig projectConfig,
+                                                                long[] leftIds,
+                                                                long[] rightIds,
+                                                                long[] baselineIds,
+                                                                int countOfIngestResults )
             throws SQLException
     {
         // We don't yet know how many unique timeseries there are. For example,
@@ -152,7 +127,7 @@ public class Projects
 
         int countOfUniqueHashes = uniqueSourcesUsed.size();
         final int MAX_PARAMETER_COUNT = 999;
-        Map<Long,String> idsToHashes = new HashMap<>( countOfUniqueHashes );
+        Map<Long, String> idsToHashes = new HashMap<>( countOfUniqueHashes );
         Set<Long> batchOfIds = new HashSet<>( MAX_PARAMETER_COUNT );
 
         for ( Long rawId : uniqueSourcesUsed )
@@ -225,14 +200,14 @@ public class Projects
             }
         }
 
-        Pair<Project,Boolean> detailsResult =
+        Pair<DatabaseProject, Boolean> detailsResult =
                 Projects.getProject( database,
                                      caches,
                                      projectConfig,
                                      leftHashes,
                                      rightHashes,
                                      baselineHashes );
-        Project details = detailsResult.getLeft();
+        DatabaseProject details = detailsResult.getLeft();
         long detailsId = details.getId();
 
         if ( detailsResult.getRight() )
@@ -349,6 +324,35 @@ public class Projects
         return details;
     }
 
+    private static Pair<DatabaseProject, Boolean> getProject( Database database,
+                                                              DatabaseCaches caches,
+                                                              ProjectConfig projectConfig,
+                                                              String[] leftHashes,
+                                                              String[] rightHashes,
+                                                              String[] baselineHashes )
+            throws SQLException
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( caches );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( leftHashes );
+        Objects.requireNonNull( rightHashes );
+        Objects.requireNonNull( baselineHashes );
+        String identity = ConfigHelper.hashProject(
+                                                    leftHashes,
+                                                    rightHashes,
+                                                    baselineHashes );
+
+        DatabaseProject details = new DatabaseProject( database,
+                                                       caches,
+                                                       projectConfig,
+                                                       identity );
+        boolean thisCallCausedInsert = details.save();
+        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
+                      thisCallCausedInsert );
+
+        return Pair.of( details, thisCallCausedInsert );
+    }
 
     /**
      * Select source ids and hashes and put them into the given Map.
@@ -361,7 +365,7 @@ public class Projects
 
     private static void selectIdsAndHashes( Database database,
                                             Set<Long> ids,
-                                            Map<Long,String> idsToHashes )
+                                            Map<Long, String> idsToHashes )
             throws SQLException
     {
         String queryStart = "SELECT source_id, hash "
@@ -401,7 +405,8 @@ public class Projects
                     boolean idNull = Objects.isNull( id );
                     boolean hashNull = Objects.isNull( hash );
                     throw new PreIngestException( "Found a null value in db when expecting a value. idNull="
-                                                  + idNull + " hashNull="
+                                                  + idNull
+                                                  + " hashNull="
                                                   + hashNull );
                 }
             }

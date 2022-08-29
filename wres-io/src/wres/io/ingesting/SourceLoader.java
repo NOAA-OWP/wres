@@ -50,6 +50,7 @@ import wres.io.reading.web.WebSource;
 import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabaseLockManagerNoop;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
@@ -117,12 +118,18 @@ public class SourceLoader
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( executor );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( lockManager );
 
         if ( !systemSettings.isInMemory() )
         {
             Objects.requireNonNull( database );
             Objects.requireNonNull( caches );
+            Objects.requireNonNull( lockManager );
+            
+            this.lockManager = lockManager;
+        }
+        else
+        {
+            this.lockManager = new DatabaseLockManagerNoop();
         }
 
         this.systemSettings = systemSettings;
@@ -130,7 +137,6 @@ public class SourceLoader
         this.database = database;
         this.caches = caches;
         this.projectConfig = projectConfig;
-        this.lockManager = lockManager;
         this.timeSeriesIngester = timeSeriesIngester;
     }
 

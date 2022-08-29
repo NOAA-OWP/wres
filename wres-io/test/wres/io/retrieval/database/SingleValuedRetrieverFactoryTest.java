@@ -40,6 +40,7 @@ import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -439,7 +440,25 @@ public class SingleValuedRetrieverFactoryTest
         LOGGER.info( "rightData: {}", rightData );
         ProjectConfig.Inputs fakeInputs =
                 new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, null, null, null, null, null );
+        PairConfig pairConfig = new PairConfig( null,
+                                                null,
+                                                null,
+                                                List.of( new Feature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
         TimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

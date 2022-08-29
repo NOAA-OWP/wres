@@ -83,7 +83,7 @@ class DatabaseProjectTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
-    private Project project;
+    private DatabaseProject project;
 
     @BeforeAll
     static void oneTimeSetup()
@@ -143,7 +143,7 @@ class DatabaseProjectTest
     @Test
     void testGetFeatures() throws SQLException
     {
-        this.project.prepareForExecution();
+        this.project.prepareAndValidate();
 
         Set<FeatureTuple> actual = this.project.getFeatures();
 
@@ -160,7 +160,7 @@ class DatabaseProjectTest
     @Test
     void testGetFeatureGroups() throws SQLException
     {
-        this.project.prepareForExecution();
+        this.project.prepareAndValidate();
 
         Set<FeatureGroup> actual = this.project.getFeatureGroups();
 
@@ -232,7 +232,7 @@ class DatabaseProjectTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private Project getProject( ProjectConfig projectConfig ) throws SQLException
+    private DatabaseProject getProject( ProjectConfig projectConfig ) throws SQLException
     {
         // Add two features
         FeatureDetails feature = new FeatureDetails( FEATURE );
@@ -300,7 +300,7 @@ class DatabaseProjectTest
         secondTraceRow.getTimeSeriesID();
 
         // Add a project
-        Project project =
+        DatabaseProject project =
                 new DatabaseProject( this.wresDatabase,
                                      this.mockCaches,
                                      projectConfig,
