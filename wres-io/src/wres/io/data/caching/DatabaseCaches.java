@@ -109,8 +109,7 @@ public class DatabaseCaches
         Objects.requireNonNull( projectConfig.getPair() );
         
         this.dataSourcesCache = new DataSources( database );
-        this.featuresCache = new Features( database, projectConfig.getPair()
-                                                                  .getGridSelection() );
+        this.featuresCache = new Features( database );
         this.timeScalesCache = new TimeScales( database );
         this.ensemblesCache = new Ensembles( database );
         this.measurementUnitsCache = new MeasurementUnits( database );

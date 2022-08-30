@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -36,8 +37,9 @@ public class Projects
 
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
-     * @param database The database
-     * @param caches The caches
+     * @param database the database
+     * @param caches the database caches
+     * @param griddedFeatures the gridded features cache
      * @param projectConfig the config that produced the ingest results
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
@@ -48,6 +50,7 @@ public class Projects
      */
     public static Project getProjectFromIngest( Database database,
                                                 DatabaseCaches caches,
+                                                GriddedFeatures griddedFeatures,
                                                 ProjectConfig projectConfig,
                                                 List<IngestResult> ingestResults )
             throws SQLException
@@ -55,7 +58,6 @@ public class Projects
         long[] leftIds = Projects.getLeftIds( ingestResults );
         long[] rightIds = Projects.getRightIds( ingestResults );
         long[] baselineIds = Projects.getBaselineIds( ingestResults );
-        int countOfIngestResults = ingestResults.size();
 
         // Check assumption that at least one left and one right source have
         // been created.
@@ -81,11 +83,11 @@ public class Projects
         // should leave space on heap for creating collections in the following.
         DatabaseProject project = Projects.getProjectFromIngestStepTwo( database,
                                                                         caches,
+                                                                        griddedFeatures,
                                                                         projectConfig,
                                                                         leftIds,
                                                                         rightIds,
-                                                                        baselineIds,
-                                                                        countOfIngestResults );
+                                                                        baselineIds );
 
 
         // Validate the saved project
@@ -96,11 +98,11 @@ public class Projects
 
     private static DatabaseProject getProjectFromIngestStepTwo( Database database,
                                                                 DatabaseCaches caches,
+                                                                GriddedFeatures griddedFeatures,
                                                                 ProjectConfig projectConfig,
                                                                 long[] leftIds,
                                                                 long[] rightIds,
-                                                                long[] baselineIds,
-                                                                int countOfIngestResults )
+                                                                long[] baselineIds )
             throws SQLException
     {
         // We don't yet know how many unique timeseries there are. For example,
@@ -108,7 +110,7 @@ public class Projects
         // can't as easily drop to primitive arrays because we would want to
         // know how to size them up front. The countOfIngestResults is a
         // maximum, though.
-        Set<Long> uniqueSourcesUsed = new HashSet<>( countOfIngestResults );
+        Set<Long> uniqueSourcesUsed = new HashSet<>();
 
         for ( long leftId : leftIds )
         {
@@ -203,6 +205,7 @@ public class Projects
         Pair<DatabaseProject, Boolean> detailsResult =
                 Projects.getProject( database,
                                      caches,
+                                     griddedFeatures,
                                      projectConfig,
                                      leftHashes,
                                      rightHashes,
@@ -326,6 +329,7 @@ public class Projects
 
     private static Pair<DatabaseProject, Boolean> getProject( Database database,
                                                               DatabaseCaches caches,
+                                                              GriddedFeatures griddedFeatures,
                                                               ProjectConfig projectConfig,
                                                               String[] leftHashes,
                                                               String[] rightHashes,
@@ -338,13 +342,13 @@ public class Projects
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
-        String identity = ConfigHelper.hashProject(
-                                                    leftHashes,
+        String identity = ConfigHelper.hashProject( leftHashes,
                                                     rightHashes,
                                                     baselineHashes );
 
         DatabaseProject details = new DatabaseProject( database,
                                                        caches,
+                                                       griddedFeatures,
                                                        projectConfig,
                                                        identity );
         boolean thisCallCausedInsert = details.save();

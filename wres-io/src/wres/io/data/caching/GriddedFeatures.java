@@ -163,8 +163,8 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
             if ( filters.isEmpty() )
             {
                 throw new IllegalArgumentException( "Cannot determine gridded features without a grid selection. An "
-                                                    + "unbounded selection is not currently suported. Please declare a "
-                                                    + "grid selection and try again." );
+                                                    + "unbounded selection is not currently supported. Please declare "
+                                                    + "a grid selection and try again." );
             }
 
             this.filters = Collections.unmodifiableList( new ArrayList<>( filters ) );

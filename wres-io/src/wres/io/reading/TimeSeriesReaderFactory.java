@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.PairConfig;
-import wres.io.data.caching.Features;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
@@ -57,17 +57,19 @@ public class TimeSeriesReaderFactory
     /** The system settings. */
     private final SystemSettings systemSettings;
 
-    /** The features cache, required for gridded reading. */
-    private final Features features;
+    /** The gridded features cache, required for gridded reading. */
+    private final GriddedFeatures.Builder features;
 
     /**
      * @param pairConfig the pair declaration, which is used to assist in chunking requests from web services, optional
      * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
-     * @param features the features cache used to read gridded features
+     * @param features the gridded features cache used to read gridded data
      * @return an instance
      */
 
-    public static TimeSeriesReaderFactory of( PairConfig pairConfig, SystemSettings systemSettings, Features features )
+    public static TimeSeriesReaderFactory of( PairConfig pairConfig,
+                                              SystemSettings systemSettings,
+                                              GriddedFeatures.Builder features )
     {
         return new TimeSeriesReaderFactory( pairConfig, systemSettings, features );
     }
@@ -151,10 +153,12 @@ public class TimeSeriesReaderFactory
      * Create an instance.
      * @param pairConfig the pair declaration, which is used to assist in reading some sources
      * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
-     * @param features the features cache, which is used to read gridded features
+     * @param features the gridded features cache, which is used to read gridded data
      */
 
-    private TimeSeriesReaderFactory( PairConfig pairConfig, SystemSettings systemSettings, Features features )
+    private TimeSeriesReaderFactory( PairConfig pairConfig,
+                                     SystemSettings systemSettings,
+                                     GriddedFeatures.Builder features )
     {
         // Defer validation until it is established as required
         this.pairConfig = pairConfig;

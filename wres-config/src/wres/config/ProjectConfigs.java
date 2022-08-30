@@ -202,11 +202,6 @@ public class ProjectConfigs
         return dataSourceConfig.getVariable().getValue();
     }
 
-    private ProjectConfigs()
-    {
-        // Prevent construction, this is a static helper class.
-    }
-
     /**
      * Get all the destinations from a configuration for a particular type.
      * @param config the config to search through
@@ -520,5 +515,10 @@ public class ProjectConfigs
                                   oldDeclaration.getOutputs(),
                                   oldDeclaration.getLabel(),
                                   oldDeclaration.getName() );
+    }
+    
+    private ProjectConfigs()
+    {
+        // Prevent construction, this is a static helper class.
     }
 }

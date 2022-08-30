@@ -303,6 +303,7 @@ class DatabaseProjectTest
         DatabaseProject project =
                 new DatabaseProject( this.wresDatabase,
                                      this.mockCaches,
+                                     null,
                                      projectConfig,
                                      PROJECT_HASH );
         boolean saved = project.save();

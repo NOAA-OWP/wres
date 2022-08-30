@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Features;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
@@ -60,17 +61,17 @@ public class NwmGriddedReader implements TimeSeriesReader
     /** Pair declaration. */
     private final PairConfig pairConfig;
 
-    /** The features cache, which contains gridded features. */
-    private final Features features;
+    /** The gridded features cache. */
+    private final GriddedFeatures.Builder features;
 
     /**
      * @param pairConfig the pair declaration, which is used to determine whether gridded features should be read
-     * @param features the features cache
+     * @param features the gridded features cache
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static NwmGriddedReader of( PairConfig pairConfig, Features features )
+    public static NwmGriddedReader of( PairConfig pairConfig, GriddedFeatures.Builder features )
     {
         return new NwmGriddedReader( pairConfig, features );
     }
@@ -150,13 +151,18 @@ public class NwmGriddedReader implements TimeSeriesReader
 
     private Stream<TimeSeriesTuple> readNetcdf( DataSource dataSource, NetcdfFile file ) throws IOException
     {
+        GriddedFeatures griddedFeatures = this.getGriddedFeatures()
+                                              .build();
+
+        Set<FeatureKey> featureKeys = griddedFeatures.get();
+
         // Gridded features must be set now
-        if ( this.getFeatures()
-                 .getGriddedFeatures()
-                 .isEmpty() )
+        if ( featureKeys.isEmpty() )
         {
-            throw new ReadException( "Cannot instantiate a gridded reader without a cache of gridded "
-                                     + "features. Set the gridded features in the feature cache." );
+            throw new ReadException( "While preparing to read "
+                                     + file.getLocation()
+                                     + ", discovered an empty cache of gridded features. Cannot read a gridded dataset "
+                                     + "without a cache of gridded features." );
         }
 
         // Prepare the grid data request
@@ -175,8 +181,7 @@ public class NwmGriddedReader implements TimeSeriesReader
         TimeWindowOuter timeWindow = TimeWindowGenerator.getOneBigTimeWindow( this.getPairConfig() );
 
         Request request = Fetcher.prepareRequest( List.of( pathString ),
-                                                  this.getFeatures()
-                                                      .getGriddedFeatures(),
+                                                  featureKeys,
                                                   dataSource.getVariable()
                                                             .getValue(),
                                                   timeWindow,
@@ -199,7 +204,7 @@ public class NwmGriddedReader implements TimeSeriesReader
      * @return the features cache
      */
 
-    private Features getFeatures()
+    private GriddedFeatures.Builder getGriddedFeatures()
     {
         return this.features;
     }
@@ -207,12 +212,12 @@ public class NwmGriddedReader implements TimeSeriesReader
     /**
      * Hidden constructor.
      * @param pairConfig the required pair declaration, which is used to determine when gridded feature ingest is needed
-     * @param features the features cache
+     * @param features the gridded features cache
      * @throws NullPointerException if either input is null
      * @throws IllegalArgumentException if the features cache does not include any gridded features
      */
 
-    private NwmGriddedReader( PairConfig pairConfig, Features features )
+    private NwmGriddedReader( PairConfig pairConfig, GriddedFeatures.Builder features )
     {
         Objects.requireNonNull( pairConfig );
         Objects.requireNonNull( features );

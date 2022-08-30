@@ -32,6 +32,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.UnnamedFeature;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -52,6 +53,7 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.geography.FeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -405,6 +407,9 @@ class ProcessorHelper
             Project project = null;
             SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
+            // Gridded features cache, if required. See #51232.
+            GriddedFeatures.Builder griddedFeaturesBuilder = ProcessorHelper.getGriddedFeaturesCache( projectConfig );
+
             // Is the evaluation in-memory? If not, use implementations that support a persistence store/database
             if ( !systemSettings.isInMemory() )
             {
@@ -425,13 +430,21 @@ class ProcessorHelper
                                                                           executors.getIoExecutor(),
                                                                           featurefulProjectConfig,
                                                                           databaseServices.getDatabaseLockManager(),
-                                                                          caches );
+                                                                          caches,
+                                                                          griddedFeaturesBuilder );
 
+                    // Create the gridded features cache if needed
+                    GriddedFeatures griddedFeatures = null;
+                    if ( Objects.nonNull( griddedFeaturesBuilder ) )
+                    {
+                        griddedFeatures = griddedFeaturesBuilder.build();
+                    }
 
                     // Get the project, which provides an interface to the underlying store of time-series data
                     project = Operations.getProject( databaseServices.getDatabase(),
                                                      featurefulProjectConfig,
                                                      caches,
+                                                     griddedFeatures,
                                                      ingestResults );
                 }
             }
@@ -446,7 +459,8 @@ class ProcessorHelper
                 List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
                                                                       executors.getIoExecutor(),
-                                                                      featurefulProjectConfig );
+                                                                      featurefulProjectConfig,
+                                                                      griddedFeaturesBuilder );
 
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
                 evaluationDetails.setTimeSeriesStore( timeSeriesStore );
@@ -1338,6 +1352,26 @@ class ProcessorHelper
                                .getRight()
                                .size()
                            + 1 );
+    }
+
+    /**
+     * @param projectConfig the project declaration
+     * @return a gridded feature cache or null if none is required
+     */
+
+    private static GriddedFeatures.Builder getGriddedFeaturesCache( ProjectConfig projectConfig )
+    {
+        GriddedFeatures.Builder griddedFeatures = null;
+
+        List<UnnamedFeature> gridSelection = projectConfig.getPair()
+                                                          .getGridSelection();
+
+        if ( !gridSelection.isEmpty() )
+        {
+            griddedFeatures = new GriddedFeatures.Builder( gridSelection );
+        }
+
+        return griddedFeatures;
     }
 
     /**

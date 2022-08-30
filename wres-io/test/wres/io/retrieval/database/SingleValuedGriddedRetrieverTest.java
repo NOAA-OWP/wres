@@ -250,6 +250,7 @@ public class SingleValuedGriddedRetrieverTest
         Project project =
                 new DatabaseProject( this.wresDatabase,
                                      this.mockCaches,
+                                     null,
                                      new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
                                      PROJECT_HASH );
         boolean saved = project.save();

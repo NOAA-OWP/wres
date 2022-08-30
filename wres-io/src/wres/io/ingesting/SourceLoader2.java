@@ -36,6 +36,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -61,7 +62,7 @@ import wres.util.NetCDF;
  * TODO: Given that {@link TimeSeriesIngester} is an API that may or may not ingest time-series data into a database, 
  * this class should not make assumptions about the ingest implementation. For example, it should not perform database 
  * operations or use database ORMs/caches. May need to extend the {@link TimeSeriesIngester} and add a more general 
- * caching API.
+ * caching API. Also, remove the gridded features cache once #51232 is addressed.
  * 
  * @author James Brown
  * @author Christopher Tubbs
@@ -76,6 +77,7 @@ public class SourceLoader2
 
     private final Database database;
     private final DatabaseCaches caches;
+    private final GriddedFeatures.Builder griddedFeatures;
     private final SystemSettings systemSettings;
 
     /** Time-series ingester. **/
@@ -102,11 +104,12 @@ public class SourceLoader2
 
     /**
      * @param timeSeriesIngester the time-series ingester
-     * @param systemSettings The system settings
-     * @param readingExecutor The executor for reading
-     * @param database The database
-     * @param caches The caches
+     * @param systemSettings the system settings
+     * @param readingExecutor the executor for reading
+     * @param database the database
+     * @param caches the database caches/ORMs
      * @param projectConfig the project configuration
+     * @param griddedFeatures the gridded features cache to populate, if required
      * @throws NullPointerException if any required input is null
      */
     public SourceLoader2( TimeSeriesIngester timeSeriesIngester,
@@ -114,7 +117,8 @@ public class SourceLoader2
                           ExecutorService readingExecutor,
                           Database database,
                           DatabaseCaches caches,
-                          ProjectConfig projectConfig )
+                          ProjectConfig projectConfig,
+                          GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
@@ -134,10 +138,10 @@ public class SourceLoader2
         this.caches = caches;
         this.projectConfig = projectConfig;
         this.timeSeriesIngester = timeSeriesIngester;
+        this.griddedFeatures = griddedFeatures;
         this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( projectConfig.getPair(),
-                                                                   this.getSystemSettings(),
-                                                                   this.getCaches()
-                                                                       .getFeaturesCache() );
+                                                                   systemSettings,
+                                                                   griddedFeatures );
     }
 
     /**
@@ -209,15 +213,14 @@ public class SourceLoader2
 
         List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
 
-        // Ingest gridded metadata/features when required - the updated cache will be used by the gridded reader
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.getSystemSettings()
-                                                                               .isInMemory() )
+        // Ingest gridded metadata/features when required. For an in-memory evaluation, it is required by the gridded
+        // reader. For a database evaluation, it is required by the DatabaseProject. This is a special snowflake until 
+        // #51232 is resolved
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED )
         {
             Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
-            CompletableFuture<List<IngestResult>> future =
-                    CompletableFuture.supplyAsync( fakeResult,
-                                                   this.getReadingExecutor() );
-            tasks.add( future );
+            CompletableFuture<List<IngestResult>> future = CompletableFuture.supplyAsync( fakeResult,
+                                                                                          this.getReadingExecutor() );
             try
             {
                 // Get the gridded features upfront
@@ -306,9 +309,6 @@ public class SourceLoader2
     {
         Objects.requireNonNull( source );
 
-        TimeSeriesReader reader = this.getTimeSeriesReaderFactory()
-                                      .getReader( source );
-
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
 
         // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. See #51232.
@@ -324,6 +324,9 @@ public class SourceLoader2
 
             return Collections.singletonList( task );
         }
+
+        TimeSeriesReader reader = this.getTimeSeriesReaderFactory()
+                                      .getReader( source );
 
         // Create a read/ingest pipeline. The ingester pulls from the reader by advancing the stream
         CompletableFuture<List<IngestResult>> task =
@@ -344,9 +347,8 @@ public class SourceLoader2
 
             try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
             {
-                this.getCaches()
-                    .getFeaturesCache()
-                    .addGriddedFeatures( ncf );
+                this.getGriddedFeatures()
+                    .addFeatures( ncf );
             }
             catch ( IOException e )
             {
@@ -956,30 +958,67 @@ public class SourceLoader2
         }
     }
 
+    /**
+     * @return the system settings
+     */
+
     private SystemSettings getSystemSettings()
     {
         return this.systemSettings;
     }
+
+    /**
+     * @return the reading executor
+     */
 
     private ExecutorService getReadingExecutor()
     {
         return this.readingExecutor;
     }
 
+    /**
+     * @return the database
+     */
+
     private Database getDatabase()
     {
         return this.database;
     }
+
+    /**
+     * @return the database caches
+     */
 
     private DatabaseCaches getCaches()
     {
         return this.caches;
     }
 
+    /**
+     * @return the gridded features cache
+     * @throws NullPointerException if the gridded features are undefined
+     */
+
+    private GriddedFeatures.Builder getGriddedFeatures()
+    {
+        Objects.requireNonNull( this.griddedFeatures,
+                                "Cannot read a gridded dataset without a gridded features cache." );
+
+        return this.griddedFeatures;
+    }
+
+    /**
+     * @return the project declaration
+     */
+
     private ProjectConfig getProjectConfig()
     {
         return this.projectConfig;
     }
+
+    /**
+     * @return the time-series ingester
+     */
 
     private TimeSeriesIngester getTimeSeriesIngester()
     {

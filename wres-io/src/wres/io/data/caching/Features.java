@@ -1,19 +1,10 @@
 package wres.io.data.caching;
 
-import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import ucar.nc2.NetcdfFile;
-import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.io.data.details.FeatureDetails;
@@ -28,8 +19,6 @@ import wres.statistics.generated.Geometry;
  */
 public class Features
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( Features.class );
-
     private static final int MAX_DETAILS = 5000;
 
     private final Database database;
@@ -41,34 +30,10 @@ public class Features
     private final Cache<FeatureKey, Long> valueToKey = Caffeine.newBuilder()
                                                                .maximumSize( MAX_DETAILS )
                                                                .build();
-    /** Gridded features.*/
-    private final GriddedFeatures.Builder griddedFeatures;
 
     public Features( Database database )
     {
         this.database = database;
-        this.griddedFeatures = null;
-    }
-
-    /**
-     * @param database the database
-     * @param gridFilters the filters for gridded features, if any
-     */
-    public Features( Database database, List<UnnamedFeature> gridFilters )
-    {
-        Objects.requireNonNull( database );
-        Objects.requireNonNull( gridFilters );
-
-        this.database = database;
-        if ( !gridFilters.isEmpty() )
-        {
-            LOGGER.debug( "Instantiating features for non-gridded data." );
-            this.griddedFeatures = new GriddedFeatures.Builder( gridFilters );
-        }
-        else
-        {
-            this.griddedFeatures = null;
-        }
     }
 
     /**
@@ -206,37 +171,4 @@ public class Features
         return id;
     }
 
-    /**
-     * @param source the source grid with features to add
-     * @throws NullPointerException if the source is null
-     * @throws IOException if the source could not be read for any reason, other than nullity
-     * @throws UnsupportedOperationException if the cache was not initialized with gridded features
-     */
-    public void addGriddedFeatures( NetcdfFile source ) throws IOException
-    {
-        if ( Objects.isNull( this.griddedFeatures ) )
-        {
-            throw new UnsupportedOperationException( "This cache has not been initialized with gridded features." );
-        }
-
-        Objects.requireNonNull( source );
-
-        this.griddedFeatures.addFeatures( source );
-    }
-
-    /**
-     * @return the gridded features
-     * @throws UnsupportedOperationException if the cache was not initialized with gridded features
-     */
-
-    public Set<FeatureKey> getGriddedFeatures()
-    {
-        if ( Objects.isNull( this.griddedFeatures ) )
-        {
-            throw new UnsupportedOperationException( "This cache has not been initialized with gridded features." );
-        }
-
-        GriddedFeatures features = this.griddedFeatures.build();
-        return features.get();
-    }
 }
