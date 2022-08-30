@@ -37,6 +37,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.data.caching.DataSources;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -71,6 +72,7 @@ public class SourceLoader
     private final ExecutorService executor;
     private final Database database;
     private final DatabaseCaches caches;
+    private final GriddedFeatures.Builder griddedFeatures;
     private final TimeSeriesIngester timeSeriesIngester;
 
     /**
@@ -104,6 +106,7 @@ public class SourceLoader
      * @param caches The caches
      * @param projectConfig the project configuration
      * @param lockManager the tool to manage ingest locks, shared per ingest
+     * @param griddedFeatures the gridded features cache to populate, if required
      * @throws NullPointerException if any required input is null
      */
     public SourceLoader( TimeSeriesIngester timeSeriesIngester,
@@ -112,7 +115,8 @@ public class SourceLoader
                          Database database,
                          DatabaseCaches caches,
                          ProjectConfig projectConfig,
-                         DatabaseLockManager lockManager )
+                         DatabaseLockManager lockManager,
+                         GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
@@ -124,7 +128,7 @@ public class SourceLoader
             Objects.requireNonNull( database );
             Objects.requireNonNull( caches );
             Objects.requireNonNull( lockManager );
-            
+
             this.lockManager = lockManager;
         }
         else
@@ -138,6 +142,7 @@ public class SourceLoader
         this.caches = caches;
         this.projectConfig = projectConfig;
         this.timeSeriesIngester = timeSeriesIngester;
+        this.griddedFeatures = griddedFeatures;
     }
 
     /**
@@ -452,7 +457,8 @@ public class SourceLoader
                       sourceUri );
 
         // Ingest gridded metadata when required
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.systemSettings.isInMemory() )
+        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED && !this.getSystemSettings()
+                                                                               .isInMemory() )
         {
             Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
             CompletableFuture<List<IngestResult>> future =
@@ -473,9 +479,8 @@ public class SourceLoader
         return () -> {
             try ( NetcdfFile ncf = NetcdfFiles.open( source.getUri().toString() ) )
             {
-                this.getCaches()
-                    .getFeaturesCache()
-                    .addGriddedFeatures( ncf );
+                this.getGriddedFeatures()
+                    .addFeatures( ncf );
             }
             catch ( IOException e )
             {
@@ -624,10 +629,10 @@ public class SourceLoader
         {
             return dataSourceKey;
         }
-        
+
         return KEY_NOT_FOUND;
     }
-    
+
     /**
      * Determines if the indicated data is currently being ingested by a task
      * in another process.
@@ -1182,6 +1187,14 @@ public class SourceLoader
     private DatabaseCaches getCaches()
     {
         return this.caches;
+    }
+
+    private GriddedFeatures.Builder getGriddedFeatures()
+    {
+        Objects.requireNonNull( this.griddedFeatures,
+                                "Cannot read a gridded dataset without a gridded features cache." );
+
+        return this.griddedFeatures;
     }
 
     private ProjectConfig getProjectConfig()

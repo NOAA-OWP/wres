@@ -35,6 +35,7 @@ import wres.datamodel.space.FeatureKey;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.data.caching.Variables;
 import wres.io.project.ProjectUtilities.VariableNames;
 import wres.io.retrieval.DataAccessException;
@@ -69,6 +70,7 @@ public class DatabaseProject implements Project
     private final ProjectConfig projectConfig;
     private final Database database;
     private final DatabaseCaches caches;
+    private final GriddedFeatures griddedFeatures;
 
     private long projectId;
 
@@ -118,18 +120,31 @@ public class DatabaseProject implements Project
     /** The desired time scale. */
     private TimeScaleOuter desiredTimeScale;
 
+    /**
+     * Creates an instance.
+     * @param database the database
+     * @param caches the database ORMs/caches
+     * @param griddedFeatures the gridded features cache, if required
+     * @param projectConfig the project declaration
+     * @param hash the hash of the project data
+     */
+
     public DatabaseProject( Database database,
                             DatabaseCaches caches,
+                            GriddedFeatures griddedFeatures,
                             ProjectConfig projectConfig,
                             String hash )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( hash );
+
         this.database = database;
         this.projectConfig = projectConfig;
         this.hash = hash;
         this.caches = caches;
+        this.griddedFeatures = griddedFeatures;
+
         // Read only from now on, post ingest
         this.caches.setReadOnly();
     }
@@ -335,11 +350,11 @@ public class DatabaseProject implements Project
      * @throws DataAccessException if retrieval of data fails
      * @throws NoDataException if zero features have intersecting data
      */
-    
+
     void prepareAndValidate()
     {
         LOGGER.info( "Validating the project and loading preliminary metadata..." );
-        
+
         LOGGER.trace( "prepareForExecution() entered" );
         Database db = this.getDatabase();
 
@@ -699,7 +714,7 @@ public class DatabaseProject implements Project
                           this.getId(),
                           this.performedInsert );
         }
-        
+
         return this.performedInsert;
     }
 
@@ -1183,7 +1198,7 @@ public class DatabaseProject implements Project
 
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
                 Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
-                
+
                 singletons.addAll( innerSingletons );
                 LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
                               + "{} features.",
@@ -1232,9 +1247,8 @@ public class DatabaseProject implements Project
     private Set<FeatureTuple> getGriddedFeatureTuples()
     {
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
-        Features fCache = this.getCaches()
-                              .getFeaturesCache();
-        Set<FeatureKey> griddedFeatures = fCache.getGriddedFeatures();
+        Set<FeatureKey> griddedFeatures = this.getGriddedFeatures()
+                                              .get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( FeatureKey nextFeature : griddedFeatures )
@@ -1365,8 +1379,20 @@ public class DatabaseProject implements Project
     }
 
     /**
+     * @return the gridded features cache
+     * 
+     */
+    private GriddedFeatures getGriddedFeatures()
+    {
+        Objects.requireNonNull( this.griddedFeatures,
+                                "Cannot query gridded feature availablity without a gridded features cache." );
+
+        return this.griddedFeatures;
+    }
+
+    /**
      * @see #getDeclaredLeftVariableName()
-     * @return The name of the left variable or null if determined from the data and the data has yet to be inspected
+     * @return the name of the left variable or null if determined from the data and the data has yet to be inspected
      */
     private String getLeftVariableName()
     {
@@ -1379,7 +1405,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return The name of the right variable or null if determined from the data and the data has yet to be inspected
+     * @return the name of the right variable or null if determined from the data and the data has yet to be inspected
      */
     private String getRightVariableName()
     {
@@ -1392,7 +1418,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return The name of the baseline variable or null if determined from the data and the data has yet to be 
+     * @return the name of the baseline variable or null if determined from the data and the data has yet to be 
      *            inspected
      */
     private String getBaselineVariableName()
@@ -1407,7 +1433,7 @@ public class DatabaseProject implements Project
 
     /**
      * @see #getLeftVariableName()
-     * @return The declared left variable name or null if undeclared
+     * @return the declared left variable name or null if undeclared
      */
     private String getDeclaredLeftVariableName()
     {
@@ -1416,7 +1442,7 @@ public class DatabaseProject implements Project
 
     /**
      * @see #getRightVariableName()
-     * @return The declared right variable name or null if undeclared
+     * @return the declared right variable name or null if undeclared
      */
     private String getDeclaredRightVariableName()
     {
@@ -1425,12 +1451,12 @@ public class DatabaseProject implements Project
 
     /**
      * @see #getBaselineVariableName()
-     * @return The declared baseline variable name or null if undeclared
+     * @return the declared baseline variable name or null if undeclared
      */
     private String getDeclaredBaselineVariableName()
     {
         String variableName = null;
-        
+
         if ( this.hasBaseline() )
         {
             variableName = ConfigHelper.getVariableName( this.getBaseline() );
@@ -1440,27 +1466,30 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return The left hand data source configuration
+     * @return the left hand data source configuration
      */
     private DataSourceConfig getLeft()
     {
-        return this.projectConfig.getInputs().getLeft();
+        return this.projectConfig.getInputs()
+                                 .getLeft();
     }
 
     /**
-     * @return The right hand data source configuration
+     * @return the right hand data source configuration
      */
     private DataSourceConfig getRight()
     {
-        return this.projectConfig.getInputs().getRight();
+        return this.projectConfig.getInputs()
+                                 .getRight();
     }
 
     /**
-     * @return The baseline data source configuration
+     * @return the baseline data source configuration
      */
     private DataSourceConfig getBaseline()
     {
-        return this.projectConfig.getInputs().getBaseline();
+        return this.projectConfig.getInputs()
+                                 .getBaseline();
     }
 }
 

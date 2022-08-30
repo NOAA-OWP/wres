@@ -98,6 +98,7 @@ public class DetailsTest
 
         Project project = new DatabaseProject( this.wresDatabase,
                                                this.mockCaches,
+                                               null,
                                                new ProjectConfig( null, null, null, null, null, null ),
                                                "321" );
         boolean saved = project.save();

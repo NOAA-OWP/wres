@@ -11,7 +11,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.retrieval.DataAccessException;
-import wres.io.utilities.NoDataException;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**

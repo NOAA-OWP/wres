@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -22,11 +23,13 @@ import ucar.nc2.dt.grid.GridDataset;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.UnnamedFeature;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
@@ -305,13 +308,26 @@ final class MainFunctions
                                                         .setLockManager( lockManager )
                                                         .build();
                 
+                List<UnnamedFeature> gridSelection = projectConfig.getPair()
+                                                                  .getGridSelection();
+                
+                // Gridded ingest is a special snowflake for now. See #51232
+                GriddedFeatures.Builder griddedFeatures = null;
+
+                if ( !gridSelection.isEmpty() )
+                {
+                    griddedFeatures = new GriddedFeatures.Builder( gridSelection );
+                }
+
                 Operations.ingest( timeSeriesIngester,
                                    sharedResources.getSystemSettings(),
                                    sharedResources.getDatabase(),
                                    sharedResources.getExecutor(),
                                    projectConfig,
                                    lockManager,
-                                   caches );
+                                   caches,
+                                   griddedFeatures );
+                
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 return ExecutionResult.success( projectConfig.getName() );
             }

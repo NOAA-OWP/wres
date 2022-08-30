@@ -27,10 +27,12 @@ import wres.datamodel.time.TimeSeriesStore;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.data.caching.GriddedFeatures;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.SourceLoader;
+import wres.io.ingesting.SourceLoader2;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
@@ -53,13 +55,18 @@ public final class Operations
 
     /**
      * Ingests for an evaluation project that requires a database and returns the ingest results.
-     * @param timeSeriesIngester The time-series ingester
-     * @param systemSettings The system settings
-     * @param database The database
-     * @param executor The executor
+     * 
+     * TODO: remove the lock manager once migrated to {@link SourceLoader2} because this is part of the ingester 
+     * implementation. Eventually, remove the database and database ORM too.
+     * 
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings the system settings
+     * @param database the database
+     * @param executor the executor
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
+     * @param griddedFeatures the gridded features cache to populate
      * @return the ingest results
      * @throws NullPointerException if any required input is null
      * @throws IllegalStateException when another process already holds lock
@@ -72,7 +79,8 @@ public final class Operations
                                              Executor executor,
                                              ProjectConfig projectConfig,
                                              DatabaseLockManager lockManager,
-                                             DatabaseCaches caches )
+                                             DatabaseCaches caches,
+                                             GriddedFeatures.Builder griddedFeatures )
     {
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
@@ -80,7 +88,8 @@ public final class Operations
                                         executor,
                                         projectConfig,
                                         lockManager,
-                                        caches );
+                                        caches,
+                                        griddedFeatures );
     }
 
     /**
@@ -89,6 +98,7 @@ public final class Operations
      * @param systemSettings The system settings
      * @param executor The executor
      * @param projectConfig the projectConfig for the evaluation
+     * @param griddedFeatures the gridded features cache to populate
      * @return the ingest results
      * @throws NullPointerException if any required input is null
      * @throws IngestException when anything else goes wrong
@@ -97,7 +107,8 @@ public final class Operations
     public static List<IngestResult> ingest( TimeSeriesIngester timeSeriesIngester,
                                              SystemSettings systemSettings,
                                              Executor executor,
-                                             ProjectConfig projectConfig )
+                                             ProjectConfig projectConfig,
+                                             GriddedFeatures.Builder griddedFeatures )
     {
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
@@ -105,7 +116,8 @@ public final class Operations
                                         executor,
                                         projectConfig,
                                         null,
-                                        null );
+                                        null,
+                                        griddedFeatures );
     }
 
     /**
@@ -113,6 +125,7 @@ public final class Operations
      * @param database The database to use
      * @param projectConfig the projectConfig to ingest
      * @param caches the database caches/ORMs
+     * @param griddedFeatures the gridded features cache, if required
      * @param ingestResults the ingest results
      * @return the project
      * @throws IllegalStateException when another process already holds lock
@@ -122,6 +135,7 @@ public final class Operations
     public static Project getProject( Database database,
                                       ProjectConfig projectConfig,
                                       DatabaseCaches caches,
+                                      GriddedFeatures griddedFeatures,
                                       List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( database );
@@ -133,6 +147,7 @@ public final class Operations
         {
             return Projects.getProjectFromIngest( database,
                                                   caches,
+                                                  griddedFeatures,
                                                   projectConfig,
                                                   ingestResults );
         }
@@ -162,7 +177,6 @@ public final class Operations
 
     /**
      * Ingests and returns the hashes of source files involved in this project.
-     * TODO: Find a more appropriate location; this should call the ingest logic, not implement it
      * @param timeSeriesIngester The time-series ingester
      * @param systemSettings The system settings
      * @param database The database to use
@@ -170,6 +184,7 @@ public final class Operations
      * @param projectConfig the projectConfig to ingest
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
+     * @param griddedFeatures the gridded features cache to populate, if required
      * @return the ingest results
      * @throws IllegalStateException when another process already holds lock
      * @throws NullPointerException if any required input is null
@@ -181,7 +196,8 @@ public final class Operations
                                                     Executor executor,
                                                     ProjectConfig projectConfig,
                                                     DatabaseLockManager lockManager,
-                                                    DatabaseCaches caches )
+                                                    DatabaseCaches caches,
+                                                    GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
@@ -218,7 +234,8 @@ public final class Operations
                                                 database,
                                                 caches,
                                                 projectConfig,
-                                                lockManager );
+                                                lockManager,
+                                                griddedFeatures );
 
         try
         {

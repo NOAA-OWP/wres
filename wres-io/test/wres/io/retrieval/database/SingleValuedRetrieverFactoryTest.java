@@ -524,6 +524,7 @@ public class SingleValuedRetrieverFactoryTest
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
         Project project = Projects.getProjectFromIngest( this.wresDatabase,
                                                          this.caches,
+                                                         null,
                                                          fakeConfig,
                                                          results );
         assertTrue( project.save() );

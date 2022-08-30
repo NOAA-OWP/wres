@@ -402,6 +402,7 @@ public class EnsembleForecastRetrieverTest
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         Project project = Projects.getProjectFromIngest( this.wresDatabase,
                                                          this.caches,
+                                                         null,
                                                          fakeConfig,
                                                          results );
         assertTrue( project.save() );
