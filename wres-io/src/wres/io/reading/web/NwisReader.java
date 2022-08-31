@@ -17,7 +17,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -72,6 +71,9 @@ public class NwisReader implements TimeSeriesReader
 
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
+
+    /** Message string. */
+    private static final String USGS_NWIS = "USGS NWIS";
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
     private final PairConfig pairConfig;
@@ -279,7 +281,9 @@ public class NwisReader implements TimeSeriesReader
                 // read task. It also means after the creation of a handful of tasks, we only create one after a
                 // previously created one has been completed, fifo/lockstep.
                 startGettingResults.countDown();
-                TimeSeriesTuple result = this.getTimeSeriesOrNull( results, startGettingResults );
+                TimeSeriesTuple result = ReaderUtilities.getTimeSeriesOrNull( results,
+                                                                              startGettingResults,
+                                                                              USGS_NWIS );
 
                 // Still some chunks to request or results to return?
                 proceed.set( !mutableChunks.isEmpty() || !results.isEmpty() );
@@ -323,49 +327,6 @@ public class NwisReader implements TimeSeriesReader
                        // Return a time-series if present
                        return timeSeries.orElse( null );
                    } );
-    }
-
-    /**
-     * @param results the queued results
-     * @param startGettingResults a latch indicating whether a result should be returned (if <= 0)
-     * @return a time-series or null
-     */
-
-    private TimeSeriesTuple getTimeSeriesOrNull( BlockingQueue<Future<TimeSeriesTuple>> results,
-                                                 CountDownLatch startGettingResults )
-    {
-        // Should attempt to get a result?
-        if ( startGettingResults.getCount() <= 0 )
-        {
-            try
-            {
-                TimeSeriesTuple result = results.take()
-                                                .get();
-
-                if ( Objects.nonNull( result ) )
-                {
-                    return result;
-                }
-
-                // Nothing to return
-                LOGGER.debug( "Skipping chunk because no time-series were returned from USGS NWIS." );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread()
-                      .interrupt();
-
-                throw new ReadException( "While attempting to acquire a time-series from USGS NWIS.", e );
-            }
-            catch ( ExecutionException e )
-            {
-                throw new ReadException( "While attempting to acquire a time-series from USGS NWIS.", e );
-            }
-        }
-
-        LOGGER.debug( "Delaying retrieval of chunk until more tasks have been submitted." );
-
-        return null;
     }
 
     /**

@@ -112,7 +112,7 @@ class DatabaseProjectTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( DatabaseType.H2 );
-        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+        Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );

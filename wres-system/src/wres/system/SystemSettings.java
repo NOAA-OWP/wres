@@ -547,7 +547,7 @@ public class SystemSettings extends XMLReader
     /**
      * @return the connection pool size
      */
-    public int getMaximumPoolSize()
+    public int getDatabaseMaximumPoolSize()
     {
         return this.databaseConfiguration.getMaxPoolSize();
     }
@@ -555,7 +555,7 @@ public class SystemSettings extends XMLReader
     /**
      * @return the high priority connection pool size
      */
-    public int getMaximumHighPriorityPoolSize()
+    public int getDatabaseMaximumHighPriorityPoolSize()
     {
         return this.databaseConfiguration.getMaxHighPriorityPoolSize();
     }

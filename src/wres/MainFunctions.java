@@ -322,7 +322,6 @@ final class MainFunctions
                 Operations.ingest( timeSeriesIngester,
                                    sharedResources.getSystemSettings(),
                                    sharedResources.getDatabase(),
-                                   sharedResources.getExecutor(),
                                    projectConfig,
                                    lockManager,
                                    caches,

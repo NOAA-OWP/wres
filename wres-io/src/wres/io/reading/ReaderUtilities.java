@@ -21,6 +21,10 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -365,7 +369,7 @@ public class ReaderUtilities
                                                       .getInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand.equals( InterfaceShortHand.WRDS_AHPS );
+            return interfaceShortHand == InterfaceShortHand.WRDS_AHPS;
         }
 
         // Fallback for unspecified interface.
@@ -643,6 +647,52 @@ public class ReaderUtilities
                                                 + urlParameters.toString(),
                                                 e );
         }
+    }
+
+    /**
+     * Returns a time-series from the queue or null if not ready.
+     * @param results the queued results
+     * @param startGettingResults a latch indicating whether a result should be returned (if {@code <= 0})
+     * @param sourceName the source name to help with messaging
+     * @return a time-series or null
+     */
+
+    public static TimeSeriesTuple getTimeSeriesOrNull( BlockingQueue<Future<TimeSeriesTuple>> results,
+                                                       CountDownLatch startGettingResults,
+                                                       String sourceName )
+    {
+        // Should attempt to get a result?
+        if ( startGettingResults.getCount() <= 0 )
+        {
+            try
+            {
+                TimeSeriesTuple result = results.take()
+                                                .get();
+
+                if ( Objects.nonNull( result ) )
+                {
+                    return result;
+                }
+
+                // Nothing to return
+                LOGGER.debug( "Skipping chunk because no time-series were returned from " + sourceName + "." );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread()
+                      .interrupt();
+
+                throw new ReadException( "While attempting to acquire a time-series from " + sourceName + ".", e );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new ReadException( "While attempting to acquire a time-series from " + sourceName + ".", e );
+            }
+        }
+
+        LOGGER.debug( "Delaying retrieval of chunk until more tasks have been submitted." );
+
+        return null;
     }
 
     /**
