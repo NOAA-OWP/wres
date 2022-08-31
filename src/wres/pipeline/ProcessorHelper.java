@@ -427,7 +427,6 @@ class ProcessorHelper
                     List<IngestResult> ingestResults = Operations.ingest( databaseIngester,
                                                                           evaluationDetails.getSystemSettings(),
                                                                           databaseServices.getDatabase(),
-                                                                          executors.getIoExecutor(),
                                                                           featurefulProjectConfig,
                                                                           databaseServices.getDatabaseLockManager(),
                                                                           caches,
@@ -458,7 +457,6 @@ class ProcessorHelper
 
                 List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
-                                                                      executors.getIoExecutor(),
                                                                       featurefulProjectConfig,
                                                                       griddedFeaturesBuilder );
 

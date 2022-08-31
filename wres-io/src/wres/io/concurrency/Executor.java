@@ -49,11 +49,11 @@ public class Executor {
                 .namingPattern( "Normal Priority I/O Thread %d" )
                 .build();
 		ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                systemSettings.maximumThreadCount(),
-                systemSettings.maximumThreadCount(),
-                systemSettings.poolObjectLifespan(),
+                this.systemSettings.maximumThreadCount(),
+                this.systemSettings.maximumThreadCount(),
+                this.systemSettings.poolObjectLifespan(),
 				TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>( systemSettings.maximumThreadCount() * 5 ),
+                new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() * 5 ),
 				factory
 		);
 
@@ -71,7 +71,7 @@ public class Executor {
 
     public <V> Future<V> submitHighPriorityTask(Callable<V> task)
 	{
-        return highPriorityService.submit( task );
+        return this.highPriorityService.submit( task );
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class Executor {
 	 */
     public <U> Future<U> submit(Callable<U> task)
 	{
-        return service.submit( task);
+        return this.service.submit( task);
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public class Executor {
 	 */
     public Future<?> execute(Runnable task)
 	{
-        return service.submit( task);
+        return this.service.submit( task);
 	}
 	
 	/**
@@ -102,13 +102,13 @@ public class Executor {
 	{
         if (!service.isShutdown())
 		{
-            service.shutdown();
-            while (!service.isTerminated());
+            this.service.shutdown();
+            while (!this.service.isTerminated());
 		}
 
-        if (!highPriorityService.isShutdown())
+        if (!this.highPriorityService.isShutdown())
 		{
-            highPriorityService.shutdown();
+            this.highPriorityService.shutdown();
             while (!highPriorityService.isTerminated());
 		}
 	}

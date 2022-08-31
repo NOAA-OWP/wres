@@ -62,7 +62,6 @@ public final class Operations
      * @param timeSeriesIngester the time-series ingester
      * @param systemSettings the system settings
      * @param database the database
-     * @param executor the executor
      * @param projectConfig the projectConfig for the evaluation
      * @param lockManager The lock manager to use.
      * @param caches the database caches/ORMs
@@ -76,7 +75,6 @@ public final class Operations
     public static List<IngestResult> ingest( TimeSeriesIngester timeSeriesIngester,
                                              SystemSettings systemSettings,
                                              Database database,
-                                             Executor executor,
                                              ProjectConfig projectConfig,
                                              DatabaseLockManager lockManager,
                                              DatabaseCaches caches,
@@ -85,7 +83,6 @@ public final class Operations
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
                                         database,
-                                        executor,
                                         projectConfig,
                                         lockManager,
                                         caches,
@@ -94,9 +91,8 @@ public final class Operations
 
     /**
      * Ingests for an evaluation project that is running in-memory and returns the ingest results.
-     * @param timeSeriesIngester The time-series ingester
-     * @param systemSettings The system settings
-     * @param executor The executor
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings the system settings
      * @param projectConfig the projectConfig for the evaluation
      * @param griddedFeatures the gridded features cache to populate
      * @return the ingest results
@@ -106,14 +102,12 @@ public final class Operations
 
     public static List<IngestResult> ingest( TimeSeriesIngester timeSeriesIngester,
                                              SystemSettings systemSettings,
-                                             Executor executor,
                                              ProjectConfig projectConfig,
                                              GriddedFeatures.Builder griddedFeatures )
     {
         return Operations.doIngestWork( timeSeriesIngester,
                                         systemSettings,
                                         null,
-                                        executor,
                                         projectConfig,
                                         null,
                                         null,
@@ -177,12 +171,11 @@ public final class Operations
 
     /**
      * Ingests and returns the hashes of source files involved in this project.
-     * @param timeSeriesIngester The time-series ingester
-     * @param systemSettings The system settings
-     * @param database The database to use
-     * @param executor The executor to use
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings the system settings
+     * @param database the database to use
      * @param projectConfig the projectConfig to ingest
-     * @param lockManager The lock manager to use.
+     * @param lockManager the lock manager to use.
      * @param caches the database caches/ORMs
      * @param griddedFeatures the gridded features cache to populate, if required
      * @return the ingest results
@@ -193,7 +186,6 @@ public final class Operations
     private static List<IngestResult> doIngestWork( TimeSeriesIngester timeSeriesIngester,
                                                     SystemSettings systemSettings,
                                                     Database database,
-                                                    Executor executor,
                                                     ProjectConfig projectConfig,
                                                     DatabaseLockManager lockManager,
                                                     DatabaseCaches caches,
@@ -201,7 +193,6 @@ public final class Operations
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( executor );
         Objects.requireNonNull( timeSeriesIngester );
 
         if ( !systemSettings.isInMemory() )

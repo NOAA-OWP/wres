@@ -850,6 +850,11 @@ public class SourceLoader
             {
                 return DataDisposition.JSON_WRDS_NWM;
             }
+            // Hosted NWM data, not via a WRDS API
+            else if( ReaderUtilities.isNwmVectorSource( dataSource ) )
+            {
+                return DataDisposition.NETCDF_VECTOR;
+            }
         }
 
         throw new UnsupportedOperationException( "Discovered an unsupported data source: "

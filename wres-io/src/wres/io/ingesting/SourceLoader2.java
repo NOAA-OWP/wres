@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,11 +34,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
-import wres.io.data.caching.DataSources;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.DataSource.DataDisposition;
@@ -47,10 +42,8 @@ import wres.io.reading.ReadException;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesReaderFactory;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.NetCDF;
 
 /**
  * This is where reading of time-series formats meets ingesting of time-series (e.g., into a persistent store). Creates 
@@ -59,10 +52,7 @@ import wres.util.NetCDF;
  * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a 
  * {@link TimeSeriesIngester}, which is supplied on construction.
  * 
- * TODO: Given that {@link TimeSeriesIngester} is an API that may or may not ingest time-series data into a database, 
- * this class should not make assumptions about the ingest implementation. For example, it should not perform database 
- * operations or use database ORMs/caches. May need to extend the {@link TimeSeriesIngester} and add a more general 
- * caching API. Also, remove the gridded features cache once #51232 is addressed.
+ * TODO: Remove the gridded features cache once #51232 is addressed.
  * 
  * @author James Brown
  * @author Christopher Tubbs
@@ -70,53 +60,39 @@ import wres.util.NetCDF;
  */
 public class SourceLoader2
 {
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader2.class );
-    private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
+    /** Executor for reading time-series formats. */
     private final ExecutorService readingExecutor;
 
-    private final Database database;
-    private final DatabaseCaches caches;
+    /** Gridded feature cache. See #51232. */
     private final GriddedFeatures.Builder griddedFeatures;
+
+    /** System settings. */
     private final SystemSettings systemSettings;
 
     /** Time-series ingester. **/
     private final TimeSeriesIngester timeSeriesIngester;
 
-    /** Factory for creating time-series readers. **/
+    /** Factory for creating time-series format readers. **/
     private final TimeSeriesReaderFactory timeSeriesReaderFactory;
 
-    /**
-     * The project configuration indicating what data to use
-     */
+    /** The project declaration. */
     private final ProjectConfig projectConfig;
 
-    /** An enumeration of the loading status of a source. */
-    private enum SourceStatus
-    {
-        /** The status of a source that has not been loaded. */
-        NOT_COMPLETE,
-        /** The status of a source that has been loaded successfully. */
-        COMPLETED,
-        /** The status of a source that cannot be loaded. */
-        INVALID
-    }
-
     /**
-     * @param timeSeriesIngester the time-series ingester
-     * @param systemSettings the system settings
-     * @param readingExecutor the executor for reading
-     * @param database the database
-     * @param caches the database caches/ORMs
-     * @param projectConfig the project configuration
-     * @param griddedFeatures the gridded features cache to populate, if required
+     * @param timeSeriesIngester the time-series ingester, required
+     * @param systemSettings the system settings, required
+     * @param readingExecutor the executor for reading, required
+     * @param projectConfig the project declaration, required along with the pair element
+     * @param griddedFeatures the gridded features cache to populate, only required for a gridded evaluation
      * @throws NullPointerException if any required input is null
      */
+
     public SourceLoader2( TimeSeriesIngester timeSeriesIngester,
                           SystemSettings systemSettings,
                           ExecutorService readingExecutor,
-                          Database database,
-                          DatabaseCaches caches,
                           ProjectConfig projectConfig,
                           GriddedFeatures.Builder griddedFeatures )
     {
@@ -126,16 +102,8 @@ public class SourceLoader2
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( projectConfig.getPair() );
 
-        if ( !systemSettings.isInMemory() )
-        {
-            Objects.requireNonNull( database );
-            Objects.requireNonNull( caches );
-        }
-
         this.systemSettings = systemSettings;
         this.readingExecutor = readingExecutor;
-        this.database = database;
-        this.caches = caches;
         this.projectConfig = projectConfig;
         this.timeSeriesIngester = timeSeriesIngester;
         this.griddedFeatures = griddedFeatures;
@@ -151,6 +119,7 @@ public class SourceLoader2
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
      */
+
     public List<CompletableFuture<List<IngestResult>>> load() throws IOException
     {
         LOGGER.info( "Loading the declared datasets. {}{}{}{}{}{}",
@@ -187,6 +156,7 @@ public class SourceLoader2
      * @return A listing of asynchronous tasks dispatched to ingest data
      * @throws FileNotFoundException when a source file is not found
      */
+
     private List<CompletableFuture<List<IngestResult>>> loadSource( DataSource source )
     {
         if ( ReaderUtilities.isWebSource( source ) )
@@ -205,6 +175,7 @@ public class SourceLoader2
      * @param source the source to ingest, must be a file
      * @return a list of future lists of ingest results, possibly empty
      */
+
     private List<CompletableFuture<List<IngestResult>>> loadFileSource( DataSource source )
     {
         Objects.requireNonNull( source );
@@ -239,41 +210,8 @@ public class SourceLoader2
             }
         }
 
-        URI sourceUri = source.getUri();
-        FileEvaluation checkIngest = this.shouldIngestFileSource( source );
-        SourceStatus sourceStatus = checkIngest.getSourceStatus();
-
-        if ( sourceStatus == SourceStatus.NOT_COMPLETE )
-        {
-            List<CompletableFuture<List<IngestResult>>> futureList = this.readAndIngestData( source );
-            tasks.addAll( futureList );
-        }
-        else if ( sourceStatus == SourceStatus.COMPLETED )
-        {
-            LOGGER.debug( "Data will not be loaded from '{}'. That data was already loaded.",
-                          sourceUri );
-
-            // Fake a future, return result immediately, nothing to read/ingest.
-            tasks.add( IngestResult.fakeFutureSingleItemListFrom( source,
-                                                                  checkIngest.getSurrogateKey(),
-                                                                  !checkIngest.ingestMarkedComplete() ) );
-        }
-        else if ( sourceStatus == SourceStatus.INVALID )
-        {
-            LOGGER.warn( "Data will not be loaded from invalid URI '{}'",
-                         sourceUri );
-        }
-        else
-        {
-            throw new IllegalStateException( "Unexpected SourceStatus "
-                                             + sourceStatus
-                                             + " for "
-                                             + source );
-        }
-
-        LOGGER.trace( "Returning tasks {} for URI {}.",
-                      tasks,
-                      sourceUri );
+        List<CompletableFuture<List<IngestResult>>> futureList = this.readAndIngestData( source );
+        tasks.addAll( futureList );
 
         return Collections.unmodifiableList( tasks );
     }
@@ -332,6 +270,7 @@ public class SourceLoader2
         CompletableFuture<List<IngestResult>> task =
                 CompletableFuture.supplyAsync( () -> reader.read( source ), this.getReadingExecutor() )
                                  .thenApply( timeSeries -> ingester.ingest( timeSeries, source ) );
+
         return Collections.singletonList( task );
     }
 
@@ -362,191 +301,23 @@ public class SourceLoader2
     }
 
     /**
-     * Determines whether or not a file-like data source should be ingested. Archived data will always be further 
-     * evaluated to determine whether its individual entries warrant an ingest
+     * <p>Evaluates a project and creates a {@link DataSource} for each distinct source within the project that needs to
+     * be loaded, together with any additional links required. A link is required for each additional context, i.e. 
+     * {@link LeftOrRightOrBaseline}, in which the source appears. The links are returned by 
+     * {@link DataSource#getLinks()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
      * 
-     * @param dataSource The data source to check
-     * @return Whether or not data within the file should be ingested
-     * @throws PreIngestException when hashing or id lookup cause some exception
-     */
-    private FileEvaluation shouldIngestFileSource( DataSource dataSource )
-    {
-        Objects.requireNonNull( dataSource );
-
-        DataDisposition disposition = dataSource.getDisposition();
-
-        // Archives should always be further evaluated as they are decomposed prior to ingest
-        if ( disposition == DataDisposition.GZIP || disposition == DataDisposition.TARBALL )
-        {
-            LOGGER.debug( "The source at '{}' was detected as an archive format whose contents will need to be further "
-                          + "evaluated.",
-                          dataSource.getUri() );
-            return new FileEvaluation( SourceStatus.NOT_COMPLETE,
-                                       KEY_NOT_FOUND );
-        }
-
-        // Is this in-memory, i.e., no ingest required?
-        if ( this.getSystemSettings()
-                 .isInMemory() )
-        {
-            return new FileEvaluation( SourceStatus.NOT_COMPLETE,
-                                       KEY_NOT_FOUND );
-        }
-
-        boolean ingest = ( disposition != DataDisposition.UNKNOWN );
-        SourceStatus sourceStatus = null;
-
-        // Only require for gridded NetCDF. Remove this when gridded evaluation and vector evaluations are par. See 
-        // #51232. 
-        String sourceHash = null;
-
-        if ( ingest )
-        {
-            try
-            {
-                // If the format is gridded NetCDF, we want to possibly bypass traditional hashing
-                if ( disposition == DataDisposition.NETCDF_GRIDDED )
-                {
-                    sourceHash = NetCDF.getUniqueIdentifier( dataSource.getUri(),
-                                                             dataSource.getVariable()
-                                                                       .getValue() );
-                }
-
-                sourceStatus = this.querySourceStatus( sourceHash );
-
-                // Added in debugging #58715-116
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "Determined that a source with URI {} and hash {} has the status of {}.",
-                                  dataSource.getUri(),
-                                  sourceHash,
-                                  sourceStatus );
-                }
-            }
-            catch ( IOException ioe )
-            {
-                throw new PreIngestException( "Could not determine whether to ingest '"
-                                              + dataSource.getUri()
-                                              + "'",
-                                              ioe );
-            }
-        }
-        else
-        {
-            LOGGER.debug( "The file at '{}' will not be ingested because it has data that could not be detected as "
-                          + "readable by WRES.",
-                          dataSource.getUri() );
-            return new FileEvaluation( SourceStatus.INVALID,
-                                       KEY_NOT_FOUND );
-        }
-
-        if ( sourceStatus == null )
-        {
-            throw new IllegalStateException( "Expected the source status to be set by now." );
-        }
-
-        // Get the surrogate key if it exists
-        long surrogateKey = this.getSurrogateKey( sourceHash, dataSource.getUri() );
-
-        return new FileEvaluation( sourceStatus, surrogateKey );
-    }
-
-    /**
-     * @param hash the hash
-     * @param uri the uri
-     * @return the surrogate key or {@link #KEY_NOT_FOUND}
-     */
-    private long getSurrogateKey( String hash, URI uri )
-    {
-        // Get the surrogate key if it exists
-        Long dataSourceKey = null;
-        if ( Objects.nonNull( hash ) )
-        {
-            try
-            {
-                DataSources dataSources = this.getCaches()
-                                              .getDataSourcesCache();
-                dataSourceKey = dataSources.getActiveSourceID( hash );
-            }
-            catch ( SQLException se )
-            {
-                throw new PreIngestException( "While determining if source '"
-                                              + uri
-                                              + "' should be ingested, "
-                                              + "failed to translate natural key '"
-                                              + hash
-                                              + "' to surrogate key.",
-                                              se );
-            }
-        }
-
-        if ( Objects.nonNull( dataSourceKey ) )
-        {
-            return dataSourceKey;
-        }
-
-        return KEY_NOT_FOUND;
-    }
-
-    /**
-     * Determines if another task is responsible for source ingest.
-     * @param hash The hash of the file that might need to be ingested
-     * @return Whether or not another task has claimed responsibility for data
-     * @throws SQLException Thrown if communication with the database failed in
-     * some way
-     */
-    private boolean anotherTaskIsResponsibleForSource( String hash )
-            throws SQLException
-    {
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
-        return dataSources.hasSource( hash );
-    }
-
-
-    /**
-     * Returns true when data ingest of a source is complete, false otherwise.
-     * @param hash the data to look for
-     * @return Whether the data has been completely ingested.
-     * @throws SQLException when query fails
-     * @throws NullPointerException when the caller failed to verify that a
-     * task already claimed the hash passed in by calling
-     * anotherTaskIsResponsibleForSource()
-     */
-    private boolean wasSourceCompleted( String hash )
-            throws SQLException
-    {
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
-        SourceDetails details = dataSources.getExistingSource( hash );
-        Database db = this.getDatabase();
-        SourceCompletedDetails completedDetails = new SourceCompletedDetails( db,
-                                                                              details );
-        return completedDetails.wasCompleted();
-    }
-
-    /**
-     * <p>Evaluates a project and creates a {@link DataSource} for each 
-     * distinct source within the project that needs to
-     * be loaded, together with any additional links required. A link is required 
-     * for each additional context, i.e. {@link LeftOrRightOrBaseline}, in 
-     * which the source appears. The links are returned by {@link DataSource#getLinks()}.
-     * Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
+     * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link DataSourceConfig.Source} 
+     * points to a directory of files, the tree is walked and a {@link DataSource} is returned for each one within the 
+     * tree that meets any prescribed filters.
      * 
-     * <p>A {@link DataSource} is returned for each discrete source. When the declared
-     * {@link DataSourceConfig.Source} points to a directory of files, the tree 
-     * is walked and a {@link DataSource} is returned for each one within the tree 
-     * that meets any prescribed filters.
-     * 
+     * @param systemSettings the system settings
+     * @param projectConfig the project declaration
      * @return the set of distinct sources to load and any additional links to create
-     * @throws NullPointerException if the input is null
      */
 
     private static Set<DataSource> createSourcesToLoadAndLink( SystemSettings systemSettings,
                                                                ProjectConfig projectConfig )
     {
-        Objects.requireNonNull( projectConfig );
-
         // Somewhat convoluted structure that will be turned into a simple one.
         // The key is the distinct source, and the paired value is the context in
         // which the source appears and the set of additional links to create, if any.
@@ -636,6 +407,7 @@ public class SourceLoader2
      * Returns the disposition of a non-file like source, which includes all web sources.
      * 
      * @param dataSource the existing data source whose disposition is unknown
+     * @return the disposition
      */
 
     private static DataDisposition getDispositionOfNonFileSource( DataSource dataSource )
@@ -658,6 +430,11 @@ public class SourceLoader2
             {
                 LOGGER.debug( "Identified a source as a JSON WRDS NWM source: {}.", dataSource );
                 return DataDisposition.JSON_WRDS_NWM;
+            }
+            // Hosted NWM data, not via a WRDS API
+            else if( ReaderUtilities.isNwmVectorSource( dataSource ) )
+            {
+                return DataDisposition.NETCDF_VECTOR;
             }
         }
 
@@ -817,19 +594,9 @@ public class SourceLoader2
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.getValue();
 
-        // Interface defined and not a source of NWM vectors, so no path to return
-        if ( source.getInterface() != null && !source.getInterface()
-                                                     .name()
-                                                     .toLowerCase()
-                                                     .startsWith( "nwm_" ) )
-        {
-            LOGGER.debug( "There is an interface specified: {}, therefore not going to walk a directory tree.",
-                          source.getInterface() );
-            return null;
-        }
-
         // Is there a source path to evaluate? Only if the source is file-like
-        if ( uri.toString().isEmpty() )
+        if ( uri.toString()
+                .isEmpty() )
         {
             LOGGER.debug( "The source value was empty from source {}", source );
             return null;
@@ -912,53 +679,6 @@ public class SourceLoader2
     }
 
     /**
-     * Returns the likely status of a given source hash based on state in db.
-     * @param hash The natural identifier of the source, null if not known yet.
-     * @return the source status
-     * @throws PreIngestException When communication with the database fails.
-     */
-
-    private SourceStatus querySourceStatus( String hash )
-    {
-        if ( Objects.isNull( hash ) )
-        {
-            // When the hash is null, report it as not started, etc.
-            // As of 2020-06-02, TimeSeriesIngester will investigate status,
-            // so do not bother checking here for files.
-            return SourceStatus.NOT_COMPLETE;
-        }
-
-        try
-        {
-            boolean anotherTaskStartedIngest = this.anotherTaskIsResponsibleForSource( hash );
-
-            if ( anotherTaskStartedIngest )
-            {
-                boolean ingestMarkedComplete = this.wasSourceCompleted( hash );
-
-                if ( ingestMarkedComplete )
-                {
-                    return SourceStatus.COMPLETED;
-                }
-                else
-                {
-                    return SourceStatus.NOT_COMPLETE;
-                }
-            }
-            else
-            {
-                return SourceStatus.NOT_COMPLETE;
-            }
-        }
-        catch ( SQLException se )
-        {
-            throw new PreIngestException( "Unable to query status of the source identified by "
-                                          + hash,
-                                          se );
-        }
-    }
-
-    /**
      * @return the system settings
      */
 
@@ -974,24 +694,6 @@ public class SourceLoader2
     private ExecutorService getReadingExecutor()
     {
         return this.readingExecutor;
-    }
-
-    /**
-     * @return the database
-     */
-
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    /**
-     * @return the database caches
-     */
-
-    private DatabaseCaches getCaches()
-    {
-        return this.caches;
     }
 
     /**
@@ -1034,34 +736,4 @@ public class SourceLoader2
         return this.timeSeriesReaderFactory;
     }
 
-    /**
-     * A result of file evaluation.
-     */
-    private static class FileEvaluation
-    {
-        private final SourceStatus sourceStatus;
-        private final long surrogateKey;
-
-        FileEvaluation( SourceStatus sourceStatus,
-                        long surrogateKey )
-        {
-            this.sourceStatus = sourceStatus;
-            this.surrogateKey = surrogateKey;
-        }
-
-        boolean ingestMarkedComplete()
-        {
-            return this.sourceStatus.equals( SourceStatus.COMPLETED );
-        }
-
-        SourceStatus getSourceStatus()
-        {
-            return this.sourceStatus;
-        }
-
-        long getSurrogateKey()
-        {
-            return this.surrogateKey;
-        }
-    }
 }

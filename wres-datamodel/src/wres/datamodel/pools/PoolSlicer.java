@@ -204,7 +204,9 @@ public class PoolSlicer
     /**
      * Applies an attribute-specific filter to the corresponding attribute-specific subset of pairs in the input and 
      * returns the union of those filtered subsets for a metadata attribute that is extracted from the pool metadata
-     * with a mapper. Additionally transforms the metadata to reflect the filtering of the pool.
+     * with a mapper. An example application may be to extract the pairs for a named feature within a pool of multiple 
+     * features and create a pool for only that feature. Additionally transforms the metadata to reflect the filtering 
+     * of the pool.
      * 
      * @param <S> the pooled data type
      * @param <T> the metadata attribute

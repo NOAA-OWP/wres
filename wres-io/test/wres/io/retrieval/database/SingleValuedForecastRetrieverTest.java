@@ -121,7 +121,7 @@ public class SingleValuedForecastRetrieverTest
                .thenReturn( this.dataSource );
         Mockito.when( this.mockSystemSettings.getDatabaseType() )
                .thenReturn( DatabaseType.H2 );
-        Mockito.when( this.mockSystemSettings.getMaximumPoolSize() )
+        Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
         Mockito.when( this.mockSystemSettings.maximumThreadCount() )
                .thenReturn( 7 );

@@ -52,44 +52,44 @@ import wres.system.SystemSettings;
  * An Interface structure used for organizing database operations and providing
  * common database operations
  */
-public class Database {
-
+public class Database
+{
     private final SystemSettings systemSettings;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( Database.class );
 
-	/**
-	 * The standard priority set of connections to the database
-	 */
+    /**
+     * The standard priority set of connections to the database
+     */
     private final DataSource connectionPool;
 
-	/**
-	 * A higher priority set of connections to the database used for operations
-	 * that absolutely need to operate within the database with little to no
-	 * competition for resources. Should be used sparingly
-	 */
+    /**
+     * A higher priority set of connections to the database used for operations
+     * that absolutely need to operate within the database with little to no
+     * competition for resources. Should be used sparingly
+     */
     private final DataSource highPriorityConnectionPool;
-    
-	/**
-	 * A separate thread executor used to schedule database communication
-	 * outside of other threads
-	 */
+
+    /**
+     * A separate thread executor used to schedule database communication
+     * outside of other threads
+     */
     private ThreadPoolExecutor sqlTasks;
 
-	/**
-	 * System agnostic newline character used to make generated queries human
-	 * readable
-	 */
+    /**
+     * System agnostic newline character used to make generated queries human
+     * readable
+     */
     private static final String NEWLINE = System.lineSeparator();
 
-	/**
-	 * A queue containing tasks used to ingest data into the database
+    /**
+     * A queue containing tasks used to ingest data into the database
      * <br><br>
      * TODO: Make this a collection of futures, not future lists of ingest results.
      * Other things need to occupy this collection that don't contain ingest results
-	 */
+     */
     private final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
-			new LinkedBlockingQueue<>();
+            new LinkedBlockingQueue<>();
 
     /**
      * Mapping between the number of a forecast value partition and its name
@@ -106,41 +106,33 @@ public class Database {
     }
 
     /**
-	 * Adds a task to the ingest queue
-	 * @param task The ingest task to add to the queue
-	 */
-    private void storeIngestTask(Future task)
-	{
-        this.storedIngestTasks.add(task);
-	}
-
-	/**
-	 * Creates a new thread executor
-	 * @return A new thread executor that may run the maximum number of configured threads
-	 */
+     * Creates a new thread executor
+     * @return A new thread executor that may run the maximum number of configured threads
+     */
     private ThreadPoolExecutor createService()
-	{
-		// Ensures that all created threads will be labeled "Database Thread"
-		ThreadFactory factory = runnable -> new Thread(runnable, "Database Thread");
-        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings().getMaximumPoolSize(),
-                                                              this.getSystemSettings().getMaximumPoolSize(),
+    {
+        // Ensures that all created threads will be labeled "Database Thread"
+        ThreadFactory factory = runnable -> new Thread( runnable, "Database Thread" );
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings()
+                                                                  .getDatabaseMaximumPoolSize(),
+                                                              this.getSystemSettings()
+                                                                  .getDatabaseMaximumPoolSize(),
                                                               systemSettings.poolObjectLifespan(),
                                                               TimeUnit.MILLISECONDS,
-                                                              new ArrayBlockingQueue<>(
-                                                                      this.getSystemSettings()
-                                                                              .getMaximumPoolSize() * 5),
-                                                              factory
-		);
+                                                              new ArrayBlockingQueue<>( this.getSystemSettings()
+                                                                                            .getDatabaseMaximumPoolSize()
+                                                                                        * 5 ),
+                                                              factory );
 
-		// Ensures that the calling thread runs the new thread logic itself if
+        // Ensures that the calling thread runs the new thread logic itself if
         // the upper bound of the executor's internal queue has been hit
-		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		return executor;
-	}
+        executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        return executor;
+    }
 
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
-	 * @return the list of resulting ingested file identifiers
+     * @return the list of resulting ingested file identifiers
      * @throws IngestException if the ingest fails
      */
     public List<IngestResult> completeAllIngestTasks() throws IngestException
@@ -178,7 +170,8 @@ public class Database {
                     else if ( LOGGER.isTraceEnabled() )
                     {
                         LOGGER.trace( "A null value was returned in the "
-                                      + "Database class. Task: {}", task );
+                                      + "Database class. Task: {}",
+                                      task );
                     }
                 }
             }
@@ -204,20 +197,20 @@ public class Database {
         return Collections.unmodifiableList( result );
     }
 
-	/**
-	 * Submits the passed in runnable task for execution
-	 * @param task The thread whose task to execute
-	 * @return the result of the execution wrapped in a {@link Future}
-	 */
-    public Future<?> execute(final Runnable task)
-	{
-        if ( sqlTasks == null || sqlTasks.isShutdown())
-		{
+    /**
+     * Submits the passed in runnable task for execution
+     * @param task The thread whose task to execute
+     * @return the result of the execution wrapped in a {@link Future}
+     */
+    public Future<?> execute( final Runnable task )
+    {
+        if ( sqlTasks == null || sqlTasks.isShutdown() )
+        {
             sqlTasks = createService();
-		}
+        }
 
-        return sqlTasks.submit( task);
-	}
+        return sqlTasks.submit( task );
+    }
 
     /**
      * Submits the passed in Callable for execution
@@ -225,30 +218,31 @@ public class Database {
      * @param <V> The return type encompassed by the future result
      * @return The future result of the passed in logic
      */
-    public <V> Future<V> submit(Callable<V> task)
-	{
-        if ( sqlTasks == null || sqlTasks.isShutdown())
-		{
+    public <V> Future<V> submit( Callable<V> task )
+    {
+        if ( sqlTasks == null || sqlTasks.isShutdown() )
+        {
             sqlTasks = createService();
-		}
-        return sqlTasks.submit( task);
-	}
-	
-	/**
-	 * Waits until all passed in jobs have executed.
-	 */
+        }
+        return sqlTasks.submit( task );
+    }
+
+    /**
+     * Waits until all passed in jobs have executed.
+     */
     public void shutdown()
-	{
-        if (!sqlTasks.isShutdown())
-		{
+    {
+        if ( !sqlTasks.isShutdown() )
+        {
             sqlTasks.shutdown();
 
-			// The wait functions for the executor aren't 100% reliable, so we spin until it's done
-            while (!sqlTasks.isTerminated());
+            // The wait functions for the executor aren't 100% reliable, so we spin until it's done
+            while ( !sqlTasks.isTerminated() )
+                ;
         }
 
         this.closePools();
-	}
+    }
 
     /**
      * Shuts down after all tasks have completed, or after timeout is reached,
@@ -288,9 +282,9 @@ public class Database {
      * @throws SQLException Thrown if a connection could not be retrieved
      */
     public Connection getConnection() throws SQLException
-	{
+    {
         return this.connectionPool.getConnection();
-	}
+    }
 
     /**
      * Checks out a high priority database connection
@@ -299,7 +293,7 @@ public class Database {
      */
     public Connection getHighPriorityConnection() throws SQLException
     {
-        LOGGER.debug("Retrieving a high priority database connection...");
+        LOGGER.debug( "Retrieving a high priority database connection..." );
         return highPriorityConnectionPool.getConnection();
     }
 
@@ -358,14 +352,14 @@ public class Database {
             LOGGER.warn( "Unable to close the high priority connection pool." );
         }
     }
-	
+
     /**
      * Returns a high priority connection to the connection pool
      * @param connection The connection to return
      */
-	public static void returnHighPriorityConnection(Connection connection)
+    public static void returnHighPriorityConnection( Connection connection )
     {
-        if (connection != null)
+        if ( connection != null )
         {
             try
             {
@@ -375,7 +369,7 @@ public class Database {
                 // changes (for instance, extra logic must be present if C3PO is not
                 // used) or for further diagnostic purposes
                 connection.close();
-                LOGGER.debug("A high priority database operation has completed.");
+                LOGGER.debug( "A high priority database operation has completed." );
             }
             catch ( SQLException se )
             {
@@ -433,8 +427,7 @@ public class Database {
         }
 
         if ( this.getSystemSettings()
-                 .getDatabaseType()
-                 == DatabaseType.POSTGRESQL )
+                 .getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             this.pgCopy( tableName,
                          columnNames,
@@ -461,7 +454,8 @@ public class Database {
             columns.add( column );
         }
 
-        String insertHeader = "INSERT INTO " + tableName + columns.toString()
+        String insertHeader = "INSERT INTO " + tableName
+                              + columns.toString()
                               + "VALUES\n";
         StringJoiner insertsJoiner = new StringJoiner( ",\n", insertHeader, ";\n" );
 
@@ -498,13 +492,15 @@ public class Database {
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to insert data into "
-                                       + tableName, se );
+                                       + tableName,
+                                       se );
         }
 
         if ( rowsModified != values.size() )
         {
             LOGGER.warn( "Expected to insert {} rows but {} were inserted.",
-                         values.size(), rowsModified );
+                         values.size(),
+                         rowsModified );
         }
     }
 
@@ -521,7 +517,7 @@ public class Database {
     private void pgCopy( String tableName,
                          List<String> columnNames,
                          List<String[]> values )
-	{
+    {
         StringJoiner columns = new StringJoiner( ",", " ( ", " )" );
 
         for ( String column : columnNames )
@@ -537,25 +533,26 @@ public class Database {
         String copy_definition = "COPY "
                                  + table_definition
                                  + " FROM STDIN WITH DELIMITER '"
-                                 + delimiter + "'";
+                                 + delimiter
+                                 + "'";
 
         final byte[] NULL = "\\N".getBytes( StandardCharsets.UTF_8 );
         CopyIn copyIn = null;
 
         try ( Connection connection = this.getConnection() )
-		{
+        {
             PGConnection pgConnection = connection.unwrap( PGConnection.class );
 
-			// We need specialized functionality to copy, so we need to create a manager object that will
+            // We need specialized functionality to copy, so we need to create a manager object that will
             // handle the copy operation from the postgresql driver
             CopyManager manager = pgConnection.getCopyAPI();
 
-			// Use the manager to stream the data through to the database
+            // Use the manager to stream the data through to the database
             copyIn = manager.copyIn( copy_definition );
             byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
             byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
 
-            for( String[] row : values )
+            for ( String[] row : values )
             {
                 for ( int i = 0; i < row.length; i++ )
                 {
@@ -586,15 +583,17 @@ public class Database {
             copyIn.endCopy();
         }
         catch ( SQLException e )
-		{
-		    // If we are in a non-production environment, it would help to see the format of the data
+        {
+            // If we are in a non-production environment, it would help to see the format of the data
             // that couldn't be added
-		    if ( LOGGER.isDebugEnabled() )
+            if ( LOGGER.isDebugEnabled() )
             {
                 String allValues = values.toString();
                 int subStringMax = Math.min( allValues.length(), 5000 );
                 LOGGER.debug( "Data could not be copied to the database:{}{}...",
-                              copy_definition, allValues.substring( 0, subStringMax ), e );
+                              copy_definition,
+                              allValues.substring( 0, subStringMax ),
+                              e );
             }
 
             // From https://www.postgresql.org/message-id/8D1E8D0DC762E82-1320-C263%40webmail-vm124.sysops.aol.com
@@ -608,14 +607,15 @@ public class Database {
                 catch ( SQLException se )
                 {
                     LOGGER.warn( "Failed to cancel copy operation on table {}",
-                                 tableName, se );
+                                 tableName,
+                                 se );
                 }
             }
 
             throw new IngestException( "Data could not be copied to the database.",
                                        e );
-		}
-	}
+        }
+    }
 
     /**
      * Refreshes statistics that the database uses to optimize queries.
@@ -626,9 +626,9 @@ public class Database {
      *               values as well
      * @throws SQLException when refresh or adding indices goes wrong
      */
-    public void refreshStatistics(boolean vacuum)
+    public void refreshStatistics( boolean vacuum )
             throws SQLException
-	{
+    {
         String sql;
 
         final String optionalVacuum;
@@ -723,7 +723,7 @@ public class Database {
 
             name = "wres.TimeSeriesValue_Lead_" + partitionNumberWord;
 
-            this.timeSeriesValuePartitionNames.putIfAbsent( partitionNumber, name);
+            this.timeSeriesValuePartitionNames.putIfAbsent( partitionNumber, name );
         }
 
         return name;
@@ -758,7 +758,7 @@ public class Database {
      * @return The number of rows modified or returned by the query
      * @throws SQLException Thrown if an issue was encountered while communicating with the database
      */
-    int execute( final Query query, final boolean isHighPriority) throws SQLException
+    int execute( final Query query, final boolean isHighPriority ) throws SQLException
     {
         int modifiedRows = 0;
 
@@ -777,14 +777,14 @@ public class Database {
      * @return A record of the results of the database call
      * @throws SQLException Thrown if there was an error when connecting to the database
      */
-    DataProvider getData( final Query query, final boolean isHighPriority) throws SQLException
+    DataProvider getData( final Query query, final boolean isHighPriority ) throws SQLException
     {
         // Since Database.buffer performs all the heavy lifting, we can just rely on that. Setting that
         // call in the try statement ensures that it is closed once the in-memory results are created
-        try ( Connection connection = this.getConnection( isHighPriority);
+        try ( Connection connection = this.getConnection( isHighPriority );
               DataProvider rawProvider = this.buffer( connection, query ) )
         {
-            return DataSetProvider.from(rawProvider);
+            return DataSetProvider.from( rawProvider );
         }
     }
 
@@ -814,12 +814,12 @@ public class Database {
      * @return null if no data could be loaded, the value of the retrieved field otherwise
      * @throws SQLException Thrown if an issue was encountered while communicating with the database
      */
-    <V> V retrieve( final Query query, final String label, final boolean isHighPriority) throws SQLException
+    <V> V retrieve( final Query query, final String label, final boolean isHighPriority ) throws SQLException
     {
         try ( Connection connection = this.getConnection( isHighPriority );
               DataProvider data = this.buffer( connection, query ) )
         {
-            if (data.isEmpty())
+            if ( data.isEmpty() )
             {
                 return null;
             }
@@ -901,16 +901,16 @@ public class Database {
 
         if ( this.getType() == DatabaseType.H2 )
         {
-             builder = new StringJoiner( NEWLINE,
-                                         "SET REFERENTIAL_INTEGRITY FALSE;" + NEWLINE,
-                                         NEWLINE + "SET REFERENTIAL_INTEGRITY TRUE;" );
+            builder = new StringJoiner( NEWLINE,
+                                        "SET REFERENTIAL_INTEGRITY FALSE;" + NEWLINE,
+                                        NEWLINE + "SET REFERENTIAL_INTEGRITY TRUE;" );
         }
         else
         {
             builder = new StringJoiner( NEWLINE );
         }
 
-		for (String partition : partitions)
+        for ( String partition : partitions )
         {
             builder.add( "TRUNCATE TABLE " + partition + ";" );
         }
@@ -939,19 +939,20 @@ public class Database {
 
         Query query = new Query( this.systemSettings, builder.toString() );
 
-		try
+        try
         {
             this.execute( query, false );
-		}
-		catch (final SQLException e)
+        }
+        catch ( final SQLException e )
         {
-			String message = "WRES data could not be removed from the database."
-                             + NEWLINE + NEWLINE
+            String message = "WRES data could not be removed from the database."
+                             + NEWLINE
+                             + NEWLINE
                              + builder.toString();
-			// Decorate with contextual information.
-			throw new SQLException( message, e );
-		}
-	}
+            // Decorate with contextual information.
+            throw new SQLException( message, e );
+        }
+    }
 
     /**
      * For system-level monitoring information, return the number of tasks in
@@ -1006,11 +1007,11 @@ public class Database {
         Objects.requireNonNull( version );
         Objects.requireNonNull( executionInterval );
 
-        if( arguments.length < 1 )
+        if ( arguments.length < 1 )
         {
             throw new IllegalArgumentException( "Cannot log an execution with zero arguments." );
         }
-        
+
         try
         {
             LocalDateTime startedAtZulu = LocalDateTime.ofInstant( executionInterval.lowerEndpoint(), UTC );
@@ -1025,7 +1026,7 @@ public class Database {
             // The two operations that might perform a project related operation are 'execute' and 'ingest';
             // these are the only cases where we might be interested in a project configuration
             String testArg = arguments[0].toLowerCase();
-            if ( "execute".equals( testArg ) || "ingest".equals( testArg ) ) 
+            if ( "execute".equals( testArg ) || "ingest".equals( testArg ) )
             {
 
                 // Go ahead and assign the second argument as the project;
@@ -1050,26 +1051,26 @@ public class Database {
 
             DataScripter script = new DataScripter( this );
 
-            script.addLine("INSERT INTO wres.ExecutionLog (");
-            script.addTab().addLine("arguments,");
-            script.addTab().addLine("system_version,");
-            script.addTab().addLine("project,");
+            script.addLine( "INSERT INTO wres.ExecutionLog (" );
+            script.addTab().addLine( "arguments," );
+            script.addTab().addLine( "system_version," );
+            script.addTab().addLine( "project," );
             script.addTab().addLine( "project_name," );
-            script.addTab().addLine("hash,");
-            script.addTab().addLine("username,");
-            script.addTab().addLine("address,");
-            script.addTab().addLine("start_time,");
-            script.addTab().addLine("end_time,");
-            script.addTab().addLine("failed,");
-            script.addTab().addLine("error");
-            script.addLine(")");
-            script.addLine("VALUES (");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
+            script.addTab().addLine( "hash," );
+            script.addTab().addLine( "username," );
+            script.addTab().addLine( "address," );
+            script.addTab().addLine( "start_time," );
+            script.addTab().addLine( "end_time," );
+            script.addTab().addLine( "failed," );
+            script.addTab().addLine( "error" );
+            script.addLine( ")" );
+            script.addLine( "VALUES (" );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
 
             if ( this.getType() == DatabaseType.POSTGRESQL )
             {
@@ -1084,25 +1085,24 @@ public class Database {
                 script.addTab().addLine( "NULL," );
             }
 
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?");
-            script.addLine(");");
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?," );
+            script.addTab().addLine( "?" );
+            script.addLine( ");" );
 
             script.execute(
-                    String.join(" ", arguments),
-                    version,
-                    project,
-                    projectName,
-                    hash,
-                    System.getProperty( "user.name" ),
-                    // Let server find and report network address
-                    startedAtZulu,
-                    endedAtZulu,
-                    failed,
-                    error
-            );
+                            String.join( " ", arguments ),
+                            version,
+                            project,
+                            projectName,
+                            hash,
+                            System.getProperty( "user.name" ),
+                            // Let server find and report network address
+                            startedAtZulu,
+                            endedAtZulu,
+                            failed,
+                            error );
         }
         catch ( SQLException | IOException e )
         {
