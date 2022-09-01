@@ -31,7 +31,7 @@ import wres.util.Strings;
  */
 public class SystemSettings extends XMLReader
 {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( SystemSettings.class );
 
     // The static path to the configuration path (on the classpath)
     private static final URI DEFAULT_CONFIG_PATH = URI.create( "wresconfig.xml" );
@@ -45,18 +45,21 @@ public class SystemSettings extends XMLReader
     private int minimumCachedNetcdf = 100;
     private int maximumCachedNetcdf = 200;
     private int hardNetcdfCacheLimit = 0;
-	private String netcdfStorePath = "systests/data/";
-	private Integer maximumArchiveThreads = null;
-	private int maximumWebClientThreads = 3;
-	private int maximumNwmIngestThreads = 6;
-	private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
-	private boolean updateProgressMonitor = false;
+    private String netcdfStorePath = "systests/data/";
+    private Integer maximumArchiveThreads = null;
+    private int maximumWebClientThreads = 3;
+    private int maximumNwmIngestThreads = 6;
+    private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
+    private boolean updateProgressMonitor = false;
     private int maximumPoolThreads = 6;
-	private int maximumThresholdThreads = 1;
-	private int maximumMetricThreads = 1;
-	private int maximumProductThreads = 3;
-	/** The minimum number of singleton features per evaluation at which feature-batched retrieval is triggered. **/
-	private int featureBatchThreshold = 10;
+    private int maximumThresholdThreads = 1;
+    private int maximumMetricThreads = 1;
+    private int maximumProductThreads = 3;
+    private int maximumReadThreads = 7;
+    private int maximumIngestThreads = 7;
+
+    /** The minimum number of singleton features per evaluation at which feature-batched retrieval is triggered. **/
+    private int featureBatchThreshold = 10;
     /** The number of features contained within each feature batch when feature-batched retrieval is conducted. **/
     private int featureBatchSize = 50;
 
@@ -69,7 +72,8 @@ public class SystemSettings extends XMLReader
         catch ( IOException ioe )
         {
             throw new IllegalStateException( "Could not read system settings from the classpath at "
-                                             + DEFAULT_CONFIG_PATH, ioe );
+                                             + DEFAULT_CONFIG_PATH,
+                                             ioe );
         }
     }
 
@@ -77,7 +81,7 @@ public class SystemSettings extends XMLReader
     {
         return new SystemSettings();
     }
-    
+
     public static SystemSettings fromUri( URI uri )
     {
         try
@@ -89,7 +93,7 @@ public class SystemSettings extends XMLReader
             throw new IllegalStateException( "Could not read system settings from " + uri, e );
         }
     }
-    
+
     /**
      * @return true if the evaluation is being performed in-memory, false otherwise. Expects either 
      */
@@ -105,14 +109,14 @@ public class SystemSettings extends XMLReader
 
         return Objects.isNull( this.databaseConfiguration );
     }
-    
-	/**
-	 * The Default constructor
-	 * 
-	 * Creates a new XMLReader and parses the System Configuration document
-	 * Looks on the classpath for the default filename
-	 * <br/><br/>
-	 */
+
+    /**
+     * The Default constructor
+     * 
+     * Creates a new XMLReader and parses the System Configuration document
+     * Looks on the classpath for the default filename
+     * <br/><br/>
+     */
     private SystemSettings( URI configPath ) throws IOException
     {
         super( configPath, null );
@@ -125,29 +129,29 @@ public class SystemSettings extends XMLReader
     private SystemSettings()
     {
         super();
-		databaseConfiguration = new DatabaseSettings();
+        databaseConfiguration = new DatabaseSettings();
     }
 
-	@Override
-	protected void parseElement(XMLStreamReader reader)
+    @Override
+    protected void parseElement( XMLStreamReader reader )
             throws IOException
-	{
-		try
-		{
-			if ( reader.getEventType() == XMLStreamConstants.START_ELEMENT)
-			{
-			    String tagName = reader.getLocalName().toLowerCase();
+    {
+        try
+        {
+            if ( reader.getEventType() == XMLStreamConstants.START_ELEMENT )
+            {
+                String tagName = reader.getLocalName().toLowerCase();
 
-			    switch (tagName)
+                switch ( tagName )
                 {
                     case "database":
-                        databaseConfiguration = new DatabaseSettings(reader);
+                        databaseConfiguration = new DatabaseSettings( reader );
                         break;
                     case "maximum_thread_count":
                         this.setMaximumThreadCount( reader );
                         break;
                     case "maximum_archive_threads":
-                        this.setMaximumArchiveThreads(reader);
+                        this.setMaximumArchiveThreads( reader );
                         break;
                     case "maximum_web_client_threads":
                         this.setMaximumWebClientThreads( reader );
@@ -206,15 +210,22 @@ public class SystemSettings extends XMLReader
                     case "feature_batch_size":
                         this.setFeatureBatchSize( reader );
                         break;
+                    case "maximum_read_threads":
+                        this.setMaximumReadThreads( reader );
+                        break;
+                    case "maximum_ingest_threads":
+                        this.setMaximumIngestThreads( reader );
+                        break;
                     case "wresconfig":
                         //Do nothing, but make sure no debug message implying it is skipped is output.
                         break;
                     default:
                         LOGGER.warn( "The configuration option '{}' was {}",
-                                     tagName, "skipped because it's not used." );
+                                     tagName,
+                                     "skipped because it's not used." );
                 }
-			}
-		}
+            }
+        }
         catch ( XMLStreamException xse )
         {
             String message = "While reading system settings, at line"
@@ -224,7 +235,7 @@ public class SystemSettings extends XMLReader
                              + ", an issue occurred.";
             throw new IOException( message, xse );
         }
-	}
+    }
 
     @Override
     protected void completeParsing() throws IOException
@@ -232,73 +243,95 @@ public class SystemSettings extends XMLReader
         this.applySystemPropertyOverrides();
     }
 
-	private void setMinimumCachedNetcdf(XMLStreamReader reader)
+    private void setMinimumCachedNetcdf( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.minimumCachedNetcdf = Integer.parseInt( value );
         }
     }
 
-    private void setMaximumCachedNetcdf(XMLStreamReader reader)
+    private void setMaximumCachedNetcdf( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.maximumCachedNetcdf = Integer.parseInt( value );
         }
     }
 
-    private void setNetcdfCachePeriod( XMLStreamReader reader)
+    private void setNetcdfCachePeriod( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.netcdfCachePeriod = Integer.parseInt( value );
         }
     }
 
-    private void setHardNetcdfCacheLimit(XMLStreamReader reader)
+    private void setHardNetcdfCacheLimit( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.hardNetcdfCacheLimit = Integer.parseInt( value );
         }
     }
 
-	private void setMaximumThreadCount(XMLStreamReader reader)
+    private void setMaximumThreadCount( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.maximumThreadCount = Integer.parseInt( value );
         }
     }
 
-    private void setMaximumArchiveThreads(XMLStreamReader reader) throws XMLStreamException
+    private void setMaximumArchiveThreads( XMLStreamReader reader ) throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric( value ))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
             this.maximumArchiveThreads = Integer.parseInt( value );
         }
     }
 
     private void setMaximumWebClientThreads( XMLStreamReader reader )
-        throws XMLStreamException
+            throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
 
         if ( StringUtils.isNumeric( value ) )
         {
             this.maximumWebClientThreads = Integer.parseInt( value );
+        }
+    }
+
+    private void setMaximumReadThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumReadThreads = Integer.parseInt( value );
+        }
+    }
+
+    private void setMaximumIngestThreads( XMLStreamReader reader )
+            throws XMLStreamException
+    {
+        String value = XMLHelper.getXMLText( reader );
+
+        if ( StringUtils.isNumeric( value ) )
+        {
+            this.maximumIngestThreads = Integer.parseInt( value );
         }
     }
 
@@ -318,51 +351,51 @@ public class SystemSettings extends XMLReader
         }
     }
 
-    private void setPoolObjectLifespan(XMLStreamReader reader)
+    private void setPoolObjectLifespan( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
-            this.poolObjectLifespan = Integer.parseInt(value);
+            this.poolObjectLifespan = Integer.parseInt( value );
         }
     }
 
-    private void setMaximumCopies(XMLStreamReader reader)
+    private void setMaximumCopies( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
-            this.maximumCopies = Integer.parseInt(value);
+            this.maximumCopies = Integer.parseInt( value );
         }
     }
 
-    private void setUpdateFrequency(XMLStreamReader reader)
+    private void setUpdateFrequency( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
-            ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
+            ProgressMonitor.setUpdateFrequency( Long.parseLong( value ) );
         }
     }
 
-    private void setFetchSize(XMLStreamReader reader)
+    private void setFetchSize( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if (value != null && StringUtils.isNumeric(value))
+        if ( value != null && StringUtils.isNumeric( value ) )
         {
-            this.fetchSize = Integer.parseInt(value);
+            this.fetchSize = Integer.parseInt( value );
         }
     }
 
-    private void setNetcdfStorePath(XMLStreamReader reader)
-        throws XMLStreamException
+    private void setNetcdfStorePath( XMLStreamReader reader )
+            throws XMLStreamException
     {
         String path = XMLHelper.getXMLText( reader );
-        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
+        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ) )
         {
             this.netcdfStorePath = path;
         }
@@ -378,10 +411,10 @@ public class SystemSettings extends XMLReader
             this.dataDirectory = Paths.get( dir );
         }
     }
-    
+
     private void setUpdateProgressMonitor( XMLStreamReader reader ) throws XMLStreamException
     {
-        this.updateProgressMonitor = Strings.isTrue( XMLHelper.getXMLText( reader) );
+        this.updateProgressMonitor = Strings.isTrue( XMLHelper.getXMLText( reader ) );
         ProgressMonitor.setShouldUpdate( this.getUpdateProgressMonitor() );
     }
 
@@ -438,7 +471,7 @@ public class SystemSettings extends XMLReader
                          size );
         }
     }
-    
+
     /**
      * @return The path where the system should store NetCDF files internally
      */
@@ -447,9 +480,9 @@ public class SystemSettings extends XMLReader
         return this.netcdfStorePath;
     }
 
-	/**
-	 * @return The number of allowable threads
-	 */
+    /**
+     * @return The number of allowable threads
+     */
     public int maximumThreadCount()
     {
         return this.maximumThreadCount;
@@ -457,11 +490,11 @@ public class SystemSettings extends XMLReader
 
     public int maximumArchiveThreads()
     {
-        if (this.maximumArchiveThreads == null)
+        if ( this.maximumArchiveThreads == null )
         {
-            int threadCount = ((Double)Math.ceil(
-                    this.maximumThreadCount() / 10F)).intValue();
-            return Math.max(threadCount, 2);
+            int threadCount = ( (Double) Math.ceil(
+                                                    this.maximumThreadCount() / 10F ) ).intValue();
+            return Math.max( threadCount, 2 );
         }
 
         return this.maximumArchiveThreads;
@@ -477,26 +510,27 @@ public class SystemSettings extends XMLReader
         return this.maximumNwmIngestThreads;
     }
 
-	/**
-	 * @return The maximum life span for an object in an object pool
-	 */
+    /**
+     * @return The maximum life span for an object in an object pool
+     */
     public int poolObjectLifespan()
     {
         return this.poolObjectLifespan;
     }
 
-	/**
-	 * @return The maximum number of rows to retrieve
-	 */
+    /**
+     * @return The maximum number of rows to retrieve
+     */
     public int fetchSize()
     {
         return this.fetchSize;
     }
 
-	/**
-	 * @return The maximum number of values that may be copied into the database at once
-	 */
-    public int getMaximumCopies() {
+    /**
+     * @return The maximum number of values that may be copied into the database at once
+     */
+    public int getMaximumCopies()
+    {
         return this.maximumCopies;
     }
 
@@ -543,7 +577,7 @@ public class SystemSettings extends XMLReader
     {
         return this.dataDirectory;
     }
-    
+
     /**
      * @return the connection pool size
      */
@@ -559,16 +593,34 @@ public class SystemSettings extends XMLReader
     {
         return this.databaseConfiguration.getMaxHighPriorityPoolSize();
     }
-    
-	/**
-	 * @return A new instance of a connection pool that is built for the system wide configuration
-	 */
+
+    /**
+     * @return the maximum number of ingest threads
+     */
+
+    public int getMaximumIngestThreads()
+    {
+        return this.maximumIngestThreads;
+    }
+
+    /**
+     * @return the maximum number of read threads
+     */
+
+    public int getMaximumReadThreads()
+    {
+        return this.maximumReadThreads;
+    }
+
+    /**
+     * @return A new instance of a connection pool that is built for the system wide configuration
+     */
     public DataSource getConnectionPool()
     {
         int maxPoolSize = this.databaseConfiguration.getMaxPoolSize();
         long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
         DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
-        return new JfrDataSource( inner );  // Monitor JDBC traffic with JFR: #61680
+        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
     }
 
     /**
@@ -593,12 +645,12 @@ public class SystemSettings extends XMLReader
     /**
      * @return Return <code>true</code> if progress monitoring is turned on, <code>false</code> if turned off.
      */
-    
+
     public boolean getUpdateProgressMonitor()
     {
         return this.updateProgressMonitor;
     }
-    
+
     Connection getRawDatabaseConnection() throws SQLException
     {
         return this.databaseConfiguration.getRawConnection();
@@ -608,18 +660,20 @@ public class SystemSettings extends XMLReader
     {
         return maximumPoolThreads;
     }
-    
+
     /**
      * @return The minimum number of singleton feature groups within an evaluation when using feature-batched retrieval
      */
-    public int getFeatureBatchThreshold() {
+    public int getFeatureBatchThreshold()
+    {
         return this.featureBatchThreshold;
     }
-    
+
     /**
      * @return The number of features within each feature-batched retrieval when using feature-batched retrieval
      */
-    public int getFeatureBatchSize() {
+    public int getFeatureBatchSize()
+    {
         return this.featureBatchSize;
     }
 
@@ -635,7 +689,8 @@ public class SystemSettings extends XMLReader
         else
         {
             LOGGER.warn( "'{}' is not a valid value for maximum_pool_threads. Falling back to {}",
-                         value, this.maximumPoolThreads );
+                         value,
+                         this.maximumPoolThreads );
         }
     }
 
@@ -656,7 +711,8 @@ public class SystemSettings extends XMLReader
         else
         {
             LOGGER.warn( "'{}' is not a valid value for maximum_threshold_threads. Falling back to {}",
-                         value, this.maximumThresholdThreads );
+                         value,
+                         this.maximumThresholdThreads );
         }
     }
 
@@ -677,7 +733,8 @@ public class SystemSettings extends XMLReader
         else
         {
             LOGGER.warn( "'{}' is not a valid value for maximum_metric_threads. Falling back to {}",
-                         value, this.maximumMetricThreads );
+                         value,
+                         this.maximumMetricThreads );
         }
     }
 
@@ -698,126 +755,138 @@ public class SystemSettings extends XMLReader
         else
         {
             LOGGER.warn( "'{}' is not a valid value for maximum_product_threads. Falling back to {}",
-                         value, this.maximumProductThreads );
+                         value,
+                         this.maximumProductThreads );
         }
     }
 
     private void applySystemPropertyOverrides()
     {
         String maxIngestThreads = System.getProperty( "wres.maxIngestThreads" );
-        if (maxIngestThreads != null)
+        if ( maxIngestThreads != null )
         {
-            if (StringUtils.isNumeric( maxIngestThreads ))
+            if ( StringUtils.isNumeric( maxIngestThreads ) )
             {
+                this.maximumIngestThreads = this.maximumThreadCount;
+
+                // For backwards compatibility
                 this.maximumThreadCount = Integer.parseInt( maxIngestThreads );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maxIngestThreads. Falling back to {}",
-                             maxIngestThreads, this.maximumThreadCount );
+                LOGGER.warn( "'{}' is not a valid value for wres.maxIngestThreads. Falling back to {}.",
+                             maxIngestThreads,
+                             this.maximumIngestThreads );
             }
         }
 
         String fetchCount = System.getProperty( "wres.fetchSize" );
-        if (fetchCount != null)
+        if ( fetchCount != null )
         {
-            if (StringUtils.isNumeric( fetchCount ))
+            if ( StringUtils.isNumeric( fetchCount ) )
             {
                 this.fetchSize = Integer.parseInt( fetchCount );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.fetchSize. Falling back to {}",
-                             fetchCount, this.fetchSize );
+                LOGGER.warn( "'{}' is not a valid value for wres.fetchSize. Falling back to {}.",
+                             fetchCount,
+                             this.fetchSize );
             }
         }
 
         String maxCopies = System.getProperty( "wres.maximumCopies" );
-        if (maxCopies != null)
+        if ( maxCopies != null )
         {
-            if (StringUtils.isNumeric( maxCopies ))
+            if ( StringUtils.isNumeric( maxCopies ) )
             {
                 this.maximumCopies = Integer.parseInt( maxCopies );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumCopies. Falling back to {}",
-                             maxCopies, this.maximumCopies );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumCopies. Falling back to {}.",
+                             maxCopies,
+                             this.maximumCopies );
             }
         }
 
         String netcdfPeriod = System.getProperty( "wres.netcdfCachePeriod" );
-        if (netcdfPeriod != null)
+        if ( netcdfPeriod != null )
         {
-            if (StringUtils.isNumeric( netcdfPeriod ))
+            if ( StringUtils.isNumeric( netcdfPeriod ) )
             {
                 this.netcdfCachePeriod = Integer.parseInt( netcdfPeriod );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.netcdfCachePeriod. Falling back to {}",
-                             netcdfPeriod, this.netcdfCachePeriod );
+                LOGGER.warn( "'{}' is not a valid value for wres.netcdfCachePeriod. Falling back to {}.",
+                             netcdfPeriod,
+                             this.netcdfCachePeriod );
             }
         }
 
         String minimumCache = System.getProperty( "wres.minimumCachedNetcdf" );
-        if (minimumCache != null)
+        if ( minimumCache != null )
         {
-            if (StringUtils.isNumeric( minimumCache ))
+            if ( StringUtils.isNumeric( minimumCache ) )
             {
                 this.minimumCachedNetcdf = Integer.parseInt( minimumCache );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.minimumCachedNetcdf. Falling back to {}",
-                             minimumCache, this.minimumCachedNetcdf );
+                LOGGER.warn( "'{}' is not a valid value for wres.minimumCachedNetcdf. Falling back to {}.",
+                             minimumCache,
+                             this.minimumCachedNetcdf );
             }
         }
 
         String maximumCache = System.getProperty( "wres.maximumCachedNetcdf" );
-        if (maximumCache != null)
+        if ( maximumCache != null )
         {
-            if (StringUtils.isNumeric( maximumCache ))
+            if ( StringUtils.isNumeric( maximumCache ) )
             {
                 this.maximumCachedNetcdf = Integer.parseInt( maximumCache );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumCachedNetcdf. Falling back to {}",
-                             maximumCache, this.maximumCachedNetcdf );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumCachedNetcdf. Falling back to {}.",
+                             maximumCache,
+                             this.maximumCachedNetcdf );
             }
         }
 
         String hardNetcdfLimit = System.getProperty( "wres.hardNetcdfCacheLimit" );
-        if (hardNetcdfLimit != null)
+        if ( hardNetcdfLimit != null )
         {
-            if (StringUtils.isNumeric( hardNetcdfLimit ))
+            if ( StringUtils.isNumeric( hardNetcdfLimit ) )
             {
                 this.hardNetcdfCacheLimit = Integer.parseInt( hardNetcdfLimit );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.hardNetcdfCacheLimit. Falling back to {}",
-                             hardNetcdfLimit, this.hardNetcdfCacheLimit );
+                LOGGER.warn( "'{}' is not a valid value for wres.hardNetcdfCacheLimit. Falling back to {}.",
+                             hardNetcdfLimit,
+                             this.hardNetcdfCacheLimit );
             }
         }
 
         String maxArchiveThreads = System.getProperty( "wres.maximumArchiveThreads" );
-        if (maxArchiveThreads != null)
+        if ( maxArchiveThreads != null )
         {
-            if (StringUtils.isNumeric( maxArchiveThreads ))
+            if ( StringUtils.isNumeric( maxArchiveThreads ) )
             {
                 this.maximumArchiveThreads = Integer.parseInt( maxArchiveThreads );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumArchiveThreads. Falling back to {}",
-                             maxArchiveThreads, this.maximumArchiveThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumArchiveThreads. Falling back to {}.",
+                             maxArchiveThreads,
+                             this.maximumArchiveThreads );
             }
         }
 
         String storePath = System.getProperty( "wres.StorePath" );
-        if (storePath != null)
+        if ( storePath != null )
         {
             this.netcdfStorePath = storePath;
         }
@@ -826,15 +895,16 @@ public class SystemSettings extends XMLReader
 
         if ( directory != null && !directory.isEmpty() )
         {
-             if ( Strings.isValidPathFormat( directory ) )
-             {
-                 this.dataDirectory = Paths.get( directory );
-             }
-             else
-             {
-                 LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}",
-                              directory, this.dataDirectory );
-             }
+            if ( Strings.isValidPathFormat( directory ) )
+            {
+                this.dataDirectory = Paths.get( directory );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
+                             directory,
+                             this.dataDirectory );
+            }
         }
 
         String maxPoolThreads = System.getProperty( "wres.maximumPoolThreads" );
@@ -847,8 +917,9 @@ public class SystemSettings extends XMLReader
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumPoolThreads. Falling back to {}",
-                             maxPoolThreads, this.maximumPoolThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumPoolThreads. Falling back to {}.",
+                             maxPoolThreads,
+                             this.maximumPoolThreads );
             }
         }
 
@@ -863,8 +934,9 @@ public class SystemSettings extends XMLReader
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumMetricThreads. Falling back to {}",
-                             maxMetricThreads, this.maximumMetricThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumMetricThreads. Falling back to {}.",
+                             maxMetricThreads,
+                             this.maximumMetricThreads );
             }
         }
 
@@ -879,8 +951,9 @@ public class SystemSettings extends XMLReader
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumThresholdThreads. Falling back to {}",
-                             maxThresholdThreads, this.maximumThresholdThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumThresholdThreads. Falling back to {}.",
+                             maxThresholdThreads,
+                             this.maximumThresholdThreads );
             }
         }
 
@@ -895,11 +968,28 @@ public class SystemSettings extends XMLReader
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumProductThreads. Falling back to {}",
-                             maxProductThreads, this.maximumProductThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumProductThreads. Falling back to {}.",
+                             maxProductThreads,
+                             this.maximumProductThreads );
             }
         }
-        
+
+        String maxReadThreads = System.getProperty( "wres.maximumReadThreads" );
+
+        if ( maxReadThreads != null )
+        {
+            if ( StringUtils.isNumeric( maxReadThreads ) )
+            {
+                this.maximumReadThreads = Integer.parseInt( maxReadThreads );
+            }
+            else
+            {
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumReadThreads. Falling back to {}.",
+                             maxReadThreads,
+                             this.maximumReadThreads );
+            }
+        }
+
         String fBatchThreshold = System.getProperty( "wres.featureBatchThreshold" );
 
         if ( fBatchThreshold != null )
@@ -927,7 +1017,7 @@ public class SystemSettings extends XMLReader
                              this.featureBatchThreshold );
             }
         }
-        
+
         String fBatchSize = System.getProperty( "wres.featureBatchSize" );
 
         if ( fBatchSize != null )

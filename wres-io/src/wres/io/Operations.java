@@ -206,8 +206,8 @@ public final class Operations
                 new BasicThreadFactory.Builder().namingPattern( "Outer Reading Thread %d" )
                                                 .build();
         ThreadPoolExecutor readingExecutor =
-                new ThreadPoolExecutor( systemSettings.maximumThreadCount(),
-                                        systemSettings.maximumThreadCount(),
+                new ThreadPoolExecutor( systemSettings.getMaximumReadThreads(),
+                                        systemSettings.getMaximumReadThreads(),
                                         systemSettings.poolObjectLifespan(),
                                         TimeUnit.MILLISECONDS,
                                         // Queue should be large enough to allow
@@ -218,7 +218,7 @@ public final class Operations
                                         threadFactoryWithNaming );
         readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         List<IngestResult> projectSources = new ArrayList<>();
-
+        
         SourceLoader loader = new SourceLoader( timeSeriesIngester,
                                                 systemSettings,
                                                 readingExecutor,
@@ -270,16 +270,6 @@ public final class Operations
         }
         finally
         {
-            if ( !systemSettings.isInMemory() )
-            {
-                List<IngestResult> leftovers = database.completeAllIngestTasks();
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "{} indirect ingest results.", leftovers.size() );
-                }
-                projectSources.addAll( leftovers );
-            }
-
             // Close the ingest executor
             readingExecutor.shutdownNow();
         }

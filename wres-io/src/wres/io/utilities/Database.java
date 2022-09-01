@@ -21,9 +21,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -43,9 +41,7 @@ import static java.time.ZoneOffset.UTC;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnableException;
 import wres.io.ingesting.IngestException;
-import wres.io.ingesting.IngestResult;
 import wres.system.DatabaseType;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
@@ -83,15 +79,6 @@ public class Database
     private static final String NEWLINE = System.lineSeparator();
 
     /**
-     * A queue containing tasks used to ingest data into the database
-     * <br><br>
-     * TODO: Make this a collection of futures, not future lists of ingest results.
-     * Other things need to occupy this collection that don't contain ingest results
-     */
-    private final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
-            new LinkedBlockingQueue<>();
-
-    /**
      * Mapping between the number of a forecast value partition and its name
      */
     private final Map<Integer, String> timeSeriesValuePartitionNames =
@@ -117,7 +104,7 @@ public class Database
                                                                   .getDatabaseMaximumPoolSize(),
                                                               this.getSystemSettings()
                                                                   .getDatabaseMaximumPoolSize(),
-                                                              systemSettings.poolObjectLifespan(),
+                                                              this.systemSettings.poolObjectLifespan(),
                                                               TimeUnit.MILLISECONDS,
                                                               new ArrayBlockingQueue<>( this.getSystemSettings()
                                                                                             .getDatabaseMaximumPoolSize()
@@ -128,73 +115,6 @@ public class Database
         // the upper bound of the executor's internal queue has been hit
         executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         return executor;
-    }
-
-    /**
-     * Loops through all stored ingest tasks and ensures that they all complete
-     * @return the list of resulting ingested file identifiers
-     * @throws IngestException if the ingest fails
-     */
-    public List<IngestResult> completeAllIngestTasks() throws IngestException
-    {
-        LOGGER.trace( "Now completing all issued ingest tasks..." );
-
-        List<IngestResult> result = new ArrayList<>();
-
-        try
-        {
-            // Make sure that feedback gets displayed
-            ProgressMonitor.setShouldUpdate( this.getSystemSettings()
-                                                 .getUpdateProgressMonitor() );
-
-            // Process every stored task
-            for ( Future<List<IngestResult>> task : this.storedIngestTasks )
-            {
-                // Tell the client that we're moving on to the next part of work
-                ProgressMonitor.increment();
-
-                // If the task hasn't completed, we want to get the results and propagate them
-                if ( !task.isDone() )
-                {
-                    // Get the task
-                    List<IngestResult> singleResult = task.get();
-
-                    // Update the monitor, saying that a task has completed
-                    ProgressMonitor.completeStep();
-
-                    // If there was a result, add it to the list
-                    if ( singleResult != null )
-                    {
-                        result.addAll( singleResult );
-                    }
-                    else if ( LOGGER.isTraceEnabled() )
-                    {
-                        LOGGER.trace( "A null value was returned in the "
-                                      + "Database class. Task: {}",
-                                      task );
-                    }
-                }
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Ingest task completion was interrupted.", ie );
-            Thread.currentThread().interrupt();
-        }
-        catch ( ExecutionException ee )
-        {
-            String message = "Could not complete all ingest tasks.";
-            throw new IngestException( message, ee );
-        }
-
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "completeAllIngestTasks returning {} results.",
-                          result.size() );
-        }
-
-        return Collections.unmodifiableList( result );
     }
 
     /**

@@ -137,6 +137,8 @@ public class AnalysisRetrieverTest
                .thenReturn( 10 );
         Mockito.when( this.mockSystemSettings.maximumThreadCount() )
                .thenReturn( 7 );
+        Mockito.when( this.mockSystemSettings.getMaximumIngestThreads() )
+               .thenReturn( 7 );
         PairConfig pairConfig = Mockito.mock( PairConfig.class );
         Mockito.when( pairConfig.getGridSelection() )
                .thenReturn( List.of() );
