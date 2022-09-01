@@ -201,11 +201,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         // A queue of tasks
         BlockingQueue<Future<List<IngestResult>>> ingestQueue =
-                new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() );
+                new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() );
 
         // Start to get results before the ingest queue overflows
         CountDownLatch startGettingResults = new CountDownLatch( this.getSystemSettings()
-                                                                     .maximumThreadCount() );
+                                                                     .getMaximumIngestThreads() );
 
         List<IngestResult> finalResults = new ArrayList<>();
 
@@ -1485,15 +1485,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                 .build();
 
         ThreadPoolExecutor executorInner =
-                new ThreadPoolExecutor( this.systemSettings.maximumThreadCount(),
-                                        this.systemSettings.maximumThreadCount(),
+                new ThreadPoolExecutor( this.systemSettings.getMaximumIngestThreads(),
+                                        this.systemSettings.getMaximumIngestThreads(),
                                         this.systemSettings.poolObjectLifespan(),
                                         TimeUnit.MILLISECONDS,
                                         // Queue should be large enough to allow
                                         // join() call below to be reached with
                                         // zero or few rejected submissions to
                                         // the executor service.
-                                        new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() ),
+                                        new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() ),
                                         threadFactoryWithNaming );
         executorInner.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         this.executor = executorInner;
