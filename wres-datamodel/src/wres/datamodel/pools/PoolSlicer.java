@@ -287,20 +287,25 @@ public class PoolSlicer
         // Handle cases with no data or some missing data
         if ( keysWithoutFilter.size() == pools.size() )
         {
-            throw new PoolException( "Failed to filter pool " + pool.getMetadata()
-                                     + ". After decomposing the pool into smaller pools by metadata attribute, failed "
-                                     + "to identify a filter for any of these attribute instances: "
+            throw new PoolException( "Failed to filter a pool into the subset of time-series events required. This "
+                                     + "probably occurred because one of the smaller pools from which the pool was "
+                                     + "constructed had incorrect metadata. Failed to identify a filter for any of "
+                                     + "these metadata attribute instances: "
                                      + keysWithoutFilter
                                      + ". These filters were available: "
-                                     + filters );
+                                     + filters.keySet()
+                                     + ". The metadata of the pool to filter was: "
+                                     + pool.getMetadata()
+                                     + "." );
         }
         else if ( !keysWithoutFilter.isEmpty() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "When filtering pool {} into smaller pools by metadata attribute, failed to correlate some "
+            LOGGER.debug( "When filtering a pool into smaller pools by metadata attribute, failed to correlate some "
                           + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
-                          + "these attribute instances and they will not be included in the evaluation.",
-                          pool.getMetadata(),
-                          keysWithoutFilter );
+                          + "these attribute instances and they will not be included in the evaluation. The pool "
+                          + "metadata was {}.",
+                          keysWithoutFilter,
+                          pool.getMetadata() );
         }
 
         return poolBuilder.build();

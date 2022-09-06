@@ -702,6 +702,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureTuple nextLeftRightFeature = nextEntry.getKey();
             FeatureKey leftFeature = nextLeftRightFeature.getLeft();
+            
+            // For now, use the complete left-right-baseline tuple for both the main and baseline pools. However, this
+            // is an awkward abstraction - the pool metadata should really deal with only left-right descriptions, 
+            // since there is separate metadata for left-right and left-baseline pairs. Once fixed, the geometries will 
+            // be pairs rather than tuples in most contexts, including the pool metadata
+            GeometryTuple geoTuple = this.getGeometryTuple( nextLeftRightFeature );
+            
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
             Pool.Builder<TimeSeries<Pair<L, R>>> nextMiniPoolBuilder = new Pool.Builder<>();
@@ -710,9 +717,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                     this.metadata.getPool()
                                  .toBuilder()
                                  .clearGeometryTuples()
-                                 .addGeometryTuples( nextLeftRightFeature.getGeometryTuple() )
+                                 .addGeometryTuples( geoTuple )
                                  .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                 .addGeometryTuples( nextLeftRightFeature.getGeometryTuple() ) );
+                                                                 .addGeometryTuples( geoTuple ) );
 
             PoolMetadata nextInnerMainMeta = PoolMetadata.of( this.metadata.getEvaluation(),
                                                               newInnerMainMetaBuilder.build() );
@@ -734,9 +741,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                         this.baselineMetadata.getPool()
                                              .toBuilder()
                                              .clearGeometryTuples()
-                                             .addGeometryTuples( nextBaselineGeometry )
+                                             .addGeometryTuples( geoTuple )
                                              .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                             .addGeometryTuples( nextBaselineGeometry ) );
+                                                                             .addGeometryTuples( geoTuple ) );
 
                 PoolMetadata nextInnerBaseMeta = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
                                                                   newInnerBaseMetaBuilder.build() );
@@ -787,7 +794,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         return builder.build();
     }
+    
+    /**
+     * Generates a left-right-baseline tuple from a left-right tuple if a baseline exists.
+     * @param leftRightTuple the left-right tuple
+     * @return the left-right-baseline tuple
+     */
 
+    private GeometryTuple getGeometryTuple( FeatureTuple leftRightTuple )
+    {
+        if( this.hasBaseline() )
+        {
+            FeatureKey left = leftRightTuple.getLeft();
+            FeatureKey right = leftRightTuple.getRight();
+            FeatureKey baseline = this.baselineFeaturesByLeft.get( left );
+            return MessageFactory.getGeometryTuple( left, right, baseline );
+        }
+        
+        return leftRightTuple.getGeometryTuple();
+    }
+    
     /**
      * Creates a paired dataset from the input, rescaling the left/right data as needed.
      * 

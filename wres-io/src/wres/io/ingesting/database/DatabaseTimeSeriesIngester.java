@@ -303,18 +303,22 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             throw new PreIngestException( "Cannot ingest an empty time-series." );
         }
 
+        ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
+        Instant value = timeSeries.getEvents()
+                                  .last()
+                                  .getTime();
+
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Discovered a time-series with zero reference times. Adding a default reference time for "
-                          + "database ingest. The time-series metadata was: {}.",
+            LOGGER.debug( "Discovered a time-series with zero reference times. Adding a default reference time of type "
+                          + "{} with value {} for database ingest. The time-series metadata was: {}.",
+                          type,
+                          value,
                           timeSeries.getMetadata() );
         }
 
-        // Default reference time is the latest valid time in the series
-        Map<ReferenceTimeType, Instant> defaultReferenceTime = Map.of( ReferenceTimeType.UNKNOWN,
-                                                                       timeSeries.getEvents()
-                                                                                 .last()
-                                                                                 .getTime() );
+        // Add an arbitrary reference time of unknown type until the database schema accepts zero or more times
+        Map<ReferenceTimeType, Instant> defaultReferenceTime = Map.of( type, value );
 
         TimeSeriesMetadata adjusted = timeSeries.getMetadata()
                                                 .toBuilder()
@@ -423,7 +427,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                        timeSeries,
                                                        source.getId() );
 
-            // Finalize, which marks complete and unlocks
+            // Finalize, which marks the source complete and unlocks it
             results = this.finalizeNewSource( source, latches, dataSource );
         }
         // Source was not inserted, so this is an existing source. But was it completed or abandoned?
@@ -540,7 +544,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                    timeSeries,
                                                    source.getId() );
 
-            // Finalize, which marks complete and unlocks
+            // Finalize, which marks the source complete and unlocks it
             results = this.finalizeNewSource( source, latches, dataSource );
         }
         // Source was not inserted, so this is an existing source. But was it completed or abandoned?

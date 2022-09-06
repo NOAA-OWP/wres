@@ -192,8 +192,13 @@ public class SourceLoader
             throws IOException
     {
         // Try to load non-file source
-        CompletableFuture<List<IngestResult>> nonFileIngest = this.loadNonFileSource( source );
-
+        CompletableFuture<List<IngestResult>> nonFileIngest = null;
+        
+        if ( ReaderUtilities.isWebSource( source ) || ReaderUtilities.isNwmVectorSource( source ) )
+        {
+            nonFileIngest = this.loadNonFileSource( source );
+        }
+        
         // When the non-file source is detected, short-circuit the file way.
         if ( nonFileIngest != null )
         {
@@ -1011,17 +1016,6 @@ public class SourceLoader
     {
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.getValue();
-
-        // Interface defined and not a source of NWM vectors, so no path to return
-        if ( source.getInterface() != null && !source.getInterface()
-                                                     .name()
-                                                     .toLowerCase()
-                                                     .startsWith( "nwm_" ) )
-        {
-            LOGGER.debug( "There is an interface specified: {}, therefore not going to walk a directory tree.",
-                          source.getInterface() );
-            return null;
-        }
 
         // Is there a source path to evaluate? Only if the source is file-like
         if ( uri.toString().isEmpty() )

@@ -618,6 +618,7 @@ public class SystemSettings extends XMLReader
     public DataSource getConnectionPool()
     {
         int maxPoolSize = this.databaseConfiguration.getMaxPoolSize();
+        LOGGER.info( "Creating a database connection pool with {} connections...", maxPoolSize );
         long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
         DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
         return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
@@ -629,6 +630,7 @@ public class SystemSettings extends XMLReader
     public DataSource getHighPriorityConnectionPool()
     {
         int maxPoolSize = this.databaseConfiguration.getMaxHighPriorityPoolSize();
+        LOGGER.info( "Creating a high-priority database connection pool with {} connections...", maxPoolSize );
         long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
         DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
         return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
