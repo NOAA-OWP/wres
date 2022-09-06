@@ -95,13 +95,9 @@ public class RetrieverTestData
 
     static TimeSeries<Double> generateTimeSeriesDoubleWithNoReferenceTimes()
     {
-        // TODO: remove the latest obs reference time type when we allow zero.
-        ReferenceTimeType referenceTimeType = ReferenceTimeType.LATEST_OBSERVATION;
-        Instant lastObs = Instant.parse( "2023-04-01T10:00:00Z" );
-
         // Create the expected series
         TimeSeriesMetadata metadata =
-                TimeSeriesMetadata.of( Map.of( referenceTimeType, lastObs ),
+                TimeSeriesMetadata.of( Map.of(),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE,
@@ -117,7 +113,7 @@ public class RetrieverTestData
                 .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
                 .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
                 .addEvent( Event.of( Instant.parse( "2023-04-01T09:00:00Z" ), 86.0 ) )
-                .addEvent( Event.of( lastObs, 93.0 ) )
+                .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
                 .build();
     }
 
