@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -222,6 +223,7 @@ public class WresJobOutput
 
         Set<URI> jobOutputs = WresJob.getSharedJobResults()
                                      .getJobOutputs( id );
+        Set<URI> deletedOutputs = new ConcurrentSkipListSet<>(); 
 
         if ( jobOutputs == null )
         {
@@ -245,6 +247,7 @@ public class WresJobOutput
                 }
                 else
                 {
+                    deletedOutputs.add( outputResource );
                     LOGGER.debug( "Deleted {}", path );
                 }
             }
@@ -256,9 +259,23 @@ public class WresJobOutput
                           id, ioe );
 
             return Response.serverError()
-                    .entity( "Failed to delete resources for job " + id +
-                             " (internal server error)" )
+                    .entity( "Failed to delete all resources for job " + id +
+                             " though some may have been deleted before the exception occurred." )
                     .build();
+        }
+        catch ( IllegalStateException ise )
+        {
+            LOGGER.error( "Internal error deleting resources for job {}.",
+                          id, ise );
+
+            return Response.serverError()
+                    .entity( "Internal error deleting all resources for job " + id +
+                             " though some may have been deleted before the exception occurred." )
+                    .build();
+        }
+        finally
+        {
+            WresJob.getSharedJobResults().removeJobOutputs( id, deletedOutputs );
         }
 
         return Response.ok( "Successfully deleted resources for job " + id )
