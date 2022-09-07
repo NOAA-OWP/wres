@@ -28,7 +28,7 @@ RUN apk add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.6-855
+FROM registry.access.redhat.com/ubi8/ubi:8.6-903.1661794351
 
 RUN dnf install -y \
     java-11-openjdk-headless-1:11.0.16.0.8-1.el8_6 \
