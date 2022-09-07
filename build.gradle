@@ -1219,7 +1219,7 @@ project(':wres-tasker')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.80.Final'
 
         // Upgrade jackson-databind used by redisson (CVE-2020-36518)
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
@@ -1444,7 +1444,7 @@ project(':wres-eventsbroker')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Artemis catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.80.Final'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1506,7 +1506,7 @@ project(':wres-events')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.80.Final'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.0' )
         {
