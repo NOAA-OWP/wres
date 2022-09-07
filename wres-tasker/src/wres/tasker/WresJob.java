@@ -492,7 +492,7 @@ public class WresJob
         {
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
-                                          false,
+                                          true,
                                           false,
                                           false,
                                           null );
@@ -504,6 +504,7 @@ public class WresJob
                             .Builder()
                             .replyTo( jobStatusExchange )
                             .correlationId( jobId )
+                            .deliveryMode( 2 )
                             .build();
 
             // Inform the JobResults class to start looking for correlationId.
@@ -557,7 +558,7 @@ public class WresJob
         {
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
-                                          false,
+                                          true,
                                           false,
                                           false,
                                           null );

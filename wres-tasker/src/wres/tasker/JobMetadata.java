@@ -349,7 +349,41 @@ public class JobMetadata
         if ( !result )
         {
             LOGGER.warn( "Outputs for {} already had a value {} in it.",
-                         this.id, uri );
+                         getId(), uri );
+        }
+    }
+
+    boolean removeOutputs( Set<URI> uris )
+    {
+        if ( Objects.isNull( uris ) )
+        {
+            throw new IllegalStateException("Null set passed into removeOutputs for job " + getId());
+        }
+        else if ( uris.isEmpty() )
+        {
+            LOGGER.warn( "For job {}, attempt to remove an empty set of URIs from outputs is ignored.",
+                         getId());
+            return false;
+        } 
+        else if ( this.getOutputs().isEmpty() )
+        {
+            throw new IllegalStateException("Somehow, a request to remove a non-empty set of outputs "
+                    + "is being made when the current list of outputs is empty. That shouldn't happen.");
+        }
+        else
+        {
+            boolean result = this.getOutputs().removeAll( uris );
+
+            if ( !result )
+            {
+                LOGGER.warn( "For job {}, a remove-all of set {} failed.", getId(), uris );
+            }
+            else 
+            {
+                LOGGER.info( "Output removed for job {}", getId());
+            }
+
+            return result;
         }
     }
 
