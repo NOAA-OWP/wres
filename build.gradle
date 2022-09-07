@@ -317,6 +317,9 @@ project(':wres-system')
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
 
+        // Update vulnerable snakeyaml that Liquibase uses
+        implementation group: 'org.yaml', name: 'snakeyaml', version: '1.31'
+
         //JB @ 02/16/17
         testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.1-jre'
 
@@ -443,6 +446,9 @@ project(':wres-io')
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.10'
+
+        // Update vulnerable snakeyaml that Liquibase uses
+        implementation group: 'org.yaml', name: 'snakeyaml', version: '1.31'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:2.4.1'
