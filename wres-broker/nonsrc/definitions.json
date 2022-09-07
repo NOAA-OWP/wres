@@ -85,7 +85,7 @@
     {
       "name": "wres.job",
       "vhost": "wres",
-      "durable": false,
+      "durable": true,
       "auto_delete": false,
       "arguments": {}
     }
