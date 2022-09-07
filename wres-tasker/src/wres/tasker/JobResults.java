@@ -132,6 +132,39 @@ class JobResults
             this.jobMetadataById = caffeineCache.asMap();
             this.objectService = null;
         }
+        
+        //Scan the job metadata map for jobs that are IN_QUEUE or IN_PROGRESS.  Set watchers for
+        //each such job.
+        for ( Map.Entry<String,JobMetadata> nextMetadata : this.jobMetadataById.entrySet() )
+        {
+            String jobId = nextMetadata.getKey();
+            JobMetadata metadata = nextMetadata.getValue();
+
+            if ( (metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_QUEUE) ||
+                 (metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_PROGRESS) )
+            {
+                LOGGER.info("Found job {} in the redis map, which has status {}.  Setting up watchers to watch it.", jobId, metadata.getJobState());
+                CountDownLatch latch;
+                try
+                {
+                    latch = watchForJobFeedback( jobId,
+                                                 getJobStatusExchangeName() );
+                    latch.await();
+                }
+                catch ( IOException | TimeoutException e )
+                {
+                    LOGGER.warn( "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
+                                 jobId,
+                                 e );
+                }
+                catch ( InterruptedException e )
+                {
+                    LOGGER.warn( "Interrupted while waiting for job feedback watchers to bind for job {}.",
+                                 jobId,
+                                 e );
+                }
+            }
+        }
     }
 
     private boolean usingRedis()
@@ -770,6 +803,30 @@ class JobResults
         }
 
         return metadata.getOutputs();
+    }
+
+    /**
+     * Remove outputs from the list of outputs.
+     * @param jobId the job
+     * @param outputs the outputs to remove
+     * @throws IllegalStateException if the removal encounters problems.
+     */
+    void removeJobOutputs( String jobId, Set<URI> outputs )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+
+        if ( Objects.isNull( metadata ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+
+        //This call may throw an IllegalStateException.
+        boolean result = metadata.removeOutputs( outputs );
+
+        if ( !result )
+        {
+            LOGGER.warn("Result from removeOutputs is not true; check previous warnings for why.");
+        }
     }
 
     /**

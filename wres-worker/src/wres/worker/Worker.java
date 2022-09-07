@@ -90,7 +90,7 @@ public class Worker
             // Take precisely one job at a time:
             receiveChannel.basicQos( 1 );
 
-            receiveChannel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
+            receiveChannel.queueDeclare( RECV_QUEUE_NAME, true, false, false, null );
 
             BlockingQueue<WresProcess> processToLaunch = new ArrayBlockingQueue<>( 1 );
 
