@@ -62,6 +62,7 @@ services:
         networks:
             wres_net:
     broker:
+        hostname: localhost
         ports:
          - "5671:5671"
          - "15671:15671"
@@ -70,6 +71,8 @@ services:
         volumes:
          # For certificates and keys that correspond to them:
          - /mnt/wres_keys:/wres_secrets:ro
+         # To support durable queues after a cycling down and up.
+         - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
         # rabbitmq.conf should have 360m specified as high watermark
