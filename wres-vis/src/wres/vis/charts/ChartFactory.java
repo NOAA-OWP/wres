@@ -607,18 +607,7 @@ public class ChartFactory
             if ( next.getData().getStatisticsCount() != 0 )
             {
                 List<BoxplotStatisticOuter> nextStatistics = List.of( next );
-                JFreeChart chart = this.getBoxplotChart( nextStatistics, durationUnits );
-
-                // Set the domain title
-                String domainTitle = valueType.toString()
-                                              .replace( "_", " " )
-                                     + " ["
-                                     + valueUnits
-                                     + "]";
-
-                chart.getXYPlot()
-                     .getDomainAxis()
-                     .setLabel( domainTitle );
+                JFreeChart chart = this.getBoxplotChartPerPool( nextStatistics, valueType, valueUnits, durationUnits );
 
                 TimeWindowOuter timeWindow = next.getMetadata()
                                                  .getTimeWindow();
@@ -638,6 +627,92 @@ public class ChartFactory
                       results.keySet() );
 
         return Collections.unmodifiableMap( results );
+    }
+
+    /**
+     * Creates a box plot chart containing data for one pool.
+     * 
+     * @param statistics the metric output to plot
+     * @param valueType the type of linked value for the domain axis
+     * @param valueUnits the type of value units for the domain axis
+     * @param durationUnits the duration units
+     * @return a {@link JFreeChart} instance
+     * @throws NullPointerException if any input is null
+     * @throws ChartBuildingException if the chart fails to build for any other reason
+     */
+    private JFreeChart getBoxplotChartPerPool( List<BoxplotStatisticOuter> statistics,
+                                               LinkedValueType valueType,
+                                               String valueUnits,
+                                               ChronoUnit durationUnits )
+    {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( valueType );
+        Objects.requireNonNull( valueUnits );
+        Objects.requireNonNull( durationUnits );
+
+        // Find the metadata for the first element, which is sufficient here
+        BoxplotStatisticOuter first = statistics.get( 0 );
+
+        MetricConstants metricName = first.getMetricName();
+        PoolMetadata metadata = first.getMetadata();
+        BoxplotMetric metric = first.getData()
+                                    .getMetric();
+        QuantileValueType type = metric.getQuantileValueType();
+        String metricUnits = metric.getUnits();
+
+        EnsembleAverageType ensembleAverageType = metadata.getPool()
+                                                          .getEnsembleAverageType();
+
+        // Determine the output type
+        ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
+
+        // Build the source
+        XYDataset source = ChartDataFactory.ofBoxplotStatistics( statistics, durationUnits );
+
+        String title = this.getChartTitle( metadata,
+                                           metricName,
+                                           null,
+                                           durationUnits,
+                                           chartType,
+                                           metricName.getMetricOutputGroup(),
+                                           ensembleAverageType );
+
+        // Create the titles
+        String domainTitle = valueType.toString()
+                                      .replace( "_", " " )
+                             + " ["
+                             + valueUnits
+                             + "]";
+
+        String rangeTitle = type.toString()
+                                .replace( "_", " " )
+                            + " ["
+                            + metricUnits
+                            + "]";
+
+        JFreeChart chart = org.jfree.chart.ChartFactory.createXYLineChart( title,
+                                                                           domainTitle,
+                                                                           rangeTitle,
+                                                                           source,
+                                                                           PlotOrientation.VERTICAL,
+                                                                           true,
+                                                                           false,
+                                                                           false );
+
+        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation 
+        // indicates that it reduces the quality of the box plots
+        chart.setAntiAlias( false );
+
+        chart.removeLegend();
+
+        XYPlot plot = chart.getXYPlot();
+        plot.setRenderer( this.getBoxPlotRenderer() );
+
+        this.setChartTheme( chart );
+        this.setChartPadding( chart );
+        this.setXYPlotAxes( plot, 0, 0, 0, 0, false, true ); // Autofit axes
+
+        return chart;
     }
 
     /**
@@ -1054,7 +1129,7 @@ public class ChartFactory
     }
 
     /**
-     * Sets the domain axis for lead durations in integer units.
+     * Sets the domain axis for lead durations in decimal units.
      * @param plot the plot
      * @throws NullPointerException if the input is null
      */
@@ -1063,9 +1138,9 @@ public class ChartFactory
     {
         Objects.requireNonNull( plot );
 
-        // Use integers/non-scientific notation for the domain axis labels
-        DecimalFormat newFormat = new DecimalFormat( "#" );
-        newFormat.setMaximumFractionDigits( 0 );
+        // Use decimal notation for the domain axis labels with up to 5 d.p.
+        DecimalFormat newFormat = new DecimalFormat( "#.#" );
+        newFormat.setMaximumFractionDigits( 5 );
         NumberAxis domainAxis = (NumberAxis) plot.getDomainAxis();
         domainAxis.setNumberFormatOverride( newFormat );
     }

@@ -764,7 +764,7 @@ public class SystemSettings extends XMLReader
 
     private void applySystemPropertyOverrides()
     {
-        String maxIngestThreads = System.getProperty( "wres.maxIngestThreads" );
+        String maxIngestThreads = System.getProperty( "wres.maximumIngestThreads" );
         if ( maxIngestThreads != null )
         {
             if ( StringUtils.isNumeric( maxIngestThreads ) )
@@ -776,7 +776,7 @@ public class SystemSettings extends XMLReader
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maxIngestThreads. Falling back to {}.",
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumIngestThreads. Falling back to {}.",
                              maxIngestThreads,
                              this.maximumIngestThreads );
             }

@@ -143,14 +143,13 @@ public class Main {
             if( ! SYSTEM_SETTINGS.isInMemory() )
             {
                 sharedResources.getDatabase()
-                .logExecution(
-                          args,
-                          result.getName(),
-                          result.getHash(),
-                          Range.open( beganExecution, endedExecution ),
-                          result.failed(),
-                          exception,
-                          Main.getVersion() );   
+                               .logExecution( args,
+                                              result.getName(),
+                                              result.getHash(),
+                                              Range.open( beganExecution, endedExecution ),
+                                              result.failed(),
+                                              exception,
+                                              Main.getVersion() );
             }
 
             if ( result.failed() )
