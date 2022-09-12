@@ -192,6 +192,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( outerSource );
 
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Ingesting time-series from source {}.", outerSource );
+        }
+        
         // If this is a gridded dataset, it has special treatment, inserting the sources only. This will disappear
         // if/when gridded ingest is normalized with other ingest: see #51232.
         if ( outerSource.isGridded() )

@@ -39,7 +39,7 @@
          sequence, the rate of reading will depend on the rate of ingest, which 
          will in turn depend on the latency of the persistent store, including 
          the number of connections allowed. --> 
-    <maximum_ingest_threads>7</maximum_ingest_threads>
+    <maximum_ingest_threads>10</maximum_ingest_threads>
     <maximum_web_client_threads>6</maximum_web_client_threads>
     <!-- The maximum number of threads to use when reading a single tarred
          archive. -->
