@@ -72,11 +72,11 @@ public class Evaluator
         Objects.requireNonNull( executor );
         Objects.requireNonNull( brokerConnectionFactory );
 
-        if( ! systemSettings.isInMemory() )
+        if ( !systemSettings.isInMemory() )
         {
             Objects.requireNonNull( database );
         }
-        
+
         this.systemSettings = systemSettings;
         this.database = database;
         this.executor = executor;
@@ -162,8 +162,8 @@ public class Evaluator
                      projectConfigPlus );
 
         SystemSettings innerSystemSettings = this.getSystemSettings();
-        
-        if( innerSystemSettings.isInMemory() )
+
+        if ( innerSystemSettings.isInMemory() )
         {
             LOGGER.info( "Running project {} in memory.", projectConfigPlus );
         }
@@ -186,7 +186,10 @@ public class Evaluator
             UserInputException e = new UserInputException( message );
             failure.setFailed();
             failure.commit();
-            return ExecutionResult.failure( e );
+            // #108090
+            return ExecutionResult.failure( projectConfigPlus.getProjectConfig()
+                                                             .getName(),
+                                            e );
         }
 
         return this.evaluate( projectConfigPlus );
