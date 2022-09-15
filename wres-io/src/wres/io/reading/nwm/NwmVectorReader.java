@@ -102,9 +102,9 @@ public class NwmVectorReader implements TimeSeriesReader
                       referenceTimes );
 
         // Read the time-series
-        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier2( dataSource,
-                                                                          referenceTimes,
-                                                                          featureBlocks );
+        Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource,
+                                                                         referenceTimes,
+                                                                         featureBlocks );
 
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
@@ -234,9 +234,9 @@ public class NwmVectorReader implements TimeSeriesReader
      * @return a time-series supplier
      */
 
-    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier2( DataSource dataSource,
-                                                              Set<Instant> referenceTimes,
-                                                              List<List<Integer>> featureBlocks )
+    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
+                                                             Set<Instant> referenceTimes,
+                                                             List<List<Integer>> featureBlocks )
     {
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
@@ -709,13 +709,19 @@ public class NwmVectorReader implements TimeSeriesReader
                                             Instant latest,
                                             NWMProfile nwmProfile )
     {
+        // Earliest and latest are the same? #99039
+        if ( earliest.equals( latest ) )
+        {
+            LOGGER.debug( "Discovered that the earliest and latest reference times are the same: {}.", earliest );
+            return Set.of( earliest );
+        }
 
         Set<Instant> datetimes = new HashSet<>();
         Duration issuedStep = nwmProfile.getDurationBetweenReferenceDatetimes();
 
-        //Simply truncate earliest to be at time 0 for the earliest
-        //day, that should be a good starting point for finding the first 
-        //NWM forecast reference strictly after the provided earliest Instant.
+        // Simply truncate earliest to be at time 0 for the earliest
+        // day, that should be a good starting point for finding the first 
+        // NWM forecast reference strictly after the provided earliest Instant.
         // Then add the duration past midnight of the first forecast.
         Instant forecastDatetime = earliest.truncatedTo( ChronoUnit.DAYS )
                                            .plus( nwmProfile.getDurationPastMidnight() );
