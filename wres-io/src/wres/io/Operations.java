@@ -31,7 +31,6 @@ import wres.io.data.caching.GriddedFeatures;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
-import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.SourceLoader2;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
@@ -219,13 +218,10 @@ public final class Operations
         readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         List<IngestResult> projectSources = new ArrayList<>();
         
-        SourceLoader loader = new SourceLoader( timeSeriesIngester,
+        SourceLoader2 loader = new SourceLoader2( timeSeriesIngester,
                                                 systemSettings,
                                                 readingExecutor,
-                                                database,
-                                                caches,
                                                 projectConfig,
-                                                lockManager,
                                                 griddedFeatures );
 
         try
