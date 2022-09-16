@@ -143,9 +143,12 @@ public class NwmVectorReader implements TimeSeriesReader
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.NETCDF_VECTOR );
 
-        // Validate that the source contains a readable file or directory
-        ReaderUtilities.validateFileSource( dataSource, true );
-
+        // Validate that the source contains a readable file or directory, unless it has an http scheme (e.g., d-store)
+        if( ! ReaderUtilities.isWebSource( dataSource ) )
+        {
+            ReaderUtilities.validateFileSource( dataSource, true );
+        }
+        
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
