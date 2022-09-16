@@ -4,6 +4,9 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -183,9 +186,18 @@ class NWMTimeSeries implements Closeable
 
         this.featuresNotFound = new HashSet<>( 1 );
 
-        // Open all the relevant files during construction, or fail.
+        // Open all the relevant files during construction, or fail.        
+        Set<URI> resourcesNotFound = new HashSet<>();
         for ( URI netcdfUri : netcdfUris )
         {
+            Path path = Paths.get( netcdfUri );
+
+            if ( !Files.exists( path ) )
+            {
+                resourcesNotFound.add( netcdfUri );
+                continue;
+            }
+
             NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
             Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
             openBlobQueue.add( futureBlob );
@@ -207,20 +219,9 @@ class NWMTimeSeries implements Closeable
                 }
                 catch ( ExecutionException ee )
                 {
-                    Throwable cause = ee.getCause();
-
-                    if ( Objects.nonNull( cause )
-                         && cause instanceof FileNotFoundException )
-                    {
-                        LOGGER.warn( "Skipping resource not found: {}",
-                                     cause.getMessage() );
-                    }
-                    else
-                    {
-                        this.close();
-                        throw new PreIngestException( "Failed to open netCDF resource.",
-                                                      ee );
-                    }
+                    this.close();
+                    throw new PreIngestException( "Failed to open netCDF resource.",
+                                                  ee );
                 }
             }
         }
@@ -241,48 +242,45 @@ class NWMTimeSeries implements Closeable
             }
             catch ( ExecutionException ee )
             {
-                Throwable cause = ee.getCause();
-
-                if ( Objects.nonNull( cause )
-                     && cause instanceof FileNotFoundException )
-                {
-                    LOGGER.warn( "Skipping resource not found: {}",
-                                 cause.getMessage() );
-                }
-                else
-                {
-                    this.close();
-                    throw new PreIngestException( "Failed to open netCDF resource.",
-                                                  ee );
-                }
+                this.close();
+                throw new PreIngestException( "Failed to open netCDF resource.",
+                                              ee );
             }
         }
-
+        
         this.featureCache = new NWMFeatureCache( this.netcdfFiles );
 
+        // Nothing missing
         if ( netcdfUris.size() == this.netcdfFiles.size() )
         {
-            LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
+            LOGGER.debug( "Successfully opened NWM TimeSeries with reference datetime {} and profile {} from {}.",
                           referenceDatetime,
                           profile,
                           this.baseUri );
         }
-        else if ( this.netcdfFiles.size() == 0 )
+        // Something missing
+        else if ( LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime,
-                         profile,
-                         this.baseUri );
-        }
-        else
-        {
-            LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
-                         referenceDatetime,
-                         profile,
-                         this.baseUri );
+            // Everything missing
+            if ( this.netcdfFiles.isEmpty() )
+            {
+                LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from {}.",
+                             referenceDatetime,
+                             profile,
+                             this.baseUri );
+            }
+            // Something missing
+            else
+            {
+                LOGGER.warn( "Found a partial NWM TimeSeries with reference datetime {} and profile {} from {}."
+                             + "The following resources were not found: {}.",
+                             referenceDatetime,
+                             profile,
+                             this.baseUri,
+                             resourcesNotFound );
+            }
         }
     }
-
 
     /**
      * Create the Set of URIs for the whole forecast based on given nwm profile.
