@@ -136,6 +136,7 @@ public class JobStatusMessenger implements Runnable
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
+                        .deliveryMode ( 2 )
                         .build();
 
         int order = this.getOrder().getAndIncrement();

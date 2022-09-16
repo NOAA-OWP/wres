@@ -1,10 +1,10 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.6-903.1661794351
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.16.0.8-1.el8_6 \
+    java-11-openjdk-headless-1:11.0.16.1.1-1.el8_6 \
     unzip-6.0-46.el8 \
     procps-ng-3.3.15-6.el8 \
-    iproute-5.15.0-4.el8 \
+    iproute-5.15.0-4.el8_6.1 \
     hostname-3.20-6.el8 \
     && dnf clean all
 

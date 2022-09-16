@@ -244,6 +244,7 @@ class WresProcess implements Callable<Integer>
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
+                        .deliveryMode ( 2 )
                         .build();
 
         try ( Channel channel = this.getConnection().createChannel() )

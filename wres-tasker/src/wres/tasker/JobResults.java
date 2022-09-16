@@ -294,7 +294,7 @@ class JobResults
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me?
-                String queueName = channel.queueDeclare().getQueue();
+                String queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
                 // Does this have any effect?
                 AMQP.Queue.BindOk bindResult = channel.queueBind( queueName, exchangeName, bindingKey );
 
@@ -320,7 +320,12 @@ class JobResults
 
                 LOGGER.debug( "Waiting to take a result value..." );
                 resultValue = result.take();
-                LOGGER.debug( "Finished taking a result value." );
+                LOGGER.debug( "Finished taking a result value. Deleting queue." );
+                AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
+                if (deleteOk == null) 
+                {
+                    LOGGER.warn( "Delete queue with name '" + queueName + "' failed. There might be a zombie queue." );
+                }
             }
             catch ( InterruptedException ie )
             {
@@ -459,7 +464,7 @@ class JobResults
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me.
-                String queueName = channel.queueDeclare().getQueue();
+                String queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
                 channel.queueBind( queueName, exchangeName, bindingKey );
 
                 JobStandardStreamConsumer jobStandardStreamConsumer =
@@ -476,6 +481,13 @@ class JobResults
                                                      oneLineOfOutput,
                                                      sharer,
                                                      this.getWhichStream().toString() );
+
+                LOGGER.info("Deleting the queue {}", queueName);
+                AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
+                if (deleteOk == null) 
+                {
+                    LOGGER.warn( "Delete queue with name '" + queueName + "' failed. There might be a zombie queue." );
+                }
             }
             catch ( InterruptedException ie )
             {
