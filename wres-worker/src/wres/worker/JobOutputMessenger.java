@@ -317,6 +317,7 @@ class JobOutputMessenger implements Runnable, Closeable
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
+                        .deliveryMode ( 2 )
                         .build();
 
         URI theOutputResource = path.toUri();

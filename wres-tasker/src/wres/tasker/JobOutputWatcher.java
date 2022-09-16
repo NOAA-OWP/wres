@@ -9,6 +9,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
+
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import org.slf4j.Logger;
@@ -100,7 +102,7 @@ class JobOutputWatcher implements Runnable
             channel.exchangeDeclare( exchangeName, exchangeType );
 
             // As the consumer, I want an exclusive queue for me.
-            String queueName = channel.queueDeclare().getQueue();
+            String queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
             channel.queueBind( queueName, exchangeName, bindingKey );
 
             JobOutputConsumer jobOutputConsumer =
@@ -115,6 +117,13 @@ class JobOutputWatcher implements Runnable
                                                  jobOutputQueue,
                                                  sharer,
                                                  TOPIC );
+
+            LOGGER.info("Deleting the queue {}", queueName);
+            AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
+            if (deleteOk == null) 
+            {
+                LOGGER.warn( "Delete queue with name '" + queueName + "' failed. There might be a zombie queue." );
+            }
         }
         catch ( InterruptedException ie )
         {
