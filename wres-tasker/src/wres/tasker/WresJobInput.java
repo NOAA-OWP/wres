@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.Response;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
@@ -110,6 +111,7 @@ public class WresJobInput
         }
 
         java.nio.file.Path temp = null;
+        String md5 = "not_computed";
 
         try
         {
@@ -130,8 +132,14 @@ public class WresJobInput
             {
                 Files.setPosixFilePermissions( temp, permissions );
             }
+            
+            //I'm going to compute the md5 within the same try, since the inability
+            //to compute the md5 is likely a sign that the file was not put in
+            //place properly, so the catch, below, is appropriate.
+            InputStream is = Files.newInputStream( temp );
+            md5 = DigestUtils.md5Hex(is);
 
-            LOGGER.debug( "Data in: {}", temp );
+            LOGGER.debug( "Data in: {} (md5 = {})", temp, md5 );
         }
         catch ( IOException ioe )
         {
@@ -157,7 +165,11 @@ public class WresJobInput
         JobResults results = WresJob.getSharedJobResults();
         URI uri = temp.toUri();
         results.addInput( jobId, dataset, uri );
-        return Response.status( Response.Status.OK )
+
+        //At this point, the md5 should be computed, so there is no need to check
+        //for it.  If it wasn't computed, the catch, above, should have been 
+        //triggered.
+        return Response.status( Response.Status.OK ).header( "content-md5", md5 )
                        .build();
     }
 
