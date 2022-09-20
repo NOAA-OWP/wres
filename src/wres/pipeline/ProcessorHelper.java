@@ -83,9 +83,7 @@ import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
- * Class with functions to help in generating metrics and processing metric products.
- *
- * TODO: abstract away the functions used for graphical processing to a separate helper, GraphicalProductsHelper.
+ * Class with functions to help in generating evaluation results.
  *
  * @author James Brown
  * @author Jesse Bickel

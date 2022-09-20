@@ -348,7 +348,7 @@ public class ReaderUtilities
                                                       .getInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand.equals( InterfaceShortHand.WRDS_OBS );
+            return interfaceShortHand == InterfaceShortHand.WRDS_OBS;
         }
 
         return false;

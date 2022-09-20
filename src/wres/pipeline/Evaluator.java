@@ -38,8 +38,8 @@ import wres.system.SystemSettings;
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
  *
- * @author james.brown@hydrosolved.com
- * @author jesse
+ * @author James Brown
+ * @author Jesse Bickel
  */
 public class Evaluator
 {
@@ -518,7 +518,6 @@ public class Evaluator
 
     static class Executors
     {
-
         /**
          * Executor for input/output operations, such as ingest.
          */

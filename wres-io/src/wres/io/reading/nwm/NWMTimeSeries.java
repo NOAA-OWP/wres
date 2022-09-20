@@ -4,9 +4,6 @@ import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -37,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -82,7 +80,7 @@ class NWMTimeSeries implements Closeable
     private static final DateTimeFormatter NWM_HOUR_FORMATTER = DateTimeFormatter.ofPattern( "HH" );
 
     private static final int CONCURRENT_READS = 6;
-    
+
     private static final int POOL_OBJECT_LIFESPAN = 30000;
 
     private final NWMProfile profile;
@@ -117,12 +115,72 @@ class NWMTimeSeries implements Closeable
      */
     private final Set<Integer> featuresNotFound;
 
+    @Override
+    public String toString()
+    {
+        return "NWM Time Series with reference datetime "
+               + this.getReferenceDatetime()
+               + " and configuration "
+               + this.getProfile().getNwmConfiguration()
+               + " from base URI "
+               + this.getBaseUri();
+    }
+
+    @Override
+    public void close()
+    {
+        if ( !this.featuresNotFound.isEmpty() )
+        {
+            LOGGER.warn( "When reading {}, unable to find the following NWM feature id(s): {}",
+                         this,
+                         this.featuresNotFound );
+        }
+
+        for ( NetcdfFile netcdfFile : this.netcdfFiles )
+        {
+            try
+            {
+                netcdfFile.close();
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Could not close netCDF file {}",
+                             netcdfFile,
+                             ioe );
+            }
+        }
+
+        this.readExecutor.shutdown();
+
+        try
+        {
+            this.readExecutor.awaitTermination( 100, TimeUnit.MILLISECONDS );
+        }
+        catch ( InterruptedException ie )
+        {
+            List<Runnable> abandoned = this.readExecutor.shutdownNow();
+            LOGGER.warn( "{} shutdown interrupted, abandoned tasks: {}",
+                         this.readExecutor,
+                         abandoned,
+                         ie );
+            Thread.currentThread().interrupt();
+        }
+
+        if ( !this.readExecutor.isShutdown() )
+        {
+            List<Runnable> abandoned = this.readExecutor.shutdownNow();
+            LOGGER.warn( "{} did not shut down quickly, abandoned tasks: {}",
+                         this.readExecutor,
+                         abandoned );
+        }
+    }
+
     /**
      * @param profile the profile
      * @param referenceDatetime the reference time
      * @param baseUri the base uri
      * @throws NullPointerException When any argument is null.
-     * @throws PreIngestException When any netCDF blob could not be opened.
+     * @throws ReadException When any netCDF blob could not be opened.
      * @throws IllegalArgumentException When baseUri is not absolute.
      */
 
@@ -135,7 +193,7 @@ class NWMTimeSeries implements Closeable
         Objects.requireNonNull( referenceDatetime );
         Objects.requireNonNull( baseUri );
         Objects.requireNonNull( referenceTimeType );
-        
+
         this.profile = profile;
         this.referenceDatetime = referenceDatetime;
         this.referenceTimeType = referenceTimeType;
@@ -155,11 +213,11 @@ class NWMTimeSeries implements Closeable
         Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
                                                            referenceDatetime,
                                                            this.baseUri );
-        
+
         LOGGER.debug( "Created a NWM time-series reader with these {} URIs to read: {}.",
                       netcdfUris.size(),
                       netcdfUris );
-        
+
         this.netcdfFiles = new HashSet<>( netcdfUris.size() );
         LOGGER.debug( "Attempting to open NWM TimeSeries with reference datetime {} and profile {} from baseUri {}.",
                       referenceDatetime,
@@ -179,7 +237,7 @@ class NWMTimeSeries implements Closeable
                                                     nwmReaderQueue,
                                                     nwmReaderThreadFactory );
         this.readExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.AbortPolicy() );
-        BlockingQueue<Future<NetcdfFile>> openBlobQueue =
+        BlockingQueue<Pair<URI, Future<NetcdfFile>>> openBlobQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults =
                 new CountDownLatch( CONCURRENT_READS );
@@ -190,17 +248,10 @@ class NWMTimeSeries implements Closeable
         Set<URI> resourcesNotFound = new HashSet<>();
         for ( URI netcdfUri : netcdfUris )
         {
-            Path path = Paths.get( netcdfUri );
-
-            if ( !Files.exists( path ) )
-            {
-                resourcesNotFound.add( netcdfUri );
-                continue;
-            }
-
             NWMResourceOpener opener = new NWMResourceOpener( netcdfUri );
             Future<NetcdfFile> futureBlob = this.readExecutor.submit( opener );
-            openBlobQueue.add( futureBlob );
+            Pair<URI, Future<NetcdfFile>> futureBlobPair = Pair.of( netcdfUri, futureBlob );
+            openBlobQueue.add( futureBlobPair );
             startGettingResults.countDown();
 
             if ( startGettingResults.getCount() <= 0 )
@@ -208,6 +259,7 @@ class NWMTimeSeries implements Closeable
                 try
                 {
                     NetcdfFile netcdfFile = openBlobQueue.take()
+                                                         .getRight()
                                                          .get();
                     this.netcdfFiles.add( netcdfFile );
                 }
@@ -219,19 +271,18 @@ class NWMTimeSeries implements Closeable
                 }
                 catch ( ExecutionException ee )
                 {
-                    this.close();
-                    throw new PreIngestException( "Failed to open netCDF resource.",
-                                                  ee );
+                    this.allowFileNotFoundOrThrowReadException( netcdfUri, ee, resourcesNotFound );
                 }
             }
         }
 
         // Finish getting the remainder of netCDF resources being opened.
-        for ( Future<NetcdfFile> opening : openBlobQueue )
+        for ( Pair<URI, Future<NetcdfFile>> opening : openBlobQueue )
         {
             try
             {
-                NetcdfFile netcdfFile = opening.get();
+                NetcdfFile netcdfFile = opening.getRight()
+                                               .get();
                 this.netcdfFiles.add( netcdfFile );
             }
             catch ( InterruptedException ie )
@@ -242,12 +293,10 @@ class NWMTimeSeries implements Closeable
             }
             catch ( ExecutionException ee )
             {
-                this.close();
-                throw new PreIngestException( "Failed to open netCDF resource.",
-                                              ee );
+                this.allowFileNotFoundOrThrowReadException( opening.getLeft(), ee, resourcesNotFound );
             }
         }
-        
+
         this.featureCache = new NWMFeatureCache( this.netcdfFiles );
 
         // Nothing missing
@@ -413,43 +462,154 @@ class NWMTimeSeries implements Closeable
         return this.profile;
     }
 
-    private Instant getReferenceDatetime()
-    {
-        return this.referenceDatetime;
-    }
-
-    private ReferenceTimeType getReferenceTimeType()
-    {
-        return this.referenceTimeType;
-    }
-
-    private URI getBaseUri()
-    {
-        return this.baseUri;
-    }
-
-    private Set<NetcdfFile> getNetcdfFiles()
-    {
-        return this.netcdfFiles;
-    }
-
-    private String getNetcdfResourceNames()
-    {
-        StringJoiner joiner = new StringJoiner( ", ", "( ", " )" );
-        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
-        {
-            String netcdfResourceName = netcdfFile.getLocation();
-            joiner.add( netcdfResourceName );
-        }
-
-        return joiner.toString();
-    }
-
     int countOfNetcdfFiles()
     {
         return this.getNetcdfFiles().size();
     }
 
+    /**
+     * Read the first value for a given variable name attribute from the netCDF
+     * files.
+     * @param variableName The NWM variable name.
+     * @param attributeName The attribute associated with the variable.
+     * @return The String representation of the value of attribute of variable.
+     */
+
+    String readAttributeAsString( String variableName, String attributeName )
+    {
+        if ( !this.getNetcdfFiles().isEmpty() )
+        {
+            // Use the very first netcdf file, assume homogeneity.
+            NetcdfFile netcdfFile = this.getNetcdfFiles()
+                                        .iterator()
+                                        .next();
+            Variable variableVariable = netcdfFile.findVariable( variableName );
+
+            if ( variableVariable == null )
+            {
+                throw new IllegalArgumentException( "No variable '"
+                                                    + variableName
+                                                    + "' found in netCDF data "
+                                                    + netcdfFile );
+            }
+
+            return readAttributeAsString( variableVariable, attributeName );
+        }
+        else
+        {
+            throw new IllegalStateException( "No netCDF data available." );
+        }
+    }
+
+    /**
+     * Read TimeSerieses from across several netCDF single-validdatetime files.
+     * @param featureIds The NWM feature IDs to read.
+     * @param variableName The NWM variable name.
+     * @param unitName The unit of all variable values.
+     * @return a map of feature id to TimeSeries containing the events, may be
+     * empty when no feature ids given were found in the NWM Data.
+     */
+
+    Map<Integer, TimeSeries<Double>> readSingleValuedTimeSerieses( int[] featureIds,
+                                                                   String variableName,
+                                                                   String unitName )
+            throws InterruptedException, ExecutionException
+    {
+        // Check that the executor is still open
+        if ( this.readExecutor.isShutdown() )
+        {
+            throw new ReadException( "Cannot read from this NWM time-series because it has been closed: " + this );
+        }
+
+        BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
+                new ArrayBlockingQueue<>( CONCURRENT_READS );
+        CountDownLatch startGettingResults = new CountDownLatch( CONCURRENT_READS );
+        Map<Integer, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
+
+        for ( int featureId : featureIds )
+        {
+            SortedSet<Event<Double>> emptyList = new TreeSet<>();
+            events.put( featureId, emptyList );
+        }
+
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
+                                                          netcdfFile,
+                                                          featureIds.clone(),
+                                                          variableName,
+                                                          this.getReferenceDatetime(),
+                                                          this.featureCache,
+                                                          false );
+
+            Future<NWMDoubleReadOutcome> future = this.readExecutor.submit( reader );
+            reads.add( future );
+
+            startGettingResults.countDown();
+
+            if ( startGettingResults.getCount() <= 0 )
+            {
+                NWMDoubleReadOutcome outcome = reads.take()
+                                                    .get();
+                List<EventForNWMFeature<Double>> read = outcome.getData();
+                this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+
+                for ( EventForNWMFeature<Double> event : read )
+                {
+                    // The reads are across features, we want data by feature.
+                    SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
+                    sortedEvents.add( event.getEvent() );
+                }
+            }
+        }
+
+        // Finish getting the remainder of events being read.
+        for ( Future<NWMDoubleReadOutcome> reading : reads )
+        {
+            NWMDoubleReadOutcome outcome = reading.get();
+            List<EventForNWMFeature<Double>> read = outcome.getData();
+            this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+
+            for ( EventForNWMFeature<Double> event : read )
+            {
+                // The reads are across features, we want data by feature.
+                SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
+                sortedEvents.add( event.getEvent() );
+            }
+        }
+
+        // Go back and remove all the entries for non-existent data
+        for ( Integer notFoundFeature : this.featuresNotFound )
+        {
+            events.remove( notFoundFeature );
+        }
+
+        Map<Integer, TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
+
+        // Create each TimeSeries
+        for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
+        {
+            // TODO: use the reference datetime from actual data, not args.
+            // The datetimes seem to be synchronized but this is not true for
+            // analyses.
+            Geometry geometry = MessageFactory.getGeometry(
+                                                            series.getKey()
+                                                                  .toString() );
+            FeatureKey feature = FeatureKey.of( geometry );
+
+            TimeSeriesMetadata metadata =
+                    TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),
+                                           null,
+                                           variableName,
+                                           feature,
+                                           unitName );
+            TimeSeries<Double> timeSeries = TimeSeries.of( metadata,
+                                                           series.getValue() );
+            allTimeSerieses.put( series.getKey(), timeSeries );
+        }
+
+        return Collections.unmodifiableMap( allTimeSerieses );
+    }
 
     Map<Integer, TimeSeries<Ensemble>> readEnsembleTimeSerieses( int[] featureIds,
                                                                  String variableName,
@@ -457,7 +617,7 @@ class NWMTimeSeries implements Closeable
             throws InterruptedException, ExecutionException
     {
         // Check that the executor is still open
-        if( this.readExecutor.isShutdown() )
+        if ( this.readExecutor.isShutdown() )
         {
             throw new ReadException( "Cannot read from this NWM time-series because it has been closed: " + this );
         }
@@ -569,6 +729,62 @@ class NWMTimeSeries implements Closeable
         return Collections.unmodifiableMap( byFeatureId );
     }
 
+    private Instant getReferenceDatetime()
+    {
+        return this.referenceDatetime;
+    }
+
+    private ReferenceTimeType getReferenceTimeType()
+    {
+        return this.referenceTimeType;
+    }
+
+    private URI getBaseUri()
+    {
+        return this.baseUri;
+    }
+
+    private Set<NetcdfFile> getNetcdfFiles()
+    {
+        return this.netcdfFiles;
+    }
+
+    private String getNetcdfResourceNames()
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "( ", " )" );
+        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
+        {
+            String netcdfResourceName = netcdfFile.getLocation();
+            joiner.add( netcdfResourceName );
+        }
+
+        return joiner.toString();
+    }
+
+    /**
+     * Inspects the exception and, if the cause of the exception is a {@link FileNotFoundException}, adds it to the 
+     * supplied set, otherwise throws an {@link ReadException} indicating that the resource could not be read.
+     * @param uri the URI that was attempted
+     * @param e the exception to inspect
+     * @param resourcesNotFound the set of resources not found
+     * @throws ReadException if the cause of the input exception is not a {@link FileNotFoundException}
+     */
+
+    private void allowFileNotFoundOrThrowReadException( URI uri, ExecutionException e, Set<URI> resourcesNotFound )
+    {
+        Throwable cause = e.getCause();
+
+        if ( Objects.nonNull( cause )
+             && cause instanceof FileNotFoundException )
+        {
+            resourcesNotFound.add( uri );
+        }
+        else
+        {
+            this.close();
+            throw new ReadException( "Failed to open netCDF resource.", e );
+        }
+    }
 
     /**
      * Read data into intermediate format more convenient for wres.datamodel.
@@ -613,41 +829,6 @@ class NWMTimeSeries implements Closeable
                                                      .getValue();
         }
     }
-
-    /**
-     * Read the first value for a given variable name attribute from the netCDF
-     * files.
-     * @param variableName The NWM variable name.
-     * @param attributeName The attribute associated with the variable.
-     * @return The String representation of the value of attribute of variable.
-     */
-
-    String readAttributeAsString( String variableName, String attributeName )
-    {
-        if ( !this.getNetcdfFiles().isEmpty() )
-        {
-            // Use the very first netcdf file, assume homogeneity.
-            NetcdfFile netcdfFile = this.getNetcdfFiles()
-                                        .iterator()
-                                        .next();
-            Variable variableVariable = netcdfFile.findVariable( variableName );
-
-            if ( variableVariable == null )
-            {
-                throw new IllegalArgumentException( "No variable '"
-                                                    + variableName
-                                                    + "' found in netCDF data "
-                                                    + netcdfFile );
-            }
-
-            return readAttributeAsString( variableVariable, attributeName );
-        }
-        else
-        {
-            throw new IllegalStateException( "No netCDF data available." );
-        }
-    }
-
 
     private static DataType getAttributeType( Variable ncVariable,
                                               String attributeName )
@@ -822,117 +1003,6 @@ class NWMTimeSeries implements Closeable
                                             + "' attribute found for variable '"
                                             + ncVariable
                                             + " in netCDF data." );
-    }
-
-
-    /**
-     * Read TimeSerieses from across several netCDF single-validdatetime files.
-     * @param featureIds The NWM feature IDs to read.
-     * @param variableName The NWM variable name.
-     * @param unitName The unit of all variable values.
-     * @return a map of feature id to TimeSeries containing the events, may be
-     * empty when no feature ids given were found in the NWM Data.
-     */
-
-    Map<Integer, TimeSeries<Double>> readSingleValuedTimeSerieses( int[] featureIds,
-                                                                   String variableName,
-                                                                   String unitName )
-            throws InterruptedException, ExecutionException
-    {
-        // Check that the executor is still open
-        if( this.readExecutor.isShutdown() )
-        {
-            throw new ReadException( "Cannot read from this NWM time-series because it has been closed: " + this );
-        }
-        
-        BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
-                new ArrayBlockingQueue<>( CONCURRENT_READS );
-        CountDownLatch startGettingResults = new CountDownLatch( CONCURRENT_READS );
-        Map<Integer, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
-
-        for ( int featureId : featureIds )
-        {
-            SortedSet<Event<Double>> emptyList = new TreeSet<>();
-            events.put( featureId, emptyList );
-        }
-
-        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
-        {
-            NWMDoubleReader reader = new NWMDoubleReader( this.getProfile(),
-                                                          netcdfFile,
-                                                          featureIds.clone(),
-                                                          variableName,
-                                                          this.getReferenceDatetime(),
-                                                          this.featureCache,
-                                                          false );
-
-            Future<NWMDoubleReadOutcome> future = this.readExecutor.submit( reader );
-            reads.add( future );
-
-            startGettingResults.countDown();
-
-            if ( startGettingResults.getCount() <= 0 )
-            {
-                NWMDoubleReadOutcome outcome = reads.take()
-                                                    .get();
-                List<EventForNWMFeature<Double>> read = outcome.getData();
-                this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
-
-                for ( EventForNWMFeature<Double> event : read )
-                {
-                    // The reads are across features, we want data by feature.
-                    SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
-                    sortedEvents.add( event.getEvent() );
-                }
-            }
-        }
-
-        // Finish getting the remainder of events being read.
-        for ( Future<NWMDoubleReadOutcome> reading : reads )
-        {
-            NWMDoubleReadOutcome outcome = reading.get();
-            List<EventForNWMFeature<Double>> read = outcome.getData();
-            this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
-
-            for ( EventForNWMFeature<Double> event : read )
-            {
-                // The reads are across features, we want data by feature.
-                SortedSet<Event<Double>> sortedEvents = events.get( event.getFeatureId() );
-                sortedEvents.add( event.getEvent() );
-            }
-        }
-
-        // Go back and remove all the entries for non-existent data
-        for ( Integer notFoundFeature : this.featuresNotFound )
-        {
-            events.remove( notFoundFeature );
-        }
-
-        Map<Integer, TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
-
-        // Create each TimeSeries
-        for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
-        {
-            // TODO: use the reference datetime from actual data, not args.
-            // The datetimes seem to be synchronized but this is not true for
-            // analyses.
-            Geometry geometry = MessageFactory.getGeometry(
-                                                            series.getKey()
-                                                                  .toString() );
-            FeatureKey feature = FeatureKey.of( geometry );
-
-            TimeSeriesMetadata metadata =
-                    TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),
-                                           null,
-                                           variableName,
-                                           feature,
-                                           unitName );
-            TimeSeries<Double> timeSeries = TimeSeries.of( metadata,
-                                                           series.getValue() );
-            allTimeSerieses.put( series.getKey(), timeSeries );
-        }
-
-        return Collections.unmodifiableMap( allTimeSerieses );
     }
 
     private static Instant readValidDatetime( NWMProfile profile,
@@ -1177,66 +1247,6 @@ class NWMTimeSeries implements Closeable
                                           + ncVariable
                                           + " from netCDF file "
                                           + netcdfFile );
-        }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "NWM Time Series with reference datetime "
-               + this.getReferenceDatetime()
-               + " and configuration "
-               + this.getProfile().getNwmConfiguration()
-               + " from base URI "
-               + this.getBaseUri();
-    }
-
-    @Override
-    public void close()
-    {
-        if ( !this.featuresNotFound.isEmpty() )
-        {
-            LOGGER.warn( "When reading {}, unable to find the following NWM feature id(s): {}",
-                         this,
-                         this.featuresNotFound );
-        }
-
-        for ( NetcdfFile netcdfFile : this.netcdfFiles )
-        {
-            try
-            {
-                netcdfFile.close();
-            }
-            catch ( IOException ioe )
-            {
-                LOGGER.warn( "Could not close netCDF file {}",
-                             netcdfFile,
-                             ioe );
-            }
-        }
-
-        this.readExecutor.shutdown();
-
-        try
-        {
-            this.readExecutor.awaitTermination( 100, TimeUnit.MILLISECONDS );
-        }
-        catch ( InterruptedException ie )
-        {
-            List<Runnable> abandoned = this.readExecutor.shutdownNow();
-            LOGGER.warn( "{} shutdown interrupted, abandoned tasks: {}",
-                         this.readExecutor,
-                         abandoned,
-                         ie );
-            Thread.currentThread().interrupt();
-        }
-
-        if ( !this.readExecutor.isShutdown() )
-        {
-            List<Runnable> abandoned = this.readExecutor.shutdownNow();
-            LOGGER.warn( "{} did not shut down quickly, abandoned tasks: {}",
-                         this.readExecutor,
-                         abandoned );
         }
     }
 
