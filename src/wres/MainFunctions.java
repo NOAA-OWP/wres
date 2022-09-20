@@ -187,6 +187,12 @@ final class MainFunctions
 	{
         DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
 
+        if ( sharedResources.getSystemSettings().isInMemory() )
+        {
+            throw new IllegalArgumentException( "This is an in-memory evaluation. Cannot clean a database because "
+                                                + "there is no database to clean." );
+        }
+
         try
         {
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
