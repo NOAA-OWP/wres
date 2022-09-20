@@ -365,10 +365,13 @@ public final class Operations
      * Assumes that the caller has already gotten an exclusive lock for modify.
      * @param database The database to use.
      * @throws SQLException when cleaning or refreshing stats fails
+     * @throws NullPointerException if the database is null
      */
 
     public static void cleanDatabase( Database database ) throws SQLException
     {
+        Objects.requireNonNull( database );
+        
         database.clean();
         database.refreshStatistics( true );
     }
