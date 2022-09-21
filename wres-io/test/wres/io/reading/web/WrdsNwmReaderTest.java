@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
@@ -52,7 +52,7 @@ import wres.system.SystemSettings;
 class WrdsNwmReaderTest
 {
     /** Mocker server instance. */
-    private static ClientAndServer mockServer;
+    private ClientAndServer mockServer;
 
     /** Feature considered. */
     private static final int NWM_FEATURE_ID = 8588002;
@@ -198,28 +198,28 @@ class WrdsNwmReaderTest
 
     private static final String GET = "GET";
 
-    @BeforeAll
-    static void startServer()
+    @BeforeEach
+    void startServer()
     {
-        WrdsNwmReaderTest.mockServer = ClientAndServer.startClientAndServer( 0 );
+        this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
-    @AfterAll
-    static void stopServer()
+    @AfterEach
+    void stopServer()
     {
-        WrdsNwmReaderTest.mockServer.stop();
+        this.mockServer.stop();
     }
 
     @Test
     void testReadReturnsOneAnalysisTimeSeries()
     {
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( ANALYSIS_PATH )
-                                                      .withMethod( GET ) )
-                                    .respond( HttpResponse.response( ANALYSIS_RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( ANALYSIS_PATH )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( ANALYSIS_RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + WrdsNwmReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
@@ -290,22 +290,22 @@ class WrdsNwmReaderTest
     @Test
     void testReadReturnsOneAnalysisTimeSeriesAfterTwoDroppedConnections()
     {
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( ANALYSIS_PATH )
-                                                      .withMethod( GET ),
-                                           Times.exactly( 2 ) )
-                                    .error( HttpError.error()
-                                                     .withDropConnection( true ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( ANALYSIS_PATH )
+                                         .withMethod( GET ),
+                              Times.exactly( 2 ) )
+                       .error( HttpError.error()
+                                        .withDropConnection( true ) );
 
         // On the third time, return the body successfully.
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( ANALYSIS_PATH )
-                                                      .withMethod( "GET" ),
-                                           Times.once() )
-                                    .respond( org.mockserver.model.HttpResponse.response( ANALYSIS_RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( ANALYSIS_PATH )
+                                         .withMethod( "GET" ),
+                              Times.once() )
+                       .respond( org.mockserver.model.HttpResponse.response( ANALYSIS_RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + WrdsNwmReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
@@ -395,27 +395,27 @@ class WrdsNwmReaderTest
                                                      new Parameter( "forecast_type", "deterministic" ),
                                                      new Parameter( "validTime", "all" ) );
 
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersOne )
-                                                      .withMethod( GET ) )
-                                    .respond( HttpResponse.response( FORECAST_RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersOne )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
 
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersTwo )
-                                                      .withMethod( GET ) )
-                                    .respond( HttpResponse.response( FORECAST_RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersTwo )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
 
-        WrdsNwmReaderTest.mockServer.when( HttpRequest.request()
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersThree )
-                                                      .withMethod( GET ) )
-                                    .respond( HttpResponse.response( FORECAST_RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersThree )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( FORECAST_RESPONSE ) );
 
         // Need to use a short URL, as would be declared, since chunking goes through URL creation
         URI fakeUri = URI.create( "http://localhost:"
-                                  + WrdsNwmReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + "/api/v1/nwm/ops/short_range/" );
 
         DataSourceConfig.Source fakeDeclarationSource =
@@ -481,27 +481,27 @@ class WrdsNwmReaderTest
         }
 
         // Three requests made
-        WrdsNwmReaderTest.mockServer.verify( request().withMethod( GET )
-                                                      .withPath( FORECAST_PATH ),
-                                             VerificationTimes.exactly( 3 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( FORECAST_PATH ),
+                                VerificationTimes.exactly( 3 ) );
 
         // One request made with parameters one
-        WrdsNwmReaderTest.mockServer.verify( request().withMethod( GET )
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersOne ),
-                                             VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersOne ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters two
-        WrdsNwmReaderTest.mockServer.verify( request().withMethod( GET )
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersTwo ),
-                                             VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersTwo ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters three
-        WrdsNwmReaderTest.mockServer.verify( request().withMethod( GET )
-                                                      .withPath( FORECAST_PATH )
-                                                      .withQueryStringParameters( parametersThree ),
-                                             VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( FORECAST_PATH )
+                                         .withQueryStringParameters( parametersThree ),
+                                VerificationTimes.exactly( 1 ) );
 
     }
 

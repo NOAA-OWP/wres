@@ -14,6 +14,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -650,14 +651,14 @@ public class ReaderUtilities
     }
 
     /**
-     * Returns a time-series from the queue or null if not ready.
+     * Returns a list of time-series from the queue.
      * @param results the queued results
      * @param startGettingResults a latch indicating whether a result should be returned (if {@code <= 0})
      * @param sourceName the source name to help with messaging
-     * @return a time-series or null
+     * @return a list of time-series
      */
 
-    public static TimeSeriesTuple getTimeSeriesOrNull( BlockingQueue<Future<TimeSeriesTuple>> results,
+    public static List<TimeSeriesTuple> getTimeSeries( BlockingQueue<Future<List<TimeSeriesTuple>>> results,
                                                        CountDownLatch startGettingResults,
                                                        String sourceName )
     {
@@ -665,9 +666,14 @@ public class ReaderUtilities
         if ( startGettingResults.getCount() <= 0 )
         {
             try
-            {
-                TimeSeriesTuple result = results.take()
-                                                .get();
+            { 
+                List<TimeSeriesTuple> result = null;
+                
+                if ( !results.isEmpty() )
+                {
+                    result = results.take()
+                                    .get();
+                }
 
                 if ( Objects.nonNull( result ) )
                 {
@@ -692,7 +698,7 @@ public class ReaderUtilities
 
         LOGGER.debug( "Delaying retrieval of chunk until more tasks have been submitted." );
 
-        return null;
+        return List.of();
     }
 
     /**

@@ -182,6 +182,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
                 List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
+                
+                LOGGER.debug( "Read {} time-series from {}.", eagerSeries.size(), dataSource );
+                
                 timeSeriesTuples.set( eagerSeries );
             }
 
@@ -190,7 +193,8 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             // More time-series to return?
             if ( iterator.get() < tuples.size() )
             {
-                return tuples.get( iterator.getAndIncrement() );
+                int index = iterator.getAndIncrement();
+                return tuples.get( index );
             }
 
             // Null sentinel to close stream
@@ -272,7 +276,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
             for ( Forecast forecast : forecasts )
             {
-                LOGGER.debug( "Parsing {}", forecast );
+                LOGGER.debug( "Parsing {}.", forecast );
                 TimeSeriesTuple timeSeriesTuple = this.getTimeSeries( forecast,
                                                                       missingValues,
                                                                       dataSource );

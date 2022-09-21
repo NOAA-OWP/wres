@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
@@ -47,7 +47,7 @@ import wres.system.SystemSettings;
 class NwisReaderTest
 {
     /** Mocker server instance. */
-    private static ClientAndServer mockServer;
+    private ClientAndServer mockServer;
 
     /** Path used by GET. */
     private static final String PATH = "/nwis/iv/";
@@ -212,28 +212,28 @@ class NwisReaderTest
 
     private static final String GET = "GET";
 
-    @BeforeAll
-    static void startServer()
+    @BeforeEach
+    void startServer()
     {
-        NwisReaderTest.mockServer = ClientAndServer.startClientAndServer( 0 );
+        this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
-    @AfterAll
-    static void stopServer()
+    @AfterEach
+    void stopServer()
     {
-        NwisReaderTest.mockServer.stop();
+        this.mockServer.stop();
     }
 
     @Test
     void testReadReturnsOneTimeSeries()
     {
-        NwisReaderTest.mockServer.when( HttpRequest.request()
-                                                   .withPath( PATH )
-                                                   .withMethod( GET ) )
-                                 .respond( HttpResponse.response( RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + NwisReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + PATH
                                   + PARAMS );
 
@@ -328,26 +328,26 @@ class NwisReaderTest
                                                      new Parameter( "sites", "09165000" ),
                                                      new Parameter( "startDT", "2020-01-01T00:00:01Z" ) );
 
-        NwisReaderTest.mockServer.when( HttpRequest.request()
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersOne )
-                                                   .withMethod( GET ) )
-                                 .respond( HttpResponse.response( RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersOne )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
 
-        NwisReaderTest.mockServer.when( HttpRequest.request()
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersTwo )
-                                                   .withMethod( GET ) )
-                                 .respond( HttpResponse.response( RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersTwo )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
 
-        NwisReaderTest.mockServer.when( HttpRequest.request()
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersThree )
-                                                   .withMethod( GET ) )
-                                 .respond( HttpResponse.response( RESPONSE ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersThree )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + NwisReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + PATH
                                   + PARAMS );
 
@@ -412,27 +412,27 @@ class NwisReaderTest
         }
 
         // Three requests made
-        NwisReaderTest.mockServer.verify( request().withMethod( GET )
-                                                   .withPath( PATH ),
-                                          VerificationTimes.exactly( 3 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH ),
+                                VerificationTimes.exactly( 3 ) );
 
         // One request made with parameters one
-        NwisReaderTest.mockServer.verify( request().withMethod( GET )
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersOne ),
-                                          VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersOne ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters two
-        NwisReaderTest.mockServer.verify( request().withMethod( GET )
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersTwo ),
-                                          VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersTwo ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters three
-        NwisReaderTest.mockServer.verify( request().withMethod( GET )
-                                                   .withPath( PATH )
-                                                   .withQueryStringParameters( parametersThree ),
-                                          VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersThree ),
+                                VerificationTimes.exactly( 1 ) );
 
     }
 
