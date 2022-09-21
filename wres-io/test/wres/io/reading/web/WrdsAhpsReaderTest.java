@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
@@ -51,7 +51,7 @@ import wres.system.SystemSettings;
 class WrdsAhpsReaderTest
 {
     /** Mocker server instance. */
-    private static ClientAndServer mockServer;
+    private ClientAndServer mockServer;
 
     /** Feature considered. */
     private static final String FEATURE_NAME = "FROV2";
@@ -354,30 +354,437 @@ class WrdsAhpsReaderTest
                                                        + "    ]\n"
                                                        + "}\n";
 
+    private static final String ANOTHER_FORECAST_RESPONSE_V2 = "{\n"
+                                                               + "  \"_documentation\": {\n"
+                                                               + "    \"swagger URL\": \"http://***REMOVED***.***REMOVED***.***REMOVED***/docs/rfc_forecast/v2.0/swagger/\"\n"
+                                                               + "  },\n"
+                                                               + "  \"deployment\": {\n"
+                                                               + "    \"api_url\": \"https://***REMOVED***.***REMOVED***.***REMOVED***/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/?format=json&issuedTime=%5B2022-09-17T00%3A00%3A00Z%2C2022-09-19T18%3A57%3A46Z%5D&proj=WRES\",\n"
+                                                               + "    \"stack\": \"prod\",\n"
+                                                               + "    \"version\": \"v2.5.1\",\n"
+                                                               + "    \"api_caller\": \"WRES\"\n"
+                                                               + "  },\n"
+                                                               + "  \"Non-urgent_issue_reporting_link\": \"https://vlab.***REMOVED***/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2831\",\n"
+                                                               + "  \"header\": {\n"
+                                                               + "    \"request\": {\n"
+                                                               + "      \"params\": {\n"
+                                                               + "        \"asProvided\": {\n"
+                                                               + "          \"issuedTime\": \"[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]\"\n"
+                                                               + "        },\n"
+                                                               + "        \"asUsed\": {\n"
+                                                               + "          \"issuedTime\": \"[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]\",\n"
+                                                               + "          \"validTime\": \"all\",\n"
+                                                               + "          \"excludePast\": \"False\",\n"
+                                                               + "          \"minForecastStatus\": \"no_flooding\",\n"
+                                                               + "          \"use_rating_curve\": null,\n"
+                                                               + "          \"includeDuplicates\": \"False\",\n"
+                                                               + "          \"returnNewestForecast\": \"False\",\n"
+                                                               + "          \"completeForecastStatus\": \"False\"\n"
+                                                               + "        }\n"
+                                                               + "      }\n"
+                                                               + "    },\n"
+                                                               + "    \"missing_values\": [\n"
+                                                               + "      -999,\n"
+                                                               + "      -9999\n"
+                                                               + "    ]\n"
+                                                               + "  },\n"
+                                                               + "  \"forecasts\": [\n"
+                                                               + "    {\n"
+                                                               + "      \"location\": {\n"
+                                                               + "        \"names\": {\n"
+                                                               + "          \"nwsLid\": \"FROV2\",\n"
+                                                               + "          \"usgsSiteCode\": \"01631000\",\n"
+                                                               + "          \"nwm_feature_id\": 5907079,\n"
+                                                               + "          \"nwsName\": \"Front Royal\",\n"
+                                                               + "          \"usgsName\": \"S F SHENANDOAH RIVER AT FRONT ROYAL, VA\"\n"
+                                                               + "        },\n"
+                                                               + "        \"coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        },\n"
+                                                               + "        \"nws_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.913888888889,\n"
+                                                               + "          \"longitude\": -78.211111111111,\n"
+                                                               + "          \"crs\": \"NAD27\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.913888888889,-78.211111111111\"\n"
+                                                               + "        },\n"
+                                                               + "        \"usgs_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        }\n"
+                                                               + "      },\n"
+                                                               + "      \"producer\": \"MARFC\",\n"
+                                                               + "      \"issuer\": \"LWX\",\n"
+                                                               + "      \"distributor\": \"SBN\",\n"
+                                                               + "      \"type\": \"deterministic\",\n"
+                                                               + "      \"issuedTime\": \"2022-09-17T13:17:00Z\",\n"
+                                                               + "      \"generationTime\": \"2022-09-17T13:24:19Z\",\n"
+                                                               + "      \"parameterCodes\": {\n"
+                                                               + "        \"physicalElement\": \"QR\",\n"
+                                                               + "        \"duration\": \"I\",\n"
+                                                               + "        \"typeSource\": \"FF\",\n"
+                                                               + "        \"extremum\": \"Z\",\n"
+                                                               + "        \"probability\": \"Z\"\n"
+                                                               + "      },\n"
+                                                               + "      \"thresholds\": {\n"
+                                                               + "        \"units\": \"CFS\",\n"
+                                                               + "        \"action\": null,\n"
+                                                               + "        \"minor\": 24340,\n"
+                                                               + "        \"moderate\": 31490,\n"
+                                                               + "        \"major\": 47200,\n"
+                                                               + "        \"record\": 130000\n"
+                                                               + "      },\n"
+                                                               + "      \"units\": {\n"
+                                                               + "        \"streamflow\": \"KCFS\"\n"
+                                                               + "      },\n"
+                                                               + "      \"members\": [\n"
+                                                               + "        {\n"
+                                                               + "          \"identifier\": \"1\",\n"
+                                                               + "          \"forecast_status\": \"no_flooding\",\n"
+                                                               + "          \"dataPointsList\": [\n"
+                                                               + "            [\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-17T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.526,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-18T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.526,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-18T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-18T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-18T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              }\n"
+                                                               + "            ]\n"
+                                                               + "          ]\n"
+                                                               + "        }\n"
+                                                               + "      ]\n"
+                                                               + "    },\n"
+                                                               + "    {\n"
+                                                               + "      \"location\": {\n"
+                                                               + "        \"names\": {\n"
+                                                               + "          \"nwsLid\": \"FROV2\",\n"
+                                                               + "          \"usgsSiteCode\": \"01631000\",\n"
+                                                               + "          \"nwm_feature_id\": 5907079,\n"
+                                                               + "          \"nwsName\": \"Front Royal\",\n"
+                                                               + "          \"usgsName\": \"S F SHENANDOAH RIVER AT FRONT ROYAL, VA\"\n"
+                                                               + "        },\n"
+                                                               + "        \"coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        },\n"
+                                                               + "        \"nws_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.913888888889,\n"
+                                                               + "          \"longitude\": -78.211111111111,\n"
+                                                               + "          \"crs\": \"NAD27\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.913888888889,-78.211111111111\"\n"
+                                                               + "        },\n"
+                                                               + "        \"usgs_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        }\n"
+                                                               + "      },\n"
+                                                               + "      \"producer\": \"MARFC\",\n"
+                                                               + "      \"issuer\": \"LWX\",\n"
+                                                               + "      \"distributor\": \"SBN\",\n"
+                                                               + "      \"type\": \"deterministic\",\n"
+                                                               + "      \"issuedTime\": \"2022-09-18T13:15:00Z\",\n"
+                                                               + "      \"generationTime\": \"2022-09-18T13:24:19Z\",\n"
+                                                               + "      \"parameterCodes\": {\n"
+                                                               + "        \"physicalElement\": \"QR\",\n"
+                                                               + "        \"duration\": \"I\",\n"
+                                                               + "        \"typeSource\": \"FF\",\n"
+                                                               + "        \"extremum\": \"Z\",\n"
+                                                               + "        \"probability\": \"Z\"\n"
+                                                               + "      },\n"
+                                                               + "      \"thresholds\": {\n"
+                                                               + "        \"units\": \"CFS\",\n"
+                                                               + "        \"action\": null,\n"
+                                                               + "        \"minor\": 24340,\n"
+                                                               + "        \"moderate\": 31490,\n"
+                                                               + "        \"major\": 47200,\n"
+                                                               + "        \"record\": 130000\n"
+                                                               + "      },\n"
+                                                               + "      \"units\": {\n"
+                                                               + "        \"streamflow\": \"KCFS\"\n"
+                                                               + "      },\n"
+                                                               + "      \"members\": [\n"
+                                                               + "        {\n"
+                                                               + "          \"identifier\": \"1\",\n"
+                                                               + "          \"forecast_status\": \"no_flooding\",\n"
+                                                               + "          \"dataPointsList\": [\n"
+                                                               + "            [\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-18T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              }\n"
+                                                               + "            ]\n"
+                                                               + "          ]\n"
+                                                               + "        }\n"
+                                                               + "      ]\n"
+                                                               + "    },\n"
+                                                               + "    {\n"
+                                                               + "      \"location\": {\n"
+                                                               + "        \"names\": {\n"
+                                                               + "          \"nwsLid\": \"FROV2\",\n"
+                                                               + "          \"usgsSiteCode\": \"01631000\",\n"
+                                                               + "          \"nwm_feature_id\": 5907079,\n"
+                                                               + "          \"nwsName\": \"Front Royal\",\n"
+                                                               + "          \"usgsName\": \"S F SHENANDOAH RIVER AT FRONT ROYAL, VA\"\n"
+                                                               + "        },\n"
+                                                               + "        \"coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        },\n"
+                                                               + "        \"nws_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.913888888889,\n"
+                                                               + "          \"longitude\": -78.211111111111,\n"
+                                                               + "          \"crs\": \"NAD27\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.913888888889,-78.211111111111\"\n"
+                                                               + "        },\n"
+                                                               + "        \"usgs_coordinates\": {\n"
+                                                               + "          \"latitude\": 38.91400059,\n"
+                                                               + "          \"longitude\": -78.21083388,\n"
+                                                               + "          \"crs\": \"NAD83\",\n"
+                                                               + "          \"link\": \"https://maps.google.com/maps?q=38.91400059,-78.21083388\"\n"
+                                                               + "        }\n"
+                                                               + "      },\n"
+                                                               + "      \"producer\": \"MARFC\",\n"
+                                                               + "      \"issuer\": \"LWX\",\n"
+                                                               + "      \"distributor\": \"SBN\",\n"
+                                                               + "      \"type\": \"deterministic\",\n"
+                                                               + "      \"issuedTime\": \"2022-09-19T13:41:00Z\",\n"
+                                                               + "      \"generationTime\": \"2022-09-19T13:54:21Z\",\n"
+                                                               + "      \"parameterCodes\": {\n"
+                                                               + "        \"physicalElement\": \"QR\",\n"
+                                                               + "        \"duration\": \"I\",\n"
+                                                               + "        \"typeSource\": \"FF\",\n"
+                                                               + "        \"extremum\": \"Z\",\n"
+                                                               + "        \"probability\": \"Z\"\n"
+                                                               + "      },\n"
+                                                               + "      \"thresholds\": {\n"
+                                                               + "        \"units\": \"CFS\",\n"
+                                                               + "        \"action\": null,\n"
+                                                               + "        \"minor\": 24340,\n"
+                                                               + "        \"moderate\": 31490,\n"
+                                                               + "        \"major\": 47200,\n"
+                                                               + "        \"record\": 130000\n"
+                                                               + "      },\n"
+                                                               + "      \"units\": {\n"
+                                                               + "        \"streamflow\": \"KCFS\"\n"
+                                                               + "      },\n"
+                                                               + "      \"members\": [\n"
+                                                               + "        {\n"
+                                                               + "          \"identifier\": \"1\",\n"
+                                                               + "          \"forecast_status\": \"no_flooding\",\n"
+                                                               + "          \"dataPointsList\": [\n"
+                                                               + "            [\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-19T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-20T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-21T18:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-22T00:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-22T06:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              },\n"
+                                                               + "              {\n"
+                                                               + "                \"time\": \"2022-09-22T12:00:00Z\",\n"
+                                                               + "                \"value\": 0.431,\n"
+                                                               + "                \"status\": \"no_flooding\"\n"
+                                                               + "              }\n"
+                                                               + "            ]\n"
+                                                               + "          ]\n"
+                                                               + "        }\n"
+                                                               + "      ]\n"
+                                                               + "    }\n"
+                                                               + "  ]\n"
+                                                               + "}\n";
+
     private static final String GET = "GET";
 
-    @BeforeAll
-    static void startServer()
+    @BeforeEach
+    void startServer()
     {
-        WrdsAhpsReaderTest.mockServer = ClientAndServer.startClientAndServer( 0 );
+        this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
-    @AfterAll
-    static void stopServer()
+    @AfterEach
+    void stopServer()
     {
-        WrdsAhpsReaderTest.mockServer.stop();
+        this.mockServer.stop();
     }
 
     @Test
     void testReadReturnsOneForecastTimeSeries()
     {
-        WrdsAhpsReaderTest.mockServer.when( HttpRequest.request()
-                                                       .withPath( FORECAST_PATH_V2 )
-                                                       .withMethod( GET ) )
-                                     .respond( HttpResponse.response( FORECAST_RESPONSE_V2 ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH_V2 )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( FORECAST_RESPONSE_V2 ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + WrdsAhpsReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + FORECAST_PATH_V2 );
 
         DataSourceConfig.Source fakeDeclarationSource =
@@ -463,6 +870,146 @@ class WrdsAhpsReaderTest
     }
 
     @Test
+    void testReadReturnsThreeForecastTimeSeries()
+    {
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( FORECAST_PATH_V2 )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( ANOTHER_FORECAST_RESPONSE_V2 ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + FORECAST_PATH_V2 );
+
+        DataSourceConfig.Source fakeDeclarationSource =
+                new DataSourceConfig.Source( fakeUri,
+                                             InterfaceShortHand.WRDS_AHPS,
+                                             null,
+                                             null,
+                                             null );
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
+                                               fakeDeclarationSource,
+                                               new DataSourceConfig( null,
+                                                                     List.of( fakeDeclarationSource ),
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               LeftOrRightOrBaseline.RIGHT );
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .collect( Collectors.toList() );
+
+            assertEquals( 3, actual.size() );
+        }
+    }
+
+    @Test
+    void testReadReturnsThreeForecastTimeSeriesInOneChunk()
+    {
+        // Create the chunk parameters
+        Parameters parameters = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
+                                                new Parameter( "issuedTime",
+                                                               "[2022-09-17T00:00:00Z,2022-09-19T18:57:46Z]" ) );
+
+        String path = "/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2";
+        
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( path )
+                                         .withQueryStringParameters( parameters )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( ANOTHER_FORECAST_RESPONSE_V2 ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + "/api/rfc_forecast/v2.0/forecast/streamflow/" );
+
+        DataSourceConfig.Source fakeDeclarationSource =
+                new DataSourceConfig.Source( fakeUri,
+                                             InterfaceShortHand.WRDS_AHPS,
+                                             null,
+                                             null,
+                                             null );
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_AHPS,
+                                               fakeDeclarationSource,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     List.of( fakeDeclarationSource ),
+                                                                     new Variable( "QR", null ),
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               LeftOrRightOrBaseline.RIGHT );
+
+        PairConfig pairConfig = new PairConfig( null,
+                                                null,
+                                                null,
+                                                List.of( new Feature( null, FEATURE_NAME, null ) ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                new DateCondition( "2022-09-17T00:00:00Z", "2022-09-19T18:57:46Z" ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        WrdsAhpsReader reader = WrdsAhpsReader.of( pairConfig, systemSettings );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .collect( Collectors.toList() );
+
+            // Three chunks expected
+            assertEquals( 3, actual.size() );
+        }
+
+        // One request made with parameters
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( path )
+                                         .withQueryStringParameters( parameters ),
+                                VerificationTimes.exactly( 1 ) );
+    }
+
+    @Test
     void testReadReturnsThreeChunkedObservedTimeSeries()
     {
         // Create the chunk parameters
@@ -478,26 +1025,26 @@ class WrdsAhpsReaderTest
                                                      new Parameter( "validTime",
                                                                     "[2020-01-01T00:00:00Z,2021-01-01T00:00:00Z]" ) );
 
-        WrdsAhpsReaderTest.mockServer.when( HttpRequest.request()
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersOne )
-                                                       .withMethod( GET ) )
-                                     .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersOne )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
 
-        WrdsAhpsReaderTest.mockServer.when( HttpRequest.request()
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersTwo )
-                                                       .withMethod( GET ) )
-                                     .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersTwo )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
 
-        WrdsAhpsReaderTest.mockServer.when( HttpRequest.request()
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersThree )
-                                                       .withMethod( GET ) )
-                                     .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersThree )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( OBSERVED_RESPONSE_V1 ) );
 
         URI fakeUri = URI.create( "http://localhost:"
-                                  + WrdsAhpsReaderTest.mockServer.getLocalPort()
+                                  + this.mockServer.getLocalPort()
                                   + OBSERVED_PATH_V1
                                   + OBSERVED_PATH_PARAMS_V1 );
 
@@ -562,27 +1109,27 @@ class WrdsAhpsReaderTest
         }
 
         // Three requests made
-        WrdsAhpsReaderTest.mockServer.verify( request().withMethod( GET )
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME ),
-                                              VerificationTimes.exactly( 3 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME ),
+                                VerificationTimes.exactly( 3 ) );
 
         // One request made with parameters one
-        WrdsAhpsReaderTest.mockServer.verify( request().withMethod( GET )
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersOne ),
-                                              VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersOne ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters two
-        WrdsAhpsReaderTest.mockServer.verify( request().withMethod( GET )
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersTwo ),
-                                              VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersTwo ),
+                                VerificationTimes.exactly( 1 ) );
 
         // One request made with parameters three
-        WrdsAhpsReaderTest.mockServer.verify( request().withMethod( GET )
-                                                       .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
-                                                       .withQueryStringParameters( parametersThree ),
-                                              VerificationTimes.exactly( 1 ) );
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( OBSERVED_PATH_V1 + FEATURE_NAME )
+                                         .withQueryStringParameters( parametersThree ),
+                                VerificationTimes.exactly( 1 ) );
 
     }
 

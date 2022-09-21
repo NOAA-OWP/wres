@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
@@ -23,6 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -233,11 +235,15 @@ public class NwisReader implements TimeSeriesReader
         // get-one-response-per-submission-of-one-ingest-task
         int concurrentCount = this.getExecutor()
                                   .getMaximumPoolSize();
-        BlockingQueue<Future<TimeSeriesTuple>> results = new ArrayBlockingQueue<>( concurrentCount );
+        BlockingQueue<Future<List<TimeSeriesTuple>>> results = new ArrayBlockingQueue<>( concurrentCount );
 
         // The size of this latch is for reason (2) above
         CountDownLatch startGettingResults = new CountDownLatch( concurrentCount );
 
+        // Cached time-series to return
+        List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
+
+        // Is true to continue looking for time-series
         AtomicBoolean proceed = new AtomicBoolean( true );
 
         // Create a supplier that returns a time-series once complete
@@ -247,6 +253,12 @@ public class NwisReader implements TimeSeriesReader
             // New rows to increment
             while ( proceed.get() )
             {
+                // Cached series from an earlier iteration? If so, return it
+                if ( !cachedSeries.isEmpty() )
+                {
+                    return cachedSeries.remove( 0 );
+                }
+
                 // Submit the next chunk if not already submitted
                 if ( !mutableChunks.isEmpty() )
                 {
@@ -271,7 +283,7 @@ public class NwisReader implements TimeSeriesReader
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
                     // Get the next time-series as a future
-                    Future<TimeSeriesTuple> future = this.getTimeSeriesTuple( innerSource );
+                    Future<List<TimeSeriesTuple>> future = this.getTimeSeriesTuple( innerSource );
 
                     results.add( future );
                 }
@@ -281,22 +293,27 @@ public class NwisReader implements TimeSeriesReader
                 // read task. It also means after the creation of a handful of tasks, we only create one after a
                 // previously created one has been completed, fifo/lockstep.
                 startGettingResults.countDown();
-                TimeSeriesTuple result = ReaderUtilities.getTimeSeriesOrNull( results,
+                List<TimeSeriesTuple> result = ReaderUtilities.getTimeSeries( results,
                                                                               startGettingResults,
                                                                               USGS_NWIS );
 
-                // Still some chunks to request or results to return?
-                proceed.set( !mutableChunks.isEmpty() || !results.isEmpty() );
+                cachedSeries.addAll( result );
 
-                LOGGER.debug( "Continuing to iterate chunks of data because some chunks were yet to be submitted ({}) "
-                              + "or some results were yet to be retrieved ({}).",
+                // Still some chunks to request or results to return?
+                proceed.set( !mutableChunks.isEmpty() || !results.isEmpty() || cachedSeries.size() > 1 );
+
+                LOGGER.debug( "Continuing to iterate chunks of data ({}) because some chunks were yet to be submitted "
+                              + "({}) or some results were yet to be retrieved ({}) or some results are cached and "
+                              + "awaiting return ({}).",
+                              proceed.get(),
                               !mutableChunks.isEmpty(),
-                              !results.isEmpty() );
+                              !results.isEmpty(),
+                              cachedSeries.size() > 1 );
 
                 // Return a result if there is one
-                if ( Objects.nonNull( result ) )
+                if ( !cachedSeries.isEmpty() )
                 {
-                    return result;
+                    return cachedSeries.remove( 0 );
                 }
             }
 
@@ -310,22 +327,23 @@ public class NwisReader implements TimeSeriesReader
      * @return a time-series task
      */
 
-    private Future<TimeSeriesTuple> getTimeSeriesTuple( DataSource dataSource )
+    private Future<List<TimeSeriesTuple>> getTimeSeriesTuple( DataSource dataSource )
     {
         LOGGER.debug( "Submitting a task for retrieving a time-series." );
 
         return this.getExecutor()
                    .submit( () -> {
-                       // Get the stream, which is closed on the terminal operation below
-                       InputStream inputStream = NwisReader.getByteStreamFromUri( dataSource.getUri() );
+                       // Get the input stream and read from it
+                       try ( InputStream inputStream = NwisReader.getByteStreamFromUri( dataSource.getUri() ) )
+                       {
+                           if ( Objects.nonNull( inputStream ) )
+                           {
+                               return WATERML_READER.read( dataSource, inputStream )
+                                                    .collect( Collectors.toList() ); // Terminal
+                           }
 
-                       // At most, one series, by definition
-                       Optional<TimeSeriesTuple> timeSeries =
-                               WATERML_READER.read( dataSource, inputStream )
-                                             .findFirst(); // Terminal
-
-                       // Return a time-series if present
-                       return timeSeries.orElse( null );
+                           return List.of();
+                       }
                    } );
     }
 
@@ -451,7 +469,7 @@ public class NwisReader implements TimeSeriesReader
 
                 if ( httpStatus == 404 )
                 {
-                    LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
+                    LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.",
                                  httpStatus,
                                  uri );
 

@@ -163,6 +163,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
                 List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
+                
+                LOGGER.debug( "Read {} time-series from {}.", eagerSeries.size(), dataSource );
+                
                 timeSeriesTuples.set( eagerSeries );
             }
 

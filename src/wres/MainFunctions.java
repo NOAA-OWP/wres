@@ -189,8 +189,8 @@ final class MainFunctions
 
         if ( sharedResources.getSystemSettings().isInMemory() )
         {
-            throw new IllegalArgumentException( "This is an in-memory evaluation. Cannot clean a database because "
-                                                + "there is no database to clean." );
+            throw new IllegalArgumentException( "Discovered the system property wres.inMemory=\"true\". Cannot clean a "
+                                                + "database because there is no database to clean." );
         }
 
         try
