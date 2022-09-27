@@ -1074,6 +1074,10 @@ public class SystemSettings extends XMLReader
                                                                                      this.hardNetcdfCacheLimit )
                                                                             .append( "netcdfStorePath",
                                                                                      this.netcdfStorePath )
+                                                                            .append( "maximumReadThreads",
+                                                                                     this.maximumReadThreads )
+                                                                            .append( "maximumIngestThreads",
+                                                                                     this.maximumIngestThreads )
                                                                             .append( "maximumArchiveThreads",
                                                                                      this.maximumArchiveThreads )
                                                                             .append( "maximumWebClientThreads",
