@@ -372,8 +372,7 @@ public class DataSource
 
     /**
      * Look at the data, open the data to detect its WRES type.
-     * Only returns values for simple types, will not return COMPLEX, will not
-     * return FILE_OR_DIRECTORY.
+     * 
      * @param inputStream The stream to examine, at position 0, will be kept
      *                    there, must support mark/reset.
      * @param uri A real or fake URI (basically a name) to log with messages.
@@ -408,7 +407,7 @@ public class DataSource
             {
                 throw new UnsupportedOperationException( "Mark not supported!"
                                                          + " E.g. send a "
-                                                         + "BufferedInputStream"
+                                                         + "BufferedInputStream "
                                                          + "or TikaInputStream "
                                                          + "instead." );
             }

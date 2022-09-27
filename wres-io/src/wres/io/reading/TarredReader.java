@@ -311,11 +311,51 @@ public class TarredReader implements TimeSeriesReader
         int expectedByteCount = (int) archiveEntry.getSize();
         URI archivedFileName = URI.create( tarName + PATH_DELIM + archiveEntry.getName() );
 
+        // Detect the data disposition using a markable stream
+        InputStream bufferedStream = new BufferedInputStream( archiveInputStream );
+        DataDisposition disposition = DataSource.detectFormat( bufferedStream, archivedFileName );
+
+        if ( disposition == UNKNOWN )
+        {
+            LOGGER.warn( "Skipping unknown data type in {}.", archivedFileName );
+
+            return Stream.of();
+        }
+
+        DataSourceConfig.Source originalSource = dataSource.getSource();
+
+        if ( Objects.isNull( originalSource ) )
+        {
+            // Demote to debug or trace if null is known as being a normal,
+            // usual occurrence that has no potential impact on anything.
+            LOGGER.warn( "Archive entry '{}' is not being read because its data source is null.",
+                         archiveEntry );
+
+            return Stream.of();
+        }
+
+        // Create the inner data source and stream
+        DataSource innerDataSource = DataSource.of( disposition,
+                                                    originalSource,
+                                                    dataSource.getContext(),
+                                                    dataSource.getLinks(),
+                                                    archivedFileName,
+                                                    dataSource.getLeftOrRightOrBaseline() );
+
+        LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
+
+        LOGGER.debug( "The tarred entry '{}' will now be read.", archivedFileName );
+
+        // Read all the bytes: unfortunately, this requires as much memory as the size of the archive entry, but 
+        // the parent/archive stream cannot be shared between low-level reader threads, in any case, because it is not 
+        // thread safe: #108595. Thus, while it would be possible to wrap the input stream with a byte-limited stream,
+        // such as an org.apache.commons.io.input.BoundedInputStream, this would expose the archive stream to async 
+        // reads, which would cause interference
         byte[] content = new byte[expectedByteCount];
 
         try
         {
-            int bytesRead = archiveInputStream.readNBytes( content, 0, expectedByteCount );
+            int bytesRead = bufferedStream.readNBytes( content, 0, expectedByteCount );
             LOGGER.debug( "Read {} bytes of an expected {} bytes from {}.",
                           bytesRead,
                           expectedByteCount,
@@ -345,52 +385,6 @@ public class TarredReader implements TimeSeriesReader
                                      + "'",
                                      ioe );
         }
-
-        // Detect the data disposition
-        DataDisposition disposition = null;
-        try ( InputStream detect = new ByteArrayInputStream( content ) )
-        {
-            disposition = DataSource.detectFormat( detect, archivedFileName );
-        }
-        catch ( IOException e )
-        {
-            String message =
-                    "Encountered an error while attempting to close a stream used for content type detection for "
-                             + archivedFileName
-                             + ".";
-            LOGGER.warn( message, e );
-        }
-
-        if ( disposition == UNKNOWN )
-        {
-            LOGGER.warn( "Skipping unknown data type in {}.", archivedFileName );
-
-            return Stream.of();
-        }
-
-        DataSourceConfig.Source originalSource = dataSource.getSource();
-
-        if ( Objects.isNull( originalSource ) )
-        {
-            // Demote to debug or trace if null is known as being a normal,
-            // usual occurrence that has no potential impact on anything.
-            LOGGER.warn( "Archive entry '{}' is not being read because its data source is null.",
-                         archiveEntry );
-
-            return Stream.of();
-        }
-
-        LOGGER.debug( "The file '{}' will now be read.", archivedFileName );
-
-        // Create the inner data source and stream
-        DataSource innerDataSource = DataSource.of( disposition,
-                                                    originalSource,
-                                                    dataSource.getContext(),
-                                                    dataSource.getLinks(),
-                                                    archivedFileName,
-                                                    dataSource.getLeftOrRightOrBaseline() );
-
-        LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
 
         InputStream streamToRead = new ByteArrayInputStream( content );
 
