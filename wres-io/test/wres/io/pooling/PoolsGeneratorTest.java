@@ -51,7 +51,7 @@ import wres.statistics.generated.GeometryTuple;
  */
 public class PoolsGeneratorTest
 {
-
+    private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
 
     private @Mock Database wresDatabase;
@@ -81,7 +81,7 @@ public class PoolsGeneratorTest
                 new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
                 new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( "CFS",
+        PairConfig pairsConfig = new PairConfig( CFS,
                                                  null,
                                                  null,
                                                  null,
@@ -146,6 +146,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -160,14 +161,14 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( () -> Stream.of() );
 
+        PoolFactory poolFactory = PoolFactory.of( project );
+
         PoolParameters poolParameters = new PoolParameters.Builder().build();
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
-                                                                      project );
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
 
         // Create the actual output
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> actual =
-                PoolFactory.getSingleValuedPools( project,
-                                                  poolRequests,
+                poolFactory.getSingleValuedPools( poolRequests,
                                                   retrieverFactory,
                                                   poolParameters );
 
@@ -194,7 +195,7 @@ public class PoolsGeneratorTest
                 new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
                 new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( "CFS",
+        PairConfig pairsConfig = new PairConfig( CFS,
                                                  null,
                                                  null,
                                                  null,
@@ -243,7 +244,7 @@ public class PoolsGeneratorTest
                                                                       null );
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
-        
+
         Geometry feature = MessageFactory.getGeometry( "FAKE2" );
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( feature, feature, null );
         GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
@@ -259,6 +260,7 @@ public class PoolsGeneratorTest
         Mockito.when( project.hasBaseline() ).thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
 
         ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
         Mockito.when( projectConfigPlus.getProjectConfig() )
@@ -273,14 +275,14 @@ public class PoolsGeneratorTest
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( () -> Stream.of() );
 
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription,
-                                                                      project );
+        PoolFactory poolFactory = PoolFactory.of( project );
+
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
 
         // Create the actual output
         PoolParameters poolParameters = new PoolParameters.Builder().build();
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> actual =
-                PoolFactory.getEnsemblePools( project,
-                                              poolRequests,
+                poolFactory.getEnsemblePools( poolRequests,
                                               retrieverFactory,
                                               poolParameters );
 

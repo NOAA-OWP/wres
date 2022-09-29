@@ -28,7 +28,6 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.Database;
 
 /**
@@ -67,9 +66,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     /** Declared <code>desiredTimeScale</code>, if any. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /** A mapper to convert measurement units. */
-    private final UnitMapper unitMapper;
-
     /** A single-valued retriever factory for the left-ish data. */
     private final RetrieverFactory<Double, Double> leftFactory;
 
@@ -79,17 +75,15 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @param project the project
      * @param database the database
      * @param caches the caches
-     * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static EnsembleRetrieverFactory of( Project project,
                                                Database database,
-                                               DatabaseCaches caches,
-                                               UnitMapper unitMapper )
+                                               DatabaseCaches caches )
     {
-        return new EnsembleRetrieverFactory( project, database, caches, unitMapper );
+        return new EnsembleRetrieverFactory( project, database, caches );
     }
 
     @Override
@@ -132,7 +126,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                    .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
                    .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
                    .setDesiredTimeScale( this.desiredTimeScale )
-                   .setUnitMapper( this.unitMapper )
                    .setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd )
                    .setTimeWindow( timeWindow )
@@ -169,7 +162,6 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                            .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
                            .setDesiredTimeScale( this.desiredTimeScale )
-                           .setUnitMapper( this.unitMapper )
                            .setSeasonStart( this.seasonStart )
                            .setSeasonEnd( this.seasonEnd )
                            .setTimeWindow( timeWindow )
@@ -276,22 +268,18 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @param project the project
      * @param database the database,
      * @param caches the caches
-     * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private EnsembleRetrieverFactory( Project project,
                                       Database database,
-                                      DatabaseCaches caches,
-                                      UnitMapper unitMapper )
+                                      DatabaseCaches caches )
     {
         Objects.requireNonNull( project );
-        Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( database );
         Objects.requireNonNull( caches );
 
         this.project = project;
-        this.unitMapper = unitMapper;
         this.database = database;
         this.caches = caches;
 
@@ -311,8 +299,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( project,
                                                             database,
-                                                            caches,
-                                                            unitMapper );
+                                                            caches );
     }
 
 }

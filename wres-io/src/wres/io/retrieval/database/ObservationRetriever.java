@@ -2,7 +2,6 @@ package wres.io.retrieval.database;
 
 import java.util.Optional;
 
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -18,7 +17,7 @@ import wres.io.utilities.ScriptBuilder;
 /**
  * Retrieves an observation {@link TimeSeries} from the WRES database.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class ObservationRetriever extends TimeSeriesRetriever<Double>
@@ -138,9 +137,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
+     * Returns a function that obtains the measured value in the existing units from a {@link DataProvider}.
      * 
-     * @return a function to obtain the measured value in the correct units
+     * @return a function to obtain the measured value
      */
 
     private Function<DataProvider, Double> getDataSupplier()
@@ -154,17 +153,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
                 return MissingValues.DOUBLE;
             }
 
-            // Existing units
-            long measurementUnitId = provider.getLong( "measurementunit_id" );
-
-            // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper( measurementUnitId );
-
-            // Convert
-            return mapper.applyAsDouble( unmapped );
+            return unmapped;
         };
     }
-
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.

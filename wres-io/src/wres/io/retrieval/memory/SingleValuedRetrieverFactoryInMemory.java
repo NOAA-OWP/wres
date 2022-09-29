@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,7 +25,6 @@ import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.RetrieverUtilities;
-import wres.io.retrieval.UnitMapper;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -41,9 +39,6 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     /** A time-series store. */
     private final TimeSeriesStore timeSeriesStore;
 
-    /**A unit mapper. */
-    private final UnitMapper unitMapper;
-
     /** The project. */
     private final Project project;
 
@@ -52,16 +47,14 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
      *
      * @param project the project
      * @param timeSeriesStore the store of time-series
-     * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static SingleValuedRetrieverFactoryInMemory of( Project project,
-                                                           TimeSeriesStore timeSeriesStore,
-                                                           UnitMapper unitMapper )
+                                                           TimeSeriesStore timeSeriesStore )
     {
-        return new SingleValuedRetrieverFactoryInMemory( project, timeSeriesStore, unitMapper );
+        return new SingleValuedRetrieverFactoryInMemory( project, timeSeriesStore );
     }
 
     @Override
@@ -74,19 +67,12 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
-        // Map the units
-        UnaryOperator<TimeSeries<Double>> m = series -> RetrieverUtilities.mapUnits( series,
-                                                                                     this.unitMapper.getUnitMapper( series.getMetadata()
-                                                                                                                          .getUnit() )::applyAsDouble,
-                                                                                     this.unitMapper.getDesiredMeasurementUnitName() );
-
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.LEFT, null, features );
 
         // Wrap in a caching retriever
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                             LeftOrRightOrBaseline.LEFT,
-                                                                                                            this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) )
-                                                   .map( m ) );
+                                                                                                            this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ) );
     }
 
     @Override
@@ -128,8 +114,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                             LeftOrRightOrBaseline.LEFT,
-                                                                                                            data ) )
-                                                   .map( this.getUnitMapper() ) );
+                                                                                                            data ) ) );
     }
 
     @Override
@@ -150,8 +135,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    features );
         return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                        LeftOrRightOrBaseline.RIGHT,
-                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) )
-                              .map( this.getUnitMapper() );
+                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) );
     }
 
     @Override
@@ -180,8 +164,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    features );
         return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                        LeftOrRightOrBaseline.BASELINE,
-                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.BASELINE ) ) )
-                              .map( this.getUnitMapper() );
+                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.BASELINE ) ) );
     }
 
     /**
@@ -251,37 +234,21 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     /**
-     * @return a unit mapper
-     */
-
-    private UnaryOperator<TimeSeries<Double>> getUnitMapper()
-    {
-        return series -> RetrieverUtilities.mapUnits( series,
-                                                      this.unitMapper.getUnitMapper( series.getMetadata()
-                                                                                           .getUnit() )::applyAsDouble,
-                                                      this.unitMapper.getDesiredMeasurementUnitName() );
-    }
-
-    /**
      * Hidden constructor.
      * 
      * @param project the project
      * @param timeSeriesStore the time-series store
-     * @param unitMapper the unit mapper
      * @param timeSeriesStore the store of time-series
      * @throws NullPointerException if any input is null
      */
 
     private SingleValuedRetrieverFactoryInMemory( Project project,
-                                                  TimeSeriesStore timeSeriesStore,
-                                                  UnitMapper unitMapper )
+                                                  TimeSeriesStore timeSeriesStore )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( timeSeriesStore );
-        Objects.requireNonNull( unitMapper );
 
         this.timeSeriesStore = timeSeriesStore;
-        this.unitMapper = unitMapper;
         this.project = project;
     }
 

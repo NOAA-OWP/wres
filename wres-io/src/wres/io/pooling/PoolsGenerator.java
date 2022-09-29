@@ -34,7 +34,6 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -79,14 +78,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
     private final TimeSeriesCrossPairer<L, R> crossPairer;
 
-    /** A transformer that applies value constraints to left-ish values. */
-    private final UnaryOperator<L> leftTransformer;
+    /** A transformer for left-ish values. */
+    private final UnaryOperator<TimeSeries<L>> leftTransformer;
 
     /** A transformer of right-ish values that can take into account the event as a whole. */
-    private final UnaryOperator<Event<R>> rightTransformer;
+    private final UnaryOperator<TimeSeries<R>> rightTransformer;
 
     /** A transformer of baseline-ish values that can take into account the event as a whole. */
-    private final UnaryOperator<Event<R>> baselineTransformer;
+    private final UnaryOperator<TimeSeries<R>> baselineTransformer;
 
     /** A function that filters left-ish time-series. */
     private final Predicate<TimeSeries<L>> leftFilter;
@@ -144,22 +143,22 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         private TimeSeriesUpscaler<R> rightUpscaler;
 
         /** A transformer that applies value constraints to left-ish values. */
-        private UnaryOperator<L> leftTransformer;
+        private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
 
         /** A transformer for right-ish values that can take into account the encapsulating event. */
-        private UnaryOperator<Event<R>> rightTransformer;
+        private UnaryOperator<TimeSeries<R>> rightTransformer = in -> in;
 
         /** A transformer for baseline-ish values that can take into account the encapsulating event. */
-        private UnaryOperator<Event<R>> baselineTransformer;
+        private UnaryOperator<TimeSeries<R>> baselineTransformer = in -> in;
 
         /** A function that filters left-ish time-series. */
-        private Predicate<TimeSeries<L>> leftFilter;
+        private Predicate<TimeSeries<L>> leftFilter = in -> true;
 
         /** A function that filters right-ish time-series. */
-        private Predicate<TimeSeries<R>> rightFilter;
+        private Predicate<TimeSeries<R>> rightFilter = in -> true;
 
         /** A function that filters baseline-ish time-series. */
-        private Predicate<TimeSeries<R>> baselineFilter;
+        private Predicate<TimeSeries<R>> baselineFilter = in -> true;
 
         /** A mapper to map between left-ish climate values and double values. */
         private ToDoubleFunction<L> climateMapper;
@@ -265,7 +264,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param leftTransformer the left transformer
          * @return the builder
          */
-        Builder<L, R> setLeftTransformer( UnaryOperator<L> leftTransformer )
+        Builder<L, R> setLeftTransformer( UnaryOperator<TimeSeries<L>> leftTransformer )
         {
             this.leftTransformer = leftTransformer;
 
@@ -276,7 +275,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param rightTransformer the right transformer, which may consider the encapsulating event
          * @return the builder
          */
-        Builder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
+        Builder<L, R> setRightTransformer( UnaryOperator<TimeSeries<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -287,7 +286,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineTransformer the baseline transformer, which may consider the encapsulating event
          * @return the builder
          */
-        Builder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
+        Builder<L, R> setBaselineTransformer( UnaryOperator<TimeSeries<R>> baselineTransformer )
         {
             this.baselineTransformer = baselineTransformer;
 
@@ -397,6 +396,12 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
         Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
         Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
+        Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
+        Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
+        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
+        Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
+        Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
+        Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
         if ( this.getPoolRequests().isEmpty() )
@@ -449,7 +454,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                .setLeftFilter( this.getLeftFilter() )
                .setRightFilter( this.getRightFilter() )
                .setBaselineFilter( this.getBaselineFilter() );
-
 
         // Obtain the desired time scale and set it
         TimeScaleOuter desiredTimeScale = this.getProject()
@@ -694,7 +698,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the transformer for left values
      */
 
-    private UnaryOperator<L> getLeftTransformer()
+    private UnaryOperator<TimeSeries<L>> getLeftTransformer()
     {
         return this.leftTransformer;
     }
@@ -703,7 +707,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the transformer for right values
      */
 
-    private UnaryOperator<Event<R>> getRightTransformer()
+    private UnaryOperator<TimeSeries<R>> getRightTransformer()
     {
         return this.rightTransformer;
     }
@@ -712,7 +716,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the transformer for baseline values
      */
 
-    private UnaryOperator<Event<R>> getBaselineTransformer()
+    private UnaryOperator<TimeSeries<R>> getBaselineTransformer()
     {
         return this.baselineTransformer;
     }
@@ -743,7 +747,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     {
         return this.baselineFilter;
     }
-    
+
     /**
      * Returns the retriever factory.
      * 
@@ -876,7 +880,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
             getClimatologyAtDesiredTimeScale( Supplier<Stream<TimeSeries<L>>> climatologySupplier,
                                               TimeSeriesUpscaler<L> upscaler,
                                               TimeScaleOuter desiredTimeScale,
-                                              UnaryOperator<L> transformer,
+                                              UnaryOperator<TimeSeries<L>> transformer,
                                               Predicate<L> admissibleValue )
     {
         // Defer rescaling until retrieval time
@@ -923,7 +927,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 // Transform?
                 if ( Objects.nonNull( transformer ) )
                 {
-                    nextSeries = TimeSeriesSlicer.transform( nextSeries, transformer );
+                    nextSeries = transformer.apply( nextSeries );
                 }
 
                 // Filter inadmissible values. Do this LAST because a transformer may produce 

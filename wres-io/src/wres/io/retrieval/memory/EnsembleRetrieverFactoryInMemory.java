@@ -1,11 +1,8 @@
 package wres.io.retrieval.memory;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import wres.config.generated.DataSourceConfig;
@@ -23,7 +20,6 @@ import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.RetrieverUtilities;
-import wres.io.retrieval.UnitMapper;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -38,9 +34,6 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     /** A time-series store. */
     private final TimeSeriesStore timeSeriesStore;
 
-    /**A unit mapper. */
-    private final UnitMapper unitMapper;
-
     /** The project. */
     private final Project project;
 
@@ -49,16 +42,14 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      *
      * @param project the project
      * @param timeSeriesStore the store of time-series
-     * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static EnsembleRetrieverFactoryInMemory of( Project project,
-                                                       TimeSeriesStore timeSeriesStore,
-                                                       UnitMapper unitMapper )
+                                                       TimeSeriesStore timeSeriesStore )
     {
-        return new EnsembleRetrieverFactoryInMemory( project, timeSeriesStore, unitMapper );
+        return new EnsembleRetrieverFactoryInMemory( project, timeSeriesStore );
     }
 
     @Override
@@ -71,9 +62,6 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
     {
-        // Map the units
-        UnaryOperator<TimeSeries<Double>> mapper = this.getUnitMapper();
-
         Stream<TimeSeries<Double>> originalSeries =
                 this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT,
                                                             features );
@@ -85,8 +73,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         // Wrap in a caching retriever
         return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                                     LeftOrRightOrBaseline.LEFT,
-                                                                                                                    this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) )
-                                                           .map( mapper ) );
+                                                                                                                    this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ) );
     }
 
     @Override
@@ -131,13 +118,10 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                                                                                   adjustedWindow,
                                                                                   features );
 
-        // Map the units
-        UnaryOperator<TimeSeries<Double>> mapper = this.getUnitMapper();
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                                     LeftOrRightOrBaseline.LEFT,
-                                                                                                                    data ) )
-                                                           .map( mapper ) );
+                                                                                                                    data ) ) );
     }
 
     @Override
@@ -163,14 +147,9 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                                                                                     adjustedWindow,
                                                                                     features );
 
-        UnaryOperator<TimeSeries<Ensemble>> mapper =
-                series -> this.getEnsembleUnitMapper( this.unitMapper.getUnitMapper( series.getMetadata()
-                                                                                           .getUnit() )::applyAsDouble )
-                              .apply( series );
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                LeftOrRightOrBaseline.RIGHT,
-                                                                                               data ) )
-                                      .map( mapper );
+                                                                                               data ) );
     }
 
     @Override
@@ -204,15 +183,9 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                                                                                     adjustedWindow,
                                                                                     features );
 
-        UnaryOperator<TimeSeries<Ensemble>> mapper =
-                series -> this.getEnsembleUnitMapper( this.unitMapper.getUnitMapper( series.getMetadata()
-                                                                                           .getUnit() )::applyAsDouble )
-                              .apply( series );
-
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                LeftOrRightOrBaseline.BASELINE,
-                                                                                               data ) )
-                                      .map( mapper );
+                                                                                               data ) );
     }
 
 
@@ -246,36 +219,6 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     /**
-     * @param mapper the double unit mapper
-     * @return a unit mapper for ensembles
-     */
-
-    private UnaryOperator<TimeSeries<Ensemble>> getEnsembleUnitMapper( DoubleUnaryOperator mapper )
-    {
-        UnaryOperator<Ensemble> ensMapper = unmappedEnsemble -> {
-            // Iterate the members, map the units and discover the names and add to the map
-            double[] members = unmappedEnsemble.getMembers();
-            double[] mappedMembers = Arrays.stream( members ).map( mapper ).toArray();
-            return Ensemble.of( mappedMembers, unmappedEnsemble.getLabels() );
-        };
-        return series -> RetrieverUtilities.mapUnits( series,
-                                                      ensMapper,
-                                                      this.unitMapper.getDesiredMeasurementUnitName() );
-    }
-
-    /**
-     * @return a unit mapper
-     */
-
-    private UnaryOperator<TimeSeries<Double>> getUnitMapper()
-    {
-        return series -> RetrieverUtilities.mapUnits( series,
-                                                      this.unitMapper.getUnitMapper( series.getMetadata()
-                                                                                           .getUnit() )::applyAsDouble,
-                                                      this.unitMapper.getDesiredMeasurementUnitName() );
-    }
-
-    /**
      * Hidden constructor.
      * 
      * @param project the project
@@ -286,15 +229,12 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      */
 
     private EnsembleRetrieverFactoryInMemory( Project project,
-                                              TimeSeriesStore timeSeriesStore,
-                                              UnitMapper unitMapper )
+                                              TimeSeriesStore timeSeriesStore )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( timeSeriesStore );
-        Objects.requireNonNull( unitMapper );
 
         this.timeSeriesStore = timeSeriesStore;
-        this.unitMapper = unitMapper;
         this.project = project;
     }
 

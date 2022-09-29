@@ -28,7 +28,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.utilities.Database;
 
@@ -78,29 +77,23 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     /** Declared <code>desiredTimeScale</code>, if any. */
     private final TimeScaleOuter desiredTimeScale;
 
-    /** A mapper to convert measurement units. */
-    private final UnitMapper unitMapper;
-
     /**
      * Returns an instance.
      *
      * @param project the project
      * @param database the database
      * @param caches the caches
-     * @param unitMapper the unit mapper
      * @return a factory instance
      * @throws NullPointerException if any input is null
      */
 
     public static SingleValuedRetrieverFactory of( Project project,
                                                    Database database,
-                                                   DatabaseCaches caches,
-                                                   UnitMapper unitMapper )
+                                                   DatabaseCaches caches )
     {
         return new SingleValuedRetrieverFactory( project,
                                                  database,
-                                                 caches,
-                                                 unitMapper );
+                                                 caches );
     }
 
     @Override
@@ -224,8 +217,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                .setVariableName( variableName )
                .setLeftOrRightOrBaseline( leftOrRightOrBaseline )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
-               .setDesiredTimeScale( this.desiredTimeScale )
-               .setUnitMapper( this.unitMapper );
+               .setDesiredTimeScale( this.desiredTimeScale );
 
         if ( Objects.nonNull( timeWindow ) )
         {
@@ -373,22 +365,18 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @param project the project
      * @param database the database,
      * @param caches the caches
-     * @param unitMapper the unit mapper
      * @throws NullPointerException if any input is null
      */
 
     private SingleValuedRetrieverFactory( Project project,
                                           Database database,
-                                          DatabaseCaches caches,
-                                          UnitMapper unitMapper )
+                                          DatabaseCaches caches )
     {
         Objects.requireNonNull( project );
-        Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( database );
         Objects.requireNonNull( caches );
 
         this.project = project;
-        this.unitMapper = unitMapper;
         this.database = database;
         this.caches = caches;
 

@@ -24,7 +24,7 @@ import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.data.caching.Features;
-import wres.io.retrieval.UnitMapper;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -38,7 +38,15 @@ import wres.statistics.generated.Geometry;
 
 class TimeSeriesRetrieverTest
 {
-
+    private static final String UNKNOWN = "unknown";
+    private static final String SCALE_PERIOD = "scale_period";
+    private static final String SCALE_FUNCTION = "scale_function";
+    private static final String REFERENCE_TIME = "reference_time";
+    private static final String FEATURE_ID = "feature_id";
+    private static final String OCCURRENCES = "occurrences";
+    private static final String A_UNIT = "a unit";
+    private static final String A_VARIABLE = "a variable";
+    private static final String A_FEATURE = "a feature";
     private static final String T1985_12_02T00_00_00Z = "1985-12-02T00:00:00Z";
     private static final String T1985_12_01T00_00_00Z = "1985-12-01T00:00:00Z";
 
@@ -91,50 +99,49 @@ class TimeSeriesRetrieverTest
                             Instant.parse( "1985-12-01T04:00:00Z" ),
                             Instant.parse( "1985-12-01T05:00:00Z" ) );
 
-        Mockito.when( provider.getInstant( "reference_time" ) )
+        Mockito.when( provider.getInstant( REFERENCE_TIME ) )
                .thenReturn( Instant.parse( T1985_12_01T00_00_00Z ) );
 
-        Mockito.when( provider.getString( "scale_function" ) )
-               .thenReturn( "unknown" );
+        Mockito.when( provider.getString( SCALE_FUNCTION ) )
+               .thenReturn( UNKNOWN );
 
-        Mockito.when( provider.getLong( "scale_period" ) )
+        Mockito.when( provider.getLong( SCALE_PERIOD ) )
                .thenReturn( 1000L );
 
-        Mockito.when( provider.hasColumn( "reference_time" ) )
+        Mockito.when( provider.hasColumn( REFERENCE_TIME ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getLong( "feature_id" ) )
+        Mockito.when( provider.getLong( FEATURE_ID ) )
                .thenReturn( 1L );
 
-        Mockito.when( provider.hasColumn( "occurrences" ) )
+        Mockito.when( provider.hasColumn( OCCURRENCES ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getInt( "occurrences" ) )
+        Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 1, 1, 1, 1 );
 
         FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
-                                                       .setName( "a feature" )
+                                                       .setName( A_FEATURE )
                                                        .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( 1L ) )
                .thenReturn( featureKey );
 
-        UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
-        Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
-               .thenReturn( "a unit" );
-
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getMeasurementUnitMapper() )
-               .thenReturn( unitMapper );
-
         Mockito.when( retriever.getVariableName() )
-               .thenReturn( "a variable" );
+               .thenReturn( A_VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
+
+        MeasurementUnits units = Mockito.mock( MeasurementUnits.class );
+        Mockito.when( units.getUnit( Mockito.anyLong() ) )
+               .thenReturn( A_UNIT );
+        Mockito.when( retriever.getMeasurementUnitsCache() )
+               .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
         List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0, 4.0, 5.0 );
@@ -153,9 +160,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         List<TimeSeries<Double>> expected = List.of( expectedSeries );
@@ -226,7 +233,7 @@ class TimeSeriesRetrieverTest
                             Instant.parse( "1985-12-02T03:00:00Z" ),
                             Instant.parse( "1985-12-02T04:00:00Z" ),
                             Instant.parse( "1985-12-02T05:00:00Z" ) );
-        Mockito.when( provider.getInstant( "reference_time" ) )
+        Mockito.when( provider.getInstant( REFERENCE_TIME ) )
                .thenReturn( Instant.parse( T1985_12_01T00_00_00Z ) )
                .thenReturn( Instant.parse( T1985_12_01T00_00_00Z ) )
                .thenReturn( Instant.parse( T1985_12_01T00_00_00Z ) )
@@ -238,47 +245,46 @@ class TimeSeriesRetrieverTest
                .thenReturn( Instant.parse( T1985_12_02T00_00_00Z ) )
                .thenReturn( Instant.parse( T1985_12_02T00_00_00Z ) );
 
-        Mockito.when( provider.getString( "scale_function" ) )
-               .thenReturn( "unknown" );
+        Mockito.when( provider.getString( SCALE_FUNCTION ) )
+               .thenReturn( UNKNOWN );
 
-        Mockito.when( provider.getLong( "scale_period" ) )
+        Mockito.when( provider.getLong( SCALE_PERIOD ) )
                .thenReturn( 1000L );
 
-        Mockito.when( provider.hasColumn( "reference_time" ) )
+        Mockito.when( provider.hasColumn( REFERENCE_TIME ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getLong( "feature_id" ) )
+        Mockito.when( provider.getLong( FEATURE_ID ) )
                .thenReturn( 1L );
 
-        Mockito.when( provider.hasColumn( "occurrences" ) )
+        Mockito.when( provider.hasColumn( OCCURRENCES ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getInt( "occurrences" ) )
+        Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 1, 1, 1, 1, 2, 2, 2, 2, 2 );
 
         FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
-                                                       .setName( "a feature" )
+                                                       .setName( A_FEATURE )
                                                        .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( Mockito.anyLong() ) )
                .thenReturn( featureKey );
 
-        UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
-        Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
-               .thenReturn( "a unit" );
-
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getMeasurementUnitMapper() )
-               .thenReturn( unitMapper );
-
         Mockito.when( retriever.getVariableName() )
-               .thenReturn( "a variable" );
+               .thenReturn( A_VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
+
+        MeasurementUnits units = Mockito.mock( MeasurementUnits.class );
+        Mockito.when( units.getUnit( Mockito.anyLong() ) )
+               .thenReturn( A_UNIT );
+        Mockito.when( retriever.getMeasurementUnitsCache() )
+               .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
         List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 );
@@ -297,9 +303,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         TimeSeries<Double> expectedSeriesTwo =
@@ -311,9 +317,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( T1985_12_02T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         List<TimeSeries<Double>> expected = List.of( expectedSeriesOne, expectedSeriesTwo, expectedSeriesTwo );
@@ -370,52 +376,51 @@ class TimeSeriesRetrieverTest
                .thenReturn( Instant.parse( "1985-12-01T01:00:00Z" ),
                             Instant.parse( "1985-12-02T01:00:00Z" ),
                             Instant.parse( "1985-12-03T01:00:00Z" ) );
-        Mockito.when( provider.getInstant( "reference_time" ) )
+        Mockito.when( provider.getInstant( REFERENCE_TIME ) )
                .thenReturn( Instant.parse( T1985_12_01T00_00_00Z ) )
                .thenReturn( Instant.parse( T1985_12_02T00_00_00Z ) )
                .thenReturn( Instant.parse( "1985-12-03T00:00:00Z" ) );
 
-        Mockito.when( provider.getString( "scale_function" ) )
-               .thenReturn( "unknown" );
+        Mockito.when( provider.getString( SCALE_FUNCTION ) )
+               .thenReturn( UNKNOWN );
 
-        Mockito.when( provider.getLong( "scale_period" ) )
+        Mockito.when( provider.getLong( SCALE_PERIOD ) )
                .thenReturn( 1000L );
 
-        Mockito.when( provider.hasColumn( "reference_time" ) )
+        Mockito.when( provider.hasColumn( REFERENCE_TIME ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getLong( "feature_id" ) )
+        Mockito.when( provider.getLong( FEATURE_ID ) )
                .thenReturn( 1L );
 
-        Mockito.when( provider.hasColumn( "occurrences" ) )
+        Mockito.when( provider.hasColumn( OCCURRENCES ) )
                .thenReturn( true );
 
-        Mockito.when( provider.getInt( "occurrences" ) )
+        Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 3, 2 );
 
         FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
-                                                       .setName( "a feature" )
+                                                       .setName( A_FEATURE )
                                                        .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( Mockito.anyLong() ) )
                .thenReturn( featureKey );
 
-        UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
-        Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
-               .thenReturn( "a unit" );
-
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getMeasurementUnitMapper() )
-               .thenReturn( unitMapper );
-
         Mockito.when( retriever.getVariableName() )
-               .thenReturn( "a variable" );
+               .thenReturn( A_VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
+
+        MeasurementUnits units = Mockito.mock( MeasurementUnits.class );
+        Mockito.when( units.getUnit( Mockito.anyLong() ) )
+               .thenReturn( A_UNIT );
+        Mockito.when( retriever.getMeasurementUnitsCache() )
+               .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
         List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0 );
@@ -430,9 +435,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         TimeSeries<Double> expectedSeriesTwo =
@@ -440,9 +445,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( T1985_12_02T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         TimeSeries<Double> expectedSeriesThree =
@@ -450,9 +455,9 @@ class TimeSeriesRetrieverTest
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                                              Instant.parse( "1985-12-03T00:00:00Z" ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     "a variable",
+                                                                                     A_VARIABLE,
                                                                                      featureKey,
-                                                                                     "a unit" ) )
+                                                                                     A_UNIT ) )
                                                 .build();
 
         List<TimeSeries<Double>> expected = List.of( expectedSeriesOne,

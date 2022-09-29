@@ -57,7 +57,6 @@ import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.Retriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -91,12 +90,6 @@ public class EnsembleForecastRetrieverTest
      */
 
     private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.RIGHT;
-
-    /**
-     * Unit mapper.
-     */
-
-    private UnitMapper unitMapper;
 
     /**
      * Error message when attempting to retrieve by identifier.
@@ -157,9 +150,6 @@ public class EnsembleForecastRetrieverTest
 
         // Add some data for testing
         this.addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase();
-
-        // Create the unit mapper
-        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -174,7 +164,6 @@ public class EnsembleForecastRetrieverTest
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
@@ -195,7 +184,7 @@ public class EnsembleForecastRetrieverTest
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
                                        FEATURE,
-                                       this.unitMapper.getDesiredMeasurementUnitName() );
+                                       UNIT );
         TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
 
         Labels expectedLabels = Labels.of( "123", "456", "567" );
@@ -230,7 +219,6 @@ public class EnsembleForecastRetrieverTest
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
@@ -252,7 +240,6 @@ public class EnsembleForecastRetrieverTest
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 
@@ -274,7 +261,6 @@ public class EnsembleForecastRetrieverTest
                                                        .setProjectId( PROJECT_ID )
                                                        .setVariableName( VARIABLE_NAME )
                                                        .setFeatures( Set.of( FEATURE ) )
-                                                       .setUnitMapper( this.unitMapper )
                                                        .setLeftOrRightOrBaseline( LRB )
                                                        .build();
 

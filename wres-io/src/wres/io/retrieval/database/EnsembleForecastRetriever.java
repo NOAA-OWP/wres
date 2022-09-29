@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -190,24 +189,18 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
+     * Returns a function that obtains the measured value.
      * 
      * TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these, 
      * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 
      * String[] are comparatively expensive.
      * 
-     * @return a function to obtain the measured value in the correct units
+     * @return a function to obtain the measured value
      */
 
     private Function<DataProvider, Ensemble> getDataSupplier()
     {
         return provider -> {
-
-            // Existing units
-            long measurementUnitId = provider.getLong( "measurementunit_id" );
-
-            // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper( measurementUnitId );
 
             Double[] members = provider.getDoubleArray( "ensemble_members" );
             Integer[] ids = provider.getIntegerArray( "ensemble_ids" );
@@ -230,9 +223,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                     throw new DataAccessException( "While attempting to map an ensemble identifier to a name.", e );
                 }
 
-                // Map the units
-                double mapped = mapper.applyAsDouble( members[i] );
-                ensemble.put( name, mapped );
+                ensemble.put( name, members[i] );
             }
 
             // Labels are cached centrally
