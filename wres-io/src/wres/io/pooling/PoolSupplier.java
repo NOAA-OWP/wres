@@ -136,14 +136,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** The declaration. */
     private final ProjectConfig projectConfig;
 
-    /** A function that transforms according to value. Used to apply value constraints to the left-style data. */
-    private final UnaryOperator<L> leftTransformer;
+    /** A transformer for left-ish values. */
+    private final UnaryOperator<TimeSeries<L>> leftTransformer;
 
-    /** A function that transforms right-ish data and may consider the encapsulating event. */
-    private final UnaryOperator<Event<R>> rightTransformer;
+    /** A transformer for right-ish values that can take into account the event context. */
+    private final UnaryOperator<TimeSeries<R>> rightTransformer;
 
-    /** A function that transforms baseline-ish data and may consider the encapsulating event. */
-    private final UnaryOperator<Event<R>> baselineTransformer;
+    /** A transformer for baseline-ish values that can take into account the event context. */
+    private final UnaryOperator<TimeSeries<R>> baselineTransformer;
 
     /** A function that filters left-ish time-series. */
     private final Predicate<TimeSeries<L>> leftFilter;
@@ -305,23 +305,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         /** Metadata for the baseline pairs. */
         private PoolMetadata baselineMetadata;
 
-        /** A function that transforms according to value. Used to apply value constraints to the left-style data. */
-        private UnaryOperator<L> leftTransformer;
+        /** A function that transforms the left-ish data. */
+        private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
 
-        /** A function that transforms right-ish data and may consider the encapsulating event. */
-        private UnaryOperator<Event<R>> rightTransformer;
+        /** A function that transforms the right-ish data. */
+        private UnaryOperator<TimeSeries<R>> rightTransformer = in -> in;
 
-        /** A function that transforms baseline-ish data and may consider the encapsulating event. */
-        private UnaryOperator<Event<R>> baselineTransformer;
+        /** A function that transforms baseline-ish data. */
+        private UnaryOperator<TimeSeries<R>> baselineTransformer = in -> in;
 
         /** A function that filters left-ish time-series. */
-        private Predicate<TimeSeries<L>> leftFilter;
+        private Predicate<TimeSeries<L>> leftFilter = in -> true;
 
         /** A function that filters right-ish time-series. */
-        private Predicate<TimeSeries<R>> rightFilter;
+        private Predicate<TimeSeries<R>> rightFilter = in -> true;
 
         /** A function that filters baseline-ish time-series. */
-        private Predicate<TimeSeries<R>> baselineFilter;
+        private Predicate<TimeSeries<R>> baselineFilter = in -> true;
 
         /** The frequency at which pairs should be produced. */
         private Duration frequency;
@@ -479,7 +479,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
          * @param leftTransformer the transformer for left-style data
          * @return the builder
          */
-        Builder<L, R> setLeftTransformer( UnaryOperator<L> leftTransformer )
+        Builder<L, R> setLeftTransformer( UnaryOperator<TimeSeries<L>> leftTransformer )
         {
             this.leftTransformer = leftTransformer;
 
@@ -490,7 +490,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
          * @param rightTransformer the transformer for right-style data
          * @return the builder
          */
-        Builder<L, R> setRightTransformer( UnaryOperator<Event<R>> rightTransformer )
+        Builder<L, R> setRightTransformer( UnaryOperator<TimeSeries<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -501,7 +501,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
          * @param baselineTransformer the transformer for baseline-style data
          * @return the builder
          */
-        Builder<L, R> setBaselineTransformer( UnaryOperator<Event<R>> baselineTransformer )
+        Builder<L, R> setBaselineTransformer( UnaryOperator<TimeSeries<R>> baselineTransformer )
         {
             this.baselineTransformer = baselineTransformer;
 
@@ -805,10 +805,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         if( this.hasBaseline() )
         {
-            FeatureKey left = leftRightTuple.getLeft();
-            FeatureKey right = leftRightTuple.getRight();
-            FeatureKey baseline = this.baselineFeaturesByLeft.get( left );
-            return MessageFactory.getGeometryTuple( left, right, baseline );
+            FeatureKey leftFeature = leftRightTuple.getLeft();
+            FeatureKey rightFeature = leftRightTuple.getRight();
+            FeatureKey baselineFeature = this.baselineFeaturesByLeft.get( leftFeature );
+            return MessageFactory.getGeometryTuple( leftFeature, rightFeature, baselineFeature );
         }
         
         return leftRightTuple.getGeometryTuple();
@@ -842,7 +842,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( rightOrBaseline );
         Objects.requireNonNull( rightOrBaselineOrientation );
         
-        UnaryOperator<Event<R>> rightOrBaselineTransformer =
+        UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer =
                 this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
         Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
 
@@ -979,7 +979,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                            Duration frequency,
                                                                            LeftOrRightOrBaseline rightOrBaselineOrientation,
                                                                            TimeWindowOuter timeWindow,
-                                                                           UnaryOperator<Event<R>> rightOrBaselineTransformer )
+                                                                           UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer )
     {
         Objects.requireNonNull( rightOrBaselineSeries );
         Objects.requireNonNull( rightOrBaselineOrientation );
@@ -1044,7 +1044,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private TimeSeriesPlusValidation<L, R> createSeriesPairs( TimeSeries<L> left,
                                                               TimeSeries<R> rightOrBaseline,
-                                                              UnaryOperator<Event<R>> rightOrBaselineTransformer,
+                                                              UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer,
                                                               TimeScaleOuter desiredTimeScale,
                                                               Duration frequency,
                                                               TimeWindowOuter timeWindow,
@@ -1171,9 +1171,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             rescalingMonitor.commit();
         }
 
-        // Transform the rescaled values, if required
-        TimeSeries<L> scaledAndTransformedLeft = this.transform( scaledLeft, this.getLeftTransformer() );
-        TimeSeries<R> scaledAndTransformedRight = this.transformByEvent( scaledRight, rightOrBaselineTransformer );
+        // Transform the rescaled values (e.g., this could contain unit transformations, among others)
+        TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformer()
+                                                     .apply( scaledLeft );
+        TimeSeries<R> scaledAndTransformedRight = rightOrBaselineTransformer.apply( scaledRight );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
@@ -1438,64 +1439,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Applies a transformation to the input series.
-     * 
-     * @param <T> the event value type
-     * @param toTransform the time-series to transform
-     * @param transformer the transformer
-     * @return the transformed series
-     */
-
-    private <T> TimeSeries<T> transform( TimeSeries<T> toTransform, UnaryOperator<T> transformer )
-    {
-        // No transformations?
-        if ( Objects.isNull( transformer ) )
-        {
-            return toTransform;
-        }
-
-        TimeSeries<T> transformed = TimeSeriesSlicer.transform( toTransform, transformer );
-
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Tranformed the values associated with time-series {}, producing a new time-series {}.",
-                          toTransform.hashCode(),
-                          transformed.hashCode() );
-        }
-
-        return transformed;
-    }
-
-    /**
-     * Applies a transformation to the input series that considers the encapsulating event.
-     * 
-     * @param <T> the event value type
-     * @param toTransform the time-series to transform
-     * @param transformer the transformer
-     * @return the transformed series
-     */
-
-    private <T> TimeSeries<T> transformByEvent( TimeSeries<T> toTransform, UnaryOperator<Event<T>> transformer )
-    {
-        // No transformations?
-        if ( Objects.isNull( transformer ) )
-        {
-            return toTransform;
-        }
-
-        TimeSeries<T> transformed = TimeSeriesSlicer.transformByEvent( toTransform, transformer );
-
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Tranformed the values associated with time-series {}, producing a new time-series {}.",
-                          toTransform.hashCode(),
-                          transformed.hashCode() );
-        }
-
-        return transformed;
-    }
-
-    /**
      * Returns the upscaler for left values, if any. Throws an exception if not available, because this is an internal
      * call and is only requested when necessary.
      * 
@@ -1529,7 +1472,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the transformer for left-ish data
      */
 
-    private UnaryOperator<L> getLeftTransformer()
+    private UnaryOperator<TimeSeries<L>> getLeftTransformer()
     {
         return this.leftTransformer;
     }
@@ -1538,7 +1481,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the transformer for right-ish data
      */
 
-    private UnaryOperator<Event<R>> getRightTransformer()
+    private UnaryOperator<TimeSeries<R>> getRightTransformer()
     {
         return this.rightTransformer;
     }
@@ -1547,7 +1490,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the transformer for baseline-ish data
      */
 
-    private UnaryOperator<Event<R>> getBaselineTransformer()
+    private UnaryOperator<TimeSeries<R>> getBaselineTransformer()
     {
         return this.baselineTransformer;
     }
@@ -1586,7 +1529,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @throws IllegalArgumentException if the orientation is unexpected
      */
 
-    private UnaryOperator<Event<R>> getRightOrBaselineTransformer( LeftOrRightOrBaseline lrb )
+    private UnaryOperator<TimeSeries<R>> getRightOrBaselineTransformer( LeftOrRightOrBaseline lrb )
     {
         Objects.requireNonNull( lrb );
 
@@ -1881,21 +1824,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.baselineTransformer = builder.baselineTransformer;
         this.frequency = builder.frequency;
         this.crossPairer = builder.crossPairer;
-
-        // Set null-friendly filters, i.e., no-op if the filter is null
-        Predicate<TimeSeries<L>> leftInner = builder.leftFilter;
-        Predicate<TimeSeries<L>> leftFinal = series -> Objects.nonNull( leftInner ) ? leftInner.test( series ) : true;
-        this.leftFilter = leftFinal;
-
-        Predicate<TimeSeries<R>> rightInner = builder.rightFilter;
-        Predicate<TimeSeries<R>> rightFinal =
-                series -> Objects.nonNull( rightInner ) ? rightInner.test( series ) : true;
-        this.rightFilter = rightFinal;
-
-        Predicate<TimeSeries<R>> baselineInner = builder.baselineFilter;
-        Predicate<TimeSeries<R>> baselineFinal =
-                series -> Objects.nonNull( baselineInner ) ? baselineInner.test( series ) : true;
-        this.baselineFilter = baselineFinal;
+        this.leftFilter = builder.leftFilter;
+        this.rightFilter = builder.rightFilter;
+        this.baselineFilter = builder.baselineFilter;
 
         // Set any time offsets required
         Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.getInputs() );
@@ -1932,15 +1863,17 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Validate
         String messageStart = "Cannot build the pool supplier: ";
-
         Objects.requireNonNull( this.left, messageStart + "add a left data source." );
-
         Objects.requireNonNull( this.right, messageStart + "add a right data source." );
-
         Objects.requireNonNull( this.pairer, messageStart + "add a pairer, in order to pair the data." );
-
         Objects.requireNonNull( this.metadata, messageStart + "add the metadata for the main pairs." );
-
+        Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
+        Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
+        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
+        Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
+        Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
+        Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
+        
         if ( Objects.isNull( this.desiredTimeScale ) && LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR

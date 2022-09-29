@@ -58,7 +58,6 @@ import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.Retriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
@@ -86,13 +85,6 @@ public class SingleValuedForecastRetrieverTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
-
-
-    /**
-     * The unit mapper.
-     */
-
-    private UnitMapper unitMapper;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -142,9 +134,6 @@ public class SingleValuedForecastRetrieverTest
 
         // Add some data for testing
         this.addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase();
-
-        // Create the unit mapper
-        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -158,7 +147,6 @@ public class SingleValuedForecastRetrieverTest
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
-                                                           .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline(
                                                                                       RIGHT )
                                                            .build();
@@ -244,7 +232,6 @@ public class SingleValuedForecastRetrieverTest
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
-                                                           .setUnitMapper( this.unitMapper )
                                                            .setTimeWindow( timeWindow )
                                                            .setLeftOrRightOrBaseline( RIGHT )
                                                            .build();
@@ -307,7 +294,6 @@ public class SingleValuedForecastRetrieverTest
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setLeftOrRightOrBaseline( RIGHT )
-                                                           .setUnitMapper( this.unitMapper )
                                                            .build();
 
         // Get the time-series
@@ -328,7 +314,6 @@ public class SingleValuedForecastRetrieverTest
                                                            .setProjectId( PROJECT_ID )
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
-                                                           .setUnitMapper( this.unitMapper )
                                                            .setLeftOrRightOrBaseline( RIGHT )
                                                            .build();
 

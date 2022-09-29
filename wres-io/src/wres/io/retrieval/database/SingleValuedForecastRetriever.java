@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -257,9 +256,9 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns a function that obtains the measured value in the desired units from a {@link DataProvider}.
+     * Returns a function that obtains the measured value.
      * 
-     * @return a function to obtain the measured value in the correct units
+     * @return a function to obtain the measured value
      */
 
     private Function<DataProvider, Double> getDataSupplier()
@@ -273,14 +272,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
                 return MissingValues.DOUBLE;
             }
 
-            // Existing units
-            long measurementUnitId = provider.getLong( "measurementunit_id" );
-
-            // Units mapper
-            DoubleUnaryOperator mapper = this.getMeasurementUnitMapper( measurementUnitId );
-
-            // Convert
-            return mapper.applyAsDouble( unmapped );
+            return unmapped;
         };
     }
 

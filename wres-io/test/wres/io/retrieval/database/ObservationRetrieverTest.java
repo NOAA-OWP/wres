@@ -56,7 +56,6 @@ import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.Retriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
@@ -88,19 +87,11 @@ public class ObservationRetrieverTest
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
-
     /**
      * A {@link LeftOrRightOrBaseline} for testing.
      */
 
     private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.LEFT;
-
-
-    /**
-     * Unit mapper.
-     */
-
-    private UnitMapper unitMapper;
 
     /**
      * Error message when attempting to retrieve by identifier.
@@ -156,8 +147,6 @@ public class ObservationRetrieverTest
 
         // Add some data for testing
         this.addAnObservedTimeSeriesWithTenEventsToTheDatabase();
-
-        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -171,7 +160,6 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
@@ -227,7 +215,6 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setUnitMapper( this.unitMapper )
                                                   .setTimeWindow( poolBoundaries )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
@@ -276,7 +263,6 @@ public class ObservationRetrieverTest
                 new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
-                                                  .setUnitMapper( this.unitMapper )
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
@@ -300,7 +286,6 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 
@@ -321,7 +306,6 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setUnitMapper( this.unitMapper )
                                                   .setLeftOrRightOrBaseline( LRB )
                                                   .build();
 

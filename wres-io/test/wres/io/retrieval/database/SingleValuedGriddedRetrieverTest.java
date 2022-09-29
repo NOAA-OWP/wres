@@ -43,7 +43,6 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
@@ -143,9 +142,6 @@ public class SingleValuedGriddedRetrieverTest
     @Test
     public void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
-        // Desired units are the same as the existing units
-        UnitMapper mapper = UnitMapper.of( UNITS );
-
         // Set the time window filter, aka pool boundaries to select a subset of sources
 
         // Remove the last source by reference time
@@ -174,7 +170,6 @@ public class SingleValuedGriddedRetrieverTest
                                                                                          .setFeatures( Set.of( FEATURE ) )
                                                                                          .setProjectId( PROJECT_ID )
                                                                                          .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
-                                                                                         .setUnitMapper( mapper )
                                                                                          .setTimeWindow( timeWindow )
                                                                                          .setDatabase( this.wresDatabase )
                                                                                          .setMeasurementUnitsCache( this.measurementUnitsCache )

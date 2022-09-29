@@ -60,7 +60,6 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
@@ -444,8 +443,7 @@ public class EnsembleRetrieverFactoryTest
         Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
 
         // Create the factory instance
-        UnitMapper unitMapper = UnitMapper.of( UNIT );
-        this.factoryToTest = EnsembleRetrieverFactory.of( project, this.wresDatabase, this.caches, unitMapper );
+        this.factoryToTest = EnsembleRetrieverFactory.of( project, this.wresDatabase, this.caches );
     }
 
     /**

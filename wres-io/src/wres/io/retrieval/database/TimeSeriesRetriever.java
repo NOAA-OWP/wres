@@ -20,16 +20,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -45,7 +41,6 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.retrieval.Retriever;
 import wres.io.retrieval.DataAccessException;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -106,15 +101,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /** The data type. */
     private final LeftOrRightOrBaseline lrb;
-
-    /** Mapper for changing measurement units. */
-    private final UnitMapper unitMapper;
-
-    /** Cache of unit mappers associated with this retriever. This should NOT be shared across instances. **/
-    private final Cache<Long, DoubleUnaryOperator> converterCache =
-            Caffeine.newBuilder()
-                    .maximumSize( 10 )
-                    .build();
 
     /** A declared existing time-scale, which can be used to augment a source, but not override it. */
     private final TimeScaleOuter declaredExistingTimeScale;
@@ -179,26 +165,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     String getVariableName()
     {
         return this.variableName;
-    }
-
-    /**
-     * Looks in the cache for a unit converter, else creates one.
-     * @param unitId the measurement unit id
-     * @return a unit converter
-     */
-
-    DoubleUnaryOperator getMeasurementUnitMapper( long unitId )
-    {
-        DoubleUnaryOperator converter = this.converterCache.getIfPresent( unitId );
-
-        if ( Objects.isNull( converter ) )
-        {
-            String unitName = this.getMeasurementUnitsCache().getUnit( unitId );
-            converter = this.unitMapper.getUnitMapper( unitName );
-            this.converterCache.put( unitId, converter );
-        }
-
-        return converter;
     }
 
     /**
@@ -523,17 +489,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     LeftOrRightOrBaseline getLeftOrRightOrBaseline()
     {
         return this.lrb;
-    }
-
-    /**
-     * Returns the measurement unit mapper.
-     * 
-     * @return the measurement unit mapper.
-     */
-
-    UnitMapper getMeasurementUnitMapper()
-    {
-        return this.unitMapper;
     }
 
     /**
@@ -998,13 +953,17 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            e );
         }
 
+        // Existing units
+        long measurementUnitId = provider.getLong( "measurementunit_id" );
+        String measurementUnitName = this.getMeasurementUnitsCache()
+                                         .getUnit( measurementUnitId );
+        
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( referenceTimes,
                                        latestScale,
                                        this.getVariableName(),
                                        featureKey,
-                                       this.getMeasurementUnitMapper()
-                                           .getDesiredMeasurementUnitName() );
+                                       measurementUnitName );
         lastBuilder.setMetadata( metadata );
 
         lastScale.set( latestScale );
@@ -1483,12 +1442,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         private LeftOrRightOrBaseline lrb;
 
         /**
-         * The measurement unit mapper.
-         */
-
-        private UnitMapper unitMapper;
-
-        /**
          * Desired time scale.
          */
 
@@ -1678,19 +1631,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
-         * Sets the measurement unit mapper.
-         * 
-         * @param unitMapper the measurement unit mapper
-         * @return the builder
-         */
-
-        Builder<S> setUnitMapper( UnitMapper unitMapper )
-        {
-            this.unitMapper = unitMapper;
-            return this;
-        }
-
-        /**
          * Sets the {@link ReferenceTimeType}.
          * 
          * @param referenceTimeType the reference time type
@@ -1728,7 +1668,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
-        this.unitMapper = builder.unitMapper;
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
         this.referenceTimeType = builder.referenceTimeType;
@@ -1741,7 +1680,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( this.database, "database instance." );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
         Objects.requireNonNull( this.variableName, validationStart + "variable name." );
-        Objects.requireNonNull( this.getMeasurementUnitMapper(), validationStart + "measurement unit mapper." );
         Objects.requireNonNull( this.getMeasurementUnitsCache(), validationStart + "measurement units cache." );
         Objects.requireNonNull( this.getFeaturesCache(), validationStart + "features cache." );
 

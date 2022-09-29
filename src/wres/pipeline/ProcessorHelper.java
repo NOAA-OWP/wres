@@ -553,7 +553,8 @@ class ProcessorHelper
             // completion state of features has no value when reported in this way
             ProgressMonitor.deactivate();
 
-            List<PoolRequest> poolRequests = ProcessorHelper.getPoolRequests( evaluationDescription, project );
+            PoolFactory poolFactory = PoolFactory.of( project );
+            List<PoolRequest> poolRequests = ProcessorHelper.getPoolRequests( poolFactory, evaluationDescription );
 
             int poolCount = poolRequests.size();
             EvaluationEvent monitor = evaluationDetails.getMonitor();
@@ -569,9 +570,9 @@ class ProcessorHelper
             // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
             // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
             // completes exceptionally, whichever happens first
-            CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( evaluationDetails,
+            CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( poolFactory,
+                                                                                        evaluationDetails,
                                                                                         sharedWriters,
-                                                                                        unitMapper,
                                                                                         poolRequests,
                                                                                         executors,
                                                                                         poolReporter,
@@ -930,14 +931,14 @@ class ProcessorHelper
      * Creates the pool requests from the project.
      * 
      * @param evaluationDescription the evaluation description
-     * @param project the project
+     * @param poolFactory the pool factory
      * @return the pool requests
      */
 
-    private static List<PoolRequest> getPoolRequests( wres.statistics.generated.Evaluation evaluationDescription,
-                                                      Project project )
+    private static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
+                                                      wres.statistics.generated.Evaluation evaluationDescription )
     {
-        List<PoolRequest> poolRequests = PoolFactory.getPoolRequests( evaluationDescription, project );
+        List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
 
         // Log some information about the pools
         if ( LOGGER.isInfoEnabled() )
@@ -973,9 +974,9 @@ class ProcessorHelper
      * Creates one pool task for each pool request and then chains them together, such that all of the pools complete 
      * nominally or one completes exceptionally.
      * 
+     * @param poolFactory the pool factory
      * @param evaluationDetails the evaluation details
      * @param sharedWriters the shared writers
-     * @param unitMapper the unit mapper
      * @param poolRequests the pool requests
      * @param executors the executor services
      * @param poolReporter the pool reporter that reports on a pool execution
@@ -983,9 +984,9 @@ class ProcessorHelper
      * @return the pool task chain
      */
 
-    private static CompletableFuture<Object> getPoolTaskChain( EvaluationDetails evaluationDetails,
+    private static CompletableFuture<Object> getPoolTaskChain( PoolFactory poolFactory,
+                                                               EvaluationDetails evaluationDetails,
                                                                SharedWriters sharedWriters,
-                                                               UnitMapper unitMapper,
                                                                List<PoolRequest> poolRequests,
                                                                Executors executors,
                                                                PoolReporter poolReporter,
@@ -1008,10 +1009,10 @@ class ProcessorHelper
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
             List<PoolProcessor<Double, Ensemble>> poolProcessors =
-                    ProcessorHelper.getEnsemblePoolProcessors( evaluationDetails,
+                    ProcessorHelper.getEnsemblePoolProcessors( poolFactory,
+                                                               evaluationDetails,
                                                                poolRequests,
                                                                sharedWriters,
-                                                               unitMapper,
                                                                executors,
                                                                poolGroupTracker,
                                                                poolParameters );
@@ -1024,10 +1025,10 @@ class ProcessorHelper
         else
         {
             List<PoolProcessor<Double, Double>> poolProcessors =
-                    ProcessorHelper.getSingleValuedPoolProcessors( evaluationDetails,
+                    ProcessorHelper.getSingleValuedPoolProcessors( poolFactory,
+                                                                   evaluationDetails,
                                                                    poolRequests,
                                                                    sharedWriters,
-                                                                   unitMapper,
                                                                    executors,
                                                                    poolGroupTracker,
                                                                    poolParameters );
@@ -1042,10 +1043,10 @@ class ProcessorHelper
 
     /**
      * Returns a list of processors for processing single-valued pools, one for each pool request.
+     * @param poolFactory the pool factory
      * @param evaluationDetails the evaluation details
      * @param poolRequests the pool requests
      * @param sharedWriters the shared writers
-     * @param unitMapper the unit mapper
      * @param executors the executors
      * @param groupPublicationTracker the group publication tracker
      * @param poolParameters the pool parameters
@@ -1053,10 +1054,10 @@ class ProcessorHelper
      */
 
     private static List<PoolProcessor<Double, Double>>
-            getSingleValuedPoolProcessors( EvaluationDetails evaluationDetails,
+            getSingleValuedPoolProcessors( PoolFactory poolFactory,
+                                           EvaluationDetails evaluationDetails,
                                            List<PoolRequest> poolRequests,
                                            SharedWriters sharedWriters,
-                                           UnitMapper unitMapper,
                                            Executors executors,
                                            PoolGroupTracker groupPublicationTracker,
                                            PoolParameters poolParameters )
@@ -1075,22 +1076,19 @@ class ProcessorHelper
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
             retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
-                                                                        evaluationDetails.getTimeSeriesStore(),
-                                                                        unitMapper );
+                                                                        evaluationDetails.getTimeSeriesStore() );
         }
         else
         {
             LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
             retrieverFactory = SingleValuedRetrieverFactory.of( project,
                                                                 evaluationDetails.getDatabase(),
-                                                                evaluationDetails.getCaches(),
-                                                                unitMapper );
+                                                                evaluationDetails.getCaches() );
         }
 
         // Create the pool suppliers for all pools in this evaluation
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> poolSuppliers =
-                PoolFactory.getSingleValuedPools( project,
-                                                  poolRequests,
+                poolFactory.getSingleValuedPools( poolRequests,
                                                   retrieverFactory,
                                                   poolParameters );
 
@@ -1134,10 +1132,10 @@ class ProcessorHelper
 
     /**
      * Returns a list of processors for processing ensemble pools, one for each pool request.
+     * @param poolFactory the pool factory
      * @param evaluationDetails the evaluation details
      * @param poolRequests the pool requests
      * @param sharedWriters the shared writers
-     * @param unitMapper the unit mapper
      * @param executors the executors
      * @param groupPublicationTracker the group publication tracker
      * @param poolParameters the pool parameters
@@ -1145,10 +1143,10 @@ class ProcessorHelper
      */
 
     private static List<PoolProcessor<Double, Ensemble>>
-            getEnsemblePoolProcessors( EvaluationDetails evaluationDetails,
+            getEnsemblePoolProcessors( PoolFactory poolFactory,
+                                       EvaluationDetails evaluationDetails,
                                        List<PoolRequest> poolRequests,
                                        SharedWriters sharedWriters,
-                                       UnitMapper unitMapper,
                                        Executors executors,
                                        PoolGroupTracker groupPublicationTracker,
                                        PoolParameters poolParameters )
@@ -1167,22 +1165,19 @@ class ProcessorHelper
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
             retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
-                                                                    evaluationDetails.getTimeSeriesStore(),
-                                                                    unitMapper );
+                                                                    evaluationDetails.getTimeSeriesStore() );
         }
         else
         {
             LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
             retrieverFactory = EnsembleRetrieverFactory.of( project,
                                                             evaluationDetails.getDatabase(),
-                                                            evaluationDetails.getCaches(),
-                                                            unitMapper );
+                                                            evaluationDetails.getCaches() );
         }
 
         // Create the pool suppliers for all pools in this evaluation
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers =
-                PoolFactory.getEnsemblePools( project,
-                                              poolRequests,
+                poolFactory.getEnsemblePools( poolRequests,
                                               retrieverFactory,
                                               poolParameters );
 

@@ -43,6 +43,9 @@ import wres.statistics.generated.GeometryTuple;
  */
 class PoolFactoryTest
 {
+    private static final String CFS = "CFS";
+
+
     @Test
     public void testGetPoolRequestsForEighteenTimeWindowsAndOneFeatureGroupProducesEighteenPoolRequests()
     {
@@ -54,7 +57,7 @@ class PoolFactoryTest
                 new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
         PoolingWindowConfig issuedDatesPoolingWindowConfig =
                 new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( "CFS",
+        PairConfig pairsConfig = new PairConfig( CFS,
                                                  null,
                                                  null,
                                                  null,
@@ -123,11 +126,14 @@ class PoolFactoryTest
                .thenReturn( Set.of( groupOne ) );
         Mockito.when( project.getProjectConfig() )
                .thenReturn( projectConfig );
-        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, project );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
+
+        PoolFactory poolFactory = PoolFactory.of( project );
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
 
         assertEquals( 18, actual.size() );
     }
-
 
     /**
      * Asserts against the behavior in #101246.
@@ -140,7 +146,7 @@ class PoolFactoryTest
         IntBoundsType leadBoundsConfig = new IntBoundsType( 1, 24 );
         PoolingWindowConfig leadTimesPoolingWindowConfig =
                 new PoolingWindowConfig( 0, 1, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( "CFS",
+        PairConfig pairsConfig = new PairConfig( CFS,
                                                  null,
                                                  null,
                                                  null,
@@ -210,7 +216,12 @@ class PoolFactoryTest
                .thenReturn( Set.of( groupOne, groupTwo ) );
         Mockito.when( project.getProjectConfig() )
                .thenReturn( projectConfig );
-        List<PoolRequest> actual = PoolFactory.getPoolRequests( evaluationDescription, project );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
+
+        PoolFactory poolFactory = PoolFactory.of( project );
+
+        List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
 
         assertEquals( 48, actual.size() );
 
@@ -222,7 +233,7 @@ class PoolFactoryTest
                .thenReturn( () -> Stream.of( TimeSeries.of( null ) ) );
 
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> suppliers =
-                PoolFactory.getSingleValuedPools( project, actual, retrieverFactory, poolParameters );
+                poolFactory.getSingleValuedPools( actual, retrieverFactory, poolParameters );
 
         // Assert two feature group names
         Set<FeatureGroup> actualFeatureGroups = suppliers.stream()

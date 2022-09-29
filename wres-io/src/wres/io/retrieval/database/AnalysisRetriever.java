@@ -66,7 +66,6 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                                            .setProjectId( super.getProjectId() )
                                                            .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
                                                            .setDesiredTimeScale( super.getDesiredTimeScale() )
-                                                           .setUnitMapper( super.getMeasurementUnitMapper() )
                                                            .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
                                                            .setTimeWindow( analysisRanges )
                                                            .setFeatures( super.getFeatures() )

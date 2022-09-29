@@ -55,7 +55,6 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.retrieval.Retriever;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -95,16 +94,6 @@ public class AnalysisRetrieverTest
      */
 
     private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.RIGHT;
-
-    /**
-     * The measurement units for testing.
-     */
-
-    /**
-     * The unit mapper.
-     */
-
-    private UnitMapper unitMapper;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -156,9 +145,6 @@ public class AnalysisRetrieverTest
 
         // Add some data for testing
         this.addThreeAnalysisTimeSeriesToTheDatabase();
-
-        // Create the unit mapper
-        this.unitMapper = UnitMapper.of( UNIT );
     }
 
     @Test
@@ -176,7 +162,6 @@ public class AnalysisRetrieverTest
                                                .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )
-                                               .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
 
@@ -265,7 +250,6 @@ public class AnalysisRetrieverTest
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )
-                                               .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
 
@@ -346,7 +330,6 @@ public class AnalysisRetrieverTest
                                                .setProjectId( PROJECT_ID )
                                                .setVariableName( VARIABLE_NAME )
                                                .setFeatures( Set.of( FEATURE ) )
-                                               .setUnitMapper( this.unitMapper )
                                                .setLeftOrRightOrBaseline( LRB )
                                                .build();
 

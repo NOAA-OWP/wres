@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -19,9 +18,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.retrieval.DataAccessException;
-import wres.io.retrieval.UnitMapper;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
@@ -253,26 +250,14 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         // Obtain the response
         SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
 
-        // Get the unit mapper
-        UnitMapper mapper = this.getMeasurementUnitMapper();
-        String responseUnits = response.getMeasuremenUnits();
-
-        // Map the units, pooling all features, since this retriever does not provide a per-feature API
-        List<TimeSeries<Double>> toStream = new ArrayList<>();
+        // Pooling all features, since this retriever does not provide a per-feature API
+        Stream<TimeSeries<Double>> concatenated = Stream.of();
         for ( Stream<TimeSeries<Double>> next : response.getTimeSeries().values() )
         {
-            // Acquire the unit mapper only when encountering a time-series with one or more events, as all series 
-            // may be empty and the units unknown
-            List<TimeSeries<Double>> mapped =
-                    next.filter( nextSeries -> !nextSeries.getEvents().isEmpty() )
-                        .map( in -> TimeSeriesSlicer.transform( in,
-                                                                mapper.getUnitMapper( responseUnits )::applyAsDouble ) )
-                        .collect( Collectors.toList() );
-
-            toStream.addAll( mapped );
+            concatenated = Stream.concat( concatenated, next );
         }
 
-        return toStream.stream();
+        return concatenated;
     }
 
     /**
