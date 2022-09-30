@@ -234,7 +234,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank", "boogaflickle", false,
+        Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false,
                                                  Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
@@ -244,7 +244,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "too short a declaration", null, null, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( "too short a declaration", null, null, null, false, Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
@@ -253,7 +253,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
@@ -264,12 +264,14 @@ public class WresJobTest
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
+        assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
+        response = wresJob.postWresJob( "fake", null, "admintoken", "cleandatabase", false, Collections.emptyList() );
+        System.out.println("####>> " + response.toString());
         assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
     }
-
 
     @AfterClass
     public static void cleanUp() throws IOException
