@@ -1,8 +1,11 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -10,6 +13,9 @@ import java.util.StringJoiner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import java.security.SecureRandom;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -70,6 +76,11 @@ public class WresJob
     private static String REDIS_HOST = null;
     private static int REDIS_PORT = DEFAULT_REDIS_PORT;
 
+    //Admin authentication
+    private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
+    private static byte[] PBEKEY_SALT = new byte[16];
+    private static byte[] ADMIN_TOKEN_HASH = null; //Empty means password not specified.
+
     /**
      * The count of evaluations combined with the maximum length below (which
      * is around 1x-2.5x the bytes) that could be handled by broker with current
@@ -90,6 +101,31 @@ public class WresJob
 
     static
     {
+        // If present, record the admin's token hashed.
+        String adminToken = System.getProperty( ADMIN_TOKEN_SYSTEM_PROPERTY_NAME );
+        if ( (adminToken != null) && (!adminToken.isEmpty()) )
+        {
+            try 
+            {
+                //Create the salt
+                SecureRandom random = new SecureRandom();
+                random.nextBytes(PBEKEY_SALT);
+                
+                //Hash the token using the salt.
+                KeySpec spec = new PBEKeySpec(adminToken.toCharArray(), PBEKEY_SALT, 65536, 128);
+                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1"); 
+                ADMIN_TOKEN_HASH = factory.generateSecret(spec).getEncoded();
+
+                LOGGER.info("Admin token read from system properties and hashed successfully.");
+            }
+            catch (Exception e)
+            {
+                LOGGER.warn("Unable to create a hash of the amdmin token. "  
+                            + "Admin token will be left undefined and no admin token" 
+                            + " required for any verb.", e);
+            }
+        }
+
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
         String brokerVhost = BrokerHelper.getBrokerVhost();
@@ -215,6 +251,7 @@ public class WresJob
      * Post a declaration to start a new WRES job.
      * @param projectConfig The declaration to use in a new job.
      * @param wresUser Do not use. Deprecated field.
+     * @param adminToken Token required for admin commands.
      * @param verb The verb to run on the declaration, default is execute.
      * @param postInput If the caller wishes to post input, true, default false.
      * @param additionalArguments Additional arguments when no projectConfig given.
@@ -230,6 +267,9 @@ public class WresJob
                                  @Deprecated
                                  @FormParam( "userName" )
                                  String wresUser,
+                                 @FormParam( "adminToken" )
+                                 @DefaultValue( "" )
+                                 String adminToken,
                                  @FormParam( "verb" )
                                  @DefaultValue( "execute" )
                                  String verb,
@@ -271,12 +311,51 @@ public class WresJob
             actualVerb = Verb.EXECUTE;
         }
 
+        // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
+        // configured via system property, then the adminToken is not necessary for any command.
+        Set<Verb> verbsNeedingAdminToken = Set.of(Verb.CLEANDATABASE,
+                                                  Verb.CONNECTTODB,
+                                                  Verb.REFRESHDATABASE);
+        boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
+        if ( ( ADMIN_TOKEN_HASH != null ) && ( usingToken ) )
+        {
+            if ( adminToken == null || adminToken.isEmpty() )
+            {
+                String message = "The verb " + actualVerb + " requires adminToken, which was not given or was blank.";
+                LOGGER.warn( message );
+                return WresJob.badRequest( message );
+            }
+            
+            try 
+            {
+                KeySpec spec = new PBEKeySpec(adminToken.toCharArray(), PBEKEY_SALT, 65536, 128);
+                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1"); 
+                byte[] hash = factory.generateSecret(spec).getEncoded();
+
+                if ( !Arrays.equals(ADMIN_TOKEN_HASH, hash) )
+                {
+                    String message = "The adminToken provided for the verb " + actualVerb 
+                            + " did not match that required.  The operation is not authorized.";
+                    LOGGER.warn( message );
+                    return WresJob.unauthorized( message );
+                }
+                LOGGER.info( "For the verb, " + actualVerb + ", the admin token matched "
+                        + "what was expected.  Continuing with the operation." );
+            }
+            catch (Exception e)
+            {    String message = "Error creating has of adminToken; this worked before " 
+                     + "it should work now. Operation " + actualVerb + " not authorized."
+                     + " Contact user support.";
+                 LOGGER.warn( message, e );
+                 return WresJob.unauthorized( message );
+            }
+        }
+
+        // Check declaration if necessary.
         Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
                                                     Verb.INGEST,
                                                     Verb.VALIDATE );
-
         boolean usingDeclaration = verbsNeedingDeclaration.contains( actualVerb );
-
         if ( usingDeclaration )
         {
             int lengthOfProjectDeclaration = projectConfig.length();
@@ -621,6 +700,15 @@ public class WresJob
     {
         return Response.status( Response.Status.BAD_REQUEST )
                        .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
+                                + message
+                                + "</p></body></html>" )
+                       .build();
+    }
+
+    private static Response unauthorized( String message )
+    {
+        return Response.status( Response.Status.UNAUTHORIZED )
+                       .entity( "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
                                 + message
                                 + "</p></body></html>" )
                        .build();
