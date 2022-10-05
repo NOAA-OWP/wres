@@ -16,10 +16,13 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.measure.Unit;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.Units;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -137,28 +140,34 @@ class RescalingHelper
      * Conducts upscaling of a time-series.
      * 
      * @param <T> the type of event value to upscale
-     * @param timeSeries the time-series
+     * @param timeSeries the time-series, required
      * @param upscaler the function that upscales the event values
-     * @param desiredTimeScale the desired time scale
-     * @param endsAt the set of times at which upscaled values should end
+     * @param desiredTimeScale the desired time scale, required
+     * @param existingUnit the existing measurement unit, optional
+     * @param desiredUnit the desired measurement unit, optional
+     * @param endsAt the set of times at which upscaled values should end, required
      * @param lenient is true to upscale irregularly spaced data (e.g., due to missing values)
      * @return the upscaled time-series and associated validation events
+     * @throws NullPointerException if any required input is null
      */
 
     static <T> RescaledTimeSeriesPlusValidation<T> upscale( TimeSeries<T> timeSeries,
                                                             Function<SortedSet<Event<T>>, T> upscaler,
                                                             TimeScaleOuter desiredTimeScale,
+                                                            Unit<?> existingUnit,
+                                                            Unit<?> desiredUnit,
                                                             SortedSet<Instant> endsAt,
                                                             boolean lenient )
     {
         Objects.requireNonNull( timeSeries );
-
         Objects.requireNonNull( desiredTimeScale );
-
         Objects.requireNonNull( endsAt );
 
         // Validate the request
-        List<EvaluationStatusMessage> validationEvents = RescalingHelper.validate( timeSeries, desiredTimeScale );
+        List<EvaluationStatusMessage> validationEvents = RescalingHelper.validate( timeSeries,
+                                                                                   desiredTimeScale,
+                                                                                   existingUnit,
+                                                                                   desiredUnit );
 
         // Empty time-series
         if ( timeSeries.getEvents().isEmpty() )
@@ -265,6 +274,37 @@ class RescalingHelper
                                                           endsAt,
                                                           validationEvents,
                                                           lenient );
+    }
+
+    /**
+     * Checks the input list for rescaling errors and throws an exception if any are found.
+     * @param events the events to check
+     * @param context the context to use when throwing an exception
+     * @throws RescalingException if any of the input events is an error
+     */
+
+    static void checkForRescalingErrorsAndThrowExceptionIfRequired( List<EvaluationStatusMessage> events,
+                                                                    TimeSeriesMetadata context )
+    {
+        List<EvaluationStatusMessage> errors = events.stream()
+                                                     .filter( a -> a.getStatusLevel() == StatusLevel.ERROR )
+                                                     .collect( Collectors.toList() );
+        String spacer = "    ";
+
+        if ( !errors.isEmpty() )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            message.add( "Encountered "
+                         + errors.size()
+                         + " errors while attempting to upscale time-series "
+                         + context // #93180
+                         + ": " );
+
+            errors.stream()
+                  .forEach( e -> message.add( spacer + spacer + e.toString() ) );
+
+            throw new RescalingException( message.toString() );
+        }
     }
 
     /**
@@ -442,35 +482,24 @@ class RescalingHelper
      * 
      * @param timeSeries the time-series to upscale
      * @param desiredTimeScale the desired scale
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
      * @throws RescalingException if the input cannot be rescaled to the desired scale
      * @return the validation events
      */
 
     private static <T> List<EvaluationStatusMessage> validate( TimeSeries<T> timeSeries,
-                                                               TimeScaleOuter desiredTimeScale )
+                                                               TimeScaleOuter desiredTimeScale,
+                                                               Unit<?> existingUnit,
+                                                               Unit<?> desiredUnit )
     {
-        List<EvaluationStatusMessage> events =
-                RescalingHelper.validateForUpscaling( timeSeries.getTimeScale(), desiredTimeScale );
+        List<EvaluationStatusMessage> events = RescalingHelper.validateForUpscaling( timeSeries.getTimeScale(),
+                                                                                     desiredTimeScale,
+                                                                                     existingUnit,
+                                                                                     desiredUnit );
 
         // Errors to translate into exceptions?
-        List<EvaluationStatusMessage> errors = events.stream()
-                                                     .filter( a -> a.getStatusLevel() == StatusLevel.ERROR )
-                                                     .collect( Collectors.toList() );
-        String spacer = "    ";
-
-        if ( !errors.isEmpty() )
-        {
-            StringJoiner message = new StringJoiner( System.lineSeparator() );
-            message.add( "Encountered "
-                         + errors.size()
-                         + " errors while attempting to upscale time-series "
-                         + timeSeries.getMetadata() // #93180
-                         + ": " );
-
-            errors.stream().forEach( e -> message.add( spacer + spacer + e.toString() ) );
-
-            throw new RescalingException( message.toString() );
-        }
+        RescalingHelper.checkForRescalingErrorsAndThrowExceptionIfRequired( events, timeSeries.getMetadata() );
 
         return Collections.unmodifiableList( events );
     }
@@ -637,17 +666,21 @@ class RescalingHelper
     /**
      * <p>Validates the request to upscale and throws an exception if the request is invalid. The validation is composed
      * of many separate pieces, each of which produces a {@link EvaluationStatusMessage}. These validation events are 
-     * collected together and, if any show {@link EventType#ERROR}, then an exception is thrown with all such cases 
+     * collected together and, if any show {@link StatusLevel#ERROR}, then an exception is thrown with all such cases 
      * identified.
      * 
      * <p>TODO: abstract this validation if future implementations rely on some or all of the same constraints.
      * 
      * @param existingTimeScale the existing scale
      * @param desiredTimeScale the desired scale
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
      */
 
     private static List<EvaluationStatusMessage> validateForUpscaling( TimeScaleOuter existingTimeScale,
-                                                                       TimeScaleOuter desiredTimeScale )
+                                                                       TimeScaleOuter desiredTimeScale,
+                                                                       Unit<?> existingUnit,
+                                                                       Unit<?> desiredUnit )
     {
         // Existing time-scale is unknown
         if ( Objects.isNull( existingTimeScale ) )
@@ -688,14 +721,22 @@ class RescalingHelper
                                                                                       desiredTimeScale ) );
             }
 
+            // Check if upscaling is combined with an integration of time-distributed units
+            allEvents.add( RescalingHelper.checkIfPerformingTimeIntegrationOfUnits( existingTimeScale,
+                                                                                    desiredTimeScale,
+                                                                                    existingUnit,
+                                                                                    desiredUnit ) );
+
             // The desired time scale must be a sensible function in the context of rescaling
             allEvents.add( RescalingHelper.checkIfDesiredFunctionIsUnknown( desiredTimeScale ) );
 
-            // If the existing time scale is instantaneous, do not allow accumulations (for now)
+            // If the existing time scale is instantaneous, check whether an accumulation is allowed
             allEvents.add( RescalingHelper.checkIfAccumulatingInstantaneous( existingTimeScale,
-                                                                             desiredTimeScale.getFunction() ) );
+                                                                             desiredTimeScale.getFunction(),
+                                                                             existingUnit,
+                                                                             desiredUnit ) );
 
-            // If the desired function is a total, then the existing function must also be a total
+            // If the desired function is a total, check whether an accumulation is possible
             allEvents.add( RescalingHelper.checkIfAccumulatingNonAccumulation( existingTimeScale.getFunction(),
                                                                                desiredTimeScale.getFunction() ) );
 
@@ -736,7 +777,7 @@ class RescalingHelper
 
     /**
      * Checks whether the desiredFunction is {@link TimeScaleFunction#UNKNOWN}, which is not allowed. If so,
-     * returns a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
+     * returns a {@link EvaluationStatusMessage} that is {@link StatusLevel#ERROR}, otherwise {@link StatusLevel#INFO}.
      *
      * @param desiredScale the desired scale
      * @return a validation event
@@ -758,7 +799,7 @@ class RescalingHelper
 
     /**
      * Checks whether the existingPeriod is larger than the desiredPeriod, which is not allowed. If so, returns
-     * a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.
+     * a {@link EvaluationStatusMessage} that is {@link StatusLevel#ERROR}, otherwise {@link StatusLevel#INFO}.
      * 
      * @param existingPeriod the existing period
      * @param desiredPeriod the desired period
@@ -783,7 +824,7 @@ class RescalingHelper
 
     /**
      * Checks whether the desiredPeriod is an integer multiple of the existingPeriod. If not an integer multiple, 
-     * returns a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}.  
+     * returns a {@link EvaluationStatusMessage} that is {@link StatusLevel#ERROR}, otherwise {@link StatusLevel#INFO}.  
      * 
      * @param inputPeriod the existing period
      * @param desiredPeriod the desired period 
@@ -829,11 +870,11 @@ class RescalingHelper
      * <ol>
      * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
      * the existingTimeScale is {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is 
-     * a {@link EventType#DEBUG}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
+     * a {@link StatusLevel#DEBUG}, which assumes, leniently, that the desiredTimeScale can be achieved.</li>
      * <li>If the {@link TimeScaleOuter#getPeriod()} match and the {@link TimeScaleOuter#getFunction()} do not match and 
      * the existingTimeScale is not a {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is 
-     * a {@link EventType#ERROR}.</li>
-     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link EventType#PASS}.</li>
+     * a {@link StatusLevel#ERROR}.</li>
+     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link StatusLevel#INFO}.</li>
      * </ol>
      * 
      * @param existingTimeScale the existing time scale
@@ -881,24 +922,42 @@ class RescalingHelper
     }
 
     /**
-     * <p>Checks whether attempting to accumulate a quantity that is instantaneous, which is not allowed. If so, returns
-     * a {@link EvaluationStatusMessage} that is {@link EventType#ERROR}, otherwise {@link EventType#PASS}. 
-     * 
-     * <p>TODO: in principle, this might be supported in future, but involves both an integral
-     * estimate and a change in units. For example, if the input is precipitation in mm/s
-     * then the total might be estimated as the average over the interval, multiplied by 
-     * the number of seconds.
+     * <p>Checks whether attempting to accumulate a quantity that is instantaneous, which is only allowed when changing
+     * from time-distributed units to time-integral units. If allowed, returns a {@link EvaluationStatusMessage} that is 
+     * {@link StatusLevel#DEBUG}, otherwise an {@link StatusLevel#ERROR}. 
      * 
      * @param existingScale the existing scale and function
      * @param desiredFunction the desired function
+     * @param existingUnit the existing measurement units
+     * @param desiredUnit the desired measurement units
      * @return a validation event
      */
 
     private static EvaluationStatusMessage checkIfAccumulatingInstantaneous( TimeScaleOuter existingScale,
-                                                                             TimeScaleFunction desiredFunction )
+                                                                             TimeScaleFunction desiredFunction,
+                                                                             Unit<?> existingUnit,
+                                                                             Unit<?> desiredUnit )
     {
         if ( existingScale.isInstantaneous() && desiredFunction == TimeScaleFunction.TOTAL )
         {
+            if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit )
+                 && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
+            {
+                String message = MessageFormat.format( "When attempting to accumulate instantaneous values to a total, "
+                                                       + "encountered existing units of ''{0}'' with a dimension of "
+                                                       + "''{1}'' and desired units of ''{2}'' with a dimension of "
+                                                       + "''{3}''. Accumulations are allowed because the existing "
+                                                       + "dimension is a rate and the required dimension is a "
+                                                       + "time-integral.",
+                                                       existingUnit,
+                                                       existingUnit.getDimension(),
+                                                       desiredUnit,
+                                                       desiredUnit.getDimension() );
+
+                return EvaluationStatusMessage.debug( EvaluationStage.RESCALING,
+                                                      message );
+            }
+
             String message = MessageFormat.format( "Cannot accumulate instantaneous values. Change the existing "
                                                    + "time scale or change the function associated with the desired "
                                                    + "time scale to something other than a ''{0}''.",
@@ -908,7 +967,72 @@ class RescalingHelper
         }
 
         return NOT_ATTEMPTING_TO_ACCUMULATE_AN_INSTANTANEOUS_VALUE;
+    }
 
+
+    /**
+     * <p>Checks whether attempting to calculate a desired time scale that requires a time-integration of the 
+     * measurement units. In this case, the desired time scale function must be a {@link TimeScaleFunction#MEAN} 
+     * because the time integration to a {@link TimeScaleFunction#TOTAL} is performed as a follow-up step and this is 
+     * only possible if the intermediate step is a {@link TimeScaleFunction#MEAN}. 
+     * 
+     * @param existingScale the existing time scale
+     * @param desiredScale the desired time scale
+     * @param existingUnit the existing measurement units
+     * @param desiredUnit the desired measurement units
+     * @return a validation event
+     */
+
+    private static EvaluationStatusMessage checkIfPerformingTimeIntegrationOfUnits( TimeScaleOuter existingScale,
+                                                                                    TimeScaleOuter desiredScale,
+                                                                                    Unit<?> existingUnit,
+                                                                                    Unit<?> desiredUnit )
+    {
+        if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit ) )
+        {
+            // Time scale function is not the expected MEAN
+            if ( desiredScale.getFunction() != TimeScaleFunction.MEAN )
+            {
+                String message =
+                        MessageFormat.format( "When attempting to upscale a time-series from ''{0}'' to ''{1}'', "
+                                              + "determined that the existing measurement units of ''{2}'' must "
+                                              + "be time integrated to form the desired units of ''{3}''. "
+                                              + "However, the time scale function for this intermediate operation was "
+                                              + "a ''{4}'', which is not expected in this context. The intermediate "
+                                              + "operation should have a time scale function of ''{5}''. Please check "
+                                              + "that the desired units are intended.",
+                                              existingScale,
+                                              desiredScale,
+                                              existingUnit,
+                                              desiredUnit,
+                                              desiredScale.getFunction(),
+                                              TimeScaleFunction.MEAN );
+
+                return EvaluationStatusMessage.error( EvaluationStage.RESCALING,
+                                                      message );
+            }
+
+            // Performing a time integration of the measurement units, so notify
+            if ( Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
+            {
+                String message =
+                        MessageFormat.format( "When attempting to upscale a time-series from ''{0}'' to ''{1}'', "
+                                              + "determined that the existing measurement units of ''{2}'' can "
+                                              + "be time integrated to form the desired units of ''{3}''.",
+                                              existingScale,
+                                              desiredScale,
+                                              existingUnit,
+                                              desiredUnit );
+
+                return EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                                     message );
+            }
+        }
+
+        String message = "Not attempting to perform a time-integration of the measurement units when conducting "
+                         + "upscaling.";
+
+        return EvaluationStatusMessage.info( EvaluationStage.RESCALING, message );
     }
 
     /**
@@ -917,12 +1041,12 @@ class RescalingHelper
      * <ol>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is a
      * {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is
-     * a {@link EventType#DEBUG}, which assumes, leniently, that the existing function is a 
+     * a {@link StatusLevel#DEBUG}, which assumes, leniently, that the existing function is a 
      * {@link TimeScaleFunction#TOTAL}.</li>
      * <li>If the desired function is a {@link TimeScaleFunction#TOTAL} and the existing function is not
      * {@link TimeScaleFunction#UNKNOWN}, returns a {@link EvaluationStatusMessage} that is
-     * a {@link EventType#ERROR}.</li>
-     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link EventType#PASS}.</li>
+     * a {@link StatusLevel#ERROR}.</li>
+     * <li>Otherwise, returns a {@link EvaluationStatusMessage} that is a {@link StatusLevel#INFO}.</li>
      * </ol>
      * 
      * @param existingFunction the existing function
@@ -948,10 +1072,10 @@ class RescalingHelper
             else
             {
                 String message =
-                        MessageFormat.format( "Cannot accumulate values that are not already accumulations. The "
-                                              + "function associated with the existing time scale must be a ''{0}'', "
-                                              + "rather than a ''{1}'', or the function associated with the desired "
-                                              + "time scale must be changed.",
+                        MessageFormat.format( "Cannot further accumulate values that are not already "
+                                              + "accumulations. The function associated with the existing time "
+                                              + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
+                                              + "associated with the desired time scale must be changed.",
                                               TimeScaleFunction.TOTAL,
                                               existingFunction );
 

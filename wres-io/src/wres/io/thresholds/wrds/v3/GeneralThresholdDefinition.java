@@ -6,7 +6,7 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.retrieval.UnitMapper;
+import wres.io.pooling.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
 
 import java.io.Serializable;
@@ -188,7 +188,7 @@ public class GeneralThresholdDefinition implements Serializable
 
         //When values is not used, then we are looking at NWS thresholds,
         //which come with stage, flow, and calculated flow options. Select
-        //based on provided trheshold type.
+        //based on provided threshold type.
         else if ( thresholdType.equals( WRDSThresholdType.STAGE ) )
         {
             if ( getStage_values() != null )

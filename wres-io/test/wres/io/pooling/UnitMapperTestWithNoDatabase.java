@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +16,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
+import wres.io.pooling.UnitMapper;
 
 /**
  * The UnitMapper doesn't need a database (db) to test conversions. 

@@ -900,8 +900,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 TimeScaleOuter nextScale = nextSeries.getMetadata()
                                                      .getTimeScale();
 
-                // Upscale? A difference in period is the minimum needed
-                if ( this.shouldUpscale( nextScale, desiredTimeScale ) )
+                // Upscale?
+                if ( this.shouldUpscaleClimatology( nextScale, desiredTimeScale ) )
                 {
                     if ( Objects.isNull( upscaler ) )
                     {
@@ -914,7 +914,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                             + " but no upscaler was provided." );
                     }
 
-                    nextSeries = upscaler.upscale( nextSeries, desiredTimeScale )
+                    String desiredUnit = this.getProject()
+                                             .getMeasurementUnit();
+
+                    nextSeries = upscaler.upscale( nextSeries, desiredTimeScale, desiredUnit )
                                          .getTimeSeries();
 
                     LOGGER.debug( "Upscaled the climatological time-series {} from {} to {}.",
@@ -959,11 +962,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return true if both scales are not null and the desired time scale has a larger period
      */
 
-    private boolean shouldUpscale( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
+    private boolean shouldUpscaleClimatology( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
     {
         return Objects.nonNull( existingTimeScale ) && Objects.nonNull( desiredTimeScale )
-               && TimeScaleOuter.getOrInferPeriodFromTimeScale( desiredTimeScale )
-                                .compareTo( TimeScaleOuter.getOrInferPeriodFromTimeScale( existingTimeScale ) ) > 0;
+               && ! existingTimeScale.equalsOrInstantaneous( desiredTimeScale );
     }
 
 }

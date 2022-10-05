@@ -1056,9 +1056,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 double actualValue = componentScore.getData()
                                                    .getValue();
 
-                if ( actualValue == MissingValues.DOUBLE
-                     || ( Double.isNaN( MissingValues.DOUBLE )
-                          && Double.isNaN( actualValue ) ) )
+                if ( MissingValues.isMissingValue( actualValue ) )
                 {
                     actualValue = NetcdfOutputFileCreator2.DOUBLE_FILL_VALUE;
                 }
@@ -1147,9 +1145,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                         ima = netcdfValue.getIndex();
                         double value = key.getValue();
 
-                        if ( value == MissingValues.DOUBLE
-                             || ( Double.isNaN( MissingValues.DOUBLE )
-                                  && Double.isNaN( value ) ) )
+                        if ( MissingValues.isMissingValue( value ) )
                         {
                             value = NetcdfOutputFileCreator2.DOUBLE_FILL_VALUE;
                         }

@@ -396,8 +396,8 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             if ( Objects.nonNull( missingValues )
                  && Arrays.stream( missingValues )
                           .anyMatch( missingValue -> Precision.equals( dataPoint.getValue(),
-                                                                       missingValue,
-                                                                       8 ) ) )
+                                                                       missingValue, 
+                                                                       Precision.EPSILON ) ) )
             {
                 usedValue = MissingValues.DOUBLE;
             }

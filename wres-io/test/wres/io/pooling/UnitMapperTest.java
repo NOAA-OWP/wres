@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThrows;
 
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.MeasurementDetails;
+import wres.io.pooling.UnitMapper;
 import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;

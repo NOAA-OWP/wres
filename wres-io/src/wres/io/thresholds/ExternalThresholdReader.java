@@ -11,7 +11,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.retrieval.UnitMapper;
+import wres.io.pooling.UnitMapper;
 import wres.io.thresholds.csv.CSVThresholdReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.system.SystemSettings;

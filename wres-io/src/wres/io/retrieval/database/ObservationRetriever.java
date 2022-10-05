@@ -148,7 +148,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
             // Raw value
             double unmapped = provider.getDouble( "trace_value" );
 
-            if ( !Double.isFinite( unmapped ) )
+            if ( MissingValues.isMissingValue( unmapped ) )
             {
                 return MissingValues.DOUBLE;
             }

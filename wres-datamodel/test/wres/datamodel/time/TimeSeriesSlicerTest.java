@@ -18,6 +18,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -970,7 +971,7 @@ public final class TimeSeriesSlicerTest
         assertEquals( expectedTwo, two );
         assertEquals( expectedThree, three );
     }
-    
+
     @Test
     public void testGetIntervalFromMonthDaysStartsOnEndMonthDay()
     {
@@ -1351,6 +1352,17 @@ public final class TimeSeriesSlicerTest
 
         Assertions.assertAll( () -> assertTrue( filter.test( one ) ),
                               () -> assertFalse( anotherFilter.test( one ) ) );
+    }
+
+    @Test
+    public void testGetEnsembleTransformer()
+    {
+        UnaryOperator<Double> multiplyByThree = in -> in * 3.0;
+        UnaryOperator<Ensemble> multiplyEnsembleByThree = TimeSeriesSlicer.getEnsembleTransformer( multiplyByThree );
+        Ensemble one = Ensemble.of( 1.0 );
+        Ensemble actual = multiplyEnsembleByThree.apply( one );
+        Ensemble expected = Ensemble.of( 3.0 );
+        assertEquals( expected, actual );
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )

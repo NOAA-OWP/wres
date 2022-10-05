@@ -777,7 +777,7 @@ public final class PIXMLReader extends XMLReader
             val = Double.parseDouble( value );
 
             if ( val == this.getSpecifiedMissingValue()
-                 || Precision.equals( val, this.getSpecifiedMissingValue() ) )
+                 || Precision.equals( val, this.getSpecifiedMissingValue(), Precision.EPSILON ) )
             {
                 return MissingValues.DOUBLE;
             }

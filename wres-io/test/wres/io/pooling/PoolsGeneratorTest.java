@@ -35,7 +35,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.io.retrieval.database.EnsembleRetrieverFactory;
 import wres.io.retrieval.database.SingleValuedRetrieverFactory;
 import wres.io.utilities.Database;
