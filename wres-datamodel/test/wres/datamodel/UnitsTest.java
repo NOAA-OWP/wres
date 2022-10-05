@@ -47,6 +47,9 @@ import static tech.units.indriya.unit.Units.SECOND;
 
 public class UnitsTest
 {
+    private static final String M3 = "m3";
+    private static final String KG = "kg";
+    private static final String KG_H = "kg/h";
     private static final String KM = "km";
     private static final String KM_H = "km/h";
     private static final String CFS = "CFS";
@@ -67,10 +70,10 @@ public class UnitsTest
                      "gallon",
                      "gal",
                      "sec",
-                     "m3",
+                     M3,
                      "litre",
                      "kilograms",
-                     "kg",
+                     KG,
                      "metre",
                      "metre/second",
                      "second",
@@ -367,11 +370,11 @@ public class UnitsTest
     public void testIsConvertingFromVolumetricFlowToVolume()
     {
         Unit<?> flowUnit = Units.getUnit( CMS );
-        Unit<?> volumeUnit = Units.getUnit( "m3" );
-       
+        Unit<?> volumeUnit = Units.getUnit( M3 );
+
         assertTrue( Units.isSupportedTimeIntegralConversion( flowUnit, volumeUnit ) );
     }
-    
+
     @Test
     public void testIsConvertingFromSpeedToDistance()
     {
@@ -382,10 +385,19 @@ public class UnitsTest
     }
 
     @Test
+    public void testIsConvertingFromMassFlowToMass()
+    {
+        Unit<?> speedUnit = Units.getUnit( KG_H );
+        Unit<?> distanceUnit = Units.getUnit( KG );
+
+        assertTrue( Units.isSupportedTimeIntegralConversion( speedUnit, distanceUnit ) );
+    }
+
+    @Test
     public void testGetVolumetricFlowToVolumeConverter()
     {
         Unit<?> flowUnit = Units.getUnit( CMS );
-        Unit<?> volumeUnit = Units.getUnit( "m3" );
+        Unit<?> volumeUnit = Units.getUnit( M3 );
 
         Duration sixHours = Duration.ofHours( 6 );
         TimeScaleOuter timeScale = TimeScaleOuter.of( sixHours, TimeScaleFunction.MEAN );
@@ -405,5 +417,18 @@ public class UnitsTest
         UnaryOperator<Double> converter = Units.getTimeIntegralConverter( timeScale, speedUnit, distanceUnit );
 
         assertEquals( 60.0, converter.apply( 10.0 ) );
+    }
+    
+    @Test
+    public void testGetMassFlowToMassConverter()
+    {
+        Unit<?> massFlowUnit = Units.getUnit( KG_H );
+        Unit<?> massUnit = Units.getUnit( KG );
+
+        Duration sixHours = Duration.ofHours( 6 );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( sixHours, TimeScaleFunction.MEAN );
+        UnaryOperator<Double> converter = Units.getTimeIntegralConverter( timeScale, massFlowUnit, massUnit );
+
+        assertEquals( 72.0, converter.apply( 12.0 ) );
     }
 }

@@ -18,6 +18,7 @@ import javax.measure.Unit;
 import javax.measure.format.MeasurementParseException;
 import javax.measure.format.UnitFormat;
 import javax.measure.quantity.Length;
+import javax.measure.quantity.Mass;
 import javax.measure.quantity.Speed;
 import javax.measure.quantity.Time;
 import javax.measure.quantity.Volume;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import si.uom.quantity.MassFlowRate;
 import si.uom.quantity.VolumetricFlowRate;
 import systems.uom.ucum.format.UCUMFormat;
 import systems.uom.ucum.internal.format.TokenException;
@@ -68,6 +70,12 @@ public class Units
 
     /** Length flow rate dimension, aka speed. */
     private static final Dimension SPEED = DISTANCE.divide( UnitDimension.TIME );
+
+    /** Mass. */
+    private static final Dimension MASS = UnitDimension.of( Mass.class );
+
+    /** Mass flow rate dimension. */
+    private static final Dimension MASS_FLOW_RATE = MASS.divide( UnitDimension.TIME );
 
     /** A small cache of formal UCUM units against official UCUM unit name strings to avoid repeated parsing from unit 
      * strings. */
@@ -419,7 +427,7 @@ public class Units
         Objects.requireNonNull( existingUnit );
         Objects.requireNonNull( desiredUnit );
 
-        // Flow conversion
+        // Volumetric flow to volume
         if ( Units.isConvertingFromVolumetricFlowToVolume( existingUnit, desiredUnit ) )
         {
             // These casts are awkward but safe because they are guarded by the check above
@@ -430,6 +438,7 @@ public class Units
 
             return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
         }
+        // Speed to distance
         else if ( Units.isConvertingFromSpeedToDistance( existingUnit, desiredUnit ) )
         {
             // These casts are awkward but safe because they are guarded by the check above
@@ -437,6 +446,17 @@ public class Units
             Unit<Speed> existingFlowUnit = (Unit<Speed>) existingUnit;
             @SuppressWarnings( "unchecked" )
             Unit<Length> desiredVolumeUnit = (Unit<Length>) desiredUnit;
+
+            return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
+        }
+        // Mass flow to mass
+        else if ( Units.isConvertingFromMassFlowToMass( existingUnit, desiredUnit ) )
+        {
+            // These casts are awkward but safe because they are guarded by the check above
+            @SuppressWarnings( "unchecked" )
+            Unit<MassFlowRate> existingFlowUnit = (Unit<MassFlowRate>) existingUnit;
+            @SuppressWarnings( "unchecked" )
+            Unit<Mass> desiredVolumeUnit = (Unit<Mass>) desiredUnit;
 
             return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
         }
@@ -459,7 +479,8 @@ public class Units
                                                              Unit<?> desiredUnit )
     {
         return Units.isConvertingFromVolumetricFlowToVolume( existingUnit, desiredUnit )
-               || Units.isConvertingFromSpeedToDistance( existingUnit, desiredUnit );
+               || Units.isConvertingFromSpeedToDistance( existingUnit, desiredUnit )
+               || Units.isConvertingFromMassFlowToMass( existingUnit, desiredUnit );
     }
 
     /**
@@ -498,6 +519,25 @@ public class Units
         Dimension desiredDimension = desiredUnit.getDimension();
 
         return SPEED.equals( existingDimension ) && DISTANCE.equals( desiredDimension );
+    }
+
+    /**
+     * @param existingUnit the existing measurement unit.
+     * @param desiredUnit the desired measurement unit
+     * @return whether the existing unit is a mass flow rate and the desired unit is a mass
+     * @throws NullPointerException if either input is null
+     */
+
+    private static boolean isConvertingFromMassFlowToMass( Unit<?> existingUnit,
+                                                           Unit<?> desiredUnit )
+    {
+        Objects.requireNonNull( existingUnit );
+        Objects.requireNonNull( desiredUnit );
+
+        Dimension existingDimension = existingUnit.getDimension();
+        Dimension desiredDimension = desiredUnit.getDimension();
+
+        return MASS_FLOW_RATE.equals( existingDimension ) && MASS.equals( desiredDimension );
     }
 
     /**
