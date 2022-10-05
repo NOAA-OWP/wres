@@ -23,6 +23,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.measure.Unit;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
+import wres.datamodel.Units;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -72,7 +74,6 @@ import wres.io.project.Project;
 import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.retrieval.UnitMapper;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 
@@ -382,7 +383,9 @@ public class PoolFactory
         LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
 
         // Create a default upscaler
-        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
+        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of( lenient,
+                                                                             this.getUnitMapper()
+                                                                                 .getUnitAliases() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
@@ -488,8 +491,12 @@ public class PoolFactory
         LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
 
         // Create a default upscaler for left-ish data
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( lenient );
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( lenient );
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( lenient,
+                                                                                 this.getUnitMapper()
+                                                                                     .getUnitAliases() );
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( lenient,
+                                                                                      this.getUnitMapper()
+                                                                                          .getUnitAliases() );
 
         // Left transformer
         DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
@@ -755,9 +762,18 @@ public class PoolFactory
         return toTransform -> {
 
             // Apply the unit mapping first, then the basic transformer
-            String existingUnit = toTransform.getMetadata()
-                                             .getUnit();
-            DoubleUnaryOperator unitMapper = this.getUnitMapper( existingUnit );
+            String existingUnitString = toTransform.getMetadata()
+                                                   .getUnit();
+            String desiredUnitString = this.getUnitMapper()
+                                           .getDesiredMeasurementUnitName();
+            Map<String, String> aliases = this.getUnitMapper()
+                                              .getUnitAliases();
+            DoubleUnaryOperator unitMapper = this.getUnitMapper( existingUnitString,
+                                                                 desiredUnitString,
+                                                                 aliases,
+                                                                 toTransform.getTimeScale(),
+                                                                 this.getProject()
+                                                                     .getDesiredTimeScale() );
             Function<Double, Double> transformer = basicTransformer.compose( unitMapper::applyAsDouble );
             TimeSeries<Double> transformed = TimeSeriesSlicer.transform( toTransform, transformer );
 
@@ -785,9 +801,19 @@ public class PoolFactory
     {
         return toTransform -> {
             // Apply the unit mapping first, then the basic transformer
-            String existingUnit = toTransform.getMetadata()
-                                             .getUnit();
-            DoubleUnaryOperator unitMapper = this.getUnitMapper( existingUnit );
+            String existingUnitString = toTransform.getMetadata()
+                                                   .getUnit();
+            String desiredUnitString = this.getUnitMapper()
+                                           .getDesiredMeasurementUnitName();
+            Map<String, String> aliases = this.getUnitMapper()
+                                              .getUnitAliases();
+
+            DoubleUnaryOperator unitMapper = this.getUnitMapper( existingUnitString,
+                                                                 desiredUnitString,
+                                                                 aliases,
+                                                                 toTransform.getTimeScale(),
+                                                                 this.getProject()
+                                                                     .getDesiredTimeScale() );
             UnaryOperator<Event<Ensemble>> ensembleUnitMapper = this.getEnsembleUnitMapper( unitMapper );
             Function<Event<Ensemble>, Event<Ensemble>> transformer = basicTransformer.compose( ensembleUnitMapper );
             TimeSeries<Ensemble> transformed = TimeSeriesSlicer.transformByEvent( toTransform, transformer );
@@ -804,19 +830,78 @@ public class PoolFactory
     }
 
     /**
-     * @param existingUnit the existing measurement unit
+     * @param existingUnitString the existing measurement unit string
+     * @param desiredUnitString the desired measurement unit string
+     * @param aliases a list of declared unit aliases
      * @return the unit mapper
      */
 
-    private DoubleUnaryOperator getUnitMapper( String existingUnit )
+    private DoubleUnaryOperator getUnitMapper( String existingUnitString,
+                                               String desiredUnitString,
+                                               Map<String, String> aliases,
+                                               TimeScaleOuter existingTimeScale,
+                                               TimeScaleOuter desiredTimeScale )
     {
-        DoubleUnaryOperator converter = this.converterCache.getIfPresent( existingUnit );
+        DoubleUnaryOperator converter = this.converterCache.getIfPresent( existingUnitString );
 
         if ( Objects.isNull( converter ) )
         {
-            converter = this.getUnitMapper()
-                            .getUnitMapper( existingUnit );
-            this.converterCache.put( existingUnit, converter );
+            // No conversion required
+            if ( existingUnitString.equals( desiredUnitString ) )
+            {
+                converter = in -> in;
+            }
+            // Conversion required
+            else
+            {
+                Unit<?> existingUnit = Units.getUnit( existingUnitString, aliases );
+                Unit<?> desiredUnit = Units.getUnit( desiredUnitString, aliases );
+
+                // Does the unit conversion involve a special time integration? If so, this is a type of upscaling 
+                // because it involves a change in time scale function, as well as in the measurement units, and should 
+                // be deferred to that activity. In other words, supply an identity converter here and log
+                if ( Objects.nonNull( existingTimeScale )
+                     && !existingTimeScale.equalsOrInstantaneous( desiredTimeScale )
+                     && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
+                {
+                    LOGGER.debug( "Encountered a request to convert {} to {}. Since these two units involve different "
+                                  + "dimensions, this is a non-standard unit conversion that additionally involves a "
+                                  + "time-integration. The time integration step is part of an upscaling operation and "
+                                  + "is, therefore, deferred. It is assumed that the upscaler will also convert the "
+                                  + "units. Based on that assumption, creating an identity converter instead.",
+                                  existingUnitString,
+                                  desiredUnitString );
+
+                    converter = in -> in;
+                }
+                // Regular converter that does not depend on time integration
+                else
+                {
+                    // Attempting to perform a unit conversion that cannot be solved without upscaling, so warn because 
+                    // no upscaling was detected (see the clause immediately above)
+                    if ( Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
+                    {
+                        LOGGER.warn( "Encountered a request to convert {} to {}. Since these two units involve "
+                                     + "different dimensions, this is a non-standard unit conversion that additionally "
+                                     + "involves a time-integration. This time integration problem can be solved by "
+                                     + "upscaling, but no appropriate declaration was found to implement upscaling. "
+                                     + "The existing time scale was {} and the desired time scale was {}. An error may "
+                                     + "follow when attempting to convert between incommensurate units. If you "
+                                     + "intended to solve this unit conversion problem by upscaling, please declare an "
+                                     + "appropriate desiredTimeScale and try again.",
+                                     existingUnitString,
+                                     desiredUnitString,
+                                     existingTimeScale,
+                                     desiredTimeScale );
+                    }
+
+                    converter = this.getUnitMapper()
+                                    .getUnitMapper( existingUnitString );
+
+                    // Cache the converter for re-use
+                    this.converterCache.put( existingUnitString, converter );
+                }
+            }
         }
 
         return converter;
@@ -1127,7 +1212,9 @@ public class PoolFactory
                 return PersistenceGenerator.of( persistenceSource,
                                                 upscaler,
                                                 admissibleValue,
-                                                finalLag );
+                                                finalLag,
+                                                this.getProject()
+                                                    .getMeasurementUnit() );
             };
         }
         // Other types are not supported

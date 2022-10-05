@@ -229,7 +229,7 @@ class WaterMLSource implements Callable<List<TimeSeries<Double>>>
                                            .getNoDataValue();
 
                 if ( Objects.nonNull( noDataValue )
-                     && Precision.equals( readValue, noDataValue, EPSILON) )
+                     && Precision.equals( readValue, noDataValue, EPSILON ) )
                 {
                     readValue = MissingValues.DOUBLE;
                 }

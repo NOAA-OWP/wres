@@ -48,6 +48,8 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  */
 public final class MeanSquareErrorSkillScoreTest
 {
+    private static final String CMS = "CMS";
+    
     /**
      * Default instance of a {@link MeanSquareErrorSkillScore}.
      */
@@ -165,7 +167,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                         TimeScaleFunction.MEAN ),
                                                                      "STREAMFLOW",
                                                                      feature,
-                                                                     "CMS" );
+                                                                     CMS );
 
         TimeSeries<Double> observed =
                 new Builder<Double>().addEvent( Event.of( Instant.parse( "2551-03-18T13:00:00Z" ), 2.1 ) )
@@ -181,7 +183,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                                                           TimeScaleFunction.MEAN ),
                                                                        "STREAMFLOW",
                                                                        feature,
-                                                                       "CMS" );
+                                                                       CMS );
 
         TimeSeries<Double> simulated =
                 new Builder<Double>().addEvent( Event.of( Instant.parse( "2551-03-18T13:00:00Z" ), 1.9 ) )
@@ -195,7 +197,8 @@ public final class MeanSquareErrorSkillScoreTest
         // Create the persistence/generated time-series
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( observed ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> persistence = generator.apply( simulated );
 

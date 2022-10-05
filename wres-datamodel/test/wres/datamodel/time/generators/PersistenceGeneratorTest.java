@@ -345,7 +345,8 @@ public class PersistenceGeneratorTest
 
         this.generator = PersistenceGenerator.of( () -> Stream.of( observations ),
                                                   TimeSeriesOfDoubleUpscaler.of(),
-                                                  Double::isFinite );
+                                                  Double::isFinite,
+                                                  CMS );
     }
 
     /**
@@ -517,7 +518,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( series ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( series );
 
@@ -579,7 +581,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( anotherSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( series );
 
@@ -630,7 +633,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( observed ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( forecast );
 
@@ -668,7 +672,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( series.build() ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeriesMetadata newMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TIMESCALE,
@@ -728,7 +733,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 
@@ -776,7 +782,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 
@@ -830,7 +837,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 
@@ -879,7 +887,8 @@ public class PersistenceGeneratorTest
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
                                                                           Double::isFinite,
-                                                                          2 );
+                                                                          2,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 
@@ -930,7 +939,8 @@ public class PersistenceGeneratorTest
 
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
-                                                                          Double::isFinite );
+                                                                          Double::isFinite,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 
@@ -997,7 +1007,8 @@ public class PersistenceGeneratorTest
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
                                                                           Double::isFinite,
-                                                                          3 );
+                                                                          3,
+                                                                          CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
 

@@ -1,7 +1,10 @@
 package wres.datamodel;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.UnaryOperator;
+
 import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
@@ -21,7 +24,10 @@ import systems.uom.ucum.internal.format.TokenMgrError;
 import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.unit.ProductUnit;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +47,10 @@ import static tech.units.indriya.unit.Units.SECOND;
 
 public class UnitsTest
 {
+    private static final String KM = "km";
+    private static final String KM_H = "km/h";
+    private static final String CFS = "CFS";
+    private static final String CMS = "CMS";
     static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
             new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
     static final Unit<VolumetricFlowRate> CUBIC_FOOT_PER_SECOND =
@@ -49,19 +59,81 @@ public class UnitsTest
             LoggerFactory.getLogger( UnitsTest.class );
 
     private static final List<String> UNITS_TO_PARSE =
-            List.of( "g/l", "m", "m/s", "metre per second", "square foot",
-                     "gallon", "gal", "sec", "m3", "litre", "kilograms", "kg",
-                     "metre", "metre/second", "second", "m³", "m³/s", "CFS",
-                     "CMS", "cubic metre per second", "m^2", "m^3/s", "meter",
-                     "feet", "foot", "inches", "inch", "ft", "in", "FT", "IN",
-                     "cms", "cfs", "m3 s-1", "m3/s", "ft^3/s", "kilo ft^3/s",
-                     "cubic foot / second", "Foot^3/Second", "kft", "KFoot",
-                     "Foot", "ft^3*1000/s", "K", "degc", "C", "F", "c", "f",
-                     "°C", "°F", "MM", "CM", "mm", "cm", "celsius",
-                     "fahrenheit", "\u2103", "\u2109", "\u00b0F", "GALLON",
-                     "gi.us", "METRE", "fm", "fth_us", "pt_br", "DEGF",
-                     "gal/min", "ac-ft", "ac", "ac ft", "gal*1000000/d",
-                     "mm s^-1", "kg/m^2/h", "1000*ft^3/s",
+            List.of( "g/l",
+                     "m",
+                     "m/s",
+                     "metre per second",
+                     "square foot",
+                     "gallon",
+                     "gal",
+                     "sec",
+                     "m3",
+                     "litre",
+                     "kilograms",
+                     "kg",
+                     "metre",
+                     "metre/second",
+                     "second",
+                     "m³",
+                     "m³/s",
+                     CFS,
+                     CMS,
+                     "cubic metre per second",
+                     "m^2",
+                     "m^3/s",
+                     "meter",
+                     "feet",
+                     "foot",
+                     "inches",
+                     "inch",
+                     "ft",
+                     "in",
+                     "FT",
+                     "IN",
+                     "cms",
+                     "cfs",
+                     "m3 s-1",
+                     "m3/s",
+                     "ft^3/s",
+                     "kilo ft^3/s",
+                     "cubic foot / second",
+                     "Foot^3/Second",
+                     "kft",
+                     "KFoot",
+                     "Foot",
+                     "ft^3*1000/s",
+                     "K",
+                     "degc",
+                     "C",
+                     "F",
+                     "c",
+                     "f",
+                     "°C",
+                     "°F",
+                     "MM",
+                     "CM",
+                     "mm",
+                     "cm",
+                     "celsius",
+                     "fahrenheit",
+                     "\u2103",
+                     "\u2109",
+                     "\u00b0F",
+                     "GALLON",
+                     "gi.us",
+                     "METRE",
+                     "fm",
+                     "fth_us",
+                     "pt_br",
+                     "DEGF",
+                     "gal/min",
+                     "ac-ft",
+                     "ac",
+                     "ac ft",
+                     "gal*1000000/d",
+                     "mm s^-1",
+                     "kg/m^2/h",
+                     "1000*ft^3/s",
                      "|0|",
                      "℃",
                      "|1|",
@@ -74,11 +146,31 @@ public class UnitsTest
                      new String( "℃".getBytes( StandardCharsets.UTF_16 ),
                                  StandardCharsets.UTF_8 ),
                      "|4|",
-                     "cfs_i", "[cfs_i]", "[cfs_i]/s", "degF", "[degF]", "Cel",
-                     "K/[ft_i]", "ft3/s", "kft3/s", "k(ft3)/s", "k[ft3]/s",
-                     "k[cft_i]/s", "m3/s", "ft_i", "ft_i3", "kft_i3", "[ft_i]",
-                     "[ft_i]3", "k[ft_i]", "k[ft_i]3/s", "cft_i", "[cft_i]",
-                     "[cft_i]/s", "k[cft_i]/s", "m[gal_us]/d" );
+                     "cfs_i",
+                     "[cfs_i]",
+                     "[cfs_i]/s",
+                     "degF",
+                     "[degF]",
+                     "Cel",
+                     "K/[ft_i]",
+                     "ft3/s",
+                     "kft3/s",
+                     "k(ft3)/s",
+                     "k[ft3]/s",
+                     "k[cft_i]/s",
+                     "m3/s",
+                     "ft_i",
+                     "ft_i3",
+                     "kft_i3",
+                     "[ft_i]",
+                     "[ft_i]3",
+                     "k[ft_i]",
+                     "k[ft_i]3/s",
+                     "cft_i",
+                     "[cft_i]",
+                     "[cft_i]/s",
+                     "k[cft_i]/s",
+                     "m[gal_us]/d" );
 
     @Test
     public void testConvertFlow()
@@ -88,7 +180,7 @@ public class UnitsTest
                 Quantities.getQuantity( someCubicMetersPerSecondNoUnits,
                                         CUBIC_METRE_PER_SECOND );
         LOGGER.debug( "Quantity of CMS flow: {}", someCubicMetersPerSecond );
-        
+
         UnitConverter converter = someCubicMetersPerSecond.getUnit()
                                                           .getConverterTo( CUBIC_FOOT_PER_SECOND );
         double someCubicFeetPerSecondNoUnits = converter.convert( someCubicMetersPerSecond.getValue() )
@@ -97,9 +189,10 @@ public class UnitsTest
         LOGGER.debug( "Converted-to-CFS raw value: {}",
                       someCubicFeetPerSecondNoUnits );
         assertTrue(
-                someCubicFeetPerSecondNoUnits > someCubicMetersPerSecondNoUnits,
-                "Expected " + someCubicFeetPerSecondNoUnits
-                + " to be greater than " + someCubicMetersPerSecondNoUnits );
+                    someCubicFeetPerSecondNoUnits > someCubicMetersPerSecondNoUnits,
+                    "Expected " + someCubicFeetPerSecondNoUnits
+                                                                                     + " to be greater than "
+                                                                                     + someCubicMetersPerSecondNoUnits );
     }
 
 
@@ -120,8 +213,8 @@ public class UnitsTest
         LOGGER.debug( "Converted-to-volume as system unit: {}",
                       someVolume.toSystemUnit() );
         UnitConverter unitConverter =
-                ( ( Unit<Volume> ) someVolume.getUnit() ).getConverterTo(
-                        GALLON_US );
+                ( (Unit<Volume>) someVolume.getUnit() ).getConverterTo(
+                                                                        GALLON_US );
         double someGallonsDouble = unitConverter.convert( someVolume.getValue()
                                                                     .doubleValue() );
         LOGGER.debug( "Converted to gallons (double): {}", someGallonsDouble );
@@ -132,12 +225,12 @@ public class UnitsTest
 
         // More straightforward than using a converter:
         Quantity<Volume> gallons =
-                ( ( Quantity<Volume> ) someVolume ).to( GALLON_US );
+                ( (Quantity<Volume>) someVolume ).to( GALLON_US );
         LOGGER.debug( "Converted to gallons again: {}", gallons );
 
         // What about cubic meters?
         Quantity<?> cubicMeters =
-                ( ( Quantity<Volume> ) someVolume ).to( CUBIC_METRE );
+                ( (Quantity<Volume>) someVolume ).to( CUBIC_METRE );
         LOGGER.debug( "Converted to cubicMeters: {}", cubicMeters );
     }
 
@@ -175,20 +268,25 @@ public class UnitsTest
             {
                 Unit<?> unit = AbstractUnit.parse( stringToParse );
                 LOGGER.debug(
-                        "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                        stringToParse,
-                        unit,
-                        unit.getName(),
-                        unit.getSymbol(),
-                        unit.getDimension() );
+                              "Indriya parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                              stringToParse,
+                              unit,
+                              unit.getName(),
+                              unit.getSymbol(),
+                              unit.getDimension() );
                 System.out.println( "Indriya parsed '" + stringToParse
-                                    + "' into '" + unit + "' name='" +
-                                    unit.getName() + "'" );
+                                    + "' into '"
+                                    + unit
+                                    + "' name='"
+                                    +
+                                    unit.getName()
+                                    + "'" );
             }
             catch ( MeasurementParseException | TokenMgrError mpe )
             {
                 LOGGER.debug( "Exception while parsing '{}': {}",
-                              stringToParse, mpe.getMessage() );
+                              stringToParse,
+                              mpe.getMessage() );
             }
         }
     }
@@ -205,17 +303,18 @@ public class UnitsTest
                 // Apparently identical to the implementation gotten from SPI.
                 Unit<?> unit = unitFormat.parse( stringToParse );
                 LOGGER.debug(
-                        "Indriya/UCUM parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
-                        stringToParse,
-                        unit,
-                        unit.getName(),
-                        unit.getSymbol(),
-                        unit.getDimension() );
+                              "Indriya/UCUM parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
+                              stringToParse,
+                              unit,
+                              unit.getName(),
+                              unit.getSymbol(),
+                              unit.getDimension() );
             }
             catch ( MeasurementParseException | TokenMgrError | TokenException | IllegalArgumentException e )
             {
                 LOGGER.debug( "Exception while parsing '{}': {}",
-                              stringToParse, e.getMessage() );
+                              stringToParse,
+                              e.getMessage() );
             }
         }
     }
@@ -223,14 +322,14 @@ public class UnitsTest
     @Test
     public void getCfsUnit()
     {
-        Unit<?> cfs = Units.getUnit( "CFS" );
+        Unit<?> cfs = Units.getUnit( CFS );
         assertNotNull( cfs );
     }
 
     @Test
     public void getCmsUnit()
     {
-        Unit<?> cfs = Units.getUnit( "CMS" );
+        Unit<?> cfs = Units.getUnit( CMS );
         assertNotNull( cfs );
     }
 
@@ -240,7 +339,6 @@ public class UnitsTest
         assertThrows( Units.UnrecognizedUnitException.class,
                       () -> Units.getUnit( "pears/parsec" ) );
     }
-
 
     /**
      * Verifies that the values in the convenience unit map (not the keys) can
@@ -260,7 +358,52 @@ public class UnitsTest
             LOGGER.debug( "About to parse unit from string {}", stringToParse );
             Unit<?> unit = unitFormat.parse( stringToParse );
             LOGGER.debug( "Successfully parsed unit {} from string {}",
-                          unit, stringToParse );
+                          unit,
+                          stringToParse );
         }
+    }
+
+    @Test
+    public void testIsConvertingFromVolumetricFlowToVolume()
+    {
+        Unit<?> flowUnit = Units.getUnit( CMS );
+        Unit<?> volumeUnit = Units.getUnit( "m3" );
+       
+        assertTrue( Units.isSupportedTimeIntegralConversion( flowUnit, volumeUnit ) );
+    }
+    
+    @Test
+    public void testIsConvertingFromSpeedToDistance()
+    {
+        Unit<?> speedUnit = Units.getUnit( KM_H );
+        Unit<?> distanceUnit = Units.getUnit( KM );
+
+        assertTrue( Units.isSupportedTimeIntegralConversion( speedUnit, distanceUnit ) );
+    }
+
+    @Test
+    public void testGetVolumetricFlowToVolumeConverter()
+    {
+        Unit<?> flowUnit = Units.getUnit( CMS );
+        Unit<?> volumeUnit = Units.getUnit( "m3" );
+
+        Duration sixHours = Duration.ofHours( 6 );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( sixHours, TimeScaleFunction.MEAN );
+        UnaryOperator<Double> converter = Units.getTimeIntegralConverter( timeScale, flowUnit, volumeUnit );
+
+        assertEquals( 21_600_000.0, converter.apply( 1000.0 ) );
+    }
+
+    @Test
+    public void testGetSpeedToDistanceConverter()
+    {
+        Unit<?> speedUnit = Units.getUnit( KM_H );
+        Unit<?> distanceUnit = Units.getUnit( KM );
+
+        Duration sixHours = Duration.ofHours( 6 );
+        TimeScaleOuter timeScale = TimeScaleOuter.of( sixHours, TimeScaleFunction.MEAN );
+        UnaryOperator<Double> converter = Units.getTimeIntegralConverter( timeScale, speedUnit, distanceUnit );
+
+        assertEquals( 60.0, converter.apply( 10.0 ) );
     }
 }

@@ -52,7 +52,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
-import wres.io.retrieval.NoSuchUnitConversionException;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -203,8 +202,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private Pool<TimeSeries<Pair<L, R>>> createPool()
     {
-        LOGGER.debug( "Creating pool {}.", this.metadata );
-        PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.metadata ); // Monitor
+        LOGGER.debug( "Creating pool {}.", this.getMetadata() );
+        PoolCreationEvent poolMonitor = PoolCreationEvent.of( this.getMetadata() ); // Monitor
         poolMonitor.begin();
 
         // Left data provided or is climatology the left data?
@@ -223,7 +222,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         Stream<TimeSeries<R>> rightData = this.right.get();
         Stream<TimeSeries<R>> baselineData = null;
-        
+
         // Baseline that is not generated?
         if ( this.hasBaseline() && !this.hasBaselineGenerator() )
         {
@@ -248,7 +247,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             int pairCount = PoolSlicer.getPairCount( returnMe );
 
             LOGGER.debug( "Finished creating pool {}, which contains {} time-series and {} pairs.",
-                          this.metadata,
+                          this.getMetadata(),
                           returnMe.get().size(),
                           pairCount );
         }
@@ -577,8 +576,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                      Stream<TimeSeries<R>> rightData,
                                                      Stream<TimeSeries<R>> baselineData )
     {
-        Objects.requireNonNull( leftData, "Left data is expected for the creation of pool " + this.metadata + "." );
-        Objects.requireNonNull( rightData, "Right data is expected for the creation of pool " + this.metadata + "." );
+        Objects.requireNonNull( leftData,
+                                "Left data is expected for the creation of pool " + this.getMetadata() + "." );
+        Objects.requireNonNull( rightData,
+                                "Right data is expected for the creation of pool " + this.getMetadata() + "." );
 
         // Obtain the desired time scale
         TimeScaleOuter desiredTimeScaleToUse = this.getDesiredTimeScale();
@@ -604,7 +605,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                    desiredTimeScaleToUse,
                                                                                    pairedFrequency,
                                                                                    LeftOrRightOrBaseline.RIGHT,
-                                                                                   this.metadata.getTimeWindow() );
+                                                                                   this.getMetadata()
+                                                                                       .getTimeWindow() );
 
         validationEvents.addAll( mainPairsPlus.getEvaluationStatusMessages() );
 
@@ -662,7 +664,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           + "and has this metadata: {}.",
                           pool.get().size(),
                           pairCount,
-                          this.metadata );
+                          this.getMetadata() );
         }
 
         return pool;
@@ -691,7 +693,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             LOGGER.debug( "Discovered no pairs. Filling with empty pools." );
             Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> emptyPools = new HashMap<>();
-            this.metadata.getFeatureTuples().forEach( nextFeature -> emptyPools.put( nextFeature, List.of() ) );
+            this.getMetadata()
+                .getFeatureTuples()
+                .forEach( nextFeature -> emptyPools.put( nextFeature, List.of() ) );
             mainPairsToUse = emptyPools;
         }
 
@@ -702,26 +706,28 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureTuple nextLeftRightFeature = nextEntry.getKey();
             FeatureKey leftFeature = nextLeftRightFeature.getLeft();
-            
+
             // For now, use the complete left-right-baseline tuple for both the main and baseline pools. However, this
             // is an awkward abstraction - the pool metadata should really deal with only left-right descriptions, 
             // since there is separate metadata for left-right and left-baseline pairs. Once fixed, the geometries will 
             // be pairs rather than tuples in most contexts, including the pool metadata
             GeometryTuple geoTuple = this.getGeometryTuple( nextLeftRightFeature );
-            
+
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
             Pool.Builder<TimeSeries<Pair<L, R>>> nextMiniPoolBuilder = new Pool.Builder<>();
 
             wres.statistics.generated.Pool.Builder newInnerMainMetaBuilder =
-                    this.metadata.getPool()
-                                 .toBuilder()
-                                 .clearGeometryTuples()
-                                 .addGeometryTuples( geoTuple )
-                                 .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                 .addGeometryTuples( geoTuple ) );
+                    this.getMetadata()
+                        .getPool()
+                        .toBuilder()
+                        .clearGeometryTuples()
+                        .addGeometryTuples( geoTuple )
+                        .setGeometryGroup( GeometryGroup.newBuilder()
+                                                        .addGeometryTuples( geoTuple ) );
 
-            PoolMetadata nextInnerMainMeta = PoolMetadata.of( this.metadata.getEvaluation(),
+            PoolMetadata nextInnerMainMeta = PoolMetadata.of( this.getMetadata()
+                                                                  .getEvaluation(),
                                                               newInnerMainMetaBuilder.build() );
             nextMiniPoolBuilder.setMetadata( nextInnerMainMeta )
                                .addData( nextMainPairs );
@@ -762,15 +768,17 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Set the metadata, adjusted to include the desired time scale
         wres.statistics.generated.Pool.Builder newMetadataBuilder =
-                this.metadata.getPool()
-                             .toBuilder();
+                this.getMetadata()
+                    .getPool()
+                    .toBuilder();
 
         if ( Objects.nonNull( desiredTimeScale ) )
         {
             newMetadataBuilder.setTimeScale( desiredTimeScale.getTimeScale() );
         }
 
-        PoolMetadata mainMetadata = PoolMetadata.of( this.metadata.getEvaluation(),
+        PoolMetadata mainMetadata = PoolMetadata.of( this.getMetadata()
+                                                         .getEvaluation(),
                                                      newMetadataBuilder.build(),
                                                      statusMessages );
 
@@ -780,21 +788,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
 
             wres.statistics.generated.Pool.Builder newBaseMetadataBuilder =
-                    this.baselineMetadata.getPool()
-                                         .toBuilder();
+                    this.getBaselineMetadata()
+                        .getPool()
+                        .toBuilder();
             if ( Objects.nonNull( desiredTimeScale ) )
             {
                 newBaseMetadataBuilder.setTimeScale( desiredTimeScale.getTimeScale() );
             }
 
-            PoolMetadata baseMetadata = PoolMetadata.of( this.metadata.getEvaluation(),
+            PoolMetadata baseMetadata = PoolMetadata.of( this.getMetadata()
+                                                             .getEvaluation(),
                                                          newBaseMetadataBuilder.build() );
             builder.setMetadataForBaseline( baseMetadata );
         }
 
         return builder.build();
     }
-    
+
     /**
      * Generates a left-right-baseline tuple from a left-right tuple if a baseline exists.
      * @param leftRightTuple the left-right tuple
@@ -803,32 +813,32 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private GeometryTuple getGeometryTuple( FeatureTuple leftRightTuple )
     {
-        if( this.hasBaseline() )
+        if ( this.hasBaseline() )
         {
             FeatureKey leftFeature = leftRightTuple.getLeft();
             FeatureKey rightFeature = leftRightTuple.getRight();
             FeatureKey baselineFeature = this.baselineFeaturesByLeft.get( leftFeature );
             return MessageFactory.getGeometryTuple( leftFeature, rightFeature, baselineFeature );
         }
-        
+
         return leftRightTuple.getGeometryTuple();
     }
-    
+
     /**
      * Creates a paired dataset from the input, rescaling the left/right data as needed.
      * 
-     * @param left the left data
-     * @param rightOrBaseline the right or baseline data
+     * @param left the left data, required
+     * @param rightOrBaseline the right or baseline data, required
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param rightOrBaselineOrientation the orientation of the non-left data, one of 
-     *            {@link LeftOrRightOrBaseline#RIGHT} or {@link LeftOrRightOrBaseline#BASELINE}
+     *            {@link LeftOrRightOrBaseline#RIGHT} or {@link LeftOrRightOrBaseline#BASELINE}, required
      * @param timeWindow the time window to snip the pairs
      * @return the pairs
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
      * @throws NoSuchUnitConversionException if the data units could not be converted
-     * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
+     * @throws NullPointerException if any required input is null
      */
 
     private TimeSeriesPlusValidation<L, R> createPairsPerFeature( Stream<TimeSeries<L>> left,
@@ -841,7 +851,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
         Objects.requireNonNull( rightOrBaselineOrientation );
-        
+
         UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer =
                 this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
         Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
@@ -940,7 +950,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Log the number of time-series available for pairing and the number of paired time-series created
         if ( LOGGER.isDebugEnabled() )
         {
-            PoolMetadata metaToReport = this.metadata;
+            PoolMetadata metaToReport = this.getMetadata();
 
             if ( rightOrBaselineOrientation == LeftOrRightOrBaseline.BASELINE )
             {
@@ -1054,6 +1064,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( rightOrBaseline );
         Objects.requireNonNull( timeWindow );
 
+        // Desired unit
+        String desiredUnit = this.getMetadata()
+                                 .getMeasurementUnit()
+                                 .getUnit();
+
         // Create the feature tuple
         GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( left.getMetadata()
                                                                            .getFeature(),
@@ -1106,7 +1121,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // #92892
             RescaledTimeSeriesPlusValidation<L> upscaledLeft = leftUp.upscale( scaledLeft,
                                                                                desiredTimeScale,
-                                                                               endsAt );
+                                                                               endsAt,
+                                                                               desiredUnit );
 
             scaledLeft = upscaledLeft.getTimeSeries();
             statusEvents.addAll( upscaledLeft.getValidationEvents() );
@@ -1149,7 +1165,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             TimeSeriesUpscaler<R> rightUp = this.getRightUpscaler();
             RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUp.upscale( rightOrBaseline,
                                                                                  desiredTimeScale,
-                                                                                 endsAt );
+                                                                                 endsAt,
+                                                                                 desiredUnit );
 
             scaledRight = upscaledRight.getTimeSeries();
             statusEvents.addAll( upscaledRight.getValidationEvents() );
@@ -1216,7 +1233,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                            Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
         LOGGER.debug( "Conducting cross-pairing of {} and {}.",
-                      this.metadata,
+                      this.getMetadata(),
                       this.baselineMetadata );
 
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairsCrossed = new HashMap<>();
@@ -1380,7 +1397,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Creates the climatological data as needed. Currently uses 
+     * Creates the climatological data as needed.
      * 
      * @param climatologyFeatureKey the feature for which the climatology is needed, not null
      * @return the climatological data or null if no climatology is defined
@@ -1408,7 +1425,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             LOGGER.debug( "Discovered {} climatological time-series for feature {} within pool {}.",
                           climData.size(),
                           climatologyFeatureKey,
-                          this.metadata );
+                          this.getMetadata() );
         }
 
         for ( TimeSeries<L> next : climData )
@@ -1587,6 +1604,24 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private TimeSeriesPairer<L, R> getPairer()
     {
         return this.pairer;
+    }
+
+    /**
+     * @return the metadata.
+     */
+
+    private PoolMetadata getMetadata()
+    {
+        return this.metadata;
+    }
+
+    /**
+     * @return the baseline metadata.
+     */
+
+    private PoolMetadata getBaselineMetadata()
+    {
+        return this.baselineMetadata;
     }
 
     /**
@@ -1873,7 +1908,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
-        
+
         if ( Objects.isNull( this.desiredTimeScale ) && LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR

@@ -1,4 +1,4 @@
-package wres.io.retrieval;
+package wres.io.pooling;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,7 +80,16 @@ public class UnitMapper
     {
         return this.desiredMeasurementUnitName;
     }
+    
+    /**
+     * @return a map of declared unit aliases
+     */
 
+    public Map<String,String> getUnitAliases()
+    {
+        return this.aliases;
+    }
+    
     /**
      * Returns a unit mapper to this UnitMapper's unit from the given unit name.
      * @param unitName The name of an existing measurement unit.
@@ -341,7 +350,7 @@ public class UnitMapper
             }
         }
 
-        this.aliases = aliasToUnitStrings;
+        this.aliases = Collections.unmodifiableMap( aliasToUnitStrings );
         this.internalMappers = this.getInternalMappers();
     }
     

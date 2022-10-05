@@ -22,7 +22,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.retrieval.UnitMapper;
+import wres.io.pooling.UnitMapper;
 import wres.io.thresholds.wrds.v2.CalculatedThresholdValues;
 import wres.io.thresholds.wrds.v2.OriginalThresholdValues;
 import wres.io.thresholds.wrds.v2.ThresholdDefinition;

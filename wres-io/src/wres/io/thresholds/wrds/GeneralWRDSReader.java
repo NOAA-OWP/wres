@@ -17,6 +17,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
+import wres.io.pooling.UnitMapper;
 import wres.io.reading.web.WebClient;
 import wres.io.reading.wrds.ReadValueManager;
 import wres.io.thresholds.ThresholdReadingException;
@@ -25,7 +26,6 @@ import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
-import wres.io.retrieval.UnitMapper;
 import wres.system.SystemSettings;
 
 import javax.net.ssl.SSLContext;

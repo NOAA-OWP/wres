@@ -586,7 +586,8 @@ public class DatacardReader implements TimeSeriesReader
         DataSourceConfig.Source source = dataSource.getSource();
         String missingValue = this.getMissingValue( source );
 
-        return Objects.nonNull( missingValue ) && Precision.equals( Double.parseDouble( missingValue ), value );
+        return Objects.nonNull( missingValue )
+               && Precision.equals( Double.parseDouble( missingValue ), value, Precision.EPSILON );
     }
 
 

@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,16 +10,33 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
+
+import javax.measure.Dimension;
+import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.format.MeasurementParseException;
 import javax.measure.format.UnitFormat;
+import javax.measure.quantity.Length;
+import javax.measure.quantity.Speed;
+import javax.measure.quantity.Time;
+import javax.measure.quantity.Volume;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
+import si.uom.quantity.VolumetricFlowRate;
 import systems.uom.ucum.format.UCUMFormat;
 import systems.uom.ucum.internal.format.TokenException;
 import systems.uom.ucum.internal.format.TokenMgrError;
-
+import tech.units.indriya.quantity.Quantities;
+import tech.units.indriya.quantity.time.TemporalQuantity;
+import tech.units.indriya.unit.UnitDimension;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 
@@ -38,6 +57,24 @@ public class Units
     private static final Logger LOGGER = LoggerFactory.getLogger( Units.class );
     private static final UnitFormat UNIT_FORMAT = UCUMFormat.getInstance( CASE_SENSITIVE );
 
+    /** Volume dimension. */
+    private static final Dimension VOLUME = UnitDimension.of( Volume.class );
+
+    /** Volumetric flow rate dimension. */
+    private static final Dimension VOLUMETRIC_FLOW_RATE = VOLUME.divide( UnitDimension.TIME );
+
+    /** Length dimension. */
+    private static final Dimension DISTANCE = UnitDimension.of( Length.class );
+
+    /** Length flow rate dimension, aka speed. */
+    private static final Dimension SPEED = DISTANCE.divide( UnitDimension.TIME );
+
+    /** A small cache of formal UCUM units against official UCUM unit name strings to avoid repeated parsing from unit 
+     * strings. */
+    private static final Cache<String, Unit<?>> UNIT_CACHE = Caffeine.newBuilder()
+                                                                     .maximumSize( 10 )
+                                                                     .build();
+
     /**
      * For backward compatibility, a map from weird unit names to official ones,
      * "official ones" being those supported by the indriya implementation.
@@ -47,7 +84,7 @@ public class Units
      * cased versions of each previously supported unit. It seemed too far to do
      * mixed case for each and every unit. This is already too far anyway.
      *
-     * wres8=> select * from wres.measurementunit;
+     * select * from wres.measurementunit;
      *  measurementunit_id | unit_name
      * --------------------+-----------
      *                   1 | NONE
@@ -301,7 +338,13 @@ public class Units
 
         String officialName = Units.getOfficialUnitName( unitName, overrideAliases );
 
-        Unit<?> unit;
+        // Look in the cache
+        Unit<?> unit = UNIT_CACHE.getIfPresent( officialName );
+
+        if ( Objects.nonNull( unit ) )
+        {
+            return unit;
+        }
 
         try
         {
@@ -309,7 +352,7 @@ public class Units
             unit = UNIT_FORMAT.parse( officialName );
         }
         // TODO: remove TokenMgrError and TokenException when the libraries
-        //  change to not throw these internal exceptions.
+        // change to not throw these internal exceptions.
         catch ( MeasurementParseException | TokenMgrError | TokenException e )
         {
             SortedSet<String> aliases = new TreeSet<>();
@@ -333,9 +376,11 @@ public class Units
                          unit.getDimension() );
         }
 
+        // Cache for re-use
+        UNIT_CACHE.put( officialName, unit );
+
         return unit;
     }
-
 
     /**
      * Given a unit name, return the formal javax.measure Unit of Measure.
@@ -353,6 +398,166 @@ public class Units
         return Units.getUnit( unitName, Collections.emptyMap() );
     }
 
+    /**
+     * Creates a converter that integrates the existing unit over time to form the desired unit.
+     * 
+     * @see #isSupportedTimeIntegralConversion(Unit, Unit)
+     * @param timeScale the time scale
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
+     * @return a converter from volumetric flow rate to volume
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the time scale does not represent an average over the scale period
+     * @throws UnsupportedOperationException if the conversion is not a supported time integration
+     */
+
+    public static UnaryOperator<Double> getTimeIntegralConverter( TimeScaleOuter timeScale,
+                                                                  Unit<?> existingUnit,
+                                                                  Unit<?> desiredUnit )
+    {
+        Objects.requireNonNull( timeScale );
+        Objects.requireNonNull( existingUnit );
+        Objects.requireNonNull( desiredUnit );
+
+        // Flow conversion
+        if ( Units.isConvertingFromVolumetricFlowToVolume( existingUnit, desiredUnit ) )
+        {
+            // These casts are awkward but safe because they are guarded by the check above
+            @SuppressWarnings( "unchecked" )
+            Unit<VolumetricFlowRate> existingFlowUnit = (Unit<VolumetricFlowRate>) existingUnit;
+            @SuppressWarnings( "unchecked" )
+            Unit<Volume> desiredVolumeUnit = (Unit<Volume>) desiredUnit;
+
+            return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
+        }
+        else if ( Units.isConvertingFromSpeedToDistance( existingUnit, desiredUnit ) )
+        {
+            // These casts are awkward but safe because they are guarded by the check above
+            @SuppressWarnings( "unchecked" )
+            Unit<Speed> existingFlowUnit = (Unit<Speed>) existingUnit;
+            @SuppressWarnings( "unchecked" )
+            Unit<Length> desiredVolumeUnit = (Unit<Length>) desiredUnit;
+
+            return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
+        }
+
+        throw new UnsupportedOperationException( "Cannot perform a time integration of "
+                                                 + existingUnit
+                                                 + " to form "
+                                                 + desiredUnit
+                                                 + "." );
+    }
+
+    /**
+     * @param existingUnit the existing measurement unit.
+     * @param desiredUnit the desired measurement unit
+     * @return whether the existing unit can be time integrated to form the desired unit
+     * @throws NullPointerException if either input is null
+     */
+
+    public static boolean isSupportedTimeIntegralConversion( Unit<?> existingUnit,
+                                                             Unit<?> desiredUnit )
+    {
+        return Units.isConvertingFromVolumetricFlowToVolume( existingUnit, desiredUnit )
+               || Units.isConvertingFromSpeedToDistance( existingUnit, desiredUnit );
+    }
+
+    /**
+     * @param existingUnit the existing measurement unit.
+     * @param desiredUnit the desired measurement unit
+     * @return whether the existing unit is a volumetric flow and the desired unit is a volume
+     * @throws NullPointerException if either input is null
+     */
+
+    private static boolean isConvertingFromVolumetricFlowToVolume( Unit<?> existingUnit,
+                                                                   Unit<?> desiredUnit )
+    {
+        Objects.requireNonNull( existingUnit );
+        Objects.requireNonNull( desiredUnit );
+
+        Dimension existingDimension = existingUnit.getDimension();
+        Dimension desiredDimension = desiredUnit.getDimension();
+
+        return VOLUMETRIC_FLOW_RATE.equals( existingDimension ) && VOLUME.equals( desiredDimension );
+    }
+
+    /**
+     * @param existingUnit the existing measurement unit.
+     * @param desiredUnit the desired measurement unit
+     * @return whether the existing unit is a speed and the desired unit is a distance
+     * @throws NullPointerException if either input is null
+     */
+
+    private static boolean isConvertingFromSpeedToDistance( Unit<?> existingUnit,
+                                                            Unit<?> desiredUnit )
+    {
+        Objects.requireNonNull( existingUnit );
+        Objects.requireNonNull( desiredUnit );
+
+        Dimension existingDimension = existingUnit.getDimension();
+        Dimension desiredDimension = desiredUnit.getDimension();
+
+        return SPEED.equals( existingDimension ) && DISTANCE.equals( desiredDimension );
+    }
+
+    /**
+     * Creates a converter that performs a time integration of the input. The time scale must represent a mean average
+     * over the scale period, i.e., a {@link TimeScaleFunction#MEAN} and cannot be an instantaneous time scale.
+     * 
+     * @param timeScale the time scale
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
+     * @return a converter that performs a time integration
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the time scale does not represent an average over the scale period
+     */
+
+    private static <S extends Quantity<S>, T extends Quantity<T>> UnaryOperator<Double>
+            getTimeIntegralConverterInner( TimeScaleOuter timeScale,
+                                           Unit<S> existingUnit,
+                                           Unit<T> desiredUnit )
+    {
+        Objects.requireNonNull( timeScale );
+        Objects.requireNonNull( existingUnit );
+        Objects.requireNonNull( desiredUnit );
+
+        if ( timeScale.isInstantaneous() || timeScale.getFunction() != TimeScaleFunction.MEAN )
+        {
+            throw new IllegalArgumentException( "Cannot create a unit converter from " + existingUnit
+                                                + " flow to "
+                                                + desiredUnit
+                                                + " because the desired time scale of "
+                                                + timeScale
+                                                + " does not represent a mean average over the scale period." );
+        }
+
+        Duration scalePeriod = timeScale.getPeriod();
+
+        // Scale period in millisecond precision
+        Quantity<Time> scalePeriodMillis = TemporalQuantity.of( scalePeriod.toMillis(), ChronoUnit.MILLIS );
+
+        // Create a conversion function
+        return flowInFlowUnits -> {
+
+            // Missing?
+            if ( MissingValues.isMissingValue( flowInFlowUnits ) )
+            {
+                return MissingValues.DOUBLE;
+            }
+
+            Quantity<S> someFlowQuantity = Quantities.getQuantity( flowInFlowUnits, existingUnit );
+            @SuppressWarnings( "unchecked" )
+            Quantity<T> someVolume = (Quantity<T>) someFlowQuantity.multiply( scalePeriodMillis );
+            Quantity<T> someVolumeInDesiredUnits = someVolume.to( desiredUnit );
+
+            return someVolumeInDesiredUnits.getValue()
+                                           .doubleValue();
+        };
+    }
+
+    /**
+     * Exception for unrecognized units.
+     */
 
     public static final class UnrecognizedUnitException extends RuntimeException
     {

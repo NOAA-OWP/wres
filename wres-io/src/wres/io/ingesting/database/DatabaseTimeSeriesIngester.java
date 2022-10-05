@@ -1167,7 +1167,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         Double valueToAdd = valueAndValidDateTime.getValue();
 
         // When the Java-land value matches WRES Missing Value, use NULL in DB.
-        if ( valueToAdd.equals( MissingValues.DOUBLE ) )
+        if ( MissingValues.isMissingValue( valueToAdd ) )
         {
             valueToAdd = null;
         }

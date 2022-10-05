@@ -113,7 +113,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         // The desired scale: total amounts over PT2H
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt, UNIT )
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
@@ -127,7 +127,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         assertEquals( expected, actual );
 
         // Upscale without end times (i.e., start at the beginning)
-        TimeSeries<Double> actualUnconditional = this.upscaler.upscale( timeSeries, desiredTimeScale )
+        TimeSeries<Double> actualUnconditional = this.upscaler.upscale( timeSeries, desiredTimeScale, UNIT )
                                                               .getTimeSeries();
 
         assertEquals( expected, actualUnconditional );
@@ -176,7 +176,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         // The desired scale: mean over PT2H
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt )
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, endsAt, UNIT )
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
@@ -272,7 +272,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                             .map( Event::getTime )
                                             .collect( Collectors.toCollection( TreeSet::new ) );
 
-        TimeSeries<Double> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+        TimeSeries<Double> actualForecast = this.upscaler.upscale( forecast, desiredTimeScale, endsAt, UNIT )
                                                          .getTimeSeries();
 
         TimeSeriesMetadata expectedMetadata =
@@ -386,7 +386,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 96 ), TimeScaleFunction.MAXIMUM );
 
         SortedSet<Instant> endsAt = new TreeSet<>( Set.of( eighteenth ) );
-        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt, UNIT )
                                                  .getTimeSeries();
         TimeSeriesMetadata expectedMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( referenceTime,
@@ -487,7 +487,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                            fifteenth,
                                                            sixteenth ) );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt )
+        TimeSeries<Double> actual = this.upscaler.upscale( forecast, desiredTimeScale, endsAt, UNIT )
                                                  .getTimeSeries();
 
         TimeSeriesMetadata expectedMetadata =
@@ -532,7 +532,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                        .build();
 
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "Downscaling is not supported: the desired "
                          + "time scale of 'PT1M' cannot be smaller than "
@@ -555,7 +555,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                        .build();
 
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "The desired time scale is '[PT2H,UNKNOWN]', but the function must be known to conduct "
                          + "rescaling.";
@@ -577,7 +577,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                        .build();
 
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "The desired period of 'PT1H15M' is not an integer multiple of the existing "
                          + "period, which is 'PT1H'. If the data has multiple time-steps that vary by time or "
@@ -601,7 +601,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                        .build();
 
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "The period associated with the existing and desired time scales is "
                          + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
@@ -624,7 +624,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
                                                        .build();
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "Cannot accumulate instantaneous values. Change the existing time scale or "
                          + "change the function associated with the desired time scale to something other than a "
@@ -646,9 +646,9 @@ public class TimeSeriesOfDoubleUpscalerTest
         TimeSeries<Double> fake = new Builder<Double>().setMetadata( existingMetadata )
                                                        .build();
         RescalingException exception =
-                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale ) );
+                assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
-        String message = "Cannot accumulate values that are not already accumulations. The "
+        String message = "Cannot further accumulate values that are not already accumulations. The "
                          + "function associated with the existing time scale must be a 'TOTAL', "
                          + "rather than a 'MEAN', or the function associated with the desired time "
                          + "scale must be changed.";
@@ -695,7 +695,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale )
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, UNIT )
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
@@ -747,7 +747,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
 
-        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale )
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, UNIT )
                                                  .getTimeSeries();
 
         // Create the expected series with the desired time scale
@@ -796,7 +796,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( timeScale );
 
-        RescaledTimeSeriesPlusValidation<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale );
+        RescaledTimeSeriesPlusValidation<Double> actual = this.upscaler.upscale( timeSeries, desiredTimeScale, UNIT );
 
         boolean match = actual.getValidationEvents()
                               .stream()
@@ -806,6 +806,127 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                                               + "evenly spaced within the period" ) );
 
         assertTrue( match );
+    }
+
+    @Test
+    public void testUpscaleInstantaneousFlowObservationsToVolumeCreatesTwoUpscaledObservations()
+    {
+        // Six event times, PT1H apart
+        Instant first = Instant.parse( "2079-12-03T00:00:00Z" );
+        Instant second = Instant.parse( "2079-12-03T01:00:00Z" );
+        Instant third = Instant.parse( "2079-12-03T02:00:00Z" );
+        Instant fourth = Instant.parse( "2079-12-03T04:00:00Z" );
+        Instant fifth = Instant.parse( "2079-12-03T05:00:00Z" );
+        Instant sixth = Instant.parse( "2079-12-03T06:00:00Z" );
+
+        // Six events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+        Event<Double> three = Event.of( third, 3.0 );
+        Event<Double> four = Event.of( fourth, 22.0 );
+        Event<Double> five = Event.of( fifth, 11.0 );
+        Event<Double> six = Event.of( sixth, 25.0 );
+
+        // Time scale of the event values: instantaneous
+        TimeScaleOuter existingScale = TimeScaleOuter.of( Duration.ofMinutes( 1 ), TimeScaleFunction.MEAN );
+        TimeSeriesMetadata existingMetadata =
+                TimeSeriesOfDoubleUpscalerTest.getBoilerplateMetadataWithTimeScale( existingScale )
+                                              .toBuilder()
+                                              .setUnit( "m3/s" )
+                                              .build();
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
+                                                             .addEvent( two )
+                                                             .addEvent( three )
+                                                             .addEvent( four )
+                                                             .addEvent( five )
+                                                             .addEvent( six )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
+
+        // Where the upscaled values should end (e.g., forecast valid times)
+        SortedSet<Instant> endsAt = new TreeSet<>();
+        endsAt.add( third );
+        endsAt.add( fourth );
+        endsAt.add( sixth );
+
+        // The desired scale: mean over PT2H
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries,
+                                                           desiredTimeScale,
+                                                           endsAt,
+                                                           "m3" )
+                                                 .getTimeSeries();
+
+        // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesOfDoubleUpscalerTest.getBoilerplateMetadataWithTimeScale( desiredTimeScale )
+                                              .toBuilder()
+                                              .setUnit( "m3" )
+                                              .build();
+
+        TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( third, 64800.0 ) )
+                                                           .addEvent( Event.of( sixth, 129600.0 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
+
+        assertEquals( expected, actual );
+    }
+    
+    @Test
+    public void testUpscaleAverageFlowToVolumeAtSameScalePeriodCreatesTwoUpscaledObservations()
+    {
+        // Six event times, PT1H apart
+        Instant first = Instant.parse( "2079-12-03T00:00:00Z" );
+        Instant second = Instant.parse( "2079-12-03T01:00:00Z" );
+
+        // Six events
+        Event<Double> one = Event.of( first, 12.0 );
+        Event<Double> two = Event.of( second, 15.0 );
+
+        // Time scale of the event values: mean over PT2H
+        TimeScaleOuter existingScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.MEAN );
+        TimeSeriesMetadata existingMetadata =
+                TimeSeriesOfDoubleUpscalerTest.getBoilerplateMetadataWithTimeScale( existingScale )
+                                              .toBuilder()
+                                              .setUnit( "m3/s" )
+                                              .build();
+
+        // Time-series to upscale
+        TimeSeries<Double> timeSeries = new Builder<Double>().addEvent( one )
+                                                             .addEvent( two )
+                                                             .setMetadata( existingMetadata )
+                                                             .build();
+
+        // Where the upscaled values should end (e.g., forecast valid times)
+        SortedSet<Instant> endsAt = new TreeSet<>();
+        endsAt.add( first );
+        endsAt.add( second );
+
+        // The desired scale: mean over PT2H
+        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
+
+        TimeSeries<Double> actual = this.upscaler.upscale( timeSeries,
+                                                           desiredTimeScale,
+                                                           endsAt,
+                                                           "m3" )
+                                                 .getTimeSeries();
+
+        // Create the expected series with the desired time scale
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesOfDoubleUpscalerTest.getBoilerplateMetadataWithTimeScale( desiredTimeScale )
+                                              .toBuilder()
+                                              .setUnit( "m3" )
+                                              .build();
+
+        TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( first, 86400.0 ) )
+                                                           .addEvent( Event.of( second, 108000.0 ) )
+                                                           .setMetadata( expectedMetadata )
+                                                           .build();
+
+        assertEquals( expected, actual );
     }
 
 }

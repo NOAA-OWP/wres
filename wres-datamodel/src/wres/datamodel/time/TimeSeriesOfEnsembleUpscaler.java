@@ -1,21 +1,29 @@
 package wres.datamodel.time;
 
+import java.text.MessageFormat;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import javax.measure.Unit;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.MissingValues;
+import wres.datamodel.Units;
 import wres.datamodel.scale.TimeScaleOuter;
-
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
@@ -28,6 +36,15 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble>
 {
+    /** Function that returns a double value or {@link MissingValues#DOUBLE} if the
+     * input is not finite. */
+    private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
+            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE: a;
+
+    /** A map of declared unit aliases to help with unit conversion when unit conversion is required as part of 
+     * upscaling. */
+    private final Map<String, String> unitAliases;
+
     /**
      * Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
      * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
@@ -35,14 +52,6 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
      */
 
     private final boolean isLenient;
-
-    /**
-     * Function that returns a double value or {@link MissingValues#DOUBLE} if the
-     * input is not finite. 
-     */
-
-    private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> Double.isFinite( a ) ? a : MissingValues.DOUBLE;
 
     /**
      * Creates an instance that enforces strict upscaling or no leniency.
@@ -53,7 +62,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     public static TimeSeriesOfEnsembleUpscaler of()
     {
-        return new TimeSeriesOfEnsembleUpscaler( false );
+        return new TimeSeriesOfEnsembleUpscaler( false, Collections.emptyMap() );
     }
 
     /**
@@ -67,27 +76,88 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     public static TimeSeriesOfEnsembleUpscaler of( boolean isLenient )
     {
-        return new TimeSeriesOfEnsembleUpscaler( isLenient );
+        return new TimeSeriesOfEnsembleUpscaler( isLenient, Collections.emptyMap() );
     }
 
-    @Override
-    public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
-                                                               TimeScaleOuter desiredTimeScale )
+    /**
+     * Creates an instance with a prescribed leniency and a map of unit aliases to use when upscaling also requires 
+     * unit conversion. Lenient upscaling means that missing data does not prevent upscaling and that irregularly 
+     * spaced data (which could indicate implicitly missing values) does not prevent upscaling. Data is explicitly 
+     * missing if it matches the {@link MissingValues#DOUBLE}.
+     * 
+     * @param isLenient is {@code true} to enforce lenient upscaling, {@code false} otherwise
+     * @param unitAliases a map of declared unit aliases
+     * @return an instance of the ensemble upscaler
+     * @throws NullPointerException if the unitAliases is null
+     */
+
+    public static TimeSeriesOfEnsembleUpscaler of( boolean isLenient, Map<String, String> unitAliases )
     {
-        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySortedSet() );
+        return new TimeSeriesOfEnsembleUpscaler( isLenient, unitAliases );
     }
 
     @Override
     public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
                                                                TimeScaleOuter desiredTimeScale,
-                                                               SortedSet<Instant> endsAt )
+                                                               String desiredUnit )
+    {
+        return this.upscale( timeSeries, desiredTimeScale, Collections.emptySortedSet(), desiredUnit );
+    }
+
+    @Override
+    public RescaledTimeSeriesPlusValidation<Ensemble> upscale( TimeSeries<Ensemble> timeSeries,
+                                                               TimeScaleOuter desiredTimeScale,
+                                                               SortedSet<Instant> endsAt,
+                                                               String desiredUnitString )
     {
         Objects.requireNonNull( desiredTimeScale );
+        Objects.requireNonNull( desiredUnitString );
 
-        TimeScaleFunction desiredFunction = desiredTimeScale.getFunction();
-        Function<SortedSet<Event<Ensemble>>, Ensemble> upscaler = this.getEnsembleUpscaler( desiredFunction );
+        String existingUnitString = timeSeries.getMetadata()
+                                              .getUnit();
+        boolean scaleAndUnitChange = false;
+        Unit<?> existingUnit = null;
+        Unit<?> desiredUnit = null;
 
-        return RescalingHelper.upscale( timeSeries, upscaler, desiredTimeScale, endsAt, this.isLenient() );
+        // Only formalize the units when a unit conversion is needed
+        if ( !existingUnitString.equals( desiredUnitString ) )
+        {
+            existingUnit = Units.getUnit( existingUnitString, this.getUnitAliases() );
+            desiredUnit = Units.getUnit( desiredUnitString, this.getUnitAliases() );
+
+            // When performing an upscaling that involves time integration of the units, there is an intermediate step
+            // to form the time average
+            scaleAndUnitChange = Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit );
+        }
+
+        TimeScaleOuter timeScaleToUse = desiredTimeScale;
+        if ( scaleAndUnitChange )
+        {
+            timeScaleToUse = TimeScaleOuter.of( desiredTimeScale.getPeriod(), TimeScaleFunction.MEAN );
+        }
+
+        // Rescale
+        Function<SortedSet<Event<Ensemble>>, Ensemble> upscaler =
+                this.getEnsembleUpscaler( timeScaleToUse.getFunction() );
+        RescaledTimeSeriesPlusValidation<Ensemble> rescaled = RescalingHelper.upscale( timeSeries,
+                                                                                       upscaler,
+                                                                                       timeScaleToUse,
+                                                                                       existingUnit,
+                                                                                       desiredUnit,
+                                                                                       endsAt,
+                                                                                       this.isLenient() );
+
+        // Special handling when accumulating a volumetric flow because this creates a volume, so finalize that part
+        if ( scaleAndUnitChange )
+        {
+            rescaled = this.doTimeIntegralConversion( rescaled,
+                                                      existingUnit,
+                                                      desiredUnit,
+                                                      desiredUnitString,
+                                                      desiredTimeScale );
+        }
+
+        return rescaled;
     }
 
     /**
@@ -158,15 +228,6 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     }
 
     /**
-     * @return {@code true} if lenient upscaling is required, {@code false} otherwise.
-     */
-
-    private boolean isLenient()
-    {
-        return this.isLenient;
-    }
-
-    /**
      * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
      * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
      * 
@@ -227,16 +288,118 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
         };
     }
 
+    /**
+     * Performs a time-integration step on the rescaled time-series values, which represent mean averages over the scale 
+     * period, and then converts the units to time integrated units.
+     * 
+     * @param toIntegrate the time-series to integrate
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
+     * @param desiredUnitString the declared desired unit string
+     * @param desiredTimeScale the desired time scale
+     * @return a time-series in volume units
+     */
+
+    private RescaledTimeSeriesPlusValidation<Ensemble>
+            doTimeIntegralConversion( RescaledTimeSeriesPlusValidation<Ensemble> toIntegrate,
+                                      Unit<?> existingUnit,
+                                      Unit<?> desiredUnit,
+                                      String desiredUnitString,
+                                      TimeScaleOuter desiredTimeScale )
+    {
+        TimeSeries<Ensemble> seriesToIntegrate = toIntegrate.getTimeSeries();
+        List<EvaluationStatusMessage> validationEvents = new ArrayList<>( toIntegrate.getValidationEvents() );
+
+        if ( desiredTimeScale.getFunction() != TimeScaleFunction.TOTAL )
+        {
+            String message =
+                    MessageFormat.format( "Attempted to convert a time-dependent unit of ''{0}'', which "
+                                          + "represents a ''{1}'' over the time scale period, to a time integral unit "
+                                          + "of ''{2}'', which represents a ''{3}'' over the time scale "
+                                          + "period. This is not allowed. The desired time scale function "
+                                          + "must be a ''{4}'' to apply this conversion.",
+                                          existingUnit,
+                                          seriesToIntegrate.getTimeScale()
+                                                           .getFunction(),
+                                          desiredUnit,
+                                          desiredTimeScale.getFunction(),
+                                          TimeScaleFunction.TOTAL );
+
+            EvaluationStatusMessage error = EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
+            validationEvents.add( error );
+
+            RescalingHelper.checkForRescalingErrorsAndThrowExceptionIfRequired( validationEvents,
+                                                                                seriesToIntegrate.getMetadata() );
+        }
+
+        String message = MessageFormat.format( "Detected a conversion from a time-dependent unit of ''{0}'', which "
+                                               + "represents a ''{1}'' over the time scale period, to a time integral "
+                                               + "unit of ''{2}'', which represents a ''{3}'' over the time scale "
+                                               + "period. This is allowed.",
+                                               existingUnit,
+                                               seriesToIntegrate.getTimeScale()
+                                                                .getFunction(),
+                                               desiredUnit,
+                                               TimeScaleFunction.TOTAL );
+
+        EvaluationStatusMessage status = EvaluationStatusMessage.debug( EvaluationStage.RESCALING, message );
+        validationEvents.add( status );
+
+        // Create a conversion function for the ensemble members
+        UnaryOperator<Double> converter = Units.getTimeIntegralConverter( seriesToIntegrate.getTimeScale(),
+                                                                          existingUnit,
+                                                                          desiredUnit );
+        // Create an ensemble conversion function
+        UnaryOperator<Ensemble> ensembleConverter = TimeSeriesSlicer.getEnsembleTransformer( converter );
+
+        // Create a converted time-series
+        TimeSeries<Ensemble> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate, ensembleConverter );
+
+        // Update the units and time scale function
+        Duration existingScalePeriod = desiredTimeScale.getPeriod();
+        TimeScaleOuter newDesiredTimeScale = TimeScaleOuter.of( existingScalePeriod, TimeScaleFunction.TOTAL );
+        TimeSeriesMetadata updated = volumeSeries.getMetadata()
+                                                 .toBuilder()
+                                                 .setUnit( desiredUnitString )
+                                                 .setTimeScale( newDesiredTimeScale )
+                                                 .build();
+
+        TimeSeries<Ensemble> adjustedVolumeSeries = TimeSeries.of( updated, volumeSeries.getEvents() );
+
+        return RescaledTimeSeriesPlusValidation.of( adjustedVolumeSeries, validationEvents );
+    }
+
+    /**
+     * @return {@code true} if lenient upscaling is required, {@code false} otherwise.
+     */
+
+    private boolean isLenient()
+    {
+        return this.isLenient;
+    }
+
+    /**
+     * @return the declared unit aliases
+     */
+    private Map<String, String> getUnitAliases()
+    {
+        return this.unitAliases;
+    }
 
     /**
      * Hidden constructor.
      * 
      * @param isLenient is true if the lenient upscaling is required, false otherwise
+     * @param a map of declared unit aliases, possibly empty
+     * @throws NullPointerException if the unitAliases is null
      */
 
-    private TimeSeriesOfEnsembleUpscaler( boolean isLenient )
+    private TimeSeriesOfEnsembleUpscaler( boolean isLenient, Map<String, String> unitAliases )
     {
+        Objects.requireNonNull( unitAliases );
+
         this.isLenient = isLenient;
+        this.unitAliases = unitAliases;
     }
 
 }

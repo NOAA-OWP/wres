@@ -8,10 +8,7 @@ import wres.datamodel.statistics.Statistic;
  * A class that stores the measurement unit associated with a {@link Pool} or a {@link Statistic}. Examples 
  * of measurement units include "millimeter", and "cubic feet per second".
  * 
- * TODO: replace this simplistic abstraction with a more sophisticated representation, probably based on javax.measure,
- * which allows for a full description, as well as transformations between units.
- * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MeasurementUnit implements Comparable<MeasurementUnit>

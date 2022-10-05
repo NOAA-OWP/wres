@@ -1047,7 +1047,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             val = Double.parseDouble( value );
 
-            if ( Precision.equals( val, missingValue, 8 ) )
+            if ( Precision.equals( val, missingValue, Precision.EPSILON ) )
             {
                 return MissingValues.DOUBLE;
             }

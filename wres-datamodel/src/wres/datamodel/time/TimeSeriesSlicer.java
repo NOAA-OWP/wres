@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -23,6 +24,7 @@ import java.util.TreeSet;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import wres.datamodel.Ensemble;
@@ -1086,6 +1088,29 @@ public final class TimeSeriesSlicer
         }
 
         return builder.build();
+    }
+
+    /**
+     * Creates an ensemble transformer from a member transformer by applying the member transformer to each member of 
+     * the ensemble.
+     * @param memberTransformer the member transformer
+     * @return an ensemble transformer
+     * @throws NullPointerException if the memberTransformer is null
+     */
+
+    public static UnaryOperator<Ensemble> getEnsembleTransformer( UnaryOperator<Double> memberTransformer )
+    {
+        Objects.requireNonNull( memberTransformer );
+
+        // Create an ensemble conversion function
+        return ensemble -> {
+            double[] members = ensemble.getMembers();
+            double[] converted = Arrays.stream( members )
+                                       .map( memberTransformer::apply )
+                                       .toArray();
+
+            return Ensemble.of( converted, ensemble.getLabels() );
+        };
     }
 
     /**
