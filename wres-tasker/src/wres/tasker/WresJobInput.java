@@ -125,7 +125,8 @@ public class WresJobInput
                 temp = Files.createTempFile( jobId + "_", "" );
             }
 
-            Files.copy( data, temp, REPLACE_EXISTING );
+            long bytesWritten = Files.copy( data, temp, REPLACE_EXISTING );
+            LOGGER.debug( "Wrote {} bytes to {}.", bytesWritten, temp );
 
             // After the copy, the permissions may not have stuck. Re-apply.
             if ( Objects.nonNull( permissions ) )
