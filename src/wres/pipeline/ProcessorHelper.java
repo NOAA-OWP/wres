@@ -1333,16 +1333,22 @@ class ProcessorHelper
 
     private static ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> getEnsembleTraceCountEstimator()
     {
-        return pool -> pool.get()
-                           .size()
-                       * ( pool.get()
-                               .get( 0 )
-                               .getEvents()
-                               .first()
-                               .getValue()
-                               .getRight()
-                               .size()
-                           + 1 );
+        return pool -> {
+
+            // Estimate the number of traces using the first time-series in the pool only
+            int traceCount = pool.get()
+                                 .stream()
+                                 .mapToInt( next -> next.getEvents()
+                                                        .first()
+                                                        .getValue()
+                                                        .getValue()
+                                                        .size() )
+                                 .max()
+                                 .orElse( 0 );
+
+            return traceCount * pool.get()
+                                    .size();
+        };
     }
 
     /**
