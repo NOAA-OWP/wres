@@ -446,6 +446,8 @@ project(':wres-io')
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.20'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.20'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.20'
 
         // Update vulnerable snakeyaml that Liquibase uses
         implementation group: 'org.yaml', name: 'snakeyaml', version: '1.33'
