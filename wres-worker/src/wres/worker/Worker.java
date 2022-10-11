@@ -78,6 +78,7 @@ public class Worker
         factory.setVirtualHost( brokerVhost );
         factory.setPort( brokerPort );
         factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
+        factory.setAutomaticRecoveryEnabled( true );
 
         SSLContext sslContext =
                 BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
