@@ -623,7 +623,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         if ( Objects.nonNull( this.baselineMeta ) && !this.baselineMeta.getPool().getIsBaselinePool() )
         {
-            throw new PoolException( "The baseline metadata has a baseline pool status of \"false\", which is not "
+            throw new PoolException( "The baseline metadata has status of isBaselinePool=\"false\", which is not "
                                      + "allowed. The complete baseline metadata is: "
                                      + this.baselineMeta
                                      + "." );
