@@ -1606,14 +1606,16 @@ public class PoolFactory
                     Pool<TimeSeries<Pair<L, R>>> pool = decomposedMap.get( nextTuple );
                     PoolMetadata nextMain = nextDecomposedRequest.getMetadata();
 
+                    // Baseline?
                     if ( pool.hasBaseline() )
                     {
                         Pool<TimeSeries<Pair<L, R>>> baselinePool = pool.getBaselineData();
-                        PoolMetadata nextBase = nextDecomposedRequest.getMetadata();
+                        PoolMetadata nextBase = nextDecomposedRequest.getMetadataForBaseline();
 
                         return Pool.of( pool.get(), nextMain, baselinePool.get(), nextBase, pool.getClimatology() );
                     }
 
+                    // No baseline
                     return Pool.of( pool.get(), nextMain, null, null, pool.getClimatology() );
                 };
 
