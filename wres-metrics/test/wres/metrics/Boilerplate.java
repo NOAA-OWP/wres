@@ -41,10 +41,11 @@ public class Boilerplate
     }
 
     /**
+     * @param isBaselinePool indicates whether the pool is a baseline pool
      * @return some pool metadata
      */
 
-    public static PoolMetadata getPoolMetadata()
+    public static PoolMetadata getPoolMetadata( boolean isBaselinePool )
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -56,9 +57,9 @@ public class Boilerplate
                                           null,
                                           null,
                                           null,
-                                          false );
+                                          isBaselinePool );
 
         return PoolMetadata.of( evaluation, pool );
     }
-
+    
 }

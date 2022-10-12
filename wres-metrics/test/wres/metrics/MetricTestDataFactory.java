@@ -595,7 +595,7 @@ public final class MetricTestDataFactory
             values.add( Pair.of( false, false ) );
         }
 
-        final PoolMetadata meta = Boilerplate.getPoolMetadata();
+        final PoolMetadata meta = Boilerplate.getPoolMetadata( false );
         return wres.datamodel.pools.Pool.of( values, meta ); //Construct the pairs
     }
 
@@ -700,7 +700,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
 
-        final PoolMetadata meta = Boilerplate.getPoolMetadata();
+        final PoolMetadata meta = Boilerplate.getPoolMetadata( false );
         return wres.datamodel.pools.Pool.of( values, meta );
     }
 
@@ -727,8 +727,8 @@ public final class MetricTestDataFactory
         baseline.add( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ZERO, Probability.of( 4.0 / 5.0 ) ) );
         baseline.add( Pair.of( Probability.ONE, Probability.of( 1.0 / 5.0 ) ) );
-        final PoolMetadata main = Boilerplate.getPoolMetadata();
-        final PoolMetadata base = Boilerplate.getPoolMetadata();
+        final PoolMetadata main = Boilerplate.getPoolMetadata( false );
+        final PoolMetadata base = Boilerplate.getPoolMetadata( true );
         return wres.datamodel.pools.Pool.of( values, main, baseline, base, null );
     }
 
@@ -1097,7 +1097,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.1 ) ) );
 
-        final PoolMetadata main = Boilerplate.getPoolMetadata();
+        final PoolMetadata main = Boilerplate.getPoolMetadata( false );
         return wres.datamodel.pools.Pool.of( values, main );
     }
 
@@ -1117,7 +1117,7 @@ public final class MetricTestDataFactory
         values.add( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) );
         values.add( Pair.of( Probability.ZERO, Probability.of( 1.0 / 5.0 ) ) );
 
-        final PoolMetadata meta = Boilerplate.getPoolMetadata();
+        final PoolMetadata meta = Boilerplate.getPoolMetadata( false );
         return wres.datamodel.pools.Pool.of( values, meta );
     }
 

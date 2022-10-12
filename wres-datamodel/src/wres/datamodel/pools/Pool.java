@@ -502,7 +502,7 @@ public class Pool<T> implements Supplier<List<T>>
                 this.baselineSampleData.addAll( base.get() );
 
                 // Merge metadata? Yes, if the existing metadata is not null and not equal
-                if ( Objects.nonNull( this.baselineMeta ) && ! this.baselineMeta.equals( base.getMetadata() ) )
+                if ( Objects.nonNull( this.baselineMeta ) && !this.baselineMeta.equals( base.getMetadata() ) )
                 {
                     LOGGER.debug( "Merging metadata for baseline pool {} into baseline pool {}.",
                                   base.getMetadata(),
@@ -619,6 +619,14 @@ public class Pool<T> implements Supplier<List<T>>
         if ( Objects.nonNull( this.baselineSampleData ) && this.baselineSampleData.contains( (T) null ) )
         {
             throw new PoolException( "One or more of the baseline pairs is null." );
+        }
+
+        if ( Objects.nonNull( this.baselineMeta ) && !this.baselineMeta.getPool().getIsBaselinePool() )
+        {
+            throw new PoolException( "The baseline metadata has a baseline pool status of \"false\", which is not "
+                                     + "allowed. The complete baseline metadata is: "
+                                     + this.baselineMeta
+                                     + "." );
         }
     }
 

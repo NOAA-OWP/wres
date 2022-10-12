@@ -25,7 +25,7 @@ import wres.statistics.generated.Evaluation;
 
 class PoolTest
 {
-    
+
     /**
      * An instance for testing.
      */
@@ -40,7 +40,7 @@ class PoolTest
         this.testPool = builder.addData( List.of( "a", "b", "c" ) )
                                .setMetadata( PoolMetadata.of() )
                                .addDataForBaseline( List.of( "d", "e", "f" ) )
-                               .setMetadataForBaseline( PoolMetadata.of() )
+                               .setMetadataForBaseline( PoolMetadata.of( true ) )
                                .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                .build();
     }
@@ -64,7 +64,7 @@ class PoolTest
         Pool<String> actualTwo = Pool.of( List.of( "a", "b", "c" ),
                                           PoolMetadata.of(),
                                           List.of( "d", "e", "f" ),
-                                          PoolMetadata.of(),
+                                          PoolMetadata.of( true ),
                                           VectorOfDoubles.of( 1, 2, 3 ) );
         assertEquals( this.testPool, actualTwo );
     }
@@ -83,7 +83,7 @@ class PoolTest
         Pool<String> expected = builder.addData( "d" )
                                        .addData( "e" )
                                        .addData( "f" )
-                                       .setMetadata( PoolMetadata.of() )
+                                       .setMetadata( PoolMetadata.of( true ) )
                                        .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                        .build();
 
@@ -123,7 +123,7 @@ class PoolTest
                                      .addDataForBaseline( "d" )
                                      .addDataForBaseline( "e" )
                                      .addDataForBaseline( "f" )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -134,7 +134,7 @@ class PoolTest
                 new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                      .setMetadata( PoolMetadata.of() )
                                      .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -156,7 +156,7 @@ class PoolTest
                 new Builder<String>().addData( List.of( "z", "b", "c" ) )
                                      .setMetadata( PoolMetadata.of() )
                                      .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -169,7 +169,7 @@ class PoolTest
                                                                               .build(),
                                                                     wres.statistics.generated.Pool.getDefaultInstance() ) )
                                      .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -179,7 +179,7 @@ class PoolTest
                 new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                      .setMetadata( PoolMetadata.of() )
                                      .addDataForBaseline( List.of( "d", "e", "q" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -192,7 +192,9 @@ class PoolTest
                                      .setMetadataForBaseline( PoolMetadata.of( Evaluation.newBuilder()
                                                                                          .setMeasurementUnit( "CFS" )
                                                                                          .build(),
-                                                                               wres.statistics.generated.Pool.getDefaultInstance() ) )
+                                                                               wres.statistics.generated.Pool.newBuilder()
+                                                                                                             .setIsBaselinePool( true )
+                                                                                                             .build() ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                      .build();
 
@@ -202,7 +204,7 @@ class PoolTest
                 new Builder<String>().addData( List.of( "a", "b", "c" ) )
                                      .setMetadata( PoolMetadata.of() )
                                      .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 4 ) )
                                      .build();
 
@@ -217,7 +219,7 @@ class PoolTest
         Pool<String> noClimatology = new Pool.Builder<String>().addData( List.of( "a", "b", "c" ) )
                                                                .setMetadata( PoolMetadata.of() )
                                                                .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                                               .setMetadataForBaseline( PoolMetadata.of() )
+                                                               .setMetadataForBaseline( PoolMetadata.of( true ) )
                                                                .build();
 
         assertNotEquals( this.testPool, noClimatology );
@@ -235,7 +237,7 @@ class PoolTest
         Pool<String> another = builder.addData( List.of( "a", "b", "c" ) )
                                       .setMetadata( PoolMetadata.of() )
                                       .addDataForBaseline( List.of( "d", "e", "f" ) )
-                                      .setMetadataForBaseline( PoolMetadata.of() )
+                                      .setMetadataForBaseline( PoolMetadata.of( true ) )
                                       .setClimatology( VectorOfDoubles.of( 1, 2, 3 ) )
                                       .build();
 
@@ -251,7 +253,7 @@ class PoolTest
         Pool<String> anotherPool = new Builder<String>().addData( List.of( "d", "e", "f" ) )
                                                         .setMetadata( PoolMetadata.of() )
                                                         .addDataForBaseline( List.of( "a", "b", "c" ) )
-                                                        .setMetadataForBaseline( PoolMetadata.of() )
+                                                        .setMetadataForBaseline( PoolMetadata.of( true ) )
                                                         .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
                                                         .build();
 
@@ -263,22 +265,22 @@ class PoolTest
                 new Builder<String>().addData( List.of( "a", "b", "c", "d", "e", "f" ) )
                                      .setMetadata( PoolMetadata.of() )
                                      .addDataForBaseline( List.of( "d", "e", "f", "a", "b", "c" ) )
-                                     .setMetadataForBaseline( PoolMetadata.of() )
+                                     .setMetadataForBaseline( PoolMetadata.of( true ) )
                                      .setClimatology( VectorOfDoubles.of( 1, 2, 3, 4, 5, 6 ) )
                                      .build();
 
         assertEquals( expected, actual );
     }
-    
+
     @Test
     void testGetMiniPools()
     {
-        assertEquals(Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
-        
+        assertEquals( Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
+
         Pool<String> anotherPool = new Builder<String>().addData( List.of( "d", "e", "f" ) )
                                                         .setMetadata( PoolMetadata.of() )
                                                         .addDataForBaseline( List.of( "a", "b", "c" ) )
-                                                        .setMetadataForBaseline( PoolMetadata.of() )
+                                                        .setMetadataForBaseline( PoolMetadata.of( true ) )
                                                         .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
                                                         .build();
 
@@ -286,21 +288,21 @@ class PoolTest
                                                    .addPool( anotherPool, true )
                                                    .build();
 
-        List<Pool<String>> actual = merged.getMiniPools(); 
+        List<Pool<String>> actual = merged.getMiniPools();
         List<Pool<String>> expected = List.of( this.testPool, anotherPool );
-        
-        assertEquals( expected, actual );       
+
+        assertEquals( expected, actual );
     }
-    
+
     @Test
     void testGetBaselinePreservesMiniPools()
     {
-        assertEquals(Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
-        
+        assertEquals( Collections.singletonList( this.testPool ), this.testPool.getMiniPools() );
+
         Pool<String> anotherPool = new Builder<String>().addData( List.of( "d", "e", "f" ) )
                                                         .setMetadata( PoolMetadata.of() )
                                                         .addDataForBaseline( List.of( "a", "b", "c" ) )
-                                                        .setMetadataForBaseline( PoolMetadata.of() )
+                                                        .setMetadataForBaseline( PoolMetadata.of( true ) )
                                                         .setClimatology( VectorOfDoubles.of( 4, 5, 6 ) )
                                                         .build();
 
@@ -308,12 +310,12 @@ class PoolTest
                                                    .addPool( anotherPool, true )
                                                    .build();
 
-        List<Pool<String>> actual = merged.getBaselineData().getMiniPools(); 
+        List<Pool<String>> actual = merged.getBaselineData().getMiniPools();
         List<Pool<String>> expected = List.of( this.testPool.getBaselineData(), anotherPool.getBaselineData() );
-        
-        assertEquals( expected, actual );       
-    }    
-    
+
+        assertEquals( expected, actual );
+    }
+
     @Test
     void testToString()
     {
@@ -323,7 +325,7 @@ class PoolTest
                           + "features=<null>,timeWindow=<null>,thresholds=<null>,timeScale=<null>,measurementUnit="
                           + "DIMENSIONLESS,ensembleAverageType=NONE],mainData=[a, b, c],baselineMetadata="
                           + "PoolMetadata[poolId=0,leftDataName=,rightDataName=,baselineDataName=,leftVariableName=,"
-                          + "rightVariableName=,baselineVariableName=,isBaselinePool=false,features=<null>,"
+                          + "rightVariableName=,baselineVariableName=,isBaselinePool=true,features=<null>,"
                           + "timeWindow=<null>,thresholds=<null>,timeScale=<null>,measurementUnit=DIMENSIONLESS,"
                           + "ensembleAverageType=NONE],baselineData=[d, e, f],climatology=[1.0, 2.0, 3.0]]";
 

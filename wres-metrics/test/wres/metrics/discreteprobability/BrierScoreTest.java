@@ -55,7 +55,7 @@ public final class BrierScoreTest
         Pool<Pair<Probability, Probability>> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         // Metadata for the output
-        PoolMetadata m1 = Boilerplate.getPoolMetadata();
+        PoolMetadata m1 = Boilerplate.getPoolMetadata( false );
         // Check the results       
         DoubleScoreStatisticOuter actual = this.brierScore.apply( input );
 

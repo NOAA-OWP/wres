@@ -466,12 +466,8 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                   .getBaseline()
                                   .isSeparateMetrics() )
                 {
-                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}, "
-                                  + "which has baseline status: {}.",
-                                  baseline.getMetadata(),
-                                  baseline.getMetadata()
-                                          .getPool()
-                                          .getIsBaselinePool() );
+                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
+                                  baseline.getMetadata() );
 
                     StatisticsStore baselineStatistics = processor.apply( baseline );
                     builder.addStatistics( baselineStatistics );

@@ -49,7 +49,7 @@ public final class ContingencyTableTest
         Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        PoolMetadata meta = Boilerplate.getPoolMetadata();
+        PoolMetadata meta = Boilerplate.getPoolMetadata( false );
 
         DoubleScoreStatistic result =
                 DoubleScoreStatistic.newBuilder()

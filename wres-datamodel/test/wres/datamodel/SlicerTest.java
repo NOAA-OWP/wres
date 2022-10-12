@@ -258,7 +258,7 @@ public final class SlicerTest
         VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), climatology );
         Pool<Pair<Double, Double>> sliced =
                 PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
@@ -300,7 +300,7 @@ public final class SlicerTest
         VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
 
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, meta, climatology );
+        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), climatology );
         Pool<Pair<Double, Ensemble>> sliced =
                 PoolSlicer.transform( pairs, Slicer.leftAndEachOfRight( Double::isFinite ) );
 

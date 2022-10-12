@@ -218,7 +218,7 @@ public final class MeanSquareErrorSkillScoreTest
                      .get( 0 );
 
         Pool<TimeSeries<Pair<Double, Double>>> mainPool = Pool.of( List.of( main ), PoolMetadata.of() );
-        Pool<TimeSeries<Pair<Double, Double>>> basePool = Pool.of( List.of( baseline ), PoolMetadata.of() );
+        Pool<TimeSeries<Pair<Double, Double>>> basePool = Pool.of( List.of( baseline ), PoolMetadata.of( true ) );
 
         Pool<Pair<Double, Double>> mainNoSeries = PoolSlicer.unpack( mainPool );
         Pool<Pair<Double, Double>> baseNoSeries = PoolSlicer.unpack( basePool );
@@ -226,7 +226,7 @@ public final class MeanSquareErrorSkillScoreTest
         Pool<Pair<Double, Double>> combined = Pool.of( mainNoSeries.get(),
                                                        PoolMetadata.of(),
                                                        baseNoSeries.get(),
-                                                       PoolMetadata.of(),
+                                                       PoolMetadata.of( true ),
                                                        null );
 
         DoubleScoreStatisticOuter actual = this.msess.apply( combined );
