@@ -247,7 +247,9 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         // Get the pool
         Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
-        
+
+        LOGGER.debug( "Created pool {}.", pool.getMetadata() );
+
         // Compute the statistics
         List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
                                                                              this.projectConfig,
@@ -460,10 +462,16 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             {
                 Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
 
-                if ( projectConfig.getInputs().getBaseline().isSeparateMetrics() )
+                if ( projectConfig.getInputs()
+                                  .getBaseline()
+                                  .isSeparateMetrics() )
                 {
-                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
-                                  baseline.getMetadata() );
+                    LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}, "
+                                  + "which has baseline status: {}.",
+                                  baseline.getMetadata(),
+                                  baseline.getMetadata()
+                                          .getPool()
+                                          .getIsBaselinePool() );
 
                     StatisticsStore baselineStatistics = processor.apply( baseline );
                     builder.addStatistics( baselineStatistics );

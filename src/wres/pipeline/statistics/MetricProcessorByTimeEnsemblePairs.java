@@ -136,8 +136,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
         Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
-                                "Expected a non-null time window in the pool metadata." );
-
+                                "Expected a non-null time window in the pool metadata." );        
+        
         // Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
 
