@@ -152,11 +152,8 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         assertEquals( expected, actual );
 
-
-        assertEquals( expected, actual );
-
         //Check against a baseline
-        Pool<Pair<Probability, Probability>> inputBase = Pool.of( values, meta, values, meta, null );
+        Pool<Pair<Probability, Probability>> inputBase = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
 
         DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
@@ -338,7 +335,7 @@ public final class RelativeOperatingCharacteristicScoreTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.rocScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
+                                             () -> this.rocScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rocScore.getName() + "'.", actual.getMessage() );
     }

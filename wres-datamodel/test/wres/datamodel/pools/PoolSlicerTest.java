@@ -76,7 +76,7 @@ class PoolSlicerTest
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Double>> sliced =
                 PoolSlicer.filter( pairs, Slicer.left( threshold::test ), threshold::test );
         //Test with baseline
@@ -103,7 +103,7 @@ class PoolSlicerTest
                                                       Operator.GREATER,
                                                       ThresholdDataType.LEFT );
         PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Ensemble>> sliced =
                 PoolSlicer.filter( pairs, Slicer.leftVector( threshold::test ), threshold::test );
 
@@ -128,15 +128,15 @@ class PoolSlicerTest
         values.add( Pair.of( 1.0, Ensemble.of( 16, 17, 18, 19, 20 ) ) );
         values.add( Pair.of( 0.0, Ensemble.of( 21, 22, 23, 24, 25 ) ) );
         values.add( Pair.of( 1.0, Ensemble.of( 26, 27, 28, 29, 30 ) ) );
-        PoolMetadata meta = PoolMetadata.of();
-        Pool<Pair<Double, Ensemble>> input = Pool.of( values, meta, values, meta, null );
+        Pool<Pair<Double, Ensemble>> input =
+                Pool.of( values, PoolMetadata.of(), values, PoolMetadata.of( true ), null );
         Function<Pair<Double, Ensemble>, Pair<Double, Double>> mapper =
                 in -> Pair.of( in.getLeft(),
                                Arrays.stream( in.getRight().getMembers() ).average().getAsDouble() );
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                Slicer.getRightSide( PoolSlicer.transform( Pool.of( values, meta ), mapper ) );
+                Slicer.getRightSide( PoolSlicer.transform( Pool.of( values, PoolMetadata.of() ), mapper ) );
         assertTrue( Arrays.equals( actualNoBase, expected ) );
         //Test baseline
         double[] actualBase = Slicer.getRightSide( PoolSlicer.transform( input, mapper ).getBaselineData() );
@@ -168,7 +168,7 @@ class PoolSlicerTest
         Pool<Pair<Boolean, Boolean>> expectedBase = Pool.of( expectedValues,
                                                              meta,
                                                              expectedValues,
-                                                             meta,
+                                                             PoolMetadata.of( true ),
                                                              null );
 
         //Test without baseline
@@ -178,7 +178,7 @@ class PoolSlicerTest
 
         //Test baseline
         Pool<Pair<Boolean, Boolean>> actualBase =
-                PoolSlicer.transform( Pool.of( values, meta, values, meta, null ),
+                PoolSlicer.transform( Pool.of( values, meta, values, PoolMetadata.of( true ), null ),
                                       mapper );
         assertEquals( expectedBase.getBaselineData().get(), actualBase.getBaselineData().get() );
     }
@@ -219,7 +219,7 @@ class PoolSlicerTest
 
         //Test baseline
         Pool<Pair<Probability, Probability>> slicedWithBaseline =
-                PoolSlicer.transform( Pool.of( values, meta, values, meta, null ), mapper );
+                PoolSlicer.transform( Pool.of( values, meta, values, PoolMetadata.of( true ), null ), mapper );
         assertEquals( expectedPairs, slicedWithBaseline.get() );
         assertEquals( expectedPairs, slicedWithBaseline.getBaselineData().get() );
     }
@@ -584,7 +584,7 @@ class PoolSlicerTest
                                         1 );
 
         PoolMetadata expected = PoolMetadata.of( evaluation, expectedPool );
-        
+
         assertEquals( expected, actual );
     }
 

@@ -74,7 +74,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         Pool<Pair<Double, Ensemble>> input = Pool.of( pairs,
                                                       PoolMetadata.of(),
                                                       basePairs,
-                                                      PoolMetadata.of(),
+                                                      PoolMetadata.of( true ),
                                                       null );
 
         //Check the results       
@@ -106,7 +106,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                 Pool.of( Arrays.asList(),
                          PoolMetadata.of(),
                          Arrays.asList(),
-                         PoolMetadata.of(),
+                         PoolMetadata.of( true ),
                          null );
 
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );

@@ -41,7 +41,7 @@ final class FalseAlarmRatioTest
     void setUpBeforeEachTest()
     {
         this.far = FalseAlarmRatio.of();
-        this.meta = Boilerplate.getPoolMetadata();
+        this.meta = Boilerplate.getPoolMetadata( false );
     }
 
     @Test

@@ -49,7 +49,7 @@ public final class FrequencyBiasTest
     public void setUpBeforeEachTest()
     {
         this.fb = FrequencyBias.of();
-        this.meta = Boilerplate.getPoolMetadata();
+        this.meta = Boilerplate.getPoolMetadata( false );
     }
 
     /**

@@ -126,7 +126,7 @@ public final class ContingencyTableScoreTest
         Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        PoolMetadata m1 = Boilerplate.getPoolMetadata();
+        PoolMetadata m1 = Boilerplate.getPoolMetadata( false );
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
@@ -164,7 +164,7 @@ public final class ContingencyTableScoreTest
     {
         Pool<Pair<Boolean, Boolean>> input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        PoolMetadata expected = Boilerplate.getPoolMetadata();
+        PoolMetadata expected = Boilerplate.getPoolMetadata( false );
 
         assertEquals( expected, this.cs.getIntermediateStatistic( input ).getMetadata() );
     }

@@ -49,7 +49,7 @@ public final class ProbabilityOfDetectionTest
     public void setUpBeforeEachTest()
     {
         this.pod = ProbabilityOfDetection.of();
-        this.meta = Boilerplate.getPoolMetadata();
+        this.meta = Boilerplate.getPoolMetadata( false );
     }
 
     /**
