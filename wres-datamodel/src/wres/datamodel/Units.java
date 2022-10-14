@@ -349,15 +349,22 @@ public class Units
         // Look in the cache
         Unit<?> unit = UNIT_CACHE.getIfPresent( officialName );
 
+        // Cached, so return it
         if ( Objects.nonNull( unit ) )
         {
             return unit;
         }
 
+        // In reality, this may be repeated across several threads before the cache is seen, but this does not affect
+        // accuracy. Could lock to avoid repetition of object creation and logging across multiple pooling threads, but 
+        // that adds complexity. The cache itself is thread-safe.
         try
         {
             LOGGER.debug( "getUnit parsing a unit {}, given {}", officialName, unitName );
             unit = UNIT_FORMAT.parse( officialName );
+            
+            // Cache
+            UNIT_CACHE.put( officialName, unit );
         }
         // TODO: remove TokenMgrError and TokenException when the libraries
         // change to not throw these internal exceptions.
@@ -383,9 +390,6 @@ public class Units
                          officialName,
                          unit.getDimension() );
         }
-
-        // Cache for re-use
-        UNIT_CACHE.put( officialName, unit );
 
         return unit;
     }

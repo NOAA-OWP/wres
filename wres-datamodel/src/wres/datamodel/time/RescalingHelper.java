@@ -738,7 +738,9 @@ class RescalingHelper
 
             // If the desired function is a total, check whether an accumulation is possible
             allEvents.add( RescalingHelper.checkIfAccumulatingNonAccumulation( existingTimeScale.getFunction(),
-                                                                               desiredTimeScale.getFunction() ) );
+                                                                               desiredTimeScale.getFunction(),
+                                                                               existingUnit,
+                                                                               desiredUnit ) );
 
         }
 
@@ -960,8 +962,14 @@ class RescalingHelper
 
             String message = MessageFormat.format( "Cannot accumulate instantaneous values. Change the existing "
                                                    + "time scale or change the function associated with the desired "
-                                                   + "time scale to something other than a ''{0}''.",
-                                                   TimeScaleFunction.TOTAL );
+                                                   + "time scale to something other than a ''{0}''. If you are "
+                                                   + "attempting to change unit dimensions by performing a time "
+                                                   + "integration of the existing measurement unit of ''{1}'', then "
+                                                   + "you should instead check that the desired measurement unit of "
+                                                   + "''{2}'' is correct.",
+                                                   TimeScaleFunction.TOTAL,
+                                                   existingUnit,
+                                                   desiredUnit );
 
             return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
@@ -988,9 +996,12 @@ class RescalingHelper
                                                                                     Unit<?> existingUnit,
                                                                                     Unit<?> desiredUnit )
     {
-        if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit ) )
+        // Performing a time integration of the measurement units, so notify
+        if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit )
+             && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
         {
-            // Time scale function is not the expected MEAN
+            // Time scale function is not the expected MEAN, which is an internal error if the time-integration is 
+            // supported, as checked above
             if ( desiredScale.getFunction() != TimeScaleFunction.MEAN )
             {
                 String message =
@@ -1012,21 +1023,17 @@ class RescalingHelper
                                                       message );
             }
 
-            // Performing a time integration of the measurement units, so notify
-            if ( Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
-            {
-                String message =
-                        MessageFormat.format( "When attempting to upscale a time-series from ''{0}'' to ''{1}'', "
-                                              + "determined that the existing measurement units of ''{2}'' can "
-                                              + "be time integrated to form the desired units of ''{3}''.",
-                                              existingScale,
-                                              desiredScale,
-                                              existingUnit,
-                                              desiredUnit );
+            String message =
+                    MessageFormat.format( "When attempting to upscale a time-series from ''{0}'' to ''{1}'', "
+                                          + "determined that the existing measurement units of ''{2}'' can "
+                                          + "be time integrated to form the desired units of ''{3}''.",
+                                          existingScale,
+                                          desiredScale,
+                                          existingUnit,
+                                          desiredUnit );
 
-                return EvaluationStatusMessage.info( EvaluationStage.RESCALING,
-                                                     message );
-            }
+            return EvaluationStatusMessage.info( EvaluationStage.RESCALING,
+                                                 message );
         }
 
         String message = "Not attempting to perform a time-integration of the measurement units when conducting "
@@ -1051,11 +1058,15 @@ class RescalingHelper
      * 
      * @param existingFunction the existing function
      * @param desiredFunction the desired function
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
      * @return a validation event
      */
 
     private static EvaluationStatusMessage checkIfAccumulatingNonAccumulation( TimeScaleFunction existingFunction,
-                                                                               TimeScaleFunction desiredFunction )
+                                                                               TimeScaleFunction desiredFunction,
+                                                                               Unit<?> existingUnit,
+                                                                               Unit<?> desiredUnit )
     {
         if ( desiredFunction == TimeScaleFunction.TOTAL && existingFunction != TimeScaleFunction.TOTAL )
         {
@@ -1075,9 +1086,15 @@ class RescalingHelper
                         MessageFormat.format( "Cannot further accumulate values that are not already "
                                               + "accumulations. The function associated with the existing time "
                                               + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
-                                              + "associated with the desired time scale must be changed.",
+                                              + "associated with the desired time scale must be changed. If you "
+                                              + "are attempting to change unit dimensions by performing a time "
+                                              + "integration of the existing measurement unit of ''{2}'', then you "
+                                              + "should instead check that the desired measurement unit of ''{3}'' is "
+                                              + "correct.",
                                               TimeScaleFunction.TOTAL,
-                                              existingFunction );
+                                              existingFunction,
+                                              existingUnit,
+                                              desiredUnit );
 
                 return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
             }

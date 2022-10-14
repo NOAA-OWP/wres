@@ -355,7 +355,7 @@ public class Validation
                          source.sourceLocation().getColumnNumber() );
 
         }
-    }    
+    }
 
     /**
      * Checks to see if there are input declarations requiring other declaration
@@ -2708,39 +2708,27 @@ public class Validation
                                                        String helper )
     {
         boolean returnMe = true;
-        // Existing aggregation cannot be an instant
-        if ( TimeScaleOuter.of( inputConfig ).isInstantaneous() )
+
+        TimeScaleOuter timeScale = TimeScaleOuter.of( inputConfig );
+
+        // If not instantaneous, the existing function must be a total or mean
+        if ( !timeScale.isInstantaneous() && ! ( inputConfig.getFunction() == TimeScaleFunction.MEAN )
+             || inputConfig.getFunction() == TimeScaleFunction.TOTAL )
         {
             returnMe = false;
 
             LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
-                          + " When using a desired time aggregation of {}, "
-                          + "the existing time aggregation on the {} cannot "
-                          + "be instantaneous.",
-                          projectConfigPlus.getOrigin(),
-                          inputConfig.sourceLocation().getLineNumber(),
-                          inputConfig.sourceLocation().getColumnNumber(),
-                          TimeScaleFunction.TOTAL,
-                          helper );
-        }
-
-        // Existing function must be a sum
-        if ( !inputConfig.getFunction()
-                         .equals( TimeScaleFunction.TOTAL ) )
-        {
-            returnMe = false;
-
-            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
-                          + " When using a desired time aggregation of {}, "
-                          + "the existing time aggregation on the {} "
-                          + "must also be a {}.",
+                          + " When using a desired time scale function of {}, the existing time scale on the {} must "
+                          + "be instantaneous or the time scale function must be a {} or a {}.",
                           projectConfigPlus.getOrigin(),
                           inputConfig.sourceLocation().getLineNumber(),
                           inputConfig.sourceLocation().getColumnNumber(),
                           TimeScaleFunction.TOTAL,
                           helper,
+                          TimeScaleFunction.MEAN,
                           TimeScaleFunction.TOTAL );
         }
+
         return returnMe;
     }
 
@@ -2769,7 +2757,7 @@ public class Validation
         TimeScaleConfig left = input.getLeft().getExistingTimeScale();
         TimeScaleConfig right = input.getRight().getExistingTimeScale();
         TimeScaleConfig baseline = null;
-        
+
         if ( input.getBaseline() != null )
         {
             baseline = input.getBaseline().getExistingTimeScale();
@@ -2779,18 +2767,18 @@ public class Validation
         {
             LOGGER.debug( "A desired time scale was not discovered, so it cannot be inconsistent with any existing "
                           + "time scale." );
-            
+
             return true;
         }
 
         if ( left == null && right == null && baseline == null )
         {
             LOGGER.debug( "An existing time scale was not discovered, so it cannot be inconsistent with any desired "
-                    + "time scale." );
-            
+                          + "time scale." );
+
             return true;
         }
-        
+
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( desiredTimeScaleDeclaration );
 
         // Currently checks the period only. If/when an existing time scale can include month-days, then update this
@@ -2820,7 +2808,7 @@ public class Validation
                                                                               projectConfigPlus )
                && returnMe;
     }
-    
+
     /**
      * Returns true if the desired time scale is consistent with the existing time scale.
      * @param existingConfig the existing time scale configuration
@@ -2829,7 +2817,7 @@ public class Validation
      * @param projectConfigPlus the project configuration
      * @return true if the time scales are consistent, false otherwise
      */
-    
+
     private static boolean isDesiredTimeScaleConsistentWithExistingTimeScales( TimeScaleConfig existingConfig,
                                                                                TimeScaleOuter desired,
                                                                                LeftOrRightOrBaseline lrb,
@@ -2850,10 +2838,10 @@ public class Validation
                                                                           lrb.toString() );
             }
         }
-        
+
         return returnMe;
     }
-    
+
     /**
      * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
      * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
@@ -3590,7 +3578,7 @@ public class Validation
 
             valid = false;
         }
-        
+
         // Type and interface shorthands consistent with each other?
         return Validation.isTypeConsistentWithEachSourceInterface( projectConfigPlus, dataSourceConfig ) && valid;
     }
