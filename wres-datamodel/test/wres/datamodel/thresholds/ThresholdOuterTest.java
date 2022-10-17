@@ -759,6 +759,25 @@ public final class ThresholdOuterTest
     }
 
     /**
+     * Tests the {@link ThresholdOuter#toStringWithoutUnits()} with a unit string that contains regex characters. 
+     * See #109152. These characters should be interpreted literally, not as a regex.
+     */
+
+    @Test
+    public void testToStringWithoutUnitsForRegexString()
+    {
+        // All components
+        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
+                                                .setOperator( Operator.GREATER )
+                                                .setDataType( ThresholdDataType.LEFT )
+                                                .setLabel( THRESHOLD_LABEL )
+                                                .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
+                                                .build();
+
+        assertEquals( "> 0.5 (a threshold)", threshold.toStringWithoutUnits() );
+    }
+
+    /**
      * Tests the {@link ThresholdOuter#test(Double)}.
      */
 

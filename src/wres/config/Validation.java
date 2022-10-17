@@ -2712,8 +2712,8 @@ public class Validation
         TimeScaleOuter timeScale = TimeScaleOuter.of( inputConfig );
 
         // If not instantaneous, the existing function must be a total or mean
-        if ( !timeScale.isInstantaneous() && ! ( inputConfig.getFunction() == TimeScaleFunction.MEAN )
-             || inputConfig.getFunction() == TimeScaleFunction.TOTAL )
+        if ( !timeScale.isInstantaneous() && ! ( inputConfig.getFunction() == TimeScaleFunction.MEAN
+             || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
 

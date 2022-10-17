@@ -510,16 +510,19 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns a string representation of the {@link ThresholdOuter} without any units. This is useful when forming string
-     * representions of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
+     * representations of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
      * 
      * @return a string without any units
      */
 
     public String toStringWithoutUnits()
     {
-        if ( hasUnits() )
+        if ( this.hasUnits() )
         {
-            return this.toString().replaceAll( " " + this.getUnits().toString(), "" );
+            return this.toString()
+                       .replace( " " + this.getUnits()
+                                           .toString(),
+                                 "" );
         }
 
         return this.toString();

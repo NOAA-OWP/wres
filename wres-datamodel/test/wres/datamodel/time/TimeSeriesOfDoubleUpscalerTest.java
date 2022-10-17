@@ -605,8 +605,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 
         String message = "The period associated with the existing and desired time scales is "
                          + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
-                         + "which differs from the function associated with the desired time scale, namely 'TOTAL'. "
-                         + "This is not allowed. The function cannot be changed without changing the period.";
+                         + "which differs from the function associated with the desired time scale, namely 'TOTAL'.";
 
         assertTrue( exception.getMessage().contains( message ) );
     }
