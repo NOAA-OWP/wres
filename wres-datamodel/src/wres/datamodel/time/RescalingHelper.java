@@ -718,7 +718,9 @@ class RescalingHelper
 
                 // If the existing and desired periods are the same, the function cannot differ
                 allEvents.add( RescalingHelper.checkIfPeriodsMatchAndFunctionsDiffer( existingTimeScale,
-                                                                                      desiredTimeScale ) );
+                                                                                      desiredTimeScale,
+                                                                                      existingUnit,
+                                                                                      desiredUnit ) );
             }
 
             // Check if upscaling is combined with an integration of time-distributed units
@@ -881,11 +883,15 @@ class RescalingHelper
      * 
      * @param existingTimeScale the existing time scale
      * @param desiredTimeScale the desired time scale
+     * @param existingUnit the existing measurement unit
+     * @param desiredUnit the desired measurement unit
      * @returns a validation event
      */
 
     private static EvaluationStatusMessage checkIfPeriodsMatchAndFunctionsDiffer( TimeScaleOuter existingTimeScale,
-                                                                                  TimeScaleOuter desiredTimeScale )
+                                                                                  TimeScaleOuter desiredTimeScale,
+                                                                                  Unit<?> existingUnit,
+                                                                                  Unit<?> desiredUnit )
     {
         if ( existingTimeScale.getPeriod().equals( desiredTimeScale.getPeriod() )
              && existingTimeScale.getFunction() != desiredTimeScale.getFunction() )
@@ -910,11 +916,17 @@ class RescalingHelper
                                                        + "time scales is ''{0}'', but the time scale function "
                                                        + "associated with the existing time scale is ''{1}'', which "
                                                        + "differs from the function associated with the desired time "
-                                                       + "scale, namely ''{2}''. This is not allowed. The function "
-                                                       + "cannot be changed without changing the period.",
+                                                       + "scale, namely ''{2}''. This is not allowed, in general "
+                                                       + "because the function cannot be changed without changing the "
+                                                       + "period. If you are attempting to change unit dimensions by "
+                                                       + "performing a time integration of the existing measurement "
+                                                       + "unit of ''{3}'', then you should instead check that the "
+                                                       + "desired measurement unit of ''{4}'' is correct.",
                                                        existingTimeScale.getPeriod(),
                                                        existingTimeScale.getFunction(),
-                                                       desiredTimeScale.getFunction() );
+                                                       desiredTimeScale.getFunction(),
+                                                       existingUnit,
+                                                       desiredUnit );
 
                 return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
             }

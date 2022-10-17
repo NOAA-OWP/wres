@@ -113,9 +113,9 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
     {
         if ( hasTwo() )
         {
-            return first.toStringWithoutUnits() + " AND " + second.toStringWithoutUnits();
+            return this.first.toStringWithoutUnits() + " AND " + this.second.toStringWithoutUnits();
         }
-        return first.toStringWithoutUnits();
+        return this.first.toStringWithoutUnits();
     }
 
     @Override
@@ -123,9 +123,9 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
     {
         if ( hasTwo() )
         {
-            return first.toString() + " AND " + second.toString();
+            return this.first.toString() + " AND " + this.second.toString();
         }
-        return first.toString();
+        return this.first.toString();
     }
 
     @Override
