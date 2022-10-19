@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20220907-e31c553"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20221011-29f9361"
         restart: always
         volumes:
          # For the job data
@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20220907-c189ea7"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20221013-8c05eed"
         restart: always
         depends_on:
             broker:
@@ -51,7 +51,7 @@ services:
          - /mnt/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
-         - JAVA_OPTS=-Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
+         - JAVA_OPTS=-Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_`hostname`.hprof'
          - LANG=C.UTF-8
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
@@ -66,11 +66,12 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20220907-9e734c6"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20221013-139e06e"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
          - /mnt/wres_keys:/wres_secrets:ro
+         # To support durable queues after a cycling down and up.
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
@@ -84,7 +85,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20220907-9e734c6"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20221019-d3c8df2"
         restart: always
         depends_on:
             broker:
@@ -130,7 +131,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20220907-1e6f73a"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20221013-8c05eed"
         restart: always
         volumes:
          # For heap-dump files
@@ -152,7 +153,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20220907-1e6f73a"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20221017-2421a2e"
         restart: always
         volumes:
          # To write graphics outputs
