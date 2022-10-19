@@ -1,6 +1,7 @@
 package wres.io.reading.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
 import java.net.URI;
@@ -41,6 +42,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.ReadException;
 import wres.statistics.generated.Geometry;
 import wres.system.SystemSettings;
 
@@ -502,7 +504,83 @@ class WrdsNwmReaderTest
                                          .withPath( FORECAST_PATH )
                                          .withQueryStringParameters( parametersThree ),
                                 VerificationTimes.exactly( 1 ) );
+    }
 
+
+    /**
+     * Tests for an expected exception and not an unexpected one. See #109238.
+     */
+
+    @Test
+    void testReadDoesNotThrowClassCastExceptionWhenChunkingFeatures()
+    {
+        URI fakeUri = URI.create( "fake" );
+
+        DataSourceConfig.Source fakeDeclarationSource =
+                new DataSourceConfig.Source( fakeUri,
+                                             InterfaceShortHand.WRDS_NWM,
+                                             null,
+                                             null,
+                                             null );
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+                                               fakeDeclarationSource,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     List.of( fakeDeclarationSource ),
+                                                                     new Variable( "streamflow", null ),
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               LeftOrRightOrBaseline.RIGHT );
+
+        PairConfig pairConfig = new PairConfig( null,
+                                                null,
+                                                null,
+                                                List.of( new Feature( null,
+                                                                      Integer.toString( NWM_FEATURE_ID ),
+                                                                      null ),
+                                                         new Feature( null,
+                                                                      "234442421",
+                                                                      null ) ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                new DateCondition( "2022-01-03T00:00:00Z", "2022-01-23T00:00:00Z" ),
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        // Feature chunk size of 1, with 2 features requested
+        WrdsNwmReader reader = WrdsNwmReader.of( pairConfig, systemSettings, 1 );
+
+        // Expect a ReadException due to the fake uri, not a ClassCastException as in #109238.
+        assertThrows( ReadException.class, () -> {
+            try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+            {
+                tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                           .collect( Collectors.toList() );
+            }
+        } );
     }
 
 }

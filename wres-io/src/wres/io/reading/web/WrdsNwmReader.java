@@ -87,7 +87,7 @@ public class WrdsNwmReader implements TimeSeriesReader
     private static final String SLASH = "/";
 
     /** The number of features to include in a chunk. */
-    private static final int FEATURE_CHUNK_SIZE = 25;
+    private static final int DEFAULT_FEATURE_CHUNK_SIZE = 25;
 
     /** Re-used string. */
     private static final String WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE =
@@ -118,6 +118,9 @@ public class WrdsNwmReader implements TimeSeriesReader
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
+    /** The feature chunk size. */
+    private final int featureChunkSize;
+
     /**
      * @see #of(PairConfig, SystemSettings)
      * @param systemSettings the system settings
@@ -127,7 +130,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     public static WrdsNwmReader of( SystemSettings systemSettings )
     {
-        return new WrdsNwmReader( null, systemSettings );
+        return new WrdsNwmReader( null, systemSettings, DEFAULT_FEATURE_CHUNK_SIZE );
     }
 
     /**
@@ -141,7 +144,23 @@ public class WrdsNwmReader implements TimeSeriesReader
     {
         Objects.requireNonNull( pairConfig );
 
-        return new WrdsNwmReader( pairConfig, systemSettings );
+        return new WrdsNwmReader( pairConfig, systemSettings, DEFAULT_FEATURE_CHUNK_SIZE );
+    }
+
+    /**
+     * @param pairConfig the pair declaration, which is used to perform chunking of a data source
+     * @param systemSettings the system settings
+     * @param featureChunkSize the number of features to include in each request
+     * @return an instance
+     * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the featureChunkSize is invalid
+     */
+
+    public static WrdsNwmReader of( PairConfig pairConfig, SystemSettings systemSettings, int featureChunkSize )
+    {
+        Objects.requireNonNull( pairConfig );
+
+        return new WrdsNwmReader( pairConfig, systemSettings, featureChunkSize );
     }
 
     @Override
@@ -221,7 +240,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         List<String> features = Collections.unmodifiableList( new ArrayList<>( featureSet ) );
 
         // The chunked features
-        List<List<String>> featureBlocks = ListUtils.partition( features, FEATURE_CHUNK_SIZE );
+        List<List<String>> featureBlocks = ListUtils.partition( features, this.getFeatureChunkSize() );
 
         // Date ranges
         Set<Pair<Instant, Instant>> dateRanges = WrdsNwmReader.getWeekRanges( pairConfig, dataSource );
@@ -269,7 +288,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                       chunks.size(),
                       chunks );
 
-        SortedSet<Pair<List<String>, Pair<Instant, Instant>>> mutableChunks = new TreeSet<>( chunks );
+        List<Pair<List<String>, Pair<Instant, Instant>>> mutableChunks = new ArrayList<>( chunks );
 
         // The size of this queue is equal to the setting for simultaneous web client threads so that we can 1. get 
         // quick feedback on exception (which requires a small queue) and 2. allow some requests to go out prior to 
@@ -303,8 +322,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                 // Submit the next chunk if not already submitted
                 if ( !mutableChunks.isEmpty() )
                 {
-                    Pair<List<String>, Pair<Instant, Instant>> nextChunk = mutableChunks.first();
-                    mutableChunks.remove( nextChunk );
+                    Pair<List<String>, Pair<Instant, Instant>> nextChunk = mutableChunks.remove( 0 );
 
                     // Create the inner data source for the chunk 
                     URI nextUri = this.getUriForChunk( dataSource.getSource()
@@ -399,6 +417,15 @@ public class WrdsNwmReader implements TimeSeriesReader
         {
             throw new ReadException( "Expected a WRDS NWM data source, but got: " + dataSource + "." );
         }
+    }
+
+    /**
+     * @return the feature chunk size
+     */
+
+    private int getFeatureChunkSize()
+    {
+        return this.featureChunkSize;
     }
 
     /**
@@ -653,7 +680,9 @@ public class WrdsNwmReader implements TimeSeriesReader
     {
         Objects.requireNonNull( uri );
 
-        if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
+        if ( Objects.nonNull( uri.getScheme() ) && uri.getScheme()
+                                                      .toLowerCase()
+                                                      .startsWith( "http" ) )
         {
             try
             {
@@ -732,13 +761,22 @@ public class WrdsNwmReader implements TimeSeriesReader
      * Hidden constructor.
      * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
+     * @param featureChunkSize the number of features to include in each request, must be greater than zero
      * @throws ProjectConfigException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
+     * @throws IllegalArgumentException if the featureChunkSize is invalid
      */
 
-    private WrdsNwmReader( PairConfig pairConfig, SystemSettings systemSettings )
+    private WrdsNwmReader( PairConfig pairConfig, SystemSettings systemSettings, int featureChunkSize )
     {
         Objects.requireNonNull( systemSettings );
+
+        if ( featureChunkSize <= 0 )
+        {
+            throw new IllegalArgumentException( "The feature chunk size must be greater than 0: "
+                                                + featureChunkSize
+                                                + "." );
+        }
 
         if ( Objects.nonNull( pairConfig ) )
         {
@@ -777,6 +815,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         }
 
         this.pairConfig = pairConfig;
+        this.featureChunkSize = featureChunkSize;
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS NWM Reading Thread %d" )
                                                                          .build();
