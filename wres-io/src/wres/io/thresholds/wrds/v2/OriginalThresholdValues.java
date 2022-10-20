@@ -6,6 +6,9 @@ import java.io.Serializable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OriginalThresholdValues implements Serializable {
+
+    private static final long serialVersionUID = 8939490245697113977L;
+
     /**
      * The measurement for low flow rate
      */
@@ -40,7 +43,6 @@ public class OriginalThresholdValues implements Serializable {
      * The measurement for record flow rate
      */
     String record_flow;
-    
 
     /**
      * The measurement for low stage height

@@ -4,6 +4,12 @@ import java.io.Serializable;
 
 public class QueryInfo implements Serializable
 {
+    private static final long serialVersionUID = 6672020602331767905L;
+ 
+    String queryURL;
+    QueryCriteria criteria;
+    QueryNote[] note;
+    
     public String getQueryURL()
     {
         return queryURL;
@@ -33,8 +39,4 @@ public class QueryInfo implements Serializable
     {
         this.note = note;
     }
-
-    String queryURL;
-    QueryCriteria criteria;
-    QueryNote[] note;
 }

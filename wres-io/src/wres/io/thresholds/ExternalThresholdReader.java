@@ -380,9 +380,6 @@ public class ExternalThresholdReader
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) thresholdsConfig.getCommaSeparatedValuesOrSource();
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
 
-        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide );
-        FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
-
         Set<FeatureTuple> recognized = new HashSet<>();
 
         // Threshold type: default to probability
@@ -399,7 +396,6 @@ public class ExternalThresholdReader
         try
         {
             Map<String, Set<ThresholdOuter>> readThresholds;
-            ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
 
             // If we're going with NWS_LIDs with WRDS, we want to do equality checks on the strict handbook-5s.
             // Some RFC data append an added identifier to the end of their handbook 5, preventing a match, so we
@@ -458,54 +454,6 @@ public class ExternalThresholdReader
         catch ( IOException e )
         {
             throw new MetricConfigException( "Failed to read the external thresholds.", e );
-        }
-    }
-
-    /**
-     * Creates a function to examine a WrdsLocation and extract the correct identifier
-     *
-     * @param side The side of the project's input to read identifiers from
-     * @return a function that will retrieve the correct identifier from a WrdsLocation
-     */
-    private Function<WrdsLocation, String> getFeatureIdentifier( LeftOrRightOrBaseline side )
-    {
-        // Start out by getting the DataSourceConfig corresponding with the side; we'll need this in order to
-        // try to figure out what field from the WrdsLocation we want to read from
-        DataSourceConfig dataSourceConfig;
-
-        switch ( side )
-        {
-            case RIGHT:
-                dataSourceConfig = this.projectConfig.getInputs().getRight();
-                break;
-            case BASELINE:
-                dataSourceConfig = this.projectConfig.getInputs().getBaseline();
-                break;
-            default:
-                dataSourceConfig = this.projectConfig.getInputs().getLeft();
-        }
-
-        FeatureDimension dimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
-
-        if ( dimension == null || dimension == FeatureDimension.CUSTOM )
-        {
-            LOGGER.warn( "A definitive feature dimension could not be determined for linking thresholds to features; " +
-                         "defaulting to the NWS lid" );
-            return WrdsLocation::getNwsLid;
-        }
-
-        // Now that we know what dimension to use, we just have to return a function that will pluck the right
-        // one off of the WrdsLocation. WRDS only supports three different formats and it's fairly obvious which
-        // sources use NWM ids or USGS sites, not so much for NWS lids. Since what CAN use NWS lids is so vague,
-        // we assume that as the base case.
-        switch ( dimension )
-        {
-            case NWM_FEATURE_ID:
-                return WrdsLocation::getNwmFeatureId;
-            case USGS_SITE_CODE:
-                return WrdsLocation::getUsgsSiteCode;
-            default:
-                return WrdsLocation::getNwsLid;
         }
     }
 

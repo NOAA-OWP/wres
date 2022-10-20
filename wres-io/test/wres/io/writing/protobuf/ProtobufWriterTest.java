@@ -33,7 +33,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Tests the {@link ProtobufWriter}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ProtobufWriterTest

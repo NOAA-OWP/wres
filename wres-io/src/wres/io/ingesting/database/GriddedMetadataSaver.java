@@ -1,4 +1,4 @@
-package wres.io.reading.nwm;
+package wres.io.ingesting.database;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -39,13 +39,14 @@ import wres.system.SystemSettings;
 import wres.util.NetCDF;
 
 /**
- * Executes the database copy operation for every value in the passed in string. TODO: remove this class when we have a
- * unified approach to ingest. See #51232.
+ * Ingests times-series metadata for gridded sources to a database. Does not copy any time-series values. TODO: remove 
+ * this class when we have a unified approach to ingest. See #51232.
  * @author Christopher Tubbs
+ * @author James Brown
  */
-public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
+class GriddedMetadataSaver extends WRESCallable<List<IngestResult>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( GriddedNWMValueSaver.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( GriddedMetadataSaver.class );
     private static final FeatureKey GRIDDED_FEATURES_PLACEHOLDER =
             FeatureKey.of( Geometry.newBuilder()
                                    .setName( "PLACEHOLDER" )
@@ -60,7 +61,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     private NetcdfFile source;
     private final String hash;
 
-    public GriddedNWMValueSaver( SystemSettings systemSettings,
+    public GriddedMetadataSaver( SystemSettings systemSettings,
                                  Database database,
                                  DatabaseCaches caches,
                                  DataSource dataSource,
@@ -98,7 +99,7 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
     public List<IngestResult> execute() throws IOException, SQLException
     {
         this.ensureFileIsLocal();
-        
+
         try
         {
             Instant referenceTime = NetCDF.getReferenceTime( this.getFile() );
@@ -114,13 +115,13 @@ public class GriddedNWMValueSaver extends WRESCallable<List<IngestResult>>
                 List<String> variableNames = this.getFile()
                                                  .getVariables()
                                                  .stream()
-                                                 .map( Variable::getShortName )
+                                                 .map( Variable::getFullName )
                                                  .collect( Collectors.toList() );
                 throw new PreIngestException( "Could not find variable '"
                                               + variable
                                               + "' in gridded netCDF resource '"
-                                              + this.getFile()
-                                              + ". Available variables: "
+                                              + this.fileName
+                                              + "'. Available variables: "
                                               + variableNames );
             }
 

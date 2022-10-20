@@ -4,6 +4,11 @@ import java.io.Serializable;
 
 public class Method implements Serializable
 {
+    private static final long serialVersionUID = 6026373155500052354L;
+    
+    String methodDescription;
+    Integer methodID;
+    
     public String getMethodDescription()
     {
         return methodDescription;
@@ -23,7 +28,4 @@ public class Method implements Serializable
     {
         this.methodID = methodID;
     }
-
-    String methodDescription;
-    Integer methodID;
 }

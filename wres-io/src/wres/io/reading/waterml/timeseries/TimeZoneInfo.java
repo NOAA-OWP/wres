@@ -4,8 +4,12 @@ import java.io.Serializable;
 
 public class TimeZoneInfo implements Serializable
 {
+    private static final long serialVersionUID = -7260060863961221920L;
+    
     TimeZone defaultTimeZone;
-
+    TimeZone daylightSavingsTimeZone;
+    Boolean siteUsesDaylightSavingsTime;
+    
     public TimeZone getDefaultTimeZone()
     {
         return defaultTimeZone;
@@ -35,7 +39,4 @@ public class TimeZoneInfo implements Serializable
     {
         this.siteUsesDaylightSavingsTime = siteUsesDaylightSavingsTime;
     }
-
-    TimeZone daylightSavingsTimeZone;
-    Boolean siteUsesDaylightSavingsTime;
 }

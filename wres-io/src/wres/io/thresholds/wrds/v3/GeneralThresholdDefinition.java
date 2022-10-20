@@ -24,6 +24,8 @@ import java.util.function.DoubleUnaryOperator;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class GeneralThresholdDefinition implements Serializable
 {
+    private static final long serialVersionUID = -7094110343140389566L;
+
     /**
      * Metadata describing where the values are valid and who produced them
      */

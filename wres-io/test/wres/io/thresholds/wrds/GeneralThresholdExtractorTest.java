@@ -1,6 +1,5 @@
 package wres.io.thresholds.wrds;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,31 +10,18 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.pooling.UnitMapper;
-import wres.io.thresholds.wrds.v2.CalculatedThresholdValues;
-import wres.io.thresholds.wrds.v2.OriginalThresholdValues;
-import wres.io.thresholds.wrds.v2.ThresholdDefinition;
-import wres.io.thresholds.wrds.v2.ThresholdExtractor;
-import wres.io.thresholds.wrds.v2.ThresholdMetadata;
-import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.v3.GeneralThresholdMetadata;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdValues;
 import wres.io.thresholds.wrds.v3.RatingCurveInfo;
-import wres.system.SystemSettings;
 
 public class GeneralThresholdExtractorTest
 {
@@ -44,7 +30,6 @@ public class GeneralThresholdExtractorTest
     //https://redacted/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/
     //
     //executed on 5/22/2021 in the afternoon.
-    private static final URI path2 = URI.create( "testinput/thresholds/wrds/recurrence_v3.json" );
 
     private static final double EPSILON = 0.00001;
 
@@ -55,11 +40,6 @@ public class GeneralThresholdExtractorTest
 
     private static final WrdsLocation PTSA1 = createFeature( "2323396", "02372250", "PTSA1" );
     private static final WrdsLocation MNTG1 = createFeature( "6444276", "02349605", "MNTG1" );
-
-
-    private static final List<WrdsLocation> DESIRED_FEATURES = List.of(
-                                                                        PTSA1,
-                                                                        MNTG1 );
 
     private static final WrdsLocation STEAK = createFeature( null, null, "STEAK" );
     private static final WrdsLocation BAKED_POTATO = createFeature( null, null, "BakedPotato" );
@@ -414,13 +394,10 @@ public class GeneralThresholdExtractorTest
         return response;
     }
 
-    private SystemSettings systemSettings;
-
     @Before
     public void runBeforeEachTest()
     {
         this.unitMapper = Mockito.mock( UnitMapper.class );
-        this.systemSettings = SystemSettings.withDefaults();
         this.normalResponse = this.createNormalThresholdResponse();
         this.funResponse = this.createFunThresholdResponse();
         Mockito.when( this.unitMapper.getUnitMapper( "FT" ) ).thenReturn( in -> in );

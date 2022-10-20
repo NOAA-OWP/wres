@@ -4,6 +4,13 @@ import java.io.Serializable;
 
 public class QueryCriteria implements Serializable
 {
+    private static final long serialVersionUID = -6329750451321834556L;
+ 
+    String locationParam;
+    String variableParam;
+    QueryTimeParameter timeParam;
+    String[] parameter;
+    
     public String getLocationParam()
     {
         return locationParam;
@@ -43,9 +50,4 @@ public class QueryCriteria implements Serializable
     {
         this.parameter = parameter;
     }
-
-    String locationParam;
-    String variableParam;
-    QueryTimeParameter timeParam;
-    String[] parameter;
 }

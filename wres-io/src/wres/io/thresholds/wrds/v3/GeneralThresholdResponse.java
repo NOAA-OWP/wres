@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 public class GeneralThresholdResponse implements Serializable {
-
+    
+    private static final long serialVersionUID = 6355701807768699282L;
+    
     Collection<GeneralThresholdDefinition> value_set;
 
     /**

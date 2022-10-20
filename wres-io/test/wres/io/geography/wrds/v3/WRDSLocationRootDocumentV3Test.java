@@ -9,11 +9,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.datamodel.MissingValues;
-import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
-import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
-import wres.io.reading.wrds.nwm.NwmDataPoint;
-
 public class WRDSLocationRootDocumentV3Test
 {
 

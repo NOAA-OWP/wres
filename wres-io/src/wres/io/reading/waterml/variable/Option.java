@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class Option implements Serializable
 {
+    private static final long serialVersionUID = 142625806918589450L;
+    
     String name;
 
     public String getName()

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonAlias;
 
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class Member

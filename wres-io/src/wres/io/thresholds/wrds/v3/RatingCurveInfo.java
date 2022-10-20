@@ -3,12 +3,13 @@ package wres.io.thresholds.wrds.v3;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RatingCurveInfo implements Serializable
 {
+    private static final long serialVersionUID = 1947722676033834492L;
+    
     String location_id;
     String id_type;
     String source;

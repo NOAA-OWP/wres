@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,8 +15,10 @@ import java.util.Map;
 public class GeneralThresholdValues implements Serializable 
 {
 
-    public RatingCurveInfo rating_curve;
+    private static final long serialVersionUID = 6437416253818226237L;
     private Map<String, Double> tresholdValues = new LinkedHashMap<>();
+    
+    RatingCurveInfo rating_curve;
     
     @JsonAnyGetter
     public Map<String, Double> getThresholdValues()

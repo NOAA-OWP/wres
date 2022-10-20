@@ -9,6 +9,9 @@ import java.io.Serializable;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CalculatedThresholdValues implements Serializable {
+
+    private static final long serialVersionUID = 9113179713864369110L;
+
     /**
      * The calculated measurement for low flow rate
      */
@@ -43,7 +46,6 @@ public class CalculatedThresholdValues implements Serializable {
      * The calculated measurement for record flow rate
      */
     String record_flow;
-
 
     /**
      * The calculated measurement for low stage height

@@ -6,6 +6,8 @@ import wres.io.reading.waterml.query.QueryNote;
 
 public class Variable implements Serializable
 {
+    private static final long serialVersionUID = -3218830640942975698L;
+    
     VariableCode[] variableCode;
     String variableName;
     String variableDescription;

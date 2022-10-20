@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.wrds.ForecastResponse;
-import wres.io.reading.wrds.ReadValueManager;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 
 public class WrdsAhpsTest
@@ -47,7 +47,7 @@ public class WrdsAhpsTest
     {
         try
         {
-            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
         }
         catch ( PreIngestException e )
         {

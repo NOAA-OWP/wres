@@ -10,6 +10,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 public class ThresholdResponse implements Serializable {
+
+    private static final long serialVersionUID = 508326690122422103L;
+    
     Map<String, Double> _metrics;
     String _documentation;
     Collection<ThresholdDefinition> thresholds;

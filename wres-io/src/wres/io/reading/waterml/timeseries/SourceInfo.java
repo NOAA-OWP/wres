@@ -6,6 +6,16 @@ import wres.io.reading.waterml.query.QueryNote;
 
 public class SourceInfo implements Serializable
 {
+    private static final long serialVersionUID = 2257802722287031705L;
+    
+    String siteName;
+    SiteCode[] siteCode;
+    TimeZoneInfo timeZoneInfo;
+    Location geoLocation;
+    QueryNote[] note;
+    String[] siteType;
+    SiteProperty[] siteProperty;
+    
     public String getSiteName()
     {
         return siteName;
@@ -75,12 +85,4 @@ public class SourceInfo implements Serializable
     {
         this.siteProperty = siteProperty;
     }
-
-    String siteName;
-    SiteCode[] siteCode;
-    TimeZoneInfo timeZoneInfo;
-    Location geoLocation;
-    QueryNote[] note;
-    String[] siteType;
-    SiteProperty[] siteProperty;
 }

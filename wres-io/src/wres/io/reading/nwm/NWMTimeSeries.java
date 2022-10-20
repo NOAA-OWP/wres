@@ -835,7 +835,7 @@ class NWMTimeSeries implements Closeable
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
-            if ( attribute.getShortName()
+            if ( attribute.getName()
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
@@ -860,7 +860,7 @@ class NWMTimeSeries implements Closeable
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
-            if ( attribute.getShortName()
+            if ( attribute.getName()
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
@@ -888,7 +888,7 @@ class NWMTimeSeries implements Closeable
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
-            if ( attribute.getShortName()
+            if ( attribute.getName()
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
@@ -929,7 +929,7 @@ class NWMTimeSeries implements Closeable
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
-            if ( attribute.getShortName()
+            if ( attribute.getName()
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
@@ -971,7 +971,7 @@ class NWMTimeSeries implements Closeable
     {
         for ( Attribute attribute : ncVariable.attributes() )
         {
-            if ( attribute.getShortName()
+            if ( attribute.getName()
                           .toLowerCase()
                           .equals( attributeName.toLowerCase() ) )
             {
@@ -1114,7 +1114,7 @@ class NWMTimeSeries implements Closeable
         Objects.requireNonNull( variable );
         Objects.requireNonNull( indices );
 
-        String variableName = variable.getShortName();
+        String variableName = variable.getFullName();
 
         if ( indices.length < 1 )
         {
@@ -1691,7 +1691,7 @@ class NWMTimeSeries implements Closeable
 
             for ( Attribute globalAttribute : globalAttributes )
             {
-                if ( globalAttribute.getShortName()
+                if ( globalAttribute.getName()
                                     .equals( memberNumberAttributeName ) )
                 {
                     ncEnsembleNumber = globalAttribute.getNumericValue()

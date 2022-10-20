@@ -105,6 +105,8 @@ public class PipelinesTest
 
     private static final class DummyException extends RuntimeException
     {
+        private static final long serialVersionUID = -7178033699130853053L;
+
         DummyException( String message )
         {
             super( message );

@@ -4,8 +4,14 @@ import java.io.Serializable;
 
 public class Qualifier implements Serializable
 {
+    private static final long serialVersionUID = -3380625359503743133L;
+    
     String qualifierCode;
-
+    String qualifierDescription;
+    Integer qualifierID;
+    String network;
+    String vocabulary;
+    
     public String getQualifierCode()
     {
         return qualifierCode;
@@ -55,9 +61,4 @@ public class Qualifier implements Serializable
     {
         this.vocabulary = vocabulary;
     }
-
-    String qualifierDescription;
-    Integer qualifierID;
-    String network;
-    String vocabulary;
 }
