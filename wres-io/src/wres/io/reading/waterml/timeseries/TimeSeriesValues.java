@@ -5,6 +5,17 @@ import java.time.Duration;
 
 public class TimeSeriesValues implements Serializable
 {
+    private static final long serialVersionUID = -23502269417368543L;
+    
+    TimeSeriesValue[] value;
+    Qualifier[] qualifier;
+    String[] qualityControlLevel;
+    Method[] method;
+    String[] source;
+    String[] offset;
+    String[] sample;
+    String[] censorCode;
+    
     public TimeSeriesValue[] getValue()
     {
         return value;
@@ -96,13 +107,4 @@ public class TimeSeriesValues implements Serializable
 
         return step;
     }
-
-    TimeSeriesValue[] value;
-    Qualifier[] qualifier;
-    String[] qualityControlLevel;
-    Method[] method;
-    String[] source;
-    String[] offset;
-    String[] sample;
-    String[] censorCode;
 }

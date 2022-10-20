@@ -13,6 +13,7 @@ import wres.io.utilities.Database;
 
 /**
  * Caches details mapping units of measurements to their IDs
+ * @author Jesse Bickel
  * @author Christopher Tubbs
  */
 public class MeasurementUnits

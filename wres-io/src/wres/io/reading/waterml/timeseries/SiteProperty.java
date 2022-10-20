@@ -4,6 +4,11 @@ import java.io.Serializable;
 
 public class SiteProperty implements Serializable
 {
+    private static final long serialVersionUID = 7149841725947418537L;
+    
+    String value;
+    String name;
+    
     public String getValue()
     {
         return value;
@@ -23,7 +28,4 @@ public class SiteProperty implements Serializable
     {
         this.name = name;
     }
-
-    String value;
-    String name;
 }

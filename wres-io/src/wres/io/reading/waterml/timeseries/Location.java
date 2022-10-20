@@ -4,6 +4,11 @@ import java.io.Serializable;
 
 public class Location implements Serializable
 {
+    private static final long serialVersionUID = 1907762874171212088L;
+    
+    GeographicLocation geogLocation;
+    String[] localSiteXY;
+    
     public GeographicLocation getGeogLocation()
     {
         return geogLocation;
@@ -23,7 +28,4 @@ public class Location implements Serializable
     {
         this.localSiteXY = localSiteXY;
     }
-
-    GeographicLocation geogLocation;
-    String[] localSiteXY;
 }

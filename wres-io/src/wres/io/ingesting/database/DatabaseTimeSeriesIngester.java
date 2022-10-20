@@ -60,7 +60,6 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.reading.nwm.GriddedNWMValueSaver;
 import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
@@ -196,7 +195,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         {
             LOGGER.debug( "Ingesting time-series from source {}.", outerSource );
         }
-        
+
         // If this is a gridded dataset, it has special treatment, inserting the sources only. This will disappear
         // if/when gridded ingest is normalized with other ingest: see #51232.
         if ( outerSource.isGridded() )
@@ -602,7 +601,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             }
 
             // Not present, so save it
-            GriddedNWMValueSaver saver = new GriddedNWMValueSaver( this.getSystemSettings(),
+            GriddedMetadataSaver saver = new GriddedMetadataSaver( this.getSystemSettings(),
                                                                    this.getDatabase(),
                                                                    this.getCaches(),
                                                                    dataSource,

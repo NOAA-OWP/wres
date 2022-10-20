@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class VariableCode implements Serializable
 {
+    private static final long serialVersionUID = 4782260215264929265L;
+    
     String value;
     String network;
 

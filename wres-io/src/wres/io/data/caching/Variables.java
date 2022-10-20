@@ -14,7 +14,6 @@ import wres.io.utilities.Database;
 /**
  * Helpers for data on Variables used in timeseries data.
  */
-
 public class Variables
 {
     private final Database database;

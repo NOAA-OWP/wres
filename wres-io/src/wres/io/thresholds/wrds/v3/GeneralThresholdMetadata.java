@@ -3,13 +3,12 @@ package wres.io.thresholds.wrds.v3;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
-import java.util.Map;
-import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeneralThresholdMetadata implements Serializable 
 {
-
+    private static final long serialVersionUID = -4195161592990949335L;
+    
     String data_type;
     String nws_lid;
     String usgs_site_code;

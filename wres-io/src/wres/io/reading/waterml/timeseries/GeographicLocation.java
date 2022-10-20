@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class GeographicLocation implements Serializable
 {
+    private static final long serialVersionUID = -6702537011475320084L;
+    
     String srs;
 
     public String getSrs()

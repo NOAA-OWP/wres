@@ -35,8 +35,8 @@ import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
 import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
-import wres.io.reading.wrds.ReadValueManager;
 
 /**
  * A feature service implementation for the WRDS feature service, which enables bulk lookup of features for prescribed
@@ -59,7 +59,7 @@ class WrdsFeatureService
     {
         try
         {
-            SSL_CONTEXT = ReadValueManager.getSslContextTrustingDodSignerForWrds();
+            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
         }
         catch ( PreIngestException e )
         {

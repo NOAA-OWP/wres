@@ -4,9 +4,12 @@ import java.io.Serializable;
 
 public class SiteCode implements Serializable
 {
+    private static final long serialVersionUID = -7293845985686518859L;
+    
     String value;
     String network;
-
+    String agencyCode;
+    
     public String getValue()
     {
         return value;
@@ -36,6 +39,4 @@ public class SiteCode implements Serializable
     {
         this.agencyCode = agencyCode;
     }
-
-    String agencyCode;
 }

@@ -24,7 +24,17 @@ import wres.system.DatabaseLockManager;
 
 public class IncompleteIngest
 {
-    private static Logger LOGGER = LoggerFactory.getLogger( IncompleteIngest.class );
+    private static final String WHERE_SOURCE_ID = "WHERE source_id = ?";
+
+    private static final String WHERE_NOT_EXISTS = "WHERE NOT EXISTS (";
+
+    private static final String SELECT_1 = "SELECT 1";
+
+    private static final String FROM_WRES_SOURCE_S = "FROM wres.Source S";
+
+    private static final String FROM_WRES_PROJECT_SOURCE_PS = "FROM wres.ProjectSource PS";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( IncompleteIngest.class );
 
     private static final String DB_COMMUNICATION_FAILED =
             "Communication with the database failed.";
@@ -98,13 +108,13 @@ public class IncompleteIngest
         timeSeriesValueScript.addLine( "(" );
         timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
         timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeries" );
-        timeSeriesValueScript.addTab().addLine( "WHERE source_id = ?" );
+        timeSeriesValueScript.addTab().addLine( WHERE_SOURCE_ID );
         timeSeriesValueScript.addArgument( sourceId );
         timeSeriesValueScript.addLine( ")" );
 
         DataScripter referenceTimeScript = new DataScripter( database );
         referenceTimeScript.addLine( "DELETE FROM wres.TimeSeriesReferenceTime" );
-        referenceTimeScript.addLine( "WHERE source_id = ?" );
+        referenceTimeScript.addLine( WHERE_SOURCE_ID );
         referenceTimeScript.addArgument( sourceId );
 
         DataScripter timeSeriesScript = new DataScripter( database );
@@ -113,13 +123,13 @@ public class IncompleteIngest
         timeSeriesScript.addLine( "(" );
         timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
         timeSeriesScript.addTab().addLine( "FROM wres.TimeSeries" );
-        timeSeriesScript.addTab().addLine( "WHERE source_id = ?" );
+        timeSeriesScript.addTab().addLine( WHERE_SOURCE_ID );
         timeSeriesScript.addArgument( sourceId );
         timeSeriesScript.addLine( ")" );
 
         DataScripter sourceScript = new DataScripter( database );
         sourceScript.addLine( "DELETE from wres.Source" );
-        sourceScript.addLine( "WHERE source_id = ?" );
+        sourceScript.addLine( WHERE_SOURCE_ID );
         sourceScript.addArgument( sourceId );
 
         try
@@ -224,15 +234,15 @@ public class IncompleteIngest
     {
         DataScripter scriptBuilder = new DataScripter( database );
 
-        scriptBuilder.addLine("SELECT EXISTS (");
-        scriptBuilder.addTab().addLine("SELECT 1");
-        scriptBuilder.addTab().addLine("FROM wres.Source S");
-        scriptBuilder.addTab().addLine("WHERE NOT EXISTS (");
-        scriptBuilder.addTab(  2  ).addLine("SELECT 1");
-        scriptBuilder.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        scriptBuilder.addTab(  2  ).addLine("WHERE PS.source_id = S.source_id");
-        scriptBuilder.addTab().addLine(")");
-        scriptBuilder.addLine(") AS orphans_exist;");
+        scriptBuilder.addLine( "SELECT EXISTS (" );
+        scriptBuilder.addTab().addLine( SELECT_1 );
+        scriptBuilder.addTab().addLine( FROM_WRES_SOURCE_S );
+        scriptBuilder.addTab().addLine( WHERE_NOT_EXISTS );
+        scriptBuilder.addTab( 2 ).addLine( SELECT_1 );
+        scriptBuilder.addTab( 2 ).addLine( FROM_WRES_PROJECT_SOURCE_PS );
+        scriptBuilder.addTab( 2 ).addLine( "WHERE PS.source_id = S.source_id" );
+        scriptBuilder.addTab().addLine( ")" );
+        scriptBuilder.addLine( ") AS orphans_exist;" );
 
         boolean thereAreOrphans;
 
@@ -254,7 +264,6 @@ public class IncompleteIngest
      * @throws SQLException Thrown when one of the required scripts could not complete
      */
 
-    @SuppressWarnings( "unchecked" )
     public static boolean removeOrphanedData( Database database ) throws SQLException
     {
         try
@@ -268,67 +277,60 @@ public class IncompleteIngest
             // operation will occur alongside other operations that need that lock.
 
             LOGGER.info( "Incomplete data has been detected. Incomplete data "
-                                  + "will now be removed to ensure that all data operated "
-                                  + "upon is valid.");
+                         + "will now be removed to ensure that all data operated "
+                         + "upon is valid." );
 
             Set<String> partitionTables = database.getPartitionTables();
 
             // We aren't actually going to collect the results so raw types are fine.
-            FutureQueue removalQueue = new FutureQueue(  );
+            FutureQueue removalQueue = new FutureQueue();
 
-            for (String partition : partitionTables)
+            for ( String partition : partitionTables )
             {
                 DataScripter valueRemover = new DataScripter( database );
                 valueRemover.setHighPriority( false );
                 valueRemover.addLine( "DELETE FROM ", partition, " P" );
-                valueRemover.addLine( "WHERE NOT EXISTS (");
-                valueRemover.addTab().addLine( "SELECT 1");
-                valueRemover.addTab().addLine( "FROM wres.TimeSeries TS");
-                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS");
-                valueRemover.addTab(  2  ).addLine( "ON PS.source_id = TS.source_id");
-                valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id");
+                valueRemover.addLine( WHERE_NOT_EXISTS );
+                valueRemover.addTab().addLine( SELECT_1 );
+                valueRemover.addTab().addLine( "FROM wres.TimeSeries TS" );
+                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+                valueRemover.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+                valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id" );
                 valueRemover.addLine( ");" );
 
-                Future timeSeriesValueRemoval = valueRemover.issue();
+                Future<?> timeSeriesValueRemoval = valueRemover.issue();
                 removalQueue.add( timeSeriesValueRemoval );
 
-                LOGGER.debug( "Started task to remove orphaned values in {}...", partition);
+                LOGGER.debug( "Started task to remove orphaned values in {}...", partition );
             }
 
-            try
-            {
-                removalQueue.loop();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new SQLException( "Orphaned observed and forecasted values could not be removed.", e );
-            }
-
+            IncompleteIngest.loop( removalQueue,
+                                   "Orphaned observed and forecasted values could not be removed." );
 
             DataScripter removeTimeSeries = new DataScripter( database );
 
             removeTimeSeries.addLine( "DELETE FROM wres.TimeSeries TS" );
-            removeTimeSeries.addLine( "WHERE NOT EXISTS (" );
-            removeTimeSeries.addTab().addLine( "SELECT 1" );
-            removeTimeSeries.addTab().addLine( "FROM wres.Source S" );
+            removeTimeSeries.addLine( WHERE_NOT_EXISTS );
+            removeTimeSeries.addTab().addLine( SELECT_1 );
+            removeTimeSeries.addTab().addLine( FROM_WRES_SOURCE_S );
             removeTimeSeries.addTab().addLine( "WHERE S.source_id = TS.source_id" );
             removeTimeSeries.add( ");" );
 
-            Future timeSeriesRemoval = removeTimeSeries.issue();
+            Future<?> timeSeriesRemoval = removeTimeSeries.issue();
             removalQueue.add( timeSeriesRemoval );
 
-            LOGGER.debug( "Added Task to remove orphaned time series...");
+            LOGGER.debug( "Added Task to remove orphaned time series..." );
 
             DataScripter removeReferenceTimes = new DataScripter( database );
 
             removeReferenceTimes.addLine( "DELETE FROM wres.TimeSeriesReferenceTime TSRT" );
-            removeReferenceTimes.addLine( "WHERE NOT EXISTS (" );
-            removeReferenceTimes.addTab().addLine( "SELECT 1" );
-            removeReferenceTimes.addTab().addLine( "FROM wres.Source S" );
+            removeReferenceTimes.addLine( WHERE_NOT_EXISTS );
+            removeReferenceTimes.addTab().addLine( SELECT_1 );
+            removeReferenceTimes.addTab().addLine( FROM_WRES_SOURCE_S );
             removeReferenceTimes.addTab().addLine( "WHERE TSRT.source_id = S.source_id" );
             removeReferenceTimes.add( ");" );
 
-            Future referenceTimesRemoval = removeReferenceTimes.issue();
+            Future<?> referenceTimesRemoval = removeReferenceTimes.issue();
             removalQueue.add( referenceTimesRemoval );
 
             LOGGER.debug( "Added Task to remove orphaned reference times..." );
@@ -336,41 +338,35 @@ public class IncompleteIngest
             DataScripter removeSources = new DataScripter( database );
 
             removeSources.addLine( "DELETE FROM wres.Source S" );
-            removeSources.addLine( "WHERE NOT EXISTS (" );
-            removeSources.addTab().addLine( "SELECT 1" );
-            removeSources.addTab().addLine( "FROM wres.ProjectSource PS" );
+            removeSources.addLine( WHERE_NOT_EXISTS );
+            removeSources.addTab().addLine( SELECT_1 );
+            removeSources.addTab().addLine( FROM_WRES_PROJECT_SOURCE_PS );
             removeSources.addTab().addLine( "WHERE PS.source_id = S.source_id" );
             removeSources.add( ");" );
 
-            Future sourcesRemoval = removeSources.issue();
+            Future<?> sourcesRemoval = removeSources.issue();
             removalQueue.add( sourcesRemoval );
 
-            LOGGER.debug( "Added task to remove orphaned sources...");
+            LOGGER.debug( "Added task to remove orphaned sources..." );
 
             DataScripter removeProjects = new DataScripter( database );
 
             removeProjects.addLine( "DELETE FROM wres.Project P" );
-            removeProjects.addLine( "WHERE NOT EXISTS (" );
-            removeProjects.addTab().addLine( "SELECT 1" );
-            removeProjects.addTab().addLine( "FROM wres.ProjectSource PS" );
+            removeProjects.addLine( WHERE_NOT_EXISTS );
+            removeProjects.addTab().addLine( SELECT_1 );
+            removeProjects.addTab().addLine( FROM_WRES_PROJECT_SOURCE_PS );
             removeProjects.addTab().addLine( "WHERE PS.project_id = P.project_id" );
             removeProjects.add( ");" );
 
-            LOGGER.debug( "Added task to remove orphaned projects...");
+            LOGGER.debug( "Added task to remove orphaned projects..." );
 
-            Future projectsRemoval = removeProjects.issue();
+            Future<?> projectsRemoval = removeProjects.issue();
             removalQueue.add( projectsRemoval );
 
-            try
-            {
-                removalQueue.loop();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new SQLException( "Orphaned forecast, project, and source metadata could not be removed.", e );
-            }
+            IncompleteIngest.loop( removalQueue,
+                                   "Orphaned forecast, project, and source metadata could not be removed." );
 
-            LOGGER.info( "Incomplete data has been removed from the system.");
+            LOGGER.info( "Incomplete data has been removed from the system." );
         }
         catch ( SQLException | ExecutionException databaseError )
         {
@@ -379,4 +375,32 @@ public class IncompleteIngest
 
         return true;
     }
+
+    /**
+     * Loops the tasks in the input queue.
+     * @param removalQueue the queue to loop
+     * @param errorMessage an error message to use when the looping fails
+     * @throws SQLException if the looping fails
+     */
+
+    private static void loop( FutureQueue removalQueue, String errorMessage ) throws SQLException
+    {
+        try
+        {
+            removalQueue.loop();
+        }
+        catch ( ExecutionException e )
+        {
+            throw new SQLException( errorMessage, e );
+        }
+    }
+
+    /**
+     * Do not construct.
+     */
+
+    private IncompleteIngest()
+    {
+    }
+
 }

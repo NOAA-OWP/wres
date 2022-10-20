@@ -4,8 +4,11 @@ import java.io.Serializable;
 
 public class TimeZone implements Serializable
 {
+    private static final long serialVersionUID = 6454995437183101190L;
+    
     String zoneOffset;
-
+    String zoneAbbreviation;
+    
     public String getZoneOffset()
     {
         return zoneOffset;
@@ -25,6 +28,4 @@ public class TimeZone implements Serializable
     {
         this.zoneAbbreviation = zoneAbbreviation;
     }
-
-    String zoneAbbreviation;
 }

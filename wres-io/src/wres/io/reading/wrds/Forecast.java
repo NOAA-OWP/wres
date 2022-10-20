@@ -134,7 +134,6 @@ public class Forecast
     @Override
     public String toString()
     {
-        String name = "";
         String locationName = "Unknown Location";
 
         if (this.getLocation() != null)

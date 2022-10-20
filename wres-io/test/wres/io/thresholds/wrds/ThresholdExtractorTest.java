@@ -22,7 +22,6 @@ import wres.io.thresholds.wrds.v2.ThresholdDefinition;
 import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdMetadata;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
-import wres.system.SystemSettings;
 
 public class ThresholdExtractorTest
 {

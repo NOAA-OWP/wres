@@ -8,6 +8,9 @@ import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ThresholdMetadata implements Serializable {
+
+    private static final long serialVersionUID = 3373661366972125521L;
+    
     String location_id;
     String nws_lid;
     String usgs_site_code;

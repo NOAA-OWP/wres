@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class Unit implements Serializable
 {
+    private static final long serialVersionUID = 3361311118306617838L;
+
     public String getUnitCode()
     {
         return unitCode;

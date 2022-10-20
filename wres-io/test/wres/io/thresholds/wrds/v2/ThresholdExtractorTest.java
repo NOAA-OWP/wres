@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,12 +22,6 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.pooling.UnitMapper;
 import wres.io.thresholds.exceptions.NoThresholdsFoundException;
-import wres.io.thresholds.wrds.v2.CalculatedThresholdValues;
-import wres.io.thresholds.wrds.v2.OriginalThresholdValues;
-import wres.io.thresholds.wrds.v2.ThresholdDefinition;
-import wres.io.thresholds.wrds.v2.ThresholdExtractor;
-import wres.io.thresholds.wrds.v2.ThresholdMetadata;
-import wres.io.thresholds.wrds.v2.ThresholdResponse;
 
 /**
  * Tests the {@link ThresholdExtractor}.  This has been modified to include a test that was
@@ -36,8 +29,8 @@ import wres.io.thresholds.wrds.v2.ThresholdResponse;
  * because it reflects two tests in two different files combined into one.  I have not refactored
  * it further.
  * 
- * @author james.brown@hydrosolved.com
- * @author hank.herr@***REMOVED***
+ * @author Hank Herr
+ * @author James Brown
  */
 
 class ThresholdExtractorTest

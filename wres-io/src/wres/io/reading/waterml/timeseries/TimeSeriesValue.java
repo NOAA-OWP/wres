@@ -11,6 +11,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class TimeSeriesValue implements Serializable
 {
+    private static final long serialVersionUID = 8383071643258233662L;
+    
     private final double value;
     private final String[] qualifiers;
     private final Instant dateTime;

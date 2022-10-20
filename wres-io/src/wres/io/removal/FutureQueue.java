@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -16,8 +17,8 @@ import org.slf4j.LoggerFactory;
 
 /**
 * Collection object used to loop through and complete a collection of future tasks
-**/
-class FutureQueue<V>
+*/
+class FutureQueue
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( FutureQueue.class );
 
@@ -29,12 +30,12 @@ class FutureQueue<V>
     /**
      * Contains the objects to loop through
      */
-    private final Queue<Future<V>> queue;
+    private final Queue<Future<?>> queue;
 
     /**
      * Contains the results of each task that had to be processed early
      */
-    private final List<V> earlyResults = new ArrayList<>();
+    private final List<Object> earlyResults = new ArrayList<>();
 
     /**
      * The number of TimeUnits to wait before moving onto another
@@ -100,9 +101,9 @@ class FutureQueue<V>
      * @throws ExecutionException Thrown if an asynchronous task had to be complete prior to
      * adding a new task threw an exception
      */
-    public V add( final Future<V> future ) throws ExecutionException
+    public Object add( final Future<?> future ) throws ExecutionException
     {
-        V earlyResult = null;
+        Object earlyResult = null;
 
         try
         {
@@ -176,7 +177,7 @@ class FutureQueue<V>
 
             while ( this.size() > this.maximumTasks )
             {
-                V earlyResult = processTask();
+                Object earlyResult = processTask();
 
                 if ( earlyResult != null )
                 {
@@ -209,15 +210,15 @@ class FutureQueue<V>
      * with any results of any task that had to be completed early
      * @throws ExecutionException Thrown if one of the tasks throws an exception
      */
-    public Collection<V> loop() throws ExecutionException
+    public Collection<Object> loop() throws ExecutionException
     {
-        List<V> results = new ArrayList<>();
+        List<Object> results = new ArrayList<>();
         try
         {
             this.queueLock.lock();
             while ( !this.queue.isEmpty() )
             {
-                V result = this.processTask();
+                Object result = this.processTask();
                 results.add( result );
             }
 
@@ -243,58 +244,79 @@ class FutureQueue<V>
      * @return The resulting value from the completed task
      * @throws ExecutionException Thrown if the task encounters an exception of some sort
      */
-    private V processTask() throws ExecutionException
+    private Object processTask() throws ExecutionException
     {
-        V result = null;
-
-        Future<V> future = null;
+        Object result = null;
 
         while ( !this.queue.isEmpty() )
         {
-            try
+            result = this.processOneTask();
+
+            if ( Objects.nonNull( result ) )
             {
-                future = this.queue.remove();
-
-                if ( this.queue.isEmpty() )
-                {
-                    result = future.get();
-                }
-                else
-                {
-                    result = future.get( this.timeout, this.timeoutUnit );
-                }
-
-                break;
+                return result;
             }
-            catch ( InterruptedException e )
+        }
+
+        return result;
+    }
+
+    /**
+     * Completes a single task from the queue
+     * <br><br>
+     * The result of a task is gathered within the configured timeout. If a task takes too long,
+     * it is added to the end of the queue and the next is processed.
+     * @return The resulting value from the completed task
+     * @throws ExecutionException Thrown if the task encounters an exception of some sort
+     */
+    private Object processOneTask() throws ExecutionException
+    {
+        Object result = null;
+
+        Future<?> future = null;
+
+        try
+        {
+            future = this.queue.remove();
+
+            if ( this.queue.isEmpty() )
             {
-                LOGGER.warn( "Future processing has been interrupted.", e );
-
-                int cancelCount = 0;
-                for ( Future<V> futureTask : this.queue )
-                {
-                    try
-                    {
-                        futureTask.cancel( true );
-                        cancelCount++;
-                    }
-                    catch ( RuntimeException ce )
-                    {
-                        LOGGER.warn( "Failed to cancel a task.", ce );
-                    }
-                }
-
-                if ( cancelCount > 0 )
-                {
-                    LOGGER.debug( "Canceled {} tasks.", cancelCount );
-                }
-                Thread.currentThread().interrupt();
+                result = future.get();
             }
-            catch ( TimeoutException e )
+            else
             {
-                LOGGER.trace( "An asynchronous task timed out; adding back to the queue to try again later." );
-                this.queue.add( future );
+                result = future.get( this.timeout, this.timeoutUnit );
             }
+        }
+        catch ( InterruptedException e )
+        {
+            LOGGER.warn( "Future processing has been interrupted.", e );
+
+            int cancelCount = 0;
+            for ( Future<?> futureTask : this.queue )
+            {
+                try
+                {
+                    futureTask.cancel( true );
+                    cancelCount++;
+                }
+                catch ( RuntimeException ce )
+                {
+                    LOGGER.warn( "Failed to cancel a task.", ce );
+                }
+            }
+
+            if ( cancelCount > 0 )
+            {
+                LOGGER.debug( "Canceled {} tasks.", cancelCount );
+            }
+
+            Thread.currentThread().interrupt();
+        }
+        catch ( TimeoutException e )
+        {
+            LOGGER.trace( "An asynchronous task timed out; adding back to the queue to try again later." );
+            this.queue.add( future );
         }
 
         return result;

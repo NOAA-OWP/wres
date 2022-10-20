@@ -20,7 +20,7 @@ import wres.datamodel.MissingValues;
  */
 public class NwmDataPointDeserializer extends StdDeserializer<NwmDataPoint>
 {
-
+    private static final long serialVersionUID = 5616289115474402095L;
 
     public NwmDataPointDeserializer()
     {
