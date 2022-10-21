@@ -607,9 +607,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                                    dataSource,
                                                                    hash );
 
-            saver.setOnRun( ProgressMonitor.onThreadStartHandler() );
-            saver.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
             return saver.call();
         }
         catch ( IOException | SQLException e )

@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,7 +27,6 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
-import wres.io.concurrency.WRESCallable;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -44,7 +44,7 @@ import wres.util.NetCDF;
  * @author Christopher Tubbs
  * @author James Brown
  */
-class GriddedMetadataSaver extends WRESCallable<List<IngestResult>>
+class GriddedMetadataSaver implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedMetadataSaver.class );
     private static final FeatureKey GRIDDED_FEATURES_PLACEHOLDER =
@@ -96,7 +96,7 @@ class GriddedMetadataSaver extends WRESCallable<List<IngestResult>>
     }
 
     @Override
-    public List<IngestResult> execute() throws IOException, SQLException
+    public List<IngestResult> call() throws IOException, SQLException
     {
         this.ensureFileIsLocal();
 

@@ -179,7 +179,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> V retrieve(String label) throws SQLException
     {
-        return database.retrieve( this.formQuery(), label, this.isHighPriority );
+        return this.database.retrieve( this.formQuery(), label, this.isHighPriority );
     }
 
     /**
@@ -190,7 +190,7 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider getData(Object... parameters) throws SQLException
     {
-        return database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
+        return this.database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
 
     /**
@@ -202,7 +202,7 @@ public class DataScripter extends ScriptBuilder
      */
     public <V> Future<V> submit(final String label)
     {
-        return database.submit( this.formQuery(), label, this.isHighPriority );
+        return this.database.submit( this.formQuery(), label, this.isHighPriority );
     }
 
     /**
@@ -211,7 +211,7 @@ public class DataScripter extends ScriptBuilder
      */
     public Future<?> issue()
     {
-        return database.issue( this.formQuery(), this.isHighPriority );
+        return this.database.issue( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -221,7 +221,7 @@ public class DataScripter extends ScriptBuilder
      */
     public DataProvider getData() throws SQLException
     {
-        return database.getData( this.formQuery(), this.isHighPriority );
+        return this.database.getData( this.formQuery(), this.isHighPriority );
     }
 
     /**
@@ -236,7 +236,7 @@ public class DataScripter extends ScriptBuilder
     {
         Query query = this.formQuery()
                           .useCursor( true );
-        return database.buffer( connection, query );
+        return this.database.buffer( connection, query );
     }
 
     /**

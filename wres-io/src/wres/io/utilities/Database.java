@@ -38,9 +38,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import static java.time.ZoneOffset.UTC;
 
-import wres.io.concurrency.WRESCallable;
-import wres.io.concurrency.WRESRunnableException;
 import wres.io.ingesting.IngestException;
+import wres.io.retrieval.DataAccessException;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -757,34 +756,7 @@ public class Database
      */
     <V> Future<V> submit( final Query query, final String label, final boolean isHighPriority )
     {
-        Database database = this;
-        WRESCallable<V> queryToSubmit = new WRESCallable<V>()
-        {
-            @Override
-            protected V execute() throws SQLException
-            {
-                return database.retrieve( this.query, this.label, this.isHighPriority );
-            }
-
-            private WRESCallable<V> init( Database database,
-                                          final Query query,
-                                          final boolean isHighPriority,
-                                          final String label )
-            {
-                this.database = database;
-                this.query = query;
-                this.isHighPriority = isHighPriority;
-                this.label = label;
-                return this;
-            }
-
-            private Database database;
-            private Query query;
-            private boolean isHighPriority;
-            private String label;
-        }.init( database, query, isHighPriority, label );
-
-        return this.submit( queryToSubmit );
+        return this.submit( () -> this.retrieve( query, label, isHighPriority ) );
     }
 
     /**
@@ -802,7 +774,7 @@ public class Database
             }
             catch ( SQLException e )
             {
-                throw new WRESRunnableException( "Encountered an error while executing a database query.", e );
+                throw new DataAccessException( "Encountered an error while executing a database query.", e );
             }
         } );
     }
