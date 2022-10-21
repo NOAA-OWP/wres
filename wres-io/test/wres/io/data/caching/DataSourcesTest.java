@@ -3,6 +3,7 @@ package wres.io.data.caching;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -102,8 +103,7 @@ public class DataSourcesTest
                                                 3,
                                                 3 )
                                        .build();
-        DataSources dataSources = new DataSources( this.wresDatabase );
-        dataSources.populate( data );
+        DataSources dataSources = new DataSources( this.wresDatabase, data );
         LOGGER.debug( "initializeDataSources ended" );
         return dataSources;
     }
@@ -119,16 +119,17 @@ public class DataSourcesTest
 
         DataSources dataSourcesCache = new DataSources( this.wresDatabase );
         SourceDetails sourceDetailsOne = new SourceDetails( "deadbeef" );
+        sourceDetailsOne.setSourcePath( URI.create( "foo" ) );
         sourceDetailsOne.setVariableName( "V" );
         sourceDetailsOne.setMeasurementUnitId( 1L );
         sourceDetailsOne.setFeatureId( 1L );
         sourceDetailsOne.save( this.wresDatabase );
-        Long result = dataSourcesCache.getSourceID( "deadbeef" );
+        Long result = dataSourcesCache.getSourceId( "deadbeef" );
 
         assertTrue("The id should be an integer greater than zero.",
                    result > 0);
 
-        Long result2 = dataSourcesCache.getSourceID( "deadbeef");
+        Long result2 = dataSourcesCache.getSourceId( "deadbeef");
 
         assertEquals("Getting an id with the same hash should yield the same result.",
                      result2, result);
@@ -169,12 +170,12 @@ public class DataSourcesTest
         sourceDetailsOne.setFeatureId( 1L );
         sourceDetailsOne.save( this.wresDatabase );
 
-        Long firstId = sc.getID( "deadbeef" );
+        Long firstId = sc.getId( "deadbeef" );
 
         // Initialize a second cache, it should find the same data already present
         DataSources scTwo = new DataSources( this.wresDatabase );
 
-        Long secondId = scTwo.getID( "deadbeef" );
+        Long secondId = scTwo.getId( "deadbeef" );
 
         assertEquals("Second cache should find id in database from first cache",
                     firstId, secondId);

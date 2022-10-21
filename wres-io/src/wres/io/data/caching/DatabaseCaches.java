@@ -94,6 +94,9 @@ public class DatabaseCaches
     public void setReadOnly()
     {
         this.featuresCache.setOnlyReadFromDatabase();
+        this.timeScalesCache.setOnlyReadFromDatabase();
+        this.measurementUnitsCache.setOnlyReadFromDatabase();
+        this.ensemblesCache.setOnlyReadFromDatabase();
     }
     
     /**

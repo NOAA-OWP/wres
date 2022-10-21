@@ -38,10 +38,8 @@ public class Features
     }
 
     /**
-     * Mark this instance as only being allowed to read from the database, in
-     * other words, not being allowed to add new features, but allowed to look
-     * for existing features. During ingest, read and create. During retrieval,
-     * read only.
+     * Mark this instance as only being allowed to read from the database, in other words, not being allowed to add new 
+     * features, but allowed to look for existing features. During ingest, read and create. During retrieval, read only.
      */
 
     public void setOnlyReadFromDatabase()

@@ -58,10 +58,10 @@ import wres.system.SystemSettings;
  * @author Christopher Tubbs
  * @author Jesse Bickel
  */
-public class SourceLoader2
+public class SourceLoader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader2.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader.class );
 
     /** Executor for reading time-series formats. */
     private final ExecutorService readingExecutor;
@@ -90,7 +90,7 @@ public class SourceLoader2
      * @throws NullPointerException if any required input is null
      */
 
-    public SourceLoader2( TimeSeriesIngester timeSeriesIngester,
+    public SourceLoader( TimeSeriesIngester timeSeriesIngester,
                           SystemSettings systemSettings,
                           ExecutorService readingExecutor,
                           ProjectConfig projectConfig,
@@ -133,7 +133,7 @@ public class SourceLoader2
         // Create the sources for which ingest should be attempted, together with any required links. A link is a 
         // connection between a data source and a context or LeftOrRightOrBaseline. A link is required for each context 
         // in which the source appears within a project.
-        Set<DataSource> sources = SourceLoader2.createSourcesToLoadAndLink( this.getSystemSettings(),
+        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.getSystemSettings(),
                                                                             this.getProjectConfig() );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
@@ -325,15 +325,15 @@ public class SourceLoader2
         Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
-        SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
+        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
 
         // Must have one or more right sources to load and link
-        SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getRight() );
+        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getRight() );
 
         // May have one or more baseline sources to load and link
         if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
         {
-            SourceLoader2.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getBaseline() );
+            SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getBaseline() );
         }
 
         // Create a simple entry (DataSource) for each complex entry
@@ -359,7 +359,7 @@ public class SourceLoader2
             LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
 
             // Evaluate the path, which is null for a source that is not file-like
-            Path path = SourceLoader2.evaluatePath( systemSettings, nextSource.getKey() );
+            Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
 
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
@@ -372,7 +372,7 @@ public class SourceLoader2
                                                    path.toUri(),
                                                    lrb );
 
-                Set<DataSource> filesources = SourceLoader2.decomposeFileSource( source );
+                Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
                 returnMe.addAll( filesources );
             }
             // Not a file-like source
@@ -387,7 +387,7 @@ public class SourceLoader2
                                                                        .getValue(),
                                                              lrb );
 
-                DataDisposition disposition = SourceLoader2.getDispositionOfNonFileSource( sourceToEvaluate );
+                DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
                 DataSource evaluatedSource = DataSource.of( disposition,
                                                             nextSource.getKey(),
                                                             dataSourceConfig,
@@ -477,7 +477,7 @@ public class SourceLoader2
         // Directory: must decompose into file sources whose format(s) must be detected
         if ( file.isDirectory() )
         {
-            return SourceLoader2.decomposeDirectorySource( dataSource );
+            return SourceLoader.decomposeDirectorySource( dataSource );
         }
         // Regular file, detect the format and return
         else

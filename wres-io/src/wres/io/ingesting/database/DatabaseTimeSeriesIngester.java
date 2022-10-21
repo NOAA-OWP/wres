@@ -587,7 +587,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                                        .getValue() );
             DataSources dataSources = this.getCaches()
                                           .getDataSourcesCache();
-            SourceDetails sourceDetails = dataSources.getExistingSource( hash );
+            SourceDetails sourceDetails = dataSources.getSource( hash );
 
             if ( Objects.nonNull( sourceDetails ) && Files.exists( Paths.get( sourceDetails.getSourcePath() ) ) )
             {
@@ -837,7 +837,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                       .getDataSourcesCache();
         try
         {
-            SourceDetails sourceDetails = dataSources.getExistingSource( hash );
+            SourceDetails sourceDetails = dataSources.getSource( hash );
             Long sourceId = sourceDetails.getId();
 
             LOGGER.debug( "Checking source lock for source {}.", sourceId );
@@ -892,7 +892,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 DataSources dataSources = this.getCaches()
                                               .getDataSourcesCache();
-                dataSourceKey = dataSources.getActiveSourceID( hash );
+                dataSourceKey = dataSources.getSourceId( hash );
             }
             catch ( SQLException se )
             {
@@ -1071,7 +1071,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         try
         {
-            id = ensemblesCache.getEnsembleID( ensembleName );
+            id = ensemblesCache.getOrCreateEnsembleId( ensembleName );
         }
         catch ( SQLException se )
         {
@@ -1278,7 +1278,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             throws SQLException
     {
         return new wres.io.data.details.TimeSeries( database,
-                                                    ensemblesCache.getDefaultEnsembleID(),
+                                                    ensemblesCache.getDefaultEnsembleId(),
                                                     sourceId );
     }
 

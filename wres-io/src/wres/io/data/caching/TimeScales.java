@@ -38,9 +38,8 @@ public class TimeScales
     }
 
     /**
-     * Mark this instance as only being allowed to read from the database, in
-     * other words, not being allowed to add new features, but allowed to look
-     * for existing features. During ingest, read and create. During retrieval,
+     * Mark this instance as only being allowed to read from the database, in other words, not being allowed to add 
+     * new time scales, but allowed to look for existing time scales. During ingest, read and create. During retrieval,
      * read only.
      */
 
@@ -53,7 +52,6 @@ public class TimeScales
     {
         return this.database;
     }
-
 
     public Long getOrCreateTimeScaleId( TimeScaleOuter key ) throws SQLException
     {
@@ -72,7 +70,7 @@ public class TimeScales
 
             if ( id == null )
             {
-                throw new IllegalStateException( "Issue getting id from TimeScaleDetails" );
+                throw new IllegalStateException( "Failed to acquire a time scale identifier for " + key + "." );
             }
 
             this.valueToKey.put( key, id );
@@ -81,7 +79,6 @@ public class TimeScales
 
         return id;
     }
-
 
     /**
      * Given a db row id aka surrogate key, find the TimeScaleOuter values for it.
