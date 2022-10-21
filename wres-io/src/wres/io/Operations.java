@@ -31,7 +31,7 @@ import wres.io.data.caching.GriddedFeatures;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
-import wres.io.ingesting.SourceLoader2;
+import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.removal.IncompleteIngest;
@@ -55,7 +55,7 @@ public final class Operations
     /**
      * Ingests for an evaluation project that requires a database and returns the ingest results.
      * 
-     * TODO: remove the lock manager once migrated to {@link SourceLoader2} because this is part of the ingester 
+     * TODO: remove the lock manager once migrated to {@link SourceLoader} because this is part of the ingester 
      * implementation. Eventually, remove the database and database ORM too.
      * 
      * @param timeSeriesIngester the time-series ingester
@@ -217,8 +217,8 @@ public final class Operations
                                         threadFactoryWithNaming );
         readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         List<IngestResult> projectSources = new ArrayList<>();
-        
-        SourceLoader2 loader = new SourceLoader2( timeSeriesIngester,
+
+        SourceLoader loader = new SourceLoader( timeSeriesIngester,
                                                 systemSettings,
                                                 readingExecutor,
                                                 projectConfig,
@@ -371,7 +371,7 @@ public final class Operations
     public static void cleanDatabase( Database database ) throws SQLException
     {
         Objects.requireNonNull( database );
-        
+
         database.clean();
         database.refreshStatistics( true );
     }

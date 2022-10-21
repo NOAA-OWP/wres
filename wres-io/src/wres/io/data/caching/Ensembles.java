@@ -1,91 +1,64 @@
 package wres.io.data.caching;
 
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.EnsembleCondition;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import wres.io.data.details.EnsembleDetails;
+import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 /**
  * Cached details about Ensembles from the database
+ * @author James Brown
  * @author Christopher Tubbs
  */
-public class Ensembles extends Cache<EnsembleDetails, String>
+public class Ensembles
 {
-
     private static final int MAX_DETAILS = 500;
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Ensembles.class );
 
     private final Database database;
-    private final Object detailLock = new Object();
-    private final Object keyLock = new Object();
 
-    public Ensembles( Database database )
-    {
-        this.database = database;
-        this.initialize();
-    }
+    private volatile boolean onlyReadFromDatabase = false;
+    private final Cache<Long, EnsembleDetails> keyToValue = Caffeine.newBuilder()
+                                                                    .maximumSize( MAX_DETAILS )
+                                                                    .build();
+    private final Cache<String, Long> valueToKey = Caffeine.newBuilder()
+                                                           .maximumSize( MAX_DETAILS )
+                                                           .build();
 
-    @Override
-    protected Database getDatabase()
-    {
-        return this.database;
-    }
-
-    @Override
-    protected Object getDetailLock()
-    {
-        return this.detailLock;
-    }
-
-    @Override
-    protected Object getKeyLock()
-    {
-        return this.keyLock;
-    }
-
-    private void populate( DataProvider data )
-    {
-        EnsembleDetails detail;
-
-        while ( data.next() )
-        {
-            detail = new EnsembleDetails();
-            detail.setEnsembleName( data.getString( "ensemble_name" ) );
-            detail.setID( data.getLong( "ensemble_id" ) );
-            this.add( detail );
-        }
-    }
-
+    /** Lock object to minimize round-trips to the database when populating the ensembles cache. */
+    private final Object lock = new Object();
 
     /**
-     * Creates a list containing all ensemble IDs that are specified in the condition
-     * <p>
-     *     The exclude flag is not respected. It is up to the caller to dictate
-     *     that the returned values should be excluded
-     * </p>
-     * @param ensemble An ensemble condition from the project configuration
-     * @return All ensemble Ids that match the ensemble conditions
+     * Creates an instance.
+     * @param database the database
+     * @throws NullPointerException if the database is null
      */
-    public List<Long> getEnsembleIDs( EnsembleCondition ensemble )
+    public Ensembles( Database database )
     {
-        return this.getKeyIndex()
-                   .entrySet()
-                   .stream()
-                   .filter( kv -> kv.getKey()
-                                    .equals( ensemble.getName() ) )
-                   .map( Entry::getValue )
-                   .collect( Collectors.toList() );
+        Objects.requireNonNull( database );
+
+        this.database = database;
+    }
+
+    /**
+     * Mark this instance as only being allowed to read from the database, in other words, not being allowed to add new 
+     * features, but allowed to look for existing features. During ingest, read and create. During retrieval, read only.
+     */
+
+    public void setOnlyReadFromDatabase()
+    {
+        this.onlyReadFromDatabase = true;
     }
 
     /**
@@ -94,16 +67,57 @@ public class Ensembles extends Cache<EnsembleDetails, String>
      * @return The surrogate key, database ID of the Ensemble
      * @throws SQLException Thrown if the ID could not be retrieved from the database
      */
-    public Long getEnsembleID( String name ) throws SQLException
+
+    public Long getOrCreateEnsembleId( String name ) throws SQLException
     {
+        if ( this.onlyReadFromDatabase )
+        {
+            throw new IllegalStateException( "This instance now allows no new features, call another method!" );
+        }
+
         // If there are no identifiers...
         if ( Objects.isNull( name ) )
         {
-            // return the default ID
-            return this.getDefaultEnsembleID();
+            LOGGER.info( "When attempting to getOrCreateEnsembleId, discovered a null ensemble name." );
+
+            // Return the default ID
+            return this.getDefaultEnsembleId();
         }
 
-        return this.getID( new EnsembleDetails( name ) );
+        Long id = this.valueToKey.getIfPresent( name );
+
+        if ( Objects.isNull( id ) )
+        {
+            synchronized ( this.lock )
+            {
+                // Check one more time before attempting to save. Again, this is purely to minimize db checks
+                Long anotherCheck = this.valueToKey.getIfPresent( name );
+
+                if ( Objects.nonNull( anotherCheck ) )
+                {
+                    return anotherCheck;
+                }
+
+                LOGGER.debug( "When attempting to getOrCreateEnsembleId, failed to discover an identifier "
+                              + "corresponding to {} in the cache. Adding to the database.",
+                              name );
+
+                EnsembleDetails ensembleDetails = new EnsembleDetails( name );
+                ensembleDetails.save( this.getDatabase() );
+                id = ensembleDetails.getId();
+
+                if ( Objects.isNull( id ) )
+                {
+                    throw new IllegalStateException( "Failed to acquire an ensemble identifier for name " + name
+                                                     + "." );
+                }
+
+                this.valueToKey.put( name, id );
+                this.keyToValue.put( id, ensembleDetails );
+            }
+        }
+
+        return id;
     }
 
     /**
@@ -112,51 +126,78 @@ public class Ensembles extends Cache<EnsembleDetails, String>
      * @return The name
      * @throws SQLException Thrown if the ID could not be retrieved from the database
      */
+
     public String getEnsembleName( long ensembleId ) throws SQLException
     {
-        EnsembleDetails details = super.get( ensembleId );
-        return details.getKey();
-    }
+        EnsembleDetails ensembleDetails = this.keyToValue.getIfPresent( ensembleId );
 
-    public Long getDefaultEnsembleID() throws SQLException
-    {
-        return this.getEnsembleID( "default" );
-    }
+        if ( Objects.nonNull( ensembleDetails ) )
+        {
+            return ensembleDetails.getKey();
+        }
 
-    @Override
-    protected int getMaxDetails()
-    {
-        return Ensembles.MAX_DETAILS;
-    }
+        String name;
 
-    /**
-     * Loads all pre-existing Ensembles into the instanced cache
-     */
-    private synchronized void initialize()
-    {
         try
         {
-            this.initializeDetails();
-
-            Database database = this.getDatabase();
-            DataScripter script = new DataScripter( database );
-            script.setHighPriority( true );
-
-            script.addLine( "SELECT ensemble_id, ensemble_name" );
-            script.addLine( "FROM wres.Ensemble" );
-            script.setMaxRows( MAX_DETAILS );
-
-            try ( DataProvider data = script.getData() )
+            synchronized ( this.lock )
             {
-                this.populate( data );
-            }
+                // Check one more time before attempting to save. Again, this is purely to minimize db checks
+                EnsembleDetails anotherCheck = this.keyToValue.getIfPresent( ensembleId );
 
-            LOGGER.debug( "Finished populating the Ensembles details." );
+                if ( Objects.nonNull( anotherCheck ) )
+                {
+                    return anotherCheck.getKey();
+                }
+
+                LOGGER.debug( "Getting ensemble name for ensembleId {}.", ensembleId );
+
+                Database innerDatabase = this.getDatabase();
+                DataScripter dataScripter = new DataScripter( innerDatabase );
+                dataScripter.setHighPriority( true );
+
+                dataScripter.addLine( "SELECT ensemble_name" );
+                dataScripter.addLine( "FROM wres.Ensemble" );
+                dataScripter.addLine( "WHERE ensemble_id = ?" );
+                dataScripter.addArgument( ensembleId );
+                dataScripter.setMaxRows( 1 );
+                dataScripter.setUseTransaction( false );
+                dataScripter.setHighPriority( true );
+
+                try ( DataProvider data = dataScripter.getData() )
+                {
+                    name = data.getString( "ensemble_name" );
+                }
+
+                // Add to cache
+                ensembleDetails = new EnsembleDetails( name );
+                this.valueToKey.put( name, ensembleId );
+                this.keyToValue.put( ensembleId, ensembleDetails );
+            }
         }
         catch ( SQLException error )
         {
-            // Failure to pre-populate cache should not affect primary outputs.
-            LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error );
+            throw new DataAccessException( "Could not acquire the ensemble name for id " + ensembleId + "." );
         }
+
+        return name;
+    }
+
+    /**
+     * @return a default ensemble identifier
+     * @throws SQLException if the identifier could not be retrieved or created
+     */
+
+    public Long getDefaultEnsembleId() throws SQLException
+    {
+        return this.getOrCreateEnsembleId( "default" );
+    }
+
+    /**
+     * @return the database
+     */
+    private Database getDatabase()
+    {
+        return this.database;
     }
 }

@@ -2,6 +2,9 @@ package wres.io.data.caching;
 
 import java.sql.SQLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -19,6 +22,9 @@ import wres.io.utilities.Database;
 public class MeasurementUnits
 {
     private static final int MAX_DETAILS = 100;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( MeasurementUnits.class );
+
     private final Database database;
 
     private volatile boolean onlyReadFromDatabase = false;
@@ -40,10 +46,9 @@ public class MeasurementUnits
     }
 
     /**
-     * Mark this instance as only being allowed to read from the database, in
-     * other words, not being allowed to add new features, but allowed to look
-     * for existing features. During ingest, read and create. During retrieval,
-     * read only.
+     * Mark this instance as only being allowed to read from the database, in other words, not being allowed to add new 
+     * measurement units, but allowed to look for existing measurement units. During ingest, read and create. During 
+     * retrieval, read only.
      */
 
     public void setOnlyReadFromDatabase()
@@ -63,6 +68,10 @@ public class MeasurementUnits
 
         if ( id == null )
         {
+            LOGGER.debug( "When attempting to getOrCreateMeasurementUnitId, failed to discover an identifier "
+                          + "corresponding to {} in the cache. Adding to the database.",
+                          unit );
+
             MeasurementDetails unitDetails = new MeasurementDetails();
             unitDetails.setUnit( unit );
             unitDetails.save( this.getDatabase() );
@@ -70,7 +79,9 @@ public class MeasurementUnits
 
             if ( id == null )
             {
-                throw new IllegalStateException( "Issue getting id from FeatureDetails" );
+                throw new IllegalStateException( "Failed to acquire a measurement unit identifier for name "
+                                                 + unit
+                                                 + "." );
             }
 
             this.valueToKey.put( unit, id );

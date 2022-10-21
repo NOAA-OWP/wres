@@ -49,12 +49,12 @@ public class IncompleteIngest
 
         try
         {
-            SourceDetails sourceDetails = dataSourcesCache.getFromCacheOrDatabaseByIdThenCache( surrogateKey );
+            SourceDetails sourceDetails = dataSourcesCache.getSource( surrogateKey );
 
             if ( sourceDetails == null )
             {
                 // This means a source has been removed by some Thread after the
-                // call to this method but prior to getExistingSource.
+                // call to this method but prior to getSource.
                 LOGGER.warn( "Another task removed source {}, not removing.",
                              surrogateKey );
                 return false;
@@ -157,7 +157,7 @@ public class IncompleteIngest
         }
 
         // Invalidate caches affected by deletes above
-        dataSourcesCache.invalidate();
+        dataSourcesCache.invalidate( source );
 
         return true;
     }
