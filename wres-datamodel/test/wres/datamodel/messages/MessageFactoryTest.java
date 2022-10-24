@@ -50,7 +50,6 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
@@ -91,6 +90,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link MessageFactory}.

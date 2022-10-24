@@ -39,7 +39,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
@@ -49,6 +48,7 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Reads time-series data from the U.S. National Weather Service (NWS) Advanced Hydrologic Prediction Service (AHPS) 

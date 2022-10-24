@@ -27,7 +27,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
@@ -40,6 +39,7 @@ import wres.io.retrieval.DataAccessException;
 import wres.io.utilities.DataProvider;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.util.Strings;
 
 /**

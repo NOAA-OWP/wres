@@ -15,7 +15,6 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
@@ -26,6 +25,7 @@ import wres.io.retrieval.DuplicatePolicy;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.RetrieverUtilities;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 

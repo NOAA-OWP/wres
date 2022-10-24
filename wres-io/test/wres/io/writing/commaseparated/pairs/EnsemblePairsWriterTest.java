@@ -37,7 +37,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.statistics.generated.Evaluation;
@@ -45,6 +44,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link EnsemblePairsWriter}.

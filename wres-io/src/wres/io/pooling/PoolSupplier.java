@@ -41,7 +41,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -56,6 +55,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeatureService;

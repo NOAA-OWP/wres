@@ -50,12 +50,12 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReadException;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is

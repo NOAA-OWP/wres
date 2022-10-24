@@ -305,14 +305,14 @@ public class MessageFactory
             TimeSeriesOfPairs.Builder series = TimeSeriesOfPairs.newBuilder();
 
             // Add the reference times
-            Map<wres.datamodel.time.ReferenceTimeType, Instant> times = nextSeries.getReferenceTimes();
-            for ( Map.Entry<wres.datamodel.time.ReferenceTimeType, Instant> nextEntry : times.entrySet() )
+            Map<ReferenceTimeType, Instant> times = nextSeries.getReferenceTimes();
+            for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : times.entrySet() )
             {
-                wres.datamodel.time.ReferenceTimeType nextType = nextEntry.getKey();
+                ReferenceTimeType nextType = nextEntry.getKey();
                 Instant nextTime = nextEntry.getValue();
                 ReferenceTime nextRef =
                         ReferenceTime.newBuilder()
-                                     .setReferenceTimeType( ReferenceTimeType.valueOf( nextType.toString() ) )
+                                     .setReferenceTimeType( nextType )
                                      .setReferenceTime( Timestamp.newBuilder()
                                                                  .setSeconds( nextTime.getEpochSecond() )
                                                                  .setNanos( nextTime.getNano() ) )

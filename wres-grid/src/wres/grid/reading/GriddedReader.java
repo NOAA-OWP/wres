@@ -5,7 +5,6 @@ import ucar.nc2.NetcdfFile;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -42,6 +41,8 @@ import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class GriddedReader
 {

@@ -26,9 +26,13 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
+import wres.datamodel.time.TimeSeriesPairer;
+import wres.datamodel.time.TimeSeriesPairerByExactTime;
+import wres.datamodel.time.TimeSeriesUpscaler;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieval.CachingRetriever;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
@@ -36,11 +40,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
-import wres.datamodel.time.TimeSeriesPairer;
-import wres.datamodel.time.TimeSeriesPairerByExactTime;
-import wres.datamodel.time.TimeSeriesUpscaler;
-import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link PoolSupplier}.

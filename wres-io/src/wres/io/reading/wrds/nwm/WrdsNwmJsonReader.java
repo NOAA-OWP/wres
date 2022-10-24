@@ -31,7 +31,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
@@ -42,6 +41,7 @@ import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.wrds.TimeScaleFromParameterCodes;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Reads time-series data from the U.S. National Weather Service (NWS) National Water Model (NWM) supplied in a JSON 

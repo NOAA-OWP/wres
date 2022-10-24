@@ -45,7 +45,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
@@ -58,6 +57,7 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.xml.XMLHelper;
 import wres.util.Strings;
 

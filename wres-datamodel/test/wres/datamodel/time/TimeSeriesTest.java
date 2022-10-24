@@ -22,6 +22,8 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Tests the {@link TimeSeries}
  * 

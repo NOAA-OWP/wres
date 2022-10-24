@@ -24,13 +24,14 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Generates a persistence time-series from a source of persistence data supplied on construction. The shape of the 

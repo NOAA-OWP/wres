@@ -36,6 +36,7 @@ import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;

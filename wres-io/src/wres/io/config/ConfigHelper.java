@@ -31,9 +31,9 @@ import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.ingesting.PreIngestException;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * The purpose of io's ConfigHelper is to help the io module translate raw

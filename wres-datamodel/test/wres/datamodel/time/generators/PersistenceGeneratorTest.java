@@ -14,13 +14,14 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
+import wres.datamodel.time.TimeSeries.Builder;
+
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.datamodel.time.TimeSeries.Builder;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link PersistenceGenerator}.

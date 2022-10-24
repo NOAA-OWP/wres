@@ -20,6 +20,8 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Tests the {@link Event}.
  * 

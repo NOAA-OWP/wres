@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import static wres.datamodel.time.ReferenceTimeType.T0;
+import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;
@@ -46,7 +46,6 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.ingesting.IngestResult;
@@ -62,6 +61,8 @@ import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link EnsembleForecastRetriever}.

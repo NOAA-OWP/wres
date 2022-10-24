@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.retrieval.RetrieverUtilities;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but

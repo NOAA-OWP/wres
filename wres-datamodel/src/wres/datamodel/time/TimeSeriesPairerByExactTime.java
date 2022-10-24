@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * <p>Implements pairing of two {@link TimeSeries} by matching times exactly. The times considered may be reference
  * times and/or valid times, depending on a {@link TimePairingType} provided on construction. When the type is 

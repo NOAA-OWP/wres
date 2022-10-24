@@ -18,7 +18,6 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -29,6 +28,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.utilities.Database;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 

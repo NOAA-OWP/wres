@@ -32,7 +32,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -46,6 +45,7 @@ import wres.io.utilities.DataScripter;
 import wres.io.utilities.Database;
 
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Abstract base class for retrieving {@link TimeSeries} from the WRES database.

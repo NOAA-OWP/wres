@@ -19,13 +19,13 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.Metric;
 import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Constructs a {@link Metric} that returns the fractional difference in time between the maximum values recorded in 

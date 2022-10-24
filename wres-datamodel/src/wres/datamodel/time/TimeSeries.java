@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.Immutable;
 import wres.datamodel.scale.TimeScaleOuter;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * <p>A time-series contains a time-ordered set of {@link Event}, together with {@link TimeSeriesMetadata}.
  * 

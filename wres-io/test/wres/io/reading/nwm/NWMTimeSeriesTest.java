@@ -19,9 +19,9 @@ import static org.junit.Assert.assertNotNull;
 
 import wres.config.generated.InterfaceShortHand;
 import wres.datamodel.Ensemble;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.system.SystemSettings;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class NWMTimeSeriesTest
 {
