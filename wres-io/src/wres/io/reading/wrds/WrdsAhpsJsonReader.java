@@ -98,7 +98,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
-        
+
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -128,7 +128,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( inputStream );
-        
+
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WRDS_AHPS );
 
@@ -182,9 +182,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
                 List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
-                
+
                 LOGGER.debug( "Read {} time-series from {}.", eagerSeries.size(), dataSource );
-                
+
                 timeSeriesTuples.set( eagerSeries );
             }
 
@@ -381,8 +381,8 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                                                              feature,
                                                              measurementUnit );
 
-        // Before ingest, validate the timeseries as being a timeseries in the
-        // sense that a timeseries is a sequence of values in time.
+        // Before ingest, validate the time-series as being a timeseries in the
+        // sense that a time-series is a sequence of values in time.
         this.validateTimeseries( dataPointsList, uri );
 
         TimeSeries.Builder<Double> timeSeriesBuilder =
@@ -396,7 +396,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             if ( Objects.nonNull( missingValues )
                  && Arrays.stream( missingValues )
                           .anyMatch( missingValue -> Precision.equals( dataPoint.getValue(),
-                                                                       missingValue, 
+                                                                       missingValue,
                                                                        Precision.EPSILON ) ) )
             {
                 usedValue = MissingValues.DOUBLE;
@@ -414,6 +414,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
         LOGGER.debug( "Created a time-series with {} event values and metadata: {}.",
                       timeSeries.getEvents().size(),
                       metadata );
+
+        // Validate that the time-series is not empty
+        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
 
         return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
     }

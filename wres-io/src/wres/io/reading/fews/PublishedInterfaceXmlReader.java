@@ -352,7 +352,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 }
             }
         }
-        
+
         return timeSeriesTuple;
     }
 
@@ -1103,6 +1103,10 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                                             ensembleValues.get( name ),
                                                             lineNumber,
                                                             dataSource.getUri() );
+
+
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( singleValuedSeries, dataSource.getUri() );
         }
         else
         {
@@ -1110,6 +1114,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                                                 ensembleValues,
                                                                 lineNumber,
                                                                 dataSource.getUri() );
+
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( ensembleSeries, dataSource.getUri() );
         }
 
         return TimeSeriesTuple.of( singleValuedSeries, ensembleSeries, dataSource );

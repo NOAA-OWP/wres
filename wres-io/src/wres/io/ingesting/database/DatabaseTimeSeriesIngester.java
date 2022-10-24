@@ -227,7 +227,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 if ( nextTuple.hasSingleValuedTimeSeries() )
                 {
                     TimeSeries<Double> nextSeries =
-                            this.addReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries() );
+                            this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
+                                                                                   innerSource.getUri() );
 
                     Future<List<IngestResult>> innerResults = this.getExecutor()
                                                                   .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
@@ -242,7 +243,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 if ( nextTuple.hasEnsembleTimeSeries() )
                 {
                     TimeSeries<Ensemble> nextSeries =
-                            this.addReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries() );
+                            this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
+                                                                                   innerSource.getUri() );
 
                     Future<List<IngestResult>> innerResults = this.getExecutor()
                                                                   .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
@@ -290,12 +292,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
-     * Database ingest currently requires at least one reference time. If none exists, add a default one.
+     * Database ingest currently requires at least one reference time. If none exists, add a default one. Also, check 
+     * that the time-series is not empty and throw an exception if it is empty.
      * @param timeSeries the time-series to check
+     * @param uri the source URI to help with error messaging
      * @return a time-series with at least one reference time
+     * @throws PreIngestException if the time-series is empty
      */
 
-    private <T> TimeSeries<T> addReferenceTimeIfRequired( TimeSeries<T> timeSeries )
+    private <T> TimeSeries<T> checkForEmptySeriesAndAddReferenceTimeIfRequired( TimeSeries<T> timeSeries, URI uri )
     {
         if ( !timeSeries.getReferenceTimes().isEmpty() )
         {
@@ -305,7 +310,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         if ( timeSeries.getEvents()
                        .isEmpty() )
         {
-            throw new PreIngestException( "Discovered an empty time-series, which cannot be ingested. The empty "
+            throw new PreIngestException( "While ingesting source " + uri
+                                          + ", discovered an empty time-series, which cannot be ingested. The empty "
                                           + "time-series is: "
                                           + timeSeries
                                           + "." );
