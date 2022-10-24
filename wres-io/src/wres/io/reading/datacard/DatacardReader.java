@@ -80,7 +80,7 @@ public class DatacardReader implements TimeSeriesReader
 
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
-        
+
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -116,7 +116,7 @@ public class DatacardReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.DATACARD );
-        
+
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, reader );
 
@@ -467,9 +467,15 @@ public class DatacardReader implements TimeSeriesReader
                                                              basicMetadata.variableName,
                                                              location,
                                                              basicMetadata.unit );
-        return this.transform( metadata,
-                               values,
-                               lineNumber.get() );
+        
+        TimeSeries<Double> timeSeries = this.transform( metadata,
+                                                        values,
+                                                        lineNumber.get() );
+
+        // Validate
+        ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+
+        return timeSeries;
     }
 
     /**

@@ -197,6 +197,7 @@ public class NwmGriddedReader implements TimeSeriesReader
         return timeSeries.values()
                          .stream()
                          .flatMap( s -> s )
+                         .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
                          .map( next -> TimeSeriesTuple.ofSingleValued( next, dataSource ) );
     }
 

@@ -309,6 +309,32 @@ public class ReaderUtilities
     }
 
     /**
+     * Validates against an empty time-series, which is not allowed.
+     * @param <T> the time-series event value type
+     * @param timeSeries the time-series to validate
+     * @param uri the source URI to help with error messaging
+     * @return the input series for convenience, such as when applying to a collection of series as a map function
+     * @throws NullPointerException if the input is null
+     * @throws ReadException if the time-series is empty
+     */
+
+    public static <T> TimeSeries<T> validateAgainstEmptyTimeSeries( TimeSeries<T> timeSeries, URI uri )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
+        {
+            throw new ReadException( "When attempting to read the time-series data source, " + uri
+                                     + ", discovered that it contained an empty time-series, which is not allowed. "
+                                     + "Please check this data source and remove all empty time-series before trying "
+                                     + "again." );
+        }
+        
+        return timeSeries;
+    }
+
+    /**
      * @param source the data source
      * @return whether the source points to the USGS NWIS
      * @throws NullPointerException if the source is null
@@ -666,9 +692,9 @@ public class ReaderUtilities
         if ( startGettingResults.getCount() <= 0 )
         {
             try
-            { 
+            {
                 List<TimeSeriesTuple> result = null;
-                
+
                 if ( !results.isEmpty() )
                 {
                     result = results.take()

@@ -91,7 +91,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
-        
+
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -112,7 +112,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WRDS_NWM );
-        
+
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
 
@@ -163,9 +163,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
             if ( Objects.isNull( timeSeriesTuples.get() ) )
             {
                 List<TimeSeriesTuple> eagerSeries = this.getTimeSeries( dataSource, inputStream );
-                
+
                 LOGGER.debug( "Read {} time-series from {}.", eagerSeries.size(), dataSource );
-                
+
                 timeSeriesTuples.set( eagerSeries );
             }
 
@@ -316,7 +316,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                                            String measurementUnit )
     {
         URI uri = dataSource.getUri();
-        
+
         // Read into an intermediate structure
         SortedMap<String, SortedMap<Instant, Double>> traces = new TreeMap<>();
 
@@ -399,6 +399,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                           series.getEvents()
                                 .size() );
 
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.getUri() );
+
             return TimeSeriesTuple.ofSingleValued( series, dataSource );
         }
         // Ensemble
@@ -409,6 +412,9 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
             LOGGER.debug( "Read an ensemble NWM time-series from the root document, which contained {} events.",
                           series.getEvents()
                                 .size() );
+
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( series, dataSource.getUri() );
 
             return TimeSeriesTuple.ofEnsemble( series, dataSource );
         }

@@ -322,6 +322,9 @@ public class CsvReader implements TimeSeriesReader
                                                                        lineNumber,
                                                                        dataSource.getUri() );
 
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
+            
             return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
         }
         else
@@ -330,6 +333,9 @@ public class CsvReader implements TimeSeriesReader
                                                                                  traceValues,
                                                                                  lineNumber,
                                                                                  dataSource.getUri() );
+            
+            // Validate
+            ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
 
             return TimeSeriesTuple.ofEnsemble( timeSeries, dataSource );
         }

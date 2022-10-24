@@ -381,7 +381,7 @@ public class WatermlReader implements TimeSeriesReader
                                              String unitCode,
                                              TimeScaleOuter timeScale )
     {
-        List<TimeSeriesTuple> timeSeruesTuples = new ArrayList<>();
+        List<TimeSeriesTuple> timeSeriesTuples = new ArrayList<>();
 
         for ( TimeSeriesValues valueSet : timeSeries.getValues() )
         {
@@ -424,8 +424,12 @@ public class WatermlReader implements TimeSeriesReader
             try
             {
                 TimeSeries<Double> timeSeriesInternal = TimeSeries.of( metadata, rawTimeSeries );
-                TimeSeriesTuple tuple = TimeSeriesTuple.ofSingleValued( timeSeriesInternal, dataSource );
-                timeSeruesTuples.add( tuple );
+                
+                // Validate
+                ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeriesInternal, dataSource.getUri() );
+                
+                TimeSeriesTuple tuple = TimeSeriesTuple.ofSingleValued( timeSeriesInternal, dataSource );                
+                timeSeriesTuples.add( tuple );
             }
             catch ( IllegalArgumentException iae )
             {
@@ -438,7 +442,7 @@ public class WatermlReader implements TimeSeriesReader
             }
         }
 
-        return Collections.unmodifiableList( timeSeruesTuples );
+        return Collections.unmodifiableList( timeSeriesTuples );
     }
 
     /**
