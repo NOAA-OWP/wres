@@ -40,7 +40,6 @@ import wres.datamodel.metrics.MetricConstants.MetricDimension;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -72,6 +71,7 @@ import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Writes statistics to a file that contains comma separated values (CSV). There is one CSV file per evaluation and  

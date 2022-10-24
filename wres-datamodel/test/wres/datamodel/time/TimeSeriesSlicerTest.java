@@ -37,6 +37,8 @@ import wres.datamodel.space.FeatureKey;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Tests the {@link TimeSeriesSlicer}.
  * 

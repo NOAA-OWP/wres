@@ -1,12 +1,9 @@
 package wres.datamodel.time;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -228,31 +225,11 @@ public class TimeSeriesStore
             Objects.requireNonNull( series );
             Objects.requireNonNull( context );
 
-            // Strip any reference time type that is ReferenceTimeType.LATEST_OBSERVATION. As of 2022-07-19, this is
-            // an artifact of the readers to support ingest into a database schema that does not allow zero reference
-            // times. However, reference times of this type are fake (i.e., not part of the original time-series) and 
-            // the failure to strip them here will result in these time-series being treated as forecasts
-            TimeSeries<Double> adjustedSeries = series;
-            if ( series.getReferenceTimes().containsKey( ReferenceTimeType.LATEST_OBSERVATION ) )
-            {
-                Map<ReferenceTimeType, Instant> referenceTimes = new HashMap<>();
-                referenceTimes.putAll( series.getReferenceTimes() );
-                referenceTimes.remove( ReferenceTimeType.LATEST_OBSERVATION );
-
-                TimeSeriesMetadata newMetadata = series.getMetadata()
-                                                       .toBuilder()
-                                                       .setReferenceTimes( referenceTimes )
-                                                       .build();
-                adjustedSeries = TimeSeries.of( newMetadata, series.getEvents() );
-                LOGGER.debug( "Adjusted a left-ish time-series to remove a fake reference time type, {}.",
-                              ReferenceTimeType.LATEST_OBSERVATION );
-            }
-
             TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                   this.rightSingleValuedSeries,
                                                   this.baselineSingleValuedSeries,
                                                   context )
-                           .add( adjustedSeries );
+                           .add( series );
 
             return this;
         }

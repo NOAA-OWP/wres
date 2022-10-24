@@ -24,7 +24,6 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
 import wres.io.data.caching.DatabaseCaches;
@@ -35,6 +34,7 @@ import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.utilities.Database;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
 

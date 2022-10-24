@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static wres.config.generated.LeftOrRightOrBaseline.RIGHT;
-import static wres.datamodel.time.ReferenceTimeType.T0;
+import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;
@@ -46,7 +46,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.DatabaseCaches;
@@ -64,6 +63,8 @@ import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link SingleValuedForecastRetriever}.

@@ -22,6 +22,8 @@ import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.time.TimeSeries.Builder;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Supports cross-pairing of two sets of paired time-series {@link TimeSeries} by reference time and valid time. 
  * 

@@ -18,6 +18,8 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.TimeSeries.Builder;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Tests the {@link TimeSeriesOfEnsembleUpscaler}
  * 

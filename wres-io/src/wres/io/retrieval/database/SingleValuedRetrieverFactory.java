@@ -18,7 +18,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -30,6 +29,7 @@ import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.DuplicatePolicy;
 import wres.io.utilities.Database;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 

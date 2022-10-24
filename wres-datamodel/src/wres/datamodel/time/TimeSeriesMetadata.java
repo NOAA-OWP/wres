@@ -14,6 +14,8 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.space.FeatureTuple;
 
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+
 /**
  * Value object the stores the metadata associated with an {@link TimeSeries}. 
  * 

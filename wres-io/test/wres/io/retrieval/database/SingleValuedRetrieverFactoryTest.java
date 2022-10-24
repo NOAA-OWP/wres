@@ -3,7 +3,7 @@ package wres.io.retrieval.database;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static wres.datamodel.time.ReferenceTimeType.T0;
+import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
 import java.sql.Connection;

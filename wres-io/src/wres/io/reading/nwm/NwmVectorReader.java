@@ -27,7 +27,6 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.Ensemble;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
@@ -36,6 +35,7 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Reads forecasts and simulations/analyses from the National Water Model (NWM) in a NetCDF vector format.

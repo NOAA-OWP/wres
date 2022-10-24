@@ -14,10 +14,11 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class RetrieverTestData
 {

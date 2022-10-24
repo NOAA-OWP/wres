@@ -26,12 +26,12 @@ import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.TimeWindow;
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Utilities for retrieving time-series data.

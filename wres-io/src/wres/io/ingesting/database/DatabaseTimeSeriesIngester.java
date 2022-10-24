@@ -42,7 +42,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
-import wres.datamodel.time.ReferenceTimeType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -63,9 +62,10 @@ import wres.io.reading.TimeSeriesTuple;
 import wres.io.removal.IncompleteIngest;
 import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
+
+import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Ingests given {@link TimeSeries} data if not already ingested.
@@ -302,9 +302,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             return timeSeries;
         }
 
-        if ( timeSeries.getEvents().isEmpty() )
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
         {
-            throw new PreIngestException( "Cannot ingest an empty time-series." );
+            throw new PreIngestException( "Discovered an empty time-series, which cannot be ingested. The empty "
+                                          + "time-series is: "
+                                          + timeSeries
+                                          + "." );
         }
 
         ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
