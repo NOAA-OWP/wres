@@ -141,9 +141,16 @@ public class TimeSeriesReaderFactory
                 return NwmGriddedReader.of( this.pairConfig, this.features );
             case NETCDF_VECTOR:
                 return NwmVectorReader.of( this.pairConfig );
+            case UNKNOWN:
+                throw new IllegalArgumentException( "The data source could not be read because the format of the "
+                                                    + "content is UNKNOWN. This may have occurred because the source "
+                                                    + "is corrupt or because the content type is unrecognized or "
+                                                    + "unsupported: "
+                                                    + dataSource
+                                                    + "." );
             default:
                 throw new IllegalArgumentException( "There is no reader implementation available for the prescribed "
-                                                    + "data source disposition: "
+                                                    + "data source: "
                                                     + dataSource
                                                     + "." );
         }
