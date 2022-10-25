@@ -292,19 +292,6 @@ public class Validation
                              DestinationType.CSV2,
                              nextType );
             }
-
-            // Warn about incubating types
-            if ( LOGGER.isWarnEnabled() && nextType == DestinationType.CSV2 )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " The declaration requests {} outputs. This output format has been marked incubating. "
-                             + "Incubating features are under active development. As such, they are more likely to "
-                             + "change in the near future and some of these changes may be breaking changes.",
-                             projectConfigPlus.getOrigin(),
-                             outputs.sourceLocation().getLineNumber(),
-                             outputs.sourceLocation().getColumnNumber(),
-                             nextType );
-            }
         }
 
         if ( !isValid && LOGGER.isErrorEnabled() )
