@@ -133,7 +133,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
 
-        if ( template.getEvents().isEmpty() )
+        if ( template.getEvents()
+                     .isEmpty() )
         {
             LOGGER.trace( WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES,
                           template.hashCode(),
@@ -812,10 +813,26 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         List<TimeSeries<T>> source = persistenceSource.get()
                                                       .collect( Collectors.toList() );
 
+        // The persistence source cannot be empty
         if ( source.isEmpty() )
         {
             throw new TimeSeriesGeneratorException( "Cannot generate a persistence baseline without a time-series. The "
                                                     + "persistence source was empty." );
+        }
+
+        // The persistence source cannot contain forecast-like time-series
+        if ( source.stream()
+                   .filter( next -> next.getReferenceTimes()
+                                        .keySet()
+                                        .contains( ReferenceTimeType.T0 ) )
+                   .count() > 0 )
+        {
+            throw new TimeSeriesGeneratorException( "When attempting to generate a persistence baseline, discovered "
+                                                    + "one or more time-series that contained a reference time with "
+                                                    + "type 'T0', which is indicative of a forecast. Cannot use "
+                                                    + "forecast-like time-series as a source for a persistence "
+                                                    + "baseline. Instead declare observation-like time-series as the "
+                                                    + "baseline data source." );
         }
 
         // Consolidate into one series
