@@ -1206,7 +1206,8 @@ public class PoolFactory
             // generated, not the template time-series that is mimicked
             return features -> {
                 Supplier<Stream<TimeSeries<R>>> persistenceSource =
-                        () -> retrieverFactory.getBaselineRetriever( features ).get();
+                        () -> retrieverFactory.getBaselineRetriever( features )
+                                              .get();
 
                 // Order 1 by default. If others are supported later, add these                              
                 return PersistenceGenerator.of( persistenceSource,

@@ -171,6 +171,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** The left features mapped against the baseline features as keys. **/
     private final Map<FeatureKey, FeatureKey> leftFeaturesByBaseline;
 
+    /** The right or baseline features mapped against the left features as keys. In general, the map values are 
+     * baseline features. However, they are right features when using a generated baseline because generated baselines 
+     * use the right-ish data as a template.**/
+    private final Map<FeatureKey, FeatureKey> baselineOrRightFeaturesByLeft;
+
     /** The baseline features mapped against the left features as keys. **/
     private final Map<FeatureKey, FeatureKey> baselineFeaturesByLeft;
 
@@ -735,7 +740,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // Set the baseline
             if ( this.hasBaseline() )
             {
-                FeatureKey baselineFeature = this.baselineFeaturesByLeft.get( leftFeature );
+                FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
 
                 GeometryTuple nextBaselineGeometry =
                         MessageFactory.getGeometryTuple( leftFeature, baselineFeature, null );
@@ -817,7 +822,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureKey leftFeature = leftRightTuple.getLeft();
             FeatureKey rightFeature = leftRightTuple.getRight();
-            FeatureKey baselineFeature = this.baselineFeaturesByLeft.get( leftFeature );
+            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
             return MessageFactory.getGeometryTuple( leftFeature, rightFeature, baselineFeature );
         }
 
@@ -1003,7 +1008,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         List<TimeSeriesPlusValidation<L, R>> returnMe = new ArrayList<>();
-        
+
         for ( TimeSeries<L> nextLeftSeries : leftSeries )
         {
             TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeftSeries,
@@ -1243,7 +1248,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureTuple leftRightFeature = nextEntry.getKey();
             FeatureKey leftFeature = leftRightFeature.getLeft();
-            FeatureKey baselineFeature = this.baselineFeaturesByLeft.get( leftFeature );
+            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
 
             GeometryTuple nextBaselineGeometry = MessageFactory.getGeometryTuple( leftFeature, baselineFeature, null );
             FeatureTuple nextBaselineTuple = FeatureTuple.of( nextBaselineGeometry );
@@ -1380,8 +1385,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureTuple nextFeature = nextEntry.getKey();
             List<TimeSeries<Pair<L, R>>> nextRight = nextEntry.getValue();
+
+            // Get the left feature name
             FeatureKey nextFeatureKey = nextFeature.getLeft();
-            UnaryOperator<TimeSeries<R>> nextGenerator = generator.apply( Set.of( nextFeatureKey ) );
+
+            // Get the corresponding baseline feature name, which is the name associated with the baseline-ish data in 
+            // this context, not the right-ish data used as a template for baseline generation
+            FeatureKey baselineFeatureKey = this.getBaselineFeature( nextFeatureKey, true );
+            UnaryOperator<TimeSeries<R>> nextGenerator = generator.apply( Set.of( baselineFeatureKey ) );
 
             for ( TimeSeries<Pair<L, R>> nextTemplate : nextRight )
             {
@@ -1650,6 +1661,33 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
+     * A helper that returns the baseline feature associated with the prescribed left feature. If the specified flag is
+     * {@code false}, looks inside the {@link #baselineOrRightFeaturesByLeft}, otherwise looks in the 
+     * {@link #baselineFeaturesByLeft}. The 
+     * 
+     * @param leftFeature the left feature, not null
+     * @param isSourceForGeneratedBaseline is true if referencing the source data associated with a generated baseline
+     * @return the baseline feature name
+     */
+
+    private FeatureKey getBaselineFeature( FeatureKey leftFeature, boolean isSourceForGeneratedBaseline )
+    {
+        Objects.requireNonNull( leftFeature );
+
+        // Strictly the baseline-ish feature name? Yes when the context is the source data for a generated baseline 
+        // because source data is always referenced by its true feature side. However, in all other cases the feature is
+        // whatever is set as the baseline name on creation of the PoolSupplier. For a generated baseline, this will be 
+        // the right-ish feature name because right-ish data is used as the template for generating a baseline. 
+        // Otherwise, it will be the baseline feature.
+        if ( isSourceForGeneratedBaseline )
+        {
+            return this.baselineFeaturesByLeft.get( leftFeature );
+        }
+
+        return this.baselineOrRightFeaturesByLeft.get( leftFeature );
+    }
+
+    /**
      * Logs the validation events of type {@link EventType#WARN} associated with rescaling.
      * 
      * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
@@ -1873,19 +1911,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                           FeatureTuple::getBaseline,
                                                           FeatureTuple::getLeft );
 
+        this.baselineFeaturesByLeft = this.getFeatureMap( this.baselineMetadata,
+                                                          FeatureTuple::getLeft,
+                                                          FeatureTuple::getBaseline );
+
         // Baseline generator present? Then the baseline feature names are based on the right-ish template data
         // This is unnecessarily awkward - see #105812
         if ( this.hasBaselineGenerator() )
         {
-            this.baselineFeaturesByLeft = this.getFeatureMap( this.baselineMetadata,
-                                                              FeatureTuple::getLeft,
-                                                              FeatureTuple::getRight );
+            this.baselineOrRightFeaturesByLeft = this.getFeatureMap( this.baselineMetadata,
+                                                                     FeatureTuple::getLeft,
+                                                                     FeatureTuple::getRight );
         }
         else
         {
-            this.baselineFeaturesByLeft = this.getFeatureMap( this.baselineMetadata,
-                                                              FeatureTuple::getLeft,
-                                                              FeatureTuple::getBaseline );
+            this.baselineOrRightFeaturesByLeft = this.getFeatureMap( this.baselineMetadata,
+                                                                     FeatureTuple::getLeft,
+                                                                     FeatureTuple::getBaseline );
         }
 
         if ( !offsets.isEmpty() && LOGGER.isDebugEnabled() )
