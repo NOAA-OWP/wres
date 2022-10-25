@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -36,6 +37,9 @@ import wres.io.ingesting.PreIngestException;
 
 public class DataSource
 {
+    private static final String WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE =
+            "While checking {} for a Datacard string, discovered that the second non-comment line ";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSource.class );
 
     /**
@@ -70,7 +74,7 @@ public class DataSource
         CSV_WRES,
         /** The data type is unknown or to be determined. */
         UNKNOWN;
-        
+
         @Override
         public String toString()
         {
@@ -542,22 +546,7 @@ public class DataSource
         }
         else if ( subtype.equals( "plain" ) && mediaType.equals( "text" ) )
         {
-            // Datacard is in ascii, so treat it as ascii for further checks.
-            // Also, a tar header (falsely detected as text/plain) is in ascii.
-            String start = new String( firstBytes, StandardCharsets.US_ASCII );
-
-            // Datacard always starts with $ and has max 80 chars in a line.
-            // See #105035. Relax for comment lines. Cannot find any evidence that
-            // the NWS standard (such as it is) requires <=80 chars per comment line.
-            // Ambiguous whether \r\n is allowed or only \n.
-            int indexOfFirstNewLine = start.indexOf( '\n' );
-            int indexOfSecondNewLine = start.indexOf( '\n',
-                                                      indexOfFirstNewLine + 1 );
-
-            if ( start.startsWith( "$" )
-                 && indexOfFirstNewLine > 0
-                 // We assume there are always two newlines here.
-                 && indexOfSecondNewLine > indexOfFirstNewLine + 1 )
+            if ( DataSource.detectDatacardFromTextPlain( firstBytes, uri ) )
             {
                 disposition = DataDisposition.DATACARD;
             }
@@ -899,6 +888,137 @@ public class DataSource
                 return false;
             }
         }
+
+        return true;
+    }
+
+    /**
+     * Attempts to identify a plain text byte array as {@link DataDisposition#DATACARD}.
+     * @param firstBytes the bytes to detect
+     * @param uri the uri
+     * @return whether the format is {@link DataDisposition#DATACARD}
+     */
+
+    private static boolean detectDatacardFromTextPlain( byte[] firstBytes, URI uri )
+    {
+        // Datacard is in ascii, so treat it as ascii for further checks.
+        // Also, a tar header (falsely detected as text/plain) is in ascii.
+        String start = new String( firstBytes, StandardCharsets.US_ASCII );
+
+        // Obtain the first two lines that do not begin with a comment ($) character. There must be two of them.
+        // Furthermore, the second line must contain the elements described here:
+        // as documented here: https://www.weather.gov/media/owp/oh/hrl/docs/72datacard.pdf
+        // This should be a good enough hook for content type detection
+
+        // Split by newline characters. Ambiguous whether \r\n is allowed or only \n, so allow both
+        String[] lines = start.split( "\\r?\\n|\\r" );
+
+        // Filter any lines that begin with a comment character, $
+        List<String> filtered = Arrays.stream( lines )
+                                      .filter( next -> !next.startsWith( "$" ) )
+                                      .collect( Collectors.toList() );
+
+        if ( filtered.size() < 2 )
+        {
+            LOGGER.debug( "While checking {} for a Datacard string, discovered fewer than two non-comment lines, so "
+                          + "this is not Datacard. A comment line begins with $.",
+                          uri );
+
+            return false;
+        }
+
+        String lineTwo = filtered.get( 1 );
+
+        // Must be between 25 and 32 characters because the format element sits in this char range and is the last part 
+        int charCount = lineTwo.length();
+
+        if ( charCount < 25 || charCount > 32 )
+        {
+            LOGGER.debug( WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                          + "contained a string of unexpected length for Datacard. The expected length is [25,32] and "
+                          + "the actual length was {}. Thus, the source was not identified as Datacard. A comment line "
+                          + "begins with $.",
+                          uri,
+                          charCount );
+
+            return false;
+        }
+
+        // Check the month/year components at the expected character positions, trimmed for whitespace
+        String first = lineTwo.substring( 0, 2 )
+                              .trim();
+        String second = lineTwo.substring( 4, 8 )
+                               .trim();
+        String third = lineTwo.substring( 9, 11 )
+                              .trim();
+        String fourth = lineTwo.substring( 14, 18 )
+                               .trim();
+
+        String message = WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                         + "contained a string with unexpected contents. Expected a two-digit month, followed by a "
+                         + "four-digit year, followed by a two-digit month and a final four-digit year. Thus, the "
+                         + "source was not identified as Datacard. A comment line begins with $.";
+
+        try
+        {
+            int firstMonth = Integer.parseInt( first );
+
+            if ( firstMonth < 1 || firstMonth > 12 )
+            {
+                LOGGER.debug( WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                              + "contained a string with unexpected contents. Expected a two-digit month in positions "
+                              + "1-2. Thus, the source was not identified as Datacard. A comment line begins with $.",
+                              uri );
+
+                return false;
+            }
+
+            int firstYear = Integer.parseInt( second );
+
+            if ( Integer.toString( firstYear )
+                        .length() != 4 )
+            {
+                LOGGER.debug( WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                              + "contained a string with unexpected contents. Expected a four-digit year in positions "
+                              + "5-8. Thus, the source was not identified as Datacard. A comment line begins with $.",
+                              uri );
+
+                return false;
+            }
+
+            int secondMonth = Integer.parseInt( third );
+
+            if ( secondMonth < 1 || secondMonth > 12 )
+            {
+                LOGGER.debug( WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                              + "contained a string with unexpected contents. Expected a two-digit month in positions "
+                              + "10-11. Thus, the source was not identified as Datacard. A comment line begins with $.",
+                              uri );
+
+                return false;
+            }
+
+            int secondYear = Integer.parseInt( fourth );
+
+            if ( Integer.toString( secondYear )
+                        .length() != 4 )
+            {
+                LOGGER.debug( WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE
+                              + "contained a string with unexpected contents. Expected a four-digit year in positions "
+                              + "15-18. Thus, the source was not identified as Datacard. A comment line begins with $.",
+                              uri );
+
+                return false;
+            }
+        }
+        catch ( NumberFormatException e )
+        {
+            LOGGER.debug( message, uri );
+
+            return false;
+        }
+
+        LOGGER.debug( "Data source {} was identified as Datacard.", uri );
 
         return true;
     }

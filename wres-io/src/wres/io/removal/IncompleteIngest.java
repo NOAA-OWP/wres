@@ -268,7 +268,7 @@ public class IncompleteIngest
     {
         try
         {
-            if ( !thereAreOrphanedValues( database ) )
+            if ( !IncompleteIngest.thereAreOrphanedValues( database ) )
             {
                 return false;
             }

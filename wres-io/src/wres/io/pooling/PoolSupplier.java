@@ -1003,7 +1003,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         List<TimeSeriesPlusValidation<L, R>> returnMe = new ArrayList<>();
-
+        
         for ( TimeSeries<L> nextLeftSeries : leftSeries )
         {
             TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeftSeries,
