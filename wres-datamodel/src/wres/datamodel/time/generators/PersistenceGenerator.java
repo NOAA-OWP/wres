@@ -829,9 +829,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         {
             throw new TimeSeriesGeneratorException( "When attempting to generate a persistence baseline, discovered "
                                                     + "one or more time-series that contained a reference time with "
-                                                    + "type 'T0', which is indicative of a forecast. Cannot use "
-                                                    + "forecast-like time-series as a source for a persistence "
-                                                    + "baseline. Instead declare observation-like time-series as the "
+                                                    + "type 'T0', which is indicative of a forecast. Forecast-like "
+                                                    + "time-series are not valid as the data source for a persistence "
+                                                    + "baseline. Instead, declare observation-like time-series as the "
                                                     + "baseline data source." );
         }
 
