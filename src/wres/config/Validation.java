@@ -345,61 +345,36 @@ public class Validation
     }
 
     /**
-     * Checks to see if there are input declarations requiring other declaration
-     * in the pair declaration.
-     * @param projectConfigPlus The project declaration to check.
-     * @return false if there are known invalid combinations present.
+     * Checks to see whether the combination of inputs and pair declaration is valid.
+     * @param projectConfigPlus the project declaration to check
+     * @return false if there are known invalid combinations present
      */
 
     private static boolean isInputsAndPairCombinationValid( ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus );
-        Locatable firstSourceThatRequiresFeatures = null;
+
+        boolean isValid = Validation.isInputsAndFeatureCombinationValid( projectConfigPlus );
+
+        isValid = Validation.isInputsAndLeadDurationCombinationValid( projectConfigPlus ) && isValid;
+
+        return Validation.hasVariablesIfGridded( projectConfigPlus ) && isValid;
+    }
+
+    /**
+     * Checks to see whether the combination of inputs and feature declaration is valid.
+     * @param projectConfigPlus the project declaration to check
+     * @return false if there are known invalid combinations present
+     */
+
+    private static boolean isInputsAndFeatureCombinationValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        Locatable firstSourceThatRequiresFeatures = Validation.getFirstSourceThatRequiresFeatures( projectConfig );
         boolean noFeatureDeclaration = false;
-        DataSourceConfig left = projectConfigPlus.getProjectConfig()
-                                                 .getInputs()
-                                                 .getLeft();
-        DataSourceConfig right = projectConfigPlus.getProjectConfig()
-                                                  .getInputs()
-                                                  .getRight();
-        DataSourceBaselineConfig baselineConfig =
-                projectConfigPlus.getProjectConfig()
-                                 .getInputs()
-                                 .getBaseline();
 
-        for ( DataSourceConfig.Source source : left.getSource() )
-        {
-            if ( Validation.requiresFeatureOrFeatureService( source ) )
-            {
-                firstSourceThatRequiresFeatures = source;
-                break;
-            }
-        }
-
-        for ( DataSourceConfig.Source source : right.getSource() )
-        {
-            if ( Validation.requiresFeatureOrFeatureService( source ) )
-            {
-                firstSourceThatRequiresFeatures = source;
-                break;
-            }
-        }
-
-        if ( Objects.nonNull( baselineConfig ) )
-        {
-            for ( DataSourceConfig.Source source : baselineConfig.getSource() )
-            {
-                if ( Validation.requiresFeatureOrFeatureService( source ) )
-                {
-                    firstSourceThatRequiresFeatures = source;
-                    break;
-                }
-            }
-        }
-
-        PairConfig pairDeclaration = projectConfigPlus.getProjectConfig()
-                                                      .getPair();
-
+        PairConfig pairDeclaration = projectConfig.getPair();
         if ( ( Objects.isNull( pairDeclaration.getFeature() )
                || pairDeclaration.getFeature()
                                  .isEmpty() )
@@ -440,41 +415,7 @@ public class Validation
             isValid = false;
         }
 
-        Locatable baselineFeatureNameButNoBaseline = null;
-
-        if ( baselineConfig == null && pairDeclaration.getFeature() != null )
-        {
-            for ( Feature feature : pairDeclaration.getFeature() )
-            {
-                if ( feature.getBaseline() != null )
-                {
-                    baselineFeatureNameButNoBaseline = feature;
-                    break;
-                }
-            }
-        }
-
-        if ( baselineFeatureNameButNoBaseline == null
-             && baselineConfig == null
-             && pairDeclaration.getFeatureGroup() != null )
-        {
-            for ( FeaturePool featurePool : pairDeclaration.getFeatureGroup() )
-            {
-                for ( Feature feature : featurePool.getFeature() )
-                {
-                    if ( feature.getBaseline() != null )
-                    {
-                        baselineFeatureNameButNoBaseline = feature;
-                        break;
-                    }
-                }
-
-                if ( baselineFeatureNameButNoBaseline != null )
-                {
-                    break;
-                }
-            }
-        }
+        Locatable baselineFeatureNameButNoBaseline = Validation.getBaselineFeatureNameButNoBaseline( projectConfig );
 
         if ( baselineFeatureNameButNoBaseline != null )
         {
@@ -511,7 +452,172 @@ public class Validation
             }
         }
 
-        return Validation.hasVariablesIfGridded( projectConfigPlus ) && isValid;
+        return isValid;
+    }
+
+    /**
+     * Checks the declaration for the first source that requires features
+     * in the pair declaration.
+     * @param projectConfig the project declaration to check
+     * @return the first source that requires features or null
+     */
+
+    private static Locatable getFirstSourceThatRequiresFeatures( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+
+        Locatable firstSourceThatRequiresFeatures = null;
+
+        DataSourceConfig left = projectConfig.getInputs()
+                                             .getLeft();
+        DataSourceConfig right = projectConfig.getInputs()
+                                              .getRight();
+        DataSourceBaselineConfig baseline =
+                projectConfig.getInputs()
+                             .getBaseline();
+
+        for ( DataSourceConfig.Source source : left.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+
+                return firstSourceThatRequiresFeatures;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : right.getSource() )
+        {
+            if ( Validation.requiresFeatureOrFeatureService( source ) )
+            {
+                firstSourceThatRequiresFeatures = source;
+
+                return firstSourceThatRequiresFeatures;
+            }
+        }
+
+        if ( Objects.nonNull( baseline ) )
+        {
+            for ( DataSourceConfig.Source source : baseline.getSource() )
+            {
+                if ( Validation.requiresFeatureOrFeatureService( source ) )
+                {
+                    firstSourceThatRequiresFeatures = source;
+
+                    return firstSourceThatRequiresFeatures;
+                }
+            }
+        }
+
+        return firstSourceThatRequiresFeatures;
+    }
+
+    /**
+     * Checks and returns a baseline feature when no baseline declaration is present, otherwise null.
+     * @param projectConfig the project declaration
+     * @return the baseline feature or null
+     */
+
+    private static Locatable getBaselineFeatureNameButNoBaseline( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+
+        Locatable baselineFeatureNameButNoBaseline = null;
+
+        PairConfig pairConfig = projectConfig.getPair();
+        DataSourceBaselineConfig baseline =
+                projectConfig.getInputs()
+                             .getBaseline();
+
+        if ( baseline == null && pairConfig.getFeature() != null )
+        {
+            baselineFeatureNameButNoBaseline = pairConfig.getFeature()
+                                                         .stream()
+                                                         .filter( next -> Objects.nonNull( next.getBaseline() ) )
+                                                         .findFirst()
+                                                         .orElse( null );
+        }
+
+        if ( baselineFeatureNameButNoBaseline == null
+             && baseline == null
+             && pairConfig.getFeatureGroup() != null )
+        {
+            for ( FeaturePool featurePool : pairConfig.getFeatureGroup() )
+            {
+                baselineFeatureNameButNoBaseline = featurePool.getFeature()
+                                                              .stream()
+                                                              .filter( next -> Objects.nonNull( next.getBaseline() ) )
+                                                              .findFirst()
+                                                              .orElse( null );
+
+                if ( baselineFeatureNameButNoBaseline != null )
+                {
+                    break;
+                }
+            }
+        }
+
+        return baselineFeatureNameButNoBaseline;
+    }
+
+    /**
+     * Checks to see whether the combination of inputs and lead duration declaration is valid.
+     * @param projectConfigPlus the project declaration to check
+     * @return false if there are known invalid combinations present
+     */
+
+    private static boolean isInputsAndLeadDurationCombinationValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+
+        // Any references to lead duration constraints or lead duration pools is not valid in this context
+        boolean isValid = true;
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        Inputs inputsConfig = projectConfig.getInputs();
+        PairConfig pair = projectConfig.getPair();
+
+        // None of the data sources/sides contains forecasts...
+        if ( !ConfigHelper.isForecast( inputsConfig.getLeft() ) && !ConfigHelper.isForecast( inputsConfig.getRight() )
+             && ( !ConfigHelper.hasBaseline( projectConfig )
+                  || !ConfigHelper.isForecast( inputsConfig.getBaseline() ) ) )
+        {
+            // ...but there are constraints on lead hours, which is not allowed
+            if ( Objects.nonNull( pair.getLeadHours() ) )
+            {
+                isValid = false;
+
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "The declaration includes a constraint on forecast lead times (\"leadHours\"), but "
+                                  + "none of the data sources contain forecasts. Please add a forecast source or "
+                                  + "remove the \"leadHours\" declaration and try again.",
+                                  projectConfigPlus.getOrigin(),
+                                  inputsConfig.getLeft().sourceLocation().getLineNumber(),
+                                  inputsConfig.getLeft().sourceLocation().getColumnNumber() );
+                }
+            }
+
+            // ...but there are lead duration pools, which is not allowed
+            if ( Objects.nonNull( pair.getLeadTimesPoolingWindow() ) )
+            {
+                isValid = false;
+
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + "The declaration includes lead duration pools (\"leadTimesPoolingWindow\"), but "
+                                  + "none of the data sources contain forecasts. Please add a forecast source or "
+                                  + "remove the \"leadTimesPoolingWindow\" declaration and try again.",
+                                  projectConfigPlus.getOrigin(),
+                                  inputsConfig.getLeft().sourceLocation().getLineNumber(),
+                                  inputsConfig.getLeft().sourceLocation().getColumnNumber() );
+                }
+            }
+        }
+
+        return isValid;
     }
 
     /**
@@ -2700,7 +2806,7 @@ public class Validation
 
         // If not instantaneous, the existing function must be a total or mean
         if ( !timeScale.isInstantaneous() && ! ( inputConfig.getFunction() == TimeScaleFunction.MEAN
-             || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
+                                                 || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
 
