@@ -112,7 +112,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final MonthDay seasonEnd;
 
     /** The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
-     * valid time, depending on context. See {@link #timeColumnIsAReferenceTime()}. */
+     * valid time, depending on context. See {@link #timeColumnIsReferenceTime()}. */
     private String timeColumn;
 
     /** The lead duration column name, including the table alias (e.g., TSV.lead). */
@@ -288,7 +288,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // Is the time column a reference time?
             // This is different from forecast vs. observation, because some nominally "observed"
             // datasets, such as analyses, may have reference times and lead durations
-            if ( this.timeColumnIsAReferenceTime() )
+            if ( this.timeColumnIsReferenceTime() )
             {
                 this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
             }
@@ -739,7 +739,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return true if the time column is a reference time, false for a valid time
      */
 
-    private boolean timeColumnIsAReferenceTime()
+    private boolean timeColumnIsReferenceTime()
     {
         return Objects.nonNull( this.leadDurationColumn );
     }
@@ -957,7 +957,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         long measurementUnitId = provider.getLong( "measurementunit_id" );
         String measurementUnitName = this.getMeasurementUnitsCache()
                                          .getUnit( measurementUnitId );
-        
+
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( referenceTimes,
                                        latestScale,
@@ -1043,7 +1043,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Long upperLead = null;
 
         // Lower bound
-        if ( !filter.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
+        if ( !filter.getEarliestLeadDuration()
+                    .equals( TimeWindowOuter.DURATION_MIN ) )
         {
             Duration period = Duration.ZERO;
 
@@ -1068,9 +1069,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             lowerLead = lowered.toMinutes();
         }
         // Upper bound
-        if ( !filter.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
+        if ( !filter.getLatestLeadDuration()
+                    .equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            upperLead = filter.getLatestLeadDuration().toMinutes();
+            upperLead = filter.getLatestLeadDuration()
+                              .toMinutes();
         }
 
         this.addLeadBoundsClauseToScript( script, lowerLead, upperLead, tabsIn );
