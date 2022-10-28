@@ -928,6 +928,9 @@ public class DataSource
         }
 
         String lineTwo = filtered.get( 1 );
+        
+        // Strip any trailing whitespace
+        lineTwo = lineTwo.stripTrailing();
 
         // Must be between 25 and 32 characters because the format element sits in this char range and is the last part 
         int charCount = lineTwo.length();

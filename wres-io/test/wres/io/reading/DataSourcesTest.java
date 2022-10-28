@@ -77,6 +77,27 @@ class DataSourcesTest
     }
 
     @Test
+    void testDetectFormatIdentifiesSixColumnDatacardWithCommentsAndUnixNewLines() throws IOException
+    {
+        String formatString = "$  IDENTIFIER=1620           DESCRIPTION=1620                \n"
+                              + "$  PERIOD OF RECORD=01/1948 THRU 09/2013\n"
+                              + "$  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00\n"
+                              + "$  TYPE=MAT    UNITS=   F   DIMENSIONS=TEMP   DATA TIME INTERVAL= 6 HOURS\n"
+                              + "$  OUTPUT FORMAT=(3A4,2I2,I4,6F9.3)              \n"
+                              + "DATACARD      MAT  TEMP    F  6   1620           1620                \n"
+                              + " 1  1948  9   2013  6   F9.3        \n"
+                              + "             148   1   12.111   18.084   21.048    7.573    1.365   18.053\n"
+                              + "             148   2   28.468   20.433   16.470   31.302   40.343   32.673";
+
+        try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "fake.datacard" );
+
+            assertEquals( DataDisposition.DATACARD, DataSource.detectFormat( stream, fakeUri ) );
+        }
+    }
+
+    @Test
     void testDetectFormatIdentifiesPublishedInterfaceXmlWithUnixNewLines() throws IOException
     {
         String formatString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
