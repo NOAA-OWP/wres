@@ -32,6 +32,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.redisson.Redisson;
+import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -98,6 +99,11 @@ public class WresJob
      * A smaller-than-minimum number of bytes expected in a project declaration.
      */
     private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
+
+    //Database information
+    private static String ACTIVE_DATABASE_NAME = "";
+    private static String ACTIVE_DATABASE_HOST = "";
+    private static String ACTIVE_DATABASE_PORT = "";
 
     static
     {
@@ -185,6 +191,40 @@ public class WresJob
         {
             REDISSON_CLIENT = null;
             LOGGER.info( "No redis host specified, using local JVM objects." );
+        }
+        
+        //If the redis client was created, set it up for recovering/storing
+        //database information.  It might be possible to turn the below into 
+        //three calls of a generic static method.
+        if (REDISSON_CLIENT != null)
+        {
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            if (bucket.get() != null && !bucket.get().isBlank())
+            {
+                ACTIVE_DATABASE_NAME = bucket.get();
+            }
+            else
+            {
+                bucket.set(ACTIVE_DATABASE_NAME);
+            }
+            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            if (hostBucket.get() != null && !hostBucket.get().isBlank())
+            {
+                ACTIVE_DATABASE_HOST = hostBucket.get();
+            }
+            else
+            {
+                hostBucket.set(ACTIVE_DATABASE_HOST);
+            } 
+            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            if (portBucket.get() != null && !portBucket.get().isBlank())
+            {
+                ACTIVE_DATABASE_PORT = portBucket.get();
+            }
+            else
+            {
+                portBucket.set(ACTIVE_DATABASE_PORT);
+            } 
         }
     }
 
@@ -279,7 +319,10 @@ public class WresJob
                                  @FormParam( "additionalArguments" )
                                  List<String> additionalArguments )
     {
-        LOGGER.debug( "additionalArguments: {}", additionalArguments );
+        LOGGER.debug("additionalArguments: {}", additionalArguments );
+        LOGGER.info("------------------- REQUEST POSTED! ----------------------");
+        LOGGER.info("Parameters: verb = '{}'; postInput = {}; additional arguments = '{}'.",
+                verb, postInput, additionalArguments);
 
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
@@ -315,7 +358,8 @@ public class WresJob
         // configured via system property, then the adminToken is not necessary for any command.
         Set<Verb> verbsNeedingAdminToken = Set.of(Verb.CLEANDATABASE,
                                                   Verb.CONNECTTODB,
-                                                  Verb.REFRESHDATABASE);
+                                                  Verb.REFRESHDATABASE,
+                                                  Verb.SWITCHDATABASE);
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
         if ( ( ADMIN_TOKEN_HASH != null ) && ( usingToken ) )
         {
@@ -394,6 +438,72 @@ public class WresJob
             }
         }
 
+        //For switchdatabase and cleandatabase, I need to record the database info
+        //from the additional arguments.  Running clean database with no arguments
+        //is fine, however.  Thus, only parse the arguments for a cleandatabase if
+        //some are given.
+        String usedDatabaseName = null;
+        String usedDatabaseHost = null;
+        String usedDatabasePort = null;
+        if ( actualVerb == Verb.SWITCHDATABASE 
+                || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() ) )
+        {
+            LOGGER.info( "Switch or clean requested. Parsing additional arguments.");
+            if (additionalArguments.size() != 3)
+            {
+                String message = "Request with verb " + actualVerb
+                    + " requires 3 additionalArguments, host, port, name, but "
+                    + additionalArguments.size() + " were provided.";
+                LOGGER.warn(message);
+                return WresJob.badRequest( message );
+            }
+            usedDatabaseHost = additionalArguments.get(0);
+            usedDatabasePort = additionalArguments.get(1);
+            usedDatabaseName = additionalArguments.get(2);
+        }
+
+        // A switchdatabase is handled completely here.  
+        if ( actualVerb == Verb.SWITCHDATABASE )
+        {
+            setDatabaseHost ( usedDatabaseHost );
+            setDatabasePort ( usedDatabasePort );
+            setDatabaseName ( usedDatabaseName );
+            LOGGER.info( "Database has been switched to host = '{}', port = '{}', name = '{}'.",
+                    ACTIVE_DATABASE_HOST,
+                    ACTIVE_DATABASE_PORT,
+                    ACTIVE_DATABASE_NAME);
+            return Response.status( Response.Status.OK )
+                       .entity( "<!DOCTYPE html><html><head><title>Database switched.</title></head>"
+                            + "<body><h1>New database has host '" + ACTIVE_DATABASE_HOST
+                            + "', port '" + ACTIVE_DATABASE_PORT 
+                            + "', and name '" + ACTIVE_DATABASE_NAME
+                            + "'. Empty strings or null imply default from .yml will be used."
+                            + "</h1></body></html>" )
+                       .build();
+        }
+
+        // All other verbs are passed through to a job handled by a worker. Set up the 
+        // used database information based on the ACTIVE variables.  For a clean, the user
+        // can override the used database information, optionally. Those were parsed
+        // above.  Thus, only set the used value if its either null or blank.
+        // The used value won't be null after this, but could still be empty. If empty,
+        // that means the default value configured in the .yml is being used.
+        if ( usedDatabaseHost == null || usedDatabaseHost.isBlank() )
+        {
+            usedDatabaseHost = ACTIVE_DATABASE_HOST;
+        }
+        if ( usedDatabasePort == null || usedDatabasePort.isBlank() )
+        {
+            usedDatabasePort = ACTIVE_DATABASE_PORT;
+        }
+        if ( usedDatabaseName == null || usedDatabaseName.isBlank() )
+        {
+            usedDatabaseName = ACTIVE_DATABASE_NAME;
+        }
+        LOGGER.info( "For verb {}, the database info is going to be host='{}', port='{}',"
+                + " name='{}' (blank means default .yml value used).", 
+                actualVerb, usedDatabaseHost, usedDatabasePort, usedDatabaseName);
+
         // Before registering a new job, see if there are already too many.
         try
         {
@@ -428,23 +538,36 @@ public class WresJob
 
         Job.job jobMessage;
 
+        // For comamnds EXECUTE, INGEST, VALIDATE...
         if ( usingDeclaration )
         {
             jobMessage = Job.job.newBuilder()
                                 .setProjectConfig( projectConfig )
                                 .setVerb( actualVerb )
+                                .setDatabaseName ( usedDatabaseName )
+                                .setDatabaseHost ( usedDatabaseHost )
+                                .setDatabasePort ( usedDatabasePort )
                                 .build();
         }
+        // All others, including CLEANDATABASE, CONNECTTODB, others?
         else
         {
             // Skip the declaration entirely, it's not needed and was not
             // validated.
             Job.job.Builder builder = Job.job.newBuilder()
-                                             .setVerb( actualVerb );
+                                             .setVerb( actualVerb )
+                                             .setDatabaseName ( usedDatabaseName )
+                                             .setDatabaseHost ( usedDatabaseHost )
+                                             .setDatabasePort ( usedDatabasePort );
 
-            for ( String arg : additionalArguments )
+            // Additional arguments are already handled when cleaning, per above.
+            // No additional arguments beyond database ones are allowed in that case.
+            if ( actualVerb != Verb.CLEANDATABASE )
             {
-                builder.addAdditionalArguments( arg );
+                for ( String arg : additionalArguments )
+                {
+                    builder.addAdditionalArguments( arg );
+                }
             }
 
             jobMessage = builder.build();
@@ -484,6 +607,10 @@ public class WresJob
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
 
+        // Push the database info into the underlying job metadata and mark it in queue.
+        JOB_RESULTS.setDatabaseName ( jobId, usedDatabaseName );
+        JOB_RESULTS.setDatabaseHost ( jobId, usedDatabaseHost );
+        JOB_RESULTS.setDatabasePort ( jobId, usedDatabasePort );
         JOB_RESULTS.setInQueue( jobId );
 
         return Response.created( resourceCreated )
@@ -732,6 +859,37 @@ public class WresJob
     {
         return WresJob.JOB_RESULTS;
     }
+
+    private static void setDatabaseName(String databaseName)
+    {
+        ACTIVE_DATABASE_NAME = databaseName;
+        if (REDISSON_CLIENT != null)
+        {
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            bucket.set(databaseName);
+        }
+    }
+
+    private static void setDatabaseHost(String databaseHost)
+    {
+        ACTIVE_DATABASE_HOST = databaseHost;
+        if (REDISSON_CLIENT != null)
+        {
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            bucket.set(databaseHost);
+        }
+    }
+
+    private static void setDatabasePort(String databasePort)
+    {
+        ACTIVE_DATABASE_PORT = databasePort;
+        if (REDISSON_CLIENT != null)
+        {
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            bucket.set(databasePort);
+        }
+    }
+
 
     /**
      * Abruptly stops all listening for job results that this class listens for,

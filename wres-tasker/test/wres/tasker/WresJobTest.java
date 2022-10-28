@@ -21,8 +21,10 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.StringJoiner;
 import jakarta.ws.rs.core.Response;
 
@@ -261,14 +263,20 @@ public class WresJobTest
     @Test
     public void testMessage() throws Exception
     {
+        String[] additionalArguments = new String[] { "host", "8000", "name" };
+        List<String> argsList = Arrays.asList ( additionalArguments );
+
         EmbeddedBroker embeddedBroker = new EmbeddedBroker();
         embeddedBroker.start();
         WresJob wresJob = new WresJob();
         Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
-        assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
+        assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
         response = wresJob.postWresJob( "fake", null, "admintoken", "cleandatabase", false, Collections.emptyList() );
-        System.out.println("####>> " + response.toString());
-        assertEquals( "Expected a 201 Created.", 201, response.getStatus() );
+        assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
+        response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, Collections.emptyList() );
+        assertEquals( "Expected a 400 Created. Response: " + response.toString(), 400, response.getStatus() );
+        response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, argsList );
+        assertEquals( "Expected a 200 Created. Response: " + response.toString(), 200, response.getStatus() );
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
     }
