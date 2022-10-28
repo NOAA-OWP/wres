@@ -112,18 +112,18 @@ public interface DatabaseLockManager
     boolean isSourceLocked( Long lockName ) throws SQLException;
 
 
-    static DatabaseLockManager from( SystemSettings settings )
+    static DatabaseLockManager from( SystemSettings systemSettings,
+                                     Supplier<Connection> connectionSupplier )
     {
-        if( settings.isInMemory() )
+        if( systemSettings.isInMemory() )
         {
             return new DatabaseLockManagerNoop();
         }
-        else if ( settings.getDatabaseType() == DatabaseType.POSTGRESQL )
+        else if ( systemSettings.getDatabaseType() == DatabaseType.POSTGRESQL )
         {
-            Supplier<Connection> connectionSupplier = new DatabaseConnectionSupplier( settings );
             return new DatabaseLockManagerPostgres( connectionSupplier );
         }
-        else if ( settings.getDatabaseType() == DatabaseType.H2 )
+        else if ( systemSettings.getDatabaseType() == DatabaseType.H2 )
         {
             return new DatabaseLockManagerNoop();
         }

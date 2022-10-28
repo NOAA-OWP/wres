@@ -408,8 +408,8 @@ class ProcessorHelper
             // Gridded features cache, if required. See #51232.
             GriddedFeatures.Builder griddedFeaturesBuilder = ProcessorHelper.getGriddedFeaturesCache( projectConfig );
 
-            // Is the evaluation in-memory? If not, use implementations that support a persistence store/database
-            if ( !systemSettings.isInMemory() )
+            // Is the evaluation in a database? If so, use implementations that support a database
+            if ( systemSettings.isInDatabase() )
             {
                 // Build the database caches/ORMs, if required
                 DatabaseCaches caches = DatabaseCaches.of( databaseServices.getDatabase(), projectConfig );

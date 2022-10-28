@@ -295,14 +295,9 @@ project(':wres-system')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.liquibase:liquibase-core:4.17.0'
-
         // Database drivers need to be on the runtime classpath in order to 
         // acquire connections initially. See #103431
         implementation 'com.h2database:h2:2.1.214'
-
-        // Use instead of the bridge between JUL and SLF4J. #60801-283
-        runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.1.0'
 
         // connection pooling:
         implementation 'com.zaxxer:HikariCP:5.0.1'
@@ -471,6 +466,11 @@ project(':wres-io')
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
+        implementation 'org.liquibase:liquibase-core:4.17.0'
+
+        // Use instead of the bridge between JUL and SLF4J. #60801-283
+        runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.1.0'
+
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
@@ -481,8 +481,6 @@ project(':wres-io')
 
         //JB @ 02/16/17
         testImplementation 'com.google.guava:guava-testlib:31.1-jre'
-
-        testImplementation 'org.liquibase:liquibase-core:4.17.0'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:4.8.0'
