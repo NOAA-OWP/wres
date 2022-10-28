@@ -46,6 +46,7 @@ import static java.time.ZoneOffset.UTC;
 
 import wres.io.ingesting.IngestException;
 import wres.io.retrieval.DataAccessException;
+import wres.io.Operations;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseLockManagerPostgres;
@@ -55,7 +56,9 @@ import wres.system.SystemSettings;
 
 /**
  * An Interface structure used for organizing database operations and providing
- * common database operations
+ * common database operations.
+ * 
+ * TODO: consider moving the database-related helpers from {@link Operations} to here.
  */
 public class Database
 {
@@ -99,6 +102,43 @@ public class Database
         this.connectionPool = systemSettings.getConnectionPool();
         this.highPriorityConnectionPool = systemSettings.getHighPriorityConnectionPool();
         this.sqlTasks = createService();
+    }
+    
+    /**
+     * Prepares the database by attempting a connection and then migrating, if needed.
+     * 
+     * @param database the database to prepare
+     * @param migrate whether database migration should be attempted
+     * @throws NullPointerException if the database is null
+     * @throws IllegalStateException if the database could not be prepared
+     */
+
+    public static Database prepareDatabase( Database database, boolean migrate )
+    {
+        // Check that the database is available
+        try
+        {
+            database.testConnection();
+        }
+        catch ( SQLException | IOException e )
+        {
+            throw new IllegalStateException( "Failed to connect to the database.", e );
+        }
+        
+        // Migrate if required
+        if( migrate )
+        {
+            try
+            {
+                database.migrate();
+            }
+            catch ( SQLException | IOException e )
+            {
+                throw new IllegalStateException( "Failed to migrate the database.", e );
+            }
+        }
+
+        return database;
     }
 
     /**
@@ -254,7 +294,7 @@ public class Database
      * @throws IOException if the host is invalid
      */
 
-    public void testConnection() throws SQLException, IOException
+    private void testConnection() throws SQLException, IOException
     {
         SystemSettings settings = this.getSystemSettings();
         DatabaseSettings databaseSettings = settings.getDatabaseSettings();
@@ -308,7 +348,7 @@ public class Database
      * @throws SQLException if cleaning fails after migration
      */
 
-    public void migrateAndClean() throws SQLException, IOException
+    private void migrate() throws SQLException, IOException
     {
         SystemSettings settings = this.getSystemSettings();
         DatabaseSettings databaseSettings = settings.getDatabaseSettings();
@@ -341,7 +381,7 @@ public class Database
             lockManager.shutdown();
         }
 
-        cleanPriorRuns();
+        this.cleanPriorRuns();
         LOGGER.info( "Finished database migration." );
     }
 
