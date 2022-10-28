@@ -1,19 +1,12 @@
 package wres.system;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 import javax.xml.stream.XMLStreamException;
@@ -25,7 +18,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.util.Strings;
 
 /**
  * Contains access to configured settings and objects for accessing the database
@@ -35,16 +27,18 @@ import wres.util.Strings;
  * {@link DataSource} route, not the {@link DriverManager} route. The latter should not be used. When acquiring 
  * connections for the {@link DatabaseLockManager}, these connections should not be from the same pool, but they should 
  * be obtained by creating a {@link DataSource}, not by using the {@link DriverManager}. See #103431 for further 
- * discussion. 
+ * discussion. Once this work is completed, there should be no need to skip the parsing of database settings when using 
+ * in-memory mode, only the connection verification and database interaction. See the relevant block of instantiation in
+ * {@link SystemSettings} for this class.
  * 
  * @author Christopher Tubbs
  */
-final class DatabaseSettings
+public final class DatabaseSettings
 {
     private static final String USE_SSL = "useSSL";
-    
-	private static final Logger LOGGER =
-			LoggerFactory.getLogger( DatabaseSettings.class );
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( DatabaseSettings.class );
 
     // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
     // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class 
@@ -78,26 +72,162 @@ final class DatabaseSettings
 
     private String jdbcUrl = null;
     private String host = "localhost";
-	private String username = "wres";
-	private String password;
-	private int port = 5432;
-	private String databaseName = "wres";
-	private DatabaseType databaseType = DatabaseType.POSTGRESQL;
-	private String certificateFileToTrust;
-	private int maxPoolSize = 10;
-	private int maxHighPriorityPoolSize = 5;
-	private int maxIdleTime = 30;
-	private boolean attemptToMigrate = true;
+    private String username = "wres";
+    private String password;
+    private int port = 5432;
+    private String databaseName = "wres";
+    private DatabaseType databaseType = DatabaseType.POSTGRESQL;
+    private String certificateFileToTrust;
+    private int maxPoolSize = 10;
+    private int maxHighPriorityPoolSize = 5;
+    private int maxIdleTime = 30;
+    private boolean attemptToMigrate = true;
 
-	private boolean useSSL = false;
-	private boolean validateSSL = true;
+    private boolean useSSL = false;
+    private boolean validateSSL = true;
 
-	// The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
-	private int queryTimeout = 60 * 60 * 5;
+    // The query timeout needs to be in seconds and we're setting the default for 5 hours (arbitrarily large)
+    private int queryTimeout = 60 * 60 * 5;
 
     // Get-connection timeout is in milliseconds. Default to default query timeout.
     private int connectionTimeoutMs = queryTimeout * 1000;
-	
+
+    /**
+     * Creates the connection string used to access the database
+     * @return The connection string used to connect to the database of interest
+     */
+
+    public String getConnectionString()
+    {
+        if ( Objects.nonNull( this.getJdbcUrl() )
+             && !this.getJdbcUrl().isBlank() )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Using the jdbc url specified verbatim: '{}'",
+                              this.getJdbcUrl() );
+            }
+
+            return this.getJdbcUrl();
+        }
+
+        StringBuilder connectionString = new StringBuilder();
+        connectionString.append( "jdbc:" );
+        connectionString.append( this.getDatabaseType() );
+
+        if ( this.getDatabaseType() == DatabaseType.H2
+             && this.shouldUseSSL() )
+        {
+            connectionString.append( ":ssl" );
+        }
+
+        connectionString.append( "://" );
+        connectionString.append( this.getHost() );
+
+        connectionString.append( ":" );
+        connectionString.append( this.getPort() );
+
+        connectionString.append( "/" );
+        connectionString.append( this.getDatabaseName() );
+
+        return connectionString.toString();
+    }
+
+    /**
+     * @return the database port
+     */
+
+    public int getPort()
+    {
+        return this.port;
+    }
+
+    /**
+     * @return the database host
+     */
+
+    public String getHost()
+    {
+        return this.host;
+    }
+    
+    /**
+     * @return the database type
+     */
+    
+    public DatabaseType getDatabaseType()
+    {
+        return this.databaseType;
+    }
+
+    /**
+     * @return the database username
+     */
+    
+    public String getUsername()
+    {
+        return this.username;
+    }
+
+    /**
+     * @return the database name
+     */
+    
+    public String getDatabaseName()
+    {
+        return this.databaseName;
+    }    
+    
+    /**
+     * @return the query timeout
+     */
+    
+    public int getQueryTimeout()
+    {
+        return this.queryTimeout;
+    }
+    
+    /**
+     * @return the database connection properties
+     */
+
+    public Properties getConnectionProperties()
+    {
+        DatabaseType type = this.getDatabaseType();
+        return this.dataSourceProperties.get( type );
+    }
+    
+    /**
+     * @return whether database migration should be attempted
+     */
+
+    public boolean getAttemptToMigrate()
+    {
+        // Stop-gap measure between always-migrate and never-migrate.
+        boolean migrate = this.attemptToMigrate;
+        String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
+
+        if ( attemptToMigrateSetting != null
+             && !attemptToMigrateSetting.isBlank() )
+        {
+            if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
+            {
+                migrate = true;
+            }
+            else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
+            {
+                migrate = false;
+            }
+            else
+            {
+                LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
+                             attemptToMigrateSetting );
+            }
+        }
+
+        return migrate;
+    }
+
     /** To be called after setting member variables based on wres config */
     private Map<DatabaseType, Properties> createDatasourceProperties()
     {
@@ -222,45 +352,45 @@ final class DatabaseSettings
         return mapping;
     }
 
-	/**
-	 * Parses the settings for the database from an XMLReader
-	 * @param reader The reader containing XML data
-	 */
-	DatabaseSettings( XMLStreamReader reader )
-	{
-        LOGGER.debug( "Default db settings before applying settings xml and before applying system property overrides: {}",
+    /**
+     * Parses the settings for the database from an XMLReader
+     * @param reader The reader containing XML data
+     */
+    DatabaseSettings( XMLStreamReader reader )
+    {
+        LOGGER.debug( "Default db settings before applying settings xml and before applying system property overrides: "
+                      + "{}",
                       this );
 
-
-		try
-		{
-			while ( reader.hasNext() )
-			{
-				if ( reader.isStartElement() && reader.getLocalName()
-													  .equalsIgnoreCase(
-															  "database" ) )
-				{
-					reader.next();
-				}
-				else if ( reader.isEndElement() && reader.getLocalName()
-														 .equalsIgnoreCase(
-																 "database" ) )
-				{
-					break;
-				}
-				else
-				{
-					parseElement( reader );
-					reader.next();
-				}
-			}
+        try
+        {
+            while ( reader.hasNext() )
+            {
+                if ( reader.isStartElement() && reader.getLocalName()
+                                                      .equalsIgnoreCase(
+                                                                         "database" ) )
+                {
+                    reader.next();
+                }
+                else if ( reader.isEndElement() && reader.getLocalName()
+                                                         .equalsIgnoreCase(
+                                                                            "database" ) )
+                {
+                    break;
+                }
+                else
+                {
+                    parseElement( reader );
+                    reader.next();
+                }
+            }
 
             LOGGER.debug( "Db settings after applying settings xml and before applying system property overrides: {}",
                           this );
 
-			this.applySystemPropertyOverrides();
+            this.applySystemPropertyOverrides();
 
-			LOGGER.debug( "Db settings after applying system property overrides: {}",
+            LOGGER.debug( "Db settings after applying system property overrides: {}",
                           this );
 
             this.overrideDatabaseAttributesUsingJdbcUrl();
@@ -274,201 +404,23 @@ final class DatabaseSettings
 
             LOGGER.debug( "Db settings after creating DataSource properties: {}",
                           this );
-
-            testConnection();
-
-            // TODO: move liquibase migration out of initialization.
-            this.migrateAndClean();
         }
-		catch ( XMLStreamException | SQLException | IOException e )
-		{
-			throw new ExceptionInInitializerError( e );
-		}
+        catch ( XMLStreamException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 
     /**
-     * Attempts to migrate the database, respecting any system property override {@code wres.attemptToMigrate} when 
-     * defined.
-     * @throws IOException if the migration fails
-     * @throws SQLException if cleaning fails after migration
+     * For when there is something wrong with the file with database settings.
      */
-
-    private void migrateAndClean() throws SQLException, IOException
+    DatabaseSettings()
     {
-        // Stop-gap measure between always-migrate and never-migrate.
-        boolean migrate = this.attemptToMigrate;
-        String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
-
-        if ( attemptToMigrateSetting != null
-             && !attemptToMigrateSetting.isBlank() )
-        {
-            if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
-            {
-                migrate = true;
-            }
-            else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
-            {
-                migrate = false;
-            }
-            else
-            {
-                LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
-                             attemptToMigrateSetting );
-            }
-        }
-
-        if ( migrate )
-        {
-            LOGGER.info( "Beginning database migration. This takes time." );
-            DatabaseLockManager lockManager;
-
-            if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
-            {
-                ConnectionSupplier connectionSupplier = new ConnectionSupplier();
-                lockManager = new DatabaseLockManagerPostgres( connectionSupplier );
-            }
-            else if ( this.getDatabaseType() == DatabaseType.H2 )
-            {
-                lockManager = new DatabaseLockManagerNoop();
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Only postgresql and h2 are currently supported" );
-            }
-
-            try ( DatabaseSchema schema = new DatabaseSchema( this.getDatabaseName(),
-                                                              lockManager );
-                  Connection connection = this.getRawConnection(); )
-            {
-                schema.applySchema( connection );
-            }
-            finally
-            {
-                lockManager.shutdown();
-            }
-
-            cleanPriorRuns();
-            LOGGER.info( "Finished database migration." );
-        }
-    }
-	
-	private void cleanPriorRuns() throws SQLException
-	{
-        if ( this.getDatabaseType() == DatabaseType.POSTGRESQL )
-        {
-            final String NEWLINE = System.lineSeparator();
-
-            String script = "";
-            script += "SELECT pg_terminate_backend(PT.pid)" + NEWLINE;
-            script += "FROM pg_locks L" + NEWLINE;
-            script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
-            script += "    ON L.relation = t.relid" + NEWLINE;
-            script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
-            script += "    ON L.pid = PT.pid" + NEWLINE;
-            script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
-            script += "    AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
-            script += "    AND usename = '" + this.getUsername() + "'" + NEWLINE;
-            script += "    AND datname = '" + this.getDatabaseName() + "'" + NEWLINE;
-            script += "GROUP BY PT.pid;";
-
-            try ( Connection connection = this.getRawConnection();
-                  Statement clean = connection.createStatement() )
-            {
-                clean.execute( script );
-                try ( ResultSet resultSet = clean.getResultSet() )
-                {
-                    if ( resultSet.isBeforeFirst() )
-                    {
-                        LOGGER.debug( "Lock(s) from previous runs of this applications "
-                                      + "have been released." );
-                    }
-                }
-            }
-        }
-	}
-
-    /**
-	 * For when there is something wrong with the file with database settings.
-	 */
-	DatabaseSettings()
-	{
-		this.applySystemPropertyOverrides();
+        this.applySystemPropertyOverrides();
         this.overrideDatabaseAttributesUsingJdbcUrl();
         this.applyPasswordOverrides();
         this.dataSourceProperties = this.createDatasourceProperties();
-	}
-
-    private boolean hostIsValid()
-	{
-        if ( this.getHost()
-                 .equalsIgnoreCase( "localhost" ) )
-		{
-			return true;
-		}
-
-        try (Socket socket = new Socket())
-        {
-            socket.connect( new InetSocketAddress( this.getHost(),
-                                                   this.getPort() ),
-                            2000 );
-            return true;
-        }
-        catch (IOException ioe)
-        {
-            LOGGER.warn( "The intended host:port combination ({}:{}) is not accessible due to",
-                         this.host, this.port, ioe );
-            return false;
-        }
-	}
-
-	private void testConnection() throws SQLException, IOException
-	{
-        boolean validURL = this.hostIsValid();
-
-        if (!validURL)
-		{
-            throw new IOException( "The given database host:port combination ('"
-                                   + this.getHost() + ":" + this.getPort()
-                                   + "') is not accessible." );
-		}
-
-        try ( Connection connection = this.getRawConnection();
-              Statement test = connection.createStatement() )
-        {
-            test.execute("SELECT 1;");
-        }
-        catch ( SQLException sqlError )
-        {
-            String message = "The database could not be reached for connection verification: "
-                             + System.lineSeparator()
-                             + System.lineSeparator();
-            message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
-            message += "Please ensure that you have:" + System.lineSeparator();
-            message += "1) The correct URL to your database: " + this.getConnectionString( null )
-                       + System.lineSeparator();
-            message += "2) The correct username for your database: " + this.getUsername() + System.lineSeparator();
-            message += "3) The correct password for your user in the database" + System.lineSeparator();
-            message += "4) An active connection to a network that may reach the requested database server"
-                       + System.lineSeparator();
-            message += "5) The correct database driver class on the application classpath"
-                       + System.lineSeparator()
-                       + System.lineSeparator();
-            message += "The application will now exit.";
-            throw new SQLException( message, sqlError );
-        }
     }
-
-    private Properties getConnectionProperties()
-    {
-        return this.dataSourceProperties.get( this.getDatabaseType() );
-    }
-
-    Connection getRawConnection() throws SQLException
-	{
-        String connectionString = this.getConnectionString( this.databaseName );
-        return DriverManager.getConnection( connectionString,
-                                            this.getConnectionProperties() );
-	}
 
     /**
      * @param maxPoolSize the maximum pool size
@@ -476,7 +428,7 @@ final class DatabaseSettings
      * @return
      */
     DataSource createDataSource( int maxPoolSize, long connectionTimeOutMs )
-	{
+    {
         HikariConfig poolConfig = new HikariConfig();
         Properties properties = this.getConnectionProperties();
         poolConfig.setDataSourceProperties( properties );
@@ -486,19 +438,14 @@ final class DatabaseSettings
         poolConfig.setMaximumPoolSize( maxPoolSize );
         poolConfig.setConnectionTimeout( connectionTimeOutMs );
         return new HikariDataSource( poolConfig );
-	}
-
-    private String getHost()
-    {
-        return this.host;
     }
 
-	/**
+    /**
      * Sets the host name of the database to connect to
      * @param host The host name of the database to connect to
-	 */
+     */
     private void setHost( String host )
-	{
+    {
         this.host = host;
     }
 
@@ -520,49 +467,39 @@ final class DatabaseSettings
         this.jdbcUrl = jdbcUrl;
     }
 
-	/**
-	 * Sets the username used to connect to the database
-	 * @param username The username used to connect to the database
-	 */
-    private void setUsername (String username)
-	{
-		this.username = username;
-	}
-
-	/**
-	 * Sets the password used to connect to the database
-	 * @param password The password used to connect to the database
-	 */
-    private void setPassword (String password)
-	{
-		this.password = password;
-	}
-
-    private int getPort()
+    /**
+     * Sets the username used to connect to the database
+     * @param username The username used to connect to the database
+     */
+    private void setUsername( String username )
     {
-        return this.port;
+        this.username = username;
     }
 
-	/**
-	 * Sets the identifier for the port used to connect to the database
-	 * @param port
-	 */
-    private void setPort ( int port )
-	{
-		this.port = port;
-	}
-
-    private String getDatabaseName()
+    /**
+     * Sets the password used to connect to the database
+     * @param password The password used to connect to the database
+     */
+    private void setPassword( String password )
     {
-        return this.databaseName;
+        this.password = password;
     }
 
-    private void setUseSSL(final boolean useSSL)
+    /**
+     * Sets the identifier for the port used to connect to the database
+     * @param port
+     */
+    private void setPort( int port )
+    {
+        this.port = port;
+    }
+
+    private void setUseSSL( final boolean useSSL )
     {
         this.useSSL = useSSL;
     }
 
-    private void setAttemptToMigrate(String value)
+    private void setAttemptToMigrate( String value )
     {
         this.attemptToMigrate = Boolean.parseBoolean( value );
     }
@@ -572,7 +509,7 @@ final class DatabaseSettings
         return this.useSSL;
     }
 
-    private void setValidateSSL(final boolean validateSSL)
+    private void setValidateSSL( final boolean validateSSL )
     {
         this.validateSSL = validateSSL;
     }
@@ -593,84 +530,38 @@ final class DatabaseSettings
     }
 
 
-	/**
-	 * Sets the name of the database to connect to
-	 * @param databaseName The name of the database to access
-	 */
+    /**
+     * Sets the name of the database to connect to
+     * @param databaseName The name of the database to access
+     */
     private void setDatabaseName( String databaseName )
     {
-	    if (databaseName.contains( ";" ) || databaseName.contains( "\"" ) || databaseName.contains( "'" ))
+        if ( databaseName.contains( ";" ) || databaseName.contains( "\"" ) || databaseName.contains( "'" ) )
         {
             String message = String.format( "%s is not a valid database name.", databaseName );
             throw new IllegalArgumentException( message );
         }
-		this.databaseName = databaseName;
-	}
-
-	/**
-	 * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
-	 * @param databaseType The name of the database to connect to
-	 */
-    private void setDatabaseType ( DatabaseType databaseType )
-	{
-		this.databaseType = databaseType;
-	}
-
-	/**
-	 * Creates the connection string used to access the database
-	 * @return The connection string used to connect to the database of interest
-	 */
-
-    private String getConnectionString (String databaseName)
-    {
-        if ( Objects.nonNull( this.getJdbcUrl() )
-             && !this.getJdbcUrl().isBlank() )
-        {
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Using the jdbc url specified verbatim: '{}'",
-                              this.getJdbcUrl() );
-            }
-
-            return this.getJdbcUrl();
-        }
-
-        if (!Strings.hasValue( databaseName ))
-        {
-            databaseName = this.getDatabaseName();
-        }
-
-        StringBuilder connectionString = new StringBuilder();
-        connectionString.append( "jdbc:" );
-        connectionString.append( this.getDatabaseType() );
-
-        if ( this.databaseType == DatabaseType.H2
-             && this.useSSL )
-        {
-            connectionString.append(":ssl");
-        }
-
-        connectionString.append( "://" );
-        connectionString.append( this.getHost() );
-
-        connectionString.append( ":" );
-        connectionString.append( this.getPort() );
-
-        connectionString.append( "/" );
-        connectionString.append( databaseName );
-
-        return connectionString.toString();
+        this.databaseName = databaseName;
     }
 
-	/**
-	 * Parses out settings from the passed in XML 
-	 * @param reader The XML reader containing XML data describing the database settings
-	 * @throws XMLStreamException Any exception occurred when reading from the XML
-	 */
+    /**
+     * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
+     * @param databaseType The name of the database to connect to
+     */
+    private void setDatabaseType( DatabaseType databaseType )
+    {
+        this.databaseType = databaseType;
+    }
+
+    /**
+     * Parses out settings from the passed in XML 
+     * @param reader The XML reader containing XML data describing the database settings
+     * @throws XMLStreamException Any exception occurred when reading from the XML
+     */
     private void parseElement( XMLStreamReader reader )
             throws XMLStreamException
-	{
-	    try
+    {
+        try
         {
             if ( reader.isStartElement() )
             {
@@ -727,7 +618,7 @@ final class DatabaseSettings
                             this.setUseSSL( Boolean.parseBoolean( value ) );
                             break;
                         case "validate_ssl":
-                            this.setValidateSSL(Boolean.parseBoolean( value ));
+                            this.setValidateSSL( Boolean.parseBoolean( value ) );
                             break;
                         case "certificate_file_to_trust":
                             this.setCertificateFileToTrust( value );
@@ -747,7 +638,7 @@ final class DatabaseSettings
         {
             throw new XMLStreamException( "Invalid settings were found within the system configuration.", e );
         }
-	}
+    }
 
 
     /**
@@ -791,7 +682,8 @@ final class DatabaseSettings
                 String type = jdbcSubstring.substring( 0, secondColonIndex )
                                            .toUpperCase();
                 LOGGER.debug( "Extracted database type {} from jdbc url {}",
-                              type, jdbc );
+                              type,
+                              jdbc );
                 DatabaseType typeEnum = DatabaseType.valueOf( type );
                 setDatabaseType( typeEnum );
             }
@@ -812,27 +704,31 @@ final class DatabaseSettings
                     String hostName = hostAndMaybePort.substring( 0, portColonIndex );
 
                     LOGGER.debug( "Extracted host {} from jdbcUrl {}",
-                                  hostName, jdbc );
+                                  hostName,
+                                  jdbc );
                     this.setHost( hostName );
 
                     try
                     {
                         int portNumber = Integer.parseInt( portRaw );
                         LOGGER.debug( "Extracted port {} from jdbcUrl {}",
-                                      portNumber, jdbc );
+                                      portNumber,
+                                      jdbc );
                         this.setPort( portNumber );
                     }
                     catch ( NumberFormatException nfe )
                     {
                         LOGGER.warn( "Unable to parse port number from jdbc url {}. Attempt from substring {} failed.",
-                                     jdbc, portRaw );
+                                     jdbc,
+                                     portRaw );
                     }
                 }
                 else
                 {
                     // There is no port because colon was not found after host.
                     LOGGER.debug( "Extracted host {} from jdbcUrl {} (and no port)",
-                                  hostAndMaybePort, jdbc );
+                                  hostAndMaybePort,
+                                  jdbc );
                     this.setHost( hostAndMaybePort );
                 }
 
@@ -852,7 +748,8 @@ final class DatabaseSettings
                 if ( !dbName.isBlank() )
                 {
                     LOGGER.debug( "Extracted database name {} from jdbc url {}",
-                                  dbName, jdbc );
+                                  dbName,
+                                  jdbc );
                     this.setDatabaseName( dbName );
                 }
                 else
@@ -874,46 +771,31 @@ final class DatabaseSettings
         }
     }
 
-	public DatabaseType getDatabaseType()
-	{
-		return this.databaseType;
-	}
-
-	public String getUsername()
-	{
-		return this.username;
-	}
-
-	public int getQueryTimeout()
+    /**
+     * @return the connection pool size
+     */
+    int getMaxPoolSize()
     {
-        return this.queryTimeout;
+        return this.maxPoolSize;
     }
-	
-	/**
-	 * @return the connection pool size
-	 */
-	int getMaxPoolSize()
-	{
-	    return this.maxPoolSize;
-	}
 
-	/**
-	 * @return the high priority connection pool size
-	 */
-	int getMaxHighPriorityPoolSize()
-	{
-	    return this.maxHighPriorityPoolSize;
-	}
+    /**
+     * @return the high priority connection pool size
+     */
+    int getMaxHighPriorityPoolSize()
+    {
+        return this.maxHighPriorityPoolSize;
+    }
 
     /**
      * @return the connection timeout in millseconds
      */
-    
+
     int getConnectionTimeoutMs()
     {
         return this.connectionTimeoutMs;
     }
-	
+
     @Override
     public String toString()
     {
@@ -942,24 +824,24 @@ final class DatabaseSettings
     }
 
     private void applySystemPropertyOverrides()
-	{
+    {
         validateSystemPropertiesRelatedToDatabase();
 
-		String usernameOverride = System.getProperty( "wres.username" );
-		if ( usernameOverride != null )
-		{
-			this.username = usernameOverride;
-		}
+        String usernameOverride = System.getProperty( "wres.username" );
+        if ( usernameOverride != null )
+        {
+            this.username = usernameOverride;
+        }
 
-		String databaseNameOverride = System.getProperty( "wres.databaseName" );
-		if ( databaseNameOverride != null )
-		{
-			this.databaseName = databaseNameOverride;
-		}
+        String databaseNameOverride = System.getProperty( "wres.databaseName" );
+        if ( databaseNameOverride != null )
+        {
+            this.databaseName = databaseNameOverride;
+        }
 
-		String urlOverride = System.getProperty( "wres.url" );
-		if ( urlOverride != null )
-		{
+        String urlOverride = System.getProperty( "wres.url" );
+        if ( urlOverride != null )
+        {
             LOGGER.warn( "Deprecated wres.url property found. Use wres.databaseHost for a hostname or wres.databaseJdbcUrl for a jdbc url." );
             this.setHost( urlOverride );
         }
@@ -985,26 +867,26 @@ final class DatabaseSettings
             this.setJdbcUrl( jdbcUrlOverride );
         }
 
-		String useSSLOverride = System.getProperty( "wres.useSSL" );
-		if (useSSLOverride != null)
+        String useSSLOverride = System.getProperty( "wres.useSSL" );
+        if ( useSSLOverride != null )
         {
             this.useSSL = Boolean.parseBoolean( useSSLOverride );
         }
 
         String validateSSLOverride = System.getProperty( "wres.validateSSL" );
-		if (validateSSLOverride != null)
+        if ( validateSSLOverride != null )
         {
             this.validateSSL = Boolean.parseBoolean( validateSSLOverride );
         }
 
         String certificateFileToTrustOverride = System.getProperty( "wres.certificateFileToTrust" );
-		if ( certificateFileToTrustOverride != null)
+        if ( certificateFileToTrustOverride != null )
         {
             this.setCertificateFileToTrust( certificateFileToTrustOverride );
         }
 
-		String timeoutOverride = System.getProperty( "wres.query_timeout" );
-        if (timeoutOverride != null)
+        String timeoutOverride = System.getProperty( "wres.query_timeout" );
+        if ( timeoutOverride != null )
         {
             this.queryTimeout = Integer.parseInt( timeoutOverride );
         }
@@ -1014,13 +896,13 @@ final class DatabaseSettings
         {
             this.connectionTimeoutMs = Integer.parseInt( connectionTimeoutMsOverride );
         }
-        
+
         String maxPoolSizeOverride = System.getProperty( "wres.maxPoolSize" );
         if ( maxPoolSizeOverride != null )
         {
             this.maxPoolSize = Integer.parseInt( maxPoolSizeOverride );
         }
-	}
+    }
 
     /**
      * Figure out the password based on system properties and/or wres config
@@ -1071,28 +953,10 @@ final class DatabaseSettings
             else if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( "Could not find password for {}:{}:{}:{} in pgpass file.",
-                             this.getHost(), this.getPort(), this.getDatabaseName(), this.getUsername() );
-            }
-        }
-    }
-
-    /**
-     * To create a DatabaseLockManager we need to supply connections.
-     */
-	private final class ConnectionSupplier implements Supplier<Connection>
-    {
-        private ConnectionSupplier() {}
-
-        @Override
-        public Connection get()
-        {
-            try
-            {
-                return getRawConnection();
-            }
-            catch ( SQLException se )
-            {
-                throw new IllegalStateException( "Unable to get connection.", se );
+                             this.getHost(),
+                             this.getPort(),
+                             this.getDatabaseName(),
+                             this.getUsername() );
             }
         }
     }
@@ -1115,7 +979,8 @@ final class DatabaseSettings
                                              + "system property 'user.timezone'"
                                              + " be set to 'UTC', e.g. "
                                              + "-Duser.timezone=UTC (found "
-                                             + zoneProperty + " instead)." );
+                                             + zoneProperty
+                                             + " instead)." );
         }
     }
 }

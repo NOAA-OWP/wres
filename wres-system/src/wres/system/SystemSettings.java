@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Objects;
 
 import javax.sql.DataSource;
@@ -95,43 +93,335 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return true if the evaluation is being performed in-memory, false otherwise. Expects either 
+     * @return true if the evaluation is being performed in-memory, false otherwise.
      */
 
     public boolean isInMemory()
     {
-        String inMemory = System.getProperty( "wres.inMemory" );
+        String useDatabaseString = System.getProperty( "wres.useDatabase" );
 
-        if ( Objects.nonNull( inMemory ) )
+        boolean useDatabase = false;
+
+        if ( Objects.nonNull( useDatabaseString ) )
         {
-            return "true".equals( inMemory );
+            useDatabase = "true".equalsIgnoreCase( useDatabaseString );
         }
 
-        return Objects.isNull( this.databaseConfiguration );
+        return !useDatabase;
     }
 
     /**
-     * The Default constructor
-     * 
-     * Creates a new XMLReader and parses the System Configuration document
-     * Looks on the classpath for the default filename
-     * <br/><br/>
+     * @return the opposite of {@link #isInMemory()}
      */
-    private SystemSettings( URI configPath ) throws IOException
+
+    public boolean isInDatabase()
     {
-        super( configPath, null );
-        parse();
+        return !this.isInMemory();
     }
 
     /**
-     * Fall back on default values when file cannot be found or parsed.
+     * @return The path where the system should store NetCDF files internally
      */
-    private SystemSettings()
+    public String getNetCDFStorePath()
     {
-        super();
-        databaseConfiguration = new DatabaseSettings();
+        return this.netcdfStorePath;
     }
 
+    /**
+     * @return The number of allowable threads
+     */
+    public int maximumThreadCount()
+    {
+        return this.maximumThreadCount;
+    }
+
+    public int maximumArchiveThreads()
+    {
+        if ( this.maximumArchiveThreads == null )
+        {
+            int threadCount = ( (Double) Math.ceil(
+                                                    this.maximumThreadCount() / 10F ) ).intValue();
+            return Math.max( threadCount, 2 );
+        }
+
+        return this.maximumArchiveThreads;
+    }
+
+    public int getMaximumWebClientThreads()
+    {
+        return this.maximumWebClientThreads;
+    }
+
+    public int getMaxiumNwmIngestThreads()
+    {
+        return this.maximumNwmIngestThreads;
+    }
+
+    /**
+     * @return The maximum life span for an object in an object pool
+     */
+    public int poolObjectLifespan()
+    {
+        return this.poolObjectLifespan;
+    }
+
+    /**
+     * @return The maximum number of rows to retrieve
+     */
+    public int fetchSize()
+    {
+        return this.fetchSize;
+    }
+
+    /**
+     * @return The maximum number of values that may be copied into the database at once
+     */
+    public int getMaximumCopies()
+    {
+        return this.maximumCopies;
+    }
+
+    /**
+     * @return the amount of NetcdfDatasets that may be cached before the
+     * calling thread is responsible for closing datasets
+     */
+    public int getHardNetcdfCacheLimit()
+    {
+        return this.hardNetcdfCacheLimit;
+    }
+
+    /**
+     * @return The amount of seconds a NetcdfDataset cache should wait before
+     * looking for cached files to close
+     */
+    public int getNetcdfCachePeriod()
+    {
+        return this.netcdfCachePeriod;
+    }
+
+    /**
+     * @return The minimum number of cached NetCDFDatasets to persist
+     */
+    public int getMinimumCachedNetcdf()
+    {
+        return this.minimumCachedNetcdf;
+    }
+
+    /**
+     * @return The maximum number of cached NetCDFDatasets to persist before
+     * attempting to close files to make room
+     */
+    public int getMaximumCachedNetcdf()
+    {
+        return this.maximumCachedNetcdf;
+    }
+
+    /**
+     * @return The (file) source directory prefix to use when loading source
+     * files that are not absolute
+     */
+    public Path getDataDirectory()
+    {
+        return this.dataDirectory;
+    }
+
+    /**
+     * @return the connection pool size
+     */
+    public int getDatabaseMaximumPoolSize()
+    {
+        return this.databaseConfiguration.getMaxPoolSize();
+    }
+
+    /**
+     * @return the high priority connection pool size
+     */
+    public int getDatabaseMaximumHighPriorityPoolSize()
+    {
+        return this.databaseConfiguration.getMaxHighPriorityPoolSize();
+    }
+
+    /**
+     * @return the maximum number of ingest threads
+     */
+
+    public int getMaximumIngestThreads()
+    {
+        return this.maximumIngestThreads;
+    }
+
+    /**
+     * @return the maximum number of read threads
+     */
+
+    public int getMaximumReadThreads()
+    {
+        return this.maximumReadThreads;
+    }
+
+    /**
+     * @return A new instance of a connection pool that is built for the system wide configuration
+     */
+    public DataSource getConnectionPool()
+    {
+        int maxPoolSize = this.databaseConfiguration.getMaxPoolSize();
+        LOGGER.info( "Creating a database connection pool with {} connections...", maxPoolSize );
+        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
+        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
+        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
+    }
+
+    /**
+     * @return a high-priority connection pool
+     */
+    public DataSource getHighPriorityConnectionPool()
+    {
+        int maxPoolSize = this.databaseConfiguration.getMaxHighPriorityPoolSize();
+        LOGGER.info( "Creating a high-priority database connection pool with {} connections...", maxPoolSize );
+        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
+        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
+        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
+    }
+
+    /**
+     * @return Returns the number of seconds that should elapse before a database query should timeout
+     */
+    public int getQueryTimeout()
+    {
+        return this.databaseConfiguration.getQueryTimeout();
+    }
+
+    /**
+     * @return Return <code>true</code> if progress monitoring is turned on, <code>false</code> if turned off.
+     */
+
+    public boolean getUpdateProgressMonitor()
+    {
+        return this.updateProgressMonitor;
+    }
+
+    /**
+     * @return the maximum number of pool threads
+     */
+    
+    public int getMaximumPoolThreads()
+    {
+        return maximumPoolThreads;
+    }
+
+    /**
+     * @return The minimum number of singleton feature groups within an evaluation when using feature-batched retrieval
+     */
+    public int getFeatureBatchThreshold()
+    {
+        return this.featureBatchThreshold;
+    }
+
+    /**
+     * @return The number of features within each feature-batched retrieval when using feature-batched retrieval
+     */
+    public int getFeatureBatchSize()
+    {
+        return this.featureBatchSize;
+    }
+
+    /**
+     * @return the maximum number of threshold threads
+     */
+    
+    public int getMaximumThresholdThreads()
+    {
+        return maximumThresholdThreads;
+    }
+
+    /**
+     * @return the database settings
+     */
+    
+    public DatabaseSettings getDatabaseSettings()
+    {
+        return this.databaseConfiguration;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                                                                            .append( "databaseConfiguration",
+                                                                                     this.databaseConfiguration )
+                                                                            .append( "maximumThreadCount",
+                                                                                     this.maximumThreadCount )
+                                                                            .append( "poolObjectLifespan",
+                                                                                     this.poolObjectLifespan )
+                                                                            .append( "fetchSize", this.fetchSize )
+                                                                            .append( "maximumCopies",
+                                                                                     this.maximumCopies )
+                                                                            .append( "netcdfCachePeriod",
+                                                                                     this.netcdfCachePeriod )
+                                                                            .append( "minimumCachedNetcdf",
+                                                                                     this.minimumCachedNetcdf )
+                                                                            .append( "maximumCachedNetcdf",
+                                                                                     this.maximumCachedNetcdf )
+                                                                            .append( "hardNetcdfCacheLimit",
+                                                                                     this.hardNetcdfCacheLimit )
+                                                                            .append( "netcdfStorePath",
+                                                                                     this.netcdfStorePath )
+                                                                            .append( "maximumReadThreads",
+                                                                                     this.maximumReadThreads )
+                                                                            .append( "maximumIngestThreads",
+                                                                                     this.maximumIngestThreads )
+                                                                            .append( "maximumArchiveThreads",
+                                                                                     this.maximumArchiveThreads )
+                                                                            .append( "maximumWebClientThreads",
+                                                                                     this.maximumWebClientThreads )
+                                                                            .append( "maximumNwmIngestThreads",
+                                                                                     this.maximumNwmIngestThreads )
+                                                                            .append( "dataDirectory",
+                                                                                     this.dataDirectory )
+                                                                            .append( "updateProgressMonitor",
+                                                                                     this.updateProgressMonitor )
+                                                                            .append( "maximumPoolThreads",
+                                                                                     this.maximumPoolThreads )
+                                                                            .append( "maximumThresholdThreads",
+                                                                                     this.maximumThresholdThreads )
+                                                                            .append( "maximumMetricThreads",
+                                                                                     this.maximumMetricThreads )
+                                                                            .append( "maximumProductThreads",
+                                                                                     this.maximumProductThreads )
+                                                                            .append( "featureBatchThreshold",
+                                                                                     this.featureBatchThreshold )
+                                                                            .append( "featureBatchSize",
+                                                                                     this.featureBatchSize )
+                                                                            .toString();
+    }
+
+    /**
+     * @return The database type.
+     */
+
+    public DatabaseType getDatabaseType()
+    {
+        return this.databaseConfiguration.getDatabaseType();
+    }
+    
+    /**
+     * @return the maximum number of product threads
+     */
+
+    public int getMaximumProductThreads()
+    {
+        return maximumProductThreads;
+    }
+    
+    /**
+     * @return the maximum number of metric threads
+     */
+    
+    public int getMaximumMetricThreads()
+    {
+        return maximumMetricThreads;
+    }
+    
     @Override
     protected void parseElement( XMLStreamReader reader )
             throws IOException
@@ -145,7 +435,7 @@ public class SystemSettings extends XMLReader
                 switch ( tagName )
                 {
                     case "database":
-                        databaseConfiguration = new DatabaseSettings( reader );
+                        this.createDatabaseSettingsIfNeeded( reader );
                         break;
                     case "maximum_thread_count":
                         this.setMaximumThreadCount( reader );
@@ -240,7 +530,75 @@ public class SystemSettings extends XMLReader
     @Override
     protected void completeParsing() throws IOException
     {
+        // Check for expected database settings where required
+        if ( !this.isInMemory() && Objects.isNull( this.databaseConfiguration ) )
+        {
+            throw new IllegalArgumentException( "Could not find the expected database configuration. Check the "
+                                                + "system configuration for database settings, which should be "
+                                                + "contained inside a <database> stanza. If you intended to perform an "
+                                                + "in-memory evaluation, then do not ask for a database evaluation via "
+                                                + "the WRES system property, \"wres.useDatabase\"." );
+        }
+
         this.applySystemPropertyOverrides();
+    }
+
+    /**
+     * The Default constructor
+     * 
+     * Creates a new XMLReader and parses the System Configuration document
+     * Looks on the classpath for the default filename
+     * <br/><br/>
+     */
+    private SystemSettings( URI configPath ) throws IOException
+    {
+        super( configPath, null );
+        this.parse();
+    }
+
+    /**
+     * Fall back on default values when file cannot be found or parsed.
+     */
+    private SystemSettings()
+    {
+        super();
+        this.databaseConfiguration = new DatabaseSettings();
+    }
+    
+    /**
+     * Creates the database settings if needed. They are only needed when {@link #isInMemory()} returns {@code false}.
+     * @param reader the stream reader
+     * @throws XMLStreamException if the database settings could not be skipped
+     */
+
+    private void createDatabaseSettingsIfNeeded( XMLStreamReader reader ) throws XMLStreamException
+    {
+        // Do not create database settings for in-memory mode as this immediately attempts to connect 
+        // and interact with a database that may not exist
+        if ( !this.isInMemory() )
+        {
+            LOGGER.debug( "Using database mode. Database settings will now be read." );
+            this.databaseConfiguration = new DatabaseSettings( reader );
+        }
+        else
+        {
+            LOGGER.debug( "Using in-memory mode. Database settings will not be read." );
+
+            // Put the reader in the correct position, ignoring all database settings
+            // This method is only called if there is database configuration present
+            while ( reader.hasNext() )
+            {
+                if ( reader.isEndElement() && reader.getLocalName()
+                                                    .equalsIgnoreCase( "database" ) )
+                {
+                    break;
+                }
+                else
+                {
+                    reader.next();
+                }
+            }
+        }
     }
 
     private void setMinimumCachedNetcdf( XMLStreamReader reader )
@@ -471,214 +829,7 @@ public class SystemSettings extends XMLReader
                          size );
         }
     }
-
-    /**
-     * @return The path where the system should store NetCDF files internally
-     */
-    public String getNetCDFStorePath()
-    {
-        return this.netcdfStorePath;
-    }
-
-    /**
-     * @return The number of allowable threads
-     */
-    public int maximumThreadCount()
-    {
-        return this.maximumThreadCount;
-    }
-
-    public int maximumArchiveThreads()
-    {
-        if ( this.maximumArchiveThreads == null )
-        {
-            int threadCount = ( (Double) Math.ceil(
-                                                    this.maximumThreadCount() / 10F ) ).intValue();
-            return Math.max( threadCount, 2 );
-        }
-
-        return this.maximumArchiveThreads;
-    }
-
-    public int getMaximumWebClientThreads()
-    {
-        return this.maximumWebClientThreads;
-    }
-
-    public int getMaxiumNwmIngestThreads()
-    {
-        return this.maximumNwmIngestThreads;
-    }
-
-    /**
-     * @return The maximum life span for an object in an object pool
-     */
-    public int poolObjectLifespan()
-    {
-        return this.poolObjectLifespan;
-    }
-
-    /**
-     * @return The maximum number of rows to retrieve
-     */
-    public int fetchSize()
-    {
-        return this.fetchSize;
-    }
-
-    /**
-     * @return The maximum number of values that may be copied into the database at once
-     */
-    public int getMaximumCopies()
-    {
-        return this.maximumCopies;
-    }
-
-    /**
-     * @return the amount of NetcdfDatasets that may be cached before the
-     * calling thread is responsible for closing datasets
-     */
-    public int getHardNetcdfCacheLimit()
-    {
-        return this.hardNetcdfCacheLimit;
-    }
-
-    /**
-     * @return The amount of seconds a NetcdfDataset cache should wait before
-     * looking for cached files to close
-     */
-    public int getNetcdfCachePeriod()
-    {
-        return this.netcdfCachePeriod;
-    }
-
-    /**
-     * @return The minimum number of cached NetCDFDatasets to persist
-     */
-    public int getMinimumCachedNetcdf()
-    {
-        return this.minimumCachedNetcdf;
-    }
-
-    /**
-     * @return The maximum number of cached NetCDFDatasets to persist before
-     * attempting to close files to make room
-     */
-    public int getMaximumCachedNetcdf()
-    {
-        return this.maximumCachedNetcdf;
-    }
-
-    /**
-     * @return The (file) source directory prefix to use when loading source
-     * files that are not absolute
-     */
-    public Path getDataDirectory()
-    {
-        return this.dataDirectory;
-    }
-
-    /**
-     * @return the connection pool size
-     */
-    public int getDatabaseMaximumPoolSize()
-    {
-        return this.databaseConfiguration.getMaxPoolSize();
-    }
-
-    /**
-     * @return the high priority connection pool size
-     */
-    public int getDatabaseMaximumHighPriorityPoolSize()
-    {
-        return this.databaseConfiguration.getMaxHighPriorityPoolSize();
-    }
-
-    /**
-     * @return the maximum number of ingest threads
-     */
-
-    public int getMaximumIngestThreads()
-    {
-        return this.maximumIngestThreads;
-    }
-
-    /**
-     * @return the maximum number of read threads
-     */
-
-    public int getMaximumReadThreads()
-    {
-        return this.maximumReadThreads;
-    }
-
-    /**
-     * @return A new instance of a connection pool that is built for the system wide configuration
-     */
-    public DataSource getConnectionPool()
-    {
-        int maxPoolSize = this.databaseConfiguration.getMaxPoolSize();
-        LOGGER.info( "Creating a database connection pool with {} connections...", maxPoolSize );
-        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
-        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
-        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
-    }
-
-    /**
-     * @return a high-priority connection pool
-     */
-    public DataSource getHighPriorityConnectionPool()
-    {
-        int maxPoolSize = this.databaseConfiguration.getMaxHighPriorityPoolSize();
-        LOGGER.info( "Creating a high-priority database connection pool with {} connections...", maxPoolSize );
-        long connectionTimeoutMs = this.databaseConfiguration.getConnectionTimeoutMs();
-        DataSource inner = this.databaseConfiguration.createDataSource( maxPoolSize, connectionTimeoutMs );
-        return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
-    }
-
-    /**
-     * @return Returns the number of seconds that should elapse before a database query should timeout
-     */
-    public int getQueryTimeout()
-    {
-        return this.databaseConfiguration.getQueryTimeout();
-    }
-
-    /**
-     * @return Return <code>true</code> if progress monitoring is turned on, <code>false</code> if turned off.
-     */
-
-    public boolean getUpdateProgressMonitor()
-    {
-        return this.updateProgressMonitor;
-    }
-
-    Connection getRawDatabaseConnection() throws SQLException
-    {
-        return this.databaseConfiguration.getRawConnection();
-    }
-
-    public int getMaximumPoolThreads()
-    {
-        return maximumPoolThreads;
-    }
-
-    /**
-     * @return The minimum number of singleton feature groups within an evaluation when using feature-batched retrieval
-     */
-    public int getFeatureBatchThreshold()
-    {
-        return this.featureBatchThreshold;
-    }
-
-    /**
-     * @return The number of features within each feature-batched retrieval when using feature-batched retrieval
-     */
-    public int getFeatureBatchSize()
-    {
-        return this.featureBatchSize;
-    }
-
+    
     private void setMaximumPoolThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
@@ -694,11 +845,6 @@ public class SystemSettings extends XMLReader
                          value,
                          this.maximumPoolThreads );
         }
-    }
-
-    public int getMaximumThresholdThreads()
-    {
-        return maximumThresholdThreads;
     }
 
     private void setMaximumThresholdThreads( XMLStreamReader reader )
@@ -718,11 +864,6 @@ public class SystemSettings extends XMLReader
         }
     }
 
-    public int getMaximumMetricThreads()
-    {
-        return maximumMetricThreads;
-    }
-
     private void setMaximumMetricThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
@@ -739,12 +880,7 @@ public class SystemSettings extends XMLReader
                          this.maximumMetricThreads );
         }
     }
-
-    public int getMaximumProductThreads()
-    {
-        return maximumProductThreads;
-    }
-
+    
     private void setMaximumProductThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
@@ -1048,67 +1184,5 @@ public class SystemSettings extends XMLReader
                              this.featureBatchSize );
             }
         }
-
-    }
-
-    @Override
-    public String toString()
-    {
-        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "databaseConfiguration",
-                                                                                     this.databaseConfiguration )
-                                                                            .append( "maximumThreadCount",
-                                                                                     this.maximumThreadCount )
-                                                                            .append( "poolObjectLifespan",
-                                                                                     this.poolObjectLifespan )
-                                                                            .append( "fetchSize", this.fetchSize )
-                                                                            .append( "maximumCopies",
-                                                                                     this.maximumCopies )
-                                                                            .append( "netcdfCachePeriod",
-                                                                                     this.netcdfCachePeriod )
-                                                                            .append( "minimumCachedNetcdf",
-                                                                                     this.minimumCachedNetcdf )
-                                                                            .append( "maximumCachedNetcdf",
-                                                                                     this.maximumCachedNetcdf )
-                                                                            .append( "hardNetcdfCacheLimit",
-                                                                                     this.hardNetcdfCacheLimit )
-                                                                            .append( "netcdfStorePath",
-                                                                                     this.netcdfStorePath )
-                                                                            .append( "maximumReadThreads",
-                                                                                     this.maximumReadThreads )
-                                                                            .append( "maximumIngestThreads",
-                                                                                     this.maximumIngestThreads )
-                                                                            .append( "maximumArchiveThreads",
-                                                                                     this.maximumArchiveThreads )
-                                                                            .append( "maximumWebClientThreads",
-                                                                                     this.maximumWebClientThreads )
-                                                                            .append( "maximumNwmIngestThreads",
-                                                                                     this.maximumNwmIngestThreads )
-                                                                            .append( "dataDirectory",
-                                                                                     this.dataDirectory )
-                                                                            .append( "updateProgressMonitor",
-                                                                                     this.updateProgressMonitor )
-                                                                            .append( "maximumPoolThreads",
-                                                                                     this.maximumPoolThreads )
-                                                                            .append( "maximumThresholdThreads",
-                                                                                     this.maximumThresholdThreads )
-                                                                            .append( "maximumMetricThreads",
-                                                                                     this.maximumMetricThreads )
-                                                                            .append( "maximumProductThreads",
-                                                                                     this.maximumProductThreads )
-                                                                            .append( "featureBatchThreshold",
-                                                                                     this.featureBatchThreshold )
-                                                                            .append( "featureBatchSize",
-                                                                                     this.featureBatchSize )
-                                                                            .toString();
-    }
-
-    /**
-     * @return The database type.
-     */
-
-    public DatabaseType getDatabaseType()
-    {
-        return this.databaseConfiguration.getDatabaseType();
     }
 }

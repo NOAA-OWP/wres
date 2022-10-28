@@ -2,6 +2,7 @@ package wres;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -31,26 +32,28 @@ import com.google.common.collect.Range;
  * @author Christopher Tubbs
  * Provides the entry point for prototyping development
  */
-public class Main {
+public class Main
+{
     static
     {
         ProcessHandle processHandle = ProcessHandle.current();
         long pid = processHandle.pid();
-        MDC.put("pid", Long.toString( pid ) );
+        MDC.put( "pid", Long.toString( pid ) );
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( Main.class );
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
     private static final Version version = new Version( SYSTEM_SETTINGS );
 
-	/**
-	 * Executes and times the requested operation with the given parameters
-	 * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
-	 */
-	public static void main(String[] args) {
+    /**
+     * Executes and times the requested operation with the given parameters
+     * @param args Arguments from the command line of the format {@code action <parameter 1, parameter 2, etc>}"
+     */
+    public static void main( String[] args )
+    {
 
 
-        if (LOGGER.isInfoEnabled())
+        if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( Main.getVersionDescription() );
             LOGGER.info( Main.getVerboseRuntimeDescription() );
@@ -58,20 +61,20 @@ public class Main {
 
         String operation = "-h";
 
-        if (args.length > 0 && MainFunctions.hasOperation(args[0]))
+        if ( args.length > 0 && MainFunctions.hasOperation( args[0] ) )
         {
             operation = args[0];
         }
-        else if (args.length > 0)
+        else if ( args.length > 0 )
         {
-            LOGGER.info("Running \"{}\" is not currently supported.", args[0]);
-            LOGGER.info("Custom handling needs to be added to prototyping.Prototype.main ");
-            LOGGER.info("to test the indicated prototype.");
+            LOGGER.info( "Running \"{}\" is not currently supported.", args[0] );
+            LOGGER.info( "Custom handling needs to be added to prototyping.Prototype.main " );
+            LOGGER.info( "to test the indicated prototype." );
         }
 
         final String finalOperation = operation;
         Instant beganExecution = Instant.now();
-        
+
         // Log any uncaught exceptions
         UncaughtExceptionHandler handler = ( a, b ) -> {
             String message = "The WRES encountered an uncaught exception in thread " + a + ".";
@@ -79,22 +82,22 @@ public class Main {
         };
 
         Thread.setDefaultUncaughtExceptionHandler( handler );
-        
+
         Database database = null;
-        if ( !SYSTEM_SETTINGS.isInMemory() )
+        if ( SYSTEM_SETTINGS.isInDatabase() )
         {
-            database = new Database( SYSTEM_SETTINGS );
+            database = Main.prepareDatabase( SYSTEM_SETTINGS );
         }
-        
+
         Executor executor = new Executor( SYSTEM_SETTINGS );
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             Instant endedExecution = Instant.now();
             Duration duration = Duration.between( beganExecution, endedExecution );
             LOGGER.info( "The function '{}' took {}", finalOperation, duration );
-        }));
+        } ) );
 
-        String[] cutArgs = Collections.removeIndexFromArray(args, 0);
+        String[] cutArgs = Collections.removeIndexFromArray( args, 0 );
         String pid = MDC.get( "pid" );
 
         if ( Objects.nonNull( pid ) )
@@ -113,15 +116,16 @@ public class Main {
         // Create the broker connections for statistics messaging
         Properties brokerConnectionProperties =
                 BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-        
+
         // Create an embedded broker for statistics messages, if needed
         EmbeddedBroker broker = null;
-        if( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
         {
             broker = EmbeddedBroker.of( brokerConnectionProperties, false );
         }
 
-        try( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties ) )
+        try ( BrokerConnectionFactory brokerConnectionFactory =
+                BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             MainFunctions.SharedResources sharedResources =
                     new MainFunctions.SharedResources( SYSTEM_SETTINGS,
@@ -129,7 +133,7 @@ public class Main {
                                                        executor,
                                                        brokerConnectionFactory,
                                                        cutArgs );
-            
+
             result = MainFunctions.call( operation, sharedResources );
             Instant endedExecution = Instant.now();
             String exception = null;
@@ -140,7 +144,7 @@ public class Main {
             }
 
             // Log the execution to the database if a database is used
-            if( ! SYSTEM_SETTINGS.isInMemory() )
+            if ( SYSTEM_SETTINGS.isInDatabase() )
             {
                 sharedResources.getDatabase()
                                .logExecution( args,
@@ -159,7 +163,7 @@ public class Main {
                 LOGGER.error( message, result.getException() );
             }
         }
-        catch ( CouldNotLoadBrokerConfigurationException | CouldNotStartEmbeddedBrokerException  e )
+        catch ( CouldNotLoadBrokerConfigurationException | CouldNotStartEmbeddedBrokerException e )
         {
             LOGGER.warn( "Failed to create the broker connections.", e );
         }
@@ -169,7 +173,7 @@ public class Main {
         }
         finally
         {
-            if ( !SYSTEM_SETTINGS.isInMemory() )
+            if ( SYSTEM_SETTINGS.isInDatabase() )
             {
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
@@ -212,7 +216,7 @@ public class Main {
                 System.exit( 1 );
             }
         }
-	}
+    }
 
     public static String getVersion()
     {
@@ -227,6 +231,43 @@ public class Main {
     private static String getVerboseRuntimeDescription()
     {
         return version.getVerboseRuntimeDescription();
+    }
+
+    /**
+     * Prepares the database by creating it, attempting a connection and then cleaning/migrating.
+     * 
+     * @param systemSettings the system settings
+     */
+
+    private static Database prepareDatabase( SystemSettings systemSettings )
+    {
+        Database database = new Database( systemSettings );
+        
+        // Check that the database is available
+        try
+        {
+            database.testConnection();
+        }
+        catch ( SQLException | IOException e )
+        {
+            throw new InternalWresException( "Failed to connect to the database.", e );
+        }
+        
+        // Migrate and clean if required
+        if( systemSettings.getDatabaseSettings()
+                          .getAttemptToMigrate() )
+        {
+            try
+            {
+                database.migrateAndClean();
+            }
+            catch ( SQLException | IOException e )
+            {
+                throw new InternalWresException( "Failed to migrate and clean the database.", e );
+            }
+        }
+
+        return database;
     }
 
     /**
@@ -258,7 +299,8 @@ public class Main {
         {
             System.out.println( messagesWritten +
                                 "specified in the logback configuration file "
-                                + logFileOverride + ". For more details, use "
+                                + logFileOverride
+                                + ". For more details, use "
                                 + "the logging library's debug functionality." );
         }
         else

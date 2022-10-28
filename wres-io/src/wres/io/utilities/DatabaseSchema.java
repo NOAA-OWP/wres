@@ -1,4 +1,4 @@
-package wres.system;
+package wres.io.utilities;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -16,6 +16,9 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import wres.system.DatabaseLockFailed;
+import wres.system.DatabaseLockManager;
+import wres.system.DatabaseType;
 
 class DatabaseSchema implements Closeable
 {

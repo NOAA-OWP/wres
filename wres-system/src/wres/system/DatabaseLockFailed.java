@@ -2,8 +2,10 @@ package wres.system;
 
 import java.util.Objects;
 
-class DatabaseLockFailed extends RuntimeException
+public class DatabaseLockFailed extends RuntimeException
 {
+    private static final long serialVersionUID = -8951384634940360610L;
+
     enum Operation
     {
         LOCK_SHARED,

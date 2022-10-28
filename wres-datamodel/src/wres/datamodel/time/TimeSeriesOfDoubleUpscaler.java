@@ -127,7 +127,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
         Unit<?> existingUnit = null;
         Unit<?> desiredUnit = null;
 
-        // Only formalize the units when a unit conversion is needed
+        // Only formalize the units when a unit conversion is needed since the unit may not be recognized
         if ( !existingUnitString.equals( desiredUnitString ) )
         {
             existingUnit = Units.getUnit( existingUnitString, this.getUnitAliases() );

@@ -194,7 +194,7 @@ public final class Operations
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( timeSeriesIngester );
 
-        if ( !systemSettings.isInMemory() )
+        if ( systemSettings.isInDatabase() )
         {
             Objects.requireNonNull( database );
             Objects.requireNonNull( caches );

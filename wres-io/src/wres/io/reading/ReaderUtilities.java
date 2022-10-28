@@ -328,7 +328,9 @@ public class ReaderUtilities
             throw new ReadException( "When attempting to read the time-series data source, " + uri
                                      + ", discovered that it contained an empty time-series, which is not allowed. "
                                      + "Please check this data source and remove all empty time-series before trying "
-                                     + "again." );
+                                     + "again. The empty time-series is: "
+                                     + timeSeries
+                                     + "." );
         }
         
         return timeSeries;

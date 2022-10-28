@@ -1094,21 +1094,41 @@ class RescalingHelper
             }
             else
             {
-                String message =
-                        MessageFormat.format( "Cannot further accumulate values that are not already "
-                                              + "accumulations. The function associated with the existing time "
-                                              + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
-                                              + "associated with the desired time scale must be changed. If you "
-                                              + "are attempting to change unit dimensions by performing a time "
-                                              + "integration of the existing measurement unit of ''{2}'', then you "
-                                              + "should instead check that the desired measurement unit of ''{3}'' is "
-                                              + "correct.",
-                                              TimeScaleFunction.TOTAL,
-                                              existingFunction,
-                                              existingUnit,
-                                              desiredUnit );
+                if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit ) )
+                {
+                    String message =
+                            MessageFormat.format( "Cannot further accumulate values that are not already "
+                                                  + "accumulations. The function associated with the existing time "
+                                                  + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
+                                                  + "associated with the desired time scale must be changed. If you "
+                                                  + "are attempting to change unit dimensions by performing a time "
+                                                  + "integration of the existing measurement unit of ''{2}'', then you "
+                                                  + "should instead check that the desired measurement unit of ''{3}'' is "
+                                                  + "correct.",
+                                                  TimeScaleFunction.TOTAL,
+                                                  existingFunction,
+                                                  existingUnit,
+                                                  desiredUnit );
 
-                return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
+                    return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
+                }
+                else
+                {
+                    String message =
+                            MessageFormat.format( "Cannot further accumulate values that are not already "
+                                                  + "accumulations. The function associated with the existing time "
+                                                  + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
+                                                  + "associated with the desired time scale must be changed. If you "
+                                                  + "are attempting to change unit dimensions by performing a time "
+                                                  + "integration of the existing measurement unit, then you should "
+                                                  + "instead check that the desired measurement unit is correct.",
+                                                  TimeScaleFunction.TOTAL,
+                                                  existingFunction,
+                                                  existingUnit,
+                                                  desiredUnit );
+
+                    return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
+                }
             }
         }
 

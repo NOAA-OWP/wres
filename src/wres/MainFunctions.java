@@ -185,13 +185,17 @@ final class MainFunctions
 	 */
     private static ExecutionResult cleanDatabase( SharedResources sharedResources )
 	{
-        DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
-
-        if ( sharedResources.getSystemSettings().isInMemory() )
+        if ( sharedResources.getSystemSettings()
+                            .isInMemory() )
         {
-            throw new IllegalArgumentException( "Discovered the system property wres.inMemory=\"true\". Cannot clean a "
-                                                + "database because there is no database to clean." );
+            throw new IllegalArgumentException( "This is an in-memory execution. Cannot clean a database because there "
+                                                + "is no database to clean." );
         }
+
+        DatabaseLockManager lockManager =
+                DatabaseLockManager.from( sharedResources.getSystemSettings(),
+                                          () -> sharedResources.getDatabase()
+                                                               .getRawConnection() );
 
         try
         {
@@ -258,7 +262,10 @@ final class MainFunctions
 
     private static ExecutionResult refreshDatabase( final SharedResources sharedResources )
 	{
-        DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
+        DatabaseLockManager lockManager =
+                DatabaseLockManager.from( sharedResources.getSystemSettings(),
+                                          () -> sharedResources.getDatabase()
+                                                               .getRawConnection() );
 
         try
         {
@@ -298,7 +305,10 @@ final class MainFunctions
                 return ExecutionResult.failure( e );
             }
 
-            DatabaseLockManager lockManager = DatabaseLockManager.from( sharedResources.getSystemSettings() );
+            DatabaseLockManager lockManager =
+                    DatabaseLockManager.from( sharedResources.getSystemSettings(),
+                                              () -> sharedResources.getDatabase()
+                                                                   .getRawConnection() );
 
             try
             {
@@ -493,7 +503,7 @@ final class MainFunctions
             Objects.requireNonNull( arguments );
             Objects.requireNonNull( brokerConnectionFactory );
             
-            if( !systemSettings.isInMemory() )
+            if( systemSettings.isInDatabase() )
             {
                 Objects.requireNonNull( database );
             }

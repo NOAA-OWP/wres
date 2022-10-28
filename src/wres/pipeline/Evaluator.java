@@ -72,7 +72,7 @@ public class Evaluator
         Objects.requireNonNull( executor );
         Objects.requireNonNull( brokerConnectionFactory );
 
-        if ( !systemSettings.isInMemory() )
+        if ( systemSettings.isInDatabase() )
         {
             Objects.requireNonNull( database );
         }
@@ -281,7 +281,9 @@ public class Evaluator
                                                       metricQueue,
                                                       productQueue );
 
-        DatabaseLockManager lockManager = DatabaseLockManager.from( innerSystemSettings );
+        DatabaseLockManager lockManager =
+                DatabaseLockManager.from( innerSystemSettings,
+                                          () -> innerDatabase.getRawConnection() );
 
         // Compress database services into one object
         DatabaseServices databaseServices = new DatabaseServices( innerDatabase, lockManager );

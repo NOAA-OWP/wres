@@ -250,8 +250,8 @@ public class SourceLoader
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
 
         // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. See #51232.
-        if ( source.isGridded() && !this.getSystemSettings()
-                                        .isInMemory() )
+        if ( source.isGridded() && this.getSystemSettings()
+                                       .isInDatabase() )
         {
             // Empty stream, which will trigger source ingest only, not time-series reading/ingest
             Stream<TimeSeriesTuple> emptyStream = Stream.of();
