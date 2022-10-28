@@ -175,6 +175,9 @@ class JobReceiver extends DefaultConsumer
         Verb command = jobMessage.getVerb();
         String projectConfig = jobMessage.getProjectConfig();
         List<String> additionalArguments = jobMessage.getAdditionalArgumentsList();
+        String databaseName = jobMessage.getDatabaseName();
+        String databaseHost = jobMessage.getDatabaseHost();
+        String databasePort = jobMessage.getDatabasePort();
 
         result.add( executable );
         result.add( command.name()
@@ -248,6 +251,26 @@ class JobReceiver extends DefaultConsumer
             javaOpts = javaOpts + " " + innerJavaOpts;
         }
 
+        //Pass through the database options if not null or blank.
+        if ( databaseHost != null && !databaseHost.isBlank() )
+        {
+            javaOpts = JobReceiver.setJavaOptOption( javaOpts,
+                                                     "wres.databaseHost",
+                                                     databaseHost );
+        }
+        if (databaseName != null && !databaseName.isBlank() )
+        {
+            javaOpts = JobReceiver.setJavaOptOption( javaOpts,
+                                                     "wres.databaseName",
+                                                     databaseName );
+        }
+        if (databasePort != null && !databasePort.isBlank() )
+        {
+            javaOpts = JobReceiver.setJavaOptOption( javaOpts,
+                                                     "wres.databasePort",
+                                                     databasePort );
+        }
+
         // Assume that a request for "connecttodb" means "migrate the db", which
         // in turn means we must replace the option wres.attemptToMigrate=false
         // to wres.attemptToMigrate=true or add the option and set to true if
@@ -256,7 +279,9 @@ class JobReceiver extends DefaultConsumer
         {
             LOGGER.info( "Special case: migrate the database, existing JAVA_OPTS: {}",
                          javaOpts );
-            javaOpts = JobReceiver.setAttemptToMigrateTrue( javaOpts );
+            javaOpts = JobReceiver.setJavaOptOption( javaOpts, 
+                                                    "wres.attemptToMigrate", 
+                                                    "true" );
             LOGGER.info( "Updated JAVA_OPTS: {}", javaOpts );
         }
 
@@ -268,25 +293,31 @@ class JobReceiver extends DefaultConsumer
 
 
     /**
-     * Force wres.attemptToMigrate=true in a given JAVA_OPTS which may or may not
+     * Force option to have a value in a given JAVA_OPTS which may or may not
      * already have this value set.
      * @param javaOpts existing JAVA_OPTS, may or may not have the setting.
-     * @return new JAVA_OPTS with wres.attemptToMigrate=true
+     * @param option The Java option to set.
+     * @param optionValue The value of the option.
+     * @return new JAVA_OPTS with the option set to the value.
      */
-    static String setAttemptToMigrateTrue( String javaOpts )
+    static String setJavaOptOption( String javaOpts, String option, String optionValue )
     {
-        String migrateTrue = "-Dwres.attemptToMigrate=true";
+        String optionCheckText = "-D" + option + "=";
+        String optionValueText = optionCheckText + optionValue;
 
-        if ( javaOpts.contains( "-Dwres.attemptToMigrate=" ) )
+        if ( javaOpts.contains( optionCheckText ) )
         {
-            LOGGER.debug( "Found migration flag in java opts, replacing." );
-            return javaOpts.replaceAll( "-Dwres\\.attemptToMigrate=[\\w\\d]+",
-                                        migrateTrue );
+            LOGGER.debug( "Found {} in java options, replacing with new valuei {}.", 
+                          option, optionValue );
+            String optionReplacementString = optionCheckText.replaceAll( ".", "\\\\." );
+            return javaOpts.replaceAll( optionCheckText + "[^\\s]+",
+                                        optionValueText );
         }
         else
         {
-            LOGGER.debug( "Did not find migration flag in java opts, appending." );
-            return javaOpts + " " + migrateTrue;
+            LOGGER.debug( "Did not find {} in java opts, appending {}.", 
+                          option, optionValueText );
+            return javaOpts + " " + optionValueText;
         }
     }
 }

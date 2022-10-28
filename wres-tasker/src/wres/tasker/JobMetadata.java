@@ -88,6 +88,12 @@ public class JobMetadata
 
     private JobState jobState;
 
+    private String databaseName;
+
+    private String databaseHost;
+
+    private String databasePort;
+
     public JobMetadata( String id )
     {
         Objects.requireNonNull( id );
@@ -107,6 +113,9 @@ public class JobMetadata
         this.rightInputs = new CopyOnWriteArrayList<>();
         this.baselineInputs = new CopyOnWriteArrayList<>();
         this.jobState = JobState.CREATED;
+        this.databaseName = null;
+        this.databaseHost = null;
+        this.databasePort = null;
     }
 
     /**
@@ -315,6 +324,36 @@ public class JobMetadata
         }
 
         this.jobState = jobState;
+    }
+ 
+    public String getDatabaseName()
+    {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String value)
+    {
+        databaseName = value;
+    }
+
+    public String getDatabaseHost()
+    {
+        return databaseHost;
+    }
+
+    public void setDatabaseHost(String value)
+    {
+        databaseHost = value;
+    }
+
+    public String getDatabasePort()
+    {
+        return databasePort;
+    }
+
+    public void setDatabasePort(String value)
+    {
+        databasePort = value;
     }
 
     void addStdout( Integer index, String line )

@@ -533,6 +533,21 @@ class JobResults
         }
     }
 
+    /**
+     * @param jobId The ID for which to find the metadata.
+     * @return The metadata found.
+     * @throws IllegalStateException if this job is not found.
+     */
+    private JobMetadata getJobMetadataExceptIfNotFound( String jobId )
+    {
+        JobMetadata metadata = jobMetadataById.get( jobId );
+        if ( Objects.isNull( metadata ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId + " not found." );
+        }
+        return metadata;
+    }
+    
 
     /**
      * Register a a new job, without yet watching for results from a worker.
@@ -614,12 +629,7 @@ class JobResults
                                         String jobStatusExchangeName )
             throws IOException, TimeoutException
     {
-        JobMetadata jobMetadata = this.jobMetadataById.get( jobId );
-
-        if ( Objects.isNull( jobMetadata ) )
-        {
-            throw new IllegalStateException( "Job " + jobId + " not found." );
-        }
+        JobMetadata jobMetadata = getJobMetadataExceptIfNotFound(jobId);
 
         CountDownLatch countDownLatch = new CountDownLatch( 5 );
         JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
@@ -825,12 +835,7 @@ class JobResults
      */
     void removeJobOutputs( String jobId, Set<URI> outputs )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( Objects.isNull( metadata ) )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         //This call may throw an IllegalStateException.
         boolean result = metadata.removeOutputs( outputs );
@@ -849,12 +854,7 @@ class JobResults
     {
         LOGGER.debug( "Setting declaration for jobId={} to: \n{}",
                       jobId, jobMessage );
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( Objects.isNull( metadata ) )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         byte[] originalMessage = metadata.getJobMessage();
 
@@ -872,60 +872,111 @@ class JobResults
      */
     byte[] getJobMessage( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         return metadata.getJobMessage();
+    }
+    
+    /**
+     * Set the name of the database for the given job.
+     */
+    void setDatabaseName( String jobId, String databaseName )
+    {
+        LOGGER.debug( "Setting databaseName for jobId={} to: {}.", jobId, databaseName );
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        String originalValue = metadata.getDatabaseName();
+        if ( Objects.nonNull( originalValue ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId
+                                             + " already had database name set,"
+                                             + originalValue + "!" );
+        }
+        metadata.setDatabaseName(databaseName);    
+    }
+    
+    /**
+     * Get the name of the database for the given job.
+     */ 
+    String getDatabaseName( String jobId )
+    {
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        return metadata.getDatabaseName();
+    }
+
+    /**
+     * Set the host of the database for the given job.
+     */ 
+    void setDatabaseHost( String jobId, String databaseHost )
+    {
+        LOGGER.debug( "Setting databaseHost for jobId={} to: {}.", jobId, databaseHost );
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        String originalValue = metadata.getDatabaseHost();
+        if ( Objects.nonNull( originalValue ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId
+                                             + " already had database host set!" );
+        }
+        metadata.setDatabaseHost(databaseHost);    
+    }
+    
+    /**
+     * Get the host of the database for the given job.
+     */ 
+    String getDatabaseHost( String jobId )
+    {
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        return metadata.getDatabaseHost();
+    }
+
+    /**
+     * Set the port of the database for the given job.
+     */ 
+    void setDatabasePort( String jobId, String databasePort )
+    {
+        LOGGER.debug( "Setting databaseHost for jobId={} to: {}.", jobId, databasePort );
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        String originalValue = metadata.getDatabasePort();
+        if ( Objects.nonNull( originalValue ) )
+        {
+            throw new IllegalStateException( "Job id " + jobId
+                                             + " already had database port set!" );
+        }
+        metadata.setDatabaseHost(databasePort);    
+    }
+    
+    /**
+     * Get the port of the database for the given job.
+     */ 
+    String getDatabasePort( String jobId )
+    {
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        return metadata.getDatabasePort();
     }
 
     List<URI> getLeftInputs( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         return Collections.unmodifiableList( metadata.getLeftInputs() );
     }
 
     List<URI> getRightInputs( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         return Collections.unmodifiableList( metadata.getRightInputs() );
     }
 
     List<URI> getBaselineInputs( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         return Collections.unmodifiableList( metadata.getBaselineInputs() );
     }
 
     void addInput( String jobId, String side, URI input )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( Objects.isNull( metadata ) )
-        {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         if ( side.equalsIgnoreCase( "left" ) )
         {
@@ -1008,7 +1059,7 @@ class JobResults
 
     void deleteInputs( String jobId )
     {
-        JobMetadata sharedMetadata = jobMetadataById.get( jobId );
+        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound(jobId);
         JobResults.deleteInputs( sharedMetadata );
     }
 
@@ -1023,12 +1074,7 @@ class JobResults
      */
     void setInQueue( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         try
         {
@@ -1059,12 +1105,7 @@ class JobResults
 
     void setAwaitingPostInputData( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         metadata.setJobState( JobMetadata.JobState.AWAITING_POSTS_OF_DATA );
     }
@@ -1080,12 +1121,7 @@ class JobResults
 
     void setPostInputDone( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         metadata.setJobState( JobMetadata.JobState.NO_MORE_POSTS_OF_DATA );
     }
@@ -1100,13 +1136,9 @@ class JobResults
 
     void setFailedBeforeInQueue( String jobId )
     {
-        JobMetadata metadata = jobMetadataById.get( jobId );
-
-        if ( metadata == null )
-        {
-            throw new IllegalArgumentException( "Unable to find jobId " + jobId );
-        }
+        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
 
         metadata.setJobState( JobMetadata.JobState.FAILED_BEFORE_IN_QUEUE );
     }
 }
+

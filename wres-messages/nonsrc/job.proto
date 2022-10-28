@@ -15,9 +15,16 @@ message job
         CLEANDATABASE = 4;
         VALIDATE = 5;
         ROTATEPARTITIONS = 6;
+        SWITCHDATABASE = 7;
     }
 
     Verb verb = 5;
 
     repeated string additional_arguments = 6;
+    
+    string database_name = 7;
+
+    string database_host = 8;
+
+    string database_port = 9;
 }
