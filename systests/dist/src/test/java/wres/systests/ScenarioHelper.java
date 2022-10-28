@@ -63,6 +63,11 @@ public class ScenarioHelper
         if( !SYSTEM_SETTINGS.isInMemory() )
         {
             DATABASE = new Database( SYSTEM_SETTINGS );
+            
+            // Migrate, as needed
+            Database.prepareDatabase( DATABASE,
+                                      SYSTEM_SETTINGS.getDatabaseSettings()
+                                                     .getAttemptToMigrate() );
         }
         else
         {

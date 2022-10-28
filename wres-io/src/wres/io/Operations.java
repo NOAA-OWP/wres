@@ -45,6 +45,9 @@ import wres.system.SystemSettings;
 
 /**
  * Helpers to conduct ingest and prepare for operations on time-series data.
+ * 
+ * TODO: consider moving the purely database-related helpers, such as {@link #cleanDatabase(Database)} from here to 
+ * {@link Database}.
  */
 
 public final class Operations
@@ -358,7 +361,6 @@ public final class Operations
             throw new SQLException( "Could not connect to the database.", e );
         }
     }
-
 
     /**
      * Removes all loaded user information from the database

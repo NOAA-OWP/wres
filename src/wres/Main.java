@@ -2,7 +2,6 @@ package wres;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -86,7 +85,12 @@ public class Main
         Database database = null;
         if ( SYSTEM_SETTINGS.isInDatabase() )
         {
-            database = Main.prepareDatabase( SYSTEM_SETTINGS );
+            database = new Database( SYSTEM_SETTINGS );
+            
+            // Migrate the database, as needed
+            Database.prepareDatabase( database,
+                                      SYSTEM_SETTINGS.getDatabaseSettings()
+                                                     .getAttemptToMigrate() );
         }
 
         Executor executor = new Executor( SYSTEM_SETTINGS );
@@ -231,43 +235,6 @@ public class Main
     private static String getVerboseRuntimeDescription()
     {
         return version.getVerboseRuntimeDescription();
-    }
-
-    /**
-     * Prepares the database by creating it, attempting a connection and then cleaning/migrating.
-     * 
-     * @param systemSettings the system settings
-     */
-
-    private static Database prepareDatabase( SystemSettings systemSettings )
-    {
-        Database database = new Database( systemSettings );
-        
-        // Check that the database is available
-        try
-        {
-            database.testConnection();
-        }
-        catch ( SQLException | IOException e )
-        {
-            throw new InternalWresException( "Failed to connect to the database.", e );
-        }
-        
-        // Migrate and clean if required
-        if( systemSettings.getDatabaseSettings()
-                          .getAttemptToMigrate() )
-        {
-            try
-            {
-                database.migrateAndClean();
-            }
-            catch ( SQLException | IOException e )
-            {
-                throw new InternalWresException( "Failed to migrate and clean the database.", e );
-            }
-        }
-
-        return database;
     }
 
     /**
