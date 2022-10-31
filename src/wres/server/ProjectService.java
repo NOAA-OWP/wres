@@ -40,7 +40,7 @@ import wres.system.SystemSettings;
  * Allows retrieval of some CSV outputs for recent stuff.
  */
 
-@Path( "/project")
+@Path( "/project" )
 public class ProjectService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
@@ -49,6 +49,14 @@ public class ProjectService
     private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
     private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
+    // Migrate the database, as needed
+    static
+    {
+        Database.prepareDatabase( DATABASE,
+                                  SYSTEM_SETTINGS.getDatabaseSettings()
+                                                 .getAttemptToMigrate() );
+    }
+
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
 
@@ -56,10 +64,9 @@ public class ProjectService
     // The cache is here for expedience, this information could be persisted
     // elsewhere, such as a database or a local file. Cleanup of outputs is a
     // related concern.
-    private static final Cache<Long, Set<java.nio.file.Path>> OUTPUTS
-            = Caffeine.newBuilder()
-                      .maximumSize( 100 )
-                      .build();
+    private static final Cache<Long, Set<java.nio.file.Path>> OUTPUTS = Caffeine.newBuilder()
+                                                                                .maximumSize( 100 )
+                                                                                .build();
 
     @POST
     @Consumes( MediaType.TEXT_XML )
@@ -71,26 +78,26 @@ public class ProjectService
         // TODO: the embedded broker and broker connections for statistics messaging should be one per service instance,
         // not one per evaluation, but this class does not currently provide a hook for closing its resources, so 
         // creating them and destroying them here for now.
-        
+
         // Create the broker connections for statistics messaging
         Properties brokerConnectionProperties =
                 BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-        
+
         // Create an embedded broker for statistics messages, if needed
         EmbeddedBroker broker = null;
-        if( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
         {
             broker = EmbeddedBroker.of( brokerConnectionProperties, false );
         }
-        
+
         // TODO: abstract out the connection factory, only need one per ProjectService
-        try( BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties ) )
+        try ( BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
                                                  ProjectService.DATABASE,
                                                  ProjectService.EXECUTOR,
                                                  brokerConnections );
-                    
+
             ProjectConfigPlus projectPlus =
                     ProjectConfigPlus.from( rawProjectConfig,
                                             "a web request" );
@@ -108,29 +115,29 @@ public class ProjectService
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
-                                   "I received something I could not parse. The top-level exception was: "
-                                   + e.getMessage() )
+                                    "I received something I could not parse. The top-level exception was: "
+                                    + e.getMessage() )
                            .build();
         }
         catch ( InternalWresException iwe )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
-                                   "WRES experienced an internal issue. The top-level exception was: "
-                                   + iwe.getMessage() )
+                                    "WRES experienced an internal issue. The top-level exception was: "
+                                    + iwe.getMessage() )
                            .build();
         }
         catch ( Exception e )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
-                                   "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                   + e.getMessage() )
+                                    "WRES experienced an unexpected internal issue. The top-level exception was: "
+                                    + e.getMessage() )
                            .build();
         }
         finally
         {
-            if( Objects.nonNull( broker ) )
+            if ( Objects.nonNull( broker ) )
             {
                 try
                 {
@@ -145,7 +152,8 @@ public class ProjectService
 
         return Response.ok( "I received project " + projectId
                             + ", and successfully ran it. Visit /project/"
-                            + projectId + " for more." )
+                            + projectId
+                            + " for more." )
                        .build();
     }
 
@@ -195,7 +203,8 @@ public class ProjectService
                 {
                     return Response.status( Response.Status.NOT_FOUND )
                                    .entity( "Could not see resource "
-                                            + resourceName + "." )
+                                            + resourceName
+                                            + "." )
                                    .build();
                 }
 
@@ -203,7 +212,8 @@ public class ProjectService
                 {
                     return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                    .entity( "Found but could not read resource "
-                                            + resourceName + "." )
+                                            + resourceName
+                                            + "." )
                                    .build();
                 }
 
@@ -232,7 +242,8 @@ public class ProjectService
         return Response.status( Response.Status.NOT_FOUND )
                        .type( type )
                        .entity( "Could not find resource " + resourceName
-                                + " from project " + id )
+                                + " from project "
+                                + id )
                        .build();
     }
 
@@ -244,7 +255,8 @@ public class ProjectService
         for ( java.nio.file.Path path : pathSet )
         {
             resources.add( "project/" + Long.toString( projectId )
-                           + "/" + path.getFileName() );
+                           + "/"
+                           + path.getFileName() );
         }
 
         return Collections.unmodifiableSet( resources );

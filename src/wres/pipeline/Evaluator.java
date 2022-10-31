@@ -102,7 +102,7 @@ public class Evaluator
         {
             String message = "Please correct project configuration file name and "
                              + "pass it like this: "
-                             + "bin/wres.bat execute c:/path/to/config1.xml ";
+                             + "bin/wres.bat execute c:/path/to/config1.xml";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             failure.setFailed();
@@ -114,8 +114,7 @@ public class Evaluator
 
         ProjectConfigPlus projectConfigPlus;
 
-        // Subject to team approval (if you would prefer to *not* overload
-        // the "execute" command, add a new method instead)
+        // Declaration passed directly as an argument
         if ( evaluationConfigArgument.startsWith( "<?xml " ) )
         {
             // Successfully detected a project passed directly as an argument.
