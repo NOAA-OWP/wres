@@ -28,8 +28,7 @@ import wres.util.Collections;
 import com.google.common.collect.Range;
 
 /**
- * @author Christopher Tubbs
- * Provides the entry point for prototyping development
+ * Entry point for the WRES standalone application.
  */
 public class Main
 {
@@ -50,28 +49,53 @@ public class Main
      */
     public static void main( String[] args )
     {
-
-
+        // Print some information about the software version and runtime
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( Main.getVersionDescription() );
             LOGGER.info( Main.getVerboseRuntimeDescription() );
         }
 
-        String operation = "-h";
+        // Default to help function, -h
+        String function = "-h";
+        String[] finalArgs = args;
 
-        if ( args.length > 0 && MainFunctions.hasOperation( args[0] ) )
+        // No arguments or request for help, print help without any other start-up details
+        if ( args.length == 0 || ( args.length == 1 && ( "-h".equals( args[0] ) || "--help".equals( args[0] ) )
+                                   || "help".equals( args[0] ) ) )
         {
-            operation = args[0];
+            Functions.call( function, null );
+
+            return;
         }
-        else if ( args.length > 0 )
+        // One argument that looks like a project declaration, so default to execute
+        else if ( args.length == 1 && ( args[0].endsWith( ".xml" ) || args[0].startsWith( "<?xml " ) ) )
         {
-            LOGGER.info( "Running \"{}\" is not currently supported.", args[0] );
-            LOGGER.info( "Custom handling needs to be added to prototyping.Prototype.main " );
-            LOGGER.info( "to test the indicated prototype." );
+            LOGGER.info( "Interpreting the first argument as project declaration and executing it..." );
+
+            function = "execute";
+        }
+        // Apply the known function
+        else if ( args.length > 0 && Functions.hasOperation( args[0] ) )
+        {
+            function = args[0];
+
+            // Remove the function from the args
+            finalArgs = Collections.removeIndexFromArray( args, 0 );
+        }
+        // Unknown function, log and print help information without any other start-up details
+        else
+        {
+            LOGGER.warn( "The function \"{}\" is not supported.", args[0] );
+
+            // Print help information
+            Functions.call( function, null );
+
+            return;
         }
 
-        final String finalOperation = operation;
+        final String finalFunction = function;
+
         Instant beganExecution = Instant.now();
 
         // Log any uncaught exceptions
@@ -82,26 +106,12 @@ public class Main
 
         Thread.setDefaultUncaughtExceptionHandler( handler );
 
-        Database database = null;
-        if ( SYSTEM_SETTINGS.isInDatabase() )
-        {
-            database = new Database( SYSTEM_SETTINGS );
-            
-            // Migrate the database, as needed
-            Database.prepareDatabase( database,
-                                      SYSTEM_SETTINGS.getDatabaseSettings()
-                                                     .getAttemptToMigrate() );
-        }
-
-        Executor executor = new Executor( SYSTEM_SETTINGS );
-
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             Instant endedExecution = Instant.now();
             Duration duration = Duration.between( beganExecution, endedExecution );
-            LOGGER.info( "The function '{}' took {}", finalOperation, duration );
+            LOGGER.info( "The function '{}' took {}", finalFunction, duration );
         } ) );
 
-        String[] cutArgs = Collections.removeIndexFromArray( args, 0 );
         String pid = MDC.get( "pid" );
 
         if ( Objects.nonNull( pid ) )
@@ -115,7 +125,32 @@ public class Main
             LOGGER.warn( "Failed to find the process id" );
         }
 
+        Main.completeExecution( finalFunction, finalArgs, beganExecution );
+    }
+
+    /**
+     * Completes an execution.
+     * @param function the function to execute
+     * @param args the arguments to execute
+     * @param beganExecution the time when the execution began
+     */
+
+    private static void completeExecution( String function, String[] args, Instant beganExecution )
+    {
         ExecutionResult result = null;
+
+        Executor executor = new Executor( SYSTEM_SETTINGS );
+
+        Database database = null;
+        if ( SYSTEM_SETTINGS.isInDatabase() )
+        {
+            database = new Database( SYSTEM_SETTINGS );
+
+            // Migrate the database, as needed
+            Database.prepareDatabase( database,
+                                      SYSTEM_SETTINGS.getDatabaseSettings()
+                                                     .getAttemptToMigrate() );
+        }
 
         // Create the broker connections for statistics messaging
         Properties brokerConnectionProperties =
@@ -131,14 +166,14 @@ public class Main
         try ( BrokerConnectionFactory brokerConnectionFactory =
                 BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
-            MainFunctions.SharedResources sharedResources =
-                    new MainFunctions.SharedResources( SYSTEM_SETTINGS,
+            Functions.SharedResources sharedResources =
+                    new Functions.SharedResources( SYSTEM_SETTINGS,
                                                        database,
                                                        executor,
                                                        brokerConnectionFactory,
-                                                       cutArgs );
+                                                       args );
 
-            result = MainFunctions.call( operation, sharedResources );
+            result = Functions.call( function, sharedResources );
             Instant endedExecution = Instant.now();
             String exception = null;
 
@@ -162,7 +197,7 @@ public class Main
 
             if ( result.failed() )
             {
-                String message = "Operation '" + operation
+                String message = "Operation '" + function
                                  + "' completed unsuccessfully";
                 LOGGER.error( message, result.getException() );
             }
@@ -182,11 +217,11 @@ public class Main
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
                 {
-                    MainFunctions.shutdown( database, executor );
+                    Functions.shutdown( database, executor );
                 }
                 else
                 {
-                    MainFunctions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
+                    Functions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
                 }
             }
 
@@ -203,8 +238,21 @@ public class Main
             }
         }
 
+        // Print the log file location. TODO: consider ditching this because it's an anti-pattern
         Main.printLogFileInformation();
 
+        // Exit
+        Main.exit( result );
+    }
+
+    /**
+     * Exits the application. 
+     * 
+     * @param result the execution result on exit
+     */
+
+    private static void exit( ExecutionResult result )
+    {
         if ( Objects.nonNull( result ) && result.failed() )
         {
             if ( result.getException() instanceof UserInputException )
