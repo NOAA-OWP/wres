@@ -218,6 +218,10 @@ public class Validation
                                                   projectConfigPlus )
                  && result;
 
+        // Validate combination of data source section with metrics section
+        result = Validation.isInputsAndMetricsCombinationValid( projectConfigPlus )
+                 && result;
+
         // Validate outputs section
         result = Validation.isOutputConfigValid( projectConfigPlus ) && result;
 
@@ -332,7 +336,7 @@ public class Validation
         if ( source.getZoneOffset() != null && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                         + "The zoneOffset attribute is only applied to "
+                         + " The zoneOffset attribute is only applied to "
                          + "datacard data. If there are no datacard data "
                          + "in this evaluation the time zone offset will "
                          + "come from the data itself and the value in the "
@@ -359,6 +363,49 @@ public class Validation
         isValid = Validation.isInputsAndLeadDurationCombinationValid( projectConfigPlus ) && isValid;
 
         return Validation.hasVariablesIfGridded( projectConfigPlus ) && isValid;
+    }
+
+    /**
+     * Checks to see whether the combination of inputs and metrics declaration is valid.
+     * @param projectConfigPlus the project declaration to check
+     * @return false if there are known invalid combinations present
+     */
+
+    private static boolean isInputsAndMetricsCombinationValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus );
+
+        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        boolean valid = true;
+
+        // If there are no ensemble forecasts, there should be no ensemble declaration
+        if ( !ConfigHelper.hasEnsembleForecasts( projectConfig )
+             && projectConfig.getMetrics()
+                             .stream()
+                             .anyMatch( next -> Objects.nonNull( next.getEnsembleAverage() ) ) )
+        {
+            valid = false;
+
+            if ( LOGGER.isErrorEnabled() )
+            {
+                LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                              + " The \"ensembleAverage\" cannot be declared unless the \"inputs\" contains a source "
+                              + "of ensemble forecasts, but no ensemble forecasts were found. Change the \"inputs\" "
+                              + "declaration to include a source of ensemble forecasts or remove the "
+                              + "\"ensembleAverage\" from the \"metrics\" declaration.",
+                              projectConfigPlus.getOrigin(),
+                              projectConfig.getInputs()
+                                           .sourceLocation()
+                                           .getLineNumber(),
+                              projectConfig.getInputs()
+                                           .sourceLocation()
+                                           .getColumnNumber() );
+
+            }
+        }
+
+        return valid;
     }
 
     /**
