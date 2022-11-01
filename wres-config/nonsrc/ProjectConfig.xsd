@@ -1022,14 +1022,10 @@ A unit of time
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         
-        <xs:attribute name="ensembleAverage" type="ensembleAverageType" default="mean">
+        <xs:attribute name="ensembleAverage" type="ensembleAverageType">
             <xs:annotation>
                 <xs:documentation>The type of average to calculate from a collection 
                         of ensemble members in order to compute a single-valued metric.
-                        The default is a "mean" average. For example, when computing 
-                        the mean absolute error (MAE) of an ensemble forecast, the 
-                        default option will compute the MAE of the ensemble mean 
-                        forecast.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>

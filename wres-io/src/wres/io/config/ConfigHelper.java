@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -58,6 +59,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class ConfigHelper
 {
+    private static final String EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH =
+            "External threshold identifiers cannot be interpretted if the input data is both ";
+
+    private static final String AND = " and ";
 
     public static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
@@ -75,12 +80,6 @@ public class ConfigHelper
      */
 
     private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
-
-    private ConfigHelper()
-    {
-        // prevent construction
-    }
-
 
     /**
      * Creates a hash for the indicated project configuration based on its
@@ -235,7 +234,7 @@ public class ConfigHelper
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
      * 
      * @param projectConfig the project declaration
-     * @return Whether or not the project uses probability thresholds
+     * @return whether or not the project uses probability thresholds
      * @throws NullPointerException if the input is null or the metrics declaration is null
      */
     public static boolean hasProbabilityThresholds( ProjectConfig projectConfig )
@@ -256,6 +255,36 @@ public class ConfigHelper
             }
         }
         return false;
+    }
+
+    /**
+     * Return <code>true</code> if the project contains ensemble forecasts, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project declaration
+     * @return whether or not the project contains ensemble forecasts
+     * @throws NullPointerException if the projectConfig is null or the inputs declaration is null
+     */
+    public static boolean hasEnsembleForecasts( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getInputs() );
+
+        Inputs inputs = projectConfig.getInputs();
+        DataSourceConfig left = inputs.getLeft();
+        DataSourceConfig right = inputs.getRight();
+        DataSourceConfig baseline = inputs.getBaseline();
+
+        if ( Objects.nonNull( left ) && left.getType() == DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            return true;
+        }
+
+        if ( Objects.nonNull( right ) && right.getType() == DatasourceType.ENSEMBLE_FORECASTS )
+        {
+            return true;
+        }
+
+        return Objects.nonNull( baseline ) && baseline.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
     private enum ConusZoneId
@@ -517,7 +546,7 @@ public class ConfigHelper
     {
         Objects.requireNonNull( pairConfig );
         Objects.requireNonNull( sourceDeclaration );
-        
+
         SortedSet<String> featureNames = new TreeSet<>();
 
         // Collect the features from the singleton groups and multi-feature groups
@@ -631,10 +660,10 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         "External threshold identifiers cannot be interpretted if the input data is both "
+                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
                                                          +
                                                          foundDimension
-                                                         + " and "
+                                                         + AND
                                                          + FeatureDimension.NWM_FEATURE_ID );
                     }
                 }
@@ -648,10 +677,10 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         "External threshold identifiers cannot be interpretted if the input data is both "
+                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
                                                          +
                                                          foundDimension
-                                                         + " and "
+                                                         + AND
                                                          + FeatureDimension.USGS_SITE_CODE );
                     }
                 }
@@ -665,10 +694,10 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         "External threshold identifiers cannot be interpretted if the input data is both "
+                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
                                                          +
                                                          foundDimension
-                                                         + " and "
+                                                         + AND
                                                          + FeatureDimension.NWS_LID );
                     }
                 }
@@ -747,7 +776,7 @@ public class ConfigHelper
     public static Duration getLatestAnalysisDuration( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig );
-        
+
         Duration returnMe = null;
 
         if ( Objects.nonNull( projectConfig.getPair()
@@ -777,11 +806,11 @@ public class ConfigHelper
     public static MonthDay getEarliestDayInSeason( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig );
-        
+
         MonthDay earliest = null;
 
         PairConfig.Season season = projectConfig.getPair()
-                .getSeason();
+                                                .getSeason();
 
         if ( season != null )
         {
@@ -800,11 +829,11 @@ public class ConfigHelper
     public static MonthDay getLatestDayInSeason( ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig );
-        
+
         MonthDay latest = null;
 
         PairConfig.Season season = projectConfig.getPair()
-                .getSeason();
+                                                .getSeason();
 
         if ( season != null )
         {
@@ -833,5 +862,11 @@ public class ConfigHelper
         }
 
         return returnMe;
+    }
+    
+
+    private ConfigHelper()
+    {
+        // prevent construction
     }
 }
