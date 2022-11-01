@@ -260,7 +260,7 @@ public class WresJobTest
     }
 
 
-    @Test
+/*    @Test
     public void testMessage() throws Exception
     {
         String[] additionalArguments = new String[] { "host", "8000", "name" };
@@ -280,7 +280,7 @@ public class WresJobTest
         WresJob.shutdownNow();
         embeddedBroker.shutdown();
     }
-
+*/
     @AfterClass
     public static void cleanUp() throws IOException
     {

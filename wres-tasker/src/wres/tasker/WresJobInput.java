@@ -333,8 +333,9 @@ public class WresJobInput
 
         try
         {
-            // Send the new job.
-            WresJob.sendDeclarationMessage( jobId, newJob.toByteArray() );
+            // Send the new job. The priority is fixed to 0, because its not
+            // an admin task, which has priority 1.
+            WresJob.sendDeclarationMessage( jobId, newJob.toByteArray(), 0 );
         }
         catch ( IOException | TimeoutException e )
         {

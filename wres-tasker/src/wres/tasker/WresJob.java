@@ -6,7 +6,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -320,9 +322,11 @@ public class WresJob
                                  List<String> additionalArguments )
     {
         LOGGER.debug("additionalArguments: {}", additionalArguments );
-        LOGGER.info("------------------- REQUEST POSTED! ----------------------");
-        LOGGER.info("Parameters: verb = '{}'; postInput = {}; additional arguments = '{}'.",
+        LOGGER.info("==========> REQUEST POSTED: verb = '{}'; postInput = {}; additional arguments = '{}'.",
                 verb, postInput, additionalArguments);
+
+        // Default priority is 0 for all tasks.
+        int messagePriority = 0;
 
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
@@ -363,6 +367,7 @@ public class WresJob
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
         if ( ( ADMIN_TOKEN_HASH != null ) && ( usingToken ) )
         {
+            messagePriority = 1; //Admin priority task.
             if ( adminToken == null || adminToken.isEmpty() )
             {
                 String message = "The verb " + actualVerb + " requires adminToken, which was not given or was blank.";
@@ -500,14 +505,12 @@ public class WresJob
         {
             usedDatabaseName = ACTIVE_DATABASE_NAME;
         }
-        LOGGER.info( "For verb {}, the database info is going to be host='{}', port='{}',"
-                + " name='{}' (blank means default .yml value used).", 
-                actualVerb, usedDatabaseHost, usedDatabasePort, usedDatabaseName);
 
         // Before registering a new job, see if there are already too many.
+        int queueLength = -1;
         try
         {
-            int queueLength = this.getJobQueueLength();
+            queueLength = this.getJobQueueLength();
             this.validateQueueLength( queueLength );
         }
         catch ( IOException | TimeoutException e )
@@ -594,7 +597,7 @@ public class WresJob
 
         try
         {
-            sendDeclarationMessage( jobId, jobMessage.toByteArray() );
+            sendDeclarationMessage( jobId, jobMessage.toByteArray(), messagePriority );
         }
         catch ( IOException | TimeoutException e )
         {
@@ -612,6 +615,9 @@ public class WresJob
         JOB_RESULTS.setDatabaseHost ( jobId, usedDatabaseHost );
         JOB_RESULTS.setDatabasePort ( jobId, usedDatabasePort );
         JOB_RESULTS.setInQueue( jobId );
+        LOGGER.info( "For verb {}, the declaration message was sent with job id {}, priority {}, and "
+                + "database host='{}', port='{}', and name='{}'. There {} jobs preceding it in the queue.", 
+                actualVerb, jobId, messagePriority, usedDatabaseHost, usedDatabasePort, usedDatabaseName, queueLength);
 
         return Response.created( resourceCreated )
                        .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
@@ -684,11 +690,12 @@ public class WresJob
     /**
      *
      * @param message
+     * @param priority The higher the value, the higher the priority.
      * @throws IOException when connectivity, queue declaration, or publication fails
      * @throws IllegalStateException when the job does not exist in shared state
      * @throws TimeoutException
      */
-    static void sendDeclarationMessage( String jobId, byte[] message )
+    static void sendDeclarationMessage( String jobId, byte[] message, int priority )
             throws IOException, TimeoutException
     {
         // Use a shared connection across requests.
@@ -696,12 +703,14 @@ public class WresJob
 
         try ( Channel channel = connection.createChannel() )
         {
+            Map<String, Object> queueArgs = new HashMap<String, Object>();
+            queueArgs.put("x-max-priority", 2);
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
                                           true,
                                           false,
                                           false,
-                                          null );
+                                          queueArgs );
 
             // Tell the worker where to send results.
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
@@ -711,6 +720,7 @@ public class WresJob
                             .replyTo( jobStatusExchange )
                             .correlationId( jobId )
                             .deliveryMode( 2 )
+                            .priority( priority )
                             .build();
 
             // Inform the JobResults class to start looking for correlationId.
@@ -762,12 +772,14 @@ public class WresJob
 
         try ( Channel channel = connection.createChannel() )
         {
+            Map<String, Object> queueArgs = new HashMap<String, Object>();
+            queueArgs.put("x-max-priority", 2);
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
                                           true,
                                           false,
                                           false,
-                                          null );
+                                          queueArgs );
             return declareOk.getMessageCount();
         }
     }
