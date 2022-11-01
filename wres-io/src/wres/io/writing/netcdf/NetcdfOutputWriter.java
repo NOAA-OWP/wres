@@ -29,6 +29,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -72,6 +73,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
+import wres.io.config.ConfigHelper;
 import wres.io.utilities.NoDataException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -251,12 +253,24 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Find the thresholds-by-metric for which blobs should be created
 
-        // Create a map of these with one ThresholdsByMetric for each ensemble average type??? Will that create only
+        // Create a map of these with one ThresholdsByMetric for each ensemble average type? Will that create only
         // the variables needed or more than needed? For example, what happens if the mean error is requested for the 
         // ensemble median and not for the ensemble mean - will that produce a variable for the ensemble median only?
+        // Use the default averaging type if the evaluation does not contain ensemble forecasts
+        boolean hasEnsembles = ConfigHelper.hasEnsembleForecasts( this.getProjectConfig() );        
+        Function<ThresholdsByMetricAndFeature,EnsembleAverageType> ensembleTypeCalculator = thresholds -> 
+        {
+            if( hasEnsembles )
+            {
+                return thresholds.getEnsembleAverageType();
+            }
+            
+            return EnsembleAverageType.MEAN;
+        };
+        
         Map<EnsembleAverageType, List<ThresholdsByMetricAndFeature>> byType =
                 thresholdsByMetricAndFeature.stream()
-                                            .collect( Collectors.groupingBy( ThresholdsByMetricAndFeature::getEnsembleAverageType ) );
+                                            .collect( Collectors.groupingBy( ensembleTypeCalculator ) );
 
         Map<EnsembleAverageType, ThresholdsByMetric> thresholds = byType.entrySet()
                                                                         .stream()
@@ -266,7 +280,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Should be at least one metric with at least one threshold
         if ( thresholds.values()
                        .stream()
-                       .allMatch( next -> next.getMetrics().isEmpty() ) )
+                       .allMatch( next -> next.getMetrics()
+                                              .isEmpty() ) )
         {
             throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }
@@ -367,7 +382,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // One blob and blob writer per time window      
         for ( TimeWindowOuter nextWindow : timeWindows )
         {
-
             Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( inputs,
                                                                                             nextWindow,
                                                                                             thresholds,
@@ -401,7 +415,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 pathActuallyWritten =
                         NetcdfOutputFileCreator.create( this.getTemplatePath(),
                                                         targetPath,
-                                                        destinationConfig,
+                                                        this.destinationConfig,
                                                         nextWindow,
                                                         NetcdfOutputWriter.ANALYSIS_TIME,
                                                         variables,
@@ -575,7 +589,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            TimeScaleOuter desiredTimeScale )
     {
         Collection<MetricVariable> merged = new ArrayList<>();
-        
+
         // Iterate through the ensemble average types
         for ( Map.Entry<EnsembleAverageType, ThresholdsByMetric> next : thresholds.entrySet() )
         {
@@ -618,7 +632,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 merged.addAll( baseline );
             }
         }
-        
+
         return Collections.unmodifiableCollection( merged );
     }
 
@@ -931,11 +945,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                         mapped.addAll( nextEntry.getValue() );
 
-                        // Add it to the map if not already there
-                        if ( !thresholdsMap.containsKey( nextMetric ) )
-                        {
-                            thresholdsMap.put( nextMetric, mapped );
-                        }
+                        thresholdsMap.computeIfAbsent( nextMetric, 
+                                                       k -> thresholdsMap.put( nextMetric, mapped ) );
                     }
                 }
             }
@@ -1208,7 +1219,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // TODO: use a common code pathway to generate the name at these two times or, better still, create blobs 
             // on-demand when the first statistic arrives. This is not currently possible with Netcdf 3 and/or the UCAR
             // Java library.
-            
+
             // Find the metric name
             MetricConstants metricComponentName =
                     MetricConstants.valueOf( score.getData()
@@ -1238,7 +1249,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
-            LOGGER.debug( "Searching the standard threshold names for metric name {} with qualifier {}.", 
+            LOGGER.debug( "Searching the standard threshold names for metric name {} with qualifier {}.",
                           metricNameString,
                           append );
 
