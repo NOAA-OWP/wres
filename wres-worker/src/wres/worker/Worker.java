@@ -7,6 +7,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.Map;
+import java.util.HashMap;
 
 import javax.net.ssl.SSLContext;
 
@@ -91,7 +93,9 @@ public class Worker
             // Take precisely one job at a time:
             receiveChannel.basicQos( 1 );
 
-            receiveChannel.queueDeclare( RECV_QUEUE_NAME, true, false, false, null );
+            Map<String, Object> queueArgs = new HashMap<String, Object>();
+            queueArgs.put("x-max-priority", 2);
+            receiveChannel.queueDeclare( RECV_QUEUE_NAME, true, false, false, queueArgs );
 
             BlockingQueue<WresProcess> processToLaunch = new ArrayBlockingQueue<>( 1 );
 

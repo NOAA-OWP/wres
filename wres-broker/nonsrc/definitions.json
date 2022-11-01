@@ -87,8 +87,11 @@
       "vhost": "wres",
       "durable": true,
       "auto_delete": false,
-      "arguments": {}
-    }
+      "arguments": 
+      {
+        "x-max-priority": 2
+      }
+    } 
   ],
   "exchanges": [],
   "bindings": []
