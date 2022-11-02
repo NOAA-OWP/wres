@@ -96,6 +96,8 @@ public class Main
 
         final String finalFunction = function;
 
+        LOGGER.info( "Running function '{}' with arguments '{}'.", finalFunction, finalArgs );
+        
         Instant beganExecution = Instant.now();
 
         // Log any uncaught exceptions
@@ -168,10 +170,10 @@ public class Main
         {
             Functions.SharedResources sharedResources =
                     new Functions.SharedResources( SYSTEM_SETTINGS,
-                                                       database,
-                                                       executor,
-                                                       brokerConnectionFactory,
-                                                       args );
+                                                   database,
+                                                   executor,
+                                                   brokerConnectionFactory,
+                                                   args );
 
             result = Functions.call( function, sharedResources );
             Instant endedExecution = Instant.now();
@@ -185,8 +187,13 @@ public class Main
             // Log the execution to the database if a database is used
             if ( SYSTEM_SETTINGS.isInDatabase() )
             {
+                // Log both the operation and the args
+                String[] argsToLog = new String[args.length + 1];
+                argsToLog[0] = function;
+                System.arraycopy( args, 0, argsToLog, 1, args.length );
+
                 sharedResources.getDatabase()
-                               .logExecution( args,
+                               .logExecution( argsToLog,
                                               result.getName(),
                                               result.getHash(),
                                               Range.open( beganExecution, endedExecution ),

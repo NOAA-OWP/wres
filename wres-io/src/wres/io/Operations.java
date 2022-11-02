@@ -374,8 +374,17 @@ public final class Operations
     {
         Objects.requireNonNull( database );
 
+        LOGGER.info( "Cleaning and refreshing the database. This may take some time..." );
+
+        Instant start = Instant.now();
+
         database.clean();
         database.refreshStatistics( true );
+
+        Instant stop = Instant.now();
+        Duration elapsed = Duration.between( start, stop );
+
+        LOGGER.info( "Finished cleaning and refreshing the database in {}.", elapsed );
     }
 
     /**
