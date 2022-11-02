@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -39,6 +40,8 @@ class CSVDataProvider implements DataProvider
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CSVDataProvider.class );
 
+    private static final String DEFAULT_COMMENT_STRING = "#";
+
     private Map<String, Integer> columnNames;
     private int currentRow = -1;
     private boolean closed;
@@ -46,87 +49,36 @@ class CSVDataProvider implements DataProvider
     private final BufferedReader reader;
     private String[] line = null;
     private final String delimiter;
+    private final String commentString;
 
-    private CSVDataProvider( final Path filePath, final String delimiter, final Map<String, Integer> columns )
+    static CSVDataProvider from( final String filePath, final String delimiter )
             throws IOException
     {
-        this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        this.delimiter = delimiter;
-        this.filePath = filePath;
-
-        if ( columns != null )
-        {
-            this.columnNames.putAll( columns );
-        }
-
-        this.reader = Files.newBufferedReader( this.filePath, StandardCharsets.UTF_8 );
-        
-        this.openFile();
-    }
-
-    private CSVDataProvider( final InputStream inputStream, final String delimiter, final Map<String, Integer> columns )
-            throws IOException
-    {
-        this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        this.delimiter = delimiter;
-        this.filePath = null;
-
-        if ( columns != null )
-        {
-            this.columnNames.putAll( columns );
-        }
-
-        this.reader = new BufferedReader( new InputStreamReader( inputStream, StandardCharsets.UTF_8 ) );
-
-        this.openFile();
-    }
-
-    static CSVDataProvider from( final String filePath, final String delimiter)
-            throws IOException
-    {
-        return new CSVDataProvider( Paths.get( filePath), delimiter, null);
+        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
     static CSVDataProvider from( final InputStream inputStream, final String delimiter )
             throws IOException
     {
-        return new CSVDataProvider( inputStream, delimiter, null );
-    }
-    
-    static CSVDataProvider from( final URI filePath, final String delimiter)
-            throws IOException
-    {
-        return new CSVDataProvider( Paths.get( filePath ), delimiter, null);
+        return new CSVDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    static CSVDataProvider from( final Path filePath, final String delimiter)
+    static CSVDataProvider from( final URI filePath, final String delimiter )
             throws IOException
     {
-        return new CSVDataProvider( filePath, delimiter, null);
+        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    static CSVDataProvider from( final String filePath, final String delimiter, final Map<String, Integer> columns)
+    static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath), delimiter, columns);
-    }
-
-    static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns)
-            throws IOException
-    {
-        return new CSVDataProvider( Paths.get( filePath), delimiter, columns);
-    }
-
-    static CSVDataProvider from( final Path filePath, final String delimiter, final Map<String, Integer> columns)
-            throws IOException
-    {
-        return new CSVDataProvider( filePath, delimiter, columns);
+        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, columns );
     }
 
     private void openFile() throws IOException
     {
         // If there aren't any columns defined, try to determine them from a possible header
-        if (this.columnNames.isEmpty())
+        if ( this.columnNames.isEmpty() )
         {
             boolean dataExists = next();
 
@@ -137,7 +89,7 @@ class CSVDataProvider implements DataProvider
                                        + ")." );
             }
 
-            for (int i = 0; i < this.line.length; ++i)
+            for ( int i = 0; i < this.line.length; ++i )
             {
                 this.columnNames.put( this.line[i], i );
             }
@@ -155,12 +107,12 @@ class CSVDataProvider implements DataProvider
     @Override
     public boolean next()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the dataset "
                                              + "may not be incremented." );
         }
-        else if (this.line == null && this.currentRow >= 0)
+        else if ( this.line == null && this.currentRow >= 0 )
         {
             throw new IndexOutOfBoundsException( "The position in the dataset may"
                                                  + " not move beyond the size of its data." );
@@ -170,26 +122,31 @@ class CSVDataProvider implements DataProvider
 
         try
         {
-            readLine = this.reader.readLine();
+            // #108359
+            while ( Objects.nonNull( readLine = this.reader.readLine() )
+                    && readLine.startsWith( this.commentString ) )
+            {
+                // Continue to skip comment lines
+            }
         }
         catch ( IOException e )
         {
             throw new IllegalStateException( "The CSV data was not in a state where more data could be read.", e );
         }
 
-        if (readLine == null)
+        if ( readLine == null )
         {
             return false;
         }
 
         String[] futureLine = readLine.split( delimiter );
 
-        for (int i = 0; i < futureLine.length; ++i)
+        for ( int i = 0; i < futureLine.length; ++i )
         {
             futureLine[i] = futureLine[i].replaceAll( "(^\"|\"$)", "" );
         }
 
-        if (this.columnNames.isEmpty())
+        if ( this.columnNames.isEmpty() )
         {
             this.line = futureLine;
         }
@@ -212,13 +169,13 @@ class CSVDataProvider implements DataProvider
     @Override
     public void toEnd()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the data set may "
-                                             + "not be moved to the end.");
+                                             + "not be moved to the end." );
         }
 
-        while (this.next())
+        while ( this.next() )
         {
             LOGGER.trace( "Moving to the end of the FileDataProvider for {}", this.filePath.toString() );
         }
@@ -227,10 +184,10 @@ class CSVDataProvider implements DataProvider
     @Override
     public void reset() throws IOException
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the data set may not "
-                                             + "be moved back to its beginning.");
+                                             + "be moved back to its beginning." );
         }
 
         this.openFile();
@@ -239,7 +196,7 @@ class CSVDataProvider implements DataProvider
     @Override
     public boolean isNull( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -270,20 +227,20 @@ class CSVDataProvider implements DataProvider
      * @param index The index for the column containing the value
      * @return The value stored in the row and column
      */
-    private Object getObject(int index)
+    private Object getObject( int index )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         // If "next" hasn't been called, go ahead and move on to the next row
-        if (this.currentRow < 0)
+        if ( this.currentRow < 0 )
         {
             this.next();
         }
 
-        if (this.isEmpty())
+        if ( this.isEmpty() )
         {
             throw new IndexOutOfBoundsException( "There is no data contained within the data set." );
         }
@@ -292,21 +249,21 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
-    public int getColumnIndex(String columnName)
+    public int getColumnIndex( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.columnNames == null)
+        if ( this.columnNames == null )
         {
             throw new IndexOutOfBoundsException( "There is no data to retrieve from this data set" );
         }
 
         Integer index = this.columnNames.getOrDefault( columnName, -1 );
 
-        if (index < 0)
+        if ( index < 0 )
         {
             throw new IndexOutOfBoundsException( "There is no field in the data set named " + columnName );
         }
@@ -317,9 +274,9 @@ class CSVDataProvider implements DataProvider
     @Override
     public List<String> getColumnNames()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The dataset is not accessible.");
+            throw new IllegalStateException( "The dataset is not accessible." );
         }
         return new ArrayList<>( columnNames.keySet() );
     }
@@ -327,7 +284,7 @@ class CSVDataProvider implements DataProvider
     @Override
     public int getRowIndex()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -336,24 +293,24 @@ class CSVDataProvider implements DataProvider
     }
 
     @Override
-    public Object getObject(String columnName)
+    public Object getObject( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.currentRow < 0)
+        if ( this.currentRow < 0 )
         {
             this.currentRow++;
         }
 
-        if (this.isNull( columnName ))
+        if ( this.isNull( columnName ) )
         {
             return null;
         }
 
-        return this.getObject(this.getColumnIndex( columnName ));
+        return this.getObject( this.getColumnIndex( columnName ) );
     }
 
     @Override
@@ -373,14 +330,14 @@ class CSVDataProvider implements DataProvider
     @Override
     public Byte getByte( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             // Return the default byte
             return null;
@@ -392,27 +349,32 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Byte.parseByte( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a byte." );
+                                          "The type '" + value.getClass().toString()
+                                          +
+                                          "' with the value '"
+                                          + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a byte." );
         }
     }
 
     @Override
-    public Integer getInt(String columnName)
+    public Integer getInt( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -423,26 +385,29 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Integer.parseInt( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as an integer." );
+                                          "The type value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as an integer." );
         }
     }
 
     @Override
-    public Short getShort(String columnName)
+    public Short getShort( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -453,26 +418,29 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Short.parseShort( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a short." );
+                                          "The value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a short." );
         }
     }
 
     @Override
-    public Long getLong(String columnName)
+    public Long getLong( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -483,26 +451,29 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Long.parseLong( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a long." );
+                                          "The type value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a long." );
         }
     }
 
     @Override
-    public Float getFloat(String columnName)
+    public Float getFloat( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -513,26 +484,29 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
             return Float.parseFloat( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a float." );
+                                          "The value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a float." );
         }
     }
 
     @Override
-    public double getDouble(String columnName)
+    public double getDouble( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return MissingValues.DOUBLE;
         }
@@ -543,36 +517,39 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
             return Double.parseDouble( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a double." );
+                                          "The value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a double." );
         }
     }
 
     @Override
     public Double[] getDoubleArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
 
-        String arrayRepresentation = (String)array;
+        String arrayRepresentation = (String) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
         arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
 
-        if (arrayRepresentation.isEmpty())
+        if ( arrayRepresentation.isEmpty() )
         {
             return new Double[0];
         }
@@ -588,12 +565,15 @@ class CSVDataProvider implements DataProvider
                 result[i] = Double.parseDouble( numbers[i] );
             }
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + array.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a double array." );
+                                          "The value '" + array.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a double array." );
         }
 
         return result;
@@ -602,24 +582,24 @@ class CSVDataProvider implements DataProvider
     @Override
     public Integer[] getIntegerArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
 
-        String arrayRepresentation = (String)array;
+        String arrayRepresentation = (String) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
         arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
 
-        if (arrayRepresentation.isEmpty())
+        if ( arrayRepresentation.isEmpty() )
         {
             return new Integer[0];
         }
@@ -635,38 +615,41 @@ class CSVDataProvider implements DataProvider
                 result[i] = Integer.parseInt( numbers[i] );
             }
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + array.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as an integer array." );
+                                          "The value '" + array.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as an integer array." );
         }
 
         return result;
     }
-    
+
     @Override
     public String[] getStringArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
 
-        String arrayRepresentation = (String)array;
+        String arrayRepresentation = (String) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
         arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
 
-        if (arrayRepresentation.isEmpty())
+        if ( arrayRepresentation.isEmpty() )
         {
             return new String[0];
         }
@@ -674,19 +657,19 @@ class CSVDataProvider implements DataProvider
         String[] values = arrayRepresentation.split( "," );
 
         return values;
-    }    
+    }
 
     @Override
     public BigDecimal getBigDecimal( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -697,19 +680,22 @@ class CSVDataProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return new BigDecimal( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The value '" + value.toString() +
-                    "' in the field '" + columnName +
-                    "' cannot be cast as a BigDecimal." );
+                                          "The value '" + value.toString()
+                                          +
+                                          "' in the field '"
+                                          + columnName
+                                          +
+                                          "' cannot be cast as a BigDecimal." );
         }
     }
 
     @Override
     public LocalTime getTime( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -721,19 +707,19 @@ class CSVDataProvider implements DataProvider
     @Override
     public LocalDate getDate( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Instant instant = this.getInstant( columnName );
-        return LocalDateTime.ofInstant( instant, ZoneId.of( "UTC" )).toLocalDate();
+        return LocalDateTime.ofInstant( instant, ZoneId.of( "UTC" ) ).toLocalDate();
     }
 
     @Override
     public OffsetDateTime getOffsetDateTime( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -753,7 +739,7 @@ class CSVDataProvider implements DataProvider
     @Override
     public Instant getInstant( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -762,28 +748,29 @@ class CSVDataProvider implements DataProvider
         return Instant.parse( value );
     }
 
-    public Duration getDuration(String columnName)
+    public Duration getDuration( String columnName )
     {
         Duration result;
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
             result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
         }
-        else if (value instanceof String)
+        else if ( value instanceof String )
         {
             result = Duration.parse( value.toString() );
         }
         else
         {
             throw new IllegalArgumentException( "The type for the column named '" +
-                                                columnName +
+                                                columnName
+                                                +
                                                 "' cannot be converted into a Duration." );
         }
 
@@ -793,38 +780,38 @@ class CSVDataProvider implements DataProvider
     @Override
     public <V> V getValue( String columnName )
     {
-        throw new IllegalStateException("Types cannot be inferred from CSV data.");
+        throw new IllegalStateException( "Types cannot be inferred from CSV data." );
     }
 
     @Override
-    public String getString(String columnName)
+    public String getString( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
 
-        return String.valueOf(value);
+        return String.valueOf( value );
     }
 
     @Override
-    public URI getURI( String columnName)
+    public URI getURI( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         String uri = this.getString( columnName );
 
-        if (uri == null)
+        if ( uri == null )
         {
             return null;
         }
@@ -844,9 +831,51 @@ class CSVDataProvider implements DataProvider
         }
         catch ( IOException e )
         {
-            LOGGER.warn("A CSV Data Provider could not be properly closed.");
+            LOGGER.warn( "A CSV Data Provider could not be properly closed." );
         }
 
         this.currentRow = -1;
+    }
+
+    private CSVDataProvider( Path filePath,
+                             String delimiter,
+                             String commentString,
+                             Map<String, Integer> columns )
+            throws IOException
+    {
+        this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
+        this.delimiter = delimiter;
+        this.filePath = filePath;
+        this.commentString = commentString;
+
+        if ( columns != null )
+        {
+            this.columnNames.putAll( columns );
+        }
+
+        this.reader = Files.newBufferedReader( this.filePath, StandardCharsets.UTF_8 );
+
+        this.openFile();
+    }
+
+    private CSVDataProvider( InputStream inputStream,
+                             String delimiter,
+                             String commentString,
+                             Map<String, Integer> columns )
+            throws IOException
+    {
+        this.columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
+        this.delimiter = delimiter;
+        this.filePath = null;
+        this.commentString = commentString;
+
+        if ( columns != null )
+        {
+            this.columnNames.putAll( columns );
+        }
+
+        this.reader = new BufferedReader( new InputStreamReader( inputStream, StandardCharsets.UTF_8 ) );
+
+        this.openFile();
     }
 }

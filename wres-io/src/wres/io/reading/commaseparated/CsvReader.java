@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -43,7 +43,9 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.util.Strings;
 
 /**
- * A reader of time-series from a source of comma separated values.
+ * A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed at the beginning of 
+ * the CSV string and begin with a # character.
+ * 
  * @author James Brown
  */
 
@@ -418,7 +420,7 @@ public class CsvReader implements TimeSeriesReader
         FeatureKey location = FeatureKey.of( geometry );
 
         // Reference datetime is optional, many sources do not have any.
-        Map<ReferenceTimeType, Instant> referenceTimes = new HashMap<>();
+        Map<ReferenceTimeType, Instant> referenceTimes = new EnumMap<>( ReferenceTimeType.class );
         if ( data.hasColumn( REFERENCE_DATETIME_COLUMN ) )
         {
             Instant referenceDatetime = data.getInstant( REFERENCE_DATETIME_COLUMN );
@@ -476,13 +478,9 @@ public class CsvReader implements TimeSeriesReader
                         +
                         dataSource.getUri()
                         +
-                        "'"
-                        +
-                        System.lineSeparator();
-        String suffix = System.lineSeparator() + "'" + dataSource.getUri() + "' cannot be ingested.";
-        StringJoiner errorJoiner = new StringJoiner( System.lineSeparator(),
-                                                     prefix,
-                                                     suffix );
+                        "', which prevented reading. ";
+        
+        StringJoiner errorJoiner = new StringJoiner( " ", prefix, "" );
 
         // Validate the date-times
         boolean valid = this.validateReferenceTime( dataProvider, errorJoiner )
@@ -491,11 +489,11 @@ public class CsvReader implements TimeSeriesReader
         if ( !dataProvider.hasColumn( VARIABLE_NAME ) )
         {
             valid = false;
-            errorJoiner.add( "The provided csv is missing a 'variable_name' column." );
+            errorJoiner.add( "The provided CSV is missing a 'variable_name' column." );
         }
         else if ( !Strings.hasValue( dataProvider.getString( VARIABLE_NAME ) ) )
         {
-            errorJoiner.add( "The provided csv is missing valid 'variable_name' data." );
+            errorJoiner.add( "The provided CSV is missing valid 'variable_name' data." );
             valid = false;
         }
         // Only validate if the variable name is declared: #95012
@@ -511,29 +509,29 @@ public class CsvReader implements TimeSeriesReader
         if ( !dataProvider.hasColumn( LOCATION ) )
         {
             valid = false;
-            errorJoiner.add( "The provided csv is missing a 'location' column." );
+            errorJoiner.add( "The provided CSV is missing a 'location' column." );
         }
         else if ( !Strings.hasValue( dataProvider.getString( LOCATION ) ) )
         {
-            errorJoiner.add( "The provided csv is missing valid 'location' data." );
+            errorJoiner.add( "The provided CSV is missing valid 'location' data." );
             valid = false;
         }
 
         if ( !dataProvider.hasColumn( MEASUREMENT_UNIT ) )
         {
             valid = false;
-            errorJoiner.add( "The provided csv is missing a 'measurement_unit' column." );
+            errorJoiner.add( "The provided CSV is missing a 'measurement_unit' column." );
         }
         else if ( !Strings.hasValue( dataProvider.getString( MEASUREMENT_UNIT ) ) )
         {
-            errorJoiner.add( "The provided csv is missing valid 'measurement_unit' data." );
+            errorJoiner.add( "The provided CSV is missing valid 'measurement_unit' data." );
             valid = false;
         }
 
         if ( !dataProvider.hasColumn( VALUE ) )
         {
             valid = false;
-            errorJoiner.add( "The provided csv is missing a 'value' column." );
+            errorJoiner.add( "The provided CSV is missing a 'value' column." );
         }
         else
         {
@@ -543,7 +541,7 @@ public class CsvReader implements TimeSeriesReader
             }
             catch ( ClassCastException e )
             {
-                errorJoiner.add( "The provided csv has invalid data within the 'value' column." );
+                errorJoiner.add( "The provided CSV has invalid data within the 'value' column." );
             }
         }
 
@@ -631,6 +629,7 @@ public class CsvReader implements TimeSeriesReader
 
     public CsvReader()
     {
+        // Do not construct
     }
 }
 
