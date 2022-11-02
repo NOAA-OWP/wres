@@ -64,7 +64,6 @@ final class Functions
     static void shutdown( Database database, Executor executor )
     {
         ProgressMonitor.deactivate();
-        LOGGER.info( "" );
         LOGGER.info( "Shutting down the application..." );
         wres.io.Operations.shutdown( database, executor );
     }
@@ -75,7 +74,6 @@ final class Functions
                                TimeUnit timeUnit )
     {
         ProgressMonitor.deactivate();
-        LOGGER.info( "" );
         LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
         wres.io.Operations.forceShutdown( database,
                                           executor,
@@ -93,7 +91,8 @@ final class Functions
     {
         return FUNCTIONS.keySet()
                         .stream()
-                        .anyMatch( next -> operation.equals( next.shortName ) || operation.equals( next.longName ) );
+                        .anyMatch( next -> operation.equalsIgnoreCase( next.shortName )
+                                           || operation.equalsIgnoreCase( next.longName ) );
     }
 
     /**
@@ -645,7 +644,20 @@ final class Functions
         @Override
         public int compareTo( WresFunction o )
         {
-            Comparator<String> nullFriendly = Comparator.nullsFirst( String::compareTo );
+            Comparator<String> nullCompare = Comparator.nullsFirst( String::compareTo );
+            Comparator<String> nullFriendly = ( left, right ) -> {
+                if ( Objects.nonNull( left ) )
+                {
+                    left = left.toLowerCase();
+                }
+
+                if ( Objects.nonNull( right ) )
+                {
+                    right = right.toLowerCase();
+                }
+
+                return nullCompare.compare( left, right );
+            };
 
             int compare = nullFriendly.compare( this.shortName, o.shortName );
 
@@ -663,6 +675,27 @@ final class Functions
 
             return nullFriendly.compare( this.description, o.description );
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( ! ( o instanceof WresFunction ) )
+            {
+                return false;
+            }
+
+            WresFunction in = (WresFunction) o;
+
+            return Objects.equals( in.shortName, this.shortName ) && Objects.equals( in.longName, this.longName )
+                   && Objects.equals( in.description, this.description );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.shortName, this.longName, this.description );
+        }
+
     }
 
 }
