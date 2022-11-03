@@ -25,10 +25,10 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.data.DataBuilder;
+import wres.io.data.DataProvider;
 import wres.io.data.details.SourceDetails;
-import wres.io.utilities.DataBuilder;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.TestDatabase;
+import wres.io.database.TestDatabase;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -41,7 +41,7 @@ public class DataSourcesTest
     private HikariDataSource dataSource;
 
     private @Mock SystemSettings mockSystemSettings;
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
 
     private Connection rawConnection;
     private Database liquibaseDatabase;
@@ -70,7 +70,7 @@ public class DataSourcesTest
         Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         LOGGER.debug( "'@Before' ended" );
     }
 

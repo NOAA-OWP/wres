@@ -19,7 +19,7 @@ import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
-import wres.io.utilities.Database;
+import wres.io.database.Database;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.SystemSettings;

@@ -22,11 +22,11 @@ import wres.datamodel.space.FeatureKey;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.io.data.DataProvider;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 import wres.statistics.generated.Geometry;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;

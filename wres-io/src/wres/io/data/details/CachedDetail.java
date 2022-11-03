@@ -4,9 +4,9 @@ import java.sql.SQLException;
 
 import org.slf4j.Logger;
 
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.data.DataProvider;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 
 /**
  * Describes detail about data from the database that may be accessed through a global cache

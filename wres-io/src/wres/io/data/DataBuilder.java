@@ -1,14 +1,15 @@
-package wres.io.utilities;
+package wres.io.data;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/*
+/**
  * Builder used to programmatically create data providers rather than retrieving
  * the data from an outside source
  */
+
 public class DataBuilder
 {
     /**
@@ -30,7 +31,7 @@ public class DataBuilder
 
     private DataBuilder()
     {
-        this.columnNames = new TreeMap<>(  );
+        this.columnNames = new TreeMap<>();
 
         this.rows = new ArrayList<>();
         this.currentRow = -1;
@@ -41,20 +42,19 @@ public class DataBuilder
      * @param columnNames The names of each column in the data
      * @return A new builder
      */
-    public static DataBuilder with(String... columnNames)
+    public static DataBuilder with( String... columnNames )
     {
         DataBuilder builder = new DataBuilder();
 
-        if (columnNames.length == 0)
+        if ( columnNames.length == 0 )
         {
             throw new IllegalArgumentException(
-                    "Column names must be added to create a new data set."
-            );
+                                                "Column names must be added to create a new data set." );
         }
 
-        for (int index = 0; index < columnNames.length; ++index)
+        for ( int index = 0; index < columnNames.length; ++index )
         {
-            builder.columnNames.put(columnNames[index], index);
+            builder.columnNames.put( columnNames[index], index );
         }
 
         return builder;
@@ -76,14 +76,16 @@ public class DataBuilder
      * @param data The data to insert into the new row
      * @return The updated builder
      */
-    public DataBuilder addRow(final Object... data)
+    public DataBuilder addRow( final Object... data )
     {
-        if (data.length > this.columnNames.size())
+        if ( data.length > this.columnNames.size() )
         {
-            throw new IndexOutOfBoundsException(
-                    "Input array too large; the maximum number of elements is " +
-                    this.columnNames.size() +
-                    ", but " + data.length + " objects were passed." );
+            throw new IndexOutOfBoundsException( "Input array too large; the maximum number of elements is " +
+                                                 this.columnNames.size()
+                                                 +
+                                                 ", but "
+                                                 + data.length
+                                                 + " objects were passed." );
         }
 
         this.currentRow += 1;
@@ -101,22 +103,22 @@ public class DataBuilder
      * @param value The value to place in the column
      * @return The updated builder
      */
-    public DataBuilder set(final String columnName, final Object value)
+    public DataBuilder set( final String columnName, final Object value )
     {
-        if (!this.columnNames.containsKey( columnName ))
+        if ( !this.columnNames.containsKey( columnName ) )
         {
             throw new IllegalArgumentException(
-                    "'" + columnName + "' is not a valid column for this dataset."
-            );
+                                                "'" + columnName
+                                                + "' is not a valid column for this dataset." );
         }
 
-        if (this.currentRow < 0)
+        if ( this.currentRow < 0 )
         {
             this.addRow();
         }
 
         int index = this.columnNames.get( columnName );
-        this.rows.get(currentRow)[index] = value;
+        this.rows.get( currentRow )[index] = value;
         return this;
     }
 
@@ -134,7 +136,7 @@ public class DataBuilder
      */
     public DataProvider build()
     {
-        DataProvider provider = DataSetProvider.from(this.columnNames, this.rows);
+        DataProvider provider = DataSetProvider.from( this.columnNames, this.rows );
         this.reset();
         return provider;
     }

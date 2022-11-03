@@ -29,7 +29,7 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
-import wres.io.utilities.Database;
+import wres.io.database.Database;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;

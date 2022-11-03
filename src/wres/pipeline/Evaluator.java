@@ -30,7 +30,7 @@ import wres.config.generated.ProjectConfig;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.config.Validation;
 import wres.io.concurrency.Executor;
-import wres.io.utilities.Database;
+import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;

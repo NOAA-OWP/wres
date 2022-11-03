@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 import java.io.Closeable;
 import java.io.IOException;

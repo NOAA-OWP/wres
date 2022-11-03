@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.io.data.DataProvider;
 
 /**
  * A {@link DataProvider} that provides buffered access to the results of a database call

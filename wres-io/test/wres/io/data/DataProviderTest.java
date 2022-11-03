@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.data;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -17,6 +17,9 @@ import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import wres.io.data.DataBuilder;
+import wres.io.data.DataProvider;
 
 public class DataProviderTest
 {

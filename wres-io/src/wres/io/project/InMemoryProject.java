@@ -37,12 +37,12 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureKey;
+import wres.io.NoDataException;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 import wres.io.project.ProjectUtilities.VariableNames;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.retrieval.DataAccessException;
-import wres.io.utilities.NoDataException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 

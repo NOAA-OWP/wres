@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 import java.sql.Connection;
 import java.sql.SQLException;

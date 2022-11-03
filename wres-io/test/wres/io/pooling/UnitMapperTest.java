@@ -23,7 +23,7 @@ import static org.junit.Assert.assertThrows;
 
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.MeasurementDetails;
-import wres.io.utilities.TestDatabase;
+import wres.io.database.TestDatabase;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -36,7 +36,7 @@ public class UnitMapperTest
     private static final String CMS = "CMS";
     @Mock
     private SystemSettings mockSystemSettings;
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -71,7 +71,7 @@ public class UnitMapperTest
         Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
 
         // Create the tables

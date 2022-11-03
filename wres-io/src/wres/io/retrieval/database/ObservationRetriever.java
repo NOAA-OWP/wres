@@ -8,11 +8,11 @@ import java.util.stream.Stream;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
+import wres.io.data.DataProvider;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
+import wres.io.database.ScriptBuilder;
 import wres.io.retrieval.DataAccessException;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.ScriptBuilder;
 
 /**
  * Retrieves an observation {@link TimeSeries} from the WRES database.

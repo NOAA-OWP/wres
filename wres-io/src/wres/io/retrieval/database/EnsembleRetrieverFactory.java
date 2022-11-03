@@ -25,9 +25,9 @@ import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
+import wres.io.database.Database;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
-import wres.io.utilities.Database;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**

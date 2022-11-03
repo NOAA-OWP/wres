@@ -41,10 +41,10 @@ import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.details.SourceDetails;
+import wres.io.database.DataScripter;
+import wres.io.database.TestDatabase;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
@@ -58,7 +58,7 @@ public class SingleValuedGriddedRetrieverTest
 {
     @Mock
     private SystemSettings mockSystemSettings;
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
     @Mock
     private Executor mockExecutor;
     private TestDatabase testDatabase;
@@ -124,7 +124,7 @@ public class SingleValuedGriddedRetrieverTest
         Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         this.measurementUnitsCache = new MeasurementUnits( this.wresDatabase );
         Features featuresCache = new Features( this.wresDatabase );
 

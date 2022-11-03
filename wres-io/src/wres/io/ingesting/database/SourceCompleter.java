@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceCompletedDetails;
+import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
-import wres.io.utilities.Database;
 import wres.system.DatabaseLockManager;
 
 /**
