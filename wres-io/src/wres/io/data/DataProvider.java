@@ -23,7 +23,7 @@ import javax.json.JsonValue;
 
 import wres.datamodel.MissingValues;
 import wres.io.database.Database;
-import wres.io.reading.commaseparated.CSVDataProvider;
+import wres.io.reading.commaseparated.CsvDataProvider;
 
 /**
  * <p>Provides access and operations on tabular data.
@@ -79,7 +79,7 @@ public interface DataProvider extends AutoCloseable
      * @throws IndexOutOfBoundsException Thrown if the column does not exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    int getColumnIndex(final String columnName);
+    int getColumnIndex( final String columnName );
 
     /**
      * @return A list of column names
@@ -98,13 +98,13 @@ public interface DataProvider extends AutoCloseable
      * @return Whether or not the value in the current row for the specified column is null
      * @throws IllegalStateException Thrown if the data has been closed down
      */
-    boolean isNull(final String columnName);
+    boolean isNull( final String columnName );
 
     /**
      * @param columnName The name of the column to look for
      * @return Whether or not the desired column is present
      */
-    boolean hasColumn(final String columnName);
+    boolean hasColumn( final String columnName );
 
     /**
      * @return Whether or not the data provider contains data
@@ -124,7 +124,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Object getObject(final String columnName);
+    Object getObject( final String columnName );
 
     /**Retrieves the value of the designated column in the current row as a boolean
      * <br>
@@ -138,7 +138,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    boolean getBoolean(final String columnName);
+    boolean getBoolean( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired value
@@ -147,7 +147,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    String getString(final String columnName);
+    String getString( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired value
@@ -156,7 +156,8 @@ public interface DataProvider extends AutoCloseable
      * the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    URI getURI(final String columnName);
+    URI getURI( final String columnName );
+
     /**
      * @param columnName The name of the column containing the desired value
      * @return The <code>byte</code> value contained within the desired column.
@@ -165,7 +166,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Byte getByte(final String columnName);
+    Byte getByte( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired value
@@ -176,7 +177,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Short getShort(final String columnName);
+    Short getShort( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired value
@@ -187,7 +188,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Integer getInt(final String columnName);
+    Integer getInt( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired
@@ -199,7 +200,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Long getLong(final String columnName);
+    Long getLong( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired
@@ -211,7 +212,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Float getFloat(final String columnName);
+    Float getFloat( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired
@@ -223,7 +224,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    double getDouble(final String columnName);
+    double getDouble( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired
@@ -234,7 +235,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    BigDecimal getBigDecimal(final String columnName);
+    BigDecimal getBigDecimal( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired
@@ -245,7 +246,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Double[] getDoubleArray(final String columnName);
+    Double[] getDoubleArray( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired <code>int</code> array
@@ -253,7 +254,7 @@ public interface DataProvider extends AutoCloseable
      * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Integer[] getIntegerArray(final String columnName);
+    Integer[] getIntegerArray( final String columnName );
 
     /**
      * @param columnName The name of the column containing the desired <code>String</code> array
@@ -261,8 +262,8 @@ public interface DataProvider extends AutoCloseable
      * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    String[] getStringArray(final String columnName);    
-    
+    String[] getStringArray( final String columnName );
+
     /**
      * @param columnName The name of the column containing a time
      *                   representation
@@ -271,7 +272,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    LocalTime getTime(final String columnName);
+    LocalTime getTime( final String columnName );
 
     /**
      * @param columnName The name of the column containing a date
@@ -281,7 +282,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    LocalDate getDate(final String columnName);
+    LocalDate getDate( final String columnName );
 
     /**
      * @param columnName The name of the column containing a date and time
@@ -291,7 +292,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    OffsetDateTime getOffsetDateTime(final String columnName);
+    OffsetDateTime getOffsetDateTime( final String columnName );
 
     /**
      * @param columnName The name of the column containing a date and time
@@ -301,7 +302,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    LocalDateTime getLocalDateTime( final String columnName);
+    LocalDateTime getLocalDateTime( final String columnName );
 
     /**
      * @param columnName The name of the column containing some representation
@@ -311,7 +312,7 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Instant getInstant(final String columnName);
+    Instant getInstant( final String columnName );
 
     /**
      * @param columnName The name of the column containing some representation
@@ -320,7 +321,7 @@ public interface DataProvider extends AutoCloseable
      * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    Duration getDuration( final String columnName);
+    Duration getDuration( final String columnName );
 
     /**
      * @param columnName The name of the column with the desired value
@@ -330,18 +331,18 @@ public interface DataProvider extends AutoCloseable
      * or the column name doesn't exist
      * @throws IndexOutOfBoundsException Thrown if the data is empty
      */
-    <V> V getValue(final String columnName);
+    <V> V getValue( final String columnName );
 
     /**
      * Get the string representation of the value in the column that may be used to form scripts
      * @param columnName The name of the column containing the value of interest
      * @return The string representation of the value
      */
-    default String toString(final String columnName)
+    default String toString( final String columnName )
     {
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
@@ -387,7 +388,7 @@ public interface DataProvider extends AutoCloseable
             charColumns[i] = false;
         }
 
-        while (this.next())
+        while ( this.next() )
         {
             String[] row = new String[columnNames.size()];
 
@@ -416,9 +417,9 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCSV( final URI fileName, final String delimiter) throws IOException
+    static DataProvider fromCsv( final URI fileName, final String delimiter ) throws IOException
     {
-        return CSVDataProvider.from(fileName, delimiter);
+        return CsvDataProvider.from( fileName, delimiter );
     }
 
     /**
@@ -428,11 +429,11 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCSV( final InputStream inputStream, final String delimiter) throws IOException
+    static DataProvider fromCsv( final InputStream inputStream, final String delimiter ) throws IOException
     {
-        return CSVDataProvider.from( inputStream, delimiter );
+        return CsvDataProvider.from( inputStream, delimiter );
     }
-    
+
     /**
      * Converts a CSV file to a DataProvider with the provided column names
      * @param fileName The path to the csv file
@@ -441,18 +442,18 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCSV(
-            final URI fileName,
-            final String delimiter,
-            final String... columnNames)
+    static DataProvider fromCsv(
+                                 final URI fileName,
+                                 final String delimiter,
+                                 final String... columnNames )
             throws IOException
     {
-        Map<String, Integer> columnIndices = new HashMap<>(  );
-        for (int i = 0; i < columnNames.length; ++i)
+        Map<String, Integer> columnIndices = new HashMap<>();
+        for ( int i = 0; i < columnNames.length; ++i )
         {
-            columnIndices.put(columnNames[i], i);
+            columnIndices.put( columnNames[i], i );
         }
-        return CSVDataProvider.from( fileName, delimiter, columnIndices );
+        return CsvDataProvider.from( fileName, delimiter, columnIndices );
     }
 
     /**
@@ -463,9 +464,10 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as a JSON String
      */
-    default String toJSONString()
+    default String toJsonString()
     {
-        return this.toJSON().toString();
+        return this.toJson()
+                   .toString();
     }
 
     /**
@@ -476,7 +478,7 @@ public interface DataProvider extends AutoCloseable
      * will not be able to return to the beginning of their data
      * @return The DataProvider represented as JSON
      */
-    default JsonValue toJSON()
+    default JsonValue toJson()
     {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
 
@@ -484,14 +486,15 @@ public interface DataProvider extends AutoCloseable
         {
             JsonObjectBuilder row = Json.createObjectBuilder();
 
-            for (String column : this.getColumnNames())
+            for ( String column : this.getColumnNames() )
             {
                 row.add( column, this.getString( column ) );
             }
 
             arrayBuilder.add( row );
 
-        } while (this.next());
+        }
+        while ( this.next() );
 
         return arrayBuilder.build();
     }
