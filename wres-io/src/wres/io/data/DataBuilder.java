@@ -6,8 +6,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Builder used to programmatically create data providers rather than retrieving
- * the data from an outside source
+ * Builder used to programmatically create data providers rather than retrieving the data from an outside source.
  */
 
 public class DataBuilder

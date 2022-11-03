@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.sql.ResultSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -24,10 +25,8 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
- * A fully in-memory tabular dataset that doesn't require an
- * active connection to a database. Mimics the behavior of
- * the <code>ResultSet</code> data structure used for
- * sql queries.
+ * A fully in-memory tabular dataset that doesn't require an active connection to a database. Mimics the behavior of
+ * the {@link ResultSet} data structure used for sql queries.
  */
 public class DataSetProvider implements DataProvider
 {

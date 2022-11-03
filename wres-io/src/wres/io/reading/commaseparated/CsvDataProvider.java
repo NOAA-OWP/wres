@@ -37,9 +37,9 @@ import wres.io.data.DataProvider;
  * the <code>ResultSet</code> data structure used for
  * sql queries.
  */
-public class CSVDataProvider implements DataProvider
+public class CsvDataProvider implements DataProvider
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( CSVDataProvider.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( CsvDataProvider.class );
 
     private static final String DEFAULT_COMMENT_STRING = "#";
 
@@ -52,28 +52,28 @@ public class CSVDataProvider implements DataProvider
     private final String delimiter;
     private final String commentString;
 
-    public static CSVDataProvider from( final String filePath, final String delimiter )
+    public static CsvDataProvider from( final String filePath, final String delimiter )
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
+        return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CSVDataProvider from( final InputStream inputStream, final String delimiter )
+    public static CsvDataProvider from( final InputStream inputStream, final String delimiter )
             throws IOException
     {
-        return new CSVDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
+        return new CsvDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CSVDataProvider from( final URI filePath, final String delimiter )
+    public static CsvDataProvider from( final URI filePath, final String delimiter )
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
+        return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
+    public static CsvDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
             throws IOException
     {
-        return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, columns );
+        return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, columns );
     }
 
     private void openFile() throws IOException
@@ -838,7 +838,7 @@ public class CSVDataProvider implements DataProvider
         this.currentRow = -1;
     }
 
-    private CSVDataProvider( Path filePath,
+    private CsvDataProvider( Path filePath,
                              String delimiter,
                              String commentString,
                              Map<String, Integer> columns )
@@ -859,7 +859,7 @@ public class CSVDataProvider implements DataProvider
         this.openFile();
     }
 
-    private CSVDataProvider( InputStream inputStream,
+    private CsvDataProvider( InputStream inputStream,
                              String delimiter,
                              String commentString,
                              Map<String, Integer> columns )

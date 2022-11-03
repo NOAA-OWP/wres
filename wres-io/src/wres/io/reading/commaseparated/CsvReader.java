@@ -85,7 +85,7 @@ public class CsvReader implements TimeSeriesReader
 
         try
         {
-            DataProvider provider = DataProvider.fromCSV( dataSource.getUri(), DELIMITER );
+            DataProvider provider = DataProvider.fromCsv( dataSource.getUri(), DELIMITER );
 
             return this.read( dataSource, provider );
         }
@@ -106,7 +106,7 @@ public class CsvReader implements TimeSeriesReader
         
         try
         {
-            DataProvider provider = DataProvider.fromCSV( inputStream, DELIMITER );
+            DataProvider provider = DataProvider.fromCsv( inputStream, DELIMITER );
 
             return this.read( dataSource, provider );
         }

@@ -974,7 +974,7 @@ public class Database
      */
     DataProvider buffer( Connection connection, Query query ) throws SQLException
     {
-        return new SQLDataProvider( connection, query.call( connection ) );
+        return new DatabaseDataProvider( connection, query.call( connection ) );
     }
 
     /**

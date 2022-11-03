@@ -31,13 +31,14 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.data.DataProvider;
 
 /**
- * A {@link DataProvider} that provides buffered access to the results of a database call
+ * A {@link DataProvider} that provides buffered access to the results of a database call.
  */
-public class SQLDataProvider implements DataProvider
+
+public class DatabaseDataProvider implements DataProvider
 {
     private static final String THE_DATA_IS_NOT_ACCESSIBLE = "The data is not accessible.";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( SQLDataProvider.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseDataProvider.class );
 
     /**
      * The connection to the database that returned this data. Must be kept open for the
@@ -73,7 +74,7 @@ public class SQLDataProvider implements DataProvider
      * @param connection The connection to where this data came from
      * @param resultSet The data streaming through the connection
      */
-    SQLDataProvider(final Connection connection, final ResultSet resultSet)
+    DatabaseDataProvider(final Connection connection, final ResultSet resultSet)
     {
         Objects.requireNonNull( connection );
         Objects.requireNonNull( resultSet );
