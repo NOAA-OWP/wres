@@ -1,7 +1,6 @@
 package wres.tasker;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.spec.KeySpec;
@@ -60,9 +59,11 @@ import static wres.messages.generated.Job.job.Verb;
  * and so forth.
  * As of 2018-10, there are only plain text and/or html responses.
  */
-@Path( "/job")
+@Path( "/job" )
 public class WresJob
 {
+    private static final String A_P_BODY_HTML = "</a></p></body></html>";
+    private static final String P_BODY_HTML = "</p></body></html>";
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
     private static final String SEND_QUEUE_NAME = "wres.job";
 
@@ -76,13 +77,13 @@ public class WresJob
             "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static final RedissonClient REDISSON_CLIENT;
-    private static String REDIS_HOST = null;
-    private static int REDIS_PORT = DEFAULT_REDIS_PORT;
+    private static String redisHost = null;
+    private static int redisPort = DEFAULT_REDIS_PORT;
 
     //Admin authentication
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
-    private static byte[] PBEKEY_SALT = new byte[16];
-    private static byte[] ADMIN_TOKEN_HASH = null; //Empty means password not specified.
+    private static byte[] salt = new byte[16];
+    private static byte[] adminTokenHash = null; //Empty means password not specified.
 
     /**
      * The count of evaluations combined with the maximum length below (which
@@ -103,34 +104,35 @@ public class WresJob
     private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
 
     //Database information
-    private static String ACTIVE_DATABASE_NAME = "";
-    private static String ACTIVE_DATABASE_HOST = "";
-    private static String ACTIVE_DATABASE_PORT = "";
+    private static String activeDatabaseName = "";
+    private static String activeDatabaseHost = "";
+    private static String activeDatabasePort = "";
 
     static
     {
         // If present, record the admin's token hashed.
         String adminToken = System.getProperty( ADMIN_TOKEN_SYSTEM_PROPERTY_NAME );
-        if ( (adminToken != null) && (!adminToken.isEmpty()) )
+        if ( ( adminToken != null ) && ( !adminToken.isEmpty() ) )
         {
-            try 
+            try
             {
                 //Create the salt
                 SecureRandom random = new SecureRandom();
-                random.nextBytes(PBEKEY_SALT);
-                
-                //Hash the token using the salt.
-                KeySpec spec = new PBEKeySpec(adminToken.toCharArray(), PBEKEY_SALT, 65536, 128);
-                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1"); 
-                ADMIN_TOKEN_HASH = factory.generateSecret(spec).getEncoded();
+                random.nextBytes( WresJob.salt );
 
-                LOGGER.info("Admin token read from system properties and hashed successfully.");
+                //Hash the token using the salt.
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.salt, 65536, 128 );
+                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
+                WresJob.adminTokenHash = factory.generateSecret( spec ).getEncoded();
+
+                LOGGER.info( "Admin token read from system properties and hashed successfully." );
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                LOGGER.warn("Unable to create a hash of the amdmin token. "  
-                            + "Admin token will be left undefined and no admin token" 
-                            + " required for any verb.", e);
+                LOGGER.warn( "Unable to create a hash of the amdmin token. "
+                             + "Admin token will be left undefined and no admin token"
+                             + " required for any verb.",
+                             e );
             }
         }
 
@@ -152,19 +154,20 @@ public class WresJob
 
         if ( Objects.nonNull( specifiedRedisHost ) )
         {
-            REDIS_HOST = specifiedRedisHost;
+            WresJob.redisHost = specifiedRedisHost;
         }
 
         if ( Objects.nonNull( specifiedRedisPortRaw ) )
         {
-            REDIS_PORT = Integer.parseInt( specifiedRedisPortRaw );
+            WresJob.redisPort = Integer.parseInt( specifiedRedisPortRaw );
         }
 
-        if ( Objects.nonNull( REDIS_HOST ) )
+        if ( Objects.nonNull( redisHost ) )
         {
-            String redisAddress = "redis://" + REDIS_HOST + ":" + REDIS_PORT;
+            String redisAddress = "redis://" + redisHost + ":" + redisPort;
             LOGGER.info( "Redis host specified: {}, using redis at {}",
-                         specifiedRedisHost, redisAddress );
+                         specifiedRedisHost,
+                         redisAddress );
             redissonConfig.useSingleServer()
                           .setAddress( redisAddress )
                           // Triple the default timeout to 9 seconds:
@@ -194,39 +197,39 @@ public class WresJob
             REDISSON_CLIENT = null;
             LOGGER.info( "No redis host specified, using local JVM objects." );
         }
-        
+
         //If the redis client was created, set it up for recovering/storing
         //database information.  It might be possible to turn the below into 
         //three calls of a generic static method.
-        if (REDISSON_CLIENT != null)
+        if ( REDISSON_CLIENT != null )
         {
             RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
-            if (bucket.get() != null && !bucket.get().isBlank())
+            if ( bucket.get() != null && !bucket.get().isBlank() )
             {
-                ACTIVE_DATABASE_NAME = bucket.get();
+                WresJob.activeDatabaseName = bucket.get();
             }
             else
             {
-                bucket.set(ACTIVE_DATABASE_NAME);
+                bucket.set( activeDatabaseName );
             }
             RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
-            if (hostBucket.get() != null && !hostBucket.get().isBlank())
+            if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
             {
-                ACTIVE_DATABASE_HOST = hostBucket.get();
+                WresJob.activeDatabaseHost = hostBucket.get();
             }
             else
             {
-                hostBucket.set(ACTIVE_DATABASE_HOST);
-            } 
+                hostBucket.set( activeDatabaseHost );
+            }
             RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
-            if (portBucket.get() != null && !portBucket.get().isBlank())
+            if ( portBucket.get() != null && !portBucket.get().isBlank() )
             {
-                ACTIVE_DATABASE_PORT = portBucket.get();
+                activeDatabasePort = portBucket.get();
             }
             else
             {
-                portBucket.set(ACTIVE_DATABASE_PORT);
-            } 
+                portBucket.set( activeDatabasePort );
+            }
         }
     }
 
@@ -250,10 +253,11 @@ public class WresJob
             if ( LOGGER.isInfoEnabled() )
             {
                 LOGGER.info( "Successfully connected to broker at {}:{}",
-                             conn.getAddress(), conn.getPort() );
+                             conn.getAddress(),
+                             conn.getPort() );
             }
         }
-        catch( IOException | TimeoutException e )
+        catch ( IOException | TimeoutException e )
         {
             throw new ConnectivityException( "broker",
                                              CONNECTION_FACTORY.getHost(),
@@ -274,13 +278,15 @@ public class WresJob
                 String id = idRaw.toString();
                 liveObjectService.delete( liveObject );
                 LOGGER.info( "Successfully used live object service via {}:{}, got id {}",
-                             REDIS_HOST, REDIS_PORT, id );
+                             redisHost,
+                             redisPort,
+                             id );
             }
             catch ( RuntimeException re )
             {
                 throw new ConnectivityException( "redis",
-                                                 REDIS_HOST,
-                                                 REDIS_PORT,
+                                                 redisHost,
+                                                 redisPort,
                                                  re );
             }
         }
@@ -303,27 +309,18 @@ public class WresJob
     @POST
     @Consumes( APPLICATION_FORM_URLENCODED )
     @Produces( "text/html; charset=utf-8" )
-    public Response postWresJob( @FormParam( "projectConfig" )
-                                 @DefaultValue( "" )
-                                 String projectConfig,
-                                 @Deprecated
-                                 @FormParam( "userName" )
-                                 String wresUser,
-                                 @FormParam( "adminToken" )
-                                 @DefaultValue( "" )
-                                 String adminToken,
-                                 @FormParam( "verb" )
-                                 @DefaultValue( "execute" )
-                                 String verb,
-                                 @FormParam( "postInput" )
-                                 @DefaultValue( "false" )
-                                 boolean postInput,
-                                 @FormParam( "additionalArguments" )
-                                 List<String> additionalArguments )
+    public Response postWresJob( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig,
+                                 @Deprecated @FormParam( "userName" ) String wresUser,
+                                 @FormParam( "adminToken" ) @DefaultValue( "" ) String adminToken,
+                                 @FormParam( "verb" ) @DefaultValue( "execute" ) String verb,
+                                 @FormParam( "postInput" ) @DefaultValue( "false" ) boolean postInput,
+                                 @FormParam( "additionalArguments" ) List<String> additionalArguments )
     {
-        LOGGER.debug("additionalArguments: {}", additionalArguments );
-        LOGGER.info("==========> REQUEST POSTED: verb = '{}'; postInput = {}; additional arguments = '{}'.",
-                verb, postInput, additionalArguments);
+        LOGGER.debug( "additionalArguments: {}", additionalArguments );
+        LOGGER.info( "==========> REQUEST POSTED: verb = '{}'; postInput = {}; additional arguments = '{}'.",
+                     verb,
+                     postInput,
+                     additionalArguments );
 
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
@@ -360,12 +357,12 @@ public class WresJob
 
         // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
         // configured via system property, then the adminToken is not necessary for any command.
-        Set<Verb> verbsNeedingAdminToken = Set.of(Verb.CLEANDATABASE,
-                                                  Verb.CONNECTTODB,
-                                                  Verb.REFRESHDATABASE,
-                                                  Verb.SWITCHDATABASE);
+        Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
+                                                   Verb.CONNECTTODB,
+                                                   Verb.REFRESHDATABASE,
+                                                   Verb.SWITCHDATABASE );
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
-        if ( ( ADMIN_TOKEN_HASH != null ) && ( usingToken ) )
+        if ( ( adminTokenHash != null ) && ( usingToken ) )
         {
             messagePriority = 1; //Admin priority task.
             if ( adminToken == null || adminToken.isEmpty() )
@@ -374,29 +371,31 @@ public class WresJob
                 LOGGER.warn( message );
                 return WresJob.badRequest( message );
             }
-            
-            try 
-            {
-                KeySpec spec = new PBEKeySpec(adminToken.toCharArray(), PBEKEY_SALT, 65536, 128);
-                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1"); 
-                byte[] hash = factory.generateSecret(spec).getEncoded();
 
-                if ( !Arrays.equals(ADMIN_TOKEN_HASH, hash) )
+            try
+            {
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), salt, 65536, 128 );
+                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
+                byte[] hash = factory.generateSecret( spec ).getEncoded();
+
+                if ( !Arrays.equals( adminTokenHash, hash ) )
                 {
-                    String message = "The adminToken provided for the verb " + actualVerb 
-                            + " did not match that required.  The operation is not authorized.";
+                    String message = "The adminToken provided for the verb " + actualVerb
+                                     + " did not match that required.  The operation is not authorized.";
                     LOGGER.warn( message );
                     return WresJob.unauthorized( message );
                 }
-                LOGGER.info( "For the verb, " + actualVerb + ", the admin token matched "
-                        + "what was expected.  Continuing with the operation." );
+                LOGGER.info( "For the verb, {}, the admin token matched expectations. Continuing.", actualVerb );
             }
-            catch (Exception e)
-            {    String message = "Error creating has of adminToken; this worked before " 
-                     + "it should work now. Operation " + actualVerb + " not authorized."
-                     + " Contact user support.";
-                 LOGGER.warn( message, e );
-                 return WresJob.unauthorized( message );
+            catch ( Exception e )
+            {
+                String message = "Error creating has of adminToken; this worked before "
+                                 + "it should work now. Operation "
+                                 + actualVerb
+                                 + " not authorized."
+                                 + " Contact user support.";
+                LOGGER.warn( message, e );
+                return WresJob.unauthorized( message );
             }
         }
 
@@ -410,15 +409,14 @@ public class WresJob
             int lengthOfProjectDeclaration = projectConfig.length();
 
             // Limit project config to avoid heap overflow in worker-shim
-            if ( lengthOfProjectDeclaration
-                 > MAXIMUM_PROJECT_DECLARATION_LENGTH )
+            if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
             {
                 String projectConfigFirstChars =
                         projectConfig.substring( 0, 1000 );
                 LOGGER.warn(
-                        "Received a project declaration of length {} starting with {}",
-                        lengthOfProjectDeclaration,
-                        projectConfigFirstChars );
+                             "Received a project declaration of length {} starting with {}",
+                             lengthOfProjectDeclaration,
+                             projectConfigFirstChars );
                 return WresJob.badRequest( "The project declaration has "
                                            + lengthOfProjectDeclaration
                                            + " characters, which is more than "
@@ -426,13 +424,12 @@ public class WresJob
                                            + ", please find a way to shrink the"
                                            + " project declaration and re-send." );
             }
-            else if ( lengthOfProjectDeclaration
-                      < MINIMUM_PROJECT_DECLARATION_LENGTH )
+            else if ( lengthOfProjectDeclaration < MINIMUM_PROJECT_DECLARATION_LENGTH )
             {
                 LOGGER.warn(
-                        "Received a project declaration of length {} (smaller than {}).",
-                        lengthOfProjectDeclaration,
-                        MINIMUM_PROJECT_DECLARATION_LENGTH );
+                             "Received a project declaration of length {} (smaller than {}).",
+                             lengthOfProjectDeclaration,
+                             MINIMUM_PROJECT_DECLARATION_LENGTH );
                 return WresJob.badRequest( "The project declaration has "
                                            + lengthOfProjectDeclaration
                                            + " characters, which too small. "
@@ -450,41 +447,45 @@ public class WresJob
         String usedDatabaseName = null;
         String usedDatabaseHost = null;
         String usedDatabasePort = null;
-        if ( actualVerb == Verb.SWITCHDATABASE 
-                || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() ) )
+        if ( actualVerb == Verb.SWITCHDATABASE
+             || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() ) )
         {
-            LOGGER.info( "Switch or clean requested. Parsing additional arguments.");
-            if (additionalArguments.size() != 3)
+            LOGGER.info( "Switch or clean requested. Parsing additional arguments." );
+            if ( additionalArguments.size() != 3 )
             {
                 String message = "Request with verb " + actualVerb
-                    + " requires 3 additionalArguments, host, port, name, but "
-                    + additionalArguments.size() + " were provided.";
-                LOGGER.warn(message);
+                                 + " requires 3 additionalArguments, host, port, name, but "
+                                 + additionalArguments.size()
+                                 + " were provided.";
+                LOGGER.warn( message );
                 return WresJob.badRequest( message );
             }
-            usedDatabaseHost = additionalArguments.get(0);
-            usedDatabasePort = additionalArguments.get(1);
-            usedDatabaseName = additionalArguments.get(2);
+            usedDatabaseHost = additionalArguments.get( 0 );
+            usedDatabasePort = additionalArguments.get( 1 );
+            usedDatabaseName = additionalArguments.get( 2 );
         }
 
         // A switchdatabase is handled completely here.  
         if ( actualVerb == Verb.SWITCHDATABASE )
         {
-            setDatabaseHost ( usedDatabaseHost );
-            setDatabasePort ( usedDatabasePort );
-            setDatabaseName ( usedDatabaseName );
+            setDatabaseHost( usedDatabaseHost );
+            setDatabasePort( usedDatabasePort );
+            setDatabaseName( usedDatabaseName );
             LOGGER.info( "Database has been switched to host = '{}', port = '{}', name = '{}'.",
-                    ACTIVE_DATABASE_HOST,
-                    ACTIVE_DATABASE_PORT,
-                    ACTIVE_DATABASE_NAME);
+                         activeDatabaseHost,
+                         activeDatabasePort,
+                         activeDatabaseName );
             return Response.status( Response.Status.OK )
-                       .entity( "<!DOCTYPE html><html><head><title>Database switched.</title></head>"
-                            + "<body><h1>New database has host '" + ACTIVE_DATABASE_HOST
-                            + "', port '" + ACTIVE_DATABASE_PORT 
-                            + "', and name '" + ACTIVE_DATABASE_NAME
-                            + "'. Empty strings or null imply default from .yml will be used."
-                            + "</h1></body></html>" )
-                       .build();
+                           .entity( "<!DOCTYPE html><html><head><title>Database switched.</title></head>"
+                                    + "<body><h1>New database has host '"
+                                    + activeDatabaseHost
+                                    + "', port '"
+                                    + activeDatabasePort
+                                    + "', and name '"
+                                    + activeDatabaseName
+                                    + "'. Empty strings or null imply default from .yml will be used."
+                                    + "</h1></body></html>" )
+                           .build();
         }
 
         // All other verbs are passed through to a job handled by a worker. Set up the 
@@ -495,15 +496,15 @@ public class WresJob
         // that means the default value configured in the .yml is being used.
         if ( usedDatabaseHost == null || usedDatabaseHost.isBlank() )
         {
-            usedDatabaseHost = ACTIVE_DATABASE_HOST;
+            usedDatabaseHost = activeDatabaseHost;
         }
         if ( usedDatabasePort == null || usedDatabasePort.isBlank() )
         {
-            usedDatabasePort = ACTIVE_DATABASE_PORT;
+            usedDatabasePort = activeDatabasePort;
         }
         if ( usedDatabaseName == null || usedDatabaseName.isBlank() )
         {
-            usedDatabaseName = ACTIVE_DATABASE_NAME;
+            usedDatabaseName = activeDatabaseName;
         }
 
         // Before registering a new job, see if there are already too many.
@@ -547,9 +548,9 @@ public class WresJob
             jobMessage = Job.job.newBuilder()
                                 .setProjectConfig( projectConfig )
                                 .setVerb( actualVerb )
-                                .setDatabaseName ( usedDatabaseName )
-                                .setDatabaseHost ( usedDatabaseHost )
-                                .setDatabasePort ( usedDatabasePort )
+                                .setDatabaseName( usedDatabaseName )
+                                .setDatabaseHost( usedDatabaseHost )
+                                .setDatabasePort( usedDatabasePort )
                                 .build();
         }
         // All others, including CLEANDATABASE, CONNECTTODB, others?
@@ -559,9 +560,9 @@ public class WresJob
             // validated.
             Job.job.Builder builder = Job.job.newBuilder()
                                              .setVerb( actualVerb )
-                                             .setDatabaseName ( usedDatabaseName )
-                                             .setDatabaseHost ( usedDatabaseHost )
-                                             .setDatabasePort ( usedDatabasePort );
+                                             .setDatabaseName( usedDatabaseName )
+                                             .setDatabaseHost( usedDatabaseHost )
+                                             .setDatabasePort( usedDatabasePort );
 
             // Additional arguments are already handled when cleaning, per above.
             // No additional arguments beyond database ones are allowed in that case.
@@ -588,10 +589,13 @@ public class WresJob
             return Response.created( resourceCreated )
                            .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
                                     + "<body><h1>Evaluation job "
-                                    + jobId + " has been received, the next step is to post input data.</h1>"
+                                    + jobId
+                                    + " has been received, the next step is to post input data.</h1>"
                                     + "<p>See <a href=\""
-                                    + urlCreated + "\">" + urlCreated
-                                    + "</a></p></body></html>" )
+                                    + urlCreated
+                                    + "\">"
+                                    + urlCreated
+                                    + A_P_BODY_HTML )
                            .build();
         }
 
@@ -611,20 +615,30 @@ public class WresJob
         }
 
         // Push the database info into the underlying job metadata and mark it in queue.
-        JOB_RESULTS.setDatabaseName ( jobId, usedDatabaseName );
-        JOB_RESULTS.setDatabaseHost ( jobId, usedDatabaseHost );
-        JOB_RESULTS.setDatabasePort ( jobId, usedDatabasePort );
+        JOB_RESULTS.setDatabaseName( jobId, usedDatabaseName );
+        JOB_RESULTS.setDatabaseHost( jobId, usedDatabaseHost );
+        JOB_RESULTS.setDatabasePort( jobId, usedDatabasePort );
         JOB_RESULTS.setInQueue( jobId );
         LOGGER.info( "For verb {}, the declaration message was sent with job id {}, priority {}, and "
-                + "database host='{}', port='{}', and name='{}'. There {} jobs preceding it in the queue.", 
-                actualVerb, jobId, messagePriority, usedDatabaseHost, usedDatabasePort, usedDatabaseName, queueLength);
+                     + "database host='{}', port='{}', and name='{}'. There {} jobs preceding it in the queue.",
+                     actualVerb,
+                     jobId,
+                     messagePriority,
+                     usedDatabaseHost,
+                     usedDatabasePort,
+                     usedDatabaseName,
+                     queueLength );
 
         return Response.created( resourceCreated )
                        .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
-                            + "<body><h1>Evaluation job " + jobId + " has been received for processing.</h1>"
-                            + "<p>See <a href=\""
-                            + urlCreated + "\">" + urlCreated
-                            + "</a></p></body></html>" )
+                                + "<body><h1>Evaluation job "
+                                + jobId
+                                + " has been received for processing.</h1>"
+                                + "<p>See <a href=\""
+                                + urlCreated
+                                + "\">"
+                                + urlCreated
+                                + A_P_BODY_HTML )
                        .build();
     }
 
@@ -647,7 +661,7 @@ public class WresJob
             return WresJob.notFound( "Could not find job " + jobId );
         }
 
-        String jobUrl= "/job/" + jobId;
+        String jobUrl = "/job/" + jobId;
 
         String statusUrl = jobUrl + "/status";
         String stdoutUrl = jobUrl + "/stdout";
@@ -663,27 +677,43 @@ public class WresJob
         }
 
         return Response.ok( "<!DOCTYPE html><html><head><title>About job "
-                            + jobId + "</title></head>"
+                            + jobId
+                            + "</title></head>"
                             + "<body><h1>How to proceed with job "
-                            + jobId + " using the WRES HTTP API</h1>"
+                            + jobId
+                            + " using the WRES HTTP API</h1>"
                             + "<p>To check whether your job has completed/succeeded/failed, GET (poll) <a href=\""
-                            + statusUrl + "\">" + statusUrl + "</a>.</p>"
+                            + statusUrl
+                            + "\">"
+                            + statusUrl
+                            + "</a>.</p>"
                             + "<p>The possible job states are: "
-                            + jobStates.toString() + ".</p>"
+                            + jobStates.toString()
+                            + ".</p>"
                             + "<p>For job evaluation results, GET <a href=\""
-                            + outputUrl + "\">" + outputUrl
+                            + outputUrl
+                            + "\">"
+                            + outputUrl
                             + "</a> <strong>after</strong> status shows that the job completed successfully (exited 0).</p>"
                             + "<p>When you GET the above output url, you may specify media type text/plain in the Accept header to get a newline-delimited list of outputs.</p>"
                             + "<p>Please DELETE <a href=\""
-                            + outputUrl + "\">" + outputUrl
+                            + outputUrl
+                            + "\">"
+                            + outputUrl
                             + "</a> <strong>after</strong> you have finished reading evaluation results (by doing GET as described)."
                             + " One option (of many) is to use curl: <code>curl -X DELETE --cacert \"/path/to/wres_ca_x509_cert.pem\" https://[servername]/"
                             + outputUrl
                             + "</code> Another option is to use your client library to do the same or use developer tools in your browser to edit the /output GET request to become a DELETE request.</p>"
                             + "<p>For detailed progress (debug) information, GET <a href=\""
-                            + stdoutUrl + "\">" + stdoutUrl + "</a>"
-                            + " or <a href=\"" + stderrUrl + "\">" + stderrUrl
-                            + "</a></p></body></html>" )
+                            + stdoutUrl
+                            + "\">"
+                            + stdoutUrl
+                            + "</a>"
+                            + " or <a href=\""
+                            + stderrUrl
+                            + "\">"
+                            + stderrUrl
+                            + A_P_BODY_HTML )
                        .build();
     }
 
@@ -703,25 +733,23 @@ public class WresJob
 
         try ( Channel channel = connection.createChannel() )
         {
-            Map<String, Object> queueArgs = new HashMap<String, Object>();
-            queueArgs.put("x-max-priority", 2);
-            AMQP.Queue.DeclareOk declareOk =
-                    channel.queueDeclare( SEND_QUEUE_NAME,
-                                          true,
-                                          false,
-                                          false,
-                                          queueArgs );
+            Map<String, Object> queueArgs = new HashMap<>();
+            queueArgs.put( "x-max-priority", 2 );
+            channel.queueDeclare( SEND_QUEUE_NAME,
+                                  true,
+                                  false,
+                                  false,
+                                  queueArgs );
 
             // Tell the worker where to send results.
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
-                    new AMQP.BasicProperties
-                            .Builder()
-                            .replyTo( jobStatusExchange )
-                            .correlationId( jobId )
-                            .deliveryMode( 2 )
-                            .priority( priority )
-                            .build();
+                    new AMQP.BasicProperties.Builder()
+                                                      .replyTo( jobStatusExchange )
+                                                      .correlationId( jobId )
+                                                      .deliveryMode( 2 )
+                                                      .priority( priority )
+                                                      .build();
 
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
@@ -739,9 +767,12 @@ public class WresJob
                                   message );
 
             LOGGER.info( "Sent a message to queue '{}' with properties '{}'",
-                         SEND_QUEUE_NAME, properties );
+                         SEND_QUEUE_NAME,
+                         properties );
             LOGGER.debug( "I sent this message to queue '{}' with properties '{}': {}.",
-                          SEND_QUEUE_NAME, properties, message );
+                          SEND_QUEUE_NAME,
+                          properties,
+                          message );
         }
         catch ( InterruptedException ie )
         {
@@ -768,12 +799,12 @@ public class WresJob
             return 0;
         }
 
-        Connection connection = WresJob.getConnection();
+        Connection innerConnection = WresJob.getConnection();
 
-        try ( Channel channel = connection.createChannel() )
+        try ( Channel channel = innerConnection.createChannel() )
         {
-            Map<String, Object> queueArgs = new HashMap<String, Object>();
-            queueArgs.put("x-max-priority", 2);
+            Map<String, Object> queueArgs = new HashMap<>();
+            queueArgs.put( "x-max-priority", 2 );
             AMQP.Queue.DeclareOk declareOk =
                     channel.queueDeclare( SEND_QUEUE_NAME,
                                           true,
@@ -811,18 +842,18 @@ public class WresJob
     private static Response internalServerError( String message )
     {
         return Response.serverError()
-                       .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                               + message
-                               + "</p></body></html>")
+                       .entity( "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
     private static Response serviceUnavailable( String message )
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
-                       .entity("<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                               + message
-                               + "</p></body></html>")
+                       .entity( "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -831,7 +862,7 @@ public class WresJob
         return Response.status( Response.Status.NOT_FOUND )
                        .entity( "<!DOCTYPE html><html><head><title>Not found</title></head><body><h1>Not Found</h1><p>"
                                 + message
-                                + "</p></body></html>" )
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -840,7 +871,7 @@ public class WresJob
         return Response.status( Response.Status.BAD_REQUEST )
                        .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
                                 + message
-                                + "</p></body></html>" )
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -849,14 +880,14 @@ public class WresJob
         return Response.status( Response.Status.UNAUTHORIZED )
                        .entity( "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
                                 + message
-                                + "</p></body></html>" )
+                                + P_BODY_HTML )
                        .build();
     }
 
     private static Connection getConnection()
             throws IOException, TimeoutException
     {
-        synchronized( CONNECTION_LOCK )
+        synchronized ( CONNECTION_LOCK )
         {
             if ( WresJob.connection == null )
             {
@@ -872,33 +903,33 @@ public class WresJob
         return WresJob.JOB_RESULTS;
     }
 
-    private static void setDatabaseName(String databaseName)
+    private static void setDatabaseName( String databaseName )
     {
-        ACTIVE_DATABASE_NAME = databaseName;
-        if (REDISSON_CLIENT != null)
+        activeDatabaseName = databaseName;
+        if ( REDISSON_CLIENT != null )
         {
             RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
-            bucket.set(databaseName);
+            bucket.set( databaseName );
         }
     }
 
-    private static void setDatabaseHost(String databaseHost)
+    private static void setDatabaseHost( String databaseHost )
     {
-        ACTIVE_DATABASE_HOST = databaseHost;
-        if (REDISSON_CLIENT != null)
+        activeDatabaseHost = databaseHost;
+        if ( REDISSON_CLIENT != null )
         {
             RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseHost" );
-            bucket.set(databaseHost);
+            bucket.set( databaseHost );
         }
     }
 
-    private static void setDatabasePort(String databasePort)
+    private static void setDatabasePort( String databasePort )
     {
-        ACTIVE_DATABASE_PORT = databasePort;
-        if (REDISSON_CLIENT != null)
+        activeDatabasePort = databasePort;
+        if ( REDISSON_CLIENT != null )
         {
             RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databasePort" );
-            bucket.set(databasePort);
+            bucket.set( databasePort );
         }
     }
 
@@ -937,13 +968,19 @@ public class WresJob
 
     static final class ConnectivityException extends RuntimeException
     {
+        private static final long serialVersionUID = 4143746909778499341L;
+
         private ConnectivityException( String serviceName,
                                        String host,
                                        int port,
                                        Throwable cause )
         {
-            super( "Failed to connect to " + serviceName + " at " + host + ":"
-                   + port, cause );
+            super( "Failed to connect to " + serviceName
+                   + " at "
+                   + host
+                   + ":"
+                   + port,
+                   cause );
         }
     }
 }
