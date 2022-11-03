@@ -1,17 +1,13 @@
 package wres.io.database;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,9 +45,6 @@ import wres.io.retrieval.DataAccessException;
 import wres.io.Operations;
 import wres.io.data.DataProvider;
 import wres.io.data.DataSetProvider;
-import wres.system.DatabaseLockManager;
-import wres.system.DatabaseLockManagerNoop;
-import wres.system.DatabaseLockManagerPostgres;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
@@ -104,68 +97,6 @@ public class Database
         this.connectionPool = systemSettings.getConnectionPool();
         this.highPriorityConnectionPool = systemSettings.getHighPriorityConnectionPool();
         this.sqlTasks = createService();
-    }
-    
-    /**
-     * Prepares the database by attempting a connection and then migrating, if needed.
-     * 
-     * @param database the database to prepare
-     * @param migrate whether database migration should be attempted
-     * @throws NullPointerException if the database is null
-     * @throws IllegalStateException if the database could not be prepared
-     */
-
-    public static Database prepareDatabase( Database database, boolean migrate )
-    {
-        // Check that the database is available
-        try
-        {
-            database.testConnection();
-        }
-        catch ( SQLException | IOException e )
-        {
-            throw new IllegalStateException( "Failed to connect to the database.", e );
-        }
-        
-        // Migrate if required
-        if( migrate )
-        {
-            try
-            {
-                database.migrate();
-            }
-            catch ( SQLException | IOException e )
-            {
-                throw new IllegalStateException( "Failed to migrate the database.", e );
-            }
-        }
-
-        return database;
-    }
-
-    /**
-     * Creates a new thread executor
-     * @return A new thread executor that may run the maximum number of configured threads
-     */
-    private ThreadPoolExecutor createService()
-    {
-        // Ensures that all created threads will be labeled "Database Thread"
-        ThreadFactory factory = runnable -> new Thread( runnable, "Database Thread" );
-        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings()
-                                                                  .getDatabaseMaximumPoolSize(),
-                                                              this.getSystemSettings()
-                                                                  .getDatabaseMaximumPoolSize(),
-                                                              this.systemSettings.poolObjectLifespan(),
-                                                              TimeUnit.MILLISECONDS,
-                                                              new ArrayBlockingQueue<>( this.getSystemSettings()
-                                                                                            .getDatabaseMaximumPoolSize()
-                                                                                        * 5 ),
-                                                              factory );
-
-        // Ensures that the calling thread runs the new thread logic itself if
-        // the upper bound of the executor's internal queue has been hit
-        executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        return executor;
     }
 
     /**
@@ -289,171 +220,14 @@ public class Database
             throw new IllegalStateException( "Could not get a raw database connection.", e );
         }
     }
-
-    /**
-     * Attempts a connection to the database and throws an exception if the connection fails.
-     * @throws SQLException if the connection could not be established
-     * @throws IOException if the host is invalid
-     */
-
-    private void testConnection() throws SQLException, IOException
-    {
-        SystemSettings settings = this.getSystemSettings();
-        DatabaseSettings databaseSettings = settings.getDatabaseSettings();
-        String host = databaseSettings.getHost();
-        int port = databaseSettings.getPort();
-        String username = databaseSettings.getUsername();
-        String connectionString = databaseSettings.getConnectionString();
-        Properties properties = databaseSettings.getConnectionProperties();
-
-        boolean validURL = this.hostIsValid( host, port );
-
-        if ( !validURL )
-        {
-            throw new IOException( "The given database host:port combination ('"
-                                   + host
-                                   + ":"
-                                   + port
-                                   + "') is not accessible." );
-        }
-
-        try ( Connection connection = this.getRawConnection( connectionString, properties );
-              Statement test = connection.createStatement() )
-        {
-            test.execute( "SELECT 1;" );
-        }
-        catch ( SQLException sqlError )
-        {
-            String message = "The database could not be reached for connection verification: "
-                             + System.lineSeparator()
-                             + System.lineSeparator();
-            message += sqlError.getMessage() + System.lineSeparator() + System.lineSeparator();
-            message += "Please ensure that you have:" + System.lineSeparator();
-            message += "1) The correct URL to your database: " + connectionString
-                       + System.lineSeparator();
-            message += "2) The correct username for your database: " + username + System.lineSeparator();
-            message += "3) The correct password for your user in the database" + System.lineSeparator();
-            message += "4) An active connection to a network that may reach the requested database server"
-                       + System.lineSeparator();
-            message += "5) The correct database driver class on the application classpath"
-                       + System.lineSeparator()
-                       + System.lineSeparator();
-            message += "The application will now exit.";
-            throw new SQLException( message, sqlError );
-        }
-    }
     
     /**
-     * Attempts to migrate the database.
-     * 
-     * @throws IOException if the migration fails
-     * @throws SQLException if cleaning fails after migration
+     * @return the database settings
      */
 
-    private void migrate() throws SQLException, IOException
+    public DatabaseSettings getSettings()
     {
-        SystemSettings settings = this.getSystemSettings();
-        DatabaseSettings databaseSettings = settings.getDatabaseSettings();
-        DatabaseType type = databaseSettings.getDatabaseType();
-        String databaseName = databaseSettings.getDatabaseName();
-
-        LOGGER.info( "Beginning database migration. This takes time." );
-        DatabaseLockManager lockManager;
-
-        if ( type == DatabaseType.POSTGRESQL )
-        {
-            lockManager = new DatabaseLockManagerPostgres( () -> this.getRawConnection() );
-        }
-        else if ( type == DatabaseType.H2 )
-        {
-            lockManager = new DatabaseLockManagerNoop();
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Only postgresql and h2 are currently supported" );
-        }
-
-        try ( DatabaseSchema schema = new DatabaseSchema( databaseName, lockManager );
-              Connection connection = this.getRawConnection(); )
-        {
-            schema.applySchema( connection );
-        }
-        finally
-        {
-            lockManager.shutdown();
-        }
-
-        this.cleanPriorRuns();
-        LOGGER.info( "Finished database migration." );
-    }
-
-    private void cleanPriorRuns() throws SQLException
-    {
-        SystemSettings settings = this.getSystemSettings();
-        DatabaseSettings databaseSettings = settings.getDatabaseSettings();
-        DatabaseType type = databaseSettings.getDatabaseType();
-        String username = databaseSettings.getUsername();
-        String databaseName = databaseSettings.getDatabaseName();
-        
-        if ( type == DatabaseType.POSTGRESQL )
-        {
-            final String NEWLINE = System.lineSeparator();
-
-            String script = "";
-            script += "SELECT pg_terminate_backend(PT.pid)" + NEWLINE;
-            script += "FROM pg_locks L" + NEWLINE;
-            script += "INNER JOIN pg_stat_all_tables T" + NEWLINE;
-            script += "    ON L.relation = t.relid" + NEWLINE;
-            script += "INNER JOIN pg_stat_activity PT" + NEWLINE;
-            script += "    ON L.pid = PT.pid" + NEWLINE;
-            script += "WHERE T.schemaname <> 'pg_toast'::name" + NEWLINE;
-            script += "    AND t.schemaname < 'pg_catalog'::name" + NEWLINE;
-            script += "    AND usename = '" + username + "'" + NEWLINE;
-            script += "    AND datname = '" + databaseName + "'" + NEWLINE;
-            script += "GROUP BY PT.pid;";
-
-            try ( Connection connection = this.getRawConnection();
-                  Statement clean = connection.createStatement() )
-            {
-                clean.execute( script );
-                try ( ResultSet resultSet = clean.getResultSet() )
-                {
-                    if ( resultSet.isBeforeFirst() )
-                    {
-                        LOGGER.debug( "Lock(s) from previous runs of this applications "
-                                      + "have been released." );
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * @param host the host, not null
-     * @param port the port
-     * @return whether the database host is valid
-     */
-
-    private boolean hostIsValid( String host, int port )
-    {
-        Objects.requireNonNull( host );
-
-        if ( host.equalsIgnoreCase( "localhost" ) )
-        {
-            return true;
-        }
-
-        try ( Socket socket = new Socket() )
-        {
-            socket.connect( new InetSocketAddress( host, port ), 2000 );
-            return true;
-        }
-        catch ( IOException ioe )
-        {
-            String message = "The intended host:port combination ({" + host + "}:{" + port + "}) is not accessible.";
-            LOGGER.warn( message, ioe );
-            return false;
-        }
+        return this.systemSettings.getDatabaseSettings();
     }
 
     /**
@@ -464,12 +238,37 @@ public class Database
      * @throws SQLException
      */
 
-    private Connection getRawConnection( String connectionString, Properties properties ) throws SQLException
+    Connection getRawConnection( String connectionString, Properties properties ) throws SQLException
     {
         return DriverManager.getConnection( connectionString,
                                             properties );
     }
+    
+    /**
+     * Creates a new thread executor
+     * @return A new thread executor that may run the maximum number of configured threads
+     */
+    private ThreadPoolExecutor createService()
+    {
+        // Ensures that all created threads will be labeled "Database Thread"
+        ThreadFactory factory = runnable -> new Thread( runnable, "Database Thread" );
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings()
+                                                                  .getDatabaseMaximumPoolSize(),
+                                                              this.getSystemSettings()
+                                                                  .getDatabaseMaximumPoolSize(),
+                                                              this.systemSettings.poolObjectLifespan(),
+                                                              TimeUnit.MILLISECONDS,
+                                                              new ArrayBlockingQueue<>( this.getSystemSettings()
+                                                                                            .getDatabaseMaximumPoolSize()
+                                                                                        * 5 ),
+                                                              factory );
 
+        // Ensures that the calling thread runs the new thread logic itself if
+        // the upper bound of the executor's internal queue has been hit
+        executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        return executor;
+    }
+    
     /**
      * Get a connection from either the normal or high priority pool
      * @param highPriority Whether to get from the high priority pool.

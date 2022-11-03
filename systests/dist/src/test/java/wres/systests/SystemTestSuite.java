@@ -10,8 +10,8 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.Duration;
 
-import wres.io.Operations;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.system.SystemSettings;
 
 @RunWith( SystemTestsSuiteRunner.class )
@@ -109,7 +109,7 @@ public class SystemTestSuite
             LOGGER.info( "Cleaning the test database instance {}...", dbName );
             Database database = new Database( systemSettings );
             Instant started = Instant.now();
-            Operations.cleanDatabase( database );
+            DatabaseOperations.cleanDatabase( database );
             Instant stopped = Instant.now();
             Duration duration = Duration.between( started, stopped );
             database.shutdown();

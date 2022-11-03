@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.system.SystemSettings;
 
 /**
@@ -57,17 +59,25 @@ public class ScenarioHelper
     private static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
     private static final Database DATABASE;
-    
+
     static
     {
-        if( !SYSTEM_SETTINGS.isInMemory() )
+        if ( !SYSTEM_SETTINGS.isInMemory() )
         {
             DATABASE = new Database( SYSTEM_SETTINGS );
-            
-            // Migrate, as needed
-            Database.prepareDatabase( DATABASE,
-                                      SYSTEM_SETTINGS.getDatabaseSettings()
-                                                     .getAttemptToMigrate() );
+
+            if ( SYSTEM_SETTINGS.getDatabaseSettings()
+                                .getAttemptToMigrate() )
+            {
+                try
+                {
+                    DatabaseOperations.migrateDatabase( DATABASE );
+                }
+                catch ( SQLException | IOException e )
+                {
+                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                }
+            }
         }
         else
         {

@@ -2,6 +2,7 @@ package wres;
 
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.SystemSettings;
@@ -97,7 +99,7 @@ public class Main
         final String finalFunction = function;
 
         LOGGER.info( "Running function '{}' with arguments '{}'.", finalFunction, finalArgs );
-        
+
         Instant beganExecution = Instant.now();
 
         // Log any uncaught exceptions
@@ -143,16 +145,7 @@ public class Main
 
         Executor executor = new Executor( SYSTEM_SETTINGS );
 
-        Database database = null;
-        if ( SYSTEM_SETTINGS.isInDatabase() )
-        {
-            database = new Database( SYSTEM_SETTINGS );
-
-            // Migrate the database, as needed
-            Database.prepareDatabase( database,
-                                      SYSTEM_SETTINGS.getDatabaseSettings()
-                                                     .getAttemptToMigrate() );
-        }
+        Database database = Main.getAndMigrateDatabaseIfRequired();
 
         // Create the broker connections for statistics messaging
         Properties brokerConnectionProperties =
@@ -250,6 +243,37 @@ public class Main
 
         // Exit
         Main.exit( result );
+    }
+
+    /**
+     * Returns a database, if required, and migrates it as needed.
+     *  
+     * @return a database or null 
+     */
+
+    private static Database getAndMigrateDatabaseIfRequired()
+    {
+        Database database = null;
+        if ( SYSTEM_SETTINGS.isInDatabase() )
+        {
+            database = new Database( SYSTEM_SETTINGS );
+
+            // Migrate the database, as needed
+            if ( SYSTEM_SETTINGS.getDatabaseSettings()
+                                .getAttemptToMigrate() )
+            {
+                try
+                {
+                    DatabaseOperations.migrateDatabase( database );
+                }
+                catch ( SQLException | IOException e )
+                {
+                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                }
+            }
+        }
+
+        return database;
     }
 
     /**

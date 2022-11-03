@@ -424,10 +424,7 @@ class ProcessorHelper
                 {
                     List<IngestResult> ingestResults = Operations.ingest( databaseIngester,
                                                                           evaluationDetails.getSystemSettings(),
-                                                                          databaseServices.getDatabase(),
                                                                           featurefulProjectConfig,
-                                                                          databaseServices.getDatabaseLockManager(),
-                                                                          caches,
                                                                           griddedFeaturesBuilder );
 
                     // Create the gridded features cache if needed

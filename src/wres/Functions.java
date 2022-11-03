@@ -35,6 +35,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
@@ -134,7 +135,7 @@ final class Functions
         final Map<WresFunction, Function<SharedResources, ExecutionResult>> functions = new TreeMap<>();
 
         functions.put( new WresFunction( "-cd", "connecttodb", "Connects to the WRES database." ),
-                       Functions::connectToDB );
+                       Functions::connectToDatabase );
         functions.put( new WresFunction( "-co", "commands", "Prints this help information." ),
                        Functions::printCommands );
         functions.put( new WresFunction( "-h", "help", "Prints this help information." ),
@@ -201,16 +202,18 @@ final class Functions
     /**
      * Creates the "connectToDB" method
      *
-     * @return method that will attempt to connect to the database to prove that a connection is possible. The version of the connected database will be printed.
+     * @return method that will attempt to connect to the database to prove that a connection is possible. The version 
+     * of the connected database will be printed.
      */
-    private static ExecutionResult connectToDB( SharedResources sharedResources )
+    private static ExecutionResult connectToDatabase( SharedResources sharedResources )
     {
         try
         {
-            Operations.testConnection( sharedResources.getDatabase() );
+            DatabaseOperations.testDatabaseConnection( sharedResources.getDatabase() );
+            
             return ExecutionResult.success();
         }
-        catch ( SQLException se )
+        catch ( SQLException | IOException se )
         {
             String message = "Could not connect to database.";
             LOGGER.warn( message, se );
@@ -242,7 +245,7 @@ final class Functions
         try
         {
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            Operations.cleanDatabase( sharedResources.getDatabase() );
+            DatabaseOperations.cleanDatabase( sharedResources.getDatabase() );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( SQLException se )
@@ -312,7 +315,7 @@ final class Functions
         try
         {
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            Operations.refreshDatabase( sharedResources.getDatabase() );
+            DatabaseOperations.refreshDatabase( sharedResources.getDatabase() );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             return ExecutionResult.success();
         }
@@ -380,10 +383,7 @@ final class Functions
 
                 Operations.ingest( timeSeriesIngester,
                                    sharedResources.getSystemSettings(),
-                                   sharedResources.getDatabase(),
                                    projectConfig,
-                                   lockManager,
-                                   caches,
                                    griddedFeatures );
 
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
