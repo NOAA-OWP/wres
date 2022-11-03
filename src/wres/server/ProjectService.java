@@ -3,6 +3,7 @@ package wres.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -30,6 +31,7 @@ import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.concurrency.Executor;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -52,9 +54,19 @@ public class ProjectService
     // Migrate the database, as needed
     static
     {
-        Database.prepareDatabase( DATABASE,
-                                  SYSTEM_SETTINGS.getDatabaseSettings()
-                                                 .getAttemptToMigrate() );
+        // Migrate the database, as needed
+        if ( SYSTEM_SETTINGS.getDatabaseSettings()
+                            .getAttemptToMigrate() )
+        {
+            try
+            {
+                DatabaseOperations.migrateDatabase( DATABASE );
+            }
+            catch ( SQLException | IOException e )
+            {
+                throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+            }
+        }
     }
 
     private static final Random RANDOM =
