@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+
+import wres.io.data.DataProvider;
+
 import java.util.IllegalFormatException;
 
 public class DataScripter extends ScriptBuilder

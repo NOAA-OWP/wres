@@ -7,10 +7,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureKey;
+import wres.io.data.DataProvider;
 import wres.io.data.details.FeatureDetails;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 import wres.statistics.generated.Geometry;
 
 /**

@@ -7,9 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.data.DataProvider;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 
 /**
  * Helpers for data on Variables used in timeseries data.

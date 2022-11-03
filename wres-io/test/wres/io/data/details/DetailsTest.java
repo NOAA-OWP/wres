@@ -22,9 +22,9 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
+import wres.io.database.TestDatabase;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
-import wres.io.utilities.TestDatabase;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -34,7 +34,7 @@ public class DetailsTest
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private @Mock SystemSettings mockSystemSettings;
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
     private @Mock Executor mockExecutor;
     private @Mock DatabaseCaches mockCaches;
     private Connection rawConnection;
@@ -60,7 +60,7 @@ public class DetailsTest
         Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         // Set up a liquibase database to run migrations against.
         this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
         Features featuresCache = new Features( this.wresDatabase );

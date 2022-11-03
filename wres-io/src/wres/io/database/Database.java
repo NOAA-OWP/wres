@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -47,6 +47,8 @@ import static java.time.ZoneOffset.UTC;
 import wres.io.ingesting.IngestException;
 import wres.io.retrieval.DataAccessException;
 import wres.io.Operations;
+import wres.io.data.DataProvider;
+import wres.io.data.DataSetProvider;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseLockManagerPostgres;

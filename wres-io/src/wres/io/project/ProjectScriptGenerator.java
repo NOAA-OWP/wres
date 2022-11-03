@@ -8,8 +8,8 @@ import java.util.StringJoiner;
 
 import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 
 /**
  * Houses the logic used to create SQL scripts based on a project

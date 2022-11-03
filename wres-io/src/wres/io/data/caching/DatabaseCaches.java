@@ -3,7 +3,7 @@ package wres.io.data.caching;
 import java.util.Objects;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.utilities.Database;
+import wres.io.database.Database;
 
 /**
  * A small container of database caches/ORMs. The individual caches are built on construction and are accessible.

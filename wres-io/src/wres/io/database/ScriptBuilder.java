@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.database;
 
 public class ScriptBuilder
 {

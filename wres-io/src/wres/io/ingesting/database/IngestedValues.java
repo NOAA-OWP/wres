@@ -10,9 +10,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.data.DataBuilder;
+import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
-import wres.io.utilities.DataBuilder;
-import wres.io.utilities.Database;
 import wres.system.SystemSettings;
 
 /**

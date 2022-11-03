@@ -3,9 +3,9 @@ package wres.io.data.details;
 import java.sql.SQLException;
 import java.util.Objects;
 
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.data.DataProvider;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 
 /**
  * Helps caller determine whether a given source has completed ingest and/or to

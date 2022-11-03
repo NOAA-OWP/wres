@@ -9,11 +9,11 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import wres.io.data.DataProvider;
 import wres.io.data.details.EnsembleDetails;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 import wres.io.retrieval.DataAccessException;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
 
 /**
  * Cached details about Ensembles from the database

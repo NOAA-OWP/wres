@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.data;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +22,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import wres.datamodel.MissingValues;
+import wres.io.database.Database;
+import wres.io.reading.commaseparated.CSVDataProvider;
 
 /**
  * <p>Provides access and operations on tabular data.

@@ -9,10 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-
+import wres.io.data.DataProvider;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**

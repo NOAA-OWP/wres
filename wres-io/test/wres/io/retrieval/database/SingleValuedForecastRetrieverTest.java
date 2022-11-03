@@ -49,6 +49,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.caching.DatabaseCaches;
+import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
@@ -57,7 +58,6 @@ import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieval.Retriever;
-import wres.io.utilities.TestDatabase;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -76,7 +76,7 @@ public class SingleValuedForecastRetrieverTest
     private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedForecastRetrieverTest.class );
     @Mock
     private SystemSettings mockSystemSettings;
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
     @Mock
     private Executor mockExecutor;
     @Mock
@@ -126,7 +126,7 @@ public class SingleValuedForecastRetrieverTest
         Mockito.when( this.mockProjectConfig.getPair() )
                .thenReturn( pairConfig );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
         this.lockManager = new DatabaseLockManagerNoop();
 

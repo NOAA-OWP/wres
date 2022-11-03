@@ -48,8 +48,8 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeScaleDetails;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.TestDatabase;
+import wres.io.database.DataScripter;
+import wres.io.database.TestDatabase;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -77,7 +77,7 @@ class DatabaseProjectTest
     @Mock
     private Executor mockExecutor;
 
-    private wres.io.utilities.Database wresDatabase;
+    private wres.io.database.Database wresDatabase;
     @Mock
     private DatabaseCaches mockCaches;
     private TestDatabase testDatabase;
@@ -115,7 +115,7 @@ class DatabaseProjectTest
         Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.utilities.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
         Features featuresCache = new Features( this.wresDatabase );
 
         Mockito.when( this.mockCaches.getFeaturesCache() )

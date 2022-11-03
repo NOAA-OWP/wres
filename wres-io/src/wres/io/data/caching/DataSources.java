@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Cache;
 
+import wres.io.data.DataProvider;
 import wres.io.data.details.SourceDetails;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 
 /**
  * Caches information about the source of forecast and observation data

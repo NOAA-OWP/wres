@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.reading.commaseparated;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.io.data.DataProvider;
 
 /**
  * A streaming tabular dataset that doesn't require an
@@ -36,7 +37,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
  * the <code>ResultSet</code> data structure used for
  * sql queries.
  */
-class CSVDataProvider implements DataProvider
+public class CSVDataProvider implements DataProvider
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CSVDataProvider.class );
 
@@ -51,25 +52,25 @@ class CSVDataProvider implements DataProvider
     private final String delimiter;
     private final String commentString;
 
-    static CSVDataProvider from( final String filePath, final String delimiter )
+    public static CSVDataProvider from( final String filePath, final String delimiter )
             throws IOException
     {
         return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    static CSVDataProvider from( final InputStream inputStream, final String delimiter )
+    public static CSVDataProvider from( final InputStream inputStream, final String delimiter )
             throws IOException
     {
         return new CSVDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    static CSVDataProvider from( final URI filePath, final String delimiter )
+    public static CSVDataProvider from( final URI filePath, final String delimiter )
             throws IOException
     {
         return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
+    public static CSVDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
             throws IOException
     {
         return new CSVDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, columns );

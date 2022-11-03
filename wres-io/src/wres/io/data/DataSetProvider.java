@@ -1,4 +1,4 @@
-package wres.io.utilities;
+package wres.io.data;
 
 import java.math.BigDecimal;
 import java.net.URI;

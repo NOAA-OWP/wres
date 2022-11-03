@@ -16,16 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.NoDataException;
 import wres.io.config.ConfigHelper;
+import wres.io.data.DataProvider;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
+import wres.io.database.DataScripter;
+import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
-import wres.io.utilities.DataProvider;
-import wres.io.utilities.DataScripter;
-import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 
 /**
  * Create or find existing wres.project rows in the database, represented by

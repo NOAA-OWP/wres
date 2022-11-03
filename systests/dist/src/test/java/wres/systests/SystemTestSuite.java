@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.time.Duration;
 
 import wres.io.Operations;
-import wres.io.utilities.Database;
+import wres.io.database.Database;
 import wres.system.SystemSettings;
 
 @RunWith( SystemTestsSuiteRunner.class )
