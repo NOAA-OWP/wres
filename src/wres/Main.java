@@ -238,9 +238,6 @@ public class Main
             }
         }
 
-        // Print the log file location. TODO: consider ditching this because it's an anti-pattern
-        Main.printLogFileInformation();
-
         // Exit
         Main.exit( result );
     }
@@ -316,45 +313,4 @@ public class Main
         return version.getVerboseRuntimeDescription();
     }
 
-    /**
-     * Print some hints to stdout about log files.
-     *
-     * This violates the rule of avoiding standard out and standard error
-     * because if you are already looking at the log output, you do not need
-     * this extraneous information.
-     *
-     * Printing log file information is dubious since the system administrator
-     * has control at runtime over which log file to use and can set debug on
-     * the runtime logging facilities chosen, but this is a convenience that has
-     * been requested in #37382 and #51945. The logging library is chosen
-     * separately from the application, so attempting to print from inside the
-     * application at compile-time violates SOC (slf4j at compile-time).
-     *
-     * The logging library chosen should allow the admin to print information
-     * about which file it is logging to. For example, with logback, one can
-     * set debug="true" in the configuration tag to show additional information.
-     */
-
-    private static void printLogFileInformation()
-    {
-        String logFileOverride = System.getProperty( "logback.configurationFile" );
-
-        String messagesWritten = "Log messages have been written to the file ";
-
-        if ( logFileOverride != null && !logFileOverride.isEmpty() )
-        {
-            System.out.println( messagesWritten +
-                                "specified in the logback configuration file "
-                                + logFileOverride
-                                + ". For more details, use "
-                                + "the logging library's debug functionality." );
-        }
-        else
-        {
-            System.out.println( messagesWritten
-                                + System.getProperty( "user.home" )
-                                + "/wres_logs/wres.log (unless otherwise configured"
-                                + " in lib/conf/logback.xml)." );
-        }
-    }
 }
