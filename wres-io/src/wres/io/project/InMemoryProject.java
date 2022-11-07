@@ -533,6 +533,15 @@ public class InMemoryProject implements Project
         return ConfigHelper.hasProbabilityThresholds( this.getProjectConfig() );
     }
 
+    @Override
+    public boolean isUpscalingLenient( LeftOrRightOrBaseline lrb )
+    {
+        return ProjectUtilities.isUpscalingLenient( lrb,
+                                                    this.getProjectConfig()
+                                                        .getPair()
+                                                        .getDesiredTimeScale() );
+    }
+
     /**
      * Saves the project.
      * @return true if this call resulted in the project being saved, false otherwise

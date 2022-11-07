@@ -344,45 +344,13 @@ public class DatabaseProject implements Project
         return this.desiredTimeScale;
     }
 
-    /**
-     * Performs operations that are needed for the project to run between ingest and evaluation.
-     * 
-     * @throws DataAccessException if retrieval of data fails
-     * @throws NoDataException if zero features have intersecting data
-     */
-
-    void prepareAndValidate()
+    @Override
+    public boolean isUpscalingLenient( LeftOrRightOrBaseline lrb )
     {
-        LOGGER.info( "Validating the project and loading preliminary metadata..." );
-
-        LOGGER.trace( "prepareForExecution() entered" );
-        Database db = this.getDatabase();
-
-        // Validates that the required variables are present
-        this.validateVariables();
-
-        // Check for features that potentially have intersecting values.
-        // The query in getIntersectingFeatures checks that there is some
-        // data for each feature on each side, but does not guarantee pairs.
-        synchronized ( this.featureLock )
-        {
-            this.setFeaturesAndFeatureGroups( db );
-        }
-
-        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
-        {
-            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
-                                       + "the variables and other declaration supplied. Please check that the declaration is expected to "
-                                       + "produce some features with time-series data on both sides of the pairing." );
-        }
-
-        // Validate any ensemble conditions
-        this.validateEnsembleConditions();
-
-        // Determine and set the variables to evaluate
-        this.setVariablesToEvaluate();
-
-        LOGGER.info( "Project validation and metadata loading is complete." );
+        return ProjectUtilities.isUpscalingLenient( lrb,
+                                                    this.getProjectConfig()
+                                                        .getPair()
+                                                        .getDesiredTimeScale() );
     }
 
     /**
@@ -738,6 +706,47 @@ public class DatabaseProject implements Project
     public int hashCode()
     {
         return Objects.hash( this.getHash() );
+    }
+
+    /**
+     * Performs operations that are needed for the project to run between ingest and evaluation.
+     * 
+     * @throws DataAccessException if retrieval of data fails
+     * @throws NoDataException if zero features have intersecting data
+     */
+
+    void prepareAndValidate()
+    {
+        LOGGER.info( "Validating the project and loading preliminary metadata..." );
+
+        LOGGER.trace( "prepareForExecution() entered" );
+        Database db = this.getDatabase();
+
+        // Validates that the required variables are present
+        this.validateVariables();
+
+        // Check for features that potentially have intersecting values.
+        // The query in getIntersectingFeatures checks that there is some
+        // data for each feature on each side, but does not guarantee pairs.
+        synchronized ( this.featureLock )
+        {
+            this.setFeaturesAndFeatureGroups( db );
+        }
+
+        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
+        {
+            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
+                                       + "the variables and other declaration supplied. Please check that the declaration is expected to "
+                                       + "produce some features with time-series data on both sides of the pairing." );
+        }
+
+        // Validate any ensemble conditions
+        this.validateEnsembleConditions();
+
+        // Determine and set the variables to evaluate
+        this.setVariablesToEvaluate();
+
+        LOGGER.info( "Project validation and metadata loading is complete." );
     }
 
     /**

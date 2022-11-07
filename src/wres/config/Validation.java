@@ -49,6 +49,7 @@ import wres.config.generated.FeaturePool;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.LenienceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -2376,6 +2377,9 @@ public class Validation
         // Check that the monthdays are valid
         valid = Validation.areDesiredTimeScaleMonthDaysValid( projectConfigPlus, pairConfig ) && valid;
 
+        // Check that the lenience declaration is valid
+        valid = Validation.isLenientRescalingValid( projectConfigPlus, pairConfig ) && valid;
+
         return valid;
     }
 
@@ -2763,6 +2767,39 @@ public class Validation
     }
 
     /**
+     * Determines whether the settings for lenient rescaling are valid.
+     * 
+     * @param projectConfigPlus the wrapped project declaration
+     * @param pairConfig the pair declaration
+     * @return true if the declaration is valid, otherwise false
+     */
+
+    private static boolean isLenientRescalingValid( ProjectConfigPlus projectConfigPlus,
+                                                    PairConfig pairConfig )
+    {
+        boolean isValid = true;
+
+        DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
+
+        if ( LOGGER.isWarnEnabled() && Objects.nonNull( desiredTimeScale )
+             && desiredTimeScale.getLenient() != LenienceType.NONE
+             && desiredTimeScale.getLenient() != LenienceType.FALSE )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " Discovered a rescaling leniency of {}. Care should be exercised when performing lenient "
+                         + "rescaling, as it implies that a rescaled value will be computed even when a majority of "
+                         + "data is missing. Care is especially needed when performing lenient rescaling of model "
+                         + "predictions because the missing data is unlikely to be missing at random.",
+                         projectConfigPlus.getOrigin(),
+                         pairConfig.sourceLocation().getLineNumber(),
+                         pairConfig.sourceLocation().getColumnNumber(),
+                         desiredTimeScale.getLenient() );
+        }
+
+        return isValid;
+    }
+
+    /**
      * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
      * aggregation functions associated with the existingTimeScale for each source.
      * 
@@ -2782,8 +2819,10 @@ public class Validation
     {
         boolean returnMe = true;
 
-        TimeScaleFunction desired = pairConfig.getDesiredTimeScale().getFunction();
-        Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
+        TimeScaleFunction desired = pairConfig.getDesiredTimeScale()
+                                              .getFunction();
+        Inputs inputConfig = projectConfigPlus.getProjectConfig()
+                                              .getInputs();
 
         // Time aggregation is a sum
         if ( TimeScaleFunction.TOTAL.equals( desired ) )

@@ -24,7 +24,7 @@ public interface Project
     /**
      * @return the project declaration
      */
-    
+
     ProjectConfig getProjectConfig();
 
     /**
@@ -58,11 +58,11 @@ public interface Project
      * Returns the set of {@link FeatureTuple} for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
      * the configuration, all locations that have been ingested are retrieved
-     * @return A set of all feature tuples involved in the project
+     * @return a set of all feature tuples involved in the project
      * @throws DataAccessException if the features cannot be retrieved
      * @throws IllegalStateException if the features have not been set
      */
-    
+
     Set<FeatureTuple> getFeatures();
 
     /**
@@ -70,12 +70,12 @@ public interface Project
      * @return A set of all feature groups involved in the project
      * @throws IllegalStateException if the features have not been set
      */
-    
+
     Set<FeatureGroup> getFeatureGroups();
 
     /**
-     * @param lrb The side of data for which the variable is required
-     * @return The declared data source for the specified orientation
+     * @param lrb the side of data for which the variable is required
+     * @return the declared data source for the specified orientation
      * @throws NullPointerException if the lrb is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
@@ -83,8 +83,17 @@ public interface Project
     DataSourceConfig getDeclaredDataSource( LeftOrRightOrBaseline lrb );
 
     /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the variable for the specified side of data
+     * @param lrb the side of data
+     * @return whether there is lenient upscaling enforced for the specified side of data
+     * @throws NullPointerException if the lrb is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    boolean isUpscalingLenient( LeftOrRightOrBaseline lrb );
+
+    /**
+     * @param lrb the side of data for which the variable is required
+     * @return the name of the variable for the specified side of data
      * @throws NullPointerException if the lrb is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
@@ -92,8 +101,8 @@ public interface Project
     String getVariableName( LeftOrRightOrBaseline lrb );
 
     /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the declared variable for the specified side of data
+     * @param lrb the side of data for which the variable is required
+     * @return the name of the declared variable for the specified side of data
      * @throws NullPointerException if the lrb is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
@@ -115,39 +124,39 @@ public interface Project
     /**
      * @return The earliest possible day in a season or null
      */
-    
+
     MonthDay getEarliestDayInSeason();
 
     /**
      * @return The latest possible day in a season or null
      */
-    
+
     MonthDay getLatestDayInSeason();
 
     /**
      * @param dataSourceConfig the data source configuration
      * @return true if the data source uses gridded data, false otherwise
      */
-    
+
     boolean usesGriddedData( DataSourceConfig dataSourceConfig );
 
     /**
      * Returns unique identifier for this project data
      * @return the project hash
      */
-    
+
     String getHash();
 
     /**
      * @return whether or not baseline data is involved in the project
      */
-    
+
     boolean hasBaseline();
 
     /**
      * @return whether or not there is a generated baseline
      */
-    
+
     boolean hasGeneratedBaseline();
 
     /**
@@ -159,7 +168,7 @@ public interface Project
     /**
      * @return whether or not the project uses probability thresholds
      */
-    
+
     boolean hasProbabilityThresholds();
 
     /**
@@ -167,6 +176,6 @@ public interface Project
      * @return true if this call resulted in the project being saved, false otherwise
      * @throws DataAccessException if the save fails for any reason
      */
-    
+
     boolean save();
 }
