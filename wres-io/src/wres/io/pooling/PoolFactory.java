@@ -34,7 +34,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import wres.config.generated.CrossPair;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DoubleBoundsType;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -377,15 +376,22 @@ public class PoolFactory
         TimeSeriesCrossPairer<Double, Double> crossPairer = this.getCrossPairerOrNull( pairConfig );
 
         // Lenient upscaling?
-        DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
-        boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
+        boolean leftLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.BASELINE );
 
-        LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
+        // Create a default upscaler for each side
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
+                                                                                 this.getUnitMapper()
+                                                                                     .getUnitAliases() );
 
-        // Create a default upscaler
-        TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of( lenient,
-                                                                             this.getUnitMapper()
-                                                                                 .getUnitAliases() );
+        TimeSeriesUpscaler<Double> rightUpscaler = TimeSeriesOfDoubleUpscaler.of( rightLenient,
+                                                                                  this.getUnitMapper()
+                                                                                      .getUnitAliases() );
+
+        TimeSeriesUpscaler<Double> baselineUpscaler = TimeSeriesOfDoubleUpscaler.of( baselineLenient,
+                                                                                     this.getUnitMapper()
+                                                                                         .getUnitAliases() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
@@ -398,7 +404,7 @@ public class PoolFactory
 
             baselineGenerator = this.getGeneratedBaseline( baselineConfig,
                                                            retrieverFactory,
-                                                           upscaler,
+                                                           rightUpscaler,
                                                            Double::isFinite );
         }
 
@@ -422,8 +428,9 @@ public class PoolFactory
                                                             .setLeftFilter( filter )
                                                             .setRightFilter( filter )
                                                             .setBaselineFilter( filter )
-                                                            .setLeftUpscaler( upscaler )
-                                                            .setRightUpscaler( upscaler )
+                                                            .setLeftUpscaler( leftUpscaler )
+                                                            .setRightUpscaler( rightUpscaler )
+                                                            .setBaselineUpscaler( baselineUpscaler )
                                                             .setPairer( pairer )
                                                             .setCrossPairer( crossPairer )
                                                             .setClimateMapper( Double::doubleValue )
@@ -485,19 +492,22 @@ public class PoolFactory
         TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( pairConfig );
 
         // Lenient upscaling?
-        DesiredTimeScaleConfig desiredTimeScale = pairConfig.getDesiredTimeScale();
-        boolean lenient = Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isLenient();
+        boolean leftLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.BASELINE );
 
-        LOGGER.debug( "While creating pool suppliers, discovered a rescaling leniency of: {}.", lenient );
-
-        // Create a default upscaler for left-ish data
-        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( lenient,
+        // Create a default upscaler for each side
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
                                                                                  this.getUnitMapper()
                                                                                      .getUnitAliases() );
-        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( lenient,
+
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( rightLenient,
                                                                                       this.getUnitMapper()
                                                                                           .getUnitAliases() );
 
+        TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
+                                                                                         this.getUnitMapper()
+                                                                                             .getUnitAliases() );
         // Left transformer
         DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
@@ -530,6 +540,7 @@ public class PoolFactory
                                                               .setBaselineTransformer( baselineValueAndUnitTransformer )
                                                               .setLeftUpscaler( leftUpscaler )
                                                               .setRightUpscaler( rightUpscaler )
+                                                              .setBaselineUpscaler( baselineUpscaler )
                                                               .setLeftFilter( singleValuedFilter )
                                                               .setRightFilter( ensembleFilter )
                                                               .setBaselineFilter( ensembleFilter )

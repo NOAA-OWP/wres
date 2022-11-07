@@ -57,6 +57,32 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="lenienceType">
+        <xs:annotation>
+            <xs:documentation>
+                The side(s) of data where lenience should be applied when 
+                rescaling time-series. A value of "all" indicates lenience
+                with respect to all sides, "none" indicates lenience with
+                respect to no sides, and the other instances name particular 
+                sides or combinations of sides. The values "true" and "false"
+                are synonyms for "all" and "none", respectively, and are 
+                maintained for backwards compatibility.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="all" />
+            <xs:enumeration value="none" />
+            <xs:enumeration value="left" />
+            <xs:enumeration value="right" />
+            <xs:enumeration value="baseline" />
+            <xs:enumeration value="rightAndBaseline" />
+            <xs:enumeration value="leftAndBaseline" />
+            <xs:enumeration value="leftAndRight" />
+            <xs:enumeration value="true" />
+            <xs:enumeration value="false" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="ensembleAverageType">
         <xs:annotation>
             <xs:documentation>
@@ -856,7 +882,7 @@ A unit of time
                     <xs:element name="latestMonth" type="xs:short" minOccurs="0" maxOccurs="1" />
                     <xs:element name="latestDay" type="xs:short" minOccurs="0" maxOccurs="1" />
                 </xs:sequence>
-                <xs:attribute name="lenient" type="xs:boolean" default="false" />
+                <xs:attribute name="lenient" type="lenienceType" default="none" />
             </xs:extension>
         </xs:complexContent>
 

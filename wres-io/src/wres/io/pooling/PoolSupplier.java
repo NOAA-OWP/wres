@@ -123,6 +123,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** Upscaler for right-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<R> rightUpscaler;
 
+    /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
+    private final TimeSeriesUpscaler<R> baselineUpscaler;
+
     /** The desired time scale. */
     private final TimeScaleOuter desiredTimeScale;
 
@@ -297,6 +300,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         /** Upscaler for right-type data. Optional on construction, but may be exceptional if later required. */
         private TimeSeriesUpscaler<R> rightUpscaler;
 
+        /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
+        private TimeSeriesUpscaler<R> baselineUpscaler;
+
         /** The desired time scale. */
         private TimeScaleOuter desiredTimeScale;
 
@@ -431,6 +437,17 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Builder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
         {
             this.rightUpscaler = rightUpscaler;
+
+            return this;
+        }
+
+        /**
+         * @param baselineUpscaler the upscaler for baseline values
+         * @return the builder
+         */
+        Builder<L, R> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
+        {
+            this.baselineUpscaler = baselineUpscaler;
 
             return this;
         }
@@ -1167,7 +1184,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                               desiredTimeScale );
             }
 
-            TimeSeriesUpscaler<R> rightUp = this.getRightUpscaler();
+            TimeSeriesUpscaler<R> rightUp = this.getRightOrBaselineUpscaler( orientation );
             RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUp.upscale( rightOrBaseline,
                                                                                  desiredTimeScale,
                                                                                  endsAt,
@@ -1467,8 +1484,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Returns the upscaler for left values, if any. Throws an exception if not available, because this is an internal
-     * call and is only requested when necessary.
+     * Returns the upscaler for left values. Throws an exception if not available, because this is an internal call and 
+     * is only requested when necessary.
      * 
      * @return the upscaler for left values
      * @throws NullPointerException if the upscaler is not available
@@ -1482,18 +1499,26 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Returns the upscaler for right values, if any. Throws an exception if not available, because this is an internal
-     * call and is only requested when necessary.
+     * Returns the upscaler for right or baseline values. Throws an exception if not available, because this is 
+     * an internal call and is only requested when necessary.
      * 
-     * @return the upscaler for right values
+     * @param lrb the orientation required
+     * @return the upscaler for right or baseline values
      * @throws NullPointerException if the upscaler is not available
      */
 
-    private TimeSeriesUpscaler<R> getRightUpscaler()
+    private TimeSeriesUpscaler<R> getRightOrBaselineUpscaler( LeftOrRightOrBaseline lrb )
     {
-        Objects.requireNonNull( this.rightUpscaler );
+        if ( lrb == LeftOrRightOrBaseline.RIGHT )
+        {
+            Objects.requireNonNull( this.rightUpscaler );
 
-        return this.rightUpscaler;
+            return this.rightUpscaler;
+        }
+
+        Objects.requireNonNull( this.baselineUpscaler );
+
+        return this.baselineUpscaler;
     }
 
     /**
@@ -1886,6 +1911,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
+        this.baselineUpscaler = builder.baselineUpscaler;
         this.desiredTimeScale = builder.desiredTimeScale;
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;

@@ -71,6 +71,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /** The upscaler for right-ish values. */
     private final TimeSeriesUpscaler<R> rightUpscaler;
+    
+    /** A function to upscale baseline data. */
+    private final TimeSeriesUpscaler<R> baselineUpscaler;
 
     /** The pairer, which admits finite value pairs. */
     private final TimeSeriesPairer<L, R> pairer;
@@ -141,6 +144,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
         /** A function to upscale right data. */
         private TimeSeriesUpscaler<R> rightUpscaler;
+        
+        /** A function to upscale baseline data. */
+        private TimeSeriesUpscaler<R> baselineUpscaler;
 
         /** A transformer that applies value constraints to left-ish values. */
         private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
@@ -245,6 +251,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         Builder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
         {
             this.rightUpscaler = rightUpscaler;
+
+            return this;
+        }
+        
+        /**
+         * @param baselineUpscaler the upscaler for baseline values
+         * @return the builder
+         */
+        Builder<L, R> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
+        {
+            this.baselineUpscaler = baselineUpscaler;
 
             return this;
         }
@@ -378,6 +395,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
+        this.baselineUpscaler = builder.baselineUpscaler;
         this.climateAdmissibleValue = builder.climateAdmissibleValue;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;
@@ -396,6 +414,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
         Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
         Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
+        Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is missing." );
         Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
         Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
         Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
@@ -445,6 +464,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         PoolSupplier.Builder<L, R> builder = new PoolSupplier.Builder<>();
         builder.setLeftUpscaler( this.getLeftUpscaler() )
                .setRightUpscaler( this.getRightUpscaler() )
+               .setBaselineUpscaler( this.getBaselineUpscaler() )
                .setPairer( this.getPairer() )
                .setCrossPairer( this.getCrossPairer() )
                .setProjectDeclaration( projectConfig )
@@ -640,7 +660,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Returns the upscaler.
+     * Returns the upscaler for left-ish data.
      * 
      * @return the upscaler
      */
@@ -651,7 +671,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Returns the upscaler.
+     * Returns the upscaler for right-ish data.
      * 
      * @return the upscaler
      */
@@ -659,6 +679,17 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private TimeSeriesUpscaler<R> getRightUpscaler()
     {
         return this.rightUpscaler;
+    }
+    
+    /**
+     * Returns the upscaler for baseline-ish data.
+     * 
+     * @return the upscaler
+     */
+
+    private TimeSeriesUpscaler<R> getBaselineUpscaler()
+    {
+        return this.baselineUpscaler;
     }
 
     /**

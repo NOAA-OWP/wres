@@ -13,9 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.generated.LenienceType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -313,6 +315,54 @@ class ProjectUtilities
                                                                       baseline,
                                                                       projectConfig.getInputs(),
                                                                       Objects.nonNull( baselineConfig ) );
+        }
+    }
+
+    /**
+     * Tests whether there is a desired time scale present that supports lenient upscaling for the specified side of 
+     * data.
+     * @param lrb the orientation of the data, required
+     * @param desiredTimeScale the desired time scale, optional
+     * @return true if the desiredTimeScale is not null and supports lenient upscaling for the specified lrb, else false
+     */
+
+    static boolean isUpscalingLenient( LeftOrRightOrBaseline lrb, DesiredTimeScaleConfig desiredTimeScale )
+    {
+        Objects.requireNonNull( lrb );
+
+        if ( Objects.isNull( desiredTimeScale ) )
+        {
+            return false;
+        }
+
+        LenienceType lenience = desiredTimeScale.getLenient();
+
+        switch ( lenience )
+        {
+            case ALL:
+                return true;
+            case NONE:
+                return false;
+            case TRUE:
+                return true;
+            case FALSE:
+                return false;
+            case LEFT:
+                return lrb == LeftOrRightOrBaseline.LEFT;
+            case RIGHT:
+                return lrb == LeftOrRightOrBaseline.RIGHT;
+            case BASELINE:
+                return lrb == LeftOrRightOrBaseline.BASELINE;
+            case LEFT_AND_RIGHT:
+                return lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.RIGHT;
+            case LEFT_AND_BASELINE:
+                return lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.BASELINE;
+            case RIGHT_AND_BASELINE:
+                return lrb == LeftOrRightOrBaseline.RIGHT || lrb == LeftOrRightOrBaseline.BASELINE;
+            default:
+                throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
+                                                    + lrb
+                                                    + "'." );
         }
     }
 

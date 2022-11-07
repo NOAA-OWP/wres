@@ -18,6 +18,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
+import wres.config.generated.LenienceType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -141,7 +142,7 @@ public class ValidationTest
                                                                               (short) 1,
                                                                               (short) 7,
                                                                               (short) 31,
-                                                                              false );
+                                                                              LenienceType.FALSE );
         desiredTimeScale.setSourceLocation( this.fakeSourceLocator );
 
         PairConfig pairConfig = new PairConfig( null,
@@ -197,7 +198,7 @@ public class ValidationTest
                                                                               (short) 1,
                                                                               null,
                                                                               (short) 31,
-                                                                              false );
+                                                                              LenienceType.FALSE );
         desiredTimeScale.setSourceLocation( this.fakeSourceLocator );
 
         PairConfig pairConfig = new PairConfig( null,
@@ -253,7 +254,7 @@ public class ValidationTest
                                                                               null,
                                                                               (short) 7,
                                                                               (short) 31,
-                                                                              false );
+                                                                              LenienceType.FALSE );
         desiredTimeScale.setSourceLocation( this.fakeSourceLocator );
 
         PairConfig pairConfig = new PairConfig( null,
@@ -309,7 +310,7 @@ public class ValidationTest
                                                                               (short) 4,
                                                                               (short) 7,
                                                                               (short) 31,
-                                                                              false );
+                                                                              LenienceType.FALSE );
         desiredTimeScale.setSourceLocation( this.fakeSourceLocator );
 
         PairConfig pairConfig = new PairConfig( null,
