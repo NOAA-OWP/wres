@@ -1,6 +1,8 @@
 package wres.tasker;
 
+import java.io.IOException;
 import java.security.Security;
+import java.util.EnumSet;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -23,6 +25,14 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+
 public class Tasker
 {
     private static final String DH_PARAM_SECURITY_PROPERTY_NAME =
@@ -36,31 +46,31 @@ public class Tasker
         // see the build.gradle for where that parameter is set.
         Security.setProperty( DH_PARAM_SECURITY_PROPERTY_NAME,
                               "{00d08a1ef24942257b67802038a29a"
-                              + "ec32503e6d9d1bf316b24512f295d3"
-                              + "276f5fbb5065eba08d62ab11fe38af"
-                              + "1bc6d52ae0ba1d01ae7216dd078e7a"
-                              + "5a9098b3bba3ce3c0c26f4c1dfaa3a"
-                              + "248ec91c6b89d62dfb313dfda2cc8c"
-                              + "3699c0619e00b0fd33cdf7737de18f"
-                              + "ceb6d37a9e473983bc0348bee7a799"
-                              + "8c3faf7afaa86efd5c3ea62aaf6f83"
-                              + "f9fa7b15df9a1905e3d6ccbcfcc545"
-                              + "a69e46c3e5a0e2bdf4b2241560b141"
-                              + "7785503a93d0c6d4134164301b50d1"
-                              + "329044f21b975abb62211724c3ce8a"
-                              + "6eab1add04df36d244527b18d79092"
-                              + "3f5c51f66fcabb20b0a8caf0f3900b"
-                              + "fe0d31b3ed54b761a29b6e300b527d"
-                              + "5462cc0211c27cf2a5f109c7dc5598"
-                              + "f1ecdf03d069de23265f2dff7deef0"
-                              + "cb35c63fc46a4c7844bba5f4e14c1f"
-                              + "a562c9733977dfd4185a8b371586f1"
-                              + "9527ae438f4749a3971c0a4ed02efc"
-                              + "d7dbcc23c81718b0570f13f41a30ad"
-                              + "321ccca10d42cf896950530ccf361a"
-                              + "a7a2ffa0630e7ed6a0971e15877c3e"
-                              + "2da9b86dc042d01c4fce3efcda0a30"
-                              + "89d3bb0a4fe7d14900b3,2}" );
+                                                               + "ec32503e6d9d1bf316b24512f295d3"
+                                                               + "276f5fbb5065eba08d62ab11fe38af"
+                                                               + "1bc6d52ae0ba1d01ae7216dd078e7a"
+                                                               + "5a9098b3bba3ce3c0c26f4c1dfaa3a"
+                                                               + "248ec91c6b89d62dfb313dfda2cc8c"
+                                                               + "3699c0619e00b0fd33cdf7737de18f"
+                                                               + "ceb6d37a9e473983bc0348bee7a799"
+                                                               + "8c3faf7afaa86efd5c3ea62aaf6f83"
+                                                               + "f9fa7b15df9a1905e3d6ccbcfcc545"
+                                                               + "a69e46c3e5a0e2bdf4b2241560b141"
+                                                               + "7785503a93d0c6d4134164301b50d1"
+                                                               + "329044f21b975abb62211724c3ce8a"
+                                                               + "6eab1add04df36d244527b18d79092"
+                                                               + "3f5c51f66fcabb20b0a8caf0f3900b"
+                                                               + "fe0d31b3ed54b761a29b6e300b527d"
+                                                               + "5462cc0211c27cf2a5f109c7dc5598"
+                                                               + "f1ecdf03d069de23265f2dff7deef0"
+                                                               + "cb35c63fc46a4c7844bba5f4e14c1f"
+                                                               + "a562c9733977dfd4185a8b371586f1"
+                                                               + "9527ae438f4749a3971c0a4ed02efc"
+                                                               + "d7dbcc23c81718b0570f13f41a30ad"
+                                                               + "321ccca10d42cf896950530ccf361a"
+                                                               + "a7a2ffa0630e7ed6a0971e15877c3e"
+                                                               + "2da9b86dc042d01c4fce3efcda0a30"
+                                                               + "89d3bb0a4fe7d14900b3,2}" );
     }
 
     public static final String PATH_TO_SERVER_P12_PNAME = "wres.taskerPathToServerP12";
@@ -124,12 +134,12 @@ public class Tasker
 
         // Following example:
         // http://nikgrozev.com/2014/10/16/rest-with-embedded-jetty-and-jersey-in-a-single-jar-step-by-step/
-
+        //Set up the ServlentContextHandler and add the ContextFilter for X-Frame-Options for all requests.
         ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
-
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
                                                           "/*" );
+        context.addFilter(ContextFilter.class, "/*",  EnumSet.of(DispatcherType.REQUEST)) ;
 
         // Multiple ways of binding using jersey, but Application is standard,
         // see here:
@@ -162,7 +172,7 @@ public class Tasker
         HttpConnectionFactory httpOneOne = new HttpConnectionFactory( httpConfig );
 
         // Support HTTP/2
-        HTTP2ServerConnectionFactory httpTwo = new HTTP2ServerConnectionFactory( httpConfig);
+        HTTP2ServerConnectionFactory httpTwo = new HTTP2ServerConnectionFactory( httpConfig );
 
         // Support ALPN
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
@@ -170,13 +180,13 @@ public class Tasker
 
         // Use TLS
         SslContextFactory.Server contextFactory = Tasker.getSslContextFactory(
-                PATH_TO_SERVER_P12 );
+                                                                               PATH_TO_SERVER_P12 );
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );
         jettyServer.setRequestLog(
-                new CustomRequestLog( new Slf4jRequestLogWriter(),
-                                      ACCESS_LOG_FORMAT ) );
+                                   new CustomRequestLog( new Slf4jRequestLogWriter(),
+                                                         ACCESS_LOG_FORMAT ) );
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer,
                                                                      tlsConnectionFactory,
@@ -198,22 +208,22 @@ public class Tasker
             LOGGER.warn( "Server was interrupted.", ie );
             Thread.currentThread().interrupt();
         }
-        catch( Exception e )
+        catch ( Exception e )
         {
             // Wrap and propagate: #84777
-            throw new TaskerFailedToStartException( "While attempting to start a jetty server within the WRES Tasker.", 
+            throw new TaskerFailedToStartException( "While attempting to start a jetty server within the WRES Tasker.",
                                                     e );
         }
         finally
         {
             WresJob.shutdownNow();
-            if( jettyServer.isStarted() )
+            if ( jettyServer.isStarted() )
             {
                 jettyServer.destroy();
             }
         }
     }
-    
+
     private static class TaskerFailedToStartException extends RuntimeException
     {
         private static final long serialVersionUID = 8797327489673141317L;
@@ -221,6 +231,27 @@ public class Tasker
         private TaskerFailedToStartException( String message, Throwable cause )
         {
             super( message, cause );
+        }
+    }
+    
+    /**
+     * A filter that sets X-Frame-Options to DENY on the HTTP header in order to mitigate against clickbait attacks.
+     * Note that the capitalization matches that used in the proxy, so I'm sticking with X-Frame-Options for conistency.
+     */
+    public static class ContextFilter implements Filter
+    {
+        @Override
+        public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain )
+                throws IOException, ServletException
+        {
+            HttpServletResponse res = (HttpServletResponse) response;
+            res.addHeader( "X-Frame-Options", "DENY" );
+            chain.doFilter( request, response );
+        }
+
+        // Hidden constructor. Privacy level needs to be consistent with the class setting.
+        public ContextFilter()
+        {
         }
     }
 
@@ -233,3 +264,4 @@ public class Tasker
         return sslContextFactory;
     }
 }
+
