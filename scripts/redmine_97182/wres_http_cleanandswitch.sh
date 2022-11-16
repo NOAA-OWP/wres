@@ -59,10 +59,11 @@ while [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
 do
     sleep 1.0
     evaluation_status=$( curl --cacert $wres_ca_file $job_location/status -s | tr -d '\r' )
-    if [ $evaluation_status != "COMPLETED_REPORTED_SUCCESS" ] \
-       && [ $evaluation_status != "COMPLETED_REPORTED_FAILURE" ] \
-       && [ $evaluation_status != "IN_QUEUE" ] \
-       && [ $evaluation_status != "IN_PROGRESS" ]  
+    echo "The evaluation status obtained is, $evaluation_status."
+    if [ "$evaluation_status" != "COMPLETED_REPORTED_SUCCESS" ] \
+       && [ "$evaluation_status" != "COMPLETED_REPORTED_FAILURE" ] \
+       && [ "$evaluation_status" != "IN_QUEUE" ] \
+       && [ "$evaluation_status" != "IN_PROGRESS" ]  
     then
         echo "Obtained unexpected response when requesting status of clean job."
         echo "The job location is $job_location."
