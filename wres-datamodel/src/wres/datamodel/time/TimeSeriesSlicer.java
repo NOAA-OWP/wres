@@ -1045,53 +1045,6 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Transforms the input type to another type.
-     * 
-     * @param <L> the left type
-     * @param <R> the right type
-     * @param <P> the transformed left type
-     * @param <Q> the transformed right type
-     * @param input the input
-     * @param transformer the transformer
-     * @return the transformed type
-     * @throws NullPointerException if either input is null
-     */
-
-    public static <L, R, P, Q> Pool<TimeSeries<Pair<P, Q>>> transform( Pool<TimeSeries<Pair<L, R>>> input,
-                                                                       Function<Pair<L, R>, Pair<P, Q>> transformer )
-    {
-        Objects.requireNonNull( input );
-
-        Objects.requireNonNull( transformer );
-
-        Pool.Builder<TimeSeries<Pair<P, Q>>> builder = new Pool.Builder<>();
-
-        builder.setClimatology( input.getClimatology() )
-               .setMetadata( input.getMetadata() );
-
-        // Add the main series
-        for ( TimeSeries<Pair<L, R>> next : input.get() )
-        {
-            builder.addData( TimeSeriesSlicer.transform( next, transformer ) );
-        }
-
-        // Add the baseline series if available
-        if ( input.hasBaseline() )
-        {
-            Pool<TimeSeries<Pair<L, R>>> baseline = input.getBaselineData();
-
-            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
-            {
-                builder.addDataForBaseline( TimeSeriesSlicer.transform( nextBase, transformer ) );
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Creates an ensemble transformer from a member transformer by applying the member transformer to each member of 
      * the ensemble.
      * @param memberTransformer the member transformer

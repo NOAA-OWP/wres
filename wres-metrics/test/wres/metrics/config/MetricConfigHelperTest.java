@@ -42,6 +42,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -264,12 +265,12 @@ public final class MetricConfigHelperTest
 
         ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
         builder.addThresholds( mockExternal, ThresholdGroup.VALUE );
-        builder.addThresholds( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig )
-                                                  .getOneOrTwoThresholds() );
+        builder.addThresholds( ThresholdSlicer.getOneOrTwoThresholds( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig ) ) );
 
         ThresholdsByMetric actualByMetric = builder.build();
 
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
+                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );

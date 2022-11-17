@@ -29,9 +29,8 @@ import wres.datamodel.time.TimeWindowOuter;
  * @author James Brown
  */
 
-class MetricFuturesByTime
+class StatisticsFutures
 {
-
     /**
      * {@link DoubleScoreStatisticOuter} results.
      */
@@ -298,38 +297,38 @@ class MetricFuturesByTime
          * @return the metric futures
          */
 
-        MetricFuturesByTime build()
+        StatisticsFutures build()
         {
-            return new MetricFuturesByTime( this );
+            return new StatisticsFutures( this );
         }
 
         /**
-         * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
+         * Adds the outputs from an existing {@link StatisticsFutures} for the outputs that are included in the
          * merge list.
          * 
          * @param futures the input futures
          * @param mergeSet the merge list
          * @return the builder
-         * @throws MetricOutputMergeException if the outputs cannot be merged across calls
+         * @throws StatisticsMergeException if the outputs cannot be merged across calls
          */
 
-        MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures )
+        MetricFuturesByTimeBuilder addFutures( StatisticsFutures futures )
         {
             this.addFutures( futures, StatisticType.set() );
             return this;
         }
 
         /**
-         * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
+         * Adds the outputs from an existing {@link StatisticsFutures} for the outputs that are included in the
          * merge list.
          * 
          * @param futures the input futures
          * @param mergeSet the merge list
          * @return the builder
-         * @throws MetricOutputMergeException if the outputs cannot be merged across calls
+         * @throws StatisticsMergeException if the outputs cannot be merged across calls
          */
 
-        MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
+        MetricFuturesByTimeBuilder addFutures( StatisticsFutures futures,
                                                Set<StatisticType> mergeSet )
         {
             if ( Objects.nonNull( mergeSet ) )
@@ -372,7 +371,7 @@ class MetricFuturesByTime
      * @param builder the builder
      */
 
-    private MetricFuturesByTime( MetricFuturesByTimeBuilder builder )
+    private StatisticsFutures( MetricFuturesByTimeBuilder builder )
     {
         this.doubleScore.addAll( builder.doubleScore );
         this.durationScore.addAll( builder.durationScore );

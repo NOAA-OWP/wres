@@ -2,9 +2,13 @@ package wres.io.writing.netcdf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.EnsembleAverageType;
 import wres.datamodel.DataFactory;
@@ -208,18 +212,18 @@ class MetricVariable
             leadHigh = DataFactory.durationToNumericUnits( localWindow.getLatestLeadDuration(),
                                                            this.getDurationUnits() );
         }
-        
+
         // Long is not supported by netcdf3
-        if( leadLow instanceof Long )
+        if ( leadLow instanceof Long )
         {
             leadLow = leadLow.intValue();
         }
-        
-        if( leadHigh instanceof Long )
+
+        if ( leadHigh instanceof Long )
         {
             leadHigh = leadHigh.intValue();
         }
-        
+
         this.earliestLead = leadLow;
         this.latestLead = leadHigh;
 
@@ -319,10 +323,31 @@ class MetricVariable
         return UNKNOWN;
     }
 
+    /**
+     * @return the variable name
+     */
+
     public String getName()
     {
         return this.variableName;
     }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        for ( Map.Entry<String, Object> nextAttribute : this.getAttributes().entrySet() )
+        {
+            builder.append( nextAttribute.getKey(), nextAttribute.getValue() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * @return a map of attributes of the variable
+     */
 
     Map<String, Object> getAttributes()
     {
@@ -356,7 +381,7 @@ class MetricVariable
 
         attributes.put( "ensemble_average_type", this.ensembleAverageType.name() );
 
-        return attributes;
+        return Collections.unmodifiableMap( attributes );
     }
 
     private ChronoUnit getDurationUnits()

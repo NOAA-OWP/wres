@@ -27,7 +27,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.pipeline.statistics.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -42,18 +42,18 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.TimeWindow;
 
 /**
- * Tests the {@link MetricFuturesByTime}.
+ * Tests the {@link StatisticsFutures}.
  * 
  * @author James Brown
  */
-public final class MetricFuturesByTimeTest
+public final class StatisticsFuturesTest
 {
 
     /**
      * A default instance to test.
      */
 
-    private MetricFuturesByTime futures;
+    private StatisticsFutures futures;
 
     /**
      * Default boxplot output.
@@ -160,7 +160,7 @@ public final class MetricFuturesByTimeTest
     }
 
     /**
-     * Compares the {@link MetricFuturesByTime#getOutputTypes()} against expected output.
+     * Compares the {@link StatisticsFutures#getOutputTypes()} against expected output.
      */
 
     @Test
@@ -174,7 +174,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( this.futures.getOutputTypes().contains( StatisticType.DURATION_DIAGRAM ) );
 
         // Check with none present
-        MetricFuturesByTime emptyFutures = new MetricFuturesByTimeBuilder().build();
+        StatisticsFutures emptyFutures = new MetricFuturesByTimeBuilder().build();
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertFalse( emptyFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
@@ -183,7 +183,7 @@ public final class MetricFuturesByTimeTest
     }
 
     /**
-     * Checks that the {@link MetricFuturesByTime#getMetricOutput()} returns non-null output when expected.
+     * Checks that the {@link StatisticsFutures#getMetricOutput()} returns non-null output when expected.
      */
 
     @Test
@@ -194,7 +194,7 @@ public final class MetricFuturesByTimeTest
     }
 
     /**
-     * Checks that the {@link MetricFuturesByTime#hasFutureOutputs()} returns the expected state.
+     * Checks that the {@link StatisticsFutures#hasFutureOutputs()} returns the expected state.
      */
 
     @Test
@@ -204,7 +204,7 @@ public final class MetricFuturesByTimeTest
         assertTrue( this.futures.hasFutureOutputs() );
 
         // Empty futures
-        MetricFuturesByTime emptyFutures = new MetricFuturesByTimeBuilder().build();
+        StatisticsFutures emptyFutures = new MetricFuturesByTimeBuilder().build();
         assertFalse( emptyFutures.hasFutureOutputs() );
     }
 
@@ -230,7 +230,7 @@ public final class MetricFuturesByTimeTest
         builder.addDurationDiagramOutput( CompletableFuture.completedFuture( this.paired ) );
 
         // Check all expected output is present
-        MetricFuturesByTime metricFutures = builder.build();
+        StatisticsFutures metricFutures = builder.build();
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );
@@ -239,7 +239,7 @@ public final class MetricFuturesByTimeTest
     }
 
     /**
-     * Tests the merge of a {@link MetricFuturesByTime} with an existing builder.
+     * Tests the merge of a {@link StatisticsFutures} with an existing builder.
      */
 
     @Test
@@ -255,7 +255,7 @@ public final class MetricFuturesByTimeTest
         builder.addFutures( this.futures );
 
         // Check all expected output is present
-        MetricFuturesByTime metricFutures = builder.build();
+        StatisticsFutures metricFutures = builder.build();
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.BOXPLOT_PER_PAIR ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DOUBLE_SCORE ) );
         assertTrue( metricFutures.getOutputTypes().contains( StatisticType.DURATION_SCORE ) );

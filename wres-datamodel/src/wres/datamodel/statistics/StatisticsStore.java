@@ -21,7 +21,6 @@ import wres.datamodel.metrics.MetricConstants.StatisticType;
 
 public class StatisticsStore
 {
-
     /**
      * Thread safe map for {@link DoubleScoreStatisticOuter}.
      */
@@ -63,6 +62,35 @@ public class StatisticsStore
      */
 
     private final int minimumSampleSize;
+
+    /**
+     * Combines the input store with the current store into a new store (without mutating the current store). This 
+     * method is eager and brings forward the calculation of all statistics in both stores.
+     * 
+     * @param input the input store
+     * @return the combined store
+     * @throws NullPointerException if the input is null
+     */
+
+    public StatisticsStore combine( StatisticsStore input )
+    {
+        Objects.requireNonNull( input );
+
+        try
+        {
+            return new Builder().setMinimumSampleSize( this.minimumSampleSize )
+                                .addStatistics( input )
+                                .addStatistics( this )
+                                .build();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread()
+                  .interrupt();
+
+            throw new StatisticException( "Interrupted while attempting to coimbine two statistics stores.", e );
+        }
+    }
 
     /**
      * Returns a {@link List} of {@link DoubleScoreStatisticOuter}.

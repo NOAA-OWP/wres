@@ -1,6 +1,7 @@
 package wres.pipeline.statistics;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,12 +48,13 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
-import wres.pipeline.statistics.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -63,13 +65,13 @@ import wres.pipeline.statistics.MetricFuturesByTime.MetricFuturesByTimeBuilder;
  * @author James Brown
  */
 
-public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Pool<TimeSeries<Pair<Double, Ensemble>>>>
+public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
 {
     /**
      * Logger instance.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeEnsemblePairs.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleStatisticsProcessor.class );
 
     /**
      * Function that computes an average from an array.
@@ -130,23 +132,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
     private final Function<Pair<Double, Ensemble>, Pair<Double, Double>> toSingleValues;
 
+    /**
+     * Instance of a single-valued processor for computing metrics from single-valued pairs derived from the ensemble.
+     */
+
+    private final SingleValuedStatisticsProcessor singleValuedProcessor;
+
     @Override
     public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Ensemble>>> pool )
     {
         Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
         Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
-                                "Expected a non-null time window in the pool metadata." );        
-        
+                                "Expected a non-null time window in the pool metadata." );
+
         // Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-
-        // Remove missing values. 
-        // TODO: when time-series metrics are supported, leave missings in place for time-series
-        // Also retain the time-series shape, where required
-        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( pool );
-        Pool<Pair<Double, Ensemble>> inputNoMissing =
-                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MetricProcessor.ADMISSABLE_DATA ) );
 
         // Add the ensemble average type used by this processor to the pool metadata. It is convenient to use a pool
         // transformer with a metadata mapper. The pool transformation itself is an identity transformation, only the
@@ -157,167 +158,63 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType =
                 wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
         // Do the metadata transformation        
-        inputNoMissing = PoolSlicer.transform( inputNoMissing, 
-                                               Function.identity(), 
-                                               unadjusted -> PoolMetadata.of( unadjusted, ensembleAverageType ) );
-        
+        Pool<TimeSeries<Pair<Double, Ensemble>>> adjustedPool = PoolSlicer.transform( pool,
+                                                                                      Function.identity(),
+                                                                                      unadjusted -> PoolMetadata.of( unadjusted,
+                                                                                                                     ensembleAverageType ) );
+
+        // Remove missing values. 
+        // TODO: when time-series metrics are supported, leave missings in place for time-series
+        // Also retain the time-series shape, where required
+        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( adjustedPool );
+        Pool<Pair<Double, Ensemble>> inputNoMissing =
+                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA ) );
+
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
             this.processEnsemblePairs( inputNoMissing, futures );
         }
 
-        // Process the metrics that consume single-valued pairs
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
-        {            
-            // Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            Pool<Pair<Double, Double>> singleValued =
-                    PoolSlicer.transform( inputNoMissing, this.toSingleValues );
-
-            super.processSingleValuedPairs( singleValued, futures );
-        }
-
-        // Process the metrics that consume discrete probability pairs
+        // Process the metrics that consume discrete probability pairs derived from the ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
             this.processDiscreteProbabilityPairs( inputNoMissing, futures );
         }
 
-        // Process the metrics that consume dichotomous pairs
-        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
+        // Process the metrics that consume dichotomous pairs derived from the ensemble pairs
+        if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) && this.hasDecisionThresholds() )
         {
+            LOGGER.debug( "Encountered dichotomous metrics and decision thresholds, which means that dichtomous "
+                          + "metrics will be computed for the ensemble pairs." );
+
             this.processDichotomousPairs( inputNoMissing, futures );
+        }
+
+        // Process the ensemble result, which do not yet include single-valued metrics       
+        StatisticsFutures futureResults = futures.build();
+        StatisticsStore results = futureResults.getMetricOutput();
+
+        // Process the metrics that consume single-valued pairs, which includes any dichotomous metrics derived from 
+        // single-valued pairs: #109783. See later for dichotomous metrics produced from ensemble pairs
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
+        {
+            // Derive the single-valued pairs from the ensemble pairs using the configured mapper
+            Function<TimeSeries<Pair<Double, Ensemble>>, TimeSeries<Pair<Double, Double>>> mapper =
+                    in -> TimeSeriesSlicer.transform( in, this.toSingleValues );
+            Pool<TimeSeries<Pair<Double, Double>>> singleValued = PoolSlicer.transform( adjustedPool, mapper );
+
+            // Compute the results and merge with the ensemble statistics
+            StatisticsStore statistics = this.singleValuedProcessor.apply( singleValued );
+
+            results = results.combine( statistics );
         }
 
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
                       pool.getMetadata().getFeatureGroup(),
                       pool.getMetadata().getTimeWindow() );
 
-        // Process and return the result       
-        MetricFuturesByTime futureResults = futures.build();
-
-        return futureResults.getMetricOutput();
-    }
-
-    /**
-     * Constructor.
-     * 
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
-     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws NullPointerException if a required input is null
-     */
-
-    public MetricProcessorByTimeEnsemblePairs( ThresholdsByMetricAndFeature metrics,
-                                               ExecutorService thresholdExecutor,
-                                               ExecutorService metricExecutor )
-    {
-        super( metrics, thresholdExecutor, metricExecutor );
-
-        //Construct the metrics
-        //Discrete probability input, vector output
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
-        {
-            this.discreteProbabilityScore =
-                    MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
-                                                                        this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                         StatisticType.DOUBLE_SCORE ) );
-
-            LOGGER.debug( "Created the discrete probability scores for processing. {}", this.discreteProbabilityScore );
-        }
-        else
-        {
-            this.discreteProbabilityScore = null;
-        }
-        //Discrete probability input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ) )
-        {
-            this.discreteProbabilityDiagrams =
-                    MetricFactory.ofDiscreteProbabilityDiagramCollection( metricExecutor,
-                                                                          this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                           StatisticType.DIAGRAM ) );
-
-            LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
-                          this.discreteProbabilityDiagrams );
-        }
-        else
-        {
-            this.discreteProbabilityDiagrams = null;
-        }
-        //Ensemble input, score output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
-        {
-            MetricConstants[] ensembleMetrics = this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                 StatisticType.DOUBLE_SCORE );
-
-            this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                          ensembleMetrics );
-
-            // Create a set of metrics for when no baseline is available, assuming there is at least one metric
-            // But, first, remove the CRPSS, which requires a baseline
-            Set<MetricConstants> filteredMetrics = Arrays.stream( ensembleMetrics )
-                                                         .filter( next -> next != MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                                                         .collect( Collectors.toSet() );
-            if ( !filteredMetrics.isEmpty() )
-            {
-                MetricConstants[] filteredArray =
-                        filteredMetrics.toArray( new MetricConstants[filteredMetrics.size()] );
-
-                this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                                        filteredArray );
-
-                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}",
-                              this.ensembleScoreNoBaseline );
-            }
-            else
-            {
-                this.ensembleScoreNoBaseline = null;
-            }
-
-            LOGGER.debug( "Created the ensemble scores for processing. {}", this.ensembleScore );
-        }
-        else
-        {
-            this.ensembleScore = null;
-            this.ensembleScoreNoBaseline = null;
-        }
-
-        //Ensemble input, multi-vector output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
-        {
-            this.ensembleDiagrams = MetricFactory.ofEnsembleDiagramCollection( metricExecutor,
-                                                                               this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                                StatisticType.DIAGRAM ) );
-
-            LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleDiagrams );
-        }
-        else
-        {
-            this.ensembleDiagrams = null;
-        }
-        //Ensemble input, box-plot output
-        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
-        {
-            this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
-                                                                              this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                               StatisticType.BOXPLOT_PER_PAIR ) );
-
-            LOGGER.debug( "Created the ensemble box plots for processing. {}", this.ensembleBoxPlot );
-        }
-        else
-        {
-            this.ensembleBoxPlot = null;
-        }
-
-        //Construct the default mapper from ensembles to single-values: this is not currently configurable
-        ToDoubleFunction<Ensemble> ensembleMapper = this.getEnsembleAverageFunction( metrics.getEnsembleAverageType() );
-        this.toSingleValues = in -> Pair.of( in.getLeft(), ensembleMapper.applyAsDouble( in.getRight() ) );
-
-        // Finalize validation now all required parameters are available
-        // This is also called by the constructor of the superclass, but local parameters must be validated too
-        this.validate();
+        return results;
     }
 
     /**
@@ -459,7 +356,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private void processEnsemblePairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                  MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
+                                                  StatisticsFutures.MetricFuturesByTimeBuilder futures,
                                                   StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -492,14 +389,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         {
             Map<FeatureTuple, Predicate<Pair<Double, Ensemble>>> slicers =
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
-                                                              MetricProcessorByTimeEnsemblePairs::getFilterForEnsemblePairs );
+                                                              EnsembleStatisticsProcessor::getFilterForEnsemblePairs );
 
             // Add the threshold to the pool metadata            
             ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
             OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
             UnaryOperator<PoolMetadata> metaTransformer =
                     untransformed -> PoolMetadata.of( untransformed, composed );
-            
+
             Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pool,
                                                                      slicers,
                                                                      PoolSlicer.getFeatureMapper(),
@@ -521,7 +418,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> pairs,
-                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
+                                       StatisticsFutures.MetricFuturesByTimeBuilder futures,
                                        StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
@@ -605,7 +502,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private void processDiscreteProbabilityPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                             MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
+                                                             StatisticsFutures.MetricFuturesByTimeBuilder futures,
                                                              StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -671,7 +568,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private void processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> pairs,
-                                                  MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
+                                                  StatisticsFutures.MetricFuturesByTimeBuilder futures,
                                                   StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
@@ -775,7 +672,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
             {
                 Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
                 return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
-                                                      this.thresholdExecutor );
+                                                      this.getThresholdExecutor() );
             }
 
             return CompletableFuture.completedFuture( List.of() );
@@ -796,7 +693,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
      */
 
     private void processDichotomousPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                     MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
+                                                     StatisticsFutures.MetricFuturesByTimeBuilder futures,
                                                      StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -824,9 +721,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
         // Decompose the thresholds by common type across features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
-        //Define a mapper to convert the single-valued pairs to dichotomous pairs
+        // Define a mapper to convert the single-valued pairs to dichotomous pairs
         Function<ThresholdOuter, Function<Pair<Double, Ensemble>, Pair<Probability, Probability>>> transformerGenerator =
                 threshold -> pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
+
+        // Classifier thresholds available? If not, nothing to compute
+        Map<FeatureTuple, ThresholdsByMetric> classifiers = super.getMetrics().getThresholdsByMetricAndFeature();
+
+        classifiers = ThresholdSlicer.filterByGroup( classifiers,
+                                                     SampleDataGroup.DICHOTOMOUS,
+                                                     outGroup,
+                                                     ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Iterate the thresholds
         for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
@@ -842,14 +747,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
 
             // Get the composed threshold for the metadata
             ThresholdOuter composedOuter = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
-
-            // Filter the thresholds for this group and for the required types
-            Map<FeatureTuple, ThresholdsByMetric> classifiers = super.getMetrics().getThresholdsByMetricAndFeature();
-
-            classifiers = ThresholdSlicer.filterByGroup( classifiers,
-                                                         SampleDataGroup.DICHOTOMOUS,
-                                                         outGroup,
-                                                         ThresholdGroup.PROBABILITY_CLASSIFIER );
 
             Map<FeatureTuple, Set<ThresholdOuter>> unpackedInner = ThresholdSlicer.unpack( classifiers );
             List<Map<FeatureTuple, ThresholdOuter>> decomposedInner = ThresholdSlicer.decompose( unpackedInner );
@@ -880,6 +777,23 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                 super.processDichotomousPairs( dichotomous, futures, outGroup );
             }
         }
+    }
+
+    /**
+     * @return whether decision thresholds are available for dichotomous metrics as they apply to ensembles
+     */
+
+    private boolean hasDecisionThresholds()
+    {
+        // Classifier thresholds available? If not, nothing to compute
+        Map<FeatureTuple, ThresholdsByMetric> classifiers = super.getMetrics().getThresholdsByMetricAndFeature();
+
+        // This is expected behavior when dichotomous metrics are defined for the ensemble average alone, as of #109783 
+        return classifiers.values()
+                          .stream()
+                          .anyMatch( next -> ThresholdSlicer.filterByGroup( next,
+                                                                            ThresholdGroup.PROBABILITY_CLASSIFIER )
+                                                            .hasGroup( ThresholdGroup.PROBABILITY_CLASSIFIER ) );
     }
 
     /**
@@ -925,7 +839,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                          .average()
                                          .getAsDouble();
             case MEDIAN:
-                return ensemble -> MetricProcessorByTimeEnsemblePairs.MEDIAN.evaluate( ensemble.getMembers() );
+                return ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
             default:
                 throw new IllegalArgumentException( "Unrecognized type for averaging an ensemble '"
                                                     + ensembleAverageType
@@ -933,6 +847,186 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                     + Set.of( EnsembleAverageType.MEAN, EnsembleAverageType.MEDIAN )
                                                     + "." );
         }
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param metrics the metrics to process
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
+     * @throws MetricConfigException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
+     */
+
+    public EnsembleStatisticsProcessor( ThresholdsByMetricAndFeature metrics,
+                                        ExecutorService thresholdExecutor,
+                                        ExecutorService metricExecutor )
+    {
+        super( metrics, thresholdExecutor, metricExecutor );
+
+        //Construct the metrics
+        //Discrete probability input, vector output
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
+        {
+            this.discreteProbabilityScore =
+                    MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
+                                                                        this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                                                         StatisticType.DOUBLE_SCORE ) );
+
+            LOGGER.debug( "Created the discrete probability scores for processing. {}", this.discreteProbabilityScore );
+        }
+        else
+        {
+            this.discreteProbabilityScore = null;
+        }
+        //Discrete probability input, multi-vector output
+        if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ) )
+        {
+            this.discreteProbabilityDiagrams =
+                    MetricFactory.ofDiscreteProbabilityDiagramCollection( metricExecutor,
+                                                                          this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                                                           StatisticType.DIAGRAM ) );
+
+            LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
+                          this.discreteProbabilityDiagrams );
+        }
+        else
+        {
+            this.discreteProbabilityDiagrams = null;
+        }
+        //Ensemble input, score output
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
+        {
+            MetricConstants[] ensembleMetrics = this.getMetrics( SampleDataGroup.ENSEMBLE,
+                                                                 StatisticType.DOUBLE_SCORE );
+
+            this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
+                                                                          ensembleMetrics );
+
+            // Create a set of metrics for when no baseline is available, assuming there is at least one metric
+            // But, first, remove the CRPSS, which requires a baseline
+            Set<MetricConstants> filteredMetrics = Arrays.stream( ensembleMetrics )
+                                                         .filter( next -> next != MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                         .collect( Collectors.toSet() );
+            if ( !filteredMetrics.isEmpty() )
+            {
+                MetricConstants[] filteredArray =
+                        filteredMetrics.toArray( new MetricConstants[filteredMetrics.size()] );
+
+                this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
+                                                                                        filteredArray );
+
+                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}",
+                              this.ensembleScoreNoBaseline );
+            }
+            else
+            {
+                this.ensembleScoreNoBaseline = null;
+            }
+
+            LOGGER.debug( "Created the ensemble scores for processing. {}", this.ensembleScore );
+        }
+        else
+        {
+            this.ensembleScore = null;
+            this.ensembleScoreNoBaseline = null;
+        }
+
+        //Ensemble input, multi-vector output
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
+        {
+            this.ensembleDiagrams = MetricFactory.ofEnsembleDiagramCollection( metricExecutor,
+                                                                               this.getMetrics( SampleDataGroup.ENSEMBLE,
+                                                                                                StatisticType.DIAGRAM ) );
+
+            LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleDiagrams );
+        }
+        else
+        {
+            this.ensembleDiagrams = null;
+        }
+        //Ensemble input, box-plot output
+        if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
+        {
+            this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
+                                                                              this.getMetrics( SampleDataGroup.ENSEMBLE,
+                                                                                               StatisticType.BOXPLOT_PER_PAIR ) );
+
+            LOGGER.debug( "Created the ensemble box plots for processing. {}", this.ensembleBoxPlot );
+        }
+        else
+        {
+            this.ensembleBoxPlot = null;
+        }
+
+        // Construct the default mapper from ensembles to single-values: this is not currently configurable
+        // Handle missings here
+        ToDoubleFunction<Ensemble> ensembleMapper = this.getEnsembleAverageFunction( metrics.getEnsembleAverageType() );
+
+        UnaryOperator<Pair<Double, Ensemble>> missingFilter =
+                Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA );
+
+        this.toSingleValues = in -> {
+            // Handle missings 
+            Pair<Double, Ensemble> inWithoutMissings = missingFilter.apply( in );
+
+            // Some data present?
+            if ( Objects.nonNull( inWithoutMissings ) )
+            {
+                double left = inWithoutMissings.getLeft();
+                double right = ensembleMapper.applyAsDouble( inWithoutMissings.getRight() );
+                return Pair.of( left, right );
+            }
+
+            // No data
+            return null;
+        };
+
+        // Create a single-valued processor for computing single-valued measures, but first eliminate any metrics that 
+        // relate to ensemble or probabilistic pairs
+        ThresholdsByMetricAndFeature singleValuedmetrics = this.getSingleValuedMetrics( metrics );
+
+        this.singleValuedProcessor = new SingleValuedStatisticsProcessor( singleValuedmetrics,
+                                                                          thresholdExecutor,
+                                                                          metricExecutor );
+
+        // Finalize validation now all required parameters are available
+        // This is also called by the constructor of the superclass, but local parameters must be validated too
+        this.validate();
+    }
+
+    /**
+     * Filters the input for metrics that are not ensemble or probability metrics. A negative filter is applied because 
+     * some metrics belong to more than one group (e.g., the sample size).
+     * 
+     * @param metrics the metrics
+     * @return the filtered metrics
+     */
+
+    private ThresholdsByMetricAndFeature getSingleValuedMetrics( ThresholdsByMetricAndFeature metrics )
+    {
+        // Use a negative filter to remove ensemble and probabilistic types, rather than a positive filter, because 
+        // some metrics are defined in more than one context (e.g., the sample size).
+        Map<FeatureTuple, ThresholdsByMetric> existingMetrics = metrics.getThresholdsByMetricAndFeature();
+        Map<FeatureTuple, ThresholdsByMetric> adjustedMetrics = new HashMap<>( existingMetrics.size() );
+
+        for ( Map.Entry<FeatureTuple, ThresholdsByMetric> nextEntry : existingMetrics.entrySet() )
+        {
+            FeatureTuple nextFeature = nextEntry.getKey();
+            ThresholdsByMetric nextMetrics = nextEntry.getValue();
+            ThresholdsByMetric adjusted = ThresholdSlicer.filterByGroup( nextMetrics,
+                                                                         false,
+                                                                         SampleDataGroup.ENSEMBLE,
+                                                                         SampleDataGroup.DISCRETE_PROBABILITY );
+
+            adjustedMetrics.put( nextFeature, adjusted );
+        }
+
+        return ThresholdsByMetricAndFeature.of( adjustedMetrics,
+                                                metrics.getMinimumSampleSize(),
+                                                metrics.getEnsembleAverageType() );
     }
 
     /**
@@ -967,68 +1061,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<Po
                                                      + "'." );
                 }
             }
-
-            this.validateCategoricalState();
         }
     }
-
-    /**
-     * Validates the current state for categorical metrics.
-     * @throws MetricConfigException if the state is invalid for any reason
-     */
-
-    private void validateCategoricalState()
-    {
-
-        // All groups that contain dichotomous and multicategory metrics must 
-        // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
-        // Check that the relevant parameters have been set first
-        for ( Map.Entry<FeatureTuple, ThresholdsByMetric> nextEntry : super.getMetrics()
-                                                                                        .getThresholdsByMetricAndFeature()
-                                                                                        .entrySet() )
-        {
-            FeatureTuple nextFeature = nextEntry.getKey();
-            ThresholdsByMetric nextThresholds = nextEntry.getValue();
-            Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
-                    nextThresholds.getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
-
-            // Multicategory
-            if ( this.hasMetrics( SampleDataGroup.MULTICATEGORY ) )
-            {
-                MetricConstants[] check = this.getMetrics( SampleDataGroup.MULTICATEGORY, null );
-
-                if ( !Arrays.stream( check )
-                            .allMatch( next -> probabilityClassifiers.containsKey( next )
-                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
-                {
-                    throw new MetricConfigException( "In order to configure multicategory metrics for ensemble inputs, "
-                                                     + "every metric group that contains multicategory metrics must "
-                                                     + "also contain thresholds for classifying the forecast "
-                                                     + "probabilities into occurrences and non-occurrences, but these "
-                                                     + "thresholds were missing for feature tuple "
-                                                     + nextFeature
-                                                     + "." );
-                }
-            }
-
-            // Dichotomous
-            if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
-            {
-                MetricConstants[] check = this.getMetrics( SampleDataGroup.DICHOTOMOUS, null );
-                if ( !Arrays.stream( check )
-                            .allMatch( next -> probabilityClassifiers.containsKey( next )
-                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
-                {
-                    throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble inputs, "
-                                                     + "every metric group that contains dichotomous metrics must also "
-                                                     + "contain thresholds for classifying the forecast probabilities "
-                                                     + "into occurrences and non-occurrences, but these thresholds "
-                                                     + "were missing for feature tuple "
-                                                     + nextFeature
-                                                     + "." );
-                }
-            }
-        }
-    }
-
 }

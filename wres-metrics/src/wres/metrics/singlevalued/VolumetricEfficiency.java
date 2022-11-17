@@ -28,7 +28,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
-
     /**
      * Basic description of the metric.
      */

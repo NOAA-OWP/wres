@@ -75,9 +75,9 @@ import wres.io.writing.commaseparated.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.pipeline.Evaluator.DatabaseServices;
 import wres.pipeline.Evaluator.Executors;
-import wres.pipeline.statistics.MetricProcessor;
-import wres.pipeline.statistics.MetricProcessorByTimeEnsemblePairs;
-import wres.pipeline.statistics.MetricProcessorByTimeSingleValuedPairs;
+import wres.pipeline.statistics.StatisticsProcessor;
+import wres.pipeline.statistics.EnsembleStatisticsProcessor;
+import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
 import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
@@ -1061,7 +1061,7 @@ class ProcessorHelper
     {
         Project project = evaluationDetails.getProject();
 
-        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 ProcessorHelper.getSingleValuedProcessors( evaluationDetails.getResolvedProject()
                                                                             .getThresholdsByMetricAndFeature(),
                                                            executors.getThresholdExecutor(),
@@ -1150,7 +1150,7 @@ class ProcessorHelper
     {
         Project project = evaluationDetails.getProject();
 
-        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 ProcessorHelper.getEnsembleProcessors( evaluationDetails.getResolvedProject()
                                                                         .getThresholdsByMetricAndFeature(),
                                                        executors.getThresholdExecutor(),
@@ -1270,17 +1270,17 @@ class ProcessorHelper
      * @return the single-valued processors
      */
 
-    private static List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
             getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics,
                                        ExecutorService thresholdExecutor,
                                        ExecutorService metricExecutor )
     {
-        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
 
         for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
         {
-            MetricProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
-                    new MetricProcessorByTimeSingleValuedPairs( nextMetrics,
+            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
+                    new SingleValuedStatisticsProcessor( nextMetrics,
                                                                 thresholdExecutor,
                                                                 metricExecutor );
             processors.add( nextProcessor );
@@ -1296,17 +1296,17 @@ class ProcessorHelper
      * @return the single-valued processors
      */
 
-    private static List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
             getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics,
                                    ExecutorService thresholdExecutor,
                                    ExecutorService metricExecutor )
     {
-        List<MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
 
         for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
         {
-            MetricProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
-                    new MetricProcessorByTimeEnsemblePairs( nextMetrics,
+            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
+                    new EnsembleStatisticsProcessor( nextMetrics,
                                                             thresholdExecutor,
                                                             metricExecutor );
             processors.add( nextProcessor );

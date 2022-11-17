@@ -29,6 +29,11 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
+import wres.datamodel.statistics.ScoreStatistic;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -38,12 +43,14 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
-import wres.pipeline.statistics.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -53,15 +60,14 @@ import wres.pipeline.statistics.MetricFuturesByTime.MetricFuturesByTimeBuilder;
  * @author James Brown
  */
 
-public class MetricProcessorByTimeSingleValuedPairs
-        extends MetricProcessorByTime<Pool<TimeSeries<Pair<Double, Double>>>>
+public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
 {
 
     /**
      * Logger instance.
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessorByTimeSingleValuedPairs.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedStatisticsProcessor.class );
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume a {@link Pool} with single-valued pairs 
@@ -76,6 +82,26 @@ public class MetricProcessorByTimeSingleValuedPairs
      */
 
     private final MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> timeSeriesStatistics;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce {@link ScoreStatistic}.
+     */
+
+    private final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> singleValuedScore;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce 
+     * {@link DiagramStatisticOuter}.
+     */
+
+    private final MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> singleValuedDiagrams;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume single-valued pairs and produce
+     * {@link BoxplotStatisticOuter}.
+     */
+
+    private final MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> singleValuedBoxPlot;
 
     @Override
     public StatisticsStore apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
@@ -93,8 +119,8 @@ public class MetricProcessorByTimeSingleValuedPairs
                           pool.getMetadata() );
             Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( pool );
             unpackedNoMissing = PoolSlicer.filter( unpacked,
-                                                   Slicer.leftAndRight( MetricProcessor.ADMISSABLE_DATA ),
-                                                   MetricProcessor.ADMISSABLE_DATA );
+                                                   Slicer.leftAndRight( StatisticsProcessor.ADMISSABLE_DATA ),
+                                                   StatisticsProcessor.ADMISSABLE_DATA );
         }
 
         //Metric futures 
@@ -103,7 +129,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
-            super.processSingleValuedPairs( unpackedNoMissing, futures );
+            this.processSingleValuedPairs( unpackedNoMissing, futures );
         }
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
@@ -122,84 +148,253 @@ public class MetricProcessorByTimeSingleValuedPairs
                       pool.getMetadata().getTimeWindow() );
 
         //Process and return the result       
-        MetricFuturesByTime futureResults = futures.build();
+        StatisticsFutures futureResults = futures.build();
 
         return futureResults.getMetricOutput();
     }
 
     /**
-     * Hidden constructor.
+     * Helper that returns a predicate for filtering single-valued pairs based on the 
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
      * 
-     * @param metrics the metrics to process
-     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
-     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @throws MetricConfigException if the metrics are configured incorrectly
-     * @throws MetricParameterException if one or more metric parameters is set incorrectly
-     * @throws NullPointerException if a required input is null
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
      */
 
-    public MetricProcessorByTimeSingleValuedPairs( ThresholdsByMetricAndFeature metrics,
-                                                   ExecutorService thresholdExecutor,
-                                                   ExecutorService metricExecutor )
+    private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter input )
     {
-        super( metrics, thresholdExecutor, metricExecutor );
-
-        //Construct the metrics
-        //Time-series 
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ) )
+        switch ( input.getDataType() )
         {
-            MetricConstants[] timingErrorMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                    StatisticType.DURATION_DIAGRAM );
-            this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
-                                                                                timingErrorMetrics );
-
-            LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
+            case LEFT:
+                return Slicer.left( input );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.leftAndRight( input );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return Slicer.right( input );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
         }
-        else
+    }
+
+    /**
+     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
+     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     */
+
+    private static Predicate<TimeSeries<Pair<Double, Double>>>
+            getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter input )
+    {
+        switch ( input.getDataType() )
         {
-            this.timeSeries = null;
+            case LEFT:
+                return TimeSeriesSlicer.anyOfLeftInTimeSeries( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( input::test );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
+            default:
+                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
+        }
+    }
+
+    /**
+     * Processes a set of metric futures for single-valued pairs.
+     * 
+     * @param pool the input pairs
+     * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private void processSingleValuedPairs( Pool<Pair<Double, Double>> pool,
+                                           StatisticsFutures.MetricFuturesByTimeBuilder futures )
+    {
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
+        {
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.DOUBLE_SCORE );
         }
 
-        //Time-series summary statistics
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ) )
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
-            Map<MetricConstants, Set<MetricConstants>> localStatistics =
-                    new EnumMap<>( MetricConstants.class );
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.DIAGRAM );
+        }
 
-            MetricConstants[] timingErrorSummaryMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                           StatisticType.DURATION_SCORE );
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
+        {
+            this.processSingleValuedPairsByThreshold( pool, futures, StatisticType.BOXPLOT_PER_POOL );
+        }
+    }
 
-            for ( MetricConstants next : timingErrorSummaryMetrics )
+    /**
+     * Processes all thresholds for metrics that consume single-valued pairs and produce a specified 
+     * {@link StatisticType}. 
+     * 
+     * @param pool the input pairs
+     * @param futures the metric futures
+     * @param outGroup the metric output type
+     * @throws MetricCalculationException if the metrics cannot be computed
+     */
+
+    private void processSingleValuedPairsByThreshold( Pool<Pair<Double, Double>> pool,
+                                                      StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                                      StatisticType outGroup )
+    {
+        // Filter the thresholds for the feature group associated with this pool and for the required types
+        ThresholdsByMetricAndFeature thresholdsByMetricAndFeature = this.getMetrics();
+
+        FeatureGroup featureGroup = pool.getMetadata()
+                                        .getFeatureGroup();
+        thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
+
+        Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
+        filtered = ThresholdSlicer.filterByGroup( filtered,
+                                                  SampleDataGroup.SINGLE_VALUED,
+                                                  outGroup,
+                                                  ThresholdGroup.PROBABILITY,
+                                                  ThresholdGroup.VALUE );
+
+        // Unpack the thresholds and add the quantiles, if needed
+        Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
+
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
+                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+
+        // Find the unique thresholds by value
+        Map<FeatureTuple, Set<ThresholdOuter>> unique =
+                ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
+
+        // Decompose the thresholds by common type across features
+        List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
+
+        // Iterate the thresholds
+        for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
+        {
+            Map<FeatureTuple, Predicate<Pair<Double, Double>>> slicers =
+                    ThresholdSlicer.getFiltersFromThresholds( thresholds,
+                                                              SingleValuedStatisticsProcessor::getFilterForSingleValuedPairs );
+
+            // Add the threshold to the pool metadata            
+            ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
+            OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
+
+            UnaryOperator<PoolMetadata> metaTransformer =
+                    untransformed -> PoolMetadata.of( untransformed, composed );
+
+            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pool,
+                                                                   slicers,
+                                                                   PoolSlicer.getFeatureMapper(),
+                                                                   metaTransformer );
+            
+            this.processSingleValuedPairs( sliced,
+                                           futures,
+                                           outGroup );
+        }
+    }
+
+    /**
+     * Processes one threshold for metrics that consume single-valued pairs and produce a specified 
+     * {@link StatisticType}. 
+     * 
+     * @param pairs the input pairs
+     * @param futures the metric futures
+     * @param outGroup the metric output type
+     */
+
+    private void processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
+                                           StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                           StatisticType outGroup )
+    {
+        // Don't waste cpu cycles computing statistics for empty pairs
+        if ( pairs.get().isEmpty() )
+        {
+            LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
+                          pairs.getMetadata() );
+
+            return;
+        }
+
+        switch ( outGroup )
+        {
+            case DOUBLE_SCORE:
+                futures.addDoubleScoreOutput( this.processSingleValuedPairs( pairs,
+                                                                             this.singleValuedScore ) );
+                break;
+
+            case DIAGRAM:
+                futures.addDiagramOutput( this.processSingleValuedPairs( pairs,
+                                                                         this.singleValuedDiagrams ) );
+                break;
+            case BOXPLOT_PER_POOL:
+                futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( pairs,
+                                                                                this.singleValuedBoxPlot ) );
+                break;
+            default:
+                throw new IllegalStateException( "The statistic group '" + outGroup
+                                                 + "' is not supported in this context." );
+        }
+    }
+
+    /**
+     * Builds a metric future for a {@link MetricCollection} that consumes single-valued pairs at a specific 
+     * {@link TimeWindowOuter} and {@link ThresholdOuter}.
+     * 
+     * @param <T> the type of {@link Statistic}
+     * @param pairs the pairs
+     * @param collection the collection of metrics
+     * @return the future result
+     */
+
+    private <T extends Statistic<?>> Future<List<T>>
+            processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
+                                      MetricCollection<Pool<Pair<Double, Double>>, T, T> collection )
+    {
+        // More samples than the minimum sample size?
+        int minimumSampleSize = this.getMetrics()
+                                    .getMinimumSampleSize();
+
+        // Log and return an empty result if the sample size is too small
+        if ( pairs.get().size() < minimumSampleSize )
+        {
+            if ( LOGGER.isDebugEnabled() )
             {
-                MetricConstants parent = next.getParent();
+                Set<MetricConstants> collected = new HashSet<>( collection.getMetrics() );
+                collected.remove( MetricConstants.SAMPLE_SIZE );
 
-                if ( Objects.isNull( parent ) )
-                {
-                    throw new MetricConfigException( "The timing error summary statistic '" + next
-                                                     + "' does not have a parent metric set, which is not allowed." );
-                }
-
-                Set<MetricConstants> nextStats = localStatistics.get( parent );
-                if ( Objects.isNull( nextStats ) )
-                {
-                    nextStats = new HashSet<>();
-                    localStatistics.put( parent, nextStats );
-                }
-
-                nextStats.add( next );
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} pairs, which is fewer than the "
+                              + "minimum sample size of {} pairs. The following metrics will not be computed for this "
+                              + "pool: {}.",
+                              pairs.getMetadata(),
+                              pairs.get().size(),
+                              minimumSampleSize,
+                              collected );
             }
 
-            this.timeSeriesStatistics = MetricFactory.ofSummaryStatisticsForTimingErrorMetrics( metricExecutor,
-                                                                                                localStatistics );
+            // Allow the sample size through without constraint
+            if ( collection.getMetrics().contains( MetricConstants.SAMPLE_SIZE ) )
+            {
+                Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
+                return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
+                                                      this.getThresholdExecutor() );
+            }
 
-        }
-        else
-        {
-            this.timeSeriesStatistics = null;
+            return CompletableFuture.completedFuture( List.of() );
         }
 
-        // Validate the state
-        this.validate();
+        return this.processMetricsRequiredForThisPool( pairs, collection );
     }
 
     /**
@@ -332,7 +527,7 @@ public class MetricProcessorByTimeSingleValuedPairs
         {
             Map<FeatureTuple, Predicate<TimeSeries<Pair<Double, Double>>>> slicers =
                     ThresholdSlicer.getFiltersFromThresholds( thresholds,
-                                                              MetricProcessorByTime::getFilterForTimeSeriesOfSingleValuedPairs );
+                                                              SingleValuedStatisticsProcessor::getFilterForTimeSeriesOfSingleValuedPairs );
 
             // Add the threshold to the pool metadata            
             ThresholdOuter outer = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
@@ -437,6 +632,130 @@ public class MetricProcessorByTimeSingleValuedPairs
     }
 
     /**
+     * Constructor.
+     * 
+     * @param metrics the metrics to process
+     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
+     * @throws MetricConfigException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
+     * @throws NullPointerException if a required input is null
+     */
+
+    public SingleValuedStatisticsProcessor( ThresholdsByMetricAndFeature metrics,
+                                                   ExecutorService thresholdExecutor,
+                                                   ExecutorService metricExecutor )
+    {
+        super( metrics, thresholdExecutor, metricExecutor );
+
+        // Construct the metrics
+        // Time-series 
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ) )
+        {
+            MetricConstants[] timingErrorMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                    StatisticType.DURATION_DIAGRAM );
+            this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
+                                                                                timingErrorMetrics );
+
+            LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
+        }
+        else
+        {
+            this.timeSeries = null;
+        }
+
+        // Time-series summary statistics
+        this.timeSeriesStatistics = this.getTimeSeriesSummaryStatistics( metricExecutor );
+
+        // Construct the metrics that are common to more than one type of input pairs
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
+        {
+            MetricConstants[] scores = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE );
+            this.singleValuedScore = MetricFactory.ofSingleValuedScoreCollection( metricExecutor, scores );
+
+            LOGGER.debug( "Created the single-valued scores for processing. {}", this.singleValuedScore );
+        }
+        else
+        {
+            this.singleValuedScore = null;
+        }
+
+        // Diagrams
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
+        {
+            MetricConstants[] diagrams = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM );
+            this.singleValuedDiagrams = MetricFactory.ofSingleValuedDiagramCollection( metricExecutor, diagrams );
+
+            LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedDiagrams );
+        }
+        else
+        {
+            this.singleValuedDiagrams = null;
+        }
+
+        // Box plots
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ) )
+        {
+            MetricConstants[] boxplots = this.getMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                          StatisticType.BOXPLOT_PER_POOL );
+            this.singleValuedBoxPlot = MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor, boxplots );
+
+            LOGGER.debug( "Created the single-valued box plots for processing. {}", this.singleValuedBoxPlot );
+        }
+        else
+        {
+            this.singleValuedBoxPlot = null;
+        }
+
+        // Validate the state
+        this.validate();
+    }
+
+    /**
+     * Creates a collection of metrics that compute time-series summary metrics.
+     * @param metricExecutor the metric executor
+     * @return the time-series summary statistics
+     */
+
+    private MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
+            getTimeSeriesSummaryStatistics( ExecutorService metricExecutor )
+    {
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ) )
+        {
+            Map<MetricConstants, Set<MetricConstants>> localStatistics =
+                    new EnumMap<>( MetricConstants.class );
+
+            MetricConstants[] timingErrorSummaryMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                           StatisticType.DURATION_SCORE );
+
+            for ( MetricConstants next : timingErrorSummaryMetrics )
+            {
+                MetricConstants parent = next.getParent();
+
+                if ( Objects.isNull( parent ) )
+                {
+                    throw new MetricConfigException( "The timing error summary statistic '" + next
+                                                     + "' does not have a parent metric set, which is not allowed." );
+                }
+
+                Set<MetricConstants> nextStats = localStatistics.get( parent );
+                if ( Objects.isNull( nextStats ) )
+                {
+                    nextStats = new HashSet<>();
+                    localStatistics.put( parent, nextStats );
+                }
+
+                nextStats.add( next );
+            }
+
+            return MetricFactory.ofSummaryStatisticsForTimingErrorMetrics( metricExecutor, localStatistics );
+
+        }
+
+        return null;
+    }
+
+    /**
      * Validates the state of the processor.
      * @throw MetricConfigException if the state is invalid for any reason
      */
@@ -446,15 +765,6 @@ public class MetricProcessorByTimeSingleValuedPairs
         //Check the metrics individually, as some may belong to multiple groups
         for ( MetricConstants next : super.getMetrics().getMetrics() )
         {
-            if ( ! ( next.isInGroup( SampleDataGroup.SINGLE_VALUED )
-                     || next.isInGroup( SampleDataGroup.SINGLE_VALUED_TIME_SERIES )
-                     || next.isInGroup( SampleDataGroup.DICHOTOMOUS ) ) )
-            {
-                throw new MetricConfigException( "Cannot configure '"
-                                                 + next
-                                                 + "' for single-valued inputs: correct the configuration." );
-            }
-
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
                  && super.getMetrics().getThresholdsByMetricAndFeature()

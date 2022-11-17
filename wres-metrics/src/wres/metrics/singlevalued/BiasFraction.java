@@ -1,7 +1,6 @@
 package wres.metrics.singlevalued;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.DoubleAdder;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,7 +20,8 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
- * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
+ * Computes the mean error of a single-valued prediction as a fraction of the mean observed value or, in other words,
+ * the sum of right values divided by the sum of left values minus one. 
  * 
  * @author James Brown
  */
@@ -69,21 +69,24 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pairs ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DoubleAdder left = new DoubleAdder();
-        DoubleAdder right = new DoubleAdder();
+        // Compute in error space for improved precision
+        double leftSum = 0.0;
+        double errorSum = 0.0;
         DoubleErrorFunction error = FunctionFactory.error();
-        s.get().forEach( pair -> {
-            left.add( error.applyAsDouble( pair ) );
-            right.add( pair.getLeft() );
-        } );
-        double result = left.sum() / right.sum();
+        for ( Pair<Double, Double> pair : pairs.get() )
+        {
+            leftSum = leftSum += pair.getLeft();
+            errorSum += error.applyAsDouble( pair );
+        }
+
+        double result = errorSum / leftSum;
 
         //Set NaN if not finite
         if ( !Double.isFinite( result ) )
@@ -102,7 +105,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pairs.getMetadata() );
     }
 
     @Override

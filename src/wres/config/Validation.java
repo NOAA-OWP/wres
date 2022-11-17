@@ -1267,8 +1267,8 @@ public class Validation
             {
                 LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
                               + " The declaration contains decision thresholds, which are only valid for ensemble or "
-                              + "probability forecasts and no such forecasts were declared. Please remove the thresholds "
-                              + "of type 'probability classifier' from this evaluation.",
+                              + "probability forecasts and no such forecasts were declared. Please remove the "
+                              + "thresholds of type 'probability classifier' from this evaluation.",
                               projectConfigPlus.getOrigin(),
                               metricsConfig.sourceLocation().getLineNumber(),
                               metricsConfig.sourceLocation().getColumnNumber() );
@@ -1279,7 +1279,6 @@ public class Validation
         if ( !categorical.isEmpty()
              && declaredRightDataType == DatasourceType.ENSEMBLE_FORECASTS )
         {
-
             // Order by number of failures - up to two possible
             if ( !eventThresholds && !decisionThresholds )
             {
@@ -1321,24 +1320,6 @@ public class Validation
                                   categorical,
                                   ThresholdType.VALUE.name(),
                                   ThresholdType.PROBABILITY.name() );
-                }
-            }
-            else if ( !decisionThresholds )
-            {
-                isValid = false;
-
-                if ( LOGGER.isErrorEnabled() )
-                {
-                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
-                                  + " The categorical metrics {} require decision thresholds or 'probability "
-                                  + "classifiers' to obtain categorical pairs from the probability pairs, but no "
-                                  + "decision thresholds were supplied. Add some thresholds of type {} to the "
-                                  + "metrics declaration or remove these metrics before proceeding.",
-                                  projectConfigPlus.getOrigin(),
-                                  metricsConfig.sourceLocation().getLineNumber(),
-                                  metricsConfig.sourceLocation().getColumnNumber(),
-                                  categorical,
-                                  ThresholdType.PROBABILITY_CLASSIFIER.name() );
                 }
             }
         }

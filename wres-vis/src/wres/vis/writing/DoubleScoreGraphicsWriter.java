@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
@@ -146,7 +147,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                         DoubleScoreGraphicsWriter.getSlicedStatistics( statistics );
 
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
-                {                    
+                {
                     Map<MetricConstants, JFreeChart> engines = chartFactory.getScoreCharts( nextOutput,
                                                                                             helper.getGraphicShape(),
                                                                                             helper.getDurationUnits() );
@@ -184,7 +185,10 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         List<List<DoubleScoreStatisticOuter>> sliced = new ArrayList<>();
 
         SortedSet<ThresholdOuter> secondThreshold =
-                Slicer.discover( statistics, next -> next.getMetadata().getThresholds().second() );
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata()
+                                             .getThresholds()
+                                             .second() );
 
         // Slice by ensemble averaging function and then by secondary threshold
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
@@ -203,8 +207,17 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                                                 value -> next.equals( value.getMetadata()
                                                                                                            .getThresholds()
                                                                                                            .second() ) ) ) );
+
+                    // Primary thresholds without secondary thresholds
+                    List<DoubleScoreStatisticOuter> primaryOnly = innerSlice.stream()
+                                                                            .filter( next -> !next.getMetadata()
+                                                                                                  .getThresholds()
+                                                                                                  .hasTwo() )
+                                                                            .collect( Collectors.toList() );
+
+                    sliced.add( primaryOnly );
                 }
-                // One output only
+                // No secondary thresholds
                 else
                 {
                     sliced.add( innerSlice );
@@ -228,10 +241,14 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Secondary threshold? If yes, only one, as this was sliced above
         SortedSet<ThresholdOuter> second =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getThresholds().second() );
+                                 next -> next.getMetadata()
+                                             .getThresholds()
+                                             .second() );
         if ( !second.isEmpty() )
         {
-            append = second.iterator().next().toStringSafe();
+            append = second.iterator()
+                           .next()
+                           .toStringSafe();
         }
 
         // Non-default averaging types that should be qualified?

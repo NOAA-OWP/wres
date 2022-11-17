@@ -114,7 +114,7 @@ public class PoolSlicer
 
         return poolBuilder.build();
     }
-
+    
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
