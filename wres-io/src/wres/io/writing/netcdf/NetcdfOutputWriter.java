@@ -42,11 +42,11 @@ import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
-import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
+import ucar.nc2.write.NetcdfFormatWriter;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.EnsembleAverageType;
@@ -139,12 +139,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private final AtomicBoolean isReadyToWrite;
 
     /**
-     * Mapping between standard threshold names and representative thresholds for those standard names. This is used
-     * to help determine the threshold portion of a variable name to which a statistic corresponds, based on the 
-     * standard name of a threshold chosen at blob creation time. There is a separate group for each metric.
+     * Mapping between each threshold and a standard threshold name for each metric. This is used to help determine the 
+     * threshold portion of a variable name to which a statistic corresponds, based on the standard name of a threshold 
+     * chosen at blob creation time. There is a separate group for each metric.
      */
 
-    private Map<String, Map<String, OneOrTwoThresholds>> standardThresholdNames = new HashMap<>();
+    private Map<String, Map<OneOrTwoThresholds, String>> standardThresholdNames = new HashMap<>();
 
     /**
      * True when using deprecated code, false otherwise. Remove when removing
@@ -257,17 +257,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // the variables needed or more than needed? For example, what happens if the mean error is requested for the 
         // ensemble median and not for the ensemble mean - will that produce a variable for the ensemble median only?
         // Use the default averaging type if the evaluation does not contain ensemble forecasts
-        boolean hasEnsembles = ConfigHelper.hasEnsembleForecasts( this.getProjectConfig() );        
-        Function<ThresholdsByMetricAndFeature,EnsembleAverageType> ensembleTypeCalculator = thresholds -> 
-        {
-            if( hasEnsembles )
+        boolean hasEnsembles = ConfigHelper.hasEnsembleForecasts( this.getProjectConfig() );
+        Function<ThresholdsByMetricAndFeature, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
+            if ( hasEnsembles )
             {
                 return thresholds.getEnsembleAverageType();
             }
-            
+
             return EnsembleAverageType.MEAN;
         };
-        
+
         Map<EnsembleAverageType, List<ThresholdsByMetricAndFeature>> byType =
                 thresholdsByMetricAndFeature.stream()
                                             .collect( Collectors.groupingBy( ensembleTypeCalculator ) );
@@ -379,6 +378,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         Set<Path> returnMe = new TreeSet<>();
 
+        // Create the standard threshold names
+        this.standardThresholdNames =
+                this.createStandardThresholdNames( thresholds, Objects.nonNull( inputs.getBaseline() ) );
+
+        LOGGER.debug( "Created this map of standard threshold names: {}", this.standardThresholdNames );
+
         // One blob and blob writer per time window      
         for ( TimeWindowOuter nextWindow : timeWindows )
         {
@@ -435,6 +440,74 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Creates the list of standard threshold names to use across blobs.
+     * @param thresholds the thresholds
+     * @param hasBaseline whether there are separate metrics for a baseline
+     */
+
+    private Map<String, Map<OneOrTwoThresholds, String>>
+            createStandardThresholdNames( Map<EnsembleAverageType, ThresholdsByMetric> thresholds, boolean hasBaseline )
+    {
+        // Create the standard threshold names, sequenced by natural order of the threshold
+        SortedSet<OneOrTwoThresholds> union = thresholds.values()
+                                                        .stream()
+                                                        .map( ThresholdSlicer::getOneOrTwoThresholds )
+                                                        .flatMap( next -> next.values().stream() )
+                                                        .flatMap( SortedSet::stream )
+                                                        .collect( Collectors.toCollection( TreeSet::new ) );
+
+        Map<OneOrTwoThresholds, String> thresholdMap = new HashMap<>();
+
+        int thresholdNumber = 1;
+        for ( OneOrTwoThresholds next : union )
+        {
+            String name = "THRESHOLD_" + thresholdNumber;
+            thresholdMap.put( next, name );
+            thresholdNumber += 1;
+        }
+
+        // Map the thresholds to metric names
+        Map<String, Map<OneOrTwoThresholds, String>> returnMe = new TreeMap<>();
+        for ( ThresholdsByMetric nextThresholds : thresholds.values() )
+        {
+            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMetrics =
+                    ThresholdSlicer.getOneOrTwoThresholds( nextThresholds );
+
+            Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
+                    this.decomposeThresholdsByMetricForBlobCreation( nextMetrics, hasBaseline );
+
+            for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
+            {
+                String nextMetric = nextEntry.getKey();
+                SortedSet<OneOrTwoThresholds> nextThresholdsForMetric = nextEntry.getValue();
+                Map<OneOrTwoThresholds, String> namedThresholds = new HashMap<>();
+                nextThresholdsForMetric.forEach( next -> namedThresholds.put( next, thresholdMap.get( next ) ) );
+
+                if ( returnMe.containsKey( nextMetric ) )
+                {
+                    returnMe.get( nextMetric ).putAll( namedThresholds );
+                }
+                else
+                {
+                    returnMe.put( nextMetric, namedThresholds );
+                }
+            }
+        }
+
+        // Render the map unmodifiable
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * @return the standard threshold names to use across blobs.
+     */
+
+    private Map<String, Map<OneOrTwoThresholds, String>> getStandardThresholdNames()
+    {
+        return this.standardThresholdNames;
     }
 
     /**
@@ -590,6 +663,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         Collection<MetricVariable> merged = new ArrayList<>();
 
+        LOGGER.debug( "Creating metric variables for for time window {} using these thresholds by metric: {}.",
+                      timeWindow,
+                      thresholds );
+
         // Iterate through the ensemble average types
         for ( Map.Entry<EnsembleAverageType, ThresholdsByMetric> next : thresholds.entrySet() )
         {
@@ -657,11 +734,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            boolean hasBaseline,
                                                                            EnsembleAverageType ensembleAverageType )
     {
-
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap = thresholds.getOneOrTwoThresholds();
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap =
+                ThresholdSlicer.getOneOrTwoThresholds( thresholds );
 
         Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
                 this.decomposeThresholdsByMetricForBlobCreation( thresholdMap, hasBaseline );
+
+        LOGGER.debug( "Discovered these thresholds by metric for blob creation and ensemble average type {}: {}.",
+                      ensembleAverageType,
+                      decomposed );
 
         Collection<MetricVariable> returnMe = new ArrayList<>();
 
@@ -679,38 +760,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // One variable for each combination of metric and threshold. 
-        // When forming threshold names, thresholds should be mapped all metrics.
-        Map<OneOrTwoThresholds, String> thresholdNames = new HashMap<>();
-        int thresholdNumber = 1;
+        // When forming threshold names, thresholds should be mapped to all metrics.
         for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
         {
             String nextMetric = nextEntry.getKey();
             Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
 
-            Map<String, OneOrTwoThresholds> nextMap = this.standardThresholdNames.get( nextMetric );
-            if ( Objects.isNull( nextMap ) )
-            {
-                nextMap = new HashMap<>();
-                this.standardThresholdNames.put( nextMetric, nextMap );
-            }
+            Map<OneOrTwoThresholds, String> nextMap = this.getStandardThresholdNames()
+                                                          .get( nextMetric );
 
             for ( OneOrTwoThresholds nextThreshold : nextThresholds )
             {
-                String thresholdName = null;
-                if ( thresholdNames.containsKey( nextThreshold ) )
-                {
-                    thresholdName = thresholdNames.get( nextThreshold );
-                }
-                else
-                {
-                    thresholdName = "THRESHOLD_" + thresholdNumber;
-                    thresholdNames.put( nextThreshold, thresholdName );
-                    thresholdNumber++;
-                }
-
-                // Add to the cache of standard threshold names
-                nextMap.put( thresholdName, nextThreshold );
-
+                String thresholdName = nextMap.get( nextThreshold );
                 String variableName = nextMetric + "_" + thresholdName + append;
 
                 MetricVariable nextVariable = new MetricVariable.Builder().setVariableName( variableName )
@@ -722,6 +783,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                           .setDurationUnits( this.getDurationUnits() )
                                                                           .setEnsembleAverageType( ensembleAverageType )
                                                                           .build();
+
+                LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
+                              variableName,
+                              nextVariable );
 
                 returnMe.add( nextVariable );
             }
@@ -929,7 +994,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             for ( ThresholdsByMetric next : thresholds.getThresholdsByMetricAndFeature().values() )
             {
-                Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping = next.getOneOrTwoThresholds();
+                Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping =
+                        ThresholdSlicer.getOneOrTwoThresholds( next );
 
                 for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
                 {
@@ -945,7 +1011,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                         mapped.addAll( nextEntry.getValue() );
 
-                        thresholdsMap.computeIfAbsent( nextMetric, 
+                        thresholdsMap.computeIfAbsent( nextMetric,
                                                        k -> thresholdsMap.put( nextMetric, mapped ) );
                     }
                 }
@@ -983,7 +1049,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * A writer to be opened on first write, closed when the {@link NetcdfOutputWriter} that encloses this
          * {@link TimeWindowWriter} is closed.
          */
-        private NetcdfFileWriter writer;
+        private NetcdfFormatWriter writer;
 
         TimeWindowWriter( NetcdfOutputWriter outputWriter,
                           String outputPath,
@@ -1139,11 +1205,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 // Open a writer to write to the path. Must be closed when closing the overall NetcdfOutputWriter instance
                 if ( Objects.isNull( this.writer ) )
                 {
-                    this.writer = NetcdfFileWriter.openExisting( this.outputPath );
+                    this.writer = NetcdfFormatWriter.openExisting( this.outputPath )
+                                                    .build();
 
                     LOGGER.trace( "Opened an underlying netcdf writer {} for pool {}.", this.writer, this.timeWindow );
                 }
-
 
                 for ( NetcdfValueKey key : this.valuesToSave )
                 {
@@ -1253,11 +1319,11 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                           metricNameString,
                           append );
 
-            Map<String, OneOrTwoThresholds> metricMap =
-                    this.outputWriter.standardThresholdNames.get( metricNameString );
+            Map<OneOrTwoThresholds, String> thresholdMap = this.outputWriter.getStandardThresholdNames()
+                                                                            .get( metricNameString );
 
             // #81594
-            if ( Objects.isNull( metricMap ) )
+            if ( Objects.isNull( thresholdMap ) )
             {
                 throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric "
                                                  + "variable "
@@ -1272,10 +1338,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                  + sampleMetadata );
             }
 
-            for ( Map.Entry<String, OneOrTwoThresholds> nextThreshold : metricMap.entrySet() )
+            for ( Map.Entry<OneOrTwoThresholds, String> nextThreshold : thresholdMap.entrySet() )
             {
-                String nextName = nextThreshold.getKey();
-                OneOrTwoThresholds thresholdFromArchive = nextThreshold.getValue();
+                String nextName = nextThreshold.getValue();
+                OneOrTwoThresholds thresholdFromArchive = nextThreshold.getKey();
                 OneOrTwoThresholds thresholdFromScore = score.getMetadata()
                                                              .getThresholds();
 
@@ -1305,8 +1371,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                              + ", discovered the variable name "
                                              + metricNameString
                                              + ", but failed to discover the standard threshold name within the map of "
-                                             + "standard names. The map contained the following names: "
-                                             + metricMap.keySet()
+                                             + "standard names. The map contained the following entries: "
+                                             + thresholdMap
                                              + ". The sample metadata of the statistic that could not be written is: "
                                              + sampleMetadata );
         }

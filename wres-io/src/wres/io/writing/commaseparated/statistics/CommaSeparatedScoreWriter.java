@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,43 +180,46 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             // Process each output
             for ( List<T> nextOutput : allOutputs )
             {
-                StringJoiner headerRow = new StringJoiner( "," );
+                if ( !nextOutput.isEmpty() )
+                {
+                    StringJoiner headerRow = new StringJoiner( "," );
 
-                headerRow.add( "FEATURE DESCRIPTION" );
+                    headerRow.add( "FEATURE DESCRIPTION" );
 
-                StringJoiner timeWindowHeader =
-                        CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( statistics.get( 0 )
-                                                                                                 .getMetadata(),
-                                                                                       durationUnits );
+                    StringJoiner timeWindowHeader =
+                            CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( statistics.get( 0 )
+                                                                                                     .getMetadata(),
+                                                                                           durationUnits );
 
-                headerRow.merge( timeWindowHeader );
+                    headerRow.merge( timeWindowHeader );
 
-                List<RowCompareByLeft> rows =
-                        CommaSeparatedScoreWriter.getRowsForOneScore( m,
-                                                                      nextOutput,
-                                                                      headerRow,
-                                                                      durationUnits,
-                                                                      mapper );
+                    List<RowCompareByLeft> rows =
+                            CommaSeparatedScoreWriter.getRowsForOneScore( m,
+                                                                          nextOutput,
+                                                                          headerRow,
+                                                                          durationUnits,
+                                                                          mapper );
 
-                // Add the header row
-                rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+                    // Add the header row
+                    rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
-                // Write the output
-                String append = CommaSeparatedScoreWriter.getPathQualifier( destinationConfig,
-                                                                            nextOutput );
-                PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
-                Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                       meta,
-                                                                       append,
-                                                                       m,
-                                                                       null );
+                    // Write the output
+                    String append = CommaSeparatedScoreWriter.getPathQualifier( destinationConfig,
+                                                                                nextOutput );
+                    PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
+                    Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+                                                                           meta,
+                                                                           append,
+                                                                           m,
+                                                                           null );
 
-                Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
+                    Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
-                // If writeTabularOutputToFile did not throw an exception, assume
-                // it succeeded in writing to the file, track outputs now (add must
-                // be called after the above call).
-                pathsWrittenTo.add( finishedPath );
+                    // If writeTabularOutputToFile did not throw an exception, assume
+                    // it succeeded in writing to the file, track outputs now (add must
+                    // be called after the above call).
+                    pathsWrittenTo.add( finishedPath );
+                }
             }
         }
 
@@ -374,6 +378,15 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                                                                                 value -> next.equals( value.getMetadata()
                                                                                                            .getThresholds()
                                                                                                            .second() ) ) ) );
+
+                    // Primary thresholds without secondary thresholds
+                    List<T> primaryOnly = innerSlice.stream()
+                                                    .filter( next -> !next.getMetadata()
+                                                                          .getThresholds()
+                                                                          .hasTwo() )
+                                                    .collect( Collectors.toList() );
+
+                    sliced.add( primaryOnly );
                 }
                 // One output only
                 else
@@ -402,11 +415,15 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // Secondary threshold? If yes, only one, as this was sliced above
         SortedSet<ThresholdOuter> second =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getThresholds().second() );
+                                 next -> next.getMetadata()
+                                             .getThresholds()
+                                             .second() );
         if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
              && !second.isEmpty() )
         {
-            append = second.iterator().next().toStringSafe();
+            append = second.iterator()
+                           .next()
+                           .toStringSafe();
         }
 
         // Non-default averaging types that should be qualified?

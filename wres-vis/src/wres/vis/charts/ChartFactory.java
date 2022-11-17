@@ -1368,11 +1368,18 @@ public class ChartFactory
             name += " " + metricComponentName;
         }
 
+        // Are decision thresholds defined?
+        boolean hasDecisionThresholds = metadata.hasThresholds() && metadata.getThresholds()
+                                                                            .hasTwo();
+
         // Qualify the ensemble average type if present and the metric is single-valued, unless it is a sample size or 
         // a univariate metric applied to the LHS of the pairs. If the LHS eventually supports ensembles, the data 
         // types will need to be qualified in the evaluation message.
-        if ( Objects.nonNull( ensembleAverageType ) && ensembleAverageType != EnsembleAverageType.NONE
-             && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+        if ( Objects.nonNull( ensembleAverageType )
+             && ensembleAverageType != EnsembleAverageType.NONE
+             // Single-valued metrics or dichotomous metrics defined for single-valued pairs only
+             && ( metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+                  || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS ) && !hasDecisionThresholds ) )
              && metricName != MetricConstants.SAMPLE_SIZE
              && metricComponentName != MetricConstants.LEFT )
         {

@@ -48,7 +48,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * 
  * @author James Brown
  */
-public final class MetricTestDataFactory
+public final class TestDataFactory
 {
 
     /**
@@ -162,7 +162,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Pool pool = MessageFactory.getPool( MetricTestDataFactory.FEATURE_GROUP,
+        Pool pool = MessageFactory.getPool( TestDataFactory.FEATURE_GROUP,
                                             null,
                                             null,
                                             null,
@@ -221,7 +221,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 18 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -272,7 +272,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 18 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -312,7 +312,7 @@ public final class MetricTestDataFactory
                                                          Instant.MAX );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -368,7 +368,7 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup(),
+        Pool pool = MessageFactory.getPool( TestDataFactory.getFeatureGroup(),
                                             window,
                                             null,
                                             null,
@@ -377,7 +377,7 @@ public final class MetricTestDataFactory
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
-        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+        return builder.addData( TimeSeries.of( TestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( meta )
                       .build();
@@ -455,7 +455,7 @@ public final class MetricTestDataFactory
                                                          Duration.ZERO );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -468,7 +468,7 @@ public final class MetricTestDataFactory
                                             null,
                                             null,
                                             false );
-        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+        return builder.addData( TimeSeries.of( TestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( PoolMetadata.of( evaluation, pool ) )
                       .build();
@@ -493,7 +493,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -555,8 +555,8 @@ public final class MetricTestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureGroup groupOne = MetricTestDataFactory.getFeatureGroup( DRRC2, false );
-        FeatureGroup groupTwo = MetricTestDataFactory.getFeatureGroup( "DRRC3", false );
+        FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2, false );
+        FeatureGroup groupTwo = TestDataFactory.getFeatureGroup( "DRRC3", false );
         Set<FeatureTuple> features = new HashSet<>();
         features.addAll( groupOne.getFeatures() );
         features.addAll( groupTwo.getFeatures() );
@@ -568,7 +568,7 @@ public final class MetricTestDataFactory
                                             null,
                                             null,
                                             false );
-        return builder.addData( TimeSeries.of( MetricTestDataFactory.getBoilerplateMetadata(),
+        return builder.addData( TimeSeries.of( TestDataFactory.getBoilerplateMetadata(),
                                                events ) )
                       .setMetadata( PoolMetadata.of( evaluation, pool ) )
                       .build();
@@ -615,7 +615,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -702,7 +702,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -783,7 +783,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -826,7 +826,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -863,7 +863,7 @@ public final class MetricTestDataFactory
                                                          Duration.ofHours( 24 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup();
+        FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "MAP" )
@@ -929,7 +929,7 @@ public final class MetricTestDataFactory
     /**
      * Hidden constructor
      */
-    private MetricTestDataFactory()
+    private TestDataFactory()
     {
     }
 

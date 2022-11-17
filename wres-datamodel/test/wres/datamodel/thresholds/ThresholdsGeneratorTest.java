@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.generated.DestinationConfig;
@@ -35,7 +34,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 /**
  * Tests the {@link ThresholdsGenerator}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ThresholdsGeneratorTest
 {
@@ -46,34 +45,27 @@ public final class ThresholdsGeneratorTest
 
     private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
 
-    /**
-     * Default mocked project configuration.
-     */
-
-    private ProjectConfig defaultMockedConfig;
-
-    @Before
-    public void runBeforeEachTest()
+    @Test
+    public void testGetThresholdsFromConfig()
     {
-        // Mock some metrics
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
-        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        List<MetricConfig> testMetrics = new ArrayList<>();
+        testMetrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        testMetrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        testMetrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
 
         // Mock some thresholds
-        List<ThresholdsConfig> thresholds = new ArrayList<>();
-        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                              ThresholdDataType.LEFT,
-                                              ThresholdsGeneratorTest.TEST_THRESHOLDS,
-                                              ThresholdOperator.GREATER_THAN ) );
+        List<ThresholdsConfig> testThresholds = new ArrayList<>();
+        testThresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                                  ThresholdDataType.LEFT,
+                                                  ThresholdsGeneratorTest.TEST_THRESHOLDS,
+                                                  ThresholdOperator.GREATER_THAN ) );
 
-        this.defaultMockedConfig =
+        ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
+                                   Arrays.asList( new MetricsConfig( testThresholds,
                                                                      0,
-                                                                     metrics,
+                                                                     testMetrics,
                                                                      null,
                                                                      EnsembleAverageType.MEAN ) ),
                                    new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
@@ -84,16 +76,12 @@ public final class ThresholdsGeneratorTest
                                                 null ),
                                    null,
                                    null );
-    }
-
-    @Test
-    public void testGetThresholdsFromConfig()
-    {
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig( this.defaultMockedConfig );
+        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
 
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualByMetric.getOneOrTwoThresholds();
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
+                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
@@ -166,7 +154,124 @@ public final class ThresholdsGeneratorTest
                 ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithNullDimension );
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actualWithNullDim =
-                actualByMetricNullDimension.getOneOrTwoThresholds();
+                ThresholdSlicer.getOneOrTwoThresholds( actualByMetricNullDimension );
+
+        assertEquals( expected, actualWithNullDim );
+    }
+
+    @Test
+    public void testGetThresholdsFromConfigIncludesDichotomousScoresWithoutDecisionThresholds()
+    {
+        List<MetricConfig> testMetrics = new ArrayList<>();
+        testMetrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        testMetrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        testMetrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        testMetrics.add( new MetricConfig( null, MetricConfigName.PROBABILITY_OF_DETECTION ) );
+
+        // Mock some thresholds
+        List<ThresholdsConfig> testThresholds = new ArrayList<>();
+        testThresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                                  ThresholdDataType.LEFT,
+                                                  ThresholdsGeneratorTest.TEST_THRESHOLDS,
+                                                  ThresholdOperator.GREATER_THAN ) );
+
+        ProjectConfig mockedConfig =
+                new ProjectConfig( null,
+                                   null,
+                                   Arrays.asList( new MetricsConfig( testThresholds,
+                                                                     0,
+                                                                     testMetrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
+                                   new Outputs( Arrays.asList( new DestinationConfig( OutputTypeSelection.THRESHOLD_LEAD,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null ) ),
+                                                null ),
+                                   null,
+                                   null );
+
+        // Compute combined thresholds
+        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
+
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
+                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
+
+        // Derive expected thresholds
+        Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
+        Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
+
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+        atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
+                                                                                            Operator.GREATER,
+                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+
+        Set<OneOrTwoThresholds> atomicThresholdsWithAllData = new HashSet<>( atomicThresholds );
+        atomicThresholdsWithAllData.add( OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA ) );
+
+        expected.put( MetricConstants.BIAS_FRACTION, atomicThresholdsWithAllData );
+        expected.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, atomicThresholdsWithAllData );
+        expected.put( MetricConstants.MEAN_ERROR, atomicThresholdsWithAllData );
+        expected.put( MetricConstants.PROBABILITY_OF_DETECTION, atomicThresholds );
+
+        assertEquals( expected, actual );
+
+        // Check for the same result when specifying an explicit pair configuration with null dimension
+        // Create some metrics
+        List<MetricConfig> metrics = new ArrayList<>();
+        metrics.add( new MetricConfig( null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        metrics.add( new MetricConfig( null, MetricConfigName.PROBABILITY_OF_DETECTION ) );
+
+        // Create some thresholds
+        List<ThresholdsConfig> thresholds = new ArrayList<>();
+        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                              ThresholdDataType.LEFT,
+                                              ThresholdsGeneratorTest.TEST_THRESHOLDS,
+                                              ThresholdOperator.GREATER_THAN ) );
+
+        ProjectConfig mockedConfigWithNullDimension =
+                new ProjectConfig( null,
+                                   new PairConfig( null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null,
+                                                   null ),
+                                   Arrays.asList( new MetricsConfig( thresholds,
+                                                                     0,
+                                                                     metrics,
+                                                                     null,
+                                                                     EnsembleAverageType.MEAN ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        // Compute combined thresholds
+        ThresholdsByMetric actualByMetricNullDimension =
+                ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithNullDimension );
+
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actualWithNullDim =
+                ThresholdSlicer.getOneOrTwoThresholds( actualByMetricNullDimension );
 
         assertEquals( expected, actualWithNullDim );
     }
@@ -210,7 +315,8 @@ public final class ThresholdsGeneratorTest
         ThresholdsByMetric actualWrapped =
                 ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithoutThresholds );
 
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual = actualWrapped.getOneOrTwoThresholds();
+        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
+                ThresholdSlicer.getOneOrTwoThresholds( actualWrapped );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );

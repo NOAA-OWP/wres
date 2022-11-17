@@ -28,7 +28,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class BiasFractionTest
 {
-
     /**
      * Default instance of a {@link BiasFraction}.
      */
