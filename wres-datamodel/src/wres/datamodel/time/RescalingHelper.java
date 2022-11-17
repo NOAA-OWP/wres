@@ -111,14 +111,14 @@ class RescalingHelper
             ", discovered that the values were not evenly spaced within the period. Identified ";
 
     private static final String DISCOVERED_FEWER_THAN_TWO_EVENTS_IN_THE_COLLECTION =
-            ", discovered fewer than two events in the collection";
+            ", discovered fewer than two events in the collection, which cannot produce an upscaled value.";
 
     private static final String ENDING_AT = " ending at ";
 
     private static final String EVENTS_TO_A_DESIRED_TIME_SCALE_OF = " events to a desired time scale of ";
 
     private static final String WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF =
-            "While attemping to upscale a collection of ";
+            "While attempting to upscale a collection of ";
 
     private static final String THREE_MEMBER_MESSAGE = "{}{}{}";
 
