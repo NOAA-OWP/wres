@@ -342,7 +342,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 catch ( XMLStreamException
                         | ProjectConfigException e )
                 {
-                    String message = "While ingesting a timeseries from " + dataSource
+                    String message = "While reading a timeseries from " + dataSource
                                      + " at line "
                                      + reader.getLocation().getLineNumber()
                                      + AND_COLUMN
@@ -408,17 +408,13 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         // See #38801 discussion.
         if ( Objects.isNull( zoneOffset ) )
         {
-            String message = "At the point of reading PI-XML series, could not "
-                             + "find the zone offset. Have read up to line "
+            String message = "At the point of reading PI-XML series, could not find the zone offset. Have read up to "
+                             + "line "
                              + reader.getLocation().getLineNumber()
                              + AND_COLUMN
                              + reader.getLocation().getColumnNumber()
-                             + ". "
-                             + "In PI-XML data, a field named <timeZone> "
-                             + "containing the number of hours to offset from "
-                             + "UTC is required for reliable ingest. Please "
-                             + "report this issue to whomever provided this "
-                             + "data file.";
+                             + ". In PI-XML data, a field named <timeZone> containing the number of hours to offset "
+                             + "from UTC is required. Please report this issue to whomever provided this data file.";
 
             throw new ReadException( message );
         }
@@ -613,23 +609,23 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             reader.next();
         }
 
-        TimeSeriesHeader header = this.getTimeSeriesHeader( reader );
+        TimeSeriesHeader header = this.getTimeSeriesHeader( reader, dataSource );
 
         if ( Objects.nonNull( header.ensembleMemberId )
              && Objects.nonNull( header.ensembleMemberIndex ) )
         {
-            throw new PreIngestException(
-                                          "Invalid data in PI-XML source '" + dataSource.getUri()
-                                          + "' near line "
-                                          + reader.getLocation().getLineNumber()
-                                          + ": a trace may have either an ensembleMemberId OR an "
-                                          + "ensembleMemberIndex but not both. Found ensembleMemberId"
-                                          + " '"
-                                          + header.ensembleMemberId
-                                          + "' and ensembleMemberIndex of '"
-                                          + header.ensembleMemberIndex
-                                          + "'. For more details see "
-                                          + "http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
+            throw new ReadException( "Invalid data in PI-XML source '"
+                                     + dataSource.getUri()
+                                     + "' near line "
+                                     + reader.getLocation().getLineNumber()
+                                     + ": a trace may have either an ensembleMemberId OR an "
+                                     + "ensembleMemberIndex but not both. Found ensembleMemberId"
+                                     + " '"
+                                     + header.ensembleMemberId
+                                     + "' and ensembleMemberIndex of '"
+                                     + header.ensembleMemberIndex
+                                     + "'. For more details see "
+                                     + "https://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
         }
 
         if ( Objects.nonNull( header.ensembleMemberId ) )
@@ -661,7 +657,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         // See #59438
         // For accumulative data, the scalePeriod has not been set, and this is equal
-        // to the timeStep
+        // to the timeStep, if available
         if ( Objects.isNull( header.scalePeriod ) )
         {
             header.scalePeriod = header.timeStep;
@@ -759,11 +755,12 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     /**
      * Gets a time-series header from the reader.
      * @param reader the reader
+     * @param dataSource the data source to help with messaging
      * @return the time-series header
      * @throws XMLStreamException if the stream could not be read
      */
 
-    private TimeSeriesHeader getTimeSeriesHeader( XMLStreamReader reader )
+    private TimeSeriesHeader getTimeSeriesHeader( XMLStreamReader reader, DataSource dataSource )
             throws XMLStreamException
     {
         TimeSeriesHeader header = new TimeSeriesHeader();
@@ -778,7 +775,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
             else if ( reader.isStartElement() )
             {
-                this.updateTimeSeriesHeader( reader, header );
+                this.updateTimeSeriesHeader( reader, header, dataSource );
             }
 
             reader.next();
@@ -791,11 +788,13 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * Updates the time-series header
      * @param reader the reader
      * @param h the header
+     * @param dataSource the data source to help with error messaging
      * @throws XMLStreamException if the stream could not be read
      */
 
     private void updateTimeSeriesHeader( XMLStreamReader reader,
-                                         TimeSeriesHeader h )
+                                         TimeSeriesHeader h,
+                                         DataSource dataSource )
             throws XMLStreamException
     {
         String localName = reader.getLocalName();
@@ -831,11 +830,10 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
         else if ( localName.equalsIgnoreCase( "timeStep" ) )
         {
-            String unit = XMLHelper.getAttributeValue( reader, "unit" ) + "s";
+            String unit = XMLHelper.getAttributeValue( reader, "unit" );
             unit = unit.toUpperCase();
-
-            int amount = Integer.parseInt( XMLHelper.getAttributeValue( reader, "multiplier" ) );
-            h.timeStep = Duration.of( amount, ChronoUnit.valueOf( unit ) );
+            String multiplier = XMLHelper.getAttributeValue( reader, "multiplier" );
+            h.timeStep = this.getTimeStep( unit, multiplier, dataSource );
         }
         else if ( localName.equalsIgnoreCase( "ensembleMemberId" ) )
         {
@@ -856,6 +854,57 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
         // Add the georeferencing attributes
         this.updateHeaderWithGeoreferencing( reader, h, localName );
+    }
+
+    /**
+     * Parses the time-step from a unit and multiplier.
+     * @param unit the unit
+     * @param multiplier the multiplier, possibly null
+     * @param dataSource the data source to help with error messaging
+     * @return the time-step
+     * @throws ReadException if the unit and/or multiplier are not correctly formatted
+     */
+
+    private Duration getTimeStep( String unit, String multiplier, DataSource dataSource )
+    {
+        if ( unit.equalsIgnoreCase( "nonequidistant" ) )
+        {
+            LOGGER.debug( "Discovered a PI-XML data-source with an irregular time-series, i.e., a "
+                          + "nonequidistant time-step unit. " );
+
+            return null;
+        }
+
+        String unitString = unit + "S";
+
+        try
+        {
+            ChronoUnit chronoUnit = ChronoUnit.valueOf( unitString );
+            Integer amount = Integer.valueOf( multiplier );
+            return Duration.of( amount, chronoUnit );
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new ReadException( "While attempting to read a data source with URI "
+                                     + dataSource.getUri()
+                                     + ", could not parse the value of the timeStep multiplier associated with one or "
+                                     + "more time-series. The multiplier should be an integer, but was: '"
+                                     + multiplier
+                                     + "'. The timeStep unit was: '"
+                                     + unit
+                                     + "'." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new ReadException( "While attempting to read a data source with URI "
+                                     + dataSource.getUri()
+                                     + ", could not parse the value of the timeStep unit associated with one or "
+                                     + "more time-series. The unit was: '"
+                                     + unit
+                                     + "'. An 'S' was appended to this unit string and interpreted as '"
+                                     + unitString
+                                     + "'." );
+        }
     }
 
     /**
