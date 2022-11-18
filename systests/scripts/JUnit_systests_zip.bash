@@ -15,13 +15,28 @@ LOGFILE=$TOPPWD/JUnit_systestsLog_${TIMESTAMP}.txt
 TESTINGJ=/wres_share/releases/install_scripts/testingJ.txt
 PENDINGQUEUEJ=/wres_share/releases/pendingQueueJ.txt
 wresGraphicsZipDirectory=/wres_share/releases/archive/graphics
+INSTALLING=/wres_share/releases/systests/installing
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 #/usr/bin/touch $LOGFILE
-if [ -f /wres_share/releases/systests/installing ]
+#if [ -f /wres_share/releases/systests/installing ]
+if [ -f $INSTALLING ]
 then
-	ls -l /wres_share/releases/systests/installing  2>&1 | /usr/bin/tee --append $LOGFILE
+	#ls -l /wres_share/releases/systests/installing  2>&1 | /usr/bin/tee --append $LOGFILE
+	# ------------ Below lines were added by RHC for redmine #110104 -------------------------
+	ls -l $INSTALLING  2>&1 | /usr/bin/tee --append $LOGFILE
+	fileStatus=`/bin/stat $INSTALLING | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
+    lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
 	echo "The system is installing the new built, now" 2>&1 | /usr/bin/tee --append $LOGFILE
-	/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+	if [ $lastHours -gt 12 ]
+	then # that installing lock file had lasted for more than a hour, let's notice the developers by email
+		echo -n "System up time " 2>&1 | /usr/bin/tee --append $LOGFILE
+		echo "The install has been last for $lastHours hours, still unfinished yet" | /usr/bin/tee --append $LOGFILE
+		/usr/bin/mailx -F -A WRES_Setting -s "The install has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `cat $INSTALLING`
+		rm -v $INSTALLING 2>&1 | /usr/bin/tee --append $LOGFILE
+        exit
+	else
+	# ----------------- Above lines were added by RHC for redmine #110104 ------------------------------------------------------
+		/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 	exit
 fi
 if [ -f $TESTINGJ ]
