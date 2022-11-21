@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * Represents a geographic feature. Db contents matches what is here. Composes a canonical {@link Geometry}.
+ * Represents a geographic feature. Composes a canonical {@link Geometry}.
  */
 
 public class FeatureKey implements Comparable<FeatureKey>

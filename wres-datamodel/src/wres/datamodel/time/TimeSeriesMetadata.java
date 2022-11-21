@@ -25,14 +25,15 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * it may have more complex geospatial information than a {@link FeatureKey}. See #96033 for some discussion. One 
  * option would be to add a nullable generic type. This would add flexibility at the expense of additional 
  * parameterization. Another option would be to allow a geospatial representation that contained one of a small number 
- * of possibilities, such as a {@link FeatureKey} or a {@link FeatureTuple}} and admitted an empty representation.  
+ * of possibilities, such as a {@link FeatureKey} or a {@link FeatureTuple}} and admitted an empty representation.
+ * Another, simpler, option would be to allow a OneOrTwoFeatures, which covers the typical use case of a univariate or 
+ * paired time-series. 
  */
 
 public class TimeSeriesMetadata
 {
     /**
-     * Use six because the common case would be up to three variable names and
-     * up to three unit names, one for each of L/R/B.
+     * Cache of commonly used strings.
      */
 
     private static final Cache<String, String> STRING_CACHE =
@@ -41,7 +42,7 @@ public class TimeSeriesMetadata
                     .build();
 
     /**
-     * Use one hundred arbitrarily. There are usually more than a handful.
+     * Cache of commonly used features. Up to one hundred, arbitrarily.
      */
 
     private static final Cache<FeatureKey, FeatureKey> FEATURE_KEY_CACHE =
@@ -112,7 +113,7 @@ public class TimeSeriesMetadata
     /**
      * @return this instance as a builder.
      */
-    
+
     public Builder toBuilder()
     {
         return new Builder().setReferenceTimes( this.referenceTimes )
@@ -121,7 +122,7 @@ public class TimeSeriesMetadata
                             .setFeature( this.feature )
                             .setUnit( this.unit );
     }
-    
+
     public TimeScaleOuter getTimeScale()
     {
         return this.timeScale;
@@ -155,7 +156,7 @@ public class TimeSeriesMetadata
             return true;
         }
 
-        if ( o == null || getClass() != o.getClass() )
+        if ( o == null || this.getClass() != o.getClass() )
         {
             return false;
         }
@@ -163,12 +164,9 @@ public class TimeSeriesMetadata
         TimeSeriesMetadata metadata = (TimeSeriesMetadata) o;
         return Objects.equals( this.timeScale, metadata.timeScale ) &&
                this.referenceTimes.equals( metadata.referenceTimes )
-               &&
-               this.variableName.equals( metadata.variableName )
-               &&
-               this.feature.equals( metadata.feature )
-               &&
-               this.unit.equals( metadata.unit );
+               && this.variableName.equals( metadata.variableName )
+               && this.feature.equals( metadata.feature )
+               && this.unit.equals( metadata.unit );
     }
 
     @Override

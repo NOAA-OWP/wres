@@ -84,6 +84,12 @@ public class TimeSeries<T>
         return this.events; // Rendered immutable on construction
     }
 
+    /**
+     * Returns the {@link TimeSeriesMetadata}. 
+     * 
+     * @return the metadata
+     */
+
     public TimeSeriesMetadata getMetadata()
     {
         return this.metadata;

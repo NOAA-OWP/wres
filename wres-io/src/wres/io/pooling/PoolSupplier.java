@@ -32,6 +32,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
@@ -757,13 +758,27 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // Set the baseline
             if ( this.hasBaseline() )
             {
-                FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
+                FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
 
                 GeometryTuple nextBaselineGeometry =
                         MessageFactory.getGeometryTuple( leftFeature, baselineFeature, null );
                 FeatureTuple nextBaselineTuple = FeatureTuple.of( nextBaselineGeometry );
 
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextBaselineTuple );
+
+                // Pairs can be empty but not null
+                if ( Objects.isNull( nextBasePairs ) )
+                {
+                    Set<FeatureKey> availableFeatures = basePairs.keySet()
+                                                                 .stream()
+                                                                 .map( FeatureTuple::getRight )
+                                                                 .collect( Collectors.toSet() );
+
+                    throw new PoolException( "Failed to identify any baseline pairs for feature: " + baselineFeature
+                                             + ". The available features were: "
+                                             + availableFeatures
+                                             + "." );
+                }
 
                 wres.statistics.generated.Pool.Builder newInnerBaseMetaBuilder =
                         this.baselineMetadata.getPool()
@@ -808,7 +823,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         if ( this.hasBaseline() )
         {
-
             wres.statistics.generated.Pool.Builder newBaseMetadataBuilder =
                     this.getBaselineMetadata()
                         .getPool()
@@ -839,7 +853,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             FeatureKey leftFeature = leftRightTuple.getLeft();
             FeatureKey rightFeature = leftRightTuple.getRight();
-            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
+            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
             return MessageFactory.getGeometryTuple( leftFeature, rightFeature, baselineFeature );
         }
 
@@ -934,6 +948,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                             timeWindow,
                                                                                             rightOrBaselineTransformer );
 
+            // Get the correct feature name for the right or baseline side, handling generated baselines as needed
+            FeatureKey adjustedRightOrBaselineFeature = this.getRightOrBaselineFeature( nextLeftFeature,
+                                                                                        nextRightOrBaselineFeature,
+                                                                                        this.hasBaselineGenerator(),
+                                                                                        rightOrBaselineOrientation );
+
             // Add to the results
             for ( TimeSeriesPlusValidation<L, R> nextSeries : nextPairs )
             {
@@ -949,9 +969,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
                 if ( !pairs.getEvents().isEmpty() )
                 {
-                    // Identify the pairs with the left/right geometry pair. See #105812
+                    // Identify the pairs with the left/right geometry pair. See #105812                   
                     GeometryTuple nextGeometry = MessageFactory.getGeometryTuple( nextLeftFeature,
-                                                                                  nextRightOrBaselineFeature,
+                                                                                  adjustedRightOrBaselineFeature,
                                                                                   null );
                     FeatureTuple nextFeature = FeatureTuple.of( nextGeometry );
 
@@ -1688,7 +1708,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * A helper that returns the baseline feature associated with the prescribed left feature. If the specified flag is
      * {@code false}, looks inside the {@link #baselineOrRightFeaturesByLeft}, otherwise looks in the 
-     * {@link #baselineFeaturesByLeft}. The 
+     * {@link #baselineFeaturesByLeft}.
      * 
      * @param leftFeature the left feature, not null
      * @param isSourceForGeneratedBaseline is true if referencing the source data associated with a generated baseline
@@ -1710,6 +1730,32 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         return this.baselineOrRightFeaturesByLeft.get( leftFeature );
+    }
+
+    /**
+     * A helper that returns the input right feature or the result of {@link #getBaselineFeature(FeatureKey, boolean)} 
+     * when the orientation is baseline.
+     * 
+     * @param leftFeature the left feature
+     * @param rightOrBaselineFeature the right or baseline feature
+     * @param isSourceForGeneratedBaseline is true if referencing the source data associated with a generated baseline
+     * @param rightOrBaselineOrientation the orientation of the data, one of right or baseline
+     * @return the right or baseline feature name
+     */
+
+    private FeatureKey getRightOrBaselineFeature( FeatureKey leftFeature,
+                                                  FeatureKey rightOrBaselineFeature,
+                                                  boolean isSourceForGeneratedBaseline,
+                                                  LeftOrRightOrBaseline rightOrBaselineOrientation )
+    {
+        FeatureKey adjustedRightOrBaselineFeature = rightOrBaselineFeature;
+        if ( rightOrBaselineOrientation == LeftOrRightOrBaseline.BASELINE )
+        {
+            adjustedRightOrBaselineFeature = this.getBaselineFeature( leftFeature,
+                                                                      isSourceForGeneratedBaseline );
+        }
+
+        return adjustedRightOrBaselineFeature;
     }
 
     /**
@@ -2073,21 +2119,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         // Add benign offsets
-        if ( !returnMe.containsKey( LeftOrRightOrBaseline.LEFT ) )
-        {
-            returnMe.put( LeftOrRightOrBaseline.LEFT, Duration.ZERO );
-        }
-
-        if ( !returnMe.containsKey( LeftOrRightOrBaseline.RIGHT ) )
-        {
-            returnMe.put( LeftOrRightOrBaseline.RIGHT, Duration.ZERO );
-        }
-
+        returnMe.putIfAbsent( LeftOrRightOrBaseline.LEFT, Duration.ZERO );
+        returnMe.putIfAbsent( LeftOrRightOrBaseline.RIGHT, Duration.ZERO );
         if ( Objects.nonNull( inputsConfig )
-             && Objects.nonNull( inputsConfig.getBaseline() )
-             && !returnMe.containsKey( LeftOrRightOrBaseline.BASELINE ) )
+             && Objects.nonNull( inputsConfig.getBaseline() ) )
         {
-            returnMe.put( LeftOrRightOrBaseline.BASELINE, Duration.ZERO );
+            returnMe.putIfAbsent( LeftOrRightOrBaseline.BASELINE, Duration.ZERO );
         }
 
         return returnMe;
