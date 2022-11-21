@@ -26,7 +26,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -969,7 +969,7 @@ class WrdsAhpsReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( null, FEATURE_NAME, null ) ),
+                                                List.of( new NamedFeature( null, FEATURE_NAME, null ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -1075,7 +1075,7 @@ class WrdsAhpsReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( FEATURE_NAME, null, null ) ),
+                                                List.of( new NamedFeature( FEATURE_NAME, null, null ) ),
                                                 null,
                                                 null,
                                                 null,

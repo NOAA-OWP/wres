@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.LenienceType;
@@ -122,7 +122,7 @@ class ProjectUtilities
             Set<FeatureTuple> groupedTuples = new HashSet<>();
             Set<FeatureTuple> noDataTuples = new HashSet<>();
 
-            for ( Feature nextFeature : nextGroup.getFeature() )
+            for ( NamedFeature nextFeature : nextGroup.getFeature() )
             {
                 FeatureTuple foundTuple = ProjectUtilities.findFeature( nextFeature, featuresForGroups, nextGroup );
 
@@ -493,7 +493,7 @@ class ProjectUtilities
      */
 
     private static FeatureTuple
-            findFeature( Feature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
+            findFeature( NamedFeature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
     {
         // Find the left-name matching features first.
         Set<FeatureTuple> leftMatched = featuresToSearch.stream()

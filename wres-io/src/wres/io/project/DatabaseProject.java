@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -1189,7 +1189,7 @@ public class DatabaseProject implements Project
 
 
             // Deal with the special case of singletons first
-            List<Feature> singletonFeatures = this.getProjectConfig()
+            List<NamedFeature> singletonFeatures = this.getProjectConfig()
                                                   .getPair()
                                                   .getFeature();
 
@@ -1217,7 +1217,7 @@ public class DatabaseProject implements Project
             }
 
             // Now deal with feature groups that contain one or more
-            List<Feature> groupedFeatures = declaredGroups.stream()
+            List<NamedFeature> groupedFeatures = declaredGroups.stream()
                                                           .flatMap( next -> next.getFeature().stream() )
                                                           .collect( Collectors.toList() );
 

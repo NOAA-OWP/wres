@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -890,7 +890,7 @@ public class InMemoryProject implements Project
                                         .getPair();
 
             // Create the singletons
-            List<Feature> declaredSingletons = pairConfig.getFeature();
+            List<NamedFeature> declaredSingletons = pairConfig.getFeature();
 
             Set<FeatureTuple> singletons = this.getFeatureTuplesFromDeclaredFeatures( declaredSingletons,
                                                                                       leftFeatures,
@@ -899,7 +899,7 @@ public class InMemoryProject implements Project
 
 
             // Create the feature groups
-            List<Feature> groupedFeatures = pairConfig.getFeatureGroup()
+            List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
                                                       .stream()
                                                       .flatMap( next -> next.getFeature().stream() )
                                                       .collect( Collectors.toList() );
@@ -932,7 +932,7 @@ public class InMemoryProject implements Project
      * @return the feature tuples
      */
 
-    private Set<FeatureTuple> getFeatureTuplesFromDeclaredFeatures( List<Feature> features,
+    private Set<FeatureTuple> getFeatureTuplesFromDeclaredFeatures( List<NamedFeature> features,
                                                                     Map<String, FeatureKey> leftFeatures,
                                                                     Map<String, FeatureKey> rightFeatures,
                                                                     Map<String, FeatureKey> baselineFeatures )
@@ -945,7 +945,7 @@ public class InMemoryProject implements Project
 
         // Declared features
         Set<FeatureTuple> featureTuples = new HashSet<>();
-        for ( Feature next : features )
+        for ( NamedFeature next : features )
         {
             String leftName = next.getLeft();
             String rightName = next.getRight();

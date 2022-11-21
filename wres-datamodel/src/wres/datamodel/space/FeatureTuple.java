@@ -195,7 +195,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 
     /**
      * Hidden constructor.
-     * @param geometryTuple thge geometry tuple
+     * @param geometryTuple the geometry tuple
      * @throws NullPointerException if the input is null
      */
     

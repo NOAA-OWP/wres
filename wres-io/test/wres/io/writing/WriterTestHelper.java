@@ -11,7 +11,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -74,7 +74,7 @@ public class WriterTestHelper
      * @return fake project configuration
      */
 
-    public static ProjectConfig getMockedProjectConfig( Feature feature, DestinationType destinationType )
+    public static ProjectConfig getMockedProjectConfig( NamedFeature feature, DestinationType destinationType )
     {
         // Use the system temp directory so that checks for writeability pass.
         GraphicalType graphics = new GraphicalType( null, 800, 600 );
@@ -91,7 +91,7 @@ public class WriterTestHelper
         ProjectConfig.Outputs outputsConfig =
                 new ProjectConfig.Outputs( destinations, null );
 
-        List<Feature> features = new ArrayList<>();
+        List<NamedFeature> features = new ArrayList<>();
         features.add( feature );
 
         PairConfig pairConfig = new PairConfig( null,
@@ -128,9 +128,9 @@ public class WriterTestHelper
      * @param locationId the location identifier
      */
 
-    public static Feature getMockedFeature( String locationId )
+    public static NamedFeature getMockedFeature( String locationId )
     {
-        return new Feature( locationId,
+        return new NamedFeature( locationId,
                             locationId,
                             null );
     }

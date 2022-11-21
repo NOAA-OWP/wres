@@ -56,13 +56,11 @@ public class TimeSeriesMetadata
 
     private final TimeScaleOuter timeScale;
 
-
     /**
      * The zero or more reference datetimes associated with the time-series.
      */
 
     private final Map<ReferenceTimeType, Instant> referenceTimes;
-
 
     /**
      * The name of the variable represented, as found in the original dataset.
@@ -70,13 +68,11 @@ public class TimeSeriesMetadata
 
     private final String variableName;
 
-
     /**
      * The geographic feature.
      */
 
     private final FeatureKey feature;
-
 
     /**
      * The name of the unit of measure.

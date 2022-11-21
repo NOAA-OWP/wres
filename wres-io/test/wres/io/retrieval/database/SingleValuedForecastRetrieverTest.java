@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -381,7 +381,7 @@ public class SingleValuedForecastRetrieverTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                List.of( new NamedFeature( FEATURE.getName(), FEATURE.getName(), null ) ),
                                                 null,
                                                 null,
                                                 null,

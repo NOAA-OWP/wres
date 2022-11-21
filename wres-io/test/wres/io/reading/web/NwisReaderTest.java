@@ -25,7 +25,7 @@ import org.mockserver.verify.VerificationTimes;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.messages.MessageFactory;
@@ -378,7 +378,7 @@ class NwisReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( "09165000", null, null ) ),
+                                                List.of( new NamedFeature( "09165000", null, null ) ),
                                                 null,
                                                 null,
                                                 null,

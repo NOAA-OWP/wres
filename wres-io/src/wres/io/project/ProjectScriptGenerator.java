@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.StringJoiner;
 
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -36,7 +36,7 @@ final class ProjectScriptGenerator
 
     static DataScripter createIntersectingFeaturesScript( Database database,
                                                           long projectId,
-                                                          List<Feature> featureDeclarations,
+                                                          List<NamedFeature> featureDeclarations,
                                                           boolean hasBaseline,
                                                           boolean isGrouped )
     {
@@ -317,7 +317,7 @@ final class ProjectScriptGenerator
      */
 
     private static String generateTempTableName( long projectId,
-                                                 List<Feature> features,
+                                                 List<NamedFeature> features,
                                                  boolean isGrouped )
     {
         int qualifier = 0;
@@ -353,7 +353,7 @@ final class ProjectScriptGenerator
      */
 
     private static String generateInsertStatement( String tempTableName,
-                                                   List<Feature> features,
+                                                   List<NamedFeature> features,
                                                    boolean hasBaseline )
     {
         String start = "INSERT INTO "
@@ -376,7 +376,7 @@ final class ProjectScriptGenerator
                                                 start,
                                                 " );" );
         boolean anyFeaturesWereAdded = false;
-        for ( Feature feature : features )
+        for ( NamedFeature feature : features )
         {
             String toAdd;
             String leftName = feature.getLeft();

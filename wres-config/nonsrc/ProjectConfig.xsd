@@ -215,6 +215,9 @@
                 data from left that the left calls feature X with data from
                 right that the right calls feature Y."
             </xs:documentation>
+            <xs:appinfo>
+                <jaxb:class name="NamedFeature" />
+            </xs:appinfo>
         </xs:annotation>
         <xs:attribute name="left" type="xs:string" />
         <xs:attribute name="right" type="xs:string" />
@@ -235,9 +238,7 @@
 
     <xs:complexType name="featurePool">
         <xs:annotation>
-            <xs:documentation>Used to declare groups of features for pooling. This is
-                an EXPERIMENTAL FEATURE that is protected by a feature toggle. Unless 
-                you are a developer, do not use!
+            <xs:documentation>Used to declare groups of features for pooling.
             </xs:documentation>
             <xs:appinfo>
                 <jaxb:class name="FeaturePool" />

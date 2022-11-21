@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeaturePool;
@@ -144,48 +144,48 @@ public class FeatureFinderTest
             new ProjectConfig.Inputs( BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
                                       BOILERPLATE_BASELINE_DATASOURCE_NO_DIMENSION,
                                       BOILERPLATE_BASELINE_DATASOURCE_NO_DIMENSION );
-    private static final Feature FULLY_DECLARED_FEATURE_ONE_NO_BASELINE =
-            new Feature( "02326550", "2287397", null );
-    private static final Feature FULLY_DECLARED_FEATURE_ONE_WITH_BASELINE =
-            new Feature( "02326550", "2287397", "NUTF1" );
-    private static final Feature FULLY_DECLARED_FEATURE_TWO_NO_BASELINE =
-            new Feature( "09171100", "18382337", null );
-    private static final Feature FULLY_DECLARED_FEATURE_TWO_WITH_BASELINE =
-            new Feature( "09171100", "18382337", "DBDC2" );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ONE_NO_BASELINE =
+            new NamedFeature( "02326550", "2287397", null );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ONE_WITH_BASELINE =
+            new NamedFeature( "02326550", "2287397", "NUTF1" );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_TWO_NO_BASELINE =
+            new NamedFeature( "09171100", "18382337", null );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_TWO_WITH_BASELINE =
+            new NamedFeature( "09171100", "18382337", "DBDC2" );
 
     private static final String FEATURE_NAME_ONE = "CHICKEN";
-    private static final Feature FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE =
-            new Feature( FEATURE_NAME_ONE, FEATURE_NAME_ONE, null );
-    private static final Feature FULLY_DECLARED_FEATURE_ALL_NAME_ONE_WITH_BASELINE =
-            new Feature( FEATURE_NAME_ONE, FEATURE_NAME_ONE, FEATURE_NAME_ONE );
-    private static final Feature LEFT_NAME_ONE_DECLARED_FEATURE =
-            new Feature( FEATURE_NAME_ONE, null, null );
-    private static final Feature RIGHT_NAME_ONE_DECLARED_FEATURE =
-            new Feature( null, FEATURE_NAME_ONE, null );
-    private static final Feature BASELINE_NAME_ONE_DECLARED_FEATURE =
-            new Feature( null, null, FEATURE_NAME_ONE );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE =
+            new NamedFeature( FEATURE_NAME_ONE, FEATURE_NAME_ONE, null );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ALL_NAME_ONE_WITH_BASELINE =
+            new NamedFeature( FEATURE_NAME_ONE, FEATURE_NAME_ONE, FEATURE_NAME_ONE );
+    private static final NamedFeature LEFT_NAME_ONE_DECLARED_FEATURE =
+            new NamedFeature( FEATURE_NAME_ONE, null, null );
+    private static final NamedFeature RIGHT_NAME_ONE_DECLARED_FEATURE =
+            new NamedFeature( null, FEATURE_NAME_ONE, null );
+    private static final NamedFeature BASELINE_NAME_ONE_DECLARED_FEATURE =
+            new NamedFeature( null, null, FEATURE_NAME_ONE );
 
     private static final String FEATURE_NAME_TWO = "CHEESE";
-    private static final Feature FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE =
-            new Feature( FEATURE_NAME_TWO, FEATURE_NAME_TWO, null );
-    private static final Feature FULLY_DECLARED_FEATURE_ALL_NAME_TWO_WITH_BASELINE =
-            new Feature( FEATURE_NAME_TWO, FEATURE_NAME_TWO, FEATURE_NAME_TWO );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE =
+            new NamedFeature( FEATURE_NAME_TWO, FEATURE_NAME_TWO, null );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ALL_NAME_TWO_WITH_BASELINE =
+            new NamedFeature( FEATURE_NAME_TWO, FEATURE_NAME_TWO, FEATURE_NAME_TWO );
 
-    private static final Feature LEFT_NAME_TWO_DECLARED_FEATURE =
-            new Feature( FEATURE_NAME_TWO, null, null );
-    private static final Feature RIGHT_NAME_TWO_DECLARED_FEATURE =
-            new Feature( null, FEATURE_NAME_TWO, null );
-    private static final Feature BASELINE_NAME_TWO_DECLARED_FEATURE =
-            new Feature( null, null, FEATURE_NAME_TWO );
+    private static final NamedFeature LEFT_NAME_TWO_DECLARED_FEATURE =
+            new NamedFeature( FEATURE_NAME_TWO, null, null );
+    private static final NamedFeature RIGHT_NAME_TWO_DECLARED_FEATURE =
+            new NamedFeature( null, FEATURE_NAME_TWO, null );
+    private static final NamedFeature BASELINE_NAME_TWO_DECLARED_FEATURE =
+            new NamedFeature( null, null, FEATURE_NAME_TWO );
 
 
     private static final String FEATURE_NAME_THREE = "CHEESE";
-    private static final Feature FULLY_DECLARED_FEATURE_ALL_NAME_THREE_WITH_BASELINE =
-            new Feature( FEATURE_NAME_THREE, FEATURE_NAME_THREE, FEATURE_NAME_THREE );
-    private static final Feature BASELINE_NAME_THREE_DECLARED_FEATURE =
-            new Feature( null, null, FEATURE_NAME_THREE );
+    private static final NamedFeature FULLY_DECLARED_FEATURE_ALL_NAME_THREE_WITH_BASELINE =
+            new NamedFeature( FEATURE_NAME_THREE, FEATURE_NAME_THREE, FEATURE_NAME_THREE );
+    private static final NamedFeature BASELINE_NAME_THREE_DECLARED_FEATURE =
+            new NamedFeature( null, null, FEATURE_NAME_THREE );
 
-    private static PairConfig getBoilerplatePairConfigWith( List<Feature> features,
+    private static PairConfig getBoilerplatePairConfigWith( List<NamedFeature> features,
                                                             List<FeaturePool> featureGroups,
                                                             FeatureService featureService )
     {
@@ -218,7 +218,7 @@ public class FeatureFinderTest
     @Test
     public void testFullyDeclaredFeaturesPassesThrough()
     {
-        List<Feature> features = List.of( FULLY_DECLARED_FEATURE_ONE_NO_BASELINE,
+        List<NamedFeature> features = List.of( FULLY_DECLARED_FEATURE_ONE_NO_BASELINE,
                                           FULLY_DECLARED_FEATURE_TWO_NO_BASELINE );
         ProjectConfig projectConfig = new ProjectConfig( BOILERPLATE_INPUTS_NO_BASELINE,
                                                          getBoilerplatePairConfigWith( features,
@@ -243,7 +243,7 @@ public class FeatureFinderTest
     @Test
     public void testFullyDeclaredFeaturesWithBaselinePassesThrough()
     {
-        List<Feature> features = List.of( FULLY_DECLARED_FEATURE_ONE_WITH_BASELINE,
+        List<NamedFeature> features = List.of( FULLY_DECLARED_FEATURE_ONE_WITH_BASELINE,
                                           FULLY_DECLARED_FEATURE_TWO_WITH_BASELINE );
         ProjectConfig projectConfig = new ProjectConfig( BOILERPLATE_INPUTS_WITH_BASELINE,
                                                          getBoilerplatePairConfigWith( features,
@@ -270,7 +270,7 @@ public class FeatureFinderTest
                                           null );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
                                                                                 null,
@@ -284,7 +284,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect features fully declared.
@@ -307,7 +307,7 @@ public class FeatureFinderTest
                                           null );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
                                                                                 null,
@@ -321,7 +321,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect features fully declared.
@@ -343,7 +343,7 @@ public class FeatureFinderTest
                                           BOILERPLATE_BASELINE_DATASOURCE_CUSTOM_DIMENSION );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
                                                                                 null,
@@ -357,7 +357,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect features fully declared.
@@ -380,7 +380,7 @@ public class FeatureFinderTest
                                           BOILERPLATE_BASELINE_DATASOURCE_CUSTOM_DIMENSION );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
                                                                                 null,
@@ -394,7 +394,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect features fully declared.
@@ -416,7 +416,7 @@ public class FeatureFinderTest
                                           BOILERPLATE_BASELINE_DATASOURCE_CUSTOM_DIMENSION );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
                                                                                 null,
@@ -430,7 +430,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect features fully declared.
@@ -454,7 +454,7 @@ public class FeatureFinderTest
                                           BOILERPLATE_BASELINE_DATASOURCE_CUSTOM_DIMENSION );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE,
                                           BASELINE_NAME_THREE_DECLARED_FEATURE );
         PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
@@ -469,7 +469,7 @@ public class FeatureFinderTest
 
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
-        List<Feature> resultFeatures = result.getPair()
+        List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
 
         // Expect three features, each with all names based on the one given.
@@ -492,7 +492,7 @@ public class FeatureFinderTest
                                           null );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
@@ -512,7 +512,7 @@ public class FeatureFinderTest
         List<FeaturePool> actual = result.getPair()
                                          .getFeatureGroup();
 
-        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+        List<NamedFeature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                   FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
 
         FeaturePool expectedFeatureGroup = new FeaturePool( expectedFeatures, groupName );
@@ -534,7 +534,7 @@ public class FeatureFinderTest
                                           null );
 
         // Pass in sparsely declared features
-        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
@@ -552,9 +552,9 @@ public class FeatureFinderTest
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
         // Assert against the singleton features
-        List<Feature> actualFeatures = result.getPair()
+        List<NamedFeature> actualFeatures = result.getPair()
                                              .getFeature();
-        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+        List<NamedFeature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                   FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
         
         assertEquals( expectedFeatures, actualFeatures );
@@ -601,7 +601,7 @@ public class FeatureFinderTest
             List<FeaturePool> actual = result.getPair()
                                              .getFeatureGroup();
 
-            FeaturePool expectedPool = new FeaturePool( List.of( new Feature( "bar", "baz", null ) ), "AL" );
+            FeaturePool expectedPool = new FeaturePool( List.of( new NamedFeature( "bar", "baz", null ) ), "AL" );
 
             List<FeaturePool> expected = List.of( expectedPool );
 
@@ -623,11 +623,11 @@ public class FeatureFinderTest
                                           null );
 
         // Densely declared singletons
-        List<Feature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
+        List<NamedFeature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
         
         // Pass in sparsely declared features
-        List<Feature> singletons = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+        List<NamedFeature> singletons = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                             FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
@@ -645,9 +645,9 @@ public class FeatureFinderTest
         ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
 
         // Assert against the singleton features
-        List<Feature> actualFeatures = result.getPair()
+        List<NamedFeature> actualFeatures = result.getPair()
                                              .getFeature();
-        List<Feature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
+        List<NamedFeature> expectedFeatures = List.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                   FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
 
         assertEquals( expectedFeatures, actualFeatures );

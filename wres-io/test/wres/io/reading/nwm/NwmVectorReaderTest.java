@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -73,7 +73,7 @@ class NwmVectorReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( "18384141", "18384141", null ) ),
+                                                List.of( new NamedFeature( "18384141", "18384141", null ) ),
                                                 null,
                                                 null,
                                                 new IntBoundsType( 0, 18 ),
