@@ -550,8 +550,8 @@ public class ConfigHelper
         SortedSet<String> featureNames = new TreeSet<>();
 
         // Collect the features from the singleton groups and multi-feature groups
-        List<Feature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
-        List<Feature> groupedFeatures = pairConfig.getFeatureGroup()
+        List<NamedFeature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
+        List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
                                                   .stream()
                                                   .flatMap( next -> next.getFeature().stream() )
                                                   .collect( Collectors.toList() );
@@ -566,7 +566,7 @@ public class ConfigHelper
         // Iterate the sides
         if ( sourceOrientation == LeftOrRightOrBaseline.LEFT )
         {
-            for ( Feature featureConfigured : featuresConfigured )
+            for ( NamedFeature featureConfigured : featuresConfigured )
             {
                 String leftName = featureConfigured.getLeft();
 
@@ -586,7 +586,7 @@ public class ConfigHelper
         }
         else if ( sourceOrientation == LeftOrRightOrBaseline.RIGHT )
         {
-            for ( Feature featureConfigured : featuresConfigured )
+            for ( NamedFeature featureConfigured : featuresConfigured )
             {
                 String rightName = featureConfigured.getRight();
 
@@ -606,7 +606,7 @@ public class ConfigHelper
         }
         else if ( sourceOrientation == LeftOrRightOrBaseline.BASELINE )
         {
-            for ( Feature featureConfigured : featuresConfigured )
+            for ( NamedFeature featureConfigured : featuresConfigured )
             {
                 String baselineName = featureConfigured.getBaseline();
 

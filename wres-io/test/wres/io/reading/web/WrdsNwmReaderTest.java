@@ -29,7 +29,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -447,7 +447,7 @@ class WrdsNwmReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( null,
+                                                List.of( new NamedFeature( null,
                                                                       Integer.toString( NWM_FEATURE_ID ),
                                                                       null ) ),
                                                 null,
@@ -543,10 +543,10 @@ class WrdsNwmReaderTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new Feature( null,
+                                                List.of( new NamedFeature( null,
                                                                       Integer.toString( NWM_FEATURE_ID ),
                                                                       null ),
-                                                         new Feature( null,
+                                                         new NamedFeature( null,
                                                                       "234442421",
                                                                       null ) ),
                                                 null,

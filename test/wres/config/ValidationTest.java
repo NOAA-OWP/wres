@@ -17,7 +17,7 @@ import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.LenienceType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -79,8 +79,8 @@ public class ValidationTest
     @Test
     public void fullFeaturePassesValidation()
     {
-        Feature fullySpecifiedFeature = new Feature( "Chicken", "Cheese", "Tuna" );
-        List<Feature> features = List.of( fullySpecifiedFeature );
+        NamedFeature fullySpecifiedFeature = new NamedFeature( "Chicken", "Cheese", "Tuna" );
+        List<NamedFeature> features = List.of( fullySpecifiedFeature );
         boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertTrue( isValid );
     }
@@ -88,8 +88,8 @@ public class ValidationTest
     @Test
     public void featureWithLeftValuePassesValidation()
     {
-        Feature featureWithLeftValue = new Feature( "Cheese", null, null );
-        List<Feature> features = List.of( featureWithLeftValue );
+        NamedFeature featureWithLeftValue = new NamedFeature( "Cheese", null, null );
+        List<NamedFeature> features = List.of( featureWithLeftValue );
         boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertTrue( isValid );
     }
@@ -97,8 +97,8 @@ public class ValidationTest
     @Test
     public void allNullFeatureFailsValidation()
     {
-        Feature featureWithNothing = new Feature( null, null, null );
-        List<Feature> features = List.of( featureWithNothing );
+        NamedFeature featureWithNothing = new NamedFeature( null, null, null );
+        List<NamedFeature> features = List.of( featureWithNothing );
         boolean isValid = Validation.areFeaturesValidInSingletonContext( features );
         assertFalse( isValid );
     }

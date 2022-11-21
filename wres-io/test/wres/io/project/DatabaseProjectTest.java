@@ -29,7 +29,7 @@ import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
@@ -370,8 +370,8 @@ class DatabaseProjectTest
     {
         String featureName = FEATURE.getName();
         String anotherName = ANOTHER_FEATURE.getName();
-        List<Feature> features =
-                List.of( new Feature( featureName, featureName, null ), new Feature( anotherName, anotherName, null ) );
+        List<NamedFeature> features =
+                List.of( new NamedFeature( featureName, featureName, null ), new NamedFeature( anotherName, anotherName, null ) );
         List<FeaturePool> featureGroups = List.of( new FeaturePool( features, "A feature group!" ) );
 
         Inputs inputs = new Inputs( new DataSourceConfig( DatasourceType.OBSERVATIONS,

@@ -16,7 +16,7 @@ import org.junit.Test;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -52,7 +52,7 @@ public class CommaSeparatedScoreWriterTest
         String LID = "DRRC2";
 
         // Construct a fake configuration file.
-        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
         ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
@@ -141,7 +141,7 @@ public class CommaSeparatedScoreWriterTest
         String LID = "DOLC2";
 
         // Construct a fake configuration file.
-        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
         ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.
@@ -191,7 +191,7 @@ public class CommaSeparatedScoreWriterTest
         String LID = "FTSC1";
 
         // Construct a fake configuration file.
-        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
         ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.

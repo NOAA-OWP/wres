@@ -44,7 +44,7 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeaturePool;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.InterfaceShortHand;
@@ -1640,7 +1640,7 @@ public class Validation
      * @return true if the features are valid, false otherwise
      */
 
-    static boolean areFeaturesValidInSingletonContext( List<Feature> features )
+    static boolean areFeaturesValidInSingletonContext( List<NamedFeature> features )
     {
         boolean valid = Validation.doesEachFeatureHaveSomethingDeclared( features );
         List<String> leftRawNames = Validation.getFeatureNames( features,
@@ -1669,7 +1669,7 @@ public class Validation
      * @return true if the features are valid, false otherwise
      */
 
-    static boolean areFeaturesValidInGroupedContext( List<Feature> features,
+    static boolean areFeaturesValidInGroupedContext( List<NamedFeature> features,
                                                      String context,
                                                      ProjectConfigPlus projectConfigPlus,
                                                      PairConfig pairConfig )
@@ -1677,7 +1677,7 @@ public class Validation
         boolean valid = Validation.doesEachFeatureHaveSomethingDeclared( features );
 
         // Check that there are no duplicate feature tuples
-        Map<Feature, Long> duplicateTuplesWithCounts = features.stream()
+        Map<NamedFeature, Long> duplicateTuplesWithCounts = features.stream()
                                                                .collect( Collectors.groupingBy( next -> next,
                                                                                                 Collectors.counting() ) )
                                                                .entrySet()
@@ -1712,12 +1712,12 @@ public class Validation
         }
 
         // Check for blank names, which are not allowed
-        Predicate<Feature> blankPolicer =
+        Predicate<NamedFeature> blankPolicer =
                 feature -> ( Objects.nonNull( feature.getLeft() ) && feature.getLeft().isBlank() )
                            || ( Objects.nonNull( feature.getRight() ) && feature.getRight().isBlank() )
                            || ( Objects.nonNull( feature.getBaseline() ) && feature.getBaseline().isBlank() );
 
-        Set<Feature> featuresWithBlankNames = features.stream()
+        Set<NamedFeature> featuresWithBlankNames = features.stream()
                                                       .filter( blankPolicer )
                                                       .collect( Collectors.toSet() );
 
@@ -1889,11 +1889,11 @@ public class Validation
      * @return True when every feature has at least one of the attributes.
      */
 
-    private static boolean doesEachFeatureHaveSomethingDeclared( List<Feature> features )
+    private static boolean doesEachFeatureHaveSomethingDeclared( List<NamedFeature> features )
     {
         int countOfEmptyFeatures = 0;
 
-        for ( Feature feature : features )
+        for ( NamedFeature feature : features )
         {
             if ( Objects.isNull( feature.getLeft() )
                  && Objects.isNull( feature.getRight() )
@@ -1921,7 +1921,7 @@ public class Validation
      * @return A list of features including null and blank.
      */
 
-    private static List<String> getFeatureNames( List<Feature> features,
+    private static List<String> getFeatureNames( List<NamedFeature> features,
                                                  LeftOrRightOrBaseline leftOrRightOrBaseline )
 
     {
@@ -1929,21 +1929,21 @@ public class Validation
 
         if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
         {
-            for ( Feature feature : features )
+            for ( NamedFeature feature : features )
             {
                 allNames.add( feature.getLeft() );
             }
         }
         else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
         {
-            for ( Feature feature : features )
+            for ( NamedFeature feature : features )
             {
                 allNames.add( feature.getRight() );
             }
         }
         else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
         {
-            for ( Feature feature : features )
+            for ( NamedFeature feature : features )
             {
                 allNames.add( feature.getBaseline() );
             }

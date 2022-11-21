@@ -28,7 +28,7 @@ import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -1087,13 +1087,13 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link Feature}.
+     * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link NamedFeature}.
      * 
      * @param feature a declared feature from which to build the instance, not null
      * @return the message
      */
 
-    public static GeometryTuple parse( Feature feature )
+    public static GeometryTuple parse( NamedFeature feature )
     {
         Objects.requireNonNull( feature );
 

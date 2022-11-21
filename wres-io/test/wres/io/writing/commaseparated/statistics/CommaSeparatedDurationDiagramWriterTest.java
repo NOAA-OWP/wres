@@ -16,7 +16,7 @@ import org.junit.Test;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationType;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.ProjectConfig;
 
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
@@ -51,7 +51,7 @@ public class CommaSeparatedDurationDiagramWriterTest
         String LID = "FTSC1";
 
         // Construct a fake configuration file.
-        Feature feature = WriterTestHelper.getMockedFeature( LID );
+        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
         ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
 
         // Begin the actual test now that we have constructed dependencies.

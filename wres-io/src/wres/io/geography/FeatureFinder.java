@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.Feature;
+import wres.config.generated.NamedFeature;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureGroup;
 import wres.config.generated.FeaturePool;
@@ -140,7 +140,7 @@ public class FeatureFinder
         FeatureService declaredFeatureService = originalPairDeclaration.getFeatureService();
 
         // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
-        List<Feature> filledSingletonFeatures = FeatureFinder.fillSingletonFeatures( projectDeclaration,
+        List<NamedFeature> filledSingletonFeatures = FeatureFinder.fillSingletonFeatures( projectDeclaration,
                                                                                      declaredFeatureService,
                                                                                      leftDimension,
                                                                                      rightDimension,
@@ -190,10 +190,10 @@ public class FeatureFinder
      * @return the sparse features, including singletons and grouped features
      */
 
-    private static List<Feature> getSparseFeatures( PairConfig pairConfig, boolean hasBaseline )
+    private static List<NamedFeature> getSparseFeatures( PairConfig pairConfig, boolean hasBaseline )
     {
-        List<Feature> featureList = pairConfig.getFeature();
-        Predicate<Feature> filter = null;
+        List<NamedFeature> featureList = pairConfig.getFeature();
+        Predicate<NamedFeature> filter = null;
 
         // Determine the correct type of filter for the feature
         if ( hasBaseline )
@@ -209,12 +209,12 @@ public class FeatureFinder
         }
 
         // Find sparse singletons
-        List<Feature> sparseFeatures = featureList.stream()
+        List<NamedFeature> sparseFeatures = featureList.stream()
                                                   .filter( filter )
                                                   .collect( Collectors.toList() );
 
         // Find sparse grouped features
-        List<Feature> sparseGroupedFeatures = pairConfig.getFeatureGroup()
+        List<NamedFeature> sparseGroupedFeatures = pairConfig.getFeatureGroup()
                                                         .stream()
                                                         .flatMap( nextGroup -> nextGroup.getFeature().stream() )
                                                         .filter( filter )
@@ -237,16 +237,16 @@ public class FeatureFinder
      * @return A new list of features based on the given args.
      */
     
-    private static List<Feature> fillSingletonFeatures( ProjectConfig projectDeclaration,
+    private static List<NamedFeature> fillSingletonFeatures( ProjectConfig projectDeclaration,
                                                         FeatureService featureService,
                                                         FeatureDimension leftDimension,
                                                         FeatureDimension rightDimension,
                                                         FeatureDimension baselineDimension )
     {
-        List<Feature> features = projectDeclaration.getPair()
+        List<NamedFeature> features = projectDeclaration.getPair()
                                                    .getFeature();
 
-        List<Feature> filledFeatures =
+        List<NamedFeature> filledFeatures =
                 FeatureFinder.fillFeatures( projectDeclaration,
                                             featureService,
                                             features,
@@ -255,13 +255,13 @@ public class FeatureFinder
                                             baselineDimension );
 
         // Add in group requests from the feature service
-        List<Feature> consolidatedFeatures = new ArrayList<>( filledFeatures );
+        List<NamedFeature> consolidatedFeatures = new ArrayList<>( filledFeatures );
 
         // Add any implicitly declared features
         if ( Objects.nonNull( featureService ) && !featureService.getGroup().isEmpty() )
         {
             // Combine all the features from groups that are not to be pooled
-            List<Feature> fromGroups =
+            List<NamedFeature> fromGroups =
                     featureService.getGroup()
                                   .stream()
                                   .filter( next -> !next.isPool() )
@@ -320,9 +320,9 @@ public class FeatureFinder
         // Iterate through the groups and densify them
         for ( FeaturePool nextGroup : featureGroups )
         {
-            List<Feature> features = nextGroup.getFeature();
+            List<NamedFeature> features = nextGroup.getFeature();
 
-            List<Feature> filledFeatures =
+            List<NamedFeature> filledFeatures =
                     FeatureFinder.fillFeatures( projectDeclaration,
                                                 featureService,
                                                 features,
@@ -345,7 +345,7 @@ public class FeatureFinder
             {
                 if ( nextGroup.isPool() )
                 {
-                    List<Feature> featuresToGroup = FeatureFinder.getFeatureGroup( featureService,
+                    List<NamedFeature> featuresToGroup = FeatureFinder.getFeatureGroup( featureService,
                                                                                    nextGroup,
                                                                                    leftDimension,
                                                                                    rightDimension,
@@ -383,24 +383,24 @@ public class FeatureFinder
      * @return A new list of features based on the given args.
      */
 
-    private static List<Feature> fillFeatures( ProjectConfig projectConfig,
+    private static List<NamedFeature> fillFeatures( ProjectConfig projectConfig,
                                                FeatureService featureService,
-                                               List<Feature> sparseFeatures,
+                                               List<NamedFeature> sparseFeatures,
                                                FeatureDimension leftDimension,
                                                FeatureDimension rightDimension,
                                                FeatureDimension baselineDimension )
     {
-        List<Feature> hasLeftNeedsRight = new ArrayList<>();
-        List<Feature> hasLeftNeedsBaseline = new ArrayList<>();
-        List<Feature> hasRightNeedsLeft = new ArrayList<>();
-        List<Feature> hasRightNeedsBaseline = new ArrayList<>();
-        List<Feature> hasBaselineNeedsLeft = new ArrayList<>();
-        List<Feature> hasBaselineNeedsRight = new ArrayList<>();
+        List<NamedFeature> hasLeftNeedsRight = new ArrayList<>();
+        List<NamedFeature> hasLeftNeedsBaseline = new ArrayList<>();
+        List<NamedFeature> hasRightNeedsLeft = new ArrayList<>();
+        List<NamedFeature> hasRightNeedsBaseline = new ArrayList<>();
+        List<NamedFeature> hasBaselineNeedsLeft = new ArrayList<>();
+        List<NamedFeature> hasBaselineNeedsRight = new ArrayList<>();
 
         boolean projectHasBaseline = Objects.nonNull( baselineDimension );
         
         // Go through the features, finding what was declared and not.
-        for ( Feature feature : sparseFeatures )
+        for ( NamedFeature feature : sparseFeatures )
         {
             // Simple case: all elements are present.
             if ( FeatureFinder.isFullyDeclared( feature, projectHasBaseline ) )
@@ -481,14 +481,14 @@ public class FeatureFinder
         // Need an intermediate map from original Feature to new l/r/b values
         // because the same Feature may have needed two different new values,
         // which are found independently below.
-        Map<Feature,String> withNewLeft = new HashMap<>( hasRightNeedsLeft.size()
+        Map<NamedFeature,String> withNewLeft = new HashMap<>( hasRightNeedsLeft.size()
                                                          + hasBaselineNeedsLeft.size() );
-        Map<Feature,String> withNewRight = new HashMap<>( hasLeftNeedsRight.size()
+        Map<NamedFeature,String> withNewRight = new HashMap<>( hasLeftNeedsRight.size()
                                                           + hasBaselineNeedsRight.size() );
-        Map<Feature,String> withNewBaseline = new HashMap<>( hasLeftNeedsBaseline.size()
+        Map<NamedFeature,String> withNewBaseline = new HashMap<>( hasLeftNeedsBaseline.size()
                                                              + hasRightNeedsBaseline.size() );
 
-        for ( Feature feature : hasLeftNeedsRight )
+        for ( NamedFeature feature : hasLeftNeedsRight )
         {
             Pair<FeatureDimension,FeatureDimension> leftToRight =
                     Pair.of( leftDimension, rightDimension );
@@ -502,7 +502,7 @@ public class FeatureFinder
                        .add( feature.getLeft() );
         }
 
-        for ( Feature feature : hasLeftNeedsBaseline )
+        for ( NamedFeature feature : hasLeftNeedsBaseline )
         {
             Pair<FeatureDimension,FeatureDimension> leftToBaseline =
                     Pair.of( leftDimension, baselineDimension );
@@ -516,7 +516,7 @@ public class FeatureFinder
                        .add( feature.getLeft() );
         }
 
-        for ( Feature feature : hasRightNeedsLeft )
+        for ( NamedFeature feature : hasRightNeedsLeft )
         {
             Pair<FeatureDimension,FeatureDimension> rightToLeft =
                     Pair.of( rightDimension, leftDimension );
@@ -530,7 +530,7 @@ public class FeatureFinder
                        .add( feature.getRight() );
         }
 
-        for ( Feature feature : hasRightNeedsBaseline )
+        for ( NamedFeature feature : hasRightNeedsBaseline )
         {
             Pair<FeatureDimension,FeatureDimension> rightToBaseline =
                     Pair.of( rightDimension, baselineDimension );
@@ -544,7 +544,7 @@ public class FeatureFinder
                        .add( feature.getRight() );
         }
 
-        for ( Feature feature : hasBaselineNeedsLeft )
+        for ( NamedFeature feature : hasBaselineNeedsLeft )
         {
             Pair<FeatureDimension,FeatureDimension> baselineToLeft =
                     Pair.of( baselineDimension, leftDimension );
@@ -558,7 +558,7 @@ public class FeatureFinder
                        .add( feature.getBaseline() );
         }
 
-        for ( Feature feature : hasBaselineNeedsRight )
+        for ( NamedFeature feature : hasBaselineNeedsRight )
         {
             Pair<FeatureDimension,FeatureDimension> baselineToRight =
                     Pair.of( baselineDimension, rightDimension );
@@ -590,7 +590,7 @@ public class FeatureFinder
             {
                 if ( to.equals( rightDimension ) )
                 {
-                    for ( Feature needed : hasLeftNeedsRight )
+                    for ( NamedFeature needed : hasLeftNeedsRight )
                     {
                         String rightName = found.get( needed.getLeft() );
 
@@ -619,7 +619,7 @@ public class FeatureFinder
                 // No if/else, because both could be true.
                 if ( to.equals( baselineDimension ) )
                 {
-                    for ( Feature needed : hasLeftNeedsBaseline )
+                    for ( NamedFeature needed : hasLeftNeedsBaseline )
                     {
                         String baselineName = found.get( needed.getLeft() );
 
@@ -650,7 +650,7 @@ public class FeatureFinder
             {
                 if ( to.equals( leftDimension ) )
                 {
-                    for ( Feature needed : hasRightNeedsLeft )
+                    for ( NamedFeature needed : hasRightNeedsLeft )
                     {
                         String leftName = found.get( needed.getRight() );
 
@@ -679,7 +679,7 @@ public class FeatureFinder
                 // No if/else, because both could be true.
                 if ( to.equals( baselineDimension ) )
                 {
-                    for ( Feature needed : hasRightNeedsBaseline )
+                    for ( NamedFeature needed : hasRightNeedsBaseline )
                     {
                         String baselineName = found.get( needed.getRight() );
 
@@ -710,7 +710,7 @@ public class FeatureFinder
             {
                 if ( to.equals( leftDimension ) )
                 {
-                    for ( Feature needed : hasBaselineNeedsLeft )
+                    for ( NamedFeature needed : hasBaselineNeedsLeft )
                     {
                         String leftName = found.get( needed.getBaseline() );
 
@@ -738,7 +738,7 @@ public class FeatureFinder
 
                 if ( to.equals( rightDimension ) )
                 {
-                    for ( Feature needed : hasBaselineNeedsRight )
+                    for ( NamedFeature needed : hasBaselineNeedsRight )
                     {
                         String rightName = found.get( needed.getBaseline() );
 
@@ -770,9 +770,9 @@ public class FeatureFinder
         LOGGER.debug( "New right names: {}", withNewRight );
         LOGGER.debug( "New baseline names: {}", withNewBaseline );
 
-        List<Feature> consolidatedFeatures = new ArrayList<>();
+        List<NamedFeature> consolidatedFeatures = new ArrayList<>();
 
-        for ( Feature feature : sparseFeatures )
+        for ( NamedFeature feature : sparseFeatures )
         {
             String leftName = feature.getLeft();
             String rightName = feature.getRight();
@@ -797,7 +797,7 @@ public class FeatureFinder
                 baselineName = newBaselineName;
             }
 
-            Feature newFeature = new Feature( leftName, rightName, baselineName );
+            NamedFeature newFeature = new NamedFeature( leftName, rightName, baselineName );
 
             consolidatedFeatures.add( newFeature );
         }
@@ -815,7 +815,7 @@ public class FeatureFinder
      * @param baselineDimension The baseline dimension discovered, null if none.
      * @return A list of fully populated features.
      */
-    private static List<Feature> getFeatureGroup( FeatureService featureService,
+    private static List<NamedFeature> getFeatureGroup( FeatureService featureService,
                                                   FeatureGroup featureGroup,
                                                   FeatureDimension leftDimension,
                                                   FeatureDimension rightDimension,
@@ -830,7 +830,7 @@ public class FeatureFinder
         
         URI featureServiceBaseUri = featureService.getBaseUrl();
 
-        List<Feature> features = new ArrayList<>();
+        List<NamedFeature> features = new ArrayList<>();
 
         if ( Objects.isNull( featureGroup.getType() )
              || Objects.isNull( featureGroup.getValue() )
@@ -959,14 +959,14 @@ public class FeatureFinder
                 }
             }
 
-            Feature featureFromGroup = new Feature( leftName, rightName, baselineName );
+            NamedFeature featureFromGroup = new NamedFeature( leftName, rightName, baselineName );
             features.add( featureFromGroup );
         }
 
         return Collections.unmodifiableList( features );
     }  
     
-    private static boolean isFullyDeclared( Feature potentiallySparseFeature,
+    private static boolean isFullyDeclared( NamedFeature potentiallySparseFeature,
                                             boolean projectHasBaseline )
     {
         boolean leftAndRightDeclared =
