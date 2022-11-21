@@ -261,6 +261,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
 
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
+
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED,
                                                   outGroup,

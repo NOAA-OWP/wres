@@ -544,19 +544,7 @@ public class Pool<T> implements Supplier<List<T>>
     {
         //Ensure safe types
         this.sampleData = Collections.unmodifiableList( new ArrayList<>( b.sampleData ) );
-
-        // If there is only one mini-pool, elide. The mini-pools view adds a reference for each data item and the 
-        // default view is a single pool, so there is no need for the duplicate references.
-        List<Pool<T>> miniPoolsInner = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
-        if ( miniPoolsInner.size() == 1 )
-        {
-            this.miniPools = Collections.emptyList();
-        }
-        else
-        {
-            this.miniPools = miniPoolsInner;
-        }
-
+        this.miniPools = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 

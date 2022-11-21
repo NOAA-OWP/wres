@@ -683,6 +683,8 @@ public class DatabaseProject implements Project
                           this.performedInsert );
         }
 
+        LOGGER.info( "The identity of the database project is '{}'.", this.getProjectId() );
+        
         return this.performedInsert;
     }
 
