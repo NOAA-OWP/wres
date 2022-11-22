@@ -22,7 +22,7 @@ export JAVA_HOME=/usr/lib/jvm/java-11-openjdk
 if [ -f $INSTALLING ]
 then
 	#ls -l /wres_share/releases/systests/installing  2>&1 | /usr/bin/tee --append $LOGFILE
-	# ------------ Below lines were added by RHC for redmine #110104 -------------------------
+	# ------------ Below lines were added by RHC for redmine #110104, Nov. 18, 2022 -------------------------
 	ls -l $INSTALLING  2>&1 | /usr/bin/tee --append $LOGFILE
 	fileStatus=`/bin/stat $INSTALLING | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
     lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
@@ -35,9 +35,10 @@ then
 		rm -v $INSTALLING 2>&1 | /usr/bin/tee --append $LOGFILE
         exit
 	else
-	# ----------------- Above lines were added by RHC for redmine #110104 ------------------------------------------------------
+	# ----------------- Above lines were added by RHC for redmine #110104, Nov. 18, 2022 ------------------------------------------------------
 		/usr/bin/find -P $TOPPWD -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +1 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
-	exit
+		exit
+	fi
 fi
 if [ -f $TESTINGJ ]
 then
