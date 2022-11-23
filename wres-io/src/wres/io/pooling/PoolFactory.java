@@ -52,12 +52,13 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesOfEnsembleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
@@ -75,6 +76,7 @@ import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -394,7 +396,7 @@ public class PoolFactory
                                                                                          .getUnitAliases() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
-        Function<Set<FeatureKey>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
+        Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
         // Generated baseline declared?
         if ( project.hasGeneratedBaseline() )
         {
@@ -785,8 +787,14 @@ public class PoolFactory
                                                                  toTransform.getTimeScale(),
                                                                  this.getProject()
                                                                      .getDesiredTimeScale() );
+
+            UnaryOperator<TimeSeriesMetadata> metaMapper = metadata -> toTransform.getMetadata()
+                                                                                  .toBuilder()
+                                                                                  .setUnit( desiredUnitString )
+                                                                                  .build();
+
             Function<Double, Double> transformer = basicTransformer.compose( unitMapper::applyAsDouble );
-            TimeSeries<Double> transformed = TimeSeriesSlicer.transform( toTransform, transformer );
+            TimeSeries<Double> transformed = TimeSeriesSlicer.transform( toTransform, transformer, metaMapper );
 
             if ( LOGGER.isTraceEnabled() )
             {
@@ -1187,7 +1195,7 @@ public class PoolFactory
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private <L, R> Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>>
+    private <L, R> Function<Set<Feature>, UnaryOperator<TimeSeries<R>>>
             getGeneratedBaseline( DataSourceConfig baselineConfig,
                                   RetrieverFactory<L, R> retrieverFactory,
                                   TimeSeriesUpscaler<R> upscaler,
@@ -1791,7 +1799,7 @@ public class PoolFactory
         private final RetrieverFactory<L, R> delegate;
 
         @Override
-        public Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<FeatureKey> features )
+        public Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<Feature> features )
         {
             // Cache the delegated call
             Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getLeftRetriever( features );
@@ -1799,31 +1807,31 @@ public class PoolFactory
         }
 
         @Override
-        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features )
+        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features )
         {
             return this.delegate.getLeftRetriever( features );
         }
 
         @Override
-        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features )
+        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features )
         {
             return this.delegate.getBaselineRetriever( features );
         }
 
         @Override
-        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow )
+        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features, TimeWindowOuter timeWindow )
         {
             return this.delegate.getLeftRetriever( features, timeWindow );
         }
 
         @Override
-        public Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow )
+        public Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<Feature> features, TimeWindowOuter timeWindow )
         {
             return this.delegate.getRightRetriever( features, timeWindow );
         }
 
         @Override
-        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features,
+        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features,
                                                                      TimeWindowOuter timeWindow )
         {
             return this.delegate.getBaselineRetriever( features, timeWindow );

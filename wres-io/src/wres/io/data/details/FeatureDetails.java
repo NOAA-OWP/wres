@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.io.data.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -18,20 +18,20 @@ import wres.statistics.generated.Geometry;
  * Defines the important details of a feature as stored in the database
  * @author Christopher Tubbs
  */
-public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
+public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
     private static final long PLACEHOLDER_ID = Long.MIN_VALUE;
 
     private long id = PLACEHOLDER_ID;
-	private FeatureKey key = null;
+	private Feature key = null;
 
 	public FeatureDetails()
     {
         super();
     }
 
-    public FeatureDetails( FeatureKey key)
+    public FeatureDetails( Feature key)
     {
         this.key = key;
     }
@@ -50,7 +50,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
         String wkt = row.getValue( "wkt" );
 
         Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
-        this.key = FeatureKey.of( geometry );
+        this.key = Feature.of( geometry );
 
         if (row.hasColumn(this.getIDName() ))
         {
@@ -83,7 +83,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, FeatureKey>
 	}
 
 	@Override
-	public FeatureKey getKey()
+	public Feature getKey()
     {
 		return this.key;
 	}

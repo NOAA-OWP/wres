@@ -201,7 +201,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         {
             // Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Function<TimeSeries<Pair<Double, Ensemble>>, TimeSeries<Pair<Double, Double>>> mapper =
-                    in -> TimeSeriesSlicer.transform( in, this.toSingleValues );
+                    in -> TimeSeriesSlicer.transform( in, this.toSingleValues, null );
             Pool<TimeSeries<Pair<Double, Double>>> singleValued = PoolSlicer.transform( adjustedPool, mapper );
 
             // Compute the results and merge with the ensemble statistics

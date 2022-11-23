@@ -37,7 +37,7 @@ import wres.config.generated.DatasourceType;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -373,7 +373,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                                             .getNwsName();
 
         Geometry geometry = MessageFactory.getGeometry( featureName, featureDescription, null, null );
-        FeatureKey feature = FeatureKey.of( geometry );
+        Feature feature = Feature.of( geometry );
 
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( datetimes,
                                                              timeScale,

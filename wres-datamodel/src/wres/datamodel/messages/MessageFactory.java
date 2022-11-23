@@ -43,7 +43,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
@@ -395,7 +395,7 @@ public class MessageFactory
      * @throws NullPointerException if either the left or right input is null
      */
 
-    public static GeometryTuple getGeometryTuple( FeatureKey left, FeatureKey right, FeatureKey baseline )
+    public static GeometryTuple getGeometryTuple( Feature left, Feature right, Feature baseline )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );
@@ -1113,13 +1113,13 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.space.FeatureKey}.
+     * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.space.Feature}.
      * 
      * @param featureKey the feature key from which to create a message
      * @return the message
      */
 
-    public static Geometry parse( FeatureKey featureKey )
+    public static Geometry parse( Feature featureKey )
     {
         Objects.requireNonNull( featureKey );
 

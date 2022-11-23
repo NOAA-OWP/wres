@@ -4,7 +4,7 @@ import java.net.URI;
 import java.time.Instant;
 
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 
 class RetrieverTestConstants
 {
@@ -15,7 +15,7 @@ class RetrieverTestConstants
     static final String PROJECT_HASH = "123deadbeef456";
 
 
-    static final FeatureKey FEATURE = FeatureKey.of(
+    static final Feature FEATURE = Feature.of(
             MessageFactory.getGeometry( "F" ) );
     static final String VARIABLE_NAME = "Q";
 

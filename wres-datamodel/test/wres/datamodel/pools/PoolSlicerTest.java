@@ -30,7 +30,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -242,14 +242,14 @@ class PoolSlicerTest
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
-                                                                        FeatureKey.of(
+                                                                        Feature.of(
                                                                                        MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
-                                                                        FeatureKey.of(
+                                                                        Feature.of(
                                                                                        MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
@@ -271,13 +271,13 @@ class PoolSlicerTest
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
-                                                                        FeatureKey.of( MessageFactory.getGeometry( "bar" ) ),
+                                                                        Feature.of( MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
-                                                                        FeatureKey.of( MessageFactory.getGeometry( "smeg" ) ),
+                                                                        Feature.of( MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );

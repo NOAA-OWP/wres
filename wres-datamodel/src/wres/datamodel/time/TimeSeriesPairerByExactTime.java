@@ -149,7 +149,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                           TimePairingType.REFERENCE_TIME_AND_VALID_TIME );
 
             return new Builder<Pair<L, R>>().setMetadata( right.getMetadata() )
-                                                      .build();
+                                            .build();
         }
 
         // Map the left admissible values by valid time
@@ -189,11 +189,13 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
 
-        // The pairs inherit the metadata of the right-hand time-series, which is a simplification. In order to model
+        // The pairs inherit the metadata of the left-hand time-series, which is a simplification. In order to model
         // this properly, we would need to relax the modeling in the TimeSeriesMetadata
+        // The left metadata is used primarily for the left feature, which is common to all pairs and provides a
+        // consistent hook for slicing the pairs: see the discussion in #110139
         TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( right.getMetadata() ).setReferenceTimes( referenceTimes )
-                                                                     .build();
+                new TimeSeriesMetadata.Builder( left.getMetadata() ).setReferenceTimes( referenceTimes )
+                                                                    .build();
 
         return new Builder<Pair<L, R>>().setMetadata( metadata )
                                         .setEvents( pairs )

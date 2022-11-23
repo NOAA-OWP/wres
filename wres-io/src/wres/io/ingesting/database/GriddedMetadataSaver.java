@@ -23,7 +23,7 @@ import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
 import wres.io.data.caching.DatabaseCaches;
@@ -47,8 +47,8 @@ import wres.util.NetCDF;
 class GriddedMetadataSaver implements Callable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedMetadataSaver.class );
-    private static final FeatureKey GRIDDED_FEATURES_PLACEHOLDER =
-            FeatureKey.of( Geometry.newBuilder()
+    private static final Feature GRIDDED_FEATURES_PLACEHOLDER =
+            Feature.of( Geometry.newBuilder()
                                    .setName( "PLACEHOLDER" )
                                    .setDescription( "A placeholder for gridded/raster netCDF data." )
                                    .build() );

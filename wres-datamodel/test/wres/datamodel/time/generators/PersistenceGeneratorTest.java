@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -35,7 +35,7 @@ public class PersistenceGeneratorTest
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final String CMS = "CMS";
     private static final String DISCHARGE = "DISCHARGE";
-    private static final FeatureKey FAKE2 = FeatureKey.of(
+    private static final Feature FAKE2 = Feature.of(
                                                            MessageFactory.getGeometry( "FAKE2" ) );
 
     // Times used    

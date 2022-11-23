@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.scale.TimeScaleOuter;
 
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 
 import wres.datamodel.time.TimeSeries;
@@ -93,7 +93,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final long projectId;
 
     /** The features. */
-    private final Set<FeatureKey> features;
+    private final Set<Feature> features;
 
     /** The variable name. */
     private final String variableName;
@@ -152,7 +152,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the feature.
      */
 
-    Set<FeatureKey> getFeatures()
+    Set<Feature> getFeatures()
     {
         return this.features;
     }
@@ -939,7 +939,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         long featureId = provider.getLong( "feature_id" );
 
-        FeatureKey featureKey;
+        Feature featureKey;
         try
         {
             featureKey = this.getFeaturesCache()
@@ -1435,7 +1435,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * Features.
          */
 
-        private Set<FeatureKey> features = new HashSet<>();
+        private Set<Feature> features = new HashSet<>();
 
         /**
          * The data type.
@@ -1542,7 +1542,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * @return the builder
          */
 
-        Builder<S> setFeatures( Set<FeatureKey> features )
+        Builder<S> setFeatures( Set<Feature> features )
         {
             if ( Objects.nonNull( features ) )
             {

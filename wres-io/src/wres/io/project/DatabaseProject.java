@@ -31,7 +31,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.io.NoDataException;
 import wres.io.config.ConfigHelper;
 import wres.io.data.DataProvider;
@@ -1258,11 +1258,11 @@ public class DatabaseProject implements Project
     private Set<FeatureTuple> getGriddedFeatureTuples()
     {
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
-        Set<FeatureKey> griddedFeatures = this.getGriddedFeatures()
+        Set<Feature> griddedFeatures = this.getGriddedFeatures()
                                               .get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        for ( FeatureKey nextFeature : griddedFeatures )
+        for ( Feature nextFeature : griddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
             GeometryTuple geoTuple = null;
@@ -1300,12 +1300,12 @@ public class DatabaseProject implements Project
             while ( dataProvider.next() )
             {
                 int leftId = dataProvider.getInt( "left_id" );
-                FeatureKey leftKey =
+                Feature leftKey =
                         fCache.getFeatureKey( leftId );
                 int rightId = dataProvider.getInt( "right_id" );
-                FeatureKey rightKey =
+                Feature rightKey =
                         fCache.getFeatureKey( rightId );
-                FeatureKey baselineKey = null;
+                Feature baselineKey = null;
 
                 // Baseline column will only be there when baseline exists.
                 if ( hasBaseline() )

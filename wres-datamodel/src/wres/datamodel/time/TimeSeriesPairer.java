@@ -44,5 +44,4 @@ public interface TimeSeriesPairer<L, R>
      */
 
     TimeSeries<Pair<L, R>> pair( TimeSeries<L> left, TimeSeries<R> right );
-
 }

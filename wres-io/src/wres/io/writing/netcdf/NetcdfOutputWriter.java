@@ -64,7 +64,7 @@ import wres.datamodel.metrics.MetricConstants.MetricGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -1514,7 +1514,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
 
                 String wkt = location.getWkt();
-                FeatureKey.GeoPoint point = FeatureKey.getLonLatFromPointWkt( wkt );
+                Feature.GeoPoint point = Feature.getLonLatFromPointWkt( wkt );
 
                 // contains the the y index and the x index
                 origin = new int[2];

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
@@ -378,7 +378,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
         String locationId = Integer.toString( rawLocationId );
         Geometry geometry = MessageFactory.getGeometry( locationId );
-        FeatureKey feature = FeatureKey.of( geometry );
+        Feature feature = Feature.of( geometry );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( referenceTimeType,
                                                                      forecast.getReferenceDatetime() ),
                                                              timeScale,

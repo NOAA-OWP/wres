@@ -25,23 +25,23 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         return new FeatureTuple( geometryTuple );
     }
 
-    public FeatureKey getLeft()
+    public Feature getLeft()
     {
-        return FeatureKey.of( this.geometryTuple.getLeft() );
+        return Feature.of( this.geometryTuple.getLeft() );
     }
 
-    public FeatureKey getRight()
+    public Feature getRight()
     {
-        return FeatureKey.of( this.geometryTuple.getRight() );
+        return Feature.of( this.geometryTuple.getRight() );
     }
 
-    public FeatureKey getBaseline()
+    public Feature getBaseline()
     {
-        FeatureKey returnMe = null;
+        Feature returnMe = null;
 
         if ( this.geometryTuple.hasBaseline() )
         {
-            returnMe = FeatureKey.of( this.geometryTuple.getBaseline() );
+            returnMe = Feature.of( this.geometryTuple.getBaseline() );
         }
 
         return returnMe;

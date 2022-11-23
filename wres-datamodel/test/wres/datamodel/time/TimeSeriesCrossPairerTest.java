@@ -16,7 +16,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
@@ -31,7 +31,7 @@ public final class TimeSeriesCrossPairerTest
 {
 
     private static final String KG_H = "kg/h";
-    private static final FeatureKey GEORGIA = FeatureKey.of( 
+    private static final Feature GEORGIA = Feature.of( 
                                                              MessageFactory.getGeometry( "Georgia" ) );
     private static final String CHICKENS = "Chickens";
     private static final Instant ZEROTH = Instant.parse( "2123-12-01T00:00:00Z" );

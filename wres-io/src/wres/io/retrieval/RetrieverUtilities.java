@@ -166,11 +166,12 @@ public class RetrieverUtilities
 
     public static <T> TimeSeries<T> mapUnits( TimeSeries<T> timeSeries, UnaryOperator<T> mapper, String desiredUnits )
     {
-        TimeSeriesMetadata meta =
-                new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setUnit( desiredUnits )
-                                                                          .build();
-        TimeSeries<T> mapped = TimeSeriesSlicer.transform( timeSeries, mapper );
-        return TimeSeries.of( meta, mapped.getEvents() );
+        UnaryOperator<TimeSeriesMetadata> metaMapper = metadata -> timeSeries.getMetadata()
+                                                                             .toBuilder()
+                                                                             .setUnit( desiredUnits )
+                                                                             .build();
+
+        return TimeSeriesSlicer.transform( timeSeries, mapper, metaMapper );
     }
 
     /**

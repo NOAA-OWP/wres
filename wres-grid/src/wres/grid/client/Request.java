@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 
 import java.nio.file.Path;
@@ -28,7 +28,7 @@ public interface Request
      * @return the features requested
      */
     
-    Set<FeatureKey> getFeatures();
+    Set<Feature> getFeatures();
     
     /**
      * @return the time window

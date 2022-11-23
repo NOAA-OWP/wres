@@ -19,7 +19,7 @@ import ucar.nc2.NetcdfFiles;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.PairConfig;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
@@ -154,7 +154,7 @@ public class NwmGriddedReader implements TimeSeriesReader
         GriddedFeatures griddedFeatures = this.getGriddedFeatures()
                                               .build();
 
-        Set<FeatureKey> featureKeys = griddedFeatures.get();
+        Set<Feature> featureKeys = griddedFeatures.get();
 
         // Gridded features must be set now
         if ( featureKeys.isEmpty() )
@@ -191,7 +191,7 @@ public class NwmGriddedReader implements TimeSeriesReader
         // Acquire the response and return the time-series
         SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
 
-        Map<FeatureKey, Stream<TimeSeries<Double>>> timeSeries = response.getTimeSeries();
+        Map<Feature, Stream<TimeSeries<Double>>> timeSeries = response.getTimeSeries();
 
         // Concatenate the per-feature streams
         return timeSeries.values()

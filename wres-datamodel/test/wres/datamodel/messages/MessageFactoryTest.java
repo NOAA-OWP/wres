@@ -37,7 +37,7 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -121,7 +121,7 @@ class MessageFactoryTest
 
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
-    private static final FeatureKey FEATURE = FeatureKey.of( MessageFactory.getGeometry( FEATURE_NAME ) );
+    private static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( FEATURE_NAME ) );
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
 
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =

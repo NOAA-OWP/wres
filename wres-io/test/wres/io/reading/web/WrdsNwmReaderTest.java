@@ -34,7 +34,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -271,7 +271,7 @@ class WrdsNwmReaderTest
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),
                                                                  null,
                                                                  "streamflow",
-                                                                 FeatureKey.of( geometry ),
+                                                                 Feature.of( geometry ),
                                                                  "meter^3 / sec" );
             TimeSeries<Double> expectedSeries =
                     new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),
@@ -357,7 +357,7 @@ class WrdsNwmReaderTest
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),
                                                                  null,
                                                                  "streamflow",
-                                                                 FeatureKey.of( geometry ),
+                                                                 Feature.of( geometry ),
                                                                  "meter^3 / sec" );
             TimeSeries<Double> expectedSeries =
                     new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),

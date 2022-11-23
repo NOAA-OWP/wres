@@ -12,7 +12,7 @@ public class FeatureKeyTest
     public void testParsePointFromPointWkt()
     {
         String wkt = "POINT ( 3.141592654 5.1 )";
-        FeatureKey.GeoPoint point = FeatureKey.getLonLatFromPointWkt( wkt );
+        Feature.GeoPoint point = Feature.getLonLatFromPointWkt( wkt );
         assertEquals( point.getX(), 3.141592654, EPSILON );
         assertEquals( point.getY(), 5.1, EPSILON );
     }
@@ -22,7 +22,7 @@ public class FeatureKeyTest
     public void testParsePointFromPointWktNonStrict()
     {
         String wkt = "POINT ( 3.141592654 5.1 )";
-        FeatureKey.GeoPoint point = FeatureKey.getLonLatOrNullFromWkt( wkt );
+        Feature.GeoPoint point = Feature.getLonLatOrNullFromWkt( wkt );
         assertNotNull( point );
         assertEquals( point.getX(), 3.141592654, EPSILON );
         assertEquals( point.getY(), 5.1, EPSILON );

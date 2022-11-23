@@ -32,7 +32,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -107,7 +107,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private final Predicate<L> climateAdmissibleValue;
 
     /** An optional generator for baseline data (e.g., persistence or climatology). */
-    private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+    private final Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
     /** The pool suppliers. */
     private final List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> pools;
@@ -173,7 +173,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         private Predicate<L> climateAdmissibleValue;
 
         /** An optional generator for baseline data (e.g., persistence or climatology). */
-        private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+        private Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
         /**
          * @param project the project
@@ -358,7 +358,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineGenerator the baselineGenerator to set
          * @return the builder
          */
-        Builder<L, R> setBaselineGenerator( Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
+        Builder<L, R> setBaselineGenerator( Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
 
@@ -498,7 +498,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                  || this.getProject()
                         .hasGeneratedBaseline() )
             {
-                Set<FeatureKey> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
+                Set<Feature> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
                 climatologySupplier = this.getRetrieverFactory()
                                           .getClimatologyRetriever( leftFeatures );
 
@@ -534,7 +534,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 TimeWindowOuter nextWindow = nextPool.getMetadata()
                                                      .getTimeWindow();
 
-                Set<FeatureKey> rightFeatures = this.getFeatures( nextPool.getMetadata(),
+                Set<Feature> rightFeatures = this.getFeatures( nextPool.getMetadata(),
                                                                   FeatureTuple::getRight );
 
                 Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
@@ -567,7 +567,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                     // Data-source baseline
                     else
                     {
-                        Set<FeatureKey> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
+                        Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
                                                                              FeatureTuple::getBaseline );
 
                         Supplier<Stream<TimeSeries<R>>> baselineSupplier = this.getRetrieverFactory()
@@ -616,7 +616,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                        .map( next -> next.getMetadata().getTimeWindow() )
                                                        .collect( Collectors.toSet() );
 
-        Set<FeatureKey> features = poolRequests.stream()
+        Set<Feature> features = poolRequests.stream()
                                                .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
                                                .map( FeatureTuple::getLeft )
                                                .collect( Collectors.toSet() );
@@ -807,7 +807,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the baseline generator
      */
 
-    private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> getBaselineGenerator()
+    private Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> getBaselineGenerator()
     {
         return this.baselineGenerator;
     }
@@ -841,8 +841,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @throws NullPointerException if the metadata is null
      */
 
-    private Set<FeatureKey> getFeatures( PoolMetadata metadata,
-                                         Function<FeatureTuple, FeatureKey> featureGetter )
+    private Set<Feature> getFeatures( PoolMetadata metadata,
+                                         Function<FeatureTuple, Feature> featureGetter )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( featureGetter );
@@ -859,7 +859,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @throws NullPointerException if the metadata is null
      */
 
-    private Set<FeatureKey> getFeatures( Function<FeatureTuple, FeatureKey> featureGetter )
+    private Set<Feature> getFeatures( Function<FeatureTuple, Feature> featureGetter )
     {
         Objects.requireNonNull( featureGetter );
         return this.getPoolRequests()

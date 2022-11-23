@@ -33,7 +33,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -73,7 +73,7 @@ public final class SingleValuedPairsWriterTest
     private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsThree = null;
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final FeatureKey FEATURE = FeatureKey.of(
+    private static final Feature FEATURE = Feature.of(
                                                              MessageFactory.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
@@ -130,7 +130,7 @@ public final class SingleValuedPairsWriterTest
 
         TimeSeriesMetadata boilerplate = SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
                                                                                          MessageFactory.getGeometry( "PLUM" ) ) )
                                                              .build();
 
@@ -173,7 +173,7 @@ public final class SingleValuedPairsWriterTest
 
         TimeSeriesMetadata boilerplateTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
-                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( Feature.of(
                                                                                             MessageFactory.getGeometry( "ORANGE" ) ) )
                                                                 .build();
 
@@ -217,7 +217,7 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesMetadata boilerplateThree =
                 SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
-                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( Feature.of(
                                                                                               MessageFactory.getGeometry( "BANANA" ) ) )
                                                                   .build();
         TimeSeries<Pair<Double, Double>> timeSeriesThree =

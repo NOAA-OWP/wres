@@ -15,7 +15,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -29,7 +29,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 public class TimeSeriesOfEnsembleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
+    private static final Feature FEATURE_NAME = Feature.of(
                                                                   MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 

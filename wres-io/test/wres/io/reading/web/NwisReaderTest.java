@@ -30,7 +30,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -274,7 +274,7 @@ class NwisReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .collect( Collectors.toList() );
 
-            FeatureKey featureKey = FeatureKey.of( MessageFactory.getGeometry( "09165000",
+            Feature featureKey = Feature.of( MessageFactory.getGeometry( "09165000",
                                                                                "DOLORES RIVER BELOW RICO, CO.",
                                                                                4326,
                                                                                "POINT ( -108.0603517 37.63888428 )" ) );

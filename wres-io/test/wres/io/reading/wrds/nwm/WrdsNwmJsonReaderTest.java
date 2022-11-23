@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -144,7 +144,7 @@ class WrdsNwmJsonReaderTest
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),
                                                                  null,
                                                                  "streamflow",
-                                                                 FeatureKey.of( MessageFactory.getGeometry( "8588002" ) ),
+                                                                 Feature.of( MessageFactory.getGeometry( "8588002" ) ),
                                                                  "meter^3 / sec" );
             TimeSeries<Double> expectedSeries =
                     new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2020-01-12T01:00:00Z" ),

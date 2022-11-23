@@ -44,7 +44,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.config.ConfigHelper;
@@ -698,7 +698,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                                         header.locationDescription,
                                                         null,
                                                         locationWkt );
-        FeatureKey feature = FeatureKey.of( geometry );
+        Feature feature = Feature.of( geometry );
 
         TimeSeriesMetadata justParsed = TimeSeriesMetadata.of( referenceTimes,
                                                                scale,

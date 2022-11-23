@@ -48,7 +48,7 @@ import ucar.nc2.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -595,7 +595,7 @@ class NWMTimeSeries implements Closeable
             Geometry geometry = MessageFactory.getGeometry(
                                                             series.getKey()
                                                                   .toString() );
-            FeatureKey feature = FeatureKey.of( geometry );
+            Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
                     TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),
@@ -710,7 +710,7 @@ class NWMTimeSeries implements Closeable
             Geometry geometry = MessageFactory.getGeometry(
                                                             entriesForOne.getKey()
                                                                          .toString() );
-            FeatureKey feature = FeatureKey.of( geometry );
+            Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
                     TimeSeriesMetadata.of( Map.of( this.getReferenceTimeType(), this.getReferenceDatetime() ),

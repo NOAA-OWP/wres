@@ -1,7 +1,6 @@
 package wres.datamodel.time;
 
 import java.text.MessageFormat;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +48,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
     /** Function that returns a double value or {@link MissingValues#DOUBLE} if the
      * input is not finite. */
     private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE: a;
+            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE : a;
 
     /** Lenient means that upscaling can proceed when values that match the {@link MissingValues#DOUBLE} are encountered
      * or when the values to upscale are spaced irregularly over the interval (e.g., because data is implicitly 
@@ -248,20 +247,15 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
                                                                           desiredUnit );
 
         // Create a converted time-series
-        TimeSeries<Double> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate, converter );
-
         // Update the units and time scale function
-        Duration existingScalePeriod = desiredTimeScale.getPeriod();
-        TimeScaleOuter newDesiredTimeScale = TimeScaleOuter.of( existingScalePeriod, TimeScaleFunction.TOTAL );
-        TimeSeriesMetadata updated = volumeSeries.getMetadata()
-                                                 .toBuilder()
-                                                 .setUnit( desiredUnitString )
-                                                 .setTimeScale( newDesiredTimeScale )
-                                                 .build();
+        UnaryOperator<TimeSeriesMetadata> metaMapper =
+                RescalingHelper.getMetadataMapper( seriesToIntegrate.getMetadata(),
+                                                   desiredTimeScale,
+                                                   desiredUnitString );
 
-        TimeSeries<Double> adjustedVolumeSeries = TimeSeries.of( updated, volumeSeries.getEvents() );
+        TimeSeries<Double> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate, converter, metaMapper );
 
-        return RescaledTimeSeriesPlusValidation.of( adjustedVolumeSeries, validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( volumeSeries, validationEvents );
     }
 
     /**

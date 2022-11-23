@@ -29,7 +29,7 @@ import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -168,7 +168,7 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of(
+                                      Feature.of(
                                                      MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
@@ -182,7 +182,7 @@ public final class MetricTestDataFactory
         return TimeSeriesMetadata.of( Collections.emptyMap(),
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
-                                      FeatureKey.of(
+                                      Feature.of(
                                                      MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }

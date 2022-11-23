@@ -24,7 +24,7 @@ import com.google.common.jimfs.Jimfs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -106,7 +106,7 @@ class DatacardReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( "DRRC2",
+                                               Feature.of( MessageFactory.getGeometry( "DRRC2",
                                                                                           "DOLORES RIVER, CO",
                                                                                           null,
                                                                                           null ) ),
@@ -192,7 +192,7 @@ class DatacardReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( "DRRC2",
+                                               Feature.of( MessageFactory.getGeometry( "DRRC2",
                                                                                           "DOLORES RIVER, CO",
                                                                                           null,
                                                                                           null ) ),

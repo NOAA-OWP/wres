@@ -36,7 +36,7 @@ import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
@@ -524,7 +524,7 @@ class NetcdfOutputFileCreator2
                           first,
                           writer.getNetcdfFile()
                                 .getLocation() );
-            List<FeatureKey.GeoPoint> points = Collections.emptyList();
+            List<Feature.GeoPoint> points = Collections.emptyList();
             Integer srid = null;
 
             if ( datasetWithGeo.equals( LeftOrRightOrBaseline.LEFT ) )
@@ -533,8 +533,8 @@ class NetcdfOutputFileCreator2
                             .getSrid();
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getLeft )
-                                 .map( FeatureKey::getWkt )
-                                 .map( FeatureKey::getLonLatOrNullFromWkt )
+                                 .map( Feature::getWkt )
+                                 .map( Feature::getLonLatOrNullFromWkt )
                                  .collect( Collectors.toList() );
             }
             else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.RIGHT ) )
@@ -543,8 +543,8 @@ class NetcdfOutputFileCreator2
                             .getSrid();
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getRight )
-                                 .map( FeatureKey::getWkt )
-                                 .map( FeatureKey::getLonLatOrNullFromWkt )
+                                 .map( Feature::getWkt )
+                                 .map( Feature::getLonLatOrNullFromWkt )
                                  .collect( Collectors.toList() );
             }
             else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.BASELINE ) )
@@ -553,8 +553,8 @@ class NetcdfOutputFileCreator2
                             .getSrid();
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getBaseline )
-                                 .map( FeatureKey::getWkt )
-                                 .map( FeatureKey::getLonLatOrNullFromWkt )
+                                 .map( Feature::getWkt )
+                                 .map( Feature::getLonLatOrNullFromWkt )
                                  .collect( Collectors.toList() );
             }
 
@@ -631,7 +631,7 @@ class NetcdfOutputFileCreator2
             // features themselves, thus null needs to be preserved.
             for ( int i = 0; i < points.size(); i++ )
             {
-                FeatureKey.GeoPoint point = points.get( i );
+                Feature.GeoPoint point = points.get( i );
 
                 if ( Objects.nonNull( point ) )
                 {
