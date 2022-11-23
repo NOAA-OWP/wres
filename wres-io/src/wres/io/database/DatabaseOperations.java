@@ -15,7 +15,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.removal.IncompleteIngest;
+import wres.io.ingesting.database.IncompleteIngest;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseLockManagerPostgres;

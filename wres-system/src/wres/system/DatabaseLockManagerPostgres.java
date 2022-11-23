@@ -79,11 +79,11 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
     /** Producer that this manager can get new connections from. */
     private final Supplier<Connection> connectionProducer;
     /** Internal coarse (int) exclusive source locks held by this manager */
-    private final ConcurrentSkipListSet<Integer> sourceLockNames;
+    private final Set<Integer> sourceLockNames;
     /** Internal coarse (int) shared locks held by this manager */
-    private final ConcurrentSkipListSet<Integer> sharedLockNames;
+    private final Set<Integer> sharedLockNames;
     /** Internal coarse (int) exclusive locks held by this manager */
-    private final ConcurrentSkipListSet<Integer> exclusiveLockNames;
+    private final Set<Integer> exclusiveLockNames;
 
     /** First connection to use for any given semantic lock (left) */
     private Connection connectionOne;
