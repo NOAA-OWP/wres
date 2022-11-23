@@ -10,7 +10,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
@@ -53,14 +53,14 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         Stream<TimeSeries<Double>> originalSeries =
                 this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT,
@@ -77,7 +77,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
         // Consider all possible lead durations
@@ -125,7 +125,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<Feature> features,
                                                                      TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
@@ -153,7 +153,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features )
     {
         TimeWindow inner = MessageFactory.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
@@ -161,7 +161,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features,
                                                                         TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
@@ -201,7 +201,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     private <T> Stream<TimeSeries<T>> getAdaptedTimeSeries( LeftOrRightOrBaseline orientation,
                                                             Stream<TimeSeries<T>> timeSeries,
                                                             TimeWindowOuter timeWindow,
-                                                            Set<FeatureKey> features )
+                                                            Set<Feature> features )
     {
         Stream<TimeSeries<T>> allSeries = timeSeries;
         // Analysis shape of evaluation?

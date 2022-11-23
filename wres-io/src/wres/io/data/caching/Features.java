@@ -6,7 +6,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.io.data.DataProvider;
 import wres.io.data.details.FeatureDetails;
 import wres.io.database.DataScripter;
@@ -25,10 +25,10 @@ public class Features
     private final Database database;
 
     private volatile boolean onlyReadFromDatabase = false;
-    private final Cache<Long, FeatureKey> keyToValue = Caffeine.newBuilder()
+    private final Cache<Long, Feature> keyToValue = Caffeine.newBuilder()
                                                                .maximumSize( MAX_DETAILS )
                                                                .build();
-    private final Cache<FeatureKey, Long> valueToKey = Caffeine.newBuilder()
+    private final Cache<Feature, Long> valueToKey = Caffeine.newBuilder()
                                                                .maximumSize( MAX_DETAILS )
                                                                .build();
 
@@ -53,7 +53,7 @@ public class Features
     }
 
 
-    public Long getOrCreateFeatureId( FeatureKey key ) throws SQLException
+    public Long getOrCreateFeatureId( Feature key ) throws SQLException
     {
         if ( this.onlyReadFromDatabase )
         {
@@ -90,10 +90,10 @@ public class Features
      * @throws SQLException when communication with the database fails.
      */
 
-    public FeatureKey getFeatureKey( long featureId )
+    public Feature getFeatureKey( long featureId )
             throws SQLException
     {
-        FeatureKey value = this.keyToValue.getIfPresent( featureId );
+        Feature value = this.keyToValue.getIfPresent( featureId );
 
         if ( value == null )
         {
@@ -115,7 +115,7 @@ public class Features
                 Integer srid = dataProvider.getInt( "srid" );
                 String wkt = dataProvider.getString( "wkt" );
                 Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
-                value = FeatureKey.of( geometry );
+                value = Feature.of( geometry );
             }
 
             this.keyToValue.put( featureId, value );
@@ -134,7 +134,7 @@ public class Features
      * @throws SQLException when communication with the database fails.
      */
 
-    public Long getFeatureId( FeatureKey featureKey )
+    public Long getFeatureId( Feature featureKey )
             throws SQLException
     {
         Long id = this.valueToKey.getIfPresent( featureKey );

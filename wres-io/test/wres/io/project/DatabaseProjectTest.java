@@ -38,7 +38,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.concurrency.Executor;
 import wres.io.data.caching.DatabaseCaches;
@@ -64,9 +64,9 @@ import wres.system.SystemSettings;
 
 class DatabaseProjectTest
 {
-    private static final FeatureKey FEATURE = FeatureKey.of(
+    private static final Feature FEATURE = Feature.of(
                                                              MessageFactory.getGeometry( "F" ) );
-    private static final FeatureKey ANOTHER_FEATURE = FeatureKey.of(
+    private static final Feature ANOTHER_FEATURE = Feature.of(
                                                                      MessageFactory.getGeometry( "G" ) );
     private static final String PROJECT_HASH = "881hfEaffja267";
     private static final String UNITS = "[ft_i]3/s";

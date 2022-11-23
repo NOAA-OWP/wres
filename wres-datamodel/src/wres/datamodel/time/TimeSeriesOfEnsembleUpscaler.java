@@ -1,7 +1,6 @@
 package wres.datamodel.time;
 
 import java.text.MessageFormat;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +38,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     /** Function that returns a double value or {@link MissingValues#DOUBLE} if the
      * input is not finite. */
     private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE: a;
+            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE : a;
 
     /** A map of declared unit aliases to help with unit conversion when unit conversion is required as part of 
      * upscaling. */
@@ -353,20 +352,16 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
         UnaryOperator<Ensemble> ensembleConverter = TimeSeriesSlicer.getEnsembleTransformer( converter );
 
         // Create a converted time-series
-        TimeSeries<Ensemble> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate, ensembleConverter );
+        UnaryOperator<TimeSeriesMetadata> metaMapper =
+                RescalingHelper.getMetadataMapper( seriesToIntegrate.getMetadata(),
+                                                   desiredTimeScale,
+                                                   desiredUnitString );
 
-        // Update the units and time scale function
-        Duration existingScalePeriod = desiredTimeScale.getPeriod();
-        TimeScaleOuter newDesiredTimeScale = TimeScaleOuter.of( existingScalePeriod, TimeScaleFunction.TOTAL );
-        TimeSeriesMetadata updated = volumeSeries.getMetadata()
-                                                 .toBuilder()
-                                                 .setUnit( desiredUnitString )
-                                                 .setTimeScale( newDesiredTimeScale )
-                                                 .build();
+        TimeSeries<Ensemble> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate,
+                                                                        ensembleConverter,
+                                                                        metaMapper );
 
-        TimeSeries<Ensemble> adjustedVolumeSeries = TimeSeries.of( updated, volumeSeries.getEvents() );
-
-        return RescaledTimeSeriesPlusValidation.of( adjustedVolumeSeries, validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( volumeSeries, validationEvents );
     }
 
     /**

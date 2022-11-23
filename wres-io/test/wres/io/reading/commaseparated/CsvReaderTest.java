@@ -24,7 +24,7 @@ import com.google.common.jimfs.Jimfs;
 
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -98,7 +98,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -112,7 +112,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -183,7 +183,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -197,7 +197,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -265,7 +265,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -279,7 +279,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -346,7 +346,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -359,7 +359,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_02T12_00_00Z ),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedTwo =
@@ -372,7 +372,7 @@ class CsvReaderTest
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
-                                               FeatureKey.of( MessageFactory.getGeometry( DRRC3 ) ),
+                                               Feature.of( MessageFactory.getGeometry( DRRC3 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedThree =

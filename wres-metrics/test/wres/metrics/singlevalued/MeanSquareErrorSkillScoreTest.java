@@ -26,7 +26,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -159,7 +159,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyAsCoefficientOfPersistence()
     {
         // Create the raw time-series
-        FeatureKey feature = FeatureKey.of( 
+        Feature feature = Feature.of( 
                                             MessageFactory.getGeometry( "FAKE2" ) );
 
         TimeSeriesMetadata observedMetadata = TimeSeriesMetadata.of( Map.of(),

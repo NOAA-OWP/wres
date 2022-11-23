@@ -36,7 +36,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -341,7 +341,7 @@ public class WatermlReader implements TimeSeriesReader
         }
 
         String featureName = siteCodesFound.get( 0 );
-        FeatureKey featureKey = this.translateGeographicFeature( dataSource,
+        Feature featureKey = this.translateGeographicFeature( dataSource,
                                                                  featureName,
                                                                  timeSeries );
 
@@ -376,7 +376,7 @@ public class WatermlReader implements TimeSeriesReader
 
     private List<TimeSeriesTuple> transform( DataSource dataSource,
                                              wres.io.reading.waterml.timeseries.TimeSeries timeSeries,
-                                             FeatureKey featureKey,
+                                             Feature featureKey,
                                              String variableName,
                                              String unitCode,
                                              TimeScaleOuter timeScale )
@@ -499,7 +499,7 @@ public class WatermlReader implements TimeSeriesReader
      * @return a WRES feature
      */
 
-    private FeatureKey translateGeographicFeature( DataSource dataSource,
+    private Feature translateGeographicFeature( DataSource dataSource,
                                                    String featureName,
                                                    wres.io.reading.waterml.timeseries.TimeSeries series )
     {
@@ -561,7 +561,7 @@ public class WatermlReader implements TimeSeriesReader
         }
 
         Geometry geometry = MessageFactory.getGeometry( featureName, siteDescription, siteSrid, siteWkt );
-        return FeatureKey.of( geometry );
+        return Feature.of( geometry );
     }
 
     /**

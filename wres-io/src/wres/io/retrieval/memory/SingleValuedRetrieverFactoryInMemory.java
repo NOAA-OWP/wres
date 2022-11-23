@@ -14,7 +14,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
@@ -58,14 +58,14 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.LEFT, null, features );
 
@@ -76,7 +76,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
         // Consider all possible lead durations
@@ -118,7 +118,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<Feature> features,
                                                                    TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
@@ -139,7 +139,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
         TimeWindow inner = MessageFactory.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
@@ -147,7 +147,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
@@ -175,7 +175,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
     private Stream<TimeSeries<Double>> getTimeSeries( LeftOrRightOrBaseline orientation,
                                                       TimeWindowOuter timeWindow,
-                                                      Set<FeatureKey> features )
+                                                      Set<Feature> features )
     {
         Stream<TimeSeries<Double>> allSeries = null;
 
@@ -208,7 +208,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         // collected together and read into a single time-series
         if ( this.project.usesGriddedData( this.project.getDeclaredDataSource( orientation ) ) )
         {
-            Map<FeatureKey, List<TimeSeries<Double>>> outerGrouped =
+            Map<Feature, List<TimeSeries<Double>>> outerGrouped =
                     allSeries.collect( Collectors.groupingBy( next -> next.getMetadata().getFeature() ) );
 
             // Iterate the series grouped by feature

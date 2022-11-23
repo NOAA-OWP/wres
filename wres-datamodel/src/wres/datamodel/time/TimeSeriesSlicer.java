@@ -54,7 +54,7 @@ public final class TimeSeriesSlicer
 {
     /** The default unit for lead durations. */
     public static final ChronoUnit LEAD_RESOLUTION = ChronoUnit.MINUTES;
-    
+
     /** Re-used log message string. */
     private static final String WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT =
             "While attempting to find the intersecting times between the left series {} and the right ";
@@ -982,19 +982,28 @@ public final class TimeSeriesSlicer
      * @param <T> the required type of time-series value
      * @param timeSeries the time-series
      * @param mapper the mapper
+     * @param metaMapper an optional metadata mapper that updates the metadata
      * @return a filtered view of the input series
      * @throws NullPointerException if any input is null
      */
 
-    public static <S, T> TimeSeries<T> transform( TimeSeries<S> timeSeries, Function<S, T> mapper )
+    public static <S, T> TimeSeries<T> transform( TimeSeries<S> timeSeries,
+                                                  Function<S, T> mapper,
+                                                  UnaryOperator<TimeSeriesMetadata> metaMapper )
     {
         Objects.requireNonNull( timeSeries );
-
         Objects.requireNonNull( mapper );
 
         TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
-        builder.setMetadata( timeSeries.getMetadata() );
+        TimeSeriesMetadata metadata = timeSeries.getMetadata();
+
+        if ( Objects.nonNull( metaMapper ) )
+        {
+            metadata = metaMapper.apply( metadata );
+        }
+
+        builder.setMetadata( metadata );
 
         for ( Event<S> event : timeSeries.getEvents() )
         {

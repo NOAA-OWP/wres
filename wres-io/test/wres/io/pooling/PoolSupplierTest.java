@@ -24,7 +24,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -139,7 +139,7 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final FeatureKey FEATURE = FeatureKey.of(
+    private static final Feature FEATURE = Feature.of(
                                                              MessageFactory.getGeometry( "DRRC2" ) );
     private static final String UNIT = "CMS";
 
@@ -153,7 +153,7 @@ public class PoolSupplierTest
     }
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
-                                                                                FeatureKey featureKey,
+                                                                                Feature featureKey,
                                                                                 TimeScaleOuter timeScale )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
@@ -857,7 +857,7 @@ public class PoolSupplierTest
     {
         // Create the duplicate observed series for a different feature
         String featureName = "DOSC1";
-        FeatureKey feature = FeatureKey.of(
+        Feature feature = Feature.of(
                                             MessageFactory.getGeometry( featureName ) );
 
         TimeSeriesMetadata obsMeta = this.observations.getMetadata();

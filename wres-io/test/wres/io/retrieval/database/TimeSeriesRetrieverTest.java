@@ -18,7 +18,7 @@ import org.mockito.Mockito;
 
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -121,7 +121,7 @@ class TimeSeriesRetrieverTest
         Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 1, 1, 1, 1 );
 
-        FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
+        Feature featureKey = Feature.of( Geometry.newBuilder()
                                                        .setName( A_FEATURE )
                                                        .build() );
 
@@ -264,7 +264,7 @@ class TimeSeriesRetrieverTest
         Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 1, 1, 1, 1, 2, 2, 2, 2, 2 );
 
-        FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
+        Feature featureKey = Feature.of( Geometry.newBuilder()
                                                        .setName( A_FEATURE )
                                                        .build() );
 
@@ -400,7 +400,7 @@ class TimeSeriesRetrieverTest
         Mockito.when( provider.getInt( OCCURRENCES ) )
                .thenReturn( 1, 3, 2 );
 
-        FeatureKey featureKey = FeatureKey.of( Geometry.newBuilder()
+        Feature featureKey = Feature.of( Geometry.newBuilder()
                                                        .setName( A_FEATURE )
                                                        .build() );
 

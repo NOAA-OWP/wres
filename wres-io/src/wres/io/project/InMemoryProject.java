@@ -36,7 +36,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.io.NoDataException;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
@@ -795,13 +795,13 @@ public class InMemoryProject implements Project
                 Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT ),
                                this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.LEFT ) );
 
-        Set<FeatureKey> griddedFeatures = leftSeries.map( next -> next.getMetadata()
+        Set<Feature> griddedFeatures = leftSeries.map( next -> next.getMetadata()
                                                                       .getFeature() )
                                                     .collect( Collectors.toSet() );
 
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        for ( FeatureKey nextFeature : griddedFeatures )
+        for ( Feature nextFeature : griddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
             GeometryTuple geoTuple = null;
@@ -862,7 +862,7 @@ public class InMemoryProject implements Project
                     Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.BASELINE ),
                                    this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.BASELINE ) );
 
-            Map<String, FeatureKey> leftFeatures =
+            Map<String, Feature> leftFeatures =
                     leftSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                       .getFeature()
                                                                       .getName(),
@@ -870,7 +870,7 @@ public class InMemoryProject implements Project
                                                                       .getFeature(),
                                                           ( a, b ) -> a ) );
 
-            Map<String, FeatureKey> rightFeatures =
+            Map<String, Feature> rightFeatures =
                     rightSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                        .getFeature()
                                                                        .getName(),
@@ -878,7 +878,7 @@ public class InMemoryProject implements Project
                                                                        .getFeature(),
                                                            ( a, b ) -> a ) );
 
-            Map<String, FeatureKey> baselineFeatures =
+            Map<String, Feature> baselineFeatures =
                     baselineSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                           .getFeature()
                                                                           .getName(),
@@ -933,9 +933,9 @@ public class InMemoryProject implements Project
      */
 
     private Set<FeatureTuple> getFeatureTuplesFromDeclaredFeatures( List<NamedFeature> features,
-                                                                    Map<String, FeatureKey> leftFeatures,
-                                                                    Map<String, FeatureKey> rightFeatures,
-                                                                    Map<String, FeatureKey> baselineFeatures )
+                                                                    Map<String, Feature> leftFeatures,
+                                                                    Map<String, Feature> rightFeatures,
+                                                                    Map<String, Feature> baselineFeatures )
     {
         // No features declared?
         if ( features.isEmpty() )
@@ -953,9 +953,9 @@ public class InMemoryProject implements Project
 
             if ( leftFeatures.containsKey( leftName ) && rightFeatures.containsKey( rightName ) )
             {
-                FeatureKey left = leftFeatures.get( leftName );
-                FeatureKey right = rightFeatures.get( rightName );
-                FeatureKey baseline = baselineFeatures.get( baselineName );
+                Feature left = leftFeatures.get( leftName );
+                Feature right = rightFeatures.get( rightName );
+                Feature baseline = baselineFeatures.get( baselineName );
                 GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( left, right, baseline );
                 FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
                 featureTuples.add( featureTuple );
@@ -972,21 +972,21 @@ public class InMemoryProject implements Project
      * @return the feature tuples when no features are declared
      */
 
-    private Set<FeatureTuple> getFeaturesWhenNoneDeclared( Map<String, FeatureKey> leftFeatures,
-                                                           Map<String, FeatureKey> rightFeatures,
-                                                           Map<String, FeatureKey> baselineFeatures )
+    private Set<FeatureTuple> getFeaturesWhenNoneDeclared( Map<String, Feature> leftFeatures,
+                                                           Map<String, Feature> rightFeatures,
+                                                           Map<String, Feature> baselineFeatures )
     {
         LOGGER.debug( "No features were declared. Attempting to correlate left/right/baseline features by common "
                       + "feature name, else one feature on all sides." );
 
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        for ( Map.Entry<String, FeatureKey> nextFeature : leftFeatures.entrySet() )
+        for ( Map.Entry<String, Feature> nextFeature : leftFeatures.entrySet() )
         {
             String name = nextFeature.getKey();
-            FeatureKey left = nextFeature.getValue();
-            FeatureKey right = rightFeatures.get( name );
-            FeatureKey baseline = baselineFeatures.get( name );
+            Feature left = nextFeature.getValue();
+            Feature right = rightFeatures.get( name );
+            Feature baseline = baselineFeatures.get( name );
 
             // Still no correlated feature, what about a unique feature?
             if ( Objects.isNull( right ) && rightFeatures.size() == 1 )

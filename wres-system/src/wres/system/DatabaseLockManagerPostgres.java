@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseLockManagerPostgres implements DatabaseLockManager
 {
+    private static final String MUST_PASS_NON_ZERO_NON_MAX_INT_NOT = "Must pass non-zero, non-max int, not ";
+
     private static final String MUST_PASS_NAME_OF_PREVIOUSLY_LOCKED_LOCK_NOT = "Must pass name of previously-locked lock, not ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseLockManagerPostgres.class );
@@ -288,7 +290,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 
@@ -396,7 +398,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         LOGGER.trace( "Began DatabaseLockManager.unlockSource( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 
@@ -516,7 +518,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 
@@ -595,7 +597,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         LOGGER.trace( "Began DatabaseLockManager.unlockExclusive( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 
@@ -674,7 +676,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 
@@ -748,7 +750,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
         LOGGER.trace( "Began DatabaseLockManager.unlockShared( {} ) {}", lockName, this );
         if ( lockName < 1 || lockName.equals( Integer.MAX_VALUE ) )
         {
-            throw new IllegalArgumentException( "Must pass non-zero, non-max int, not "
+            throw new IllegalArgumentException( MUST_PASS_NON_ZERO_NON_MAX_INT_NOT
                                                 + lockName );
         }
 

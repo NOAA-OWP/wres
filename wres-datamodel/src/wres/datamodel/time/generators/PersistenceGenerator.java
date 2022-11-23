@@ -376,7 +376,15 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     private TimeSeries<T> getPersistenceTimeSeriesFromTemplateAndPersistenceValue( TimeSeries<T> template,
                                                                                    T persistenceValue )
     {
-        Builder<T> builder = new Builder<T>().setMetadata( template.getMetadata() );
+        // Adjust the template metadata because the persisted values are in the same measurement units as the 
+        // persistence source
+        TimeSeriesMetadata adjusted = template.getMetadata()
+                                              .toBuilder()
+                                              .setUnit( this.persistenceSource.getMetadata()
+                                                                              .getUnit() )
+                                              .build();
+
+        Builder<T> builder = new Builder<T>().setMetadata( adjusted );
 
         // Persistence value admissible?
         if ( ( Objects.isNull( persistenceValue ) || !this.admissibleValue.test( persistenceValue ) ) )
@@ -624,7 +632,15 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                         desiredUnit )
                                               .getTimeSeries();
 
-        return TimeSeries.of( template.getMetadata(), upscaled.getEvents() );
+        // Adjust the template metadata because the persisted values are in the same measurement units as the 
+        // persistence source
+        TimeSeriesMetadata adjusted = template.getMetadata()
+                                              .toBuilder()
+                                              .setUnit( upscaled.getMetadata()
+                                                                .getUnit() )
+                                              .build();
+
+        return TimeSeries.of( adjusted, upscaled.getEvents() );
     }
 
     /**

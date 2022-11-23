@@ -3,7 +3,7 @@ package wres.grid.reading;
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -106,7 +106,7 @@ public class GriddedReader
         Queue<String> paths = new LinkedList<>( request.getPaths() );
 
         // Events per feature, where each event is indexed by reference time in a pair
-        Map<FeatureKey, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
+        Map<Feature, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
 
         String measurementUnit = "UNKNOWN";
         
@@ -121,7 +121,7 @@ public class GriddedReader
             }
             else
             {
-                for ( FeatureKey feature : request.getFeatures() )
+                for ( Feature feature : request.getFeatures() )
                 {
                     List<Pair<Instant, Event<Double>>> events = eventsPerFeature.get( feature );
                     if ( Objects.isNull( events ) )
@@ -146,9 +146,9 @@ public class GriddedReader
             }
         }
 
-        Map<FeatureKey, Stream<TimeSeries<Double>>> seriesPerFeature = new HashMap<>();
+        Map<Feature, Stream<TimeSeries<Double>>> seriesPerFeature = new HashMap<>();
 
-        for ( Map.Entry<FeatureKey, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
+        for ( Map.Entry<Feature, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
                     GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), 
@@ -184,7 +184,7 @@ public class GriddedReader
                                                                   TimeScaleOuter timeScale,
                                                                   boolean isForecast,
                                                                   String variableName,
-                                                                  FeatureKey feature,
+                                                                  Feature feature,
                                                                   String unit )
     {
         Objects.requireNonNull( events );
@@ -334,7 +334,7 @@ public class GriddedReader
 
             this.readLock.lock();
 
-            FeatureKey.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
+            Feature.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
             DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
@@ -382,9 +382,9 @@ public class GriddedReader
          *
          * TODO: do an affine transform, not just parse a point.
          */
-        private static FeatureKey.GeoPoint getLatLonCoordFromSridWkt( String wkt )
+        private static Feature.GeoPoint getLatLonCoordFromSridWkt( String wkt )
         {
-            return FeatureKey.getLonLatFromPointWkt( wkt );
+            return Feature.getLonLatFromPointWkt( wkt );
         }
 
         private Instant getValidTime() throws IOException

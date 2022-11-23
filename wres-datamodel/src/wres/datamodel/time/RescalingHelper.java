@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.measure.Unit;
@@ -305,6 +306,37 @@ class RescalingHelper
 
             throw new RescalingException( message.toString() );
         }
+    }
+
+    /**
+     * Returns a metadata mapper that uses the input metadata as a platform and modifies the time scale and units to 
+     * the prescribed values.
+     * 
+     * @param existing the existing metadata
+     * @param desiredTimeScale the desired time scale
+     * @param desiredUnitString the desired unit string
+     * @return the mapper metadata
+     * @throws NullPointerException if any input is null
+     */
+
+    static UnaryOperator<TimeSeriesMetadata> getMetadataMapper( TimeSeriesMetadata existing,
+                                                                TimeScaleOuter desiredTimeScale,
+                                                                String desiredUnitString )
+    {
+        Objects.requireNonNull( existing );
+        Objects.requireNonNull( desiredTimeScale );
+        Objects.requireNonNull( desiredUnitString );
+        
+        // Create a converted time-series
+        // Update the units and time scale function
+        return metadata -> {
+            Duration existingScalePeriod = desiredTimeScale.getPeriod();
+            TimeScaleOuter newDesiredTimeScale = TimeScaleOuter.of( existingScalePeriod, TimeScaleFunction.TOTAL );
+            return existing.toBuilder()
+                           .setUnit( desiredUnitString )
+                           .setTimeScale( newDesiredTimeScale )
+                           .build();
+        };
     }
 
     /**

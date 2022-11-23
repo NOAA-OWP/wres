@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.Immutable;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 
 /**
  * Store of {@link TimeSeries} that is built incrementally with a {@link Builder}.
@@ -57,7 +57,7 @@ public class TimeSeriesStore
      */
 
     public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline orientation,
-                                                             Set<FeatureKey> features )
+                                                             Set<Feature> features )
     {
         Objects.requireNonNull( orientation );
         Objects.requireNonNull( features );
@@ -113,7 +113,7 @@ public class TimeSeriesStore
 
     public Stream<TimeSeries<Double>> getSingleValuedSeries( TimeWindowOuter timeWindow,
                                                              LeftOrRightOrBaseline orientation,
-                                                             Set<FeatureKey> features )
+                                                             Set<Feature> features )
     {
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( orientation );
@@ -140,7 +140,7 @@ public class TimeSeriesStore
 
     public Stream<TimeSeries<Ensemble>> getEnsembleSeries( TimeWindowOuter timeWindow,
                                                            LeftOrRightOrBaseline orientation,
-                                                           Set<FeatureKey> features )
+                                                           Set<Feature> features )
     {
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( orientation );

@@ -40,7 +40,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -424,15 +424,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.getUri() );
 
+        // Try to insert a row into wres.Source for the time-series
         SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
 
-        // Source was inserted, so this is a new source
+        // Source row was inserted, so this is a new time-series
         if ( source.performedInsert() )
         {
             // Lock source with an advisory lock. Unlocked by a SourceCompleter.
             this.lockSource( source, timeSeries );
 
-            // Ready to ingest, source row was inserted and is (advisory) locked.
+            // Ready to insert the time-series, source row was inserted and is (advisory) locked.
             Set<Pair<CountDownLatch, CountDownLatch>> latches =
                     this.insertSingleValuedTimeSeries( this.getSystemSettings(),
                                                        this.getDatabase(),
@@ -444,7 +445,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             // Finalize, which marks the source complete and unlocks it
             results = this.finalizeNewSource( source, latches, dataSource );
         }
-        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
+        // Source was not inserted, so must be in progress, abandoned or completed. Try to finalize it.
         else
         {
             results = this.finalizeExistingSource( source, dataSource );
@@ -676,7 +677,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         source.setSourcePath( uri );
         TimeSeriesMetadata metadata = timeSeries.getMetadata();
         String measurementUnit = metadata.getUnit();
-        FeatureKey feature = metadata.getFeature();
+        Feature feature = metadata.getFeature();
         TimeScaleOuter timeScale = metadata.getTimeScale();
 
         String variableName = metadata.getVariableName();
@@ -764,16 +765,17 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
             // First, try to safely remove it, which will again check for completion
             long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
-            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                                       this.getCaches()
-                                                                           .getDataSourcesCache(),
-                                                                       surrogateKey,
-                                                                       this.getLockManager() );
 
             LOGGER.warn( "Another instance started to ingest data source, {}, identified by '{}' but did not finish. "
                          + "Cleaning up...",
                          dataSource,
                          surrogateKey );
+            
+            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
+                                                                       this.getCaches()
+                                                                           .getDataSourcesCache(),
+                                                                       surrogateKey,
+                                                                       this.getLockManager() );
 
             // Removed the source, retry ingest later
             if ( removed )
@@ -1335,7 +1337,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @throws SQLException if the feature identity could not be determined
      */
 
-    private long getFeatureId( FeatureKey featureKey ) throws SQLException
+    private long getFeatureId( Feature featureKey ) throws SQLException
     {
         Features innerFeaturesCache = this.getCaches()
                                           .getFeaturesCache();

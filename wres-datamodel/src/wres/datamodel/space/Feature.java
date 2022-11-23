@@ -14,7 +14,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * Represents a geographic feature. Composes a canonical {@link Geometry}.
  */
 
-public class FeatureKey implements Comparable<FeatureKey>
+public class Feature implements Comparable<Feature>
 {
     private final Geometry geometry;
 
@@ -26,9 +26,9 @@ public class FeatureKey implements Comparable<FeatureKey>
      * @throws NullPointerException if the geometry is null
      */
 
-    public static FeatureKey of( Geometry geometry )
+    public static Feature of( Geometry geometry )
     {
-        return new FeatureKey( geometry );
+        return new Feature( geometry );
     }
 
     public String getName()
@@ -68,7 +68,7 @@ public class FeatureKey implements Comparable<FeatureKey>
             return false;
         }
 
-        Geometry in = ( (FeatureKey) o ).geometry;
+        Geometry in = ( (Feature) o ).geometry;
 
         return this.geometry.equals( in );
     }
@@ -80,7 +80,7 @@ public class FeatureKey implements Comparable<FeatureKey>
     }
 
     @Override
-    public int compareTo( FeatureKey o )
+    public int compareTo( Feature o )
     {
         if ( this.equals( o ) )
         {
@@ -341,7 +341,7 @@ public class FeatureKey implements Comparable<FeatureKey>
      * @throws NullPointerException if the geometry is null
      */
 
-    private FeatureKey( Geometry geometry )
+    private Feature( Geometry geometry )
     {
         Objects.requireNonNull( geometry );
 

@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -22,10 +22,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * TODO: currently the time-series metadata is inflexible in how it represents geospatial information that is common to
  * all events in the time-series. In practice, a time-series may have no common geospatial information (e.g., because
  * that information is modeled per-event, such as for an environmental tracer or a time-series of inundation extent) or
- * it may have more complex geospatial information than a {@link FeatureKey}. See #96033 for some discussion. One 
+ * it may have more complex geospatial information than a {@link Feature}. See #96033 for some discussion. One 
  * option would be to add a nullable generic type. This would add flexibility at the expense of additional 
  * parameterization. Another option would be to allow a geospatial representation that contained one of a small number 
- * of possibilities, such as a {@link FeatureKey} or a {@link FeatureTuple}} and admitted an empty representation.
+ * of possibilities, such as a {@link Feature} or a {@link FeatureTuple}} and admitted an empty representation.
  * Another, simpler, option would be to allow a OneOrTwoFeatures, which covers the typical use case of a univariate or 
  * paired time-series. 
  */
@@ -45,7 +45,7 @@ public class TimeSeriesMetadata
      * Cache of commonly used features. Up to one hundred, arbitrarily.
      */
 
-    private static final Cache<FeatureKey, FeatureKey> FEATURE_KEY_CACHE =
+    private static final Cache<Feature, Feature> FEATURE_KEY_CACHE =
             Caffeine.newBuilder()
                     .maximumSize( 100 )
                     .build();
@@ -72,7 +72,7 @@ public class TimeSeriesMetadata
      * The geographic feature.
      */
 
-    private final FeatureKey feature;
+    private final Feature feature;
 
     /**
      * The name of the unit of measure.
@@ -95,7 +95,7 @@ public class TimeSeriesMetadata
     public static TimeSeriesMetadata of( Map<ReferenceTimeType, Instant> referenceTimes,
                                          TimeScaleOuter timeScale,
                                          String variableName,
-                                         FeatureKey feature,
+                                         Feature feature,
                                          String unit )
     {
         return new Builder().setReferenceTimes( referenceTimes )
@@ -134,7 +134,7 @@ public class TimeSeriesMetadata
         return this.variableName;
     }
 
-    public FeatureKey getFeature()
+    public Feature getFeature()
     {
         return this.feature;
     }
@@ -218,7 +218,7 @@ public class TimeSeriesMetadata
          * The geographic feature.
          */
 
-        private FeatureKey feature;
+        private Feature feature;
 
 
         /**
@@ -276,7 +276,7 @@ public class TimeSeriesMetadata
          * @return the builder
          */
 
-        public Builder setFeature( FeatureKey feature )
+        public Builder setFeature( Feature feature )
         {
             this.feature = feature;
 
@@ -357,7 +357,7 @@ public class TimeSeriesMetadata
         this.timeScale = builder.timeScale;
 
         String localVariableName = builder.variableName;
-        FeatureKey localFeature = builder.feature;
+        Feature localFeature = builder.feature;
         String localUnits = builder.unit;
 
         Objects.requireNonNull( localVariableName, "A timeseries requires a variable name." );
@@ -376,7 +376,7 @@ public class TimeSeriesMetadata
             STRING_CACHE.put( this.variableName, this.variableName );
         }
 
-        FeatureKey cachedFeatureKey = FEATURE_KEY_CACHE.getIfPresent( localFeature );
+        Feature cachedFeatureKey = FEATURE_KEY_CACHE.getIfPresent( localFeature );
 
         if ( Objects.nonNull( cachedFeatureKey ) )
         {

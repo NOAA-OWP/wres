@@ -17,7 +17,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -87,27 +87,27 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         return this.leftFactory.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
         return this.leftFactory.getLeftRetriever( features, timeWindow );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<Feature> features,
                                                                      TimeWindowOuter timeWindow )
     {
         LOGGER.debug( "Creating a right retriever for project '{}', features '{}' and time window {}.",
@@ -133,13 +133,13 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features )
     {
         return this.getBaselineRetriever( features, null );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features,
                                                                         TimeWindowOuter timeWindow )
     {
         Supplier<Stream<TimeSeries<Ensemble>>> baseline = Stream::of;

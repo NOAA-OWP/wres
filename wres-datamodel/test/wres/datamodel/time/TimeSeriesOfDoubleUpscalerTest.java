@@ -24,7 +24,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -38,7 +38,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 public class TimeSeriesOfDoubleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
-    private static final FeatureKey FEATURE_NAME = FeatureKey.of(
+    private static final Feature FEATURE_NAME = Feature.of(
                                                                   MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 

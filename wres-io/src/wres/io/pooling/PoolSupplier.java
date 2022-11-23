@@ -39,12 +39,13 @@ import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
+import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
@@ -110,7 +111,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private final Supplier<Stream<TimeSeries<R>>> baseline;
 
     /** Generator for baseline data source. Optional. */
-    private final Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+    private final Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
     /** Pairer. */
     private final TimeSeriesPairer<L, R> pairer;
@@ -170,18 +171,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private final Duration frequency;
 
     /** The left features mapped against the right features as keys. **/
-    private final Map<FeatureKey, FeatureKey> leftFeaturesByRight;
+    private final Map<Feature, Feature> leftFeaturesByRight;
 
     /** The left features mapped against the baseline features as keys. **/
-    private final Map<FeatureKey, FeatureKey> leftFeaturesByBaseline;
+    private final Map<Feature, Feature> leftFeaturesByBaseline;
 
     /** The right or baseline features mapped against the left features as keys. In general, the map values are 
      * baseline features. However, they are right features when using a generated baseline because generated baselines 
      * use the right-ish data as a template.**/
-    private final Map<FeatureKey, FeatureKey> baselineOrRightFeaturesByLeft;
+    private final Map<Feature, Feature> baselineOrRightFeaturesByLeft;
 
     /** The baseline features mapped against the left features as keys. **/
-    private final Map<FeatureKey, FeatureKey> baselineFeaturesByLeft;
+    private final Map<Feature, Feature> baselineFeaturesByLeft;
 
     /**
      * Returns a {@link Pool} for metric calculation.
@@ -290,7 +291,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         private Supplier<Stream<TimeSeries<R>>> baseline;
 
         /** Generator for baseline data source. Optional. */
-        private Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+        private Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
         /** Pairer. */
         private TimeSeriesPairer<L, R> pairer;
@@ -391,7 +392,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
          * @param baselineGenerator a baseline generator to set
          * @return the builder
          */
-        Builder<L, R> setBaselineGenerator( Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
+        Builder<L, R> setBaselineGenerator( Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
 
@@ -728,7 +729,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairsToUse.entrySet() )
         {
             FeatureTuple nextLeftRightFeature = nextEntry.getKey();
-            FeatureKey leftFeature = nextLeftRightFeature.getLeft();
+            Feature leftFeature = nextLeftRightFeature.getLeft();
 
             // For now, use the complete left-right-baseline tuple for both the main and baseline pools. However, this
             // is an awkward abstraction - the pool metadata should really deal with only left-right descriptions, 
@@ -758,7 +759,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // Set the baseline
             if ( this.hasBaseline() )
             {
-                FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
+                Feature baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
 
                 GeometryTuple nextBaselineGeometry =
                         MessageFactory.getGeometryTuple( leftFeature, baselineFeature, null );
@@ -769,10 +770,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 // Pairs can be empty but not null
                 if ( Objects.isNull( nextBasePairs ) )
                 {
-                    Set<FeatureKey> availableFeatures = basePairs.keySet()
-                                                                 .stream()
-                                                                 .map( FeatureTuple::getRight )
-                                                                 .collect( Collectors.toSet() );
+                    Set<Feature> availableFeatures = basePairs.keySet()
+                                                              .stream()
+                                                              .map( FeatureTuple::getRight )
+                                                              .collect( Collectors.toSet() );
 
                     throw new PoolException( "Failed to identify any baseline pairs for feature: " + baselineFeature
                                              + ". The available features were: "
@@ -851,9 +852,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         if ( this.hasBaseline() )
         {
-            FeatureKey leftFeature = leftRightTuple.getLeft();
-            FeatureKey rightFeature = leftRightTuple.getRight();
-            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
+            Feature leftFeature = leftRightTuple.getLeft();
+            Feature rightFeature = leftRightTuple.getRight();
+            Feature baselineFeature = this.getBaselineFeature( leftFeature, this.hasBaselineGenerator() );
             return MessageFactory.getGeometryTuple( leftFeature, rightFeature, baselineFeature );
         }
 
@@ -904,7 +905,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         // Unscaled left-ish series for re-use across right-ish series, mapped by feature key. Apply any valid time
         // offset here
-        Map<FeatureKey, List<TimeSeries<L>>> leftSeries =
+        Map<Feature, List<TimeSeries<L>>> leftSeries =
                 left.filter( leftFilterInner )
                     .collect( Collectors.groupingBy( next -> next.getMetadata()
                                                                  .getFeature() ) );
@@ -932,11 +933,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                   rightOrBaselineOrientation );
 
             // Find the left-ish series
-            FeatureKey nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
-                                                                              .getFeature();
+            Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
+                                                                           .getFeature();
 
-            FeatureKey nextLeftFeature = this.getLeftFeatureForRightOrBaseline( nextRightOrBaselineFeature,
-                                                                                rightOrBaselineOrientation );
+            Feature nextLeftFeature = this.getLeftFeatureForRightOrBaseline( nextRightOrBaselineFeature,
+                                                                             rightOrBaselineOrientation );
 
             List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
 
@@ -949,10 +950,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                             rightOrBaselineTransformer );
 
             // Get the correct feature name for the right or baseline side, handling generated baselines as needed
-            FeatureKey adjustedRightOrBaselineFeature = this.getRightOrBaselineFeature( nextLeftFeature,
-                                                                                        nextRightOrBaselineFeature,
-                                                                                        this.hasBaselineGenerator(),
-                                                                                        rightOrBaselineOrientation );
+            Feature adjustedRightOrBaselineFeature = this.getRightOrBaselineFeature( nextLeftFeature,
+                                                                                     nextRightOrBaselineFeature,
+                                                                                     this.hasBaselineGenerator(),
+                                                                                     rightOrBaselineOrientation );
 
             // Add to the results
             for ( TimeSeriesPlusValidation<L, R> nextSeries : nextPairs )
@@ -1233,6 +1234,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Transform the rescaled values (e.g., this could contain unit transformations, among others)
         TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformer()
                                                      .apply( scaledLeft );
+
         TimeSeries<R> scaledAndTransformedRight = rightOrBaselineTransformer.apply( scaledRight );
 
         // Create the pairs, if any
@@ -1284,8 +1286,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairs.entrySet() )
         {
             FeatureTuple leftRightFeature = nextEntry.getKey();
-            FeatureKey leftFeature = leftRightFeature.getLeft();
-            FeatureKey baselineFeature = this.getBaselineFeature( leftFeature, false );
+            Feature leftFeature = leftRightFeature.getLeft();
+            Feature baselineFeature = this.getBaselineFeature( leftFeature, false );
 
             GeometryTuple nextBaselineGeometry = MessageFactory.getGeometryTuple( leftFeature, baselineFeature, null );
             FeatureTuple nextBaselineTuple = FeatureTuple.of( nextBaselineGeometry );
@@ -1328,27 +1330,34 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the left feature for the specified right or baseline feature
      */
 
-    private FeatureKey getLeftFeatureForRightOrBaseline( FeatureKey rightOrBaselineFeature, LeftOrRightOrBaseline lrb )
+    private Feature getLeftFeatureForRightOrBaseline( Feature rightOrBaselineFeature, LeftOrRightOrBaseline lrb )
     {
-        FeatureKey correlated = null;
+        Feature correlated = null;
 
         if ( lrb == LeftOrRightOrBaseline.RIGHT )
         {
             correlated = this.leftFeaturesByRight.get( rightOrBaselineFeature );
+
+            if ( Objects.isNull( correlated ) )
+            {
+                throw new IllegalStateException( "Unable to find a left feature corresponding to the right feature "
+                                                 + rightOrBaselineFeature
+                                                 + ". The available pairs of left/right features were: "
+                                                 + this.leftFeaturesByRight
+                                                 + "." );
+            }
         }
         else
         {
-            // Using a generated baseline? Then the feature names are the names of the right-ish/template data
-            // This is unnecessarily awkward - see #105812
-            if ( this.hasBaselineGenerator() )
+            correlated = this.leftFeaturesByBaseline.get( rightOrBaselineFeature );
+
+            if ( Objects.isNull( correlated ) )
             {
-                LOGGER.debug( "Using the right-ish feature names to obtain the linked left feature name for a "
-                              + "prescribed baseline because the baseline was generated with a right template." );
-                correlated = this.leftFeaturesByRight.get( rightOrBaselineFeature );
-            }
-            else
-            {
-                correlated = this.leftFeaturesByBaseline.get( rightOrBaselineFeature );
+                throw new IllegalStateException( "Unable to find a left feature corresponding to the baseline feature "
+                                                 + rightOrBaselineFeature
+                                                 + ". The available pairs of left/right features were: "
+                                                 + this.leftFeaturesByBaseline
+                                                 + "." );
             }
         }
 
@@ -1411,7 +1420,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return a list of generated baseline time-series
      */
 
-    private Stream<TimeSeries<R>> createBaseline( Function<Set<FeatureKey>, UnaryOperator<TimeSeries<R>>> generator,
+    private Stream<TimeSeries<R>> createBaseline( Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> generator,
                                                   Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairs )
     {
         LOGGER.debug( "Creating baseline time-series with a generator function." );
@@ -1424,17 +1433,24 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             List<TimeSeries<Pair<L, R>>> nextRight = nextEntry.getValue();
 
             // Get the left feature name
-            FeatureKey nextFeatureKey = nextFeature.getLeft();
+            Feature nextFeatureKey = nextFeature.getLeft();
 
             // Get the corresponding baseline feature name, which is the name associated with the baseline-ish data in 
-            // this context, not the right-ish data used as a template for baseline generation
-            FeatureKey baselineFeatureKey = this.getBaselineFeature( nextFeatureKey, true );
+            // this context, not the data used as a template for baseline generation, which is the paired data and 
+            // currently uses the left-ish feature name in the time-series metadata
+            Feature baselineFeatureKey = this.getBaselineFeature( nextFeatureKey, true );
             UnaryOperator<TimeSeries<R>> nextGenerator = generator.apply( Set.of( baselineFeatureKey ) );
 
-            for ( TimeSeries<Pair<L, R>> nextTemplate : nextRight )
+            for ( TimeSeries<Pair<L, R>> nextPairs : nextRight )
             {
-                TimeSeries<R> rhs = TimeSeriesSlicer.transform( nextTemplate, Pair::getRight );
-                TimeSeries<R> generated = nextGenerator.apply( rhs );
+                UnaryOperator<TimeSeriesMetadata> metaMapper = metadata -> nextPairs.getMetadata()
+                                                                                    .toBuilder()
+                                                                                    .setFeature( baselineFeatureKey )
+                                                                                    .build();
+
+                // Create the template from the right-ish data and insert the baseline feature name
+                TimeSeries<R> nextTemplate = TimeSeriesSlicer.transform( nextPairs, Pair::getRight, metaMapper );
+                TimeSeries<R> generated = nextGenerator.apply( nextTemplate );
                 returnMe.add( generated );
             }
         }
@@ -1451,7 +1467,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the climatological data or null if no climatology is defined
      */
 
-    private VectorOfDoubles getClimatology( FeatureKey climatologyFeatureKey )
+    private VectorOfDoubles getClimatology( Feature climatologyFeatureKey )
     {
         Objects.requireNonNull( climatologyFeatureKey );
 
@@ -1479,7 +1495,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         for ( TimeSeries<L> next : climData )
         {
             TimeSeries<Double> transformed = TimeSeriesSlicer.transform( next,
-                                                                         this.climatologyMapper::applyAsDouble );
+                                                                         this.climatologyMapper::applyAsDouble,
+                                                                         null );
 
             // Extract the doubles
             DoubleStream seriesDoubles = transformed.getEvents()
@@ -1715,7 +1732,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the baseline feature name
      */
 
-    private FeatureKey getBaselineFeature( FeatureKey leftFeature, boolean isSourceForGeneratedBaseline )
+    private Feature getBaselineFeature( Feature leftFeature, boolean isSourceForGeneratedBaseline )
     {
         Objects.requireNonNull( leftFeature );
 
@@ -1733,7 +1750,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * A helper that returns the input right feature or the result of {@link #getBaselineFeature(FeatureKey, boolean)} 
+     * A helper that returns the input right feature or the result of {@link #getBaselineFeature(Feature, boolean)} 
      * when the orientation is baseline.
      * 
      * @param leftFeature the left feature
@@ -1743,12 +1760,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the right or baseline feature name
      */
 
-    private FeatureKey getRightOrBaselineFeature( FeatureKey leftFeature,
-                                                  FeatureKey rightOrBaselineFeature,
-                                                  boolean isSourceForGeneratedBaseline,
-                                                  LeftOrRightOrBaseline rightOrBaselineOrientation )
+    private Feature getRightOrBaselineFeature( Feature leftFeature,
+                                               Feature rightOrBaselineFeature,
+                                               boolean isSourceForGeneratedBaseline,
+                                               LeftOrRightOrBaseline rightOrBaselineOrientation )
     {
-        FeatureKey adjustedRightOrBaselineFeature = rightOrBaselineFeature;
+        Objects.requireNonNull( leftFeature );
+
+        Feature adjustedRightOrBaselineFeature = rightOrBaselineFeature;
         if ( rightOrBaselineOrientation == LeftOrRightOrBaseline.BASELINE )
         {
             adjustedRightOrBaselineFeature = this.getBaselineFeature( leftFeature,
@@ -2071,9 +2090,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return a mapping of features
      */
 
-    private Map<FeatureKey, FeatureKey> getFeatureMap( PoolMetadata metadata,
-                                                       Function<? super FeatureTuple, ? extends FeatureKey> keyMapper,
-                                                       Function<? super FeatureTuple, ? extends FeatureKey> valueMapper )
+    private Map<Feature, Feature> getFeatureMap( PoolMetadata metadata,
+                                                 Function<? super FeatureTuple, ? extends Feature> keyMapper,
+                                                 Function<? super FeatureTuple, ? extends Feature> valueMapper )
     {
         if ( Objects.isNull( metadata ) )
         {

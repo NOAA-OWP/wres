@@ -11,7 +11,7 @@ import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
@@ -52,7 +52,7 @@ class RetrievalEvent extends Event
 
     static RetrievalEvent of( LeftOrRightOrBaseline lrb,
                               TimeWindowOuter timeWindow,
-                              Set<FeatureKey> features,
+                              Set<Feature> features,
                               String variableName )
     {
         return new RetrievalEvent( lrb, timeWindow, features, variableName );
@@ -70,7 +70,7 @@ class RetrievalEvent extends Event
 
     private RetrievalEvent( LeftOrRightOrBaseline lrb,
                             TimeWindowOuter timeWindow,
-                            Set<FeatureKey> features,
+                            Set<Feature> features,
                             String variableName )
     {
         Objects.requireNonNull( lrb );
@@ -81,7 +81,7 @@ class RetrievalEvent extends Event
 
         // Use the short names only
         this.features = features.stream()
-                                .map( FeatureKey::getName )
+                                .map( Feature::getName )
                                 .collect( Collectors.toSet() )
                                 .toString();
         this.variableName = variableName;

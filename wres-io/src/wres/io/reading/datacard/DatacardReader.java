@@ -30,7 +30,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -460,7 +460,7 @@ public class DatacardReader implements TimeSeriesReader
                                                         basicMetadata.featureDescription,
                                                         null,
                                                         null );
-        FeatureKey location = FeatureKey.of( geometry );
+        Feature location = Feature.of( geometry );
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              // No time scale information: #92480 and #59536
                                                              null,

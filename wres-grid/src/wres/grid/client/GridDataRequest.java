@@ -9,7 +9,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
@@ -29,7 +29,7 @@ class GridDataRequest implements Request
      * The features to read.
      */
 
-    private final Set<FeatureKey> features;
+    private final Set<Feature> features;
 
     /**
      * The variable name.
@@ -68,7 +68,7 @@ class GridDataRequest implements Request
      */
 
     static GridDataRequest of( List<String> paths,
-                               Set<FeatureKey> features,
+                               Set<Feature> features,
                                String variableName,
                                TimeWindowOuter timeWindow,
                                boolean isForecast,
@@ -90,7 +90,7 @@ class GridDataRequest implements Request
      */
 
     private GridDataRequest( List<String> paths,
-                             Set<FeatureKey> features,
+                             Set<Feature> features,
                              String variableName,
                              TimeWindowOuter timeWindow,
                              boolean isForecast,
@@ -134,7 +134,7 @@ class GridDataRequest implements Request
     }
 
     @Override
-    public Set<FeatureKey> getFeatures()
+    public Set<Feature> getFeatures()
     {
         return this.features; // Rendered immutable on construction
     }

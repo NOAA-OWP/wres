@@ -32,7 +32,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -71,7 +71,7 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-    private static final FeatureKey FEATURE = FeatureKey.of( MessageFactory.getGeometry( "POINT( 1 2 )",
+    private static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( "POINT( 1 2 )",
                                                                                          null,
                                                                                          4326,
                                                                                          "POINT( 1 2 )" ) );

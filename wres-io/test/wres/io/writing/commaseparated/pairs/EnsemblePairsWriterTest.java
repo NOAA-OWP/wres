@@ -35,7 +35,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -55,7 +55,7 @@ public final class EnsemblePairsWriterTest
 {
 
     private static final String VARIABLE_NAME = "ARMS";
-    private static final FeatureKey FEATURE = FeatureKey.of(
+    private static final Feature FEATURE = Feature.of(
                                                              MessageFactory.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
@@ -132,7 +132,7 @@ public final class EnsemblePairsWriterTest
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
         TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
                                                                                          MessageFactory.getGeometry( "PLUM" ) ) )
                                                              .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesOne =
@@ -171,7 +171,7 @@ public final class EnsemblePairsWriterTest
         PoolMetadata metaTwo = PoolMetadata.of( evaluationTwo, poolTwo );
         TimeSeriesMetadata boilerplateTwo = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
-                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( Feature.of(
                                                                                             MessageFactory.getGeometry( "ORANGE" ) ) )
                                                                 .build();
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo =
@@ -213,7 +213,7 @@ public final class EnsemblePairsWriterTest
 
         TimeSeriesMetadata boilerplateThree = EnsemblePairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
-                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( FeatureKey.of(
+                new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( Feature.of(
                                                                                               MessageFactory.getGeometry( "BANANA" ) ) )
                                                                   .build();
 
@@ -320,7 +320,7 @@ public final class EnsemblePairsWriterTest
 
                 TimeSeriesMetadata boilerplate = EnsemblePairsWriterTest.getBoilerplateMetadata();
                 TimeSeriesMetadata metadata =
-                        new TimeSeriesMetadata.Builder( boilerplate ).setFeature( FeatureKey.of(
+                        new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
                                                                                                  MessageFactory.getGeometry( "PINEAPPLE" ) ) )
                                                                      .build();
 

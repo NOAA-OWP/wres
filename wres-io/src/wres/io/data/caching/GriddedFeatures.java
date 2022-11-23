@@ -31,7 +31,7 @@ import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.statistics.generated.Geometry;
 import wres.util.NetCDF;
 
@@ -41,10 +41,10 @@ import wres.util.NetCDF;
  * @author James Brown
  */
 @Immutable
-public class GriddedFeatures implements Supplier<Set<FeatureKey>>
+public class GriddedFeatures implements Supplier<Set<Feature>>
 {
     /** The features.*/
-    private final Set<FeatureKey> features;
+    private final Set<Feature> features;
 
     /** The logger.*/
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedFeatures.class );
@@ -53,7 +53,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
     private static final String POINT = "POINT(";
 
     @Override
-    public Set<FeatureKey> get()
+    public Set<Feature> get()
     {
         return this.features; // Immutable on construction
     }
@@ -65,7 +65,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
 
     private GriddedFeatures( Builder builder )
     {
-        Set<FeatureKey> innerFeatures = new HashSet<>();
+        Set<Feature> innerFeatures = new HashSet<>();
         innerFeatures.addAll( builder.features );
         this.features = Collections.unmodifiableSet( innerFeatures );
 
@@ -86,7 +86,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
          * The features.
          */
 
-        private final Set<FeatureKey> features = ConcurrentHashMap.newKeySet();
+        private final Set<Feature> features = ConcurrentHashMap.newKeySet();
 
         /**
          * The filters.
@@ -143,7 +143,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
                 }
             }
 
-            Set<FeatureKey> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.filters );
+            Set<Feature> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.filters );
             this.features.addAll( innerFeatures );
 
             return this;
@@ -179,13 +179,13 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
      * @throws NullPointerException if any input is null
      */
 
-    private static Set<FeatureKey> readFeaturesAndFilterThem( NetcdfFile source, List<UnnamedFeature> filters )
+    private static Set<Feature> readFeaturesAndFilterThem( NetcdfFile source, List<UnnamedFeature> filters )
             throws IOException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( filters );
 
-        Set<FeatureKey> innerFeatures = new HashSet<>();
+        Set<Feature> innerFeatures = new HashSet<>();
 
         try ( NetcdfDataset ncd = NetcdfDatasets.openDataset( source.getLocation() );
               GridDataset grid = new GridDataset( ncd ) )
@@ -204,7 +204,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
                     // Within the filter boundaries?
                     if ( GriddedFeatures.isContained( point, filters ) )
                     {
-                        FeatureKey tuple = GriddedFeatures.getFeatureFromCoordinate( point );
+                        Feature tuple = GriddedFeatures.getFeatureFromCoordinate( point );
                         innerFeatures.add( tuple );
                     }
 
@@ -226,7 +226,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
      * @throws IllegalArgumentException if the longitude or latitude are invalid
      */
 
-    private static FeatureKey getFeatureFromCoordinate( LatLonPoint point )
+    private static Feature getFeatureFromCoordinate( LatLonPoint point )
     {
         double x = point.getLongitude();
         double y = point.getLatitude();
@@ -247,7 +247,7 @@ public class GriddedFeatures implements Supplier<Set<FeatureKey>>
                                                         4326,
                                                         wkt );
 
-        return FeatureKey.of( geometry );
+        return Feature.of( geometry );
     }
 
     /**

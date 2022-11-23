@@ -17,7 +17,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
@@ -97,14 +97,14 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getClimatologyRetriever( Set<Feature> features )
     {
         // No distinction between climatology and left for now
         return this.getLeftRetriever( features );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         return this.get( this.leftConfig,
                          features,
@@ -112,7 +112,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
         return this.get( this.leftConfig,
@@ -121,7 +121,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<Feature> features,
                                                                    TimeWindowOuter timeWindow )
     {
         return this.get( this.rightConfig,
@@ -130,7 +130,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
         return this.get( this.baselineConfig,
                          features,
@@ -138,7 +138,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<FeatureKey> features,
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
         return this.get( this.baselineConfig,
@@ -157,7 +157,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      */
 
     private Supplier<Stream<TimeSeries<Double>>> get( DataSourceConfig dataSourceConfig,
-                                                      Set<FeatureKey> features,
+                                                      Set<Feature> features,
                                                       TimeWindowOuter timeWindow )
     {
         Objects.requireNonNull( dataSourceConfig );

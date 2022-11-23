@@ -26,7 +26,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.data.DataProvider;
@@ -417,7 +417,7 @@ public class CsvReader implements TimeSeriesReader
                                                         locationDescription,
                                                         locationSrid,
                                                         locationWkt );
-        FeatureKey location = FeatureKey.of( geometry );
+        Feature location = Feature.of( geometry );
 
         // Reference datetime is optional, many sources do not have any.
         Map<ReferenceTimeType, Instant> referenceTimes = new EnumMap<>( ReferenceTimeType.class );

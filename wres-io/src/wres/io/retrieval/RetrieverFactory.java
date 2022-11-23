@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.pooling.PoolsGenerator;
@@ -33,7 +33,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<FeatureKey> features );    
+    Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<Feature> features );    
     
     /**
      * Creates a retriever for all left-ish data without any pool boundaries.
@@ -45,7 +45,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features );
+    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features );
 
     /**
      * Creates a retriever for all baseline-ish data without any pool boundaries.
@@ -57,7 +57,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features );
+    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features );
     
     /**
      * Creates a retriever for the left-ish data associated with a particular {@link TimeWindowOuter}.
@@ -70,7 +70,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow );
+    Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
 
     /**
      * Creates a retriever of right-ish data associated with a particular {@link TimeWindowOuter}.
@@ -83,7 +83,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow );
+    Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
 
     /**
      * Creates a retriever of right-ish data associated with a baseline for a particular {@link TimeWindowOuter}.
@@ -96,6 +96,6 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<FeatureKey> features, TimeWindowOuter timeWindow );
+    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
 
 }

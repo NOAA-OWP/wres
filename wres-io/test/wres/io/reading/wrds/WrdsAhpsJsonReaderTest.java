@@ -22,7 +22,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -253,7 +253,7 @@ class WrdsAhpsJsonReaderTest
                                                                          Instant.parse( "2021-11-14T13:46:00Z" ) ),
                                                                  TimeScaleOuter.of(),
                                                                  "QR",
-                                                                 FeatureKey.of( geometry ),
+                                                                 Feature.of( geometry ),
                                                                  "KCFS" );
             TimeSeries<Double> expectedSeries =
                     new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2021-11-14T18:00:00Z" ),

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureKey;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.grid.reading.GriddedReader;
 
@@ -53,7 +53,7 @@ public class Fetcher
      */
 
     public static GridDataRequest prepareRequest( List<String> paths,
-                                                  Set<FeatureKey> features,
+                                                  Set<Feature> features,
                                                   String variableName,
                                                   TimeWindowOuter timeWindow,
                                                   boolean isForecast,
