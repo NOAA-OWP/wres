@@ -1,4 +1,4 @@
-package wres.io.removal;
+package wres.io.ingesting.database;
 
 import java.sql.SQLException;
 import java.util.Objects;
@@ -18,8 +18,7 @@ import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
 
 /**
- * Deals with partial/orphaned/incomplete ingested data, both detection and
- * removal.
+ * Deals with partial/orphaned/incomplete ingested data, both detection and removal.
  */
 
 public class IncompleteIngest
@@ -54,7 +53,7 @@ public class IncompleteIngest
             if ( sourceDetails == null )
             {
                 // This means a source has been removed by some Thread after the
-                // call to this method but prior to getSource.
+                // call to this method
                 LOGGER.warn( "Another task removed source {}, not removing.",
                              surrogateKey );
                 return false;
@@ -85,60 +84,33 @@ public class IncompleteIngest
 
         if ( wasIngested )
         {
-            LOGGER.warn( "Source {} was fully ingested, will not remove.",
-                         source );
+            LOGGER.warn( "Source {} was fully ingested, will not remove.", source );
             return false;
         }
 
-        boolean isBeingIngested = IncompleteIngest.isBeingIngested( source,
-                                                                    lockManager );
-        if ( isBeingIngested )
+        if ( lockManager.isSourceLocked( source.getId() ) )
         {
-            LOGGER.warn( "Source {} is being actively ingested, will not remove.",
-                         source );
+            LOGGER.warn( "Source {} is actively locked, will not remove.", source );
             return false;
         }
 
+        // Proceed to remove
         long sourceId = source.getId();
-
-        // Simple, but slow when the partitions are not by timeseries_id:
-        DataScripter timeSeriesValueScript = new DataScripter( database );
-        timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesValue" );
-        timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
-        timeSeriesValueScript.addLine( "(" );
-        timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
-        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeries" );
-        timeSeriesValueScript.addTab().addLine( WHERE_SOURCE_ID );
-        timeSeriesValueScript.addArgument( sourceId );
-        timeSeriesValueScript.addLine( ")" );
-
-        DataScripter referenceTimeScript = new DataScripter( database );
-        referenceTimeScript.addLine( "DELETE FROM wres.TimeSeriesReferenceTime" );
-        referenceTimeScript.addLine( WHERE_SOURCE_ID );
-        referenceTimeScript.addArgument( sourceId );
-
-        DataScripter timeSeriesScript = new DataScripter( database );
-        timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
-        timeSeriesScript.addLine( "WHERE timeseries_id IN" );
-        timeSeriesScript.addLine( "(" );
-        timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
-        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeries" );
-        timeSeriesScript.addTab().addLine( WHERE_SOURCE_ID );
-        timeSeriesScript.addArgument( sourceId );
-        timeSeriesScript.addLine( ")" );
-
-        DataScripter sourceScript = new DataScripter( database );
-        sourceScript.addLine( "DELETE from wres.Source" );
-        sourceScript.addLine( WHERE_SOURCE_ID );
-        sourceScript.addArgument( sourceId );
 
         try
         {
             lockManager.lockSource( sourceId );
+
+            DataScripter timeSeriesValueScript = IncompleteIngest.getTimeSeriesValueScript( database, sourceId );
+            DataScripter referenceTimeScript = IncompleteIngest.getReferenceTimeScript( database, sourceId );
+            DataScripter timeSeriesScript = IncompleteIngest.getTimeSeriesScript( database, sourceId );
+            DataScripter sourceScript = IncompleteIngest.getTimeSeriesSourceScript( database, sourceId );
+
             int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
             int referenceTimesRemoved = referenceTimeScript.execute();
             int timeSeriesRemoved = timeSeriesScript.execute();
             int sourcesRemoved = sourceScript.execute();
+
             LOGGER.debug( "Removed {} tsv, {} tsrt, {} ts, {} s.",
                           timeSeriesValuesRemoved,
                           referenceTimesRemoved,
@@ -153,7 +125,11 @@ public class IncompleteIngest
         }
         finally
         {
-            lockManager.unlockSource( sourceId );
+            // Should be locked, but double-check because lock attempt can throw an exception. See #110218
+            if ( lockManager.isSourceLocked( sourceId ) )
+            {
+                lockManager.unlockSource( sourceId );
+            }
         }
 
         // Invalidate caches affected by deletes above
@@ -163,44 +139,79 @@ public class IncompleteIngest
     }
 
     /**
-     * Given a source, return true if it is currently being ingested. TODO: consider replacing with 
-     * {@link DatabaseLockManager#isSourceLocked(Long)}, which already checks twice, as well as the internal cache of
-     * locks.
-     * @param source The source to look for, non-null and with non-null ID.
-     * @param lockManager The lock manager to use.
-     * @return true if the source is being actively ingested, false otherwise.
-     * @throws IllegalStateException When database communication fails.
+     * @param database the database
+     * @param sourceId the source id
+     * @return the time-series value remover script
      */
 
-    private static boolean isBeingIngested( SourceDetails source,
-                                            DatabaseLockManager lockManager )
+    private static DataScripter getTimeSeriesValueScript( Database database, Long sourceId )
     {
-        Objects.requireNonNull( source );
-        Objects.requireNonNull( source.getId() );
-        Long sourceId = source.getId();
+        // Simple, but slow when the partitions are not by timeseries_id:
+        DataScripter timeSeriesValueScript = new DataScripter( database );
+        timeSeriesValueScript.addLine( "DELETE FROM wres.TimeSeriesValue" );
+        timeSeriesValueScript.addLine( "WHERE timeseries_id IN" );
+        timeSeriesValueScript.addLine( "(" );
+        timeSeriesValueScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesValueScript.addTab().addLine( "FROM wres.TimeSeries" );
+        timeSeriesValueScript.addTab().addLine( WHERE_SOURCE_ID );
+        timeSeriesValueScript.addArgument( sourceId );
+        timeSeriesValueScript.addLine( ")" );
 
-        // Check twice to be more confident that no other process is currently
-        // ingesting this source when the first check returns false.
-        boolean isLockedCheckOne;
-        boolean isLockedCheckTwo = false;
-
-        try
-        {
-            isLockedCheckOne = lockManager.isSourceLocked( sourceId );
-
-            if ( !isLockedCheckOne )
-            {
-                isLockedCheckTwo = lockManager.isSourceLocked( sourceId );
-            }
-        }
-        catch ( SQLException se )
-        {
-            throw new IllegalStateException( DB_COMMUNICATION_FAILED, se );
-        }
-
-        return isLockedCheckOne || isLockedCheckTwo;
+        return timeSeriesValueScript;
     }
 
+    /**
+     * @param database the database
+     * @param sourceId the source id
+     * @return the time-series reference time remover script
+     */
+
+    private static DataScripter getReferenceTimeScript( Database database, Long sourceId )
+    {
+        DataScripter referenceTimeScript = new DataScripter( database );
+        referenceTimeScript.addLine( "DELETE FROM wres.TimeSeriesReferenceTime" );
+        referenceTimeScript.addLine( WHERE_SOURCE_ID );
+        referenceTimeScript.addArgument( sourceId );
+
+        return referenceTimeScript;
+    }
+
+    /**
+     * @param database the database
+     * @param sourceId the source id
+     * @return the time-series remover script
+     */
+
+    private static DataScripter getTimeSeriesScript( Database database, Long sourceId )
+    {
+        DataScripter timeSeriesScript = new DataScripter( database );
+        timeSeriesScript.addLine( "DELETE FROM wres.TimeSeries" );
+        timeSeriesScript.addLine( "WHERE timeseries_id IN" );
+        timeSeriesScript.addLine( "(" );
+        timeSeriesScript.addTab().addLine( "SELECT timeseries_id" );
+        timeSeriesScript.addTab().addLine( "FROM wres.TimeSeries" );
+        timeSeriesScript.addTab().addLine( WHERE_SOURCE_ID );
+        timeSeriesScript.addArgument( sourceId );
+        timeSeriesScript.addLine( ")" );
+
+        return timeSeriesScript;
+    }
+
+    /**
+     * @param database the database
+     * @param sourceId the source id
+     * @return the time-series source remover script
+     */
+
+    private static DataScripter getTimeSeriesSourceScript( Database database, Long sourceId )
+    {
+        DataScripter sourceScript = new DataScripter( database );
+        sourceScript.addLine( "DELETE from wres.Source" );
+        sourceScript.addLine( WHERE_SOURCE_ID );
+        sourceScript.addArgument( sourceId );
+
+        return sourceScript;
+    }
 
     /**
      * Given a source, return true if it has been completely ingested.

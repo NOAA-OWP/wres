@@ -60,7 +60,6 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.data.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.removal.IncompleteIngest;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.util.NetCDF;
@@ -389,6 +388,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             // Success
             if ( this.isIngestComplete( results ) )
             {
+                if ( i > 0 )
+                {
+                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {}.",
+                                 dataSource,
+                                 i + 1,
+                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES );
+                }
+
                 LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
 
                 return results;
@@ -425,7 +432,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         LOGGER.debug( "Ingesting a single-valued time-series from source {}.", dataSource.getUri() );
 
         // Try to insert a row into wres.Source for the time-series
-        SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
 
         // Source row was inserted, so this is a new time-series
         if ( source.performedInsert() )
@@ -504,7 +511,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 if ( i > 0 )
                 {
-                    LOGGER.info( "Succesfully ingested a time-series from {} after {} retries.", dataSource, i );
+                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {}.",
+                                 dataSource,
+                                 i + 1,
+                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES );
                 }
 
                 LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
@@ -542,25 +552,37 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.getUri() );
 
-        SourceDetails source = this.saveSource( timeSeries, dataSource.getUri() );
+        SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
 
         // Not found
         if ( source.performedInsert() )
         {
-            // Lock source with an advisory lock. Unlocked by a SourceCompleter.
-            this.lockSource( source, timeSeries );
+            // Try to lock source with an advisory lock. Unlocked by a SourceCompleter. See #110218
+            if ( this.lockSource( source, timeSeries ) )
+            {
+                // Ready to ingest, source row was inserted and is (advisory) locked.
+                Set<Pair<CountDownLatch, CountDownLatch>> latches =
+                        this.insertEnsembleTimeSeries( this.getSystemSettings(),
+                                                       this.getDatabase(),
+                                                       this.getCaches()
+                                                           .getEnsemblesCache(),
+                                                       timeSeries,
+                                                       source.getId() );
 
-            // Ready to ingest, source row was inserted and is (advisory) locked.
-            Set<Pair<CountDownLatch, CountDownLatch>> latches =
-                    this.insertEnsembleTimeSeries( this.getSystemSettings(),
-                                                   this.getDatabase(),
-                                                   this.getCaches()
-                                                       .getEnsemblesCache(),
-                                                   timeSeries,
-                                                   source.getId() );
+                // Finalize, which marks the source complete and unlocks it using a SourceCompleter
+                results = this.finalizeNewSource( source, latches, dataSource );
+            }
+            else
+            {
+                LOGGER.debug( "Detected a data source that is locked in another task, {}. Will retry later.",
+                              dataSource );
 
-            // Finalize, which marks the source complete and unlocks it
-            results = this.finalizeNewSource( source, latches, dataSource );
+                // Busy, retry again later
+                results = IngestResult.singleItemListFrom( dataSource,
+                                                           source.getId(),
+                                                           true,
+                                                           true );
+            }
         }
         // Source was not inserted, so this is an existing source. But was it completed or abandoned?
         else
@@ -632,9 +654,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @param <T> the type of time-series event value
      * @param source the source to lock
      * @param timeSeries the time-series
+     * @return whether the lock was acquired
      */
 
-    private <T> void lockSource( SourceDetails source, TimeSeries<T> timeSeries )
+    private <T> boolean lockSource( SourceDetails source, TimeSeries<T> timeSeries )
     {
         if ( LOGGER.isDebugEnabled() )
         {
@@ -645,7 +668,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         try
         {
-            this.lockManager.lockSource( source.getId() );
+            if ( !this.lockManager.isSourceLocked( source.getId() ) )
+            {
+                this.lockManager.lockSource( source.getId() );
+
+                return true;
+            }
+
+            return false;
         }
         catch ( SQLException se )
         {
@@ -663,7 +693,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return the source details
      */
 
-    private <T> SourceDetails saveSource( TimeSeries<T> timeSeries, URI uri )
+    private <T> SourceDetails saveTimeSeriesSource( TimeSeries<T> timeSeries, URI uri )
     {
         byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
         String hash = Hex.encodeHexString( rawHash, false );
@@ -724,10 +754,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     private List<IngestResult> finalizeExistingSource( SourceDetails source,
                                                        DataSource dataSource )
     {
-        boolean completed = this.isSourceComplete( source );
-
         // Completed, no retries needed
-        if ( completed )
+        if ( this.isSourceComplete( source ) )
         {
             LOGGER.trace( "Already ingested and completed data source {}.", dataSource );
 
@@ -737,10 +765,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                     true,
                                                     false );
         }
-        // In progress elsewhere, retry later
-        else if ( this.isIngestInProgress( source.getHash(), this.getLockManager() ) )
+        // Source is already locked for mutation, try again later. See #110218
+        else if ( this.isSourceLocked( this.lockManager, source.getId() ) )
         {
-            LOGGER.debug( "Detected a data source whose ingest is already in progress in another task, {}.",
+            LOGGER.debug( "Detected a data source that is locked in another task, {}. Will retry later.",
                           dataSource );
 
             // Retry later
@@ -749,7 +777,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                     true,
                                                     true );
         }
-        // Started, but not completed (unless in the interim) and not in progress, remove and retry later
+        // Started, but not completed (unless in the interim) and not in progress, so remove and retry later
         else
         {
             // Check again for completion as it may have happened in the interim
@@ -763,48 +791,56 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                         false );
             }
 
-            // First, try to safely remove it, which will again check for completion
+            // Check again whether source is locked for mutation and, if locked, try again later. See #110218
+            if ( this.isSourceLocked( this.lockManager, source.getId() ) )
+            {
+                LOGGER.trace( "Discovered a lock on data source {}, retrying later.", dataSource );
+
+                return IngestResult.singleItemListFrom( dataSource,
+                                                        source.getId(),
+                                                        true,
+                                                        true );
+            }
+
+            // First, try to safely remove it, which will again check for completion and only remove if safe
             long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
 
             LOGGER.warn( "Another instance started to ingest data source, {}, identified by '{}' but did not finish. "
                          + "Cleaning up...",
                          dataSource,
                          surrogateKey );
-            
+
             boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
                                                                        this.getCaches()
                                                                            .getDataSourcesCache(),
                                                                        surrogateKey,
                                                                        this.getLockManager() );
 
-            // Removed the source, retry ingest later
-            if ( removed )
+            // Log status
+            if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Successfully removed an abandoned data source, {}, identified by '{}'. This source will "
-                              + "be retried at the next opportunity.",
-                              dataSource,
-                              surrogateKey );
-
-                // Retry later
-                return IngestResult.singleItemListFrom( dataSource,
-                                                        source.getId(),
-                                                        true,
-                                                        true );
+                if ( removed )
+                {
+                    LOGGER.debug( "Successfully removed an abandoned data source, {}, identified by '{}'. This source "
+                                  + "will be retried at the next opportunity.",
+                                  dataSource,
+                                  surrogateKey );
+                }
+                // Not removed, inspect and retry again later
+                else
+                {
+                    LOGGER.debug( "Failed to remove data source {}, identified by '{}'. This source will be reexamined "
+                                  + "at the next opportunity.",
+                                  dataSource,
+                                  surrogateKey );
+                }
             }
-            // Not removed, inspect and retry again later
-            else
-            {
-                LOGGER.debug( "Failed to remove data source {}, identified by '{}'. This source will be reexamined at "
-                              + "the next opportunity.",
-                              dataSource,
-                              surrogateKey );
 
-                // Retry later
-                return IngestResult.singleItemListFrom( dataSource,
-                                                        source.getId(),
-                                                        true,
-                                                        true );
-            }
+            // Retry ingest later
+            return IngestResult.singleItemListFrom( dataSource,
+                                                    source.getId(),
+                                                    true,
+                                                    true );
         }
     }
 
@@ -830,33 +866,24 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
-     * Determines if the indicated data is currently being ingested by another task. Also see 
-     * {@link IncompleteIngest#removeSourceDataSafely(Database, DataSources, long, DatabaseLockManager)}, which takes a
-     * slightly different route to checking ingest status. TODO: consider normalizing these routes.
+     * Determines if the indicated data is currently being ingested or removed by another task.
      * 
-     * @param hash The hash of the data that some task might be ingesting, known
-     *             to exist already.
+     * @param sourceId the source identifier
      * @return true if a task is detected to be ingesting, false otherwise
      * @throws PreIngestException when communication with the database fails
      */
-    private boolean isIngestInProgress( String hash,
-                                        DatabaseLockManager lockManager )
+    private boolean isSourceLocked( DatabaseLockManager lockManager, Long sourceId )
     {
-        DataSources dataSources = this.getCaches()
-                                      .getDataSourcesCache();
         try
         {
-            SourceDetails sourceDetails = dataSources.getSource( hash );
-            Long sourceId = sourceDetails.getId();
-
             LOGGER.debug( "Checking source lock for source {}.", sourceId );
 
             return lockManager.isSourceLocked( sourceId );
         }
         catch ( SQLException e )
         {
-            throw new PreIngestException( "Failed to determine whether the data source with hash "
-                                          + hash
+            throw new PreIngestException( "Failed to determine whether the data source with identity "
+                                          + sourceId
                                           + " was currently being ingested." );
         }
     }

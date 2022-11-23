@@ -1,4 +1,4 @@
-package wres.io.removal;
+package wres.io.ingesting.database;
 
 import java.util.ArrayList;
 import java.util.Collection;

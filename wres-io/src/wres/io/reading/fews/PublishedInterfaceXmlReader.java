@@ -182,7 +182,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              XMLStreamReader xmlStreamReader )
     {
-
+        // Map of traces against labels
         SortedMap<String, SortedMap<Instant, Double>> traceValues = new TreeMap<>();
         AtomicReference<TimeSeriesMetadata> lastTraceMetadata = new AtomicReference<>();
         AtomicReference<String> lastTraceName = new AtomicReference<>();

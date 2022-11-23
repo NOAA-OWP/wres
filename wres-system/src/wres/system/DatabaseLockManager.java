@@ -5,14 +5,14 @@ import java.sql.SQLException;
 import java.util.function.Supplier;
 
 /**
- * Manages application-level locks on database objects, exposes lock(), unlock()
+ * Manages application-level locks on database objects.
  *
  * Re-entrance is disallowed. In other words, it is an error to attempt to
  * acquire the same semantic lock twice before releasing the same lock.
  */
 
 public interface DatabaseLockManager
-{  
+{
     /**
      * Shutdown the lock manager.
      *
@@ -22,11 +22,9 @@ public interface DatabaseLockManager
     void shutdown();
 
     /**
-     * Lock the back-end database using lockName which is a source id
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
-     * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE
+     * Attempts to lock the back-end database using lockName which is a source id
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}
+     * @throws IllegalArgumentException when lockName less than 1 or is MAX_VALUE
      * @throws DatabaseLockFailed when db reports lock acquisition failed
      * @throws IllegalStateException when lock already was acquired by any Thread
      * @throws SQLException when database communication fails
@@ -34,13 +32,11 @@ public interface DatabaseLockManager
 
     void lockSource( Long lockName ) throws SQLException;
 
-
     /**
      * Unlock the back-end database using lockName that was previously locked
      * using lockSource.
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
-     *                 locked with lock()
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}, and 
+     *            have been previously locked with {@link #lockSource(Long)}
      * @throws IllegalArgumentException when lockName less than 1 or is
      * MAX_VALUE or was not previously locked
      * @throws DatabaseLockFailed when db reports lock release failed
@@ -50,13 +46,10 @@ public interface DatabaseLockManager
 
     void unlockSource( Long lockName ) throws SQLException;
 
-
     /**
      * Lock the back-end database using lockName, a shared lock, non-exclusive
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
-     * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}
+     * @throws IllegalArgumentException when lockName less than 1 or is {@link Integer#MAX_VALUE}
      * @throws DatabaseLockFailed when db reports lock acquisition failed
      * @throws IllegalStateException when lock already was acquired by any Thread
      * @throws SQLException when database communication fails
@@ -64,14 +57,12 @@ public interface DatabaseLockManager
 
     void lockExclusive( Long lockName ) throws SQLException;
 
-
     /**
      * Unlock the back-end database using lockName that was previously locked
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
-     *                 locked with lock()
-     * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE or was not previously locked
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}, and 
+     *            have been previously locked with lock()
+     * @throws IllegalArgumentException when lockName less than 1 or is {@link Integer#MAX_VALUE} or was not previously 
+     *            locked
      * @throws IllegalStateException when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails
@@ -79,13 +70,10 @@ public interface DatabaseLockManager
 
     void unlockExclusive( Long lockName ) throws SQLException;
 
-
     /**
      * Lock the back-end database using lockName, a shared lock, non-exclusive
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE
-     * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}
+     * @throws IllegalArgumentException when lockName less than 1 or is {@link Integer#MAX_VALUE}
      * @throws IllegalStateException when db reports lock acquisition failed
      * @throws IllegalStateException when lock already was acquired by any Thread
      * @throws SQLException when database communication fails
@@ -93,14 +81,12 @@ public interface DatabaseLockManager
 
     void lockShared( Long lockName ) throws SQLException;
 
-
     /**
      * Unlock the back-end database using lockName that was previously locked
-     * @param lockName the lock name to use, must be non-zero and positive, less
-     *                 than {@link Integer}.MAX_VALUE, and have been previously
-     *                 locked with lock()
-     * @throws IllegalArgumentException when lockName less than 1 or is
-     * MAX_VALUE or was not previously locked
+     * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}, and 
+     *            have been previously locked with {@link #lockShared(Long)}
+     * @throws IllegalArgumentException when lockName less than 1 or is {@link Integer#MAX_VALUE} or was not previously 
+     *            locked
      * @throws IllegalStateException when db reports lock release failed
      * @throws IllegalStateException when unlock was called twice simultaneously
      * @throws SQLException when database communication fails
@@ -108,14 +94,28 @@ public interface DatabaseLockManager
 
     void unlockShared( Long lockName ) throws SQLException;
 
+    /**
+     * @param lockName the lock name
+     * @return whether the source is locked
+     * @throws SQLException if the lock status could not be determined
+     */
 
     boolean isSourceLocked( Long lockName ) throws SQLException;
+
+    /**
+     * Creates an instance for {@link DatabaseType#H2} or {@link DatabaseType#POSTGRESQL}.
+     * 
+     * @param systemSettings the system settings
+     * @param connectionSupplier the connection supplier
+     * @return the instance, if recognized
+     * @throws UnsupportedOperationException if the configured database type is not recognized
+     */
 
 
     static DatabaseLockManager from( SystemSettings systemSettings,
                                      Supplier<Connection> connectionSupplier )
     {
-        if( systemSettings.isInMemory() )
+        if ( systemSettings.isInMemory() )
         {
             return new DatabaseLockManagerNoop();
         }
