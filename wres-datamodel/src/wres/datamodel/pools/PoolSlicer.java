@@ -944,7 +944,9 @@ public class PoolSlicer
 
         List<T> mainPairs = pool.get();
         List<T> mainPairsSubset =
-                mainPairs.stream().filter( condition ).collect( Collectors.toList() );
+                mainPairs.stream()
+                         .filter( condition )
+                         .collect( Collectors.toList() );
 
         PoolMetadata unmapped = pool.getMetadata();
         PoolMetadata mapped = metaTransformer.apply( unmapped );
@@ -970,7 +972,9 @@ public class PoolSlicer
             Pool<T> baseline = pool.getBaselineData();
             List<T> basePairs = baseline.get();
             List<T> basePairsSubset =
-                    basePairs.stream().filter( condition ).collect( Collectors.toList() );
+                    basePairs.stream()
+                             .filter( condition )
+                             .collect( Collectors.toList() );
 
             PoolMetadata unmappedBaseline = baseline.getMetadata();
             PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );

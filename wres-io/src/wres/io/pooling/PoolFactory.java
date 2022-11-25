@@ -1795,7 +1795,7 @@ public class PoolFactory
     private static class ClimatologyCachedRetrieverFactory<L, R> implements RetrieverFactory<L, R>
     {
 
-        /** The factory to delegate to for implementations. */
+        /** The factory to delegate to. */
         private final RetrieverFactory<L, R> delegate;
 
         @Override
@@ -1838,7 +1838,7 @@ public class PoolFactory
         }
 
         /**
-         * @param delegate the factory to delegate to for implementations
+         * @param delegate the factory to delegate to
          */
         private ClimatologyCachedRetrieverFactory( RetrieverFactory<L, R> delegate )
         {
