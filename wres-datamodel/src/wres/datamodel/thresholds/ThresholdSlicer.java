@@ -558,8 +558,13 @@ public class ThresholdSlicer
         Map<S, Pool<T>> decomposed = PoolSlicer.decompose( metaMapper, pool );
 
         // Probability thresholds included, but no climatology
-        if ( thresholds.values().stream().flatMap( Set::stream ).anyMatch( ThresholdOuter::hasProbabilities )
-             && decomposed.values().stream().noneMatch( Pool::hasClimatology ) )
+        if ( thresholds.values()
+                       .stream()
+                       .flatMap( Set::stream )
+                       .anyMatch( ThresholdOuter::hasProbabilities )
+             && decomposed.values()
+                          .stream()
+                          .noneMatch( Pool::hasClimatology ) )
         {
             throw new ThresholdException( "Cannot add quantiles to probability thresholds without a climatological "
                                           + "data source. Add a climatological data source to pool "
@@ -568,7 +573,10 @@ public class ThresholdSlicer
         }
 
         // No probability thresholds, return the input thresholds
-        if ( thresholds.values().stream().flatMap( Set::stream ).noneMatch( ThresholdOuter::hasProbabilities ) )
+        if ( thresholds.values()
+                       .stream()
+                       .flatMap( Set::stream )
+                       .noneMatch( ThresholdOuter::hasProbabilities ) )
         {
             LOGGER.debug( "No probability thresholds discovered, returning the input thresholds without quantiles." );
 
@@ -772,7 +780,7 @@ public class ThresholdSlicer
 
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     /**
      * @param builder the builder
      * @param values the values to set
