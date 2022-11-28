@@ -18,21 +18,19 @@ import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.jupiter.api.Test;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
-import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -230,8 +228,16 @@ class ThresholdSlicerTest
     @Test
     void testAddQuantiles()
     {
-        VectorOfDoubles climatology =
-                VectorOfDoubles.of( 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 );
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "a" )
+                                    .build();
+        Feature feature = Feature.of( geometry );
+
+        Climatology climatology =
+                new Climatology.Builder().addClimatology( feature,
+                                                          new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8,
+                                                                         7001.4, 12038.5, 17897.2 } )
+                                         .build();
 
         wres.statistics.generated.Pool.Builder builder = wres.statistics.generated.Pool.newBuilder();
         GeometryTuple geoTupleOne = GeometryTuple.newBuilder()
@@ -239,13 +245,6 @@ class ThresholdSlicerTest
                                                  .setRight( Geometry.newBuilder().setName( "b" ) )
                                                  .build();
         builder.setGeometryGroup( GeometryGroup.newBuilder().addGeometryTuples( geoTupleOne ) );
-
-        Pool<String> pool = new Pool.Builder<String>().setClimatology( climatology )
-                                                      .setMetadata( PoolMetadata.of( Evaluation.newBuilder()
-                                                                                               .setMeasurementUnit( "unit" )
-                                                                                               .build(),
-                                                                                     builder.build() ) )
-                                                      .build();
 
         FeatureTuple oneTuple = FeatureTuple.of( geoTupleOne );
 
@@ -265,7 +264,7 @@ class ThresholdSlicerTest
                                                                        ThresholdDataType.LEFT ) ) );
 
         Map<FeatureTuple, Set<ThresholdOuter>> actual =
-                ThresholdSlicer.addQuantiles( thresholds, pool, meta -> meta.getFeatureTuples().iterator().next() );
+                ThresholdSlicer.addQuantiles( thresholds, climatology );
 
         Map<FeatureTuple, Set<ThresholdOuter>> expected =
                 Map.of( oneTuple,

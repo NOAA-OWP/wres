@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.Climatology;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureTuple;
@@ -95,7 +95,8 @@ public class PoolSlicer
 
         PoolMetadata unmapped = pool.getMetadata();
         PoolMetadata mapped = metaTransformer.apply( unmapped );
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped );
+        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped )
+                                                           .setClimatology( pool.getClimatology() );
 
         if ( pool.hasBaseline() )
         {
@@ -109,7 +110,7 @@ public class PoolSlicer
         for ( Pool<S> next : pool.getMiniPools() )
         {
             Pool<T> transformed = PoolSlicer.transformInner( next, transformer, metaTransformer );
-            poolBuilder.addPool( transformed, false );
+            poolBuilder.addPool( transformed );
         }
 
         return poolBuilder.build();
@@ -161,6 +162,19 @@ public class PoolSlicer
         PoolMetadata mapped = metaTransformer.apply( unmapped );
         Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped );
 
+        // Filter climatology as required
+        if ( pool.hasClimatology() )
+        {
+            Climatology climatology = pool.getClimatology();
+
+            if ( Objects.nonNull( applyToClimatology ) )
+            {
+                climatology = Slicer.filter( pool.getClimatology(), applyToClimatology );
+            }
+
+            poolBuilder.setClimatology( climatology );
+        }
+
         if ( pool.hasBaseline() )
         {
             PoolMetadata unmappedBaseline = pool.getBaselineData()
@@ -173,7 +187,7 @@ public class PoolSlicer
         for ( Pool<T> next : pool.getMiniPools() )
         {
             Pool<T> filtered = PoolSlicer.filterInner( next, condition, applyToClimatology, metaTransformer );
-            poolBuilder.addPool( filtered, false );
+            poolBuilder.addPool( filtered );
         }
 
         return poolBuilder.build();
@@ -229,8 +243,7 @@ public class PoolSlicer
         Objects.requireNonNull( metaMapper );
 
         // Optimization for no data, only apply the metadata adjustment
-        if ( pool.get().isEmpty() && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() )
-             && ( !pool.hasClimatology() || pool.getClimatology().size() == 0 ) )
+        if ( pool.get().isEmpty() && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() ) )
         {
             PoolMetadata unmapped = pool.getMetadata();
             PoolMetadata mapped = metaTransformer.apply( unmapped );
@@ -276,7 +289,7 @@ public class PoolSlicer
             if ( Objects.nonNull( nextPredicate ) )
             {
                 Pool<S> filtered = PoolSlicer.filter( nextPool, nextPredicate, null, metaTransformer );
-                poolBuilder.addPool( filtered, false );
+                poolBuilder.addPool( filtered );
             }
             else
             {
@@ -389,7 +402,7 @@ public class PoolSlicer
             if ( Objects.nonNull( nextTransformer ) )
             {
                 Pool<U> transformed = PoolSlicer.transform( nextPool, nextTransformer, metaTransformer );
-                poolBuilder.addPool( transformed, false );
+                poolBuilder.addPool( transformed );
             }
             else
             {
@@ -451,7 +464,8 @@ public class PoolSlicer
     {
         Objects.requireNonNull( pool );
 
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( pool.getMetadata() );
+        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( pool.getMetadata() )
+                                                           .setClimatology( pool.getClimatology() );
 
         if ( pool.hasBaseline() )
         {
@@ -463,7 +477,7 @@ public class PoolSlicer
         for ( Pool<TimeSeries<U>> nextMiniPool : pool.getMiniPools() )
         {
             Pool<U> nextUnpacked = PoolSlicer.unpackInner( nextMiniPool );
-            poolBuilder.addPool( nextUnpacked, false );
+            poolBuilder.addPool( nextUnpacked );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -956,7 +970,7 @@ public class PoolSlicer
         // Filter climatology as required
         if ( pool.hasClimatology() )
         {
-            VectorOfDoubles climatology = pool.getClimatology();
+            Climatology climatology = pool.getClimatology();
 
             if ( Objects.nonNull( applyToClimatology ) )
             {

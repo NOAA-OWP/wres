@@ -583,8 +583,7 @@ public final class EnsembleStatisticsProcessorTest
                                                   () -> processor.apply( pairs ) );
 
         assertTrue( actual.getMessage()
-                          .startsWith( "Cannot add quantiles to probability thresholds without a "
-                                       + "climatological data source." ) );
+                          .startsWith( "Quantiles were required for feature tuple" ) );
     }
 
     @Test

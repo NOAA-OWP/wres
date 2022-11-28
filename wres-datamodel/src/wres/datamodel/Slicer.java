@@ -40,6 +40,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.Feature;
 
 /**
  * A utility class for slicing/dicing and transforming datasets.
@@ -713,24 +714,32 @@ public final class Slicer
     }
 
     /**
-     * Filters a {@link VectorOfDoubles}, returning a subset whose elements meet the condition.
+     * Filters a {@link Climatology}, returning a subset whose elements meet the condition.
      * 
      * @param input the input
      * @param condition the condition
      * @return the filtered vector
      */
 
-    public static VectorOfDoubles filter( VectorOfDoubles input, DoublePredicate condition )
+    public static Climatology filter( Climatology input, DoublePredicate condition )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
         Objects.requireNonNull( input, NULL_PREDICATE_EXCEPTION );
 
-        double[] filtered = Arrays.stream( input.getDoubles() )
-                                  .filter( condition )
-                                  .toArray();
 
-        return VectorOfDoubles.of( filtered );
+        Climatology.Builder builder = new Climatology.Builder();
+
+        for ( Feature nextFeature : input.getFeatures() )
+        {
+            double[] climatology = input.get( nextFeature );
+            double[] filtered = Arrays.stream( climatology )
+                                      .filter( condition )
+                                      .toArray();
+            builder.addClimatology( nextFeature, filtered );
+        }
+
+        return builder.build();
     }
 
     /**
@@ -786,20 +795,27 @@ public final class Slicer
     {
         DoubleStream combined = DoubleStream.of();
 
-        for ( VectorOfDoubles next : input )
+        try
         {
-            if ( Objects.isNull( combined ) )
+            for ( VectorOfDoubles next : input )
             {
-                combined = Arrays.stream( next.getDoubles() );
+                if ( Objects.isNull( combined ) )
+                {
+                    combined = Arrays.stream( next.getDoubles() );
+                }
+                else
+                {
+                    DoubleStream nextStream = Arrays.stream( next.getDoubles() );
+                    combined = DoubleStream.concat( combined, nextStream );
+                }
             }
-            else
-            {
-                DoubleStream nextStream = Arrays.stream( next.getDoubles() );
-                combined = DoubleStream.concat( combined, nextStream );
-            }
-        }
 
-        return VectorOfDoubles.of( combined.toArray() );
+            return VectorOfDoubles.of( combined.toArray() );
+        }
+        finally
+        {
+            combined.close();
+        }
     }
 
     /**

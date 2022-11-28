@@ -27,11 +27,11 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeWindow;
@@ -1104,7 +1104,7 @@ public final class TimeSeriesSlicer
         //Filter climatology as required
         if ( input.hasClimatology() )
         {
-            VectorOfDoubles climatology = input.getClimatology();
+            Climatology climatology = input.getClimatology();
 
             if ( Objects.nonNull( applyToClimatology ) )
             {
@@ -1165,7 +1165,7 @@ public final class TimeSeriesSlicer
         //Filter climatology as required
         if ( input.hasClimatology() )
         {
-            VectorOfDoubles climatology = input.getClimatology();
+            Climatology climatology = input.getClimatology();
 
             if ( Objects.nonNull( applyToClimatology ) )
             {

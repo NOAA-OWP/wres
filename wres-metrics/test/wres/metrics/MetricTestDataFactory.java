@@ -19,9 +19,9 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Probability;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
@@ -169,7 +169,7 @@ public final class MetricTestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                  MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -183,7 +183,7 @@ public final class MetricTestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                                     MessageFactory.getGeometry( DRRC2 ) ),
+                                                  MessageFactory.getGeometry( DRRC2 ) ),
                                       UNIT );
     }
 
@@ -1489,7 +1489,14 @@ public final class MetricTestDataFactory
 
         PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+        double[] rawClimatology = climatology.stream()
+                                             .mapToDouble( Double::valueOf )
+                                             .toArray();
+
+        Climatology clim = new Climatology.Builder().addClimatology( Boilerplate.getFeatureTuple()
+                                                                                .getLeft(),
+                                                                     rawClimatology )
+                                                    .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 

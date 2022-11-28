@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static systems.uom.ucum.UCUM.CUBIC_FOOT_INTERNATIONAL;
+import static systems.uom.ucum.UCUM.FOOT_INTERNATIONAL;
 import static systems.uom.ucum.UCUM.GALLON_US;
 import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 import static tech.units.indriya.unit.Units.CUBIC_METRE;
@@ -41,8 +41,6 @@ import static tech.units.indriya.unit.Units.SECOND;
 /**
  * The first test and the "explore" tests are exploratory. The remainder are
  * critical tests to verify unit parsing and unit conversion functionality.
- * See more related tests in wres.io.retrieval.UnitMapperTest as well as in
- * wres.io.retrieval.UnitMapperTestWithNoDatabase
  */
 
 public class UnitsTest
@@ -57,7 +55,7 @@ public class UnitsTest
     static final Unit<VolumetricFlowRate> CUBIC_METRE_PER_SECOND =
             new ProductUnit<>( CUBIC_METRE.divide( SECOND ) );
     static final Unit<VolumetricFlowRate> CUBIC_FOOT_PER_SECOND =
-            new ProductUnit<>( CUBIC_FOOT_INTERNATIONAL.divide( SECOND ) );
+            new ProductUnit<>( FOOT_INTERNATIONAL.pow( 3 ).divide( SECOND ) );
     private static final Logger LOGGER =
             LoggerFactory.getLogger( UnitsTest.class );
 
@@ -215,6 +213,7 @@ public class UnitsTest
                                 .getDimension() );
         LOGGER.debug( "Converted-to-volume as system unit: {}",
                       someVolume.toSystemUnit() );
+        @SuppressWarnings( "unchecked" )
         UnitConverter unitConverter =
                 ( (Unit<Volume>) someVolume.getUnit() ).getConverterTo(
                                                                         GALLON_US );
@@ -227,11 +226,13 @@ public class UnitsTest
         LOGGER.debug( "Class of the Number: {}", someGallonsNumber.getClass() );
 
         // More straightforward than using a converter:
+        @SuppressWarnings( "unchecked" )
         Quantity<Volume> gallons =
                 ( (Quantity<Volume>) someVolume ).to( GALLON_US );
         LOGGER.debug( "Converted to gallons again: {}", gallons );
 
         // What about cubic meters?
+        @SuppressWarnings( "unchecked" )
         Quantity<?> cubicMeters =
                 ( (Quantity<Volume>) someVolume ).to( CUBIC_METRE );
         LOGGER.debug( "Converted to cubicMeters: {}", cubicMeters );

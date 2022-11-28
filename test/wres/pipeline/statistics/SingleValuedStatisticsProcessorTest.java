@@ -205,7 +205,7 @@ public final class SingleValuedStatisticsProcessorTest
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             Pool<TimeSeries<Pair<Double, Double>>> next =
-                    new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs, false )
+                    new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
                                                                         .setMetadata( meta )
                                                                         .build();
 
@@ -761,7 +761,7 @@ public final class SingleValuedStatisticsProcessorTest
             PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
             Pool<TimeSeries<Pair<Double, Double>>> next =
-                    new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs, false )
+                    new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
                                                                         .setMetadata( meta )
                                                                         .build();
 
@@ -971,7 +971,7 @@ public final class SingleValuedStatisticsProcessorTest
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         Pool<TimeSeries<Pair<Double, Double>>> next =
-                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs, false )
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
                                                                     .setMetadata( meta )
                                                                     .build();
 
@@ -1074,8 +1074,7 @@ public final class SingleValuedStatisticsProcessorTest
         ThresholdException actual = assertThrows( ThresholdException.class, () -> processor.apply( pairs ) );
 
         assertTrue( actual.getMessage()
-                          .startsWith( "Cannot add quantiles to probability thresholds without a "
-                                       + "climatological data source." ) );
+                          .startsWith( "Quantiles were required for feature tuple" ) );
     }
 
     @Test
@@ -1154,8 +1153,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         // Create the combined pool, one for each feature
         Pool<TimeSeries<Pair<Double, Double>>> combinedPool =
-                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( poolOne, false )
-                                                                    .addPool( poolTwo, false )
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( poolOne )
+                                                                    .addPool( poolTwo )
                                                                     .build();
 
         StatisticsStore statistics = processor.apply( combinedPool );

@@ -21,8 +21,8 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
@@ -640,7 +640,12 @@ public final class TestDataFactory
 
         PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+        double[] rawClimatology = climatology.stream()
+                                             .mapToDouble( Double::valueOf )
+                                             .toArray();
+
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+                                                    .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 
@@ -727,7 +732,12 @@ public final class TestDataFactory
 
         PoolMetadata baseMeta = PoolMetadata.of( evaluation, poolTwo );
 
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+        double[] rawClimatology = climatology.stream()
+                                             .mapToDouble( Double::valueOf )
+                                             .toArray();
+
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+                                                    .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 
@@ -799,7 +809,12 @@ public final class TestDataFactory
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        VectorOfDoubles clim = VectorOfDoubles.of( climatology.toArray( new Double[climatology.size()] ) );
+        double[] rawClimatology = climatology.stream()
+                                             .mapToDouble( Double::valueOf )
+                                             .toArray();
+
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+                                                    .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
 
@@ -908,7 +923,7 @@ public final class TestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                                     MessageFactory.getGeometry( FEATURE_NAME ) ),
+                                                  MessageFactory.getGeometry( FEATURE_NAME ) ),
                                       UNIT );
     }
 
@@ -922,7 +937,7 @@ public final class TestDataFactory
                                       TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                       VARIABLE_NAME,
                                       Feature.of(
-                                                     MessageFactory.getGeometry( FEATURE_NAME ) ),
+                                                  MessageFactory.getGeometry( FEATURE_NAME ) ),
                                       UNIT );
     }
 

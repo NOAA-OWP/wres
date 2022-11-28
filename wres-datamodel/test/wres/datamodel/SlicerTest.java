@@ -28,6 +28,7 @@ import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.Feature;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.Statistic;
@@ -38,6 +39,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -254,10 +259,28 @@ public final class SlicerTest
         expectedValues.add( Pair.of( 1.0, 3.0 / 5.0 ) );
         expectedValues.add( Pair.of( 1.0, 1.0 / 5.0 ) );
 
-        VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
-        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "feature" )
+                                    .build();
+        Feature feature = Feature.of( geometry );
 
-        PoolMetadata meta = PoolMetadata.of();
+        Climatology climatology =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN } )
+                                         .build();
+
+        Climatology climatologyExpected =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                                         .build();
+        PoolMetadata meta =
+                PoolMetadata.of( Evaluation.newBuilder()
+                                           .setMeasurementUnit( "foo" )
+                                           .build(),
+                                 wres.statistics.generated.Pool.newBuilder()
+                                                               .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                                               .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                                                                .setLeft( geometry )
+                                                                                                                                .setRight( geometry ) ) )
+                                                               .build() );
         Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), climatology );
         Pool<Pair<Double, Double>> sliced =
                 PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
@@ -265,11 +288,10 @@ public final class SlicerTest
         //Test with baseline
         assertEquals( expectedValues, sliced.get() );
         assertEquals( expectedValues, sliced.getBaselineData().get() );
-        assertTrue( Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
-        assertTrue( !Arrays.equals( PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
-                                              .getClimatology()
-                                              .getDoubles(),
-                                    climatologyExpected.getDoubles() ) );
+        assertEquals( climatologyExpected, sliced.getClimatology() );
+        assertNotEquals( climatologyExpected,
+                         PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
+                                   .getClimatology() );
         assertNotEquals( values, sliced.get() );
 
         //Test without baseline or climatology
@@ -297,7 +319,14 @@ public final class SlicerTest
         expectedValues.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3 ) ) );
         expectedValues.add( Pair.of( 0.0, Ensemble.of( 2, 3 ) ) );
 
-        VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "feature" )
+                                    .build();
+        Feature feature = Feature.of( geometry );
+
+        Climatology climatology =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                                         .build();
 
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), climatology );
@@ -309,7 +338,7 @@ public final class SlicerTest
         assertEquals( expectedValues, sliced.getBaselineData().get() );
         assertNotEquals( values, sliced.get() );
 
-        //Test without baseline or climatology
+        //Test without baseline
         Pool<Pair<Double, Ensemble>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Ensemble>> slicedNoBase =
                 PoolSlicer.transform( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ) );
@@ -535,10 +564,19 @@ public final class SlicerTest
     @Test
     public void testFilter()
     {
-        VectorOfDoubles input = VectorOfDoubles.of( 1, 2, 3, 4, 5, 6, 7 );
-        VectorOfDoubles expectedOutput = VectorOfDoubles.of( 1, 3, 5, 7 );
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "feature" )
+                                    .build();
+        Feature feature = Feature.of( geometry );
+
+        Climatology climatology =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, 6, 7 } )
+                                         .build();
+
+        Climatology expectedOutput = new Climatology.Builder().addClimatology( feature, new double[] { 1, 3, 5, 7 } )
+                                                              .build();
         DoublePredicate predicate = d -> ( d == 1 || d == 3 || d == 5 || d == 7 );
-        VectorOfDoubles actualOutput = Slicer.filter( input, predicate );
+        Climatology actualOutput = Slicer.filter( climatology, predicate );
 
         assertEquals( expectedOutput, actualOutput );
     }

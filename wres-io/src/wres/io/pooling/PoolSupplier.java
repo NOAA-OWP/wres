@@ -13,13 +13,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.Climatology;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.Pool;
@@ -41,7 +41,6 @@ import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -79,7 +78,7 @@ import wres.config.generated.ProjectConfig;
  * 
  * <p><b>Implementation notes:</b></p>
  * 
- * <p>This class is thread safe.
+ * <p>This class is thread safe. A pool supplier cannot be re-used, it is "one and done".
  * 
  * @author James Brown
  * @param <L> the type of left value in each pair
@@ -184,6 +183,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** The baseline features mapped against the left features as keys. **/
     private final Map<Feature, Feature> baselineFeaturesByLeft;
 
+    /** Has the supplier been called before? */
+    private final AtomicBoolean done = new AtomicBoolean( false );
+
     /**
      * Returns a {@link Pool} for metric calculation.
      * 
@@ -192,12 +194,21 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
      * @throws NoSuchUnitConversionException if the data units could not be converted
+     * @throws PoolCreationException if the supplier is called more than once
      */
 
     @Override
     public Pool<TimeSeries<Pair<L, R>>> get()
     {
-        return this.createPool();
+        if ( !this.done.getAndSet( true ) )
+        {
+            return this.createPool();
+        }
+
+        throw new PoolCreationException( "Attempted to call a pool supplier more than once, which is not allowed. The "
+                                         + "repeated call was made to the supplier of pool: "
+                                         + this.getMetadata()
+                                         + "." );
     }
 
     /**
@@ -724,6 +735,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
+        builder.setClimatology( this.getClimatology() );
 
         // Create the mini pools, one per feature
         for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairsToUse.entrySet() )
@@ -797,11 +809,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             }
 
             // Set the climatology
-            VectorOfDoubles nextClimatology = this.getClimatology( leftFeature );
+            Climatology nextClimatology = this.getClimatology();
             nextMiniPoolBuilder.setClimatology( nextClimatology );
 
             Pool<TimeSeries<Pair<L, R>>> nextMiniPool = nextMiniPoolBuilder.build();
-            builder.addPool( nextMiniPool, this.hasDeclaredFeatureGroups() );
+            builder.addPool( nextMiniPool );
         }
 
         // Set the metadata, adjusted to include the desired time scale
@@ -1463,50 +1475,31 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * Creates the climatological data as needed.
      * 
-     * @param climatologyFeatureKey the feature for which the climatology is needed, not null
      * @return the climatological data or null if no climatology is defined
      */
 
-    private VectorOfDoubles getClimatology( Feature climatologyFeatureKey )
+    private Climatology getClimatology()
     {
-        Objects.requireNonNull( climatologyFeatureKey );
-
         if ( Objects.isNull( this.climatology ) )
         {
             return null;
         }
 
-        List<TimeSeries<L>> climData = this.climatology.get()
-                                                       .filter( next -> next.getMetadata()
-                                                                            .getFeature()
-                                                                            .equals( climatologyFeatureKey ) )
-                                                       .collect( Collectors.toList() );
-
-        DoubleStream climatologyStream = DoubleStream.of();
+        Function<L, Double> mapper = value -> this.climatologyMapper.applyAsDouble( value );
+        List<TimeSeries<Double>> climData = this.climatology.get()
+                                                            .map( next -> TimeSeriesSlicer.transform( next,
+                                                                                                      mapper,
+                                                                                                      null ) )
+                                                            .collect( Collectors.toList() );
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Discovered {} climatological time-series for feature {} within pool {}.",
+            LOGGER.debug( "Discovered {} climatological time-series for pool {}.",
                           climData.size(),
-                          climatologyFeatureKey,
                           this.getMetadata() );
         }
 
-        for ( TimeSeries<L> next : climData )
-        {
-            TimeSeries<Double> transformed = TimeSeriesSlicer.transform( next,
-                                                                         this.climatologyMapper::applyAsDouble,
-                                                                         null );
-
-            // Extract the doubles
-            DoubleStream seriesDoubles = transformed.getEvents()
-                                                    .stream()
-                                                    .mapToDouble( Event::getValue );
-
-            climatologyStream = DoubleStream.concat( climatologyStream, seriesDoubles );
-        }
-
-        return VectorOfDoubles.of( climatologyStream.toArray() );
+        return Climatology.of( climData );
     }
 
     /**
