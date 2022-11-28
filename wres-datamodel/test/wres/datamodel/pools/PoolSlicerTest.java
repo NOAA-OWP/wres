@@ -243,14 +243,14 @@ class PoolSlicerTest
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
                                                                         Feature.of(
-                                                                                       MessageFactory.getGeometry( "bar" ) ),
+                                                                                    MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
                                                                         Feature.of(
-                                                                                       MessageFactory.getGeometry( "smeg" ) ),
+                                                                                    MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
@@ -322,8 +322,8 @@ class PoolSlicerTest
                                                                                        anotherBuilder.build() ) )
                                                         .build();
 
-        Pool<String> merged = new Builder<String>().addPool( aPool, false )
-                                                   .addPool( anotherPool, false )
+        Pool<String> merged = new Builder<String>().addPool( aPool )
+                                                   .addPool( anotherPool )
                                                    .build();
 
         Map<FeatureTuple, Pool<String>> actual =
@@ -626,8 +626,8 @@ class PoolSlicerTest
                                                                                   anotherBuilder.build() ) )
                                                    .build();
 
-        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool, false )
-                                                                               .addPool( anotherPool, false )
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
+                                                                               .addPool( anotherPool )
                                                                                .build();
 
         Map<FeatureTuple, Predicate<Pair<Double, Double>>> predicates = new HashMap<>();
@@ -705,8 +705,8 @@ class PoolSlicerTest
                                                                                   anotherBuilder.build() ) )
                                                    .build();
 
-        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool, false )
-                                                                               .addPool( anotherPool, false )
+        Pool<Pair<Double, Double>> merged = new Builder<Pair<Double, Double>>().addPool( aPool )
+                                                                               .addPool( anotherPool )
                                                                                .build();
 
         Map<FeatureTuple, Function<Pair<Double, Double>, Pair<Boolean, Boolean>>> transformers = new HashMap<>();

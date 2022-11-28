@@ -25,15 +25,19 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
@@ -49,7 +53,7 @@ public final class TimeSeriesSlicerTest
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final Feature DRRC2 = Feature.of(
-                                                           MessageFactory.getGeometry( "DRRC2" ) );
+                                                     MessageFactory.getGeometry( "DRRC2" ) );
     private static final String T2010_01_01T16_00_00Z = "2010-01-01T16:00:00Z";
     private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
     private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
@@ -69,7 +73,7 @@ public final class TimeSeriesSlicerTest
 
     private static final String VARIABLE_NAME = "Fruit";
     private static final Feature FEATURE_NAME = Feature.of(
-                                                                  MessageFactory.getGeometry( "Tropics" ) );
+                                                            MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     @Test
@@ -653,7 +657,22 @@ public final class TimeSeriesSlicerTest
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 16.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 17.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 18.0 ) ) );
-        PoolMetadata meta = PoolMetadata.of();
+
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( "feature" )
+                                    .build();
+        Feature feature = Feature.of( geometry );
+
+        PoolMetadata meta =
+                PoolMetadata.of( Evaluation.newBuilder()
+                                           .setMeasurementUnit( "foo" )
+                                           .build(),
+                                 wres.statistics.generated.Pool.newBuilder()
+                                                               .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                                               .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                                                                .setLeft( geometry )
+                                                                                                                                .setRight( geometry ) ) )
+                                                               .build() );
 
         //Add the time-series
         Pool<TimeSeries<Pair<Double, Double>>> firstSeries = b.addData( TimeSeries.of( firstMetadata,
@@ -688,8 +707,12 @@ public final class TimeSeriesSlicerTest
         assertEquals( secondBenchmark, secondData );
 
         // Add climatology for later
-        VectorOfDoubles climatology = VectorOfDoubles.of( 1, 2, 3, 4, 5, Double.NaN );
-        VectorOfDoubles climatologyExpected = VectorOfDoubles.of( 1, 2, 3, 4, 5 );
+        Climatology climatology =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN } )
+                                         .build();
+        Climatology climatologyExpected =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                                         .build();
 
         b.setClimatology( climatology );
 

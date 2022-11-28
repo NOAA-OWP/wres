@@ -349,7 +349,7 @@ public final class SingleValuedPairsWriterTest
 
                 // Create the pairs with a time window
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
-                tsBuilder.addPool( SingleValuedPairsWriterTest.pairs, false );
+                tsBuilder.addPool( SingleValuedPairsWriterTest.pairs );
                 TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                  Instant.parse( "1990-01-01T00:00:00Z" ),
                                                                  Duration.ZERO );

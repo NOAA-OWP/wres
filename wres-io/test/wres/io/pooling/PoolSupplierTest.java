@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.Climatology;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -140,7 +140,7 @@ public class PoolSupplierTest
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
     private static final Feature FEATURE = Feature.of(
-                                                             MessageFactory.getGeometry( "DRRC2" ) );
+                                                       MessageFactory.getGeometry( "DRRC2" ) );
     private static final String UNIT = "CMS";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
@@ -613,7 +613,8 @@ public class PoolSupplierTest
     {
         // Mock one return of the observed stream, even though it is used for climatology,
         // because we are adding to a CachingRetriever
-        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations ) );
 
         Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
@@ -655,8 +656,9 @@ public class PoolSupplierTest
                                                           .build();
 
         // Acquire the pools for the baseline
-        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get().getBaselineData();
-
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get()
+                                                                              .getBaselineData();
+        
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
@@ -692,7 +694,8 @@ public class PoolSupplierTest
                                                      .mapToDouble( Event::getValue )
                                                      .toArray();
 
-        VectorOfDoubles expectedClimatology = VectorOfDoubles.of( climatologyArray );
+        Climatology expectedClimatology = new Climatology.Builder().addClimatology( FEATURE, climatologyArray )
+                                                                   .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
                 new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( poolOneSeries )
@@ -858,7 +861,7 @@ public class PoolSupplierTest
         // Create the duplicate observed series for a different feature
         String featureName = "DOSC1";
         Feature feature = Feature.of(
-                                            MessageFactory.getGeometry( featureName ) );
+                                      MessageFactory.getGeometry( featureName ) );
 
         TimeSeriesMetadata obsMeta = this.observations.getMetadata();
         TimeSeries<Double> observationsTwo = new TimeSeries.Builder<Double>().addEvents( this.observations.getEvents() )

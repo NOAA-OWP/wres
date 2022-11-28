@@ -143,7 +143,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
-        Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
+        Objects.requireNonNull( pool.getMetadata()
+                                    .getTimeWindow(),
                                 "Expected a non-null time window in the pool metadata." );
 
         // Metric futures 
@@ -162,14 +163,14 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                                       Function.identity(),
                                                                                       unadjusted -> PoolMetadata.of( unadjusted,
                                                                                                                      ensembleAverageType ) );
-
+        
         // Remove missing values. 
         // TODO: when time-series metrics are supported, leave missings in place for time-series
         // Also retain the time-series shape, where required
         Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( adjustedPool );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
                 PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA ) );
-
+        
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
@@ -374,8 +375,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
@@ -520,8 +521,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
@@ -711,8 +712,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =

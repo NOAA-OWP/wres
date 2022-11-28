@@ -271,8 +271,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         // Unpack the thresholds and add the quantiles, if needed
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
 
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
@@ -299,7 +299,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                                                    slicers,
                                                                    PoolSlicer.getFeatureMapper(),
                                                                    metaTransformer );
-            
+
             this.processSingleValuedPairs( sliced,
                                            futures,
                                            outGroup );
@@ -445,8 +445,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
@@ -513,8 +513,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
-        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles =
-                ThresholdSlicer.addQuantiles( unpacked, pool, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( unpacked,
+                                                                                             pool.getClimatology() );
 
         // Find the unique thresholds by value
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
@@ -644,8 +644,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     public SingleValuedStatisticsProcessor( ThresholdsByMetricAndFeature metrics,
-                                                   ExecutorService thresholdExecutor,
-                                                   ExecutorService metricExecutor )
+                                            ExecutorService thresholdExecutor,
+                                            ExecutorService metricExecutor )
     {
         super( metrics, thresholdExecutor, metricExecutor );
 

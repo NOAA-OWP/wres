@@ -23,16 +23,15 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.Climatology;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.space.Feature;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
@@ -533,44 +532,20 @@ public class ThresholdSlicer
     }
 
     /**
-     * Adds a quantile to each probability threshold in the input using the climatological data provided by the pool 
-     * and a mapping function that maps from the pool metadata to the keyed data. Preserves any thresholds that do not
-     * require quantiles.
+     * Adds a quantile to each probability threshold in the input using the climatological data. Preserves any 
+     * thresholds that do not require quantiles. Uses the left-ish feature to correlate with the climatological data.
      * 
-     * @param <S> the type of key
-     * @param <T> the type of pool data
      * @param thresholds the thresholds
-     * @param pool the pool
-     * @param metaMapper the function that maps from the pool metadata to the map key
+     * @param climatology the climatology
      * @return the thresholds with quantiles added
-     * @throws ThresholdException if no climatology is available
+     * @throws ThresholdException if the climatology is required but null
      */
 
-    public static <S extends Comparable<S>, T> Map<S, Set<ThresholdOuter>>
-            addQuantiles( Map<S, Set<ThresholdOuter>> thresholds,
-                          Pool<T> pool,
-                          Function<PoolMetadata, S> metaMapper )
+    public static Map<FeatureTuple, Set<ThresholdOuter>>
+            addQuantiles( Map<FeatureTuple, Set<ThresholdOuter>> thresholds,
+                          Climatology climatology )
     {
         Objects.requireNonNull( thresholds );
-        Objects.requireNonNull( pool );
-        Objects.requireNonNull( metaMapper );
-
-        Map<S, Pool<T>> decomposed = PoolSlicer.decompose( metaMapper, pool );
-
-        // Probability thresholds included, but no climatology
-        if ( thresholds.values()
-                       .stream()
-                       .flatMap( Set::stream )
-                       .anyMatch( ThresholdOuter::hasProbabilities )
-             && decomposed.values()
-                          .stream()
-                          .noneMatch( Pool::hasClimatology ) )
-        {
-            throw new ThresholdException( "Cannot add quantiles to probability thresholds without a climatological "
-                                          + "data source. Add a climatological data source to pool "
-                                          + pool.getMetadata()
-                                          + " and try again." );
-        }
 
         // No probability thresholds, return the input thresholds
         if ( thresholds.values()
@@ -583,23 +558,30 @@ public class ThresholdSlicer
             return thresholds;
         }
 
-        Map<S, Set<ThresholdOuter>> returnMe = new HashMap<>();
-        for ( Map.Entry<S, Pool<T>> nextEntry : decomposed.entrySet() )
+        Map<FeatureTuple, Set<ThresholdOuter>> returnMe = new HashMap<>();
+        for ( Map.Entry<FeatureTuple, Set<ThresholdOuter>> nextThresholds : thresholds.entrySet() )
         {
-            S nextKey = nextEntry.getKey();
-            Pool<T> nextPool = nextEntry.getValue();
-            Set<ThresholdOuter> nextThresholdSet = thresholds.get( nextKey );
+            FeatureTuple nextFeature = nextThresholds.getKey();
+            Set<ThresholdOuter> nextThresholdSet = nextThresholds.getValue();
 
             // Probability threshold available for this pool
             boolean hasProbabilityThreshold = Objects.nonNull( nextThresholdSet )
                                               && nextThresholdSet.stream()
                                                                  .anyMatch( ThresholdOuter::hasProbabilities );
-            if ( nextPool.hasClimatology() && hasProbabilityThreshold )
+            if ( hasProbabilityThreshold )
             {
-                VectorOfDoubles climatology = nextPool.getClimatology();
+                Feature leftFeature = nextFeature.getLeft();
 
-                double[] sorted = climatology.getDoubles();
-                Arrays.sort( sorted );
+                if ( Objects.isNull( climatology ) || !climatology.hasFeature( leftFeature ) )
+                {
+                    throw new ThresholdException( "Quantiles were required for feature tuple '"
+                                                  + nextFeature.toStringShort()
+                                                  + "' but no climatological data was found for the left feature, '"
+                                                  + leftFeature.getName()
+                                                  + "'." );
+                }
+
+                double[] sorted = climatology.get( leftFeature );
 
                 // Quantile mapper
                 UnaryOperator<ThresholdOuter> quantileMapper =
@@ -617,25 +599,25 @@ public class ThresholdSlicer
                                 .filter( Predicate.not( ThresholdOuter::hasProbabilities ) )
                                 .forEach( quantiles::add );
 
-                returnMe.put( nextKey, quantiles );
+                returnMe.put( nextFeature, quantiles );
             }
             else if ( Objects.nonNull( nextThresholdSet ) )
             {
                 LOGGER.debug( "Failed to add quantile thresholds for {}. In order to add a quantile threshold, a "
                               + "probability threshold and some climatological data must both be available. "
-                              + "Climatological data: {}. Probability threshold found: {}.",
-                              nextKey,
-                              nextPool.hasClimatology(),
+                              + "Climatological data found: {}. Probability threshold found: {}.",
+                              nextFeature,
+                              Objects.nonNull( climatology ),
                               hasProbabilityThreshold );
 
                 // Preserve them
-                returnMe.put( nextKey, nextThresholdSet );
+                returnMe.put( nextFeature, nextThresholdSet );
             }
             else if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "While attempting to add quantiles to thresholds, failed to find a correlation "
                               + "in the threshold map for key {}. The available keys were {}.",
-                              nextKey,
+                              nextFeature,
                               thresholds.keySet() );
             }
         }

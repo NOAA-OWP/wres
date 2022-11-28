@@ -1,7 +1,6 @@
 package wres.datamodel.pools;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -13,8 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
-import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.Climatology;
 
 /**
  * <p>An atomic collection of samples from which a statistic is computed using a metric. The samples may comprise paired 
@@ -64,7 +62,7 @@ public class Pool<T> implements Supplier<List<T>>
      * Climatological dataset. May be null.
      */
 
-    private final VectorOfDoubles climatology;
+    private final Climatology climatology;
 
     /**
      * Provides a view of the mini-pools from which this pool was constructed, otherwise, a view of the overall pool, 
@@ -123,7 +121,7 @@ public class Pool<T> implements Supplier<List<T>>
      * @return a climatological dataset or null
      */
 
-    public VectorOfDoubles getClimatology()
+    public Climatology getClimatology()
     {
         return this.climatology;
     }
@@ -161,7 +159,8 @@ public class Pool<T> implements Supplier<List<T>>
             return null;
         }
 
-        Builder<T> builder = new Builder<T>().setMetadata( this.baselineMeta );
+        Builder<T> builder = new Builder<T>().setMetadata( this.baselineMeta )
+                                             .setClimatology( this.climatology );
 
         // Preserve the mini-pool view of the data
         List<Pool<T>> miniPools = this.getMiniPools();
@@ -175,7 +174,7 @@ public class Pool<T> implements Supplier<List<T>>
                                                        .setClimatology( next.climatology )
                                                        .build();
 
-                builder.addPool( nextBaseline, false );
+                builder.addPool( nextBaseline );
             }
         }
 
@@ -294,7 +293,7 @@ public class Pool<T> implements Supplier<List<T>>
                                   PoolMetadata sampleMeta,
                                   List<T> baselineData,
                                   PoolMetadata baselineMeta,
-                                  VectorOfDoubles climatology )
+                                  Climatology climatology )
     {
         Builder<T> builder = new Builder<>();
 
@@ -333,7 +332,7 @@ public class Pool<T> implements Supplier<List<T>>
          * Climatology.
          */
 
-        private VectorOfDoubles climatology;
+        private Climatology climatology;
 
         /**
          * Metadata for input.
@@ -381,7 +380,7 @@ public class Pool<T> implements Supplier<List<T>>
          * @return the builder
          */
 
-        public Builder<T> setClimatology( VectorOfDoubles climatology )
+        public Builder<T> setClimatology( Climatology climatology )
         {
             this.climatology = climatology;
 
@@ -458,12 +457,11 @@ public class Pool<T> implements Supplier<List<T>>
          * Adds a pool of pairs to the builder.
          * 
          * @param pool the pool to add
-         * @param mergeClimatology is true to merge the climatology of the input with any existing climatology
          * @return the builder
          * @throws NullPointerException if the input is null
          */
 
-        public Builder<T> addPool( Pool<T> pool, boolean mergeClimatology )
+        public Builder<T> addPool( Pool<T> pool )
         {
             Objects.requireNonNull( pool, "Cannot add a null pool to the builder." );
 
@@ -482,18 +480,6 @@ public class Pool<T> implements Supplier<List<T>>
             else
             {
                 this.mainMeta = pool.getMetadata();
-            }
-
-            // Merge climatology?
-            if ( mergeClimatology && Objects.nonNull( this.climatology ) && pool.hasClimatology() )
-            {
-                LOGGER.debug( "Merging climatology for pool {} into pool {}.", pool.getMetadata(), this.mainMeta );
-
-                this.climatology = Slicer.concatenate( this.climatology, pool.getClimatology() );
-            }
-            else
-            {
-                this.climatology = pool.getClimatology();
             }
 
             if ( pool.hasBaseline() )
@@ -562,7 +548,6 @@ public class Pool<T> implements Supplier<List<T>>
         }
 
         //Validate
-        this.validateClimatologicalInput();
         this.validateMainInput();
         this.validateBaselineInput();
     }
@@ -615,31 +600,6 @@ public class Pool<T> implements Supplier<List<T>>
                                      + "allowed. The complete baseline metadata is: "
                                      + this.baselineMeta
                                      + "." );
-        }
-    }
-
-    /**
-     * Validates the climatological input after the constructor has copied it.
-     * 
-     * @throws PoolException if the climatological input is invalid
-     */
-
-    private void validateClimatologicalInput()
-    {
-        // #65881: if a climatology is provided, it cannot be empty when some pairs exist
-        if ( Objects.nonNull( this.getClimatology() ) && !this.get().isEmpty() )
-        {
-            if ( this.getClimatology().size() == 0 )
-            {
-                throw new PoolException( "Cannot build the paired data with an empty climatology: add one or "
-                                         + "more values." );
-            }
-
-            if ( !Arrays.stream( this.getClimatology().getDoubles() ).anyMatch( Double::isFinite ) )
-            {
-                throw new PoolException( "Must have at least one non-missing value in the climatological "
-                                         + "input" );
-            }
         }
     }
 }
