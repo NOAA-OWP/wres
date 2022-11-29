@@ -240,8 +240,7 @@ public class GriddedReader
         // Add the time-series
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
-            Builder<T> builder =
-                    new Builder<T>().addEvents( nextEntry.getValue() );
+            Builder<T> builder = new Builder<T>().setEvents( nextEntry.getValue() );
             Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
 
             // Add the reference time for forecasts

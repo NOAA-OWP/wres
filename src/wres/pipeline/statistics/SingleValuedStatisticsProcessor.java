@@ -258,6 +258,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
+
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
 
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
@@ -295,9 +296,15 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             UnaryOperator<PoolMetadata> metaTransformer =
                     untransformed -> PoolMetadata.of( untransformed, composed );
 
-            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pool,
+            // Decompose by feature
+            Map<FeatureTuple, Pool<Pair<Double, Double>>> pools =
+                    PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
+
+            // Filter by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pools,
                                                                    slicers,
-                                                                   PoolSlicer.getFeatureMapper(),
+                                                                   pool.getMetadata(),
+                                                                   super.getBaselineMetadata( pool ),
                                                                    metaTransformer );
 
             this.processSingleValuedPairs( sliced,
@@ -434,6 +441,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         ThresholdsByMetricAndFeature thresholdsByMetricAndFeature = super.getMetrics();
         FeatureGroup featureGroup = pool.getMetadata()
                                         .getFeatureGroup();
+
         thresholdsByMetricAndFeature = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature( featureGroup );
 
         Map<FeatureTuple, ThresholdsByMetric> filtered = thresholdsByMetricAndFeature.getThresholdsByMetricAndFeature();
@@ -473,10 +481,15 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             UnaryOperator<PoolMetadata> metaTransformer =
                     untransformed -> PoolMetadata.of( untransformed, composed );
 
-            // Transform the pairs
-            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool,
+            // Decompose by feature
+            Map<FeatureTuple, Pool<Pair<Double, Double>>> pools =
+                    PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
+
+            // Transform by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pools,
                                                                              transformers,
-                                                                             PoolSlicer.getFeatureMapper(),
+                                                                             pool.getMetadata(),
+                                                                             this.getBaselineMetadata( pool ),
                                                                              metaTransformer );
 
             super.processDichotomousPairs( transformed,
@@ -536,10 +549,15 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             UnaryOperator<PoolMetadata> metaTransformer =
                     untransformed -> PoolMetadata.of( untransformed, composed );
 
+            // Decompose by feature
+            Map<FeatureTuple, Pool<TimeSeries<Pair<Double, Double>>>> pools =
+                    PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
 
-            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pool,
+            // Filter by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pools,
                                                                                slicers,
-                                                                               PoolSlicer.getFeatureMapper(),
+                                                                               pool.getMetadata(),
+                                                                               super.getBaselineMetadata( pool ),
                                                                                metaTransformer );
 
             // Build the future result

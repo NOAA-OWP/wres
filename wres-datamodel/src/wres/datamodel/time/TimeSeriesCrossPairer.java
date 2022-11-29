@@ -192,7 +192,9 @@ public class TimeSeriesCrossPairer<L, R>
                               nearest.getMetadata(),
                               nearest.getEvents().size(),
                               events.size(),
-                              events.stream().map( Event::getTime ).collect( Collectors.toSet() ) );
+                              events.stream()
+                                    .map( Event::getTime )
+                                    .collect( Collectors.toSet() ) );
             }
 
             if ( !events.isEmpty() )
@@ -200,8 +202,8 @@ public class TimeSeriesCrossPairer<L, R>
                 // Consider only valid times that are part of the next time-series
                 TimeSeries<Pair<L, R>> nextSeries =
                         new Builder<Pair<L, R>>().setMetadata( nearest.getMetadata() )
-                                                           .setEvents( events )
-                                                           .build();
+                                                 .setEvents( events )
+                                                 .build();
 
                 returnMe.add( nextSeries );
 

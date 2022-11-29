@@ -160,12 +160,19 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
             .forEach( next -> mapper.put( next.getTime(), next ) );
 
         // The pairs
-        SortedSet<Event<Pair<L, R>>> pairs = new TreeSet<>();
-
         int leftInadmissible = left.getEvents().size() - mapper.size();
         int rightInadmissible = 0;
 
+        // The pairs inherit the metadata of the left-hand time-series, which is a simplification. In order to model
+        // this properly, we would need to relax the modeling in the TimeSeriesMetadata
+        // The left metadata is used primarily for the left feature, which is common to all pairs and provides a
+        // consistent hook for slicing the pairs: see the discussion in #110139
+        TimeSeriesMetadata metadata =
+                new TimeSeriesMetadata.Builder( left.getMetadata() ).setReferenceTimes( referenceTimes )
+                                                                    .build();
+
         // Find the right with corresponding valid times to the left
+        TimeSeries.Builder<Pair<L, R>> builder = new TimeSeries.Builder<Pair<L, R>>().setMetadata( metadata );
         for ( Event<R> nextRight : right.getEvents() )
         {
             // Right value admissible?
@@ -177,7 +184,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                     Event<L> nextLeft = mapper.get( nextRight.getTime() );
                     Pair<L, R> pair = Pair.of( nextLeft.getValue(), nextRight.getValue() );
                     Event<Pair<L, R>> event = Event.of( nextLeft.getTime(), pair );
-                    pairs.add( event );
+                    builder.addEvent( event );
                 }
             }
             else
@@ -189,17 +196,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
         // Log inadmissible cases
         this.logInadmissibleCases( left, right, leftInadmissible, rightInadmissible );
 
-        // The pairs inherit the metadata of the left-hand time-series, which is a simplification. In order to model
-        // this properly, we would need to relax the modeling in the TimeSeriesMetadata
-        // The left metadata is used primarily for the left feature, which is common to all pairs and provides a
-        // consistent hook for slicing the pairs: see the discussion in #110139
-        TimeSeriesMetadata metadata =
-                new TimeSeriesMetadata.Builder( left.getMetadata() ).setReferenceTimes( referenceTimes )
-                                                                    .build();
-
-        return new Builder<Pair<L, R>>().setMetadata( metadata )
-                                        .setEvents( pairs )
-                                        .build();
+        return builder.build();
     }
 
     /**

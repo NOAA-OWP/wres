@@ -76,7 +76,6 @@ import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
-import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -1596,7 +1595,7 @@ public class PoolFactory
 
             // Decompose/map the pools by feature and cache that map for re-use
             Supplier<Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>>> decomposed =
-                    () -> PoolSlicer.decompose( PoolSlicer.getFeatureMapper(), nextSupplier.get() );
+                    () -> PoolSlicer.decompose( nextSupplier.get(), PoolSlicer.getFeatureMapper() );
             Supplier<Map<FeatureTuple, Pool<TimeSeries<Pair<L, R>>>>> cachedDecomposed =
                     CachingSupplier.of( decomposed );
 

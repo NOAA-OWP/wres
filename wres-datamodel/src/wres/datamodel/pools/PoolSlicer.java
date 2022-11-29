@@ -93,10 +93,19 @@ public class PoolSlicer
         Objects.requireNonNull( transformer, PoolSlicer.NULL_MAPPER_EXCEPTION );
         Objects.requireNonNull( metaTransformer, PoolSlicer.NULL_META_MAPPER_EXCEPTION );
 
+        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setClimatology( pool.getClimatology() );
+
+        // Preserve any small pools
+        for ( Pool<S> next : pool.getMiniPools() )
+        {
+            Pool<T> transformed = PoolSlicer.transformInner( next, transformer, metaTransformer );
+            poolBuilder.addPool( transformed );
+        }
+
+        // Set the overall metadata
         PoolMetadata unmapped = pool.getMetadata();
         PoolMetadata mapped = metaTransformer.apply( unmapped );
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped )
-                                                           .setClimatology( pool.getClimatology() );
+        poolBuilder.setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
@@ -104,13 +113,6 @@ public class PoolSlicer
                                                 .getMetadata();
             PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
             poolBuilder.setMetadataForBaseline( mappedBaseline );
-        }
-
-        // Preserve any small pools
-        for ( Pool<S> next : pool.getMiniPools() )
-        {
-            Pool<T> transformed = PoolSlicer.transformInner( next, transformer, metaTransformer );
-            poolBuilder.addPool( transformed );
         }
 
         return poolBuilder.build();
@@ -158,9 +160,7 @@ public class PoolSlicer
         Objects.requireNonNull( condition, PoolSlicer.NULL_PREDICATE_EXCEPTION );
         Objects.requireNonNull( metaTransformer, PoolSlicer.NULL_META_MAPPER_EXCEPTION );
 
-        PoolMetadata unmapped = pool.getMetadata();
-        PoolMetadata mapped = metaTransformer.apply( unmapped );
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>().setMetadata( mapped );
+        Pool.Builder<T> poolBuilder = new Pool.Builder<T>();
 
         // Filter climatology as required
         if ( pool.hasClimatology() )
@@ -175,14 +175,6 @@ public class PoolSlicer
             poolBuilder.setClimatology( climatology );
         }
 
-        if ( pool.hasBaseline() )
-        {
-            PoolMetadata unmappedBaseline = pool.getBaselineData()
-                                                .getMetadata();
-            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
-            poolBuilder.setMetadataForBaseline( mappedBaseline );
-        }
-
         // Preserve any small pools
         for ( Pool<T> next : pool.getMiniPools() )
         {
@@ -190,86 +182,10 @@ public class PoolSlicer
             poolBuilder.addPool( filtered );
         }
 
-        return poolBuilder.build();
-    }
-
-    /**
-     * Applies an attribute-specific filter to the corresponding attribute-specific subset of pairs in the input and 
-     * returns the union of those filtered subsets for a metadata attribute that is extracted from the pool metadata
-     * with a mapper.
-     * 
-     * @param <S> the pooled data type
-     * @param <T> the metadata attribute
-     * @param pool the pool to filter
-     * @param filters the filters to use
-     * @param metaMapper the function to extract an attribute from the metadata
-     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
-     * @throws NullPointerException if any input is null
-     * @throws PoolException if the pool could not be filtered for any reason
-     */
-
-    public static <S, T extends Comparable<T>> Pool<S> filter( Pool<S> pool,
-                                                               Map<T, Predicate<S>> filters,
-                                                               Function<PoolMetadata, T> metaMapper )
-    {
-        return PoolSlicer.filter( pool, filters, metaMapper, meta -> meta );
-    }
-
-    /**
-     * Applies an attribute-specific filter to the corresponding attribute-specific subset of pairs in the input and 
-     * returns the union of those filtered subsets for a metadata attribute that is extracted from the pool metadata
-     * with a mapper. An example application may be to extract the pairs for a named feature within a pool of multiple 
-     * features and create a pool for only that feature. Additionally transforms the metadata to reflect the filtering 
-     * of the pool.
-     * 
-     * @param <S> the pooled data type
-     * @param <T> the metadata attribute
-     * @param pool the pool to filter
-     * @param filters the filters to use
-     * @param metaMapper the function to extract an attribute from the metadata
-     * @param metaTransformer the metadata transformer, not null
-     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
-     * @throws NullPointerException if any input is null
-     * @throws PoolException if the pool could not be filtered for any reason
-     */
-
-    public static <S, T extends Comparable<T>> Pool<S> filter( Pool<S> pool,
-                                                               Map<T, Predicate<S>> filters,
-                                                               Function<PoolMetadata, T> metaMapper,
-                                                               UnaryOperator<PoolMetadata> metaTransformer )
-    {
-        Objects.requireNonNull( pool );
-        Objects.requireNonNull( filters );
-        Objects.requireNonNull( metaMapper );
-
-        // Optimization for no data, only apply the metadata adjustment
-        if ( pool.get().isEmpty() && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() ) )
-        {
-            PoolMetadata unmapped = pool.getMetadata();
-            PoolMetadata mapped = metaTransformer.apply( unmapped );
-            Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( mapped )
-                                                               .setClimatology( pool.getClimatology() );
-
-            if ( pool.hasBaseline() )
-            {
-                PoolMetadata unmappedBaseline = pool.getBaselineData()
-                                                    .getMetadata();
-                PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
-                poolBuilder.setMetadataForBaseline( mappedBaseline );
-            }
-
-            return poolBuilder.build();
-        }
-
-        // Small pools
-        Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
-
-        // Iterate the pools and apply the filters
-        Set<T> keysWithoutFilter = new HashSet<>();
-
+        // Set the overall metadata
         PoolMetadata unmapped = pool.getMetadata();
         PoolMetadata mapped = metaTransformer.apply( unmapped );
-        Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( mapped );
+        poolBuilder.setMetadata( mapped );
 
         if ( pool.hasBaseline() )
         {
@@ -278,6 +194,58 @@ public class PoolSlicer
             PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
             poolBuilder.setMetadataForBaseline( mappedBaseline );
         }
+
+        return poolBuilder.build();
+    }
+
+    /**
+     * Applies an attribute-specific filter to the corresponding attribute-specific subset of pooled data and returns 
+     * the union of those filtered subsets. An example application may be to extract the pairs for a named feature 
+     * within a pool of multiple features and create a pool for only that feature, applying a feature-specific filter 
+     * to each feature-specific pool. Use the metadata transformer to generate metadata for each of the filtered pools.
+     * 
+     * @param <S> the pooled data type
+     * @param <T> the metadata attribute
+     * @param pools the pools to filter
+     * @param filters the filters to use
+     * @param composedMetadata the metadata for the composition
+     * @param composedBaselineMetadata the metadata for the baseline composition
+     * @param metaTransformer the metadata transformer, not null
+     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
+     * @throws NullPointerException if any required input is null
+     * @throws PoolException if the pool could not be filtered for any reason
+     */
+
+    public static <S, T extends Comparable<T>> Pool<S> filter( Map<T, Pool<S>> pools,
+                                                               Map<T, Predicate<S>> filters,
+                                                               PoolMetadata composedMetadata,
+                                                               PoolMetadata composedBaselineMetadata,
+                                                               UnaryOperator<PoolMetadata> metaTransformer )
+    {
+        Objects.requireNonNull( pools );
+        Objects.requireNonNull( filters );
+        Objects.requireNonNull( composedMetadata );
+        Objects.requireNonNull( metaTransformer );
+
+        // Return the empty pool
+        if ( pools.isEmpty() )
+        {
+            PoolMetadata mapped = metaTransformer.apply( composedMetadata );
+            Pool.Builder<S> poolBuilder = new Pool.Builder<S>().setMetadata( mapped );
+
+            if ( Objects.nonNull( composedBaselineMetadata ) )
+            {
+                PoolMetadata mappedBaseline = metaTransformer.apply( composedBaselineMetadata );
+                poolBuilder.setMetadataForBaseline( mappedBaseline );
+            }
+
+            return poolBuilder.build();
+        }
+
+        Pool.Builder<S> poolBuilder = new Pool.Builder<S>();
+
+        // Iterate the pools and apply the filters
+        Set<T> keysWithoutFilter = new HashSet<>();
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
         {
@@ -297,100 +265,87 @@ public class PoolSlicer
             }
         }
 
+        // Set the overall metadata
+        PoolMetadata mapped = metaTransformer.apply( composedMetadata );
+        poolBuilder.setMetadata( mapped );
+
+        if ( Objects.nonNull( composedBaselineMetadata ) )
+        {
+            PoolMetadata mappedBaseline = metaTransformer.apply( composedBaselineMetadata );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
+        }
+
         // Handle cases with no data or some missing data
         if ( keysWithoutFilter.size() == pools.size() )
         {
-            throw new PoolException( "Failed to filter a pool into the subset of time-series events required. This "
-                                     + "probably occurred because one of the smaller pools from which the pool was "
-                                     + "constructed had incorrect metadata. Failed to identify a filter for any of "
-                                     + "these metadata attribute instances: "
+            throw new PoolException( "Failed to apply attribute-specific filers to a pool. This probably occurred "
+                                     + "because one of the smaller pools from which the pool was constructed had "
+                                     + "incorrect metadata. Failed to identify a filter for any of these metadata "
+                                     + "attribute instances: "
                                      + keysWithoutFilter
                                      + ". These filters were available: "
                                      + filters.keySet()
-                                     + ". The metadata of the pool to filter was: "
-                                     + pool.getMetadata()
                                      + "." );
         }
         else if ( !keysWithoutFilter.isEmpty() && LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "When filtering a pool into smaller pools by metadata attribute, failed to correlate some "
                           + "attributes with filters: {}. Consequently, no filtered pool was identified for any of "
-                          + "these attribute instances and they will not be included in the evaluation. The pool "
-                          + "metadata was {}.",
-                          keysWithoutFilter,
-                          pool.getMetadata() );
+                          + "these attribute instances and they will not be included in the evaluation.",
+                          keysWithoutFilter );
         }
 
         return poolBuilder.build();
     }
 
     /**
-     * Applies an attribute-specific transformer to the corresponding attribute-specific subset of pairs in the input 
-     * and returns the union of those transformed subsets for a metadata attribute that is extracted from the pool 
-     * metadata with a mapper.
+     * Applies an attribute-specific transformer to the corresponding attribute-specific pools in the input 
+     * and returns the union of those transformed subsets. Also transforms the metadata to reflect the transformation
+     * of the pool.
      * 
      * @param <S> the pooled data type
      * @param <T> the metadata attribute
      * @param <U> the transformed pool data type
-     * @param pool the pool to transform
+     * @param pools the pools to transform
      * @param transformers the transformers to use
-     * @param metaMapper the function to extract an attribute from the metadata
-     * @return the union of the subsets, each subset filtered by an attribute-specific predicate
-     * @throws NullPointerException if any input is null
-     * @throws PoolException if the pool could not be filtered for any reason
-     */
-
-    public static <S, T extends Comparable<T>, U> Pool<U> transform( Pool<S> pool,
-                                                                     Map<T, Function<S, U>> transformers,
-                                                                     Function<PoolMetadata, T> metaMapper )
-    {
-        return PoolSlicer.transform( pool, transformers, metaMapper, meta -> meta );
-    }
-
-    /**
-     * Applies an attribute-specific transformer to the corresponding attribute-specific subset of pairs in the input 
-     * and returns the union of those transformed subsets for a metadata attribute that is extracted from the pool 
-     * metadata with a mapper. Also transforms the metadata to reflect the transformation of the pool.
-     * 
-     * @param <S> the pooled data type
-     * @param <T> the metadata attribute
-     * @param <U> the transformed pool data type
-     * @param pool the pool to transform
-     * @param transformers the transformers to use
-     * @param metaMapper the function to extract an attribute from the metadata
+     * @param composedMetadata the metadata for the composition
+     * @param composedBaselineMetadata the metadata for the baseline composition
      * @param metaTransformer the function that transforms the pool metadata to reflect the transformation of the pool
      * @return the union of the subsets, each subset filtered by an attribute-specific predicate
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any required input is null
      * @throws PoolException if the pool could not be filtered for any reason
      */
 
-    public static <S, T extends Comparable<T>, U> Pool<U> transform( Pool<S> pool,
+    public static <S, T extends Comparable<T>, U> Pool<U> transform( Map<T, Pool<S>> pools,
                                                                      Map<T, Function<S, U>> transformers,
-                                                                     Function<PoolMetadata, T> metaMapper,
+                                                                     PoolMetadata composedMetadata,
+                                                                     PoolMetadata composedBaselineMetadata,
                                                                      UnaryOperator<PoolMetadata> metaTransformer )
     {
-        Objects.requireNonNull( pool );
+        Objects.requireNonNull( pools );
         Objects.requireNonNull( transformers );
-        Objects.requireNonNull( metaMapper );
+        Objects.requireNonNull( composedMetadata );
         Objects.requireNonNull( metaTransformer );
 
-        // Small pools
-        Map<T, Pool<S>> pools = PoolSlicer.decompose( metaMapper, pool );
+        // Return the empty pool
+        if ( pools.isEmpty() )
+        {
+            PoolMetadata mapped = metaTransformer.apply( composedMetadata );
+            Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( mapped );
+
+            if ( Objects.nonNull( composedBaselineMetadata ) )
+            {
+                PoolMetadata mappedBaseline = metaTransformer.apply( composedBaselineMetadata );
+                poolBuilder.setMetadataForBaseline( mappedBaseline );
+            }
+
+            return poolBuilder.build();
+        }
 
         // Iterate the pools and apply the transformers
         Set<T> keysWithoutTransformer = new HashSet<>();
 
-        PoolMetadata unmapped = pool.getMetadata();
-        PoolMetadata mapped = metaTransformer.apply( unmapped );
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( mapped );
-
-        if ( pool.hasBaseline() )
-        {
-            Pool<S> baseline = pool.getBaselineData();
-            PoolMetadata unmappedBaseline = baseline.getMetadata();
-            PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );
-            poolBuilder.setMetadataForBaseline( mappedBaseline );
-        }
+        Pool.Builder<U> poolBuilder = new Pool.Builder<U>();
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
         {
@@ -410,22 +365,33 @@ public class PoolSlicer
             }
         }
 
+        // Set the overall metadata
+        PoolMetadata mapped = metaTransformer.apply( composedMetadata );
+        poolBuilder.setMetadata( mapped );
+
+        if ( Objects.nonNull( composedBaselineMetadata ) )
+        {
+            PoolMetadata mappedBaseline = metaTransformer.apply( composedBaselineMetadata );
+            poolBuilder.setMetadataForBaseline( mappedBaseline );
+        }
+
         // Handle cases with no data or some missing data
         if ( keysWithoutTransformer.size() == pools.size() )
         {
-            throw new PoolException( "Failed to transform pool " + pool.getMetadata()
-                                     + ". After decomposing the pool into smaller pools by metadata attribute, failed "
-                                     + "to identify a transformer for any of these attribute instances: "
+            throw new PoolException( "Failed to apply attribute-specific transformers to a pool. This probably "
+                                     + "occurred because one of the smaller pools from which the pool was constructed "
+                                     + "had incorrect metadata. Failed to identify a transformer for any of these "
+                                     + "metadata attribute instances: "
                                      + keysWithoutTransformer
-                                     + ". These transfomers were available: "
-                                     + transformers );
+                                     + ". These transformers were available: "
+                                     + transformers
+                                     + "." );
         }
         else if ( !keysWithoutTransformer.isEmpty() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "When transforming pool {} into smaller pools by metadata attribute, failed to correlate "
-                          + "some attributes with transformers: {}. Consequently, no transformed pool was identified "
-                          + "for any of these attribute instances and they will not be included in the evaluation.",
-                          pool.getMetadata(),
+            LOGGER.debug( "When transforming a pool into smaller pools by metadata attribute, failed to correlate some "
+                          + "attributes with transformers: {}. Consequently, no transformed pool was identified for "
+                          + "any of these attribute instances and they will not be included in the evaluation.",
                           keysWithoutTransformer );
         }
 
@@ -464,20 +430,23 @@ public class PoolSlicer
     {
         Objects.requireNonNull( pool );
 
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>().setMetadata( pool.getMetadata() )
-                                                           .setClimatology( pool.getClimatology() );
-
-        if ( pool.hasBaseline() )
-        {
-            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
-                                                    .getMetadata() );
-        }
+        Pool.Builder<U> poolBuilder = new Pool.Builder<U>();
 
         // Preserve any small pools
         for ( Pool<TimeSeries<U>> nextMiniPool : pool.getMiniPools() )
         {
             Pool<U> nextUnpacked = PoolSlicer.unpackInner( nextMiniPool );
             poolBuilder.addPool( nextUnpacked );
+        }
+
+        // Set the overall metadata
+        poolBuilder.setMetadata( pool.getMetadata() )
+                   .setClimatology( pool.getClimatology() );
+
+        if ( pool.hasBaseline() )
+        {
+            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
+                                                    .getMetadata() );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -494,14 +463,14 @@ public class PoolSlicer
      * 
      * @param <S> the key against which pools should be mapped
      * @param <T> the type of pooled data
-     * @param metaMapper the metadata mapper
      * @param pool the pool
+     * @param metaMapper the metadata mapper
      * @return a decomposed list of mini-pools based on their metadata
      * @throws IllegalArgumentException if multiple pools map to the same key
      */
 
-    public static <S extends Comparable<S>, T> Map<S, Pool<T>> decompose( Function<PoolMetadata, S> metaMapper,
-                                                                          Pool<T> pool )
+    public static <S extends Comparable<S>, T> Map<S, Pool<T>> decompose( Pool<T> pool,
+                                                                          Function<PoolMetadata, S> metaMapper )
     {
         Objects.requireNonNull( metaMapper );
         Objects.requireNonNull( pool );

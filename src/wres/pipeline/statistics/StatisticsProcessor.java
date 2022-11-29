@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
@@ -156,7 +157,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         Set<MetricConstants> all = new HashSet<>( collection.getMetrics() );
 
         LOGGER.debug( "Considering whether to compute these metrics: {}.", all );
-        
+
         // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
         if ( collection.getMetrics()
                        .stream()
@@ -210,7 +211,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         }
 
         LOGGER.debug( "Computing these metrics: {}.", all );
-        
+
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, all ),
                                               this.thresholdExecutor );
     }
@@ -335,6 +336,28 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     }
 
     /**
+     * Extracts the baseline metadata from the pool, if available.
+     * 
+     * @return the baseline metadata or null
+     * @throws NullPointerException if the pool is null
+     */
+
+    PoolMetadata getBaselineMetadata( Pool<?> pool )
+    {
+        Objects.requireNonNull( pool );
+
+        PoolMetadata returnMe = null;
+
+        if ( pool.hasBaseline() )
+        {
+            returnMe = pool.getBaselineData()
+                           .getMetadata();
+        }
+
+        return returnMe;
+    }
+
+    /**
      * Builds a metric future for a {@link MetricCollection} that consumes dichotomous pairs.
      * 
      * @param <T> the type of {@link Statistic}
@@ -412,8 +435,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      */
 
     StatisticsProcessor( ThresholdsByMetricAndFeature metrics,
-                     ExecutorService thresholdExecutor,
-                     ExecutorService metricExecutor )
+                         ExecutorService thresholdExecutor,
+                         ExecutorService metricExecutor )
     {
         Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
 

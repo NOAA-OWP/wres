@@ -1011,7 +1011,8 @@ public final class TimeSeriesSlicer
 
             if ( Objects.nonNull( transformed ) )
             {
-                builder.addEvent( Event.of( event.getTime(), transformed ) );
+                Event<T> transformedEvent = Event.of( event.getTime(), transformed );
+                builder.addEvent( transformedEvent );
             }
         }
 
