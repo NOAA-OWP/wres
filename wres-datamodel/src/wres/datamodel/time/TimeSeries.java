@@ -141,14 +141,14 @@ public class TimeSeries<T>
             return true;
         }
 
-        if ( o == null || getClass() != o.getClass() )
+        if ( o == null || this.getClass() != o.getClass() )
         {
             return false;
         }
 
         TimeSeries<?> that = (TimeSeries<?>) o;
-        return metadata.equals( that.metadata ) &&
-               events.equals( that.events );
+        return this.metadata.equals( that.metadata ) &&
+               this.events.equals( that.events );
     }
 
     @Override
@@ -167,47 +167,6 @@ public class TimeSeries<T>
     }
 
     /**
-     * Builds with a builder.
-     * 
-     * @param builder the builder
-     */
-    private TimeSeries( Builder<T> builder )
-    {
-
-        // Set then validate
-        // Important to place in a new set here, because the builder uses a special 
-        // comparator, based on event time only
-        SortedSet<Event<T>> localEvents = new TreeSet<>();
-        localEvents.addAll( builder.events );
-        this.events = Collections.unmodifiableSortedSet( localEvents );
-        this.metadata = builder.metadata;
-
-        if ( Objects.isNull( this.metadata ) )
-        {
-            throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
-        }
-
-        // All reference datetimes and types must be non-null
-        for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
-        {
-            Objects.requireNonNull( nextEntry.getKey() );
-
-            Objects.requireNonNull( nextEntry.getValue() );
-        }
-
-        // No null events
-        this.getEvents().forEach( Objects::requireNonNull );
-
-        // Log absence of time scale
-        if ( Objects.isNull( this.getMetadata().getTimeScale() ) )
-        {
-            LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
-                          builder,
-                          this.getMetadata() );
-        }
-    }
-
-    /**
      * Builder that allows for incremental construction and validation. 
      * 
      * @param <T> the type of data
@@ -216,7 +175,8 @@ public class TimeSeries<T>
     public static class Builder<T>
     {
         /**
-         * Events with a prescribed comparator based on event time.
+         * Events with a prescribed comparator based on event time, since duplicates by valid time are not allowed 
+         * (even if the event values are different).
          */
 
         private SortedSet<Event<T>> events =
@@ -229,58 +189,7 @@ public class TimeSeries<T>
         private TimeSeriesMetadata metadata;
 
         /**
-         * Adds several events to the time-series.
-         * 
-         * @param events the events
-         * @return the builder
-         * @throws NullPointerException if the input is null
-         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
-         */
-
-        public Builder<T> addEvents( SortedSet<Event<T>> events )
-        {
-            Objects.requireNonNull( events );
-
-            events.forEach( this::addEvent );
-
-            return this;
-        }
-
-        /**
-         * Sets the events for the time-series. This method should be preferred when setting all events at once and is
-         * much more performant than {@link #addEvents(SortedSet)} for a large time-series.  
-         * 
-         * @param events the events
-         * @return the builder
-         * @throws NullPointerException if the input is null
-         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
-         */
-
-        public Builder<T> setEvents( SortedSet<Event<T>> events )
-        {
-            Objects.requireNonNull( events );
-
-            Set<Instant> instants = events.stream()
-                                          .map( Event::getTime )
-                                          .collect( Collectors.toSet() );
-
-            int duplicates = events.size() - instants.size();
-
-            if ( duplicates > 0 )
-            {
-                throw new IllegalArgumentException( "While building a time-series from a set of events, discovered "
-                                                    + duplicates
-                                                    + " duplicate events by valid time. A time-series cannot contain "
-                                                    + "duplicate events." );
-            }
-
-            this.events = events;
-
-            return this;
-        }
-
-        /**
-         * Adds an event.
+         * Adds an event. This is the preferred method to build a time-series incrementally.
          * 
          * @param event the event
          * @return the builder
@@ -302,6 +211,65 @@ public class TimeSeries<T>
                                                     + event
                                                     + "'." );
             }
+
+            return this;
+        }
+
+        /**
+         * Sets the events for the time-series. This is the preferred method to build a time-series from a pre-existing 
+         * set of events. Otherwise, favor {@link #addEvent(Event)} to build incrementally. Do not build a set of 
+         * events locally and then call this method, as it will be less performant than building incrementally with 
+         * {@link #addEvent(Event)}, although more performant than using the same pattern with 
+         * {@link #addEvents(SortedSet)} (i.e., avoid both, but especially the latter).
+         * 
+         * @param events the events
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
+         */
+
+        public Builder<T> setEvents( SortedSet<Event<T>> events )
+        {
+            Objects.requireNonNull( events );
+
+            // Must be as many instants as events, in keeping with the comparator used when this class builds the sorted
+            // set, i.e., duplicates by valid time are not allowed
+            Set<Instant> instants = events.stream()
+                                          .map( Event::getTime )
+                                          .collect( Collectors.toSet() );
+
+            int duplicates = events.size() - instants.size();
+
+            if ( duplicates > 0 )
+            {
+                throw new IllegalArgumentException( "While building a time-series from a set of events, discovered "
+                                                    + duplicates
+                                                    + " duplicate events by valid time. A time-series cannot contain "
+                                                    + "duplicate events." );
+            }
+
+            this.events = events;
+
+            return this;
+        }
+
+        /**
+         * Adds a collection of events to the time-series. Only use this method when building a time-series from 
+         * multiple pre-existing time-series or event collections, otherwise favor {@link #addEvent(Event)} or 
+         * {@link #setEvents(SortedSet)}. Do not build a set of events locally and then call this method, as it will 
+         * be less performant for very large time-series (requires a set to be populated twice).
+         * 
+         * @param events the events
+         * @return the builder
+         * @throws NullPointerException if the input is null
+         * @throws IllegalArgumentException if the time-series contains more than one event at the same time
+         */
+
+        public Builder<T> addEvents( SortedSet<Event<T>> events )
+        {
+            Objects.requireNonNull( events );
+
+            events.forEach( this::addEvent );
 
             return this;
         }
@@ -361,6 +329,45 @@ public class TimeSeries<T>
 
     }
 
+    /**
+     * Builds with a builder.
+     * 
+     * @param builder the builder
+     */
+    private TimeSeries( Builder<T> builder )
+    {
+        // Copy, set and then validate
+        // Do not use a comparator based on valid time here because this would lead to an inconsistency with equals 
+        // when comparing the set of events based on valid times alone. This guard on duplicates by valid time is only 
+        // required when building the time-series
+        SortedSet<Event<T>> localEvents = new TreeSet<>();
+        localEvents.addAll( builder.events );
+        this.events = Collections.unmodifiableSortedSet( localEvents );
+        this.metadata = builder.metadata;
+
+        if ( Objects.isNull( this.metadata ) )
+        {
+            throw new UnsupportedOperationException( "Use complete metadata in your TimeSeries instances." );
+        }
+
+        // All reference datetimes and types must be non-null
+        for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
+        {
+            Objects.requireNonNull( nextEntry.getKey() );
+            Objects.requireNonNull( nextEntry.getValue() );
+        }
+
+        // No null events
+        this.getEvents().forEach( Objects::requireNonNull );
+
+        // Log absence of time scale
+        if ( Objects.isNull( this.getMetadata().getTimeScale() ) )
+        {
+            LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",
+                          builder,
+                          this.getMetadata() );
+        }
+    }
 
 }
 

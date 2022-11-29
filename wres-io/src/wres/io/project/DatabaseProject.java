@@ -684,7 +684,7 @@ public class DatabaseProject implements Project
         }
 
         LOGGER.info( "The identity of the database project is '{}'.", this.getProjectId() );
-        
+
         return this.performedInsert;
     }
 
@@ -1190,8 +1190,8 @@ public class DatabaseProject implements Project
 
             // Deal with the special case of singletons first
             List<NamedFeature> singletonFeatures = this.getProjectConfig()
-                                                  .getPair()
-                                                  .getFeature();
+                                                       .getPair()
+                                                       .getFeature();
 
             // If there are no declared singletons, allow features to be discovered, but only if there are no declared
             // multi-feature groups. TODO: consider whether zero declared features should be supported in future
@@ -1218,8 +1218,8 @@ public class DatabaseProject implements Project
 
             // Now deal with feature groups that contain one or more
             List<NamedFeature> groupedFeatures = declaredGroups.stream()
-                                                          .flatMap( next -> next.getFeature().stream() )
-                                                          .collect( Collectors.toList() );
+                                                               .flatMap( next -> next.getFeature().stream() )
+                                                               .collect( Collectors.toList() );
 
             if ( !groupedFeatures.isEmpty() )
             {
@@ -1259,7 +1259,7 @@ public class DatabaseProject implements Project
     {
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
         Set<Feature> griddedFeatures = this.getGriddedFeatures()
-                                              .get();
+                                           .get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( Feature nextFeature : griddedFeatures )

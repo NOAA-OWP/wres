@@ -7,7 +7,7 @@ import java.util.Objects;
  * An outcome or value at a specific {@link Instant} on the timeline.
  * 
  * @param <T> the the type of event
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class Event<T> implements Comparable<Event<T>>

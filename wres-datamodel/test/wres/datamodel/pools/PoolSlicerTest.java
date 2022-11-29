@@ -327,7 +327,7 @@ class PoolSlicerTest
                                                    .build();
 
         Map<FeatureTuple, Pool<String>> actual =
-                PoolSlicer.decompose( next -> next.getFeatureTuples().iterator().next(), merged );
+                PoolSlicer.decompose( merged, next -> next.getFeatureTuples().iterator().next() );
 
         assertEquals( 2, actual.size() );
 
@@ -644,7 +644,14 @@ class PoolSlicerTest
         predicates.put( MessageFactory.parse( geoTupleOne ), predicateOne );
         predicates.put( MessageFactory.parse( geoTupleTwo ), predicateTwo );
 
-        Pool<Pair<Double, Double>> actual = PoolSlicer.filter( merged, predicates, PoolSlicer.getFeatureMapper() );
+        Map<FeatureTuple, Pool<Pair<Double, Double>>> pools = PoolSlicer.decompose( merged,
+                                                                                    PoolSlicer.getFeatureMapper() );
+
+        Pool<Pair<Double, Double>> actual = PoolSlicer.filter( pools,
+                                                               predicates,
+                                                               merged.getMetadata(),
+                                                               null,
+                                                               meta -> meta );
 
         wres.statistics.generated.Pool expectedPool = wres.statistics.generated.Pool.newBuilder()
                                                                                     .setGeometryGroup( GeometryGroup.newBuilder()
@@ -664,6 +671,21 @@ class PoolSlicerTest
                                                    .setMetadata( PoolMetadata.of( evaluation,
                                                                                   expectedPool ) )
                                                    .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testFilterEmptyPool()
+    {
+        Map<String, Pool<Pair<Double, Double>>> pools = Map.of();
+        Pool<Pair<Double, Double>> actual = PoolSlicer.filter( pools,
+                                                               Map.of(),
+                                                               PoolMetadata.of(),
+                                                               null,
+                                                               meta -> meta );
+
+        Pool<Pair<Double, Double>> expected = Pool.of( List.of(), PoolMetadata.of() );
 
         assertEquals( expected, actual );
     }
@@ -720,8 +742,10 @@ class PoolSlicerTest
         transformers.put( MessageFactory.parse( geoTupleOne ), transformerOne );
         transformers.put( MessageFactory.parse( geoTupleTwo ), transformerTwo );
 
+        Map<FeatureTuple, Pool<Pair<Double, Double>>> pools = PoolSlicer.decompose( merged, 
+                                                                                    PoolSlicer.getFeatureMapper() );
         Pool<Pair<Boolean, Boolean>> actual =
-                PoolSlicer.transform( merged, transformers, PoolSlicer.getFeatureMapper() );
+                PoolSlicer.transform( pools, transformers, merged.getMetadata(), null, meta -> meta );
 
         wres.statistics.generated.Pool expectedPool = wres.statistics.generated.Pool.newBuilder()
                                                                                     .setGeometryGroup( GeometryGroup.newBuilder()

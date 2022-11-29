@@ -163,14 +163,14 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                                       Function.identity(),
                                                                                       unadjusted -> PoolMetadata.of( unadjusted,
                                                                                                                      ensembleAverageType ) );
-        
+
         // Remove missing values. 
         // TODO: when time-series metrics are supported, leave missings in place for time-series
         // Also retain the time-series shape, where required
         Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( adjustedPool );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
                 PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA ) );
-        
+
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
@@ -398,9 +398,15 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             UnaryOperator<PoolMetadata> metaTransformer =
                     untransformed -> PoolMetadata.of( untransformed, composed );
 
-            Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pool,
+            // Decompose by feature
+            Map<FeatureTuple, Pool<Pair<Double, Ensemble>>> pools =
+                    PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
+
+            // Filter by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pools,
                                                                      slicers,
-                                                                     PoolSlicer.getFeatureMapper(),
+                                                                     pool.getMetadata(),
+                                                                     super.getBaselineMetadata( pool ),
                                                                      metaTransformer );
 
             this.processEnsemblePairs( sliced,
@@ -547,10 +553,15 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             OneOrTwoThresholds composed = OneOrTwoThresholds.of( outer );
             UnaryOperator<PoolMetadata> metaTransformer = untransformed -> PoolMetadata.of( untransformed, composed );
 
-            //Transform the pairs
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pool,
+            // Decompose by feature
+            Map<FeatureTuple, Pool<Pair<Double, Ensemble>>> pools = PoolSlicer.decompose( pool, 
+                                                                                          PoolSlicer.getFeatureMapper() );
+
+            // Transform by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pools,
                                                                                      transformers,
-                                                                                     PoolSlicer.getFeatureMapper(),
+                                                                                     pool.getMetadata(),
+                                                                                     super.getBaselineMetadata( pool ),
                                                                                      metaTransformer );
 
             this.processDiscreteProbabilityPairs( transformed,
@@ -741,10 +752,16 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                     ThresholdSlicer.getTransformersFromThresholds( thresholds,
                                                                    transformerGenerator );
 
-            // Transform the outer pairs
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pool,
+            // Decompose by feature
+            Map<FeatureTuple, Pool<Pair<Double, Ensemble>>> pools = PoolSlicer.decompose( pool,
+                                                                                          PoolSlicer.getFeatureMapper() );
+
+            // Transform by threshold using the feature as a hook to tie a pool to a threshold
+            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pools,
                                                                                      transformers,
-                                                                                     PoolSlicer.getFeatureMapper() );
+                                                                                     pool.getMetadata(),
+                                                                                     super.getBaselineMetadata( pool ),
+                                                                                     meta -> meta );
 
             // Get the composed threshold for the metadata
             ThresholdOuter composedOuter = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
@@ -769,10 +786,16 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                 UnaryOperator<PoolMetadata> metaTransformer =
                         untransformed -> PoolMetadata.of( untransformed, composed );
 
-                // Transform the inner pairs
-                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( transformed,
+                // Decompose by feature
+                Map<FeatureTuple, Pool<Pair<Probability, Probability>>> innerPools =
+                        PoolSlicer.decompose( transformed, 
+                                              PoolSlicer.getFeatureMapper() );
+
+                // Transform by threshold using the feature as a hook to tie a pool to a threshold
+                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( innerPools,
                                                                                  innerTransformers,
-                                                                                 PoolSlicer.getFeatureMapper(),
+                                                                                 transformed.getMetadata(),
+                                                                                 super.getBaselineMetadata( transformed ),
                                                                                  metaTransformer );
 
                 super.processDichotomousPairs( dichotomous, futures, outGroup );

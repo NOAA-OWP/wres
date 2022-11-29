@@ -1659,7 +1659,7 @@ public class ChartFactory
     }
 
     /**
-     * Uncovers the variable name for the plot title.
+     * Uncovers the georeferencing information for the plot title.
      * 
      * @param metadata the sample metadata
      * @return the geographic name

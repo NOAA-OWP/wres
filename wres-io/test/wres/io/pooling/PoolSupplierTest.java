@@ -24,6 +24,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -433,7 +434,8 @@ public class PoolSupplierTest
                                           .build();
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
@@ -631,7 +633,7 @@ public class PoolSupplierTest
                                                          Duration.ofHours( 0 ),
                                                          Duration.ofHours( 23 ) );
         TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
-
+        
         PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                         poolOneWindow,
                                                         this.desiredTimeScale );

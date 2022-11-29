@@ -748,6 +748,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // since there is separate metadata for left-right and left-baseline pairs. Once fixed, the geometries will 
             // be pairs rather than tuples in most contexts, including the pool metadata
             GeometryTuple geoTuple = this.getGeometryTuple( nextLeftRightFeature );
+            FeatureTuple fullTuple = FeatureTuple.of( geoTuple );
 
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
@@ -760,11 +761,17 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                         .clearGeometryTuples()
                         .addGeometryTuples( geoTuple )
                         .setGeometryGroup( GeometryGroup.newBuilder()
+                                                        // Default region name is the short name of the tuple
+                                                        .setRegionName( fullTuple.toStringShort() )
                                                         .addGeometryTuples( geoTuple ) );
 
             PoolMetadata nextInnerMainMeta = PoolMetadata.of( this.getMetadata()
                                                                   .getEvaluation(),
                                                               newInnerMainMetaBuilder.build() );
+
+            // Set the time scale
+            nextInnerMainMeta = PoolMetadata.of( nextInnerMainMeta, desiredTimeScale );
+
             nextMiniPoolBuilder.setMetadata( nextInnerMainMeta )
                                .addData( nextMainPairs );
 
@@ -799,10 +806,16 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                              .clearGeometryTuples()
                                              .addGeometryTuples( geoTuple )
                                              .setGeometryGroup( GeometryGroup.newBuilder()
+                                                                             // Default region name is the short name 
+                                                                             // of the tuple
+                                                                             .setRegionName( fullTuple.toStringShort() )
                                                                              .addGeometryTuples( geoTuple ) );
 
                 PoolMetadata nextInnerBaseMeta = PoolMetadata.of( this.baselineMetadata.getEvaluation(),
                                                                   newInnerBaseMetaBuilder.build() );
+
+                // Set the time scale
+                nextInnerBaseMeta = PoolMetadata.of( nextInnerBaseMeta, desiredTimeScale );
 
                 nextMiniPoolBuilder.setMetadataForBaseline( nextInnerBaseMeta )
                                    .addDataForBaseline( nextBasePairs );
@@ -831,9 +844,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                          .getEvaluation(),
                                                      newMetadataBuilder.build(),
                                                      statusMessages );
-
+        
         builder.setMetadata( mainMetadata );
-
+        
         if ( this.hasBaseline() )
         {
             wres.statistics.generated.Pool.Builder newBaseMetadataBuilder =
