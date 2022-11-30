@@ -71,7 +71,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /** The upscaler for right-ish values. */
     private final TimeSeriesUpscaler<R> rightUpscaler;
-    
+
     /** A function to upscale baseline data. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
@@ -144,7 +144,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
         /** A function to upscale right data. */
         private TimeSeriesUpscaler<R> rightUpscaler;
-        
+
         /** A function to upscale baseline data. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
 
@@ -254,7 +254,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
             return this;
         }
-        
+
         /**
          * @param baselineUpscaler the upscaler for baseline values
          * @return the builder
@@ -528,14 +528,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
             List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
 
-            // Create the retrievers for each time window
+            // Create the retrievers for each pool
             for ( PoolRequest nextPool : this.getPoolRequests() )
             {
                 TimeWindowOuter nextWindow = nextPool.getMetadata()
                                                      .getTimeWindow();
 
                 Set<Feature> rightFeatures = this.getFeatures( nextPool.getMetadata(),
-                                                                  FeatureTuple::getRight );
+                                                               FeatureTuple::getRight );
 
                 Supplier<Stream<TimeSeries<R>>> rightSupplier = this.getRetrieverFactory()
                                                                     .getRightRetriever( rightFeatures,
@@ -560,7 +560,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                     builder.setBaselineMetadata( nextPool.getMetadataForBaseline() );
 
                     // Generated baseline?
-                    if ( this.getProject().hasGeneratedBaseline() )
+                    if ( this.getProject()
+                             .hasGeneratedBaseline() )
                     {
                         builder.setBaselineGenerator( this.getBaselineGenerator() );
                     }
@@ -568,7 +569,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                     else
                     {
                         Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
-                                                                             FeatureTuple::getBaseline );
+                                                                          FeatureTuple::getBaseline );
 
                         Supplier<Stream<TimeSeries<R>>> baselineSupplier = this.getRetrieverFactory()
                                                                                .getBaselineRetriever( baselineFeatures,
@@ -617,9 +618,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                        .collect( Collectors.toSet() );
 
         Set<Feature> features = poolRequests.stream()
-                                               .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
-                                               .map( FeatureTuple::getLeft )
-                                               .collect( Collectors.toSet() );
+                                            .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                                            .map( FeatureTuple::getLeft )
+                                            .collect( Collectors.toSet() );
 
         // Observations or simulations? Then de-duplicate if possible.
         if ( type == DatasourceType.OBSERVATIONS || type == DatasourceType.SIMULATIONS )
@@ -680,7 +681,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     {
         return this.rightUpscaler;
     }
-    
+
     /**
      * Returns the upscaler for baseline-ish data.
      * 
@@ -842,7 +843,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      */
 
     private Set<Feature> getFeatures( PoolMetadata metadata,
-                                         Function<FeatureTuple, Feature> featureGetter )
+                                      Function<FeatureTuple, Feature> featureGetter )
     {
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( featureGetter );
@@ -996,7 +997,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private boolean shouldUpscaleClimatology( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
     {
         return Objects.nonNull( existingTimeScale ) && Objects.nonNull( desiredTimeScale )
-               && ! existingTimeScale.equalsOrInstantaneous( desiredTimeScale );
+               && !existingTimeScale.equalsOrInstantaneous( desiredTimeScale );
     }
 
 }
