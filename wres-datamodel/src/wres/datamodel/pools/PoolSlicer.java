@@ -478,7 +478,9 @@ public class PoolSlicer
         // Use a sorted map implementation to preserve order
         Map<S, Pool<T>> returnMe = new TreeMap<>();
 
-        LOGGER.debug( "Encountered a pool with {} mini-pools.", pool.getMiniPools().size() );
+        LOGGER.debug( "Encountered a pool with {} mini-pools.",
+                      pool.getMiniPools()
+                          .size() );
 
         for ( Pool<T> nextPool : pool.getMiniPools() )
         {
