@@ -600,7 +600,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                      Stream<TimeSeries<R>> baselineData )
     {
         LOGGER.debug( "Creating a pool." );
-        
+
         Objects.requireNonNull( leftData,
                                 "Left data is expected for the creation of pool " + this.getMetadata() + "." );
         Objects.requireNonNull( rightData,
@@ -715,7 +715,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         basePairs = this.getExistingPoolsOrEmpty( basePairs, this.getBaselineMetadata() );
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
-        builder.setClimatology( this.createClimatology() );
+
+        // Create and set the climatology
+        Climatology nextClimatology = this.createClimatology();
+        builder.setClimatology( nextClimatology );
 
         // Create the mini pools, one per feature
         // TODO: this assumes that an empty main means empty baseline too. Probably need to relax
@@ -810,8 +813,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                    .addDataForBaseline( nextBasePairs );
             }
 
-            // Set the climatology
-            Climatology nextClimatology = this.createClimatology();
             nextMiniPoolBuilder.setClimatology( nextClimatology );
 
             Pool<TimeSeries<Pair<L, R>>> nextMiniPool = nextMiniPoolBuilder.build();
