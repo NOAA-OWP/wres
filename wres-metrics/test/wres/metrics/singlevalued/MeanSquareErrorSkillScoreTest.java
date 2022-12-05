@@ -49,7 +49,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 public final class MeanSquareErrorSkillScoreTest
 {
     private static final String CMS = "CMS";
-    
+
     /**
      * Default instance of a {@link MeanSquareErrorSkillScore}.
      */
@@ -105,7 +105,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         assertEquals( expected, actual.getData() );
     }
-    
+
     @Test
     public void testApplyWithoutBaselineTwo()
     {
@@ -145,7 +145,7 @@ public final class MeanSquareErrorSkillScoreTest
     {
         assertTrue( this.msess.isSkillScore() );
     }
-    
+
     /**
      * Integration test with a persistence baseline generated from a raw time-series. See issue #99160. This tests a 
      * variant of the MSESS as defined by Kitanidis, P.K., and Bras, R.L. 1980. Real-time forecasting with a conceptual 
@@ -159,8 +159,7 @@ public final class MeanSquareErrorSkillScoreTest
     public void testApplyAsCoefficientOfPersistence()
     {
         // Create the raw time-series
-        Feature feature = Feature.of( 
-                                            MessageFactory.getGeometry( "FAKE2" ) );
+        Feature feature = Feature.of( MessageFactory.getGeometry( "FAKE2" ) );
 
         TimeSeriesMetadata observedMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                      TimeScaleOuter.of( Duration.ofHours( 1 ),

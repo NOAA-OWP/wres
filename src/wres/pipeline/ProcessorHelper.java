@@ -964,6 +964,33 @@ class ProcessorHelper
                          PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
         }
 
+        // Log some detailed information about the pools, if required
+        if ( LOGGER.isTraceEnabled() )
+        {
+            for ( PoolRequest nextRequest : poolRequests )
+            {
+                if ( nextRequest.hasBaseline() )
+                {
+                    LOGGER.trace( "Pool request {}/{} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest.getMetadataForBaseline()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+                else
+                {
+                    LOGGER.trace( "Pool request {} is: {}.",
+                                  nextRequest.getMetadata()
+                                             .getPool()
+                                             .getPoolId(),
+                                  nextRequest );
+                }
+            }
+        }
+
         return poolRequests;
     }
 
@@ -1281,8 +1308,8 @@ class ProcessorHelper
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
                     new SingleValuedStatisticsProcessor( nextMetrics,
-                                                                thresholdExecutor,
-                                                                metricExecutor );
+                                                         thresholdExecutor,
+                                                         metricExecutor );
             processors.add( nextProcessor );
         }
 
@@ -1307,8 +1334,8 @@ class ProcessorHelper
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
                     new EnsembleStatisticsProcessor( nextMetrics,
-                                                            thresholdExecutor,
-                                                            metricExecutor );
+                                                     thresholdExecutor,
+                                                     metricExecutor );
             processors.add( nextProcessor );
         }
 

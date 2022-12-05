@@ -10,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -23,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -36,7 +40,8 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * <p>Generates a persistence time-series from a source of persistence data supplied on construction. The shape of the 
  * persistence series is obtained from a template time-series supplied on demand. Uses the reference time as the anchor
- * datetime for persistence when available, otherwise the valid times.
+ * datetime for persistence when available, otherwise the valid times. The template time-series must use the same 
+ * feature identity as the data source from which the persistence time-series is generated.
  * 
  * @author James Brown
  * @param <T> the type of persistence value to generate
@@ -56,8 +61,11 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * be derived. Order means the number of times prior to the reference time in the template. */
     private final int order;
 
-    /** The source data from which the persistence values should be generated. */
-    private final TimeSeries<T> persistenceSource;
+    /** The source data from which the persistence values should be generated, indexed by feature. */
+    private final Map<Feature, TimeSeries<T>> persistenceSource;
+
+    /** Representative time-series metadata from the persistence source. */
+    private final TimeSeriesMetadata persistenceSourceMetadata;
 
     /** An optional upscaler to use in generating a persistence value from the {@link #persistenceSource}. */
     private final TimeSeriesUpscaler<T> upscaler;
@@ -76,13 +84,13 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
      * 
      * @param <T> the type of time-series event value
-     * @param persistenceSource the persistence data source
+     * @param persistenceSource the persistence data source, required
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
-     *            persistenceSource
+     *            persistenceSource, optional
      * @param admissibleValue an optional constraint on values that should be persisted
-     * @param desiredUnit the desired measurement unit
+     * @param desiredUnit the desired measurement unit, required
      * @return an instance
-     * @throws NullPointerException if the persistenceSource is null
+     * @throws NullPointerException if any required input is null
      */
 
     public static <T> PersistenceGenerator<T> of( Supplier<Stream<TimeSeries<T>>> persistenceSource,
@@ -90,19 +98,23 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                   Predicate<T> admissibleValue,
                                                   String desiredUnit )
     {
-        return new PersistenceGenerator<>( 1, persistenceSource, upscaler, admissibleValue, desiredUnit );
+        return new PersistenceGenerator<>( 1,
+                                           persistenceSource,
+                                           upscaler,
+                                           admissibleValue,
+                                           desiredUnit );
     }
 
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
      * 
      * @param <T> the type of time-series event value
-     * @param persistenceSource the persistence data source
+     * @param persistenceSource the persistence data source, required
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
-     *            persistenceSource
+     *            persistenceSource, optional
      * @param admissibleValue an optional constraint on values that should be persisted
      * @param lag the lag or order, which must be non-negative
-     * @param desiredUnit the desired measurement unit
+     * @param desiredUnit the desired measurement unit, required
      * @return an instance
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the order is negative
@@ -114,7 +126,11 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                   int lag,
                                                   String desiredUnit )
     {
-        return new PersistenceGenerator<>( lag, persistenceSource, upscaler, admissibleValue, desiredUnit );
+        return new PersistenceGenerator<>( lag,
+                                           persistenceSource,
+                                           upscaler,
+                                           admissibleValue,
+                                           desiredUnit );
     }
 
     /**
@@ -176,8 +192,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // Upscale? 
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
-             && Objects.nonNull( this.persistenceSource.getTimeScale() )
-             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+             && Objects.nonNull( this.getSourceTimeScale() )
+             && !desiredTimeScale.equals( this.getSourceTimeScale() ) )
         {
             return this.getPersistenceForFirstReferenceTimeWithUpscaling( template );
         }
@@ -201,9 +217,10 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
-        List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
-                                                              .stream()
-                                                              .collect( Collectors.toList() );
+        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
+                                                         .stream()
+                                                         .collect( Collectors.toList() );
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
 
@@ -268,6 +285,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         }
 
         TimeScaleOuter timeScale = template.getTimeScale();
+        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
 
         // The rescaled periods start and/or end at a precise month-day
         if ( timeScale.hasMonthDays() )
@@ -278,7 +296,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             // No explicit valid times at which the upscaled values are required
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
-                                                                                    this.persistenceSource,
+                                                                                    persistenceSeries,
                                                                                     Collections.emptySortedSet(),
                                                                                     this.desiredUnit );
 
@@ -327,9 +345,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             // Put the persistence values into a list. There are at least N+1 values in the list, established at 
             // construction
-            List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
-                                                                  .stream()
-                                                                  .collect( Collectors.toList() );
+            List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
+                                                             .stream()
+                                                             .collect( Collectors.toList() );
 
             Event<T> persistenceEvent = this.getNthNearestValueInstant( eventsToSearch, referenceTime, this.order );
 
@@ -351,7 +369,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             times.add( persistenceEventTime );
 
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
-                                                                                    this.persistenceSource,
+                                                                                    persistenceSeries,
                                                                                     times,
                                                                                     this.desiredUnit );
 
@@ -380,8 +398,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // persistence source
         TimeSeriesMetadata adjusted = template.getMetadata()
                                               .toBuilder()
-                                              .setUnit( this.persistenceSource.getMetadata()
-                                                                              .getUnit() )
+                                              .setUnit( this.getSourceUnit() )
                                               .build();
 
         Builder<T> builder = new Builder<T>().setMetadata( adjusted );
@@ -418,8 +435,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // Upscale? 
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
-             && Objects.nonNull( this.persistenceSource.getTimeScale() )
-             && !desiredTimeScale.equals( this.persistenceSource.getTimeScale() ) )
+             && Objects.nonNull( this.getSourceTimeScale() )
+             && !desiredTimeScale.equals( this.getSourceTimeScale() ) )
         {
             return this.getPersistenceForEachValidTimeWithUpscaling( template );
         }
@@ -442,9 +459,10 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
-        List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
-                                                              .stream()
-                                                              .collect( Collectors.toList() );
+        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
+                                                         .stream()
+                                                         .collect( Collectors.toList() );
 
         // Find a persistence event from the eventsToSearch for each valid time in the template series
         List<Instant> validTimes = template.getEvents()
@@ -488,6 +506,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is required." );
 
         TimeScaleOuter timeScale = template.getTimeScale();
+        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
 
         // The rescaled periods start and/or end at a precise month-day
         if ( timeScale.hasMonthDays() )
@@ -497,7 +516,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                           timeScale );
 
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
-                                                                                    this.persistenceSource,
+                                                                                    persistenceSeries,
                                                                                     Collections.emptySortedSet(),
                                                                                     this.desiredUnit );
 
@@ -549,9 +568,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                .collect( Collectors.toList() );
 
             // The persistence values. There are at least N+1 values in the list, established at construction
-            List<Event<T>> eventsToSearch = this.persistenceSource.getEvents()
-                                                                  .stream()
-                                                                  .collect( Collectors.toList() );
+            List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
+                                                             .stream()
+                                                             .collect( Collectors.toList() );
 
             // Find a persistence event from the eventsToSearch for each valid time in the template
             List<Event<T>> persistenceEvents = this.getNthNearestValueInstant( eventsToSearch, validTimes, this.order );
@@ -567,7 +586,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             // This is the upscaled time-series for values that end at the persistence event times. Now need to map
             // these back to the valid times for which persistence events are required
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
-                                                                                    this.persistenceSource,
+                                                                                    persistenceSeries,
                                                                                     persistenceEventTimesSorted,
                                                                                     this.desiredUnit );
 
@@ -591,7 +610,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         int yearsToSubtract = lag;
         Instant targetLower = time.minusYears( yearsToSubtract )
                                   .toInstant();
-        Instant targetUpper = time.minusYears( yearsToSubtract - 1 )
+        Instant targetUpper = time.minusYears( yearsToSubtract - 1L )
                                   .minusNanos( 1 ) // Do not include the event time
                                   .toInstant();
 
@@ -622,7 +641,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                     + template.getTimeScale()
                                                     + ", but the "
                                                     + "persistence source had a desired time scale of "
-                                                    + this.persistenceSource.getTimeScale()
+                                                    + this.getSourceTimeScale()
                                                     + " and no temporal upscaler was supplied on construction." );
         }
 
@@ -797,15 +816,62 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     }
 
     /**
+     * @return the time scale of the persistence source
+     */
+
+    private TimeScaleOuter getSourceTimeScale()
+    {
+        return this.persistenceSourceMetadata.getTimeScale();
+    }
+
+    /**
+     * @return the measurement unit of the persistence source
+     */
+
+    private String getSourceUnit()
+    {
+        return this.persistenceSourceMetadata.getUnit();
+    }
+
+    /**
+     * @return the time-series from the persistence source whose feature name matches template series
+     */
+
+    private TimeSeries<T> getPersistenceSeriesForTemplate( TimeSeries<T> template )
+    {
+        // Feature correlation assumes that the template feature is right-ish and the source feature is baseline-ish
+        // If this is no longer a safe assumption, then the orientation should be declared on construction
+        Feature templateFeature = template.getMetadata()
+                                          .getFeature();
+
+        if ( !this.persistenceSource.containsKey( templateFeature ) )
+        {
+            Set<Feature> sourceFeatures = this.persistenceSource.values()
+                                                                .stream()
+                                                                .map( next -> next.getMetadata().getFeature() )
+                                                                .collect( Collectors.toSet() );
+
+            throw new TimeSeriesGeneratorException( "When building a persistence baseline, failed to discover a "
+                                                    + "source time-series for the template time-series with feature: "
+                                                    + templateFeature
+                                                    + ". Source time-series were available for features: "
+                                                    + sourceFeatures
+                                                    + "." );
+        }
+
+        return this.persistenceSource.get( templateFeature );
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param order the order of persistence
-     * @param persistenceSource the source data for the persistence values
+     * @param persistenceSource the source data for the persistence values, not null
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
      *            persistenceSource
      * @param admissableValue an optional constrain on each admissible values to persist
-     * @param desiredUnit the desired measurement unit
-     * @throws NullPointerException if the persistenceSource is null
+     * @param desiredUnit the desired measurement unit, not null
+     * @throws NullPointerException if any required input is null
      * @throws TimeSeriesGeneratorException if the generator could not be created
      */
 
@@ -851,25 +917,34 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                     + "baseline data source." );
         }
 
-        // Consolidate into one series
-        this.persistenceSource = TimeSeriesSlicer.consolidate( source );
+        // Consolidate into one series per feature
+        BinaryOperator<TimeSeries<T>> merger = ( a, b ) -> TimeSeriesSlicer.consolidate( Set.of( a, b ) );
+        this.persistenceSource = persistenceSource.get()
+                                                  .filter( next -> next.getEvents().size() >= order )
+                                                  .collect( Collectors.toUnmodifiableMap( next -> next.getMetadata()
+                                                                                                      .getFeature(),
+                                                                                          Function.identity(),
+                                                                                          merger ) );
 
-        if ( this.persistenceSource.getEvents().size() < order )
+        if ( this.persistenceSource.isEmpty() )
         {
             throw new TimeSeriesGeneratorException( "Could not create a persistence source from the time-series "
-                                                    + "supplier: at least "
+                                                    + "supplier: at least one time-series that contains "
                                                     + order
-                                                    + " time-series values are "
+                                                    + " event values is "
                                                     + "required to generate a persistence time-series of order "
                                                     + order
-                                                    + " but the supplier only contained "
-                                                    + this.persistenceSource.getEvents()
-                                                                            .size()
-                                                    + " values. " );
+                                                    + " but the supplier contained no time-series that match this "
+                                                    + "requirement. " );
         }
 
         this.upscaler = upscaler;
         this.desiredUnit = desiredUnit;
+        this.persistenceSourceMetadata = this.persistenceSource.values()
+                                                               .stream()
+                                                               .findAny()
+                                                               .orElseThrow() // Already checked above that it exists
+                                                               .getMetadata();
 
         if ( Objects.isNull( admissibleValue ) )
         {

@@ -70,13 +70,12 @@ public class SourceCompletedDetails
                                              + scripter + "'" );
         }
 
-        wasCompleted = true;
+        this.wasCompleted = true;
         // Only this method can say "definitive answer found", because it did
         // the insert successfully. When calling wasCompleted, however, we may
         // want to get up-to-date information from the db via repeated calls.
-        definitiveCompletedAnswerFound = true;
+        this.definitiveCompletedAnswerFound = true;
     }
-
 
     /**
      * Was this source completed?
@@ -86,7 +85,7 @@ public class SourceCompletedDetails
 
     public boolean wasCompleted() throws SQLException
     {
-        if ( definitiveCompletedAnswerFound )
+        if ( this.definitiveCompletedAnswerFound )
         {
             return this.wasCompleted;
         }

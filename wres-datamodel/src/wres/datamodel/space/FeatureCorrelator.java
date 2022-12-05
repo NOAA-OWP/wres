@@ -19,7 +19,6 @@ import net.jcip.annotations.Immutable;
 @Immutable
 public class FeatureCorrelator
 {
-
     /** The feature tuples mapped against the left features as keys. **/
     private final Map<Feature, FeatureTuple> featureTuplesByLeft;
 
