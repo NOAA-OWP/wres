@@ -1102,7 +1102,7 @@ public final class TimeSeriesSlicer
 
         builder.setMetadata( input.getMetadata() );
 
-        //Filter climatology as required
+        // Filter climatology as required
         if ( input.hasClimatology() )
         {
             Climatology climatology = input.getClimatology();

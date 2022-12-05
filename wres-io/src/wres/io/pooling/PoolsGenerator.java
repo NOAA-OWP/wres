@@ -491,12 +491,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         // Create the time windows, iterate over them and create the retrievers 
         try
         {
-            // Climatological data required?
+            // Climatological data required? If there are probability thresholds, yes.
             Supplier<Stream<TimeSeries<L>>> climatologySupplier = null;
             if ( this.getProject()
-                     .hasProbabilityThresholds()
-                 || this.getProject()
-                        .hasGeneratedBaseline() )
+                     .hasProbabilityThresholds() )
             {
                 Set<Feature> leftFeatures = this.getFeatures( FeatureTuple::getLeft );
                 climatologySupplier = this.getRetrieverFactory()

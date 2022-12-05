@@ -1230,6 +1230,7 @@ public class PoolFactory
             // Here the feature names supplied must be consistent with the source data from which the baseline is 
             // generated, not the template time-series that is mimicked
             return features -> {
+
                 Supplier<Stream<TimeSeries<R>>> persistenceSource =
                         () -> retrieverFactory.getBaselineRetriever( features )
                                               .get();
@@ -1852,6 +1853,8 @@ public class PoolFactory
                     cached = this.climatologyCache.getIfPresent( key );
                     if ( Objects.isNull( cached ) )
                     {
+                        LOGGER.debug( "Retrieving climatological data for features: {}.", features );
+                        
                         Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getClimatologyRetriever( features );
                         cached = CachingRetriever.of( delegated );
                         this.climatologyCache.put( key, cached );
@@ -1893,6 +1896,8 @@ public class PoolFactory
                         cached = this.generatedBaselineCache.getIfPresent( key );
                         if ( Objects.isNull( cached ) )
                         {
+                            LOGGER.debug( "Retrieving baseline data for features: {}.", features );
+                            
                             Supplier<Stream<TimeSeries<R>>> delegated = this.delegate.getBaselineRetriever( features );
                             cached = CachingRetriever.of( delegated );
                             this.generatedBaselineCache.put( key, cached );

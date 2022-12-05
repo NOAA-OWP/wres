@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.space.Feature;
@@ -28,6 +30,9 @@ import wres.datamodel.time.TimeSeries;
 @Immutable
 public class Climatology
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( Climatology.class );
+
     /** The climatological data, mapped by feature. */
     private final Map<Feature, double[]> climateData;
 
@@ -261,6 +266,8 @@ public class Climatology
         // Sort in place
         climatologyInner.values()
                         .forEach( Arrays::sort );
+
+        LOGGER.debug( "Created a climatological data source for features {}.", this.climateData.keySet() );
     }
 
     /**
