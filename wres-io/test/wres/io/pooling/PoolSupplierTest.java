@@ -5,8 +5,10 @@ import static org.junit.Assert.assertEquals;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,6 +34,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieval.CachingRetriever;
@@ -633,7 +636,7 @@ public class PoolSupplierTest
                                                          Duration.ofHours( 0 ),
                                                          Duration.ofHours( 23 ) );
         TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
-        
+
         PoolMetadata poolOneMetadata = PoolMetadata.of( this.metadata,
                                                         poolOneWindow,
                                                         this.desiredTimeScale );
@@ -645,11 +648,16 @@ public class PoolSupplierTest
 
         PoolMetadata poolOneMetadataBaseline = PoolMetadata.of( poolOneMetadata.getEvaluation(), baselinePool );
 
+        List<TimeSeries<Double>> climData = obsSupplier.get()
+                                                       .collect( Collectors.toList() );
+
+        Supplier<Climatology> climatology = () -> Climatology.of( climData );
+
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
                 new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
                                                           .setRight( forcSupplierOne )
                                                           .setBaseline( forcSupplierOne )
-                                                          .setClimatology( obsSupplier, Double::doubleValue )
+                                                          .setClimatology( climatology )
                                                           .setLeftUpscaler( this.upscaler )
                                                           .setPairer( this.pairer )
                                                           .setDesiredTimeScale( this.desiredTimeScale )
@@ -660,7 +668,7 @@ public class PoolSupplierTest
         // Acquire the pools for the baseline
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get()
                                                                               .getBaselineData();
-        
+
         // Pool One expected
         TimeSeriesMetadata poolOneTimeSeriesMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,

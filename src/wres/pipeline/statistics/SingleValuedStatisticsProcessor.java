@@ -27,6 +27,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
@@ -62,7 +63,6 @@ import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 
 public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
 {
-
     /**
      * Logger instance.
      */
@@ -118,9 +118,10 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             LOGGER.debug( "Removing any single-valued pairs with missing left or right values for pool {}.",
                           pool.getMetadata() );
             Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( pool );
+            // Climatology is filtered for missings on construction
             unpackedNoMissing = PoolSlicer.filter( unpacked,
-                                                   Slicer.leftAndRight( StatisticsProcessor.ADMISSABLE_DATA ),
-                                                   StatisticsProcessor.ADMISSABLE_DATA );
+                                                   Slicer.leftAndRight( MissingValues::isNotMissingValue ),
+                                                   null );
         }
 
         //Metric futures 

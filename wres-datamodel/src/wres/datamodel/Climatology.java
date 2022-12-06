@@ -151,7 +151,7 @@ public class Climatology
     }
 
     /**
-     * Builds a climatological dataset.
+     * Builds a climatological dataset, merging with existing data as needed.
      */
 
     public static class Builder
@@ -182,8 +182,11 @@ public class Climatology
                 {
                     this.mergeAdd( nextFeature, nextSeriesDoubles );
                 }
-
-                this.climateData.put( nextFeature, nextSeriesDoubles );
+                else
+                {
+                    // No need to clone the above array is created anew
+                    this.climateData.put( nextFeature, nextSeriesDoubles );
+                }
             }
 
             return this;
@@ -258,14 +261,23 @@ public class Climatology
     {
         // No need to clone in this context because the builder clones
         Map<Feature, double[]> climatologyInner = new HashMap<>( builder.climateData );
+
+        // Filter and sort
+        for ( Map.Entry<Feature, double[]> nextEntry : climatologyInner.entrySet() )
+        {
+            Feature nextFeature = nextEntry.getKey();
+            double[] nextDoubles = nextEntry.getValue();
+            double[] filteredAndSorted = Arrays.stream( nextDoubles )
+                                               .filter( MissingValues::isNotMissingValue )
+                                               .sorted()
+                                               .toArray();
+            climatologyInner.replace( nextFeature, filteredAndSorted );
+        }
+
         this.climateData = Collections.unmodifiableMap( climatologyInner );
 
         // Validate
         this.validate( this.climateData );
-
-        // Sort in place
-        climatologyInner.values()
-                        .forEach( Arrays::sort );
 
         LOGGER.debug( "Created a climatological data source for features {}.", this.climateData.keySet() );
     }

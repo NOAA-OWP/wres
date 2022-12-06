@@ -119,8 +119,8 @@ public class PoolSlicer
     }
 
     /**
-     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
-     * Does not modify the metadata associated with the input.
+     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs 
+     * and, optionally, to the climatological data. Does not modify the metadata associated with the input.
      * 
      * @param <T> the type of data
      * @param pool the data to slice, not null
