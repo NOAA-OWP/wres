@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConfigException;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.MissingValues;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
@@ -44,12 +45,6 @@ import wres.metrics.MetricParameterException;
 
 public abstract class StatisticsProcessor<S extends Pool<?>> implements Function<S, StatisticsStore>
 {
-    /**
-     * Filter for admissible numerical data.
-     */
-
-    static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
-
     /**
      * Message that indicates processing is complete.
      */

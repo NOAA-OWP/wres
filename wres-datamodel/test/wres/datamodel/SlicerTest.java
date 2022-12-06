@@ -289,9 +289,6 @@ public final class SlicerTest
         assertEquals( expectedValues, sliced.get() );
         assertEquals( expectedValues, sliced.getBaselineData().get() );
         assertEquals( climatologyExpected, sliced.getClimatology() );
-        assertNotEquals( climatologyExpected,
-                         PoolSlicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
-                                   .getClimatology() );
         assertNotEquals( values, sliced.get() );
 
         //Test without baseline or climatology

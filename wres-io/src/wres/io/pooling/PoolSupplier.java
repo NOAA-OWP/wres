@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -93,11 +92,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** Message re-used several times. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
 
-    /** Climatological data source at the desired time scale. */
-    private final Supplier<Stream<TimeSeries<L>>> climatology;
-
-    /** Mapper from the left-type of climatological data to a double-type. */
-    private final ToDoubleFunction<L> climatologyMapper;
+    /** The climatology, possibly null. */
+    private final Supplier<Climatology> climatology;
 
     /** Left data source. */
     private final Supplier<Stream<TimeSeries<L>>> left;
@@ -216,16 +212,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         poolMonitor.begin();
 
         // Left data provided or is climatology the left data?
-        Stream<TimeSeries<L>> leftData;
-
-        if ( Objects.nonNull( this.left ) )
-        {
-            leftData = this.left.get();
-        }
-        else
-        {
-            leftData = this.climatology.get();
-        }
+        Stream<TimeSeries<L>> leftData = this.left.get();
 
         LOGGER.debug( "Preparing to retrieve time-series data." );
 
@@ -274,11 +261,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     static class Builder<L, R>
     {
-        /** Climatological data source. Optional. */
-        private Supplier<Stream<TimeSeries<L>>> climatology;
-
-        /** Climatology mapper. */
-        private ToDoubleFunction<L> climatologyMapper;
+        /** The climatology. */
+        private Supplier<Climatology> climatology;
 
         /** Left data source. */
         private Supplier<Stream<TimeSeries<L>>> left;
@@ -342,14 +326,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         /**
          * @param climatology the climatology to set
-         * @param climatologyMapper the mapper from the climatological type to a double type
          * @return the builder
          */
-        Builder<L, R> setClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
-                                      ToDoubleFunction<L> climatologyMapper )
+        Builder<L, R> setClimatology( Supplier<Climatology> climatology )
         {
             this.climatology = climatology;
-            this.climatologyMapper = climatologyMapper;
 
             return this;
         }
@@ -716,9 +697,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
-        // Create and set the climatology
-        Climatology nextClimatology = this.createClimatology();
-        builder.setClimatology( nextClimatology );
+        // Create and set the climatology#
+        Climatology nextClimatology = null;
+        if ( this.hasClimatology() )
+        {
+            nextClimatology = this.getClimatology()
+                                  .get();
+            builder.setClimatology( nextClimatology );
+        }
 
         // Create the mini pools, one per feature
         // TODO: this assumes that an empty main means empty baseline too. Probably need to relax
@@ -766,7 +752,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                .addData( nextMainPairs );
 
             // Set the baseline
-            if ( this.hasBaseline() )
+            if ( Objects.nonNull( basePairs ) )
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
 
@@ -1491,44 +1477,30 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Creates the climatological data as needed.
-     * 
-     * @return the climatological data or null if no climatology is defined
+     * @return the climatology or null if none exists
      */
 
-    private Climatology createClimatology()
+    private Supplier<Climatology> getClimatology()
     {
-        if ( Objects.isNull( this.climatology ) )
-        {
-            return null;
-        }
-
-        Function<L, Double> mapper = this.climatologyMapper::applyAsDouble;
-        List<TimeSeries<Double>> climData = this.climatology.get()
-                                                            .map( next -> TimeSeriesSlicer.transform( next,
-                                                                                                      mapper,
-                                                                                                      null ) )
-                                                            .collect( Collectors.toList() );
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Discovered {} climatological time-series for pool {}.",
-                          climData.size(),
-                          this.getMetadata() );
-        }
-
-        return Climatology.of( climData );
+        return this.climatology;
     }
 
     /**
-     * Returns true if the supplier includes a baseline, otherwise false.
-     * 
-     * @return true if the supplier contains a baseline, otherwise false.
+     * @return true if the supplier contains a baseline, otherwise false
      */
 
     private boolean hasBaseline()
     {
         return Objects.nonNull( this.baseline ) || Objects.nonNull( this.baselineGenerator );
+    }
+
+    /**
+     * @return whether a climatological data source is available
+     */
+
+    private boolean hasClimatology()
+    {
+        return Objects.nonNull( this.climatology );
     }
 
     /**
@@ -1934,7 +1906,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private PoolSupplier( Builder<L, R> builder )
     {
         // Set
-        this.climatology = builder.climatology;
         this.left = builder.left;
         this.right = builder.right;
         this.baseline = builder.baseline;
@@ -1945,7 +1916,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.desiredTimeScale = builder.desiredTimeScale;
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;
-        this.climatologyMapper = builder.climatologyMapper;
         this.baselineGenerator = builder.baselineGenerator;
         this.projectConfig = builder.projectConfig;
         this.leftTransformer = builder.leftTransformer;
@@ -1956,6 +1926,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.leftFilter = builder.leftFilter;
         this.rightFilter = builder.rightFilter;
         this.baselineFilter = builder.baselineFilter;
+        this.climatology = builder.climatology;
 
         // Set any time offsets required
         Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.getInputs() );
@@ -2004,12 +1975,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
                           + "discovered that the project declaration was undefined.",
                           this.metadata );
-        }
-
-        if ( Objects.isNull( this.climatology ) != Objects.isNull( this.climatologyMapper ) )
-        {
-            throw new IllegalArgumentException( messageStart + "cannot add a climatological data source without a "
-                                                + "mapper to double values and vice versa." );
         }
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied

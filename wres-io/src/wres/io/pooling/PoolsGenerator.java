@@ -28,6 +28,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.datamodel.Climatology;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
@@ -43,6 +44,7 @@ import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.project.Project;
 import wres.io.retrieval.CachingRetriever;
+import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.DataAccessException;
 import wres.io.retrieval.RetrieverFactory;
 
@@ -514,7 +516,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 // is potentially expensive and there is no need to repeat it on every call to the supplier.
                 climatologyAtScale = CachingRetriever.of( climatologyAtScale );
 
-                builder.setClimatology( climatologyAtScale, this.getClimateMapper() );
+                // Create the raw climatology, but continue to defer the data pull until required by a pool. This is 
+                // achieved by wrapping in a supplier
+                Supplier<Climatology> climatology = this.createClimatology( climatologyAtScale,
+                                                                            this.getClimateMapper() );
+
+                // Create a caching supplier to re-use the result once the data has been pulled
+                Supplier<Climatology> cachedClimatology = CachingSupplier.of( climatology );
+                builder.setClimatology( cachedClimatology );
             }
             // No climatology, so populate the collection of per-pool left-ish retrievers
             else
@@ -996,6 +1005,44 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     {
         return Objects.nonNull( existingTimeScale ) && Objects.nonNull( desiredTimeScale )
                && !existingTimeScale.equalsOrInstantaneous( desiredTimeScale );
+    }
+
+    /**
+     * Creates the climatological data as needed.
+     * 
+     * @param climatology the time-series supplier for the climatological data
+     * @param climatologyMapper the mapper to transform the climatology from left-ish data to double values
+     * @return the climatological data or null if no climatology is defined
+     * @throws NullPointerException if the climatology is not null and the climateMapper is null
+     */
+
+    private Supplier<Climatology> createClimatology( Supplier<Stream<TimeSeries<L>>> climatology,
+                                                     ToDoubleFunction<L> climatologyMapper )
+    {
+        return () -> {
+            // Null if no climatology
+            if ( Objects.isNull( climatology ) )
+            {
+                return null;
+            }
+
+            Objects.requireNonNull( climatologyMapper );
+
+            Function<L, Double> mapper = climatologyMapper::applyAsDouble;
+            List<TimeSeries<Double>> climData = climatology.get()
+                                                           .map( next -> TimeSeriesSlicer.transform( next,
+                                                                                                     mapper,
+                                                                                                     null ) )
+                                                           .collect( Collectors.toList() );
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Discovered {} climatological time-series when generating the pools.",
+                              climData.size() );
+            }
+
+            return Climatology.of( climData );
+        };
     }
 
 }

@@ -25,6 +25,7 @@ import wres.config.MetricConfigException;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
@@ -169,7 +170,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Also retain the time-series shape, where required
         Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( adjustedPool );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
-                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA ) );
+                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ) );
 
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
@@ -990,7 +991,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         ToDoubleFunction<Ensemble> ensembleMapper = this.getEnsembleAverageFunction( metrics.getEnsembleAverageType() );
 
         UnaryOperator<Pair<Double, Ensemble>> missingFilter =
-                Slicer.leftAndEachOfRight( StatisticsProcessor.ADMISSABLE_DATA );
+                Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue );
 
         this.toSingleValues = in -> {
             // Handle missings 

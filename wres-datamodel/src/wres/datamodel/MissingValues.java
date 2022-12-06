@@ -31,6 +31,17 @@ public class MissingValues
     }
 
     /**
+     * Opposite of {@link #isMissingValue(double)} to allow a method reference.
+     * @param value the value to test
+     * @return true if the value is not missing
+     */
+
+    public static boolean isNotMissingValue( double value )
+    {
+        return !MissingValues.isMissingValue( value );
+    }
+
+    /**
      * Do not construct.
      */
 
