@@ -7,8 +7,8 @@ RUN dnf install -y \
     fontconfig-2.13.1-4.el8 \
     dejavu-fonts-common-2.35-7.el8 \
     dejavu-sans-fonts-2.35-7.el8 \
-    procps-ng-3.3.15-6.el8 \
-    iproute-5.15.0-4.el8_6.1 \
+    procps-ng-3.3.15-9.el8 \
+    iproute-5.18.0-1.el8 \
     hostname-3.20-6.el8 \
     && dnf clean all
 
