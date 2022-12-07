@@ -25,61 +25,63 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
         super();
     }
 
-    private static final Logger
-            LOGGER = LoggerFactory.getLogger( EnsembleDetails.class);
-	
-	/**
-	 The name of the ensemble trace being represented
-	  */
-	private String ensembleName = null;
+    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleDetails.class );
+
+    /**
+     The name of the ensemble trace being represented
+      */
+    private String ensembleName = null;
 
     /**
      * The serial id of the ensemble in the database
      */
-    private Long ensembleID = null;
+    private Long ensembleId = null;
 
-	/**
-	 * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
-	 * @param ensembleName The new name for the ensemble
-	 */
-	public void setEnsembleName(String ensembleName)
-	{
-		if (this.ensembleName == null || !this.ensembleName.equalsIgnoreCase(ensembleName))
-		{
-			this.ensembleName = ensembleName;
-		}
-	}
+    /**
+     * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
+     * @param ensembleName The new name for the ensemble
+     */
+    public void setEnsembleName( String ensembleName )
+    {
+        if ( this.ensembleName == null || !this.ensembleName.equalsIgnoreCase( ensembleName ) )
+        {
+            this.ensembleName = ensembleName;
+        }
+    }
 
-	@Override
-	public int compareTo(EnsembleDetails other)
-	{
-	    return this.getKey().compareTo( other.getKey() );
-	}
+    @Override
+    public int compareTo( EnsembleDetails other )
+    {
+        return this.getKey().compareTo( other.getKey() );
+    }
 
-	@Override
-	public String getKey()
-	{
-		return this.ensembleName;
-	}
+    @Override
+    public String getKey()
+    {
+        return this.ensembleName;
+    }
 
-	@Override
-	public Long getId() {
-		return this.ensembleID;
-	}
+    @Override
+    public Long getId()
+    {
+        return this.ensembleId;
+    }
 
-	@Override
-	protected String getIDName() {
-		return "ensemble_id";
-	}
+    @Override
+    protected String getIDName()
+    {
+        return "ensemble_id";
+    }
 
-	@Override
-	public void setID( long id ) {
-		this.ensembleID = id;
-	}
+    @Override
+    public void setID( long id )
+    {
+        this.ensembleId = id;
+    }
 
-	@Override
-	protected DataScripter getInsertSelect( Database database )
-	{
+    @Override
+    protected DataScripter getInsertSelect( Database database )
+    {
         DataScripter script = new DataScripter( database );
 
         script.setUseTransaction( true );
@@ -89,18 +91,18 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
 
         script.setHighPriority( true );
 
-		script.addTab().addLine( "INSERT INTO wres.Ensemble( ensemble_name ) ");
-		script.addTab().addLine( "SELECT ?" );
-		script.addArgument( this.ensembleName );
-		script.addTab().addLine("WHERE NOT EXISTS (");
-		script.addTab(  2  ).addLine("SELECT 1");
-		script.addTab(  2  ).addLine("FROM wres.Ensemble");
-		script.addTab(  2  ).addLine("WHERE ensemble_name = ?");
-        script.addArgument(this.ensembleName);
-		script.addTab().addLine(")");
+        script.addTab().addLine( "INSERT INTO wres.Ensemble( ensemble_name ) " );
+        script.addTab().addLine( "SELECT ?" );
+        script.addArgument( this.ensembleName );
+        script.addTab().addLine( "WHERE NOT EXISTS (" );
+        script.addTab( 2 ).addLine( "SELECT 1" );
+        script.addTab( 2 ).addLine( "FROM wres.Ensemble" );
+        script.addTab( 2 ).addLine( "WHERE ensemble_name = ?" );
+        script.addArgument( this.ensembleName );
+        script.addTab().addLine( ")" );
 
         return script;
-	}
+    }
 
     @Override
     public void save( Database database ) throws SQLException
@@ -110,7 +112,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
 
         if ( performedInsert )
         {
-            this.ensembleID = script.getInsertedIds()
+            this.ensembleId = script.getInsertedIds()
                                     .get( 0 );
         }
         else
@@ -126,16 +128,16 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.ensembleID = data.getLong( this.getIDName() );
+                this.ensembleId = data.getLong( this.getIDName() );
             }
         }
 
         LOGGER.trace( "Did I create Ensemble ID {}? {}",
-                      this.ensembleID,
+                      this.ensembleId,
                       performedInsert );
     }
 
-	@Override
+    @Override
     protected Object getSaveLock()
     {
         return new Object();

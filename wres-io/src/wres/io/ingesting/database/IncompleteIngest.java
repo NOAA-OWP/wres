@@ -15,37 +15,39 @@ import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.system.DatabaseLockManager;
 
 /**
- * Deals with partial/orphaned/incomplete ingested data, both detection and removal.
+ * Deals with partial/orphaned/incomplete ingested data, both detection and removal. Locking semantics should be 
+ * handled by the caller.
+ * 
+ * TODO: consider adding a guard to the script that remove incomplete data to select only those rows where the source 
+ * is marked complete because completed sources are, by definition, not within the scope of incomplete ingest and no 
+ * guards in code are as good as a guard within the select that chooses rows to delete.
  */
 
 public class IncompleteIngest
 {
     private static final String WHERE_SOURCE_ID = "WHERE source_id = ?";
-
     private static final String WHERE_NOT_EXISTS = "WHERE NOT EXISTS (";
-
     private static final String SELECT_1 = "SELECT 1";
-
     private static final String FROM_WRES_SOURCE_S = "FROM wres.Source S";
-
     private static final String FROM_WRES_PROJECT_SOURCE_PS = "FROM wres.ProjectSource PS";
-
     private static final Logger LOGGER = LoggerFactory.getLogger( IncompleteIngest.class );
-
     private static final String DB_COMMUNICATION_FAILED =
             "Communication with the database failed.";
 
+    /**
+     * Attempts to remove a data source from the database. The caller must handle locking semantics.
+     * @param database the database
+     * @param dataSourcesCache the data source cache
+     * @param surrogateKey the surrogate key of the source to remove
+     * @return true if the source was removed, otherwise false
+     */
 
-    public static boolean removeSourceDataSafely( Database database,
-                                                  DataSources dataSourcesCache,
-                                                  long surrogateKey,
-                                                  DatabaseLockManager lockManager )
+    public static boolean removeDataSource( Database database,
+                                            DataSources dataSourcesCache,
+                                            long surrogateKey )
     {
-        Objects.requireNonNull( lockManager );
-
         try
         {
             SourceDetails sourceDetails = dataSourcesCache.getSource( surrogateKey );
@@ -58,10 +60,10 @@ public class IncompleteIngest
                              surrogateKey );
                 return false;
             }
-            return IncompleteIngest.removeSourceDataSafely( database,
-                                                            dataSourcesCache,
-                                                            sourceDetails,
-                                                            lockManager );
+
+            return IncompleteIngest.removeDataSource( database,
+                                                      dataSourcesCache,
+                                                      sourceDetails );
         }
         catch ( SQLException se )
         {
@@ -69,67 +71,67 @@ public class IncompleteIngest
         }
     }
 
-    private static boolean removeSourceDataSafely( Database database,
-                                                   DataSources dataSourcesCache,
-                                                   SourceDetails source,
-                                                   DatabaseLockManager lockManager )
+    /**
+     * Attempts to remove the data source.
+     * @param database the database
+     * @param dataSourcesCache the data sources cache
+     * @param source the data source/ORM
+     * @return whether the source was removed
+     * @throws SQLException if removal failed
+     */
+
+    private static boolean removeDataSource( Database database,
+                                             DataSources dataSourcesCache,
+                                             SourceDetails source )
             throws SQLException
     {
         Objects.requireNonNull( source );
         Objects.requireNonNull( source.getId() );
-        Objects.requireNonNull( lockManager );
 
         boolean wasIngested = IncompleteIngest.wasCompletelyIngested( database,
                                                                       source );
 
         if ( wasIngested )
         {
-            LOGGER.warn( "Source {} was fully ingested, will not remove.", source );
+            LOGGER.warn( "This task was asked to inspect a source for incomplete ingest but the source was "
+                         + "subsequently completed by another task, so it will not be removed. The source was: {}.",
+                         source );
             return false;
         }
 
-        if ( lockManager.isSourceLocked( source.getId() ) )
-        {
-            LOGGER.warn( "Source {} is actively locked, will not remove.", source );
-            return false;
-        }
+        // If we got to this point, there should be an exclusive lock on the source that prevents other threads 
+        // mutating it (e.g., removing it) and we have now checked that nothing completed it immediately before that 
+        // lock was acquired, so it is truly an incomplete ingest, otherwise something went wrong. If this message is 
+        // seen when one instance or multiple instances are currently trying to ingest the source, then something went 
+        // wrong with the locking semantics
+
+        LOGGER.warn( "Another task started to ingest a source but did not complete it. This source will now be removed "
+                     + "from the database. The source to be removed is: {}.",
+                     source );
 
         // Proceed to remove
         long sourceId = source.getId();
 
-        try
+        DataScripter timeSeriesValueScript = IncompleteIngest.getTimeSeriesValueScript( database, sourceId );
+        DataScripter referenceTimeScript = IncompleteIngest.getReferenceTimeScript( database, sourceId );
+        DataScripter timeSeriesScript = IncompleteIngest.getTimeSeriesScript( database, sourceId );
+        DataScripter sourceScript = IncompleteIngest.getTimeSeriesSourceScript( database, sourceId );
+
+        int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
+        int referenceTimesRemoved = referenceTimeScript.execute();
+        int timeSeriesRemoved = timeSeriesScript.execute();
+        int sourcesRemoved = sourceScript.execute();
+
+        LOGGER.debug( "Removed {} tsv, {} tsrt, {} ts, {} s.",
+                      timeSeriesValuesRemoved,
+                      referenceTimesRemoved,
+                      timeSeriesRemoved,
+                      sourcesRemoved );
+
+        if ( sourcesRemoved != 1 )
         {
-            lockManager.lockSource( sourceId );
-
-            DataScripter timeSeriesValueScript = IncompleteIngest.getTimeSeriesValueScript( database, sourceId );
-            DataScripter referenceTimeScript = IncompleteIngest.getReferenceTimeScript( database, sourceId );
-            DataScripter timeSeriesScript = IncompleteIngest.getTimeSeriesScript( database, sourceId );
-            DataScripter sourceScript = IncompleteIngest.getTimeSeriesSourceScript( database, sourceId );
-
-            int timeSeriesValuesRemoved = timeSeriesValueScript.execute();
-            int referenceTimesRemoved = referenceTimeScript.execute();
-            int timeSeriesRemoved = timeSeriesScript.execute();
-            int sourcesRemoved = sourceScript.execute();
-
-            LOGGER.debug( "Removed {} tsv, {} tsrt, {} ts, {} s.",
-                          timeSeriesValuesRemoved,
-                          referenceTimesRemoved,
-                          timeSeriesRemoved,
-                          sourcesRemoved );
-
-            if ( sourcesRemoved != 1 )
-            {
-                LOGGER.warn( "Removed {} sources when 1 was expected.",
-                             sourcesRemoved );
-            }
-        }
-        finally
-        {
-            // Should be locked, but double-check because lock attempt can throw an exception. See #110218
-            if ( lockManager.isSourceLocked( sourceId ) )
-            {
-                lockManager.unlockSource( sourceId );
-            }
+            LOGGER.warn( "Removed {} sources when 1 was expected.",
+                         sourcesRemoved );
         }
 
         // Invalidate caches affected by deletes above
@@ -264,7 +266,6 @@ public class IncompleteIngest
 
         return thereAreOrphans;
     }
-
 
     /**
      * Removes all data from the database that isn't properly linked to a project

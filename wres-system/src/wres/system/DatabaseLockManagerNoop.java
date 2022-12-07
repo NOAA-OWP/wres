@@ -25,15 +25,15 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
     }
 
     @Override
-    public void lockSource( Long lockName ) throws SQLException
+    public boolean lockSource( Long lockName ) throws SQLException
     {
-        // No-op
+        return true;
     }
 
     @Override
-    public void unlockSource( Long lockName ) throws SQLException
+    public boolean unlockSource( Long lockName ) throws SQLException
     {
-        // No-op
+        return true;
     }
 
     @Override
@@ -58,11 +58,5 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
     public void unlockShared( Long lockName ) throws SQLException
     {
         // No-op
-    }
-
-    @Override
-    public boolean isSourceLocked( Long lockName ) throws SQLException
-    {
-        return false;
     }
 }

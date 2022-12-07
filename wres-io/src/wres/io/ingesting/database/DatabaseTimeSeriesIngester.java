@@ -103,6 +103,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /** The default key value for a data source when not discovered in the cache. */
     private static final long KEY_NOT_FOUND = Long.MIN_VALUE;
 
+    /** Level of patience in waiting for the ingest of a source to be marked complete. */
+    private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
+
     private final SystemSettings systemSettings;
     private final Database database;
     private final DatabaseCaches caches;
@@ -375,10 +378,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 // Exponential back-off
                 sleepMillis *= 2;
 
-                LOGGER.warn( "Failed to ingest a time-series on attempt {} of {}. Continuing to retry until the "
-                             + "maximum retry count of {} is reached. There are {} attempts remaining.",
+                LOGGER.warn( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing to "
+                             + "retry until the maximum retry count of {} is reached. There are {} attempts remaining.",
+                             dataSource,
                              i,
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             Thread.currentThread()
+                                   .getName(),
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
             }
@@ -390,13 +396,18 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 if ( i > 0 )
                 {
-                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {}.",
+                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
                                  dataSource,
                                  i + 1,
-                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES );
+                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                                 Thread.currentThread()
+                                       .getName() );
                 }
 
-                LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
+                LOGGER.trace( "Successfully ingested a time-series from {} in thread '{}'.",
+                              dataSource,
+                              Thread.currentThread()
+                                    .getName() );
 
                 return results;
             }
@@ -433,32 +444,68 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         // Try to insert a row into wres.Source for the time-series
         SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+        DatabaseLockManager innerLockManager = this.getLockManager();
 
-        // Source row was inserted, so this is a new time-series
+        // Inserted?
         if ( source.performedInsert() )
         {
-            // Lock source with an advisory lock. Unlocked by a SourceCompleter.
-            this.lockSource( source, timeSeries );
+            // Try to lock source with an advisory lock
+            if ( this.lockSource( source, timeSeries, innerLockManager ) )
+            {
+                try
+                {
+                    // Advisory locked, so go ahead and create
+                    results = this.createNewSingleValuedSource( timeSeries, source, dataSource );
+                }
+                // Lock succeeded, so unlock
+                finally
+                {
+                    this.unlockSource( source, innerLockManager );
+                }
+            }
+            else
+            {
+                LOGGER.debug( "Detected a data source that is locked in another task, {}. Will retry later.",
+                              dataSource );
 
-            // Ready to insert the time-series, source row was inserted and is (advisory) locked.
-            Set<Pair<CountDownLatch, CountDownLatch>> latches =
-                    this.insertSingleValuedTimeSeries( this.getSystemSettings(),
-                                                       this.getDatabase(),
-                                                       this.getCaches()
-                                                           .getEnsemblesCache(),
-                                                       timeSeries,
-                                                       source.getId() );
-
-            // Finalize, which marks the source complete and unlocks it
-            results = this.finalizeNewSource( source, latches, dataSource );
+                // Busy, retry again later
+                results = IngestResult.singleItemListFrom( dataSource,
+                                                           source.getId(),
+                                                           true,
+                                                           true );
+            }
         }
-        // Source was not inserted, so must be in progress, abandoned or completed. Try to finalize it.
+        // Source was not inserted, so this is an existing source. But was it completed or abandoned?
         else
         {
             results = this.finalizeExistingSource( source, dataSource );
         }
 
         return results;
+    }
+
+    /**
+     * Inserts a single-valued time-series into the database. The caller is responsible for locking.
+     * @param timeSeries the time-series
+     * @param source the source/ORM
+     * @param dataSource the raw data source
+     * @return the ingest results
+     */
+
+    private List<IngestResult> createNewSingleValuedSource( TimeSeries<Double> timeSeries,
+                                                            SourceDetails source,
+                                                            DataSource dataSource )
+    {
+        Set<Pair<CountDownLatch, CountDownLatch>> latches =
+                this.insertSingleValuedTimeSeries( this.getSystemSettings(),
+                                                   this.getDatabase(),
+                                                   this.getCaches()
+                                                       .getEnsemblesCache(),
+                                                   timeSeries,
+                                                   source.getId() );
+
+        // Finalize, which marks the source complete
+        return this.finalizeNewSource( source, latches, dataSource );
     }
 
     /**
@@ -495,11 +542,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 // Exponential back-off
                 sleepMillis *= 2;
 
-                LOGGER.warn( "Failed to ingest a time-series from {} on attempt {} of {}. Continuing to retry until "
-                             + "the maximum retry count of {} is reached. There are {} attempts remaining.",
+                LOGGER.warn( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing to "
+                             + "retry until the maximum retry count of {} is reached. There are {} attempts remaining.",
                              dataSource,
                              i,
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                             Thread.currentThread()
+                                   .getName(),
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
             }
@@ -511,13 +560,18 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 if ( i > 0 )
                 {
-                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {}.",
+                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
                                  dataSource,
                                  i + 1,
-                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES );
+                                 DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                                 Thread.currentThread()
+                                       .getName() );
                 }
 
-                LOGGER.trace( "Successfully ingested a time-series with metadata: {}.", timeSeries.getMetadata() );
+                LOGGER.trace( "Successfully ingested a time-series from {} in thread '{}'.",
+                              dataSource,
+                              Thread.currentThread()
+                                    .getName() );
 
                 return result;
             }
@@ -552,25 +606,26 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         LOGGER.debug( "Ingesting an ensemble time-series from source {}.", dataSource.getUri() );
 
+        // Try to insert a row into wres.Source for the time-series
         SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+        DatabaseLockManager innerLockManager = this.getLockManager();
 
-        // Not found
+        // Inserted?
         if ( source.performedInsert() )
         {
-            // Try to lock source with an advisory lock. Unlocked by a SourceCompleter. See #110218
-            if ( this.lockSource( source, timeSeries ) )
+            // Try to lock source with an advisory lock
+            if ( this.lockSource( source, timeSeries, innerLockManager ) )
             {
-                // Ready to ingest, source row was inserted and is (advisory) locked.
-                Set<Pair<CountDownLatch, CountDownLatch>> latches =
-                        this.insertEnsembleTimeSeries( this.getSystemSettings(),
-                                                       this.getDatabase(),
-                                                       this.getCaches()
-                                                           .getEnsemblesCache(),
-                                                       timeSeries,
-                                                       source.getId() );
-
-                // Finalize, which marks the source complete and unlocks it using a SourceCompleter
-                results = this.finalizeNewSource( source, latches, dataSource );
+                try
+                {
+                    // Advisory locked, so go ahead and create
+                    results = this.createNewEnsembleSource( timeSeries, source, dataSource );
+                }
+                // Lock succeeded, so unlock
+                finally
+                {
+                    this.unlockSource( source, innerLockManager );
+                }
             }
             else
             {
@@ -591,6 +646,30 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         }
 
         return results;
+    }
+
+    /**
+     * Inserts a new ensemble time-series into the database. The caller is responsible for locking.
+     * @param timeSeries the time-series
+     * @param source the source/ORM
+     * @param dataSource the raw data source
+     * @return the ingest results
+     */
+
+    private List<IngestResult> createNewEnsembleSource( TimeSeries<Ensemble> timeSeries,
+                                                        SourceDetails source,
+                                                        DataSource dataSource )
+    {
+        Set<Pair<CountDownLatch, CountDownLatch>> latches =
+                this.insertEnsembleTimeSeries( this.getSystemSettings(),
+                                               this.getDatabase(),
+                                               this.getCaches()
+                                                   .getEnsemblesCache(),
+                                               timeSeries,
+                                               source.getId() );
+
+        // Finalize, which marks the source complete
+        return this.finalizeNewSource( source, latches, dataSource );
     }
 
     /**
@@ -650,16 +729,17 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
-     * Attempts to lock a source aka time-series. Unlocking is managed by a {@link SourceCompleter}.
+     * Attempts to lock a source aka time-series.
      * @param <T> the type of time-series event value
      * @param source the source to lock
      * @param timeSeries the time-series
+     * @param lockManager the lock manager
      * @return whether the lock was acquired
      */
 
-    private <T> boolean lockSource( SourceDetails source, TimeSeries<T> timeSeries )
+    private <T> boolean lockSource( SourceDetails source, TimeSeries<T> timeSeries, DatabaseLockManager lockManager )
     {
-        if ( LOGGER.isDebugEnabled() )
+        if ( LOGGER.isDebugEnabled() && Objects.nonNull( timeSeries ) )
         {
             byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
             String hash = Hex.encodeHexString( rawHash, false );
@@ -668,18 +748,55 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         try
         {
-            if ( !this.lockManager.isSourceLocked( source.getId() ) )
-            {
-                this.lockManager.lockSource( source.getId() );
+            LOGGER.debug( "Preparing to lock source {} in thread {}.",
+                          source.getId(),
+                          Thread.currentThread().getName() );
 
-                return true;
-            }
+            boolean locked = lockManager.lockSource( source.getId() );
 
-            return false;
+            LOGGER.debug( "Locked source {} in thread {}.",
+                          source.getId(),
+                          Thread.currentThread().getName() );
+
+            return locked;
         }
         catch ( SQLException se )
         {
             throw new IngestException( "Failed to lock for source id "
+                                       + source.getId(),
+                                       se );
+        }
+    }
+
+    /**
+     * Attempts to unlock a source aka time-series.
+     * @param source the source to unlock
+     * @param lockManager the lock manager
+     */
+
+    private void unlockSource( SourceDetails source, DatabaseLockManager lockManager )
+    {
+        try
+        {
+            boolean unlocked = lockManager.unlockSource( source.getId() );
+
+            if ( unlocked && LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Unlocked source {} in thread {}.",
+                              source.getId(),
+                              Thread.currentThread().getName() );
+            }
+            else if ( !unlocked && LOGGER.isWarnEnabled() )
+            {
+                LOGGER.debug( "Failed to unlock source {} in thread {}. Some other thread probably unlocked this "
+                              + "source.",
+                              source.getId(),
+                              Thread.currentThread().getName() );
+            }
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to unlock for source id "
                                        + source.getId(),
                                        se );
         }
@@ -743,8 +860,95 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
+     * Completes a new source.  Requires that locking semantics are handled by the caller.
+     * 
+     * @param source the source details
+     * @param latches the latches used to coordinate with other ingest tasks
+     * @param dataSource the data source
+     * @return the ingest results
+     */
+
+    private List<IngestResult> finalizeNewSource( SourceDetails source,
+                                                  Set<Pair<CountDownLatch, CountDownLatch>> latches,
+                                                  DataSource dataSource )
+    {
+        /* Mark the given source completed because the caller was in charge of
+        * ingest and needs to mark it so.
+        *
+        * Ensure that ingest of a given sourceId is complete, either by verifying
+        * that another task has finished it or by finishing it right here and now.
+        *
+        * Due to #64922 (empty WRDS AHPS data sources) and #65049 (empty CSV
+        * data sources), this class tolerates an empty Set of latches and logs a
+        * warning (prior behavior was to throw IllegalArgumentException). 
+        */
+
+        // Make sure the ingest is actually complete by sending
+        // a signal that we sit and await the ingest of values prior to
+        // marking them complete.
+        for ( Pair<CountDownLatch, CountDownLatch> latchPair : latches )
+        {
+            // Say "I am about to sit here and wait, y'all..."
+            latchPair.getLeft()
+                     .countDown();
+        }
+
+        if ( !latches.isEmpty() )
+        {
+            try
+            {
+                this.flush( latches, source );
+            }
+            catch ( InterruptedException ie )
+            {
+                String message =
+                        "Interrupted while waiting for another task to ingest data for source "
+                                 + source
+                                 + ".";
+                Thread.currentThread().interrupt();
+                // Additionally throw exception to ensure we don't accidentally mark
+                // this source as completed a few lines down.
+                throw new IngestException( message, ie );
+            }
+        }
+        else
+        {
+            LOGGER.warn( "A data source with no data may have been found. Please check your dataset. "
+                         + "(Technical info: source={}.)",
+                         source );
+        }
+
+        SourceCompletedDetails completedDetails =
+                new SourceCompletedDetails( this.database, source.getId() );
+
+        try
+        {
+            completedDetails.markCompleted();
+
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Successfully marked source {} as completed.",
+                              source.getId() );
+            }
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to mark source "
+                                       + source.getId()
+                                       + " as completed.",
+                                       se );
+        }
+
+        return IngestResult.singleItemListFrom( dataSource,
+                                                source.getId(),
+                                                false,
+                                                false );
+    }
+
+    /**
      * Creates a list of ingest results for a completed source or an abandoned source that should be retried. If an 
-     * abandoned source is detected, the source is removed safely in preparation for a retry.
+     * abandoned source is detected, the source is locked and removal in preparation for a retry. The caller does not
+     * need to handle locking semantics because locking is only required on source removal.
      *  
      * @param source the source details
      * @param dataSource the data source
@@ -765,18 +969,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                     true,
                                                     false );
         }
-        // Source is already locked for mutation, try again later. See #110218
-        else if ( this.isSourceLocked( this.lockManager, source.getId() ) )
-        {
-            LOGGER.debug( "Detected a data source that is locked in another task, {}. Will retry later.",
-                          dataSource );
-
-            // Retry later
-            return IngestResult.singleItemListFrom( dataSource,
-                                                    source.getId(),
-                                                    true,
-                                                    true );
-        }
         // Started, but not completed (unless in the interim) and not in progress, so remove and retry later
         else
         {
@@ -791,34 +983,31 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                         false );
             }
 
-            // Check again whether source is locked for mutation and, if locked, try again later. See #110218
-            if ( this.isSourceLocked( this.lockManager, source.getId() ) )
-            {
-                LOGGER.trace( "Discovered a lock on data source {}, retrying later.", dataSource );
-
-                return IngestResult.singleItemListFrom( dataSource,
-                                                        source.getId(),
-                                                        true,
-                                                        true );
-            }
-
-            // First, try to safely remove it, which will again check for completion and only remove if safe
             long surrogateKey = this.getSurrogateKey( source.getHash(), dataSource.getUri() );
 
-            LOGGER.warn( "Another instance started to ingest data source, {}, identified by '{}' but did not finish. "
-                         + "Cleaning up...",
-                         dataSource,
-                         surrogateKey );
-
-            boolean removed = IncompleteIngest.removeSourceDataSafely( this.getDatabase(),
-                                                                       this.getCaches()
-                                                                           .getDataSourcesCache(),
-                                                                       surrogateKey,
-                                                                       this.getLockManager() );
+            // First, try to safely remove it, which requires an exclusive lock
+            boolean removed = false;
+            if ( this.lockSource( source, null, this.getLockManager() ) )
+            {
+                try
+                {
+                    // There is a final check below that some other thread did not complete in between the last check 
+                    // for completion and the exclusive lock being acquired above
+                    removed = IncompleteIngest.removeDataSource( this.getDatabase(),
+                                                                 this.getCaches()
+                                                                     .getDataSourcesCache(),
+                                                                 surrogateKey );
+                }
+                finally
+                {
+                    this.unlockSource( source, this.getLockManager() );
+                }
+            }
 
             // Log status
             if ( LOGGER.isDebugEnabled() )
             {
+                // Removed incomplete source, try to ingest later
                 if ( removed )
                 {
                     LOGGER.debug( "Successfully removed an abandoned data source, {}, identified by '{}'. This source "
@@ -866,51 +1055,71 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
-     * Determines if the indicated data is currently being ingested or removed by another task.
+     * Attempts to flush ingested data to the database.
      * 
-     * @param sourceId the source identifier
-     * @return true if a task is detected to be ingesting, false otherwise
-     * @throws PreIngestException when communication with the database fails
-     */
-    private boolean isSourceLocked( DatabaseLockManager lockManager, Long sourceId )
-    {
-        try
-        {
-            LOGGER.debug( "Checking source lock for source {}.", sourceId );
-
-            return lockManager.isSourceLocked( sourceId );
-        }
-        catch ( SQLException e )
-        {
-            throw new PreIngestException( "Failed to determine whether the data source with identity "
-                                          + sourceId
-                                          + " was currently being ingested." );
-        }
-    }
-
-    /**
-     * Completes a new source.
-     * @param source the source details
      * @param latches the latches
-     * @param dataSource the data source
-     * @return the ingest results
+     * @param source the source
+     * @throws InterruptedException if the flush was interrupted
      */
 
-    private List<IngestResult> finalizeNewSource( SourceDetails source,
-                                                  Set<Pair<CountDownLatch, CountDownLatch>> latches,
-                                                  DataSource dataSource )
+    private void flush( Set<Pair<CountDownLatch, CountDownLatch>> latches, SourceDetails source )
+            throws InterruptedException
     {
-        List<IngestResult> results;
+        Duration eachWait = Duration.ofMillis( 1 );
 
-        // Mark complete
-        SourceCompleter completer = this.createSourceCompleter( source.getId(),
-                                                                this.lockManager );
-        completer.complete( latches );
-        results = IngestResult.singleItemListFrom( dataSource,
-                                                   source.getId(),
-                                                   false,
-                                                   false );
-        return results;
+        for ( Pair<CountDownLatch, CountDownLatch> latchPair : latches )
+        {
+            // Wait a moment for another task to save my data before
+            // doing it myself.
+            boolean dataFinished = latchPair.getRight()
+                                            .await( eachWait.toMillis(),
+                                                    TimeUnit.MILLISECONDS );
+            if ( !dataFinished )
+            {
+                LOGGER.debug( "Sick of waiting for another task, saving data myself! {}, {}",
+                              source,
+                              latchPair );
+                boolean thisFlushed = IngestedValues.flush( this.database,
+                                                            latchPair );
+
+                // It is still necessary to double-check that the data has
+                // actually been written, because even if we call flush(),
+                // there is no guarantee that this was the task that wrote.
+                // However, because we called flush, we or someone must be
+                // doing the write at this point. Wait indefinitely for it.
+                // On the other hand, if the other task died while
+                // attempting the copy, we cannot sit here and wait forever.
+                // If we truly completed it, await() call would return
+                // immediately. If we did not successfully complete, then we
+                // should be ready to give up after a time to break
+                // deadlock.
+                if ( !thisFlushed )
+                {
+                    boolean done = latchPair.getRight()
+                                            .await( PATIENCE_LEVEL.toMillis(),
+                                                    TimeUnit.MILLISECONDS );
+
+                    // This is uncomfortable for sure, and a better way
+                    // should be found than making an assumption that the
+                    // other task failed. The thing we are working around is
+                    // that get() may be called on this task prior to get()
+                    // on the task responsible for marking completed, while
+                    // that other task has had an exception that does not
+                    // propagate.
+                    if ( !done )
+                    {
+                        throw new IngestException(
+                                                   "Another task did not "
+                                                   + "ingest and complete "
+                                                   + latchPair
+                                                   + " within "
+                                                   + PATIENCE_LEVEL
+                                                   + ", therefore assuming "
+                                                   + "it failed." );
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1231,9 +1440,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         try
         {
-            databaseTimeSeries = this.getDbTimeSeries( database,
-                                                       ensemblesCache,
-                                                       sourceId );
+            databaseTimeSeries = this.getDatabaseTimeSeries( database,
+                                                             ensemblesCache,
+                                                             sourceId );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
@@ -1265,9 +1474,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         try
         {
-            databaseTimeSeries = this.getDbTimeSeriesForEnsembleTrace( database,
-                                                                       ensembleId,
-                                                                       sourceId );
+            databaseTimeSeries = this.getDatabaseTimeSeriesForEnsembleTrace( database,
+                                                                             ensembleId,
+                                                                             sourceId );
             // The following indirectly calls save:
             return databaseTimeSeries.getTimeSeriesID();
         }
@@ -1291,9 +1500,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return a time-series for an ensemble trace
      */
 
-    private wres.io.data.details.TimeSeries getDbTimeSeriesForEnsembleTrace( Database database,
-                                                                             long ensembleId,
-                                                                             long sourceId )
+    private wres.io.data.details.TimeSeries getDatabaseTimeSeriesForEnsembleTrace( Database database,
+                                                                                   long ensembleId,
+                                                                                   long sourceId )
     {
         return new wres.io.data.details.TimeSeries( database,
                                                     ensembleId,
@@ -1308,10 +1517,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @throws SQLException if the time-series could not be created
      */
 
-    private wres.io.data.details.TimeSeries getDbTimeSeries( Database database,
-                                                             Ensembles ensemblesCache,
-                                                             long sourceId )
-            throws SQLException
+    private wres.io.data.details.TimeSeries
+            getDatabaseTimeSeries( Database database,
+                                   Ensembles ensemblesCache,
+                                   long sourceId )
+                    throws SQLException
     {
         return new wres.io.data.details.TimeSeries( database,
                                                     ensemblesCache.getDefaultEnsembleId(),
@@ -1427,26 +1637,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return a SourceDetails
      */
 
-    SourceDetails createSourceDetails( String sourceKey )
+    private SourceDetails createSourceDetails( String sourceKey )
     {
         return new SourceDetails( sourceKey );
     }
-
-
-    /**
-     * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
-     * @param sourceId the first arg to SourceCompleter
-     * @param lockManager the second arg to SourceCompleter
-     * @return a SourceCompleter
-     */
-
-    SourceCompleter createSourceCompleter( long sourceId,
-                                           DatabaseLockManager lockManager )
-    {
-        return new SourceCompleter( this.getDatabase(), sourceId, lockManager );
-    }
-
 
     /**
      * This method facilitates testing, Pattern 1 at
@@ -1455,7 +1649,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return a SourceCompleter
      */
 
-    SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
+    private SourceCompletedDetails createSourceCompletedDetails( SourceDetails sourceDetails )
     {
         return new SourceCompletedDetails( this.getDatabase(), sourceDetails );
     }
