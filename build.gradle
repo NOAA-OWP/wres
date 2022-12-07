@@ -315,8 +315,8 @@ project(':wres-system')
         // Update vulnerable snakeyaml that Liquibase uses
         implementation group: 'org.yaml', name: 'snakeyaml', version: '1.33'
 
-        //JB @ 02/16/17
-        testImplementation group: 'com.google.guava', name: 'guava-testlib', version: '31.1-jre'
+        // JCIP annotations
+        compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         testImplementation 'junit:junit:4.13.2'
 
