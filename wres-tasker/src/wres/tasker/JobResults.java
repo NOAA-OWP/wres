@@ -288,16 +288,21 @@ class JobResults
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
             String bindingKey = "job." + jobId + ".exitCode";
+            String queueName = null;
+            Channel channel = null;
 
-            try ( Channel channel = this.getConnection().createChannel() )
+            try
             {
+                channel = this.getConnection().createChannel();
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me?
-                String queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
+                queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
+                
                 // Does this have any effect?
                 AMQP.Queue.BindOk bindResult = channel.queueBind( queueName, exchangeName, bindingKey );
 
+                LOGGER.info( "Watching queue {} for the exit code result of the evaluation.", queueName );
                 LOGGER.debug( "Bindresult: {}", bindResult );
 
                 JobResultConsumer jobResultConsumer =
@@ -320,12 +325,7 @@ class JobResults
 
                 LOGGER.debug( "Waiting to take a result value..." );
                 resultValue = result.take();
-                LOGGER.debug( "Finished taking a result value. Deleting queue." );
-                AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                if (deleteOk == null) 
-                {
-                    LOGGER.warn( "Delete queue with name '" + queueName + "' failed. There might be a zombie queue." );
-                }
+                LOGGER.debug( "Finished taking a result value." );
             }
             catch ( InterruptedException ie )
             {
@@ -339,6 +339,25 @@ class JobResults
                 LOGGER.warn( "When attempting to get job results message using {}:",
                              this, ioe );
                 throw ioe;
+            }
+            finally
+            {
+                if ( (queueName != null) && (channel != null) )
+                {
+                    try
+                    {
+                        LOGGER.info( "Deleting the queue {}", queueName );
+                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
+                        if (deleteOk == null)
+                        {
+                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                    }
+                }
             }
 
             JobMetadata sharedData = this.getJobMetadata();
@@ -458,14 +477,19 @@ class JobResults
             String exchangeType = "topic";
             String bindingKey = "job." + jobId + "." + this.getWhichStream()
                                                            .name();
+            String queueName = null;
+            Channel channel = null;
 
-            try ( Channel channel = this.getConnection().createChannel() )
+            try 
             {
+                channel = this.getConnection().createChannel();
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me.
-                String queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
+                queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
                 channel.queueBind( queueName, exchangeName, bindingKey );
+
+                LOGGER.info("Watching the queue {} for {} logging.", queueName, this.getWhichStream().toString() );
 
                 JobStandardStreamConsumer jobStandardStreamConsumer =
                         new JobStandardStreamConsumer( channel,
@@ -481,13 +505,6 @@ class JobResults
                                                      oneLineOfOutput,
                                                      sharer,
                                                      this.getWhichStream().toString() );
-
-                LOGGER.info("Deleting the queue {}", queueName);
-                AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                if (deleteOk == null) 
-                {
-                    LOGGER.warn( "Delete queue with name '" + queueName + "' failed. There might be a zombie queue." );
-                }
             }
             catch ( InterruptedException ie )
             {
@@ -500,6 +517,25 @@ class JobResults
                 LOGGER.warn( "When attempting to get job results message using {}:",
                              this, ioe );
                 throw ioe;
+            }
+            finally
+            {
+                if ( (queueName != null) && (channel != null) )
+                {
+                    try
+                    {
+                        LOGGER.info( "Deleting the queue {}", queueName );
+                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
+                        if (deleteOk == null)
+                        {
+                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                        }
+                    }
+                    catch ( IOException e )
+                    {
+                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                    }
+                }
             }
 
             if ( this.getWhichStream()
