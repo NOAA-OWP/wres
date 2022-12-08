@@ -313,10 +313,12 @@ class NWMTimeSeries implements Closeable
             // Everything missing
             if ( this.netcdfFiles.isEmpty() )
             {
-                LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from {}.",
+                LOGGER.warn( "Skipping NWM TimeSeries (not found) with reference datetime {} and profile {} from {}. "
+                             + "The following resources were inspected: {}.",
                              referenceDatetime,
                              profile,
-                             this.baseUri );
+                             this.baseUri,
+                             netcdfUris );
             }
             // Something missing
             else

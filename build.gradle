@@ -28,7 +28,7 @@ buildscript
 plugins
 {
     // Static analysis tool sonarqube client
-    id 'org.sonarqube' version '3.4.0.2513'
+    id 'org.sonarqube' version '3.5.0.2730'
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
@@ -58,9 +58,10 @@ plugins
     id 'org.owasp.dependencycheck' version '7.2.1'
     
     // Task to assist in downloading artifacts
-    id "de.undercouch.download" version "5.2.1"
+    id "de.undercouch.download" version "5.3.0"
 
     // To discover library versions with updates available
+    // Stuck on 0.42.0 until we update the gradle baseline to 7.0 or higher: #110090
     id 'com.github.ben-manes.versions' version '0.42.0'
 
     // Run python scripts
@@ -72,7 +73,7 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.3"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.7"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
     id "org.beryx.jlink" version "2.25.0"
@@ -232,7 +233,7 @@ project(':wres-util')
     {
         implementation project(':wres-datamodel')
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         implementation( 'com.google.guava:guava:31.1-jre' )
         {
@@ -253,23 +254,23 @@ project(':wres-util')
         }
 
         // Update the org.apache.httpcomponents modules depended upon by cdm
-        implementation 'org.apache.httpcomponents:httpclient:4.5.13'
-        implementation 'org.apache.httpcomponents:httpcore:4.4.15'
-        implementation 'org.apache.httpcomponents:httpmime:4.5.13'
+        implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+        implementation 'org.apache.httpcomponents:httpcore:4.4.16'
+        implementation 'org.apache.httpcomponents:httpmime:4.5.14'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.3'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.5'
 
         testImplementation 'junit:junit:4.13.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.8.0'
+        testImplementation 'org.mockito:mockito-core:4.9.0'
     }
 }
 
@@ -278,7 +279,7 @@ project(':wres-system')
     dependencies
     {
         implementation project(':wres-util')
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         implementation( 'com.google.guava:guava:31.1-jre' )
         {
@@ -289,7 +290,7 @@ project(':wres-system')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.5.0' )
+        implementation( 'org.postgresql:postgresql:42.5.1' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -307,7 +308,7 @@ project(':wres-system')
 
         // Because org.postgresql:postgresql uses JUL logging, bridge it, here
         // at compile time because we need to expose a class to JUL.
-        implementation 'org.slf4j:jul-to-slf4j:2.0.3'
+        implementation 'org.slf4j:jul-to-slf4j:2.0.5'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
@@ -340,16 +341,16 @@ project(':wres-datamodel')
 
         api 'org.apache.commons:commons-lang3:3.12.0'
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
+        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.2' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -366,7 +367,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.8.0'
+        testImplementation 'org.mockito:mockito-core:4.9.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -393,17 +394,17 @@ project(':wres-io')
         implementation project(':wres-config')
         implementation project(':wres-grid')
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.14.0-rc2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0-rc2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.0-rc2'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.14.0-rc2'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.14.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.0-rc2'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.1'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
         {
@@ -415,10 +416,10 @@ project(':wres-io')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.apache.commons:commons-compress:1.21'
+        implementation 'org.apache.commons:commons-compress:1.22'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.5.0' )
+        implementation( 'org.postgresql:postgresql:42.5.1' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -448,10 +449,10 @@ project(':wres-io')
         implementation group: 'org.yaml', name: 'snakeyaml', version: '1.33'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.5.0'
+        implementation 'org.apache.tika:tika-core:2.6.0'
 
         // To cache
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
+        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.2' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -466,7 +467,7 @@ project(':wres-io')
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
-        implementation 'org.liquibase:liquibase-core:4.17.0'
+        implementation 'org.liquibase:liquibase-core:4.18.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:4.1.0'
@@ -474,16 +475,16 @@ project(':wres-io')
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
-        runtimeOnly 'org.slf4j:jul-to-slf4j:2.0.3'
+        runtimeOnly 'org.slf4j:jul-to-slf4j:2.0.5'
 
         // Because cdm and aws sdk uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.3'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.5'
 
         //JB @ 02/16/17
         testImplementation 'com.google.guava:guava-testlib:31.1-jre'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-inline:4.8.0'
+        testImplementation 'org.mockito:mockito-inline:4.9.0'
 
         // Use mockserver as a mock server for mock API responses
         testImplementation 'org.mock-server:mockserver-netty:5.14.0'
@@ -546,15 +547,15 @@ project(':wres-metrics')
         implementation project(':wres-datamodel')
         implementation project(':wres-config')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:4.8.0'
+        testImplementation 'org.mockito:mockito-core:4.9.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -590,7 +591,7 @@ project(':wres-statistics')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.21.7'
+            artifact = 'com.google.protobuf:protoc:3.21.10'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -682,7 +683,7 @@ project(':wres-statistics')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.21.7'
+        api 'com.google.protobuf:protobuf-java:3.21.10'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -795,21 +796,21 @@ project(':wres-vis')
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.3'
 
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'jfreesvg', version: '3.4.3'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         // For ohdcommonchps.jar:
-        runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.3'
+        runtimeOnly group: 'org.slf4j', name: 'log4j-over-slf4j', version: '2.0.5'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -820,7 +821,7 @@ project(':wres-vis')
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.1'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.8.0'
+        testImplementation 'org.mockito:mockito-core:4.9.0'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -841,7 +842,7 @@ project(':wres-config')
 
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         // For Java 9+ compatibility:
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
@@ -962,7 +963,7 @@ project(':wres-grid')
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
@@ -973,14 +974,14 @@ project(':wres-grid')
             exclude group: 'org.jdom', module: 'jdom2'
         }
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.3'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.5'
 
         testImplementation 'junit:junit:4.13.2'
     }
@@ -997,7 +998,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.21.7'
+            artifact = 'com.google.protobuf:protoc:3.21.10'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -1027,9 +1028,9 @@ project(':wres-messages')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.21.7'
+        api 'com.google.protobuf:protobuf-java:3.21.10'
 
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         testImplementation 'junit:junit:4.13.2'
     }
@@ -1044,10 +1045,10 @@ project(':wres-worker')
     dependencies
     {
         implementation project( ':wres-messages' )
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
         implementation 'com.rabbitmq:amqp-client:5.16.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1180,7 +1181,7 @@ project(':wres-tasker')
         implementation project( ':wres-config' )
 
         implementation project( ':wres-messages' )
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
         implementation 'com.rabbitmq:amqp-client:5.16.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
@@ -1202,54 +1203,54 @@ project(':wres-tasker')
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.0-M8'
+        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.0'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.0-M8'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.0'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
+        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.2' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.5.0'
+        implementation 'org.apache.tika:tika-core:2.6.0'
 
         // To persist job metadata while keeping it relatively fast
-        implementation( 'org.redisson:redisson:3.17.7' )
+        implementation( 'org.redisson:redisson:3.18.1' )
         {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.82.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.85.Final'
 
         // Upgrade jackson-databind used by redisson (CVE-2020-36518)
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0-rc2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
         // Upgrade some jackson libs used by redisson for good measure
-        implementation 'com.fasterxml.jackson:jackson-bom:2.14.0-rc2'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.14.0-rc2'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.0-rc2'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.14.1'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.1'
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.21.7'
+        implementation 'com.google.protobuf:protobuf-java:3.21.10'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.0-M8'
+        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.0'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
-        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.0-M8'
+        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.0'
 
         testImplementation 'junit:junit:4.13.2'
 
@@ -1264,7 +1265,7 @@ project(':wres-tasker')
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:8.0.6'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.3'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.7'
     }
 
     apply plugin: 'application'
@@ -1416,7 +1417,7 @@ project(':wres-eventsbroker')
 {
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
@@ -1424,7 +1425,7 @@ project(':wres-eventsbroker')
         implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Apache ActiveMQ Artemis server
-        implementation( 'org.apache.activemq:artemis-server:2.26.0' )
+        implementation( 'org.apache.activemq:artemis-server:2.27.1' )
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -1437,7 +1438,7 @@ project(':wres-eventsbroker')
         }
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        implementation( 'org.apache.activemq:artemis-amqp-protocol:2.26.0' )
+        implementation( 'org.apache.activemq:artemis-amqp-protocol:2.27.1' )
         {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
@@ -1450,20 +1451,20 @@ project(':wres-eventsbroker')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Artemis catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.82.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.85.Final'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         // Because artemis uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.3'
+        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.5'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client to test interaction with the embedded broker
         testImplementation( 'org.apache.qpid:qpid-jms-client:2.1.0' )
@@ -1489,13 +1490,13 @@ project(':wres-events')
     dependencies
     {
         implementation project( ':wres-statistics' )
-        implementation 'org.slf4j:slf4j-api:2.0.3'
+        implementation 'org.slf4j:slf4j-api:2.0.5'
 
         // JCIP annotations
         implementation group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
+        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.2' )
         {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -1512,9 +1513,9 @@ project(':wres-events')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.82.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.85.Final'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1525,9 +1526,9 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:4.8.0'
+        testImplementation 'org.mockito:mockito-core:4.9.0'
         // Mocking final classes
-        testImplementation 'org.mockito:mockito-inline:4.8.0'
+        testImplementation 'org.mockito:mockito-inline:4.9.0'
 
         // To create an embedded broker for unit testing
         testImplementation project( ':wres-eventsbroker' )
@@ -1767,7 +1768,7 @@ dependencies
     implementation project(':wres-eventsbroker')
     implementation project(':wres-util')
 
-    implementation 'org.slf4j:slf4j-api:2.0.3'
+    implementation 'org.slf4j:slf4j-api:2.0.5'
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
@@ -1777,9 +1778,9 @@ dependencies
 
     implementation 'org.eclipse.jetty:jetty-server:11.0.12'
     implementation 'org.eclipse.jetty:jetty-webapp:11.0.12'
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.0-M8'
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.0'
 
-    implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.1' )
+    implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.2' )
     {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
@@ -1801,11 +1802,11 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
-    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.0-M8'
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.0-M8'
-    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.0-M8'
+    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.0'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.0'
+    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.0'
 
-    runtimeOnly( 'ch.qos.logback:logback-classic:1.4.4' )
+    runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
     {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -1821,7 +1822,7 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.1'
 
-    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation 'org.mockito:mockito-core:4.9.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
