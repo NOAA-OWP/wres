@@ -1963,6 +1963,8 @@ processResources.dependsOn(copyDocs)
 // Add configuration files to the classpath when running via script
 startScripts
 {
+    classpath = files( '$APP_HOME/lib/*' )
+
     // Note gradle in this context assumes lib directory precedes these
     // files. To add more outsidejar directories, they need to be
     // added to 'dist/lib' and then the directory name
