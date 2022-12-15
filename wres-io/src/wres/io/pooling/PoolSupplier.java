@@ -943,47 +943,28 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
                                                                            .getFeature();
 
-            Feature nextLeftFeature = this.getLeftFeatureForRightOrBaseline( nextRightOrBaselineFeature,
-                                                                             rightOrBaselineOrientation );
+            Set<Feature> nextLeftFeatures = this.getLeftFeatureForRightOrBaseline( nextRightOrBaselineFeature,
+                                                                                   rightOrBaselineOrientation );
 
-            List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
-
-            List<TimeSeriesPlusValidation<L, R>> nextPairs = this.createPairsPerLeftSeries( nextLeftSeries,
-                                                                                            transformedRightOrBaseline,
-                                                                                            desiredTimeScale,
-                                                                                            frequency,
-                                                                                            rightOrBaselineOrientation,
-                                                                                            timeWindow,
-                                                                                            rightOrBaselineTransformer );
-
-            // Get the correct feature tuple for the left feature
-            FeatureTuple nextFeature = this.getFeatureCorrelator()
-                                           .getFeatureTupleForLeftFeature( nextLeftFeature );
-
-            // Add to the results
-            for ( TimeSeriesPlusValidation<L, R> nextSeries : nextPairs )
+            // Add the pairs for each left feature
+            for ( Feature nextLeftFeature : nextLeftFeatures )
             {
-                List<EvaluationStatusMessage> statusEvents = nextSeries.getEvaluationStatusMessages();
-                validation.addAll( statusEvents );
 
-                // Only one series here because that is what we paired above
-                TimeSeries<Pair<L, R>> pairs = nextSeries.getTimeSeries()
-                                                         .values()
-                                                         .iterator()
-                                                         .next()
-                                                         .get( 0 );
+                List<TimeSeries<L>> nextLeftSeries = leftSeries.get( nextLeftFeature );
 
-                if ( !pairs.getEvents().isEmpty() )
-                {
-                    List<TimeSeries<Pair<L, R>>> nextList = pairsPerFeature.get( nextFeature );
-                    if ( Objects.isNull( nextList ) )
-                    {
-                        nextList = new ArrayList<>();
-                        pairsPerFeature.put( nextFeature, nextList );
-                    }
-
-                    nextList.add( pairs );
-                }
+                List<TimeSeriesPlusValidation<L, R>> nextPairs = this.createPairsPerLeftSeries( nextLeftSeries,
+                                                                                                transformedRightOrBaseline,
+                                                                                                desiredTimeScale,
+                                                                                                frequency,
+                                                                                                rightOrBaselineOrientation,
+                                                                                                timeWindow,
+                                                                                                rightOrBaselineTransformer );
+                this.addTimeSeriesPairsForFeature( pairsPerFeature,
+                                                   nextPairs,
+                                                   nextLeftFeature,
+                                                   nextRightOrBaselineFeature,
+                                                   validation,
+                                                   rightOrBaselineOrientation );
             }
 
             rightOrBaselineSeriesCount++;
@@ -1010,6 +991,75 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         return new TimeSeriesPlusValidation<>( pairsPerFeature, validation );
+    }
+
+    /**
+     * Adds the pairs for the next left and right/baseline feature.
+     * 
+     * @param pairsPerFeature the pairs per feature to update
+     * @param nextPairs the next pairs to add
+     * @param nextLeftFeature the left feature
+     * @param nextRightOrBaselineFeature the right or baseline feature
+     * @param validation the validation to update
+     * @param orientation the orientation (right or baseline)
+     */
+
+    private void addTimeSeriesPairsForFeature( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairsPerFeature,
+                                               List<TimeSeriesPlusValidation<L, R>> nextPairs,
+                                               Feature nextLeftFeature,
+                                               Feature nextRightOrBaselineFeature,
+                                               List<EvaluationStatusMessage> validation,
+                                               LeftOrRightOrBaseline orientation )
+    {
+        // Get the correct feature tuple for the left and right or baseline feature
+        Set<FeatureTuple> nextFeatures = null;
+
+        if ( orientation == LeftOrRightOrBaseline.RIGHT )
+        {
+            nextFeatures = this.getFeatureCorrelator()
+                               .getFeatureTuplesForLeftFeature( nextLeftFeature )
+                               .stream()
+                               .filter( next -> nextRightOrBaselineFeature.equals( next.getRight() ) )
+                               .collect( Collectors.toSet() );
+        }
+        else
+        {
+            nextFeatures = this.getFeatureCorrelator()
+                               .getFeatureTuplesForLeftFeature( nextLeftFeature )
+                               .stream()
+                               .filter( next -> nextRightOrBaselineFeature.equals( next.getBaseline() ) )
+                               .collect( Collectors.toSet() );
+        }
+
+        // Add to the results
+        for ( TimeSeriesPlusValidation<L, R> nextSeries : nextPairs )
+        {
+            List<EvaluationStatusMessage> statusEvents = nextSeries.getEvaluationStatusMessages();
+            validation.addAll( statusEvents );
+
+            // Only one series here because that is what we paired above
+            TimeSeries<Pair<L, R>> pairs = nextSeries.getTimeSeries()
+                                                     .values()
+                                                     .iterator()
+                                                     .next()
+                                                     .get( 0 );
+
+            // Add the pairs for each tuple context in which they are needed 
+            for ( FeatureTuple nextFeature : nextFeatures )
+            {
+                if ( !pairs.getEvents().isEmpty() )
+                {
+                    List<TimeSeries<Pair<L, R>>> nextList = pairsPerFeature.get( nextFeature );
+                    if ( Objects.isNull( nextList ) )
+                    {
+                        nextList = new ArrayList<>();
+                        pairsPerFeature.put( nextFeature, nextList );
+                    }
+
+                    nextList.add( pairs );
+                }
+            }
+        }
     }
 
     /**
@@ -1317,47 +1367,28 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
-     * Discovers the left feature associated with the specified right or baseline feature. Assumes one left feature per
-     * one right or baseline feature.
+     * Discovers the left features associated with the specified right or baseline feature.
      * @param rightOrBaselineFeature the left feature
      * @param isRight is true if the right feature is required, false for the baseline
-     * @return the left feature for the specified right or baseline feature
+     * @return the left features for the specified right or baseline feature
      */
 
-    private Feature getLeftFeatureForRightOrBaseline( Feature rightOrBaselineFeature, LeftOrRightOrBaseline lrb )
+    private Set<Feature> getLeftFeatureForRightOrBaseline( Feature rightOrBaselineFeature, LeftOrRightOrBaseline lrb )
     {
-        Feature correlated = null;
+        Set<Feature> correlated = null;
 
         if ( lrb == LeftOrRightOrBaseline.RIGHT )
         {
             correlated = this.getFeatureCorrelator()
                              .getLeftForRightFeature( rightOrBaselineFeature );
-
-            if ( Objects.isNull( correlated ) )
-            {
-                throw new IllegalStateException( "Unable to find a left feature corresponding to the right feature "
-                                                 + rightOrBaselineFeature
-                                                 + ". The available pairs of right/left features were: "
-                                                 + this.getFeatureCorrelator().getLeftByRightFeatures()
-                                                 + "." );
-            }
         }
         else
         {
             correlated = this.getFeatureCorrelator()
                              .getLeftForBaselineFeature( rightOrBaselineFeature );
-
-            if ( Objects.isNull( correlated ) )
-            {
-                throw new IllegalStateException( "Unable to find a left feature corresponding to the baseline feature "
-                                                 + rightOrBaselineFeature
-                                                 + ". The available pairs of baseline/left features were: "
-                                                 + this.getFeatureCorrelator().getLeftByBaselineFeatures()
-                                                 + "." );
-            }
         }
 
-        LOGGER.debug( "Correlated LEFT feature {} with {} feature {}.", rightOrBaselineFeature, lrb, correlated );
+        LOGGER.debug( "Correlated LEFT feature {} with {} features {}.", rightOrBaselineFeature, lrb, correlated );
 
         return correlated;
     }
@@ -1450,24 +1481,30 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // Get the left feature name
             Feature leftFeature = nextFeature.getLeft();
 
-            // Get the corresponding baseline feature name, which is the name associated with the baseline-ish data in 
-            // this context, not the data used as a template for baseline generation, which is the paired data and 
+            // Get the corresponding baseline feature names, which are the names associated with the baseline-ish data 
+            // in this context, not the data used as a template for baseline generation, which is the paired data and 
             // currently uses the left-ish feature name in the time-series metadata
-            Feature baselineFeatureKey = this.getFeatureCorrelator()
-                                             .getFeatureTupleForLeftFeature( leftFeature )
-                                             .getBaseline();
+            Set<Feature> baselineFeatureKeys = this.getFeatureCorrelator()
+                                                   .getFeatureTuplesForLeftFeature( leftFeature )
+                                                   .stream()
+                                                   .map( FeatureTuple::getBaseline )
+                                                   .collect( Collectors.toSet() );
 
-            for ( TimeSeries<Pair<L, R>> nextPairs : nextRight )
+            // Iterate through each baseline data source
+            for ( Feature nextBaselineFeature : baselineFeatureKeys )
             {
-                UnaryOperator<TimeSeriesMetadata> metaMapper = innerMetadata -> nextPairs.getMetadata()
-                                                                                         .toBuilder()
-                                                                                         .setFeature( baselineFeatureKey )
-                                                                                         .build();
+                for ( TimeSeries<Pair<L, R>> nextPairs : nextRight )
+                {
+                    UnaryOperator<TimeSeriesMetadata> metaMapper = innerMetadata -> nextPairs.getMetadata()
+                                                                                             .toBuilder()
+                                                                                             .setFeature( nextBaselineFeature )
+                                                                                             .build();
 
-                // Create the template from the right-ish data and insert the baseline feature name
-                TimeSeries<R> nextTemplate = TimeSeriesSlicer.transform( nextPairs, Pair::getRight, metaMapper );
-                TimeSeries<R> generated = nextGenerator.apply( nextTemplate );
-                returnMe.add( generated );
+                    // Create the template from the right-ish data and insert the baseline feature name
+                    TimeSeries<R> nextTemplate = TimeSeriesSlicer.transform( nextPairs, Pair::getRight, metaMapper );
+                    TimeSeries<R> generated = nextGenerator.apply( nextTemplate );
+                    returnMe.add( generated );
+                }
             }
         }
 

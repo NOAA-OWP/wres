@@ -1,17 +1,19 @@
 package wres.datamodel.space;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import net.jcip.annotations.Immutable;
 
 /**
- * Utility class for discovering correlations between features. Currently assumes a one:one relationship between 
- * features within a feature tuple. If this assumption is relaxed, the behavior here will need to be relaxed too. See 
- * #82867.
+ * Utility class for discovering correlations between features. Allows a one-to-many relationship between features, 
+ * i.e., admits duplicates on one or more sides (but not all sides). 
  * 
  * @author James Brown
  */
@@ -20,13 +22,13 @@ import net.jcip.annotations.Immutable;
 public class FeatureCorrelator
 {
     /** The feature tuples mapped against the left features as keys. **/
-    private final Map<Feature, FeatureTuple> featureTuplesByLeft;
+    private final Map<Feature, Set<FeatureTuple>> featureTuplesByLeft;
 
     /** The left features mapped against the right features as keys. **/
-    private final Map<Feature, Feature> leftFeaturesByRight;
+    private final Map<Feature, Set<Feature>> leftFeaturesByRight;
 
     /** The left features mapped against the baseline features as keys. **/
-    private final Map<Feature, Feature> leftFeaturesByBaseline;
+    private final Map<Feature, Set<Feature>> leftFeaturesByBaseline;
 
     /**
      * Creates an instance with the specified features.
@@ -47,11 +49,11 @@ public class FeatureCorrelator
      * @throws NullPointerException if the rightFeature is null
      */
 
-    public Feature getLeftForRightFeature( Feature rightFeature )
+    public Set<Feature> getLeftForRightFeature( Feature rightFeature )
     {
         Objects.requireNonNull( rightFeature );
 
-        return this.leftFeaturesByRight.get( rightFeature );
+        return this.getOrEmptySet( this.leftFeaturesByRight, rightFeature );
     }
 
     /**
@@ -61,11 +63,11 @@ public class FeatureCorrelator
      * @throws NullPointerException if the baselineFeature is null
      */
 
-    public Feature getLeftForBaselineFeature( Feature baselineFeature )
+    public Set<Feature> getLeftForBaselineFeature( Feature baselineFeature )
     {
         Objects.requireNonNull( baselineFeature );
 
-        return this.leftFeaturesByBaseline.get( baselineFeature );
+        return this.getOrEmptySet( this.leftFeaturesByBaseline, baselineFeature );
     }
 
     /**
@@ -75,33 +77,29 @@ public class FeatureCorrelator
      * @throws NullPointerException if the leftFeature is null
      */
 
-    public FeatureTuple getFeatureTupleForLeftFeature( Feature leftFeature )
+    public Set<FeatureTuple> getFeatureTuplesForLeftFeature( Feature leftFeature )
     {
         Objects.requireNonNull( leftFeature );
 
-        return this.featureTuplesByLeft.get( leftFeature );
+        return this.getOrEmptySet( this.featureTuplesByLeft, leftFeature );
     }
 
     /**
-     * Returns the left features mapped against the right features as keys.
-     * @return the left features by right features
+     * Helper that returns the empty set if the key doesn't exist in the map, otherwise the mapped value.
+     * @param <T> the value type
+     * @param map the map
+     * @param key the map key
+     * @return the mapped value or empty set
      */
 
-    public Map<Feature, Feature> getLeftByRightFeatures()
+    private <T> Set<T> getOrEmptySet( Map<Feature, Set<T>> map, Feature key )
     {
-        // Immutable on construction
-        return this.leftFeaturesByRight;
-    }
+        if ( !map.containsKey( key ) )
+        {
+            return Collections.emptySet();
+        }
 
-    /**
-     * Returns the left features mapped against the baseline features as keys.
-     * @return the left features by baseline features
-     */
-
-    public Map<Feature, Feature> getLeftByBaselineFeatures()
-    {
-        // Immutable on construction
-        return this.leftFeaturesByBaseline;
+        return map.get( key );
     }
 
     /**
@@ -117,9 +115,7 @@ public class FeatureCorrelator
         this.leftFeaturesByBaseline = this.getFeatureMap( features,
                                                           FeatureTuple::getBaseline,
                                                           FeatureTuple::getLeft );
-        this.featureTuplesByLeft = features.stream()
-                                           .collect( Collectors.toUnmodifiableMap( FeatureTuple::getLeft,
-                                                                                   Function.identity() ) );
+        this.featureTuplesByLeft = this.getFeatureMap( features, FeatureTuple::getLeft, next -> next );
     }
 
     /**
@@ -127,14 +123,24 @@ public class FeatureCorrelator
      * @return a mapping of the features
      */
 
-    private Map<Feature, Feature> getFeatureMap( Set<FeatureTuple> features,
-                                                 Function<? super FeatureTuple, ? extends Feature> keyMapper,
-                                                 Function<? super FeatureTuple, ? extends Feature> valueMapper )
+    private <S, T> Map<T, Set<S>> getFeatureMap( Set<FeatureTuple> features,
+                                                 Function<? super FeatureTuple, ? extends T> keyMapper,
+                                                 Function<? super FeatureTuple, ? extends S> valueMapper )
     {
+        // Create the union in an unmodifiable set
+        BinaryOperator<Set<S>> merger = ( a, b ) -> {
+            Set<S> newSet = new HashSet<>();
+            newSet.addAll( a );
+            newSet.addAll( b );
+            return Collections.unmodifiableSet( newSet );
+        };
+
         return features.stream()
                        // Ignore pairs with null keys or values
                        .filter( next -> Objects.nonNull( keyMapper.apply( next ) )
                                         && Objects.nonNull( valueMapper.apply( next ) ) )
-                       .collect( Collectors.toUnmodifiableMap( keyMapper, valueMapper ) );
+                       .collect( Collectors.toUnmodifiableMap( keyMapper::apply,
+                                                               next -> Set.of( valueMapper.apply( next ) ),
+                                                               merger ) );
     }
 }
