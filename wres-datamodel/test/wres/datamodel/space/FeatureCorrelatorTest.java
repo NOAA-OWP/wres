@@ -10,6 +10,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.PoolMetadata;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link FeatureCorrelator}.
@@ -20,6 +24,11 @@ class FeatureCorrelatorTest
 {
     /** Test instance. */
     private FeatureCorrelator testInstance;
+
+    private static final Geometry GEOMETRY = MessageFactory.getGeometry( "DRRC2" );
+    private static final Geometry ANOTHER_GEOMETRY = MessageFactory.getGeometry( "DRRC3" );
+    private static final Feature FEATURE = Feature.of( GEOMETRY );
+    private static final Feature ANOTHER_FEATURE = Feature.of( ANOTHER_GEOMETRY );
 
     @BeforeEach
     void runBeforeEachTest()
@@ -47,15 +56,15 @@ class FeatureCorrelatorTest
     @Test
     void testGetLeftForRightFeature()
     {
-        assertAll( () -> assertEquals( Feature.of( MessageFactory.getGeometry( "a" ) ),
+        assertAll( () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "a" ) ) ),
                                        this.testInstance.getLeftForRightFeature( Feature.of( MessageFactory.getGeometry( "b" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "d" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "d" ) ) ),
                                        this.testInstance.getLeftForRightFeature( Feature.of( MessageFactory.getGeometry( "e" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "f" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "f" ) ) ),
                                        this.testInstance.getLeftForRightFeature( Feature.of( MessageFactory.getGeometry( "g" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "i" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "i" ) ) ),
                                        this.testInstance.getLeftForRightFeature( Feature.of( MessageFactory.getGeometry( "j" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "k" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "k" ) ) ),
                                        this.testInstance.getLeftForRightFeature( Feature.of( MessageFactory.getGeometry( "l" ) ) ) ) );
 
     }
@@ -63,54 +72,84 @@ class FeatureCorrelatorTest
     @Test
     void testGetLeftForBaselineFeature()
     {
-        assertAll( () -> assertEquals( Feature.of( MessageFactory.getGeometry( "a" ) ),
+        assertAll( () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "a" ) ) ),
                                        this.testInstance.getLeftForBaselineFeature( Feature.of( MessageFactory.getGeometry( "c" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "f" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "f" ) ) ),
                                        this.testInstance.getLeftForBaselineFeature( Feature.of( MessageFactory.getGeometry( "h" ) ) ) ),
-                   () -> assertEquals( Feature.of( MessageFactory.getGeometry( "k" ) ),
+                   () -> assertEquals( Set.of( Feature.of( MessageFactory.getGeometry( "k" ) ) ),
                                        this.testInstance.getLeftForBaselineFeature( Feature.of( MessageFactory.getGeometry( "m" ) ) ) ) );
 
     }
 
     @Test
-    void testGetFeatureTupleForLeftFeature()
+    void testGetFeatureTuplesForLeftFeature()
     {
-        assertAll( () -> assertEquals( FeatureTuple.of( MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "f" ),
-                                                                                         MessageFactory.getGeometry( "g" ),
-                                                                                         MessageFactory.getGeometry( "h" ) ) ),
-                                       this.testInstance.getFeatureTupleForLeftFeature( Feature.of( MessageFactory.getGeometry( "f" ) ) ) ) );
+        assertAll( () -> assertEquals( Set.of( FeatureTuple.of( MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "f" ),
+                                                                                                 MessageFactory.getGeometry( "g" ),
+                                                                                                 MessageFactory.getGeometry( "h" ) ) ) ),
+                                       this.testInstance.getFeatureTuplesForLeftFeature( Feature.of( MessageFactory.getGeometry( "f" ) ) ) ) );
 
     }
 
     @Test
-    void testGetLeftByRightFeatures()
+    void testGetLeftForRightFeatureWithDuplicateRightFeatures()
     {
-        Map<Feature, Feature> actual = this.testInstance.getLeftByRightFeatures();
-        Map<Feature, Feature> expected = Map.of( Feature.of( MessageFactory.getGeometry( "b" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "a" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "e" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "d" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "g" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "f" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "j" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "i" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "l" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "k" ) ) );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE, FEATURE, FEATURE );
+        FeatureTuple anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
 
-        assertEquals( expected, actual );
+        Set<FeatureTuple> featureTuples = Set.of( featureTuple, anotherFeatureTuple );
+
+        FeatureCorrelator correlator = FeatureCorrelator.of( featureTuples );
+
+        assertEquals( Set.of( FEATURE, ANOTHER_FEATURE ), correlator.getLeftForRightFeature( FEATURE ) );
     }
 
     @Test
-    void testGetLeftByBaselineFeatures()
+    void testGetFeatureTuplesForLeftFeatureWithDuplicateRightFeatures()
     {
-        Map<Feature, Feature> actual = this.testInstance.getLeftByBaselineFeatures();
-        Map<Feature, Feature> expected = Map.of( Feature.of( MessageFactory.getGeometry( "c" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "a" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "h" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "f" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "m" ) ),
-                                                 Feature.of( MessageFactory.getGeometry( "k" ) ) );
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE, FEATURE, FEATURE );
+        FeatureTuple anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
 
-        assertEquals( expected, actual );
+        Set<FeatureTuple> featureTuples = Set.of( featureTuple, anotherFeatureTuple );
+
+        FeatureCorrelator correlator = FeatureCorrelator.of( featureTuples );
+
+        assertEquals( Set.of( anotherFeatureTuple ), correlator.getFeatureTuplesForLeftFeature( ANOTHER_FEATURE ) );
     }
+
+    @Test
+    void testGetLeftForRightFeatureWithDuplicateLeftFeatures()
+    {
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( FEATURE, ANOTHER_FEATURE, FEATURE );
+        FeatureTuple anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
+
+        Set<FeatureTuple> featureTuples = Set.of( featureTuple, anotherFeatureTuple );
+
+        FeatureCorrelator correlator = FeatureCorrelator.of( featureTuples );
+
+        assertEquals( Set.of( FEATURE ), correlator.getLeftForRightFeature( FEATURE ) );
+    }
+
+    @Test
+    void testGetFeatureTuplesForLeftFeatureWithDuplicateLeftFeatures()
+    {
+        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
+        FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( FEATURE, ANOTHER_FEATURE, FEATURE );
+        FeatureTuple anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
+
+        Set<FeatureTuple> featureTuples = Set.of( featureTuple, anotherFeatureTuple );
+
+        FeatureCorrelator correlator = FeatureCorrelator.of( featureTuples );
+
+        assertEquals( Set.of( featureTuple, anotherFeatureTuple ),
+                      correlator.getFeatureTuplesForLeftFeature( FEATURE ) );
+    }
+
 }

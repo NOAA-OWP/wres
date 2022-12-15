@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,7 +35,6 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieval.CachingRetriever;
@@ -143,29 +143,11 @@ public class PoolSupplierTest
     private static final Instant T2551_03_17T00_00_00Z = Instant.parse( "2551-03-17T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "STREAMFLOW";
-    private static final Feature FEATURE = Feature.of(
-                                                       MessageFactory.getGeometry( "DRRC2" ) );
+    private static final Geometry GEOMETRY = MessageFactory.getGeometry( "DRRC2" );
+    private static final Geometry ANOTHER_GEOMETRY = MessageFactory.getGeometry( "DRRC3" );
+    private static final Feature FEATURE = Feature.of( GEOMETRY );
+    private static final Feature ANOTHER_FEATURE = Feature.of( ANOTHER_GEOMETRY );
     private static final String UNIT = "CMS";
-
-    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( TimeScaleOuter timeScale )
-    {
-        return TimeSeriesMetadata.of( Collections.emptyMap(),
-                                      timeScale,
-                                      VARIABLE_NAME,
-                                      FEATURE,
-                                      UNIT );
-    }
-
-    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
-                                                                                Feature featureKey,
-                                                                                TimeScaleOuter timeScale )
-    {
-        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
-                                      timeScale,
-                                      VARIABLE_NAME,
-                                      featureKey,
-                                      UNIT );
-    }
 
     /** Retriever for observations.*/
     @Mock
@@ -184,6 +166,9 @@ public class PoolSupplierTest
     /** Observations that encompass the second half of {@link #forecastOne}. */
     private TimeSeries<Double> observationsTwo;
 
+    /** Observations that encompass a second feature. */
+    private TimeSeries<Double> observationsThree;
+
     /** Forecast: 25510317T12_FAKE2_forecast.xml */
     private TimeSeries<Double> forecastOne;
 
@@ -196,11 +181,17 @@ public class PoolSupplierTest
     /** Forecast: 25510319T00_FAKE2_forecast.xml */
     private TimeSeries<Double> forecastFour;
 
+    /** Forecast that encompasses a second feature */
+    private TimeSeries<Double> forecastFive;
+
     /** Desired time scale. */
     private TimeScaleOuter desiredTimeScale;
 
-    /** Metadata for common pools. */
+    /** Metadata for a single-feature pool. */
     private PoolMetadata metadata;
+
+    /** Metadata for a multi-feature pool. */
+    private PoolMetadata multiFeatureMetadata;
 
     /** An upscaler. */
     private TimeSeriesUpscaler<Double> upscaler;
@@ -215,8 +206,10 @@ public class PoolSupplierTest
         TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Observations: 25510317T00_FAKE2_observations.xml
-        TimeSeriesMetadata metadata = getBoilerplateMetadataWithTimeScale( TimeScaleOuter.of( Duration.ofHours( 1 ),
-                                                                                              TimeScaleFunction.MEAN ) );
+        TimeSeriesMetadata metadata =
+                getBoilerplateMetadataWithTimeScale( FEATURE,
+                                                     TimeScaleOuter.of( Duration.ofHours( 1 ),
+                                                                        TimeScaleFunction.MEAN ) );
         this.observations =
                 new TimeSeries.Builder<Double>().setMetadata( metadata )
                                                 .addEvent( Event.of( T2551_03_17T00_00_00Z, 313.0 ) )
@@ -347,6 +340,14 @@ public class PoolSupplierTest
                                                 .addEvent( Event.of( T2551_03_18T21_00_00Z, 607.0 ) )
                                                 .build();
 
+        TimeSeriesMetadata otherMetadata =
+                getBoilerplateMetadataWithTimeScale( ANOTHER_FEATURE,
+                                                     TimeScaleOuter.of( Duration.ofHours( 1 ),
+                                                                        TimeScaleFunction.MEAN ) );
+
+        this.observationsThree = TimeSeries.of( otherMetadata, this.observations.getEvents() );
+
+
         // Forecast: 25510317T12_FAKE2_forecast.xml
         TimeSeriesMetadata forecastOneMetadata =
                 getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
@@ -427,6 +428,26 @@ public class PoolSupplierTest
                                                 .addEvent( Event.of( T2551_03_20T09_00_00Z, 311.0 ) )
                                                 .build();
 
+        TimeSeriesMetadata forecastFiveMetadata =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          ANOTHER_FEATURE,
+                                                          existingTimeScale );
+
+        this.forecastFive =
+                new TimeSeries.Builder<Double>().setMetadata( forecastFiveMetadata )
+                                                .addEvent( Event.of( T2551_03_17T15_00_00Z, 1.0 ) )
+                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 2.0 ) )
+                                                .addEvent( Event.of( T2551_03_17T21_00_00Z, 3.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T00_00_00Z, 4.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T03_00_00Z, 5.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T06_00_00Z, 6.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T09_00_00Z, 7.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T12_00_00Z, 8.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T15_00_00Z, 9.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T18_00_00Z, 10.0 ) )
+                                                .addEvent( Event.of( T2551_03_18T21_00_00Z, 11.0 ) )
+                                                .build();
+
         // Desired time scale
         this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
@@ -448,6 +469,25 @@ public class PoolSupplierTest
                                                                       false );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
+
+        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE, FEATURE, FEATURE );
+        FeatureTuple anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
+        GeometryTuple yetAnotherGeoTuple = MessageFactory.getGeometryTuple( FEATURE, ANOTHER_FEATURE, FEATURE );
+        FeatureTuple yetAnotherFeatureTuple = FeatureTuple.of( yetAnotherGeoTuple );
+
+        GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( "FOO_GROUP",
+                                                                         Set.of( featureTuple,
+                                                                                 anotherFeatureTuple,
+                                                                                 yetAnotherFeatureTuple ) );
+        FeatureGroup anotherFeatureGroup = FeatureGroup.of( anotherGeoGroup );
+
+        wres.statistics.generated.Pool anotherPool = MessageFactory.getPool( anotherFeatureGroup,
+                                                                             null,
+                                                                             null,
+                                                                             null,
+                                                                             false );
+
+        this.multiFeatureMetadata = PoolMetadata.of( evaluation, anotherPool );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleUpscaler.of();
@@ -956,4 +996,166 @@ public class PoolSupplierTest
         assertEquals( 4, poolActual.get().size() );
     }
 
+    @Test
+    public void testGetReturnsPoolThatContainsSevenPairsInThreeSeriesAcrossThreeFeatures()
+    {
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations,
+                                       this.observationsThree ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
+
+        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne, this.forecastFive ) );
+
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
+
+        TimeWindow inner = MessageFactory.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                         T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                         Duration.ofHours( 0 ),
+                                                         Duration.ofHours( 23 ) );
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
+
+        PoolMetadata poolOneMetadata = PoolMetadata.of( this.multiFeatureMetadata,
+                                                        poolOneWindow,
+                                                        this.desiredTimeScale );
+
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
+                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
+                                                          .setRight( forcSupplierOne )
+                                                          .setLeftUpscaler( this.upscaler )
+                                                          .setPairer( this.pairer )
+                                                          .setDesiredTimeScale( this.desiredTimeScale )
+                                                          .setMetadata( poolOneMetadata )
+                                                          .build();
+
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
+
+        // Three time-series expected with L/R feature correlations of DRRC2-DRRC2, DRRC3-DRRC2 and DRRC2-DRRC3
+        TimeSeriesMetadata timeSeriesMetadataOne =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
+                                                          this.desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> timeSeriesOne =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( timeSeriesMetadataOne )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            73.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            79.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                   Pair.of( 443.6666666666667,
+                                                                                            83.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                   Pair.of( 460.3333333333333,
+                                                                                            89.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                   Pair.of( 477.6666666666667,
+                                                                                            97.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                   Pair.of( 497.6666666666667,
+                                                                                            101.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                   Pair.of( 517.6666666666666,
+                                                                                            103.0 ) ) )
+                                                              .build();
+
+        TimeSeriesMetadata timeSeriesMetadataTwo =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          ANOTHER_FEATURE,
+                                                          this.desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> timeSeriesTwo =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( timeSeriesMetadataTwo )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            73.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            79.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                   Pair.of( 443.6666666666667,
+                                                                                            83.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                   Pair.of( 460.3333333333333,
+                                                                                            89.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                   Pair.of( 477.6666666666667,
+                                                                                            97.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                   Pair.of( 497.6666666666667,
+                                                                                            101.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                   Pair.of( 517.6666666666666,
+                                                                                            103.0 ) ) )
+                                                              .build();
+
+        TimeSeries<Pair<Double, Double>> timeSeriesThree =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( timeSeriesMetadataOne )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            1.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            2.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T21_00_00Z,
+                                                                                   Pair.of( 443.6666666666667,
+                                                                                            3.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T00_00_00Z,
+                                                                                   Pair.of( 460.3333333333333,
+                                                                                            4.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T03_00_00Z,
+                                                                                   Pair.of( 477.6666666666667,
+                                                                                            5.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T06_00_00Z,
+                                                                                   Pair.of( 497.6666666666667,
+                                                                                            6.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_18T09_00_00Z,
+                                                                                   Pair.of( 517.6666666666666,
+                                                                                            7.0 ) ) )
+                                                              .build();
+
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
+                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( timeSeriesOne )
+                                                                    .addData( timeSeriesTwo )
+                                                                    .addData( timeSeriesThree )
+                                                                    .setMetadata( poolOneMetadata )
+                                                                    .build();
+
+        assertEquals( poolOneExpected, poolOneActual );
+    }
+
+    /**
+     * Produces time-series metadata from the inputs.
+     * @param featureKey the feature
+     * @param timeScale the time scale
+     * @return the metadata
+     */
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithTimeScale( Feature featureKey,
+                                                                           TimeScaleOuter timeScale )
+    {
+        return TimeSeriesMetadata.of( Collections.emptyMap(),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      featureKey,
+                                      UNIT );
+    }
+
+    /**
+     * Produces time-series metadata from the inputs.
+     * @param t0 the forecast initialization time
+     * @param featureKey the feature
+     * @param timeScale the time scale
+     * @return the metadata
+     */
+
+    private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,
+                                                                                Feature featureKey,
+                                                                                TimeScaleOuter timeScale )
+    {
+        return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
+                                      timeScale,
+                                      VARIABLE_NAME,
+                                      featureKey,
+                                      UNIT );
+    }
 }
