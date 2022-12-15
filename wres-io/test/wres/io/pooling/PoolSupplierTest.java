@@ -1,6 +1,8 @@
 package wres.io.pooling;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -1113,14 +1115,12 @@ public class PoolSupplierTest
                                                                                             7.0 ) ) )
                                                               .build();
 
-        Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =
-                new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addData( timeSeriesOne )
-                                                                    .addData( timeSeriesTwo )
-                                                                    .addData( timeSeriesThree )
-                                                                    .setMetadata( poolOneMetadata )
-                                                                    .build();
+        List<TimeSeries<Pair<Double, Double>>> series = poolOneActual.get();
 
-        assertEquals( poolOneExpected, poolOneActual );
+        assertAll( () -> assertEquals( 3, poolOneActual.get().size() ),
+                   () -> assertTrue( series.contains( timeSeriesOne ) ),
+                   () -> assertTrue( series.contains( timeSeriesTwo ) ),
+                   () -> assertTrue( series.contains( timeSeriesThree ) ) );
     }
 
     /**
