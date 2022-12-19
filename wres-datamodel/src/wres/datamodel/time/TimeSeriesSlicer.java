@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolSlicer;
@@ -1610,6 +1611,60 @@ public final class TimeSeriesSlicer
         }
 
         return transformed;
+    }
+
+    /**
+     * Snips the input series to the prescribed time window. Only snips lead durations with respect to reference times 
+     * with the type {@link ReferenceTimeType#T0}.
+     * 
+     * @param <T> the time-series event value type
+     * @param toSnip the time-series to snip
+     * @param snipTo the time window to use when snipping
+     * @return the snipped time-series
+     */
+
+    public static <T> TimeSeries<T> snip( TimeSeries<T> toSnip, TimeWindowOuter snipTo )
+    {
+        Objects.requireNonNull( toSnip );
+
+        TimeSeries<T> returnMe = toSnip;
+
+        if ( Objects.nonNull( snipTo ) )
+        {
+
+            // Snip datetimes first, because lead durations are only snipped with respect to 
+            // the ReferenceTimeType.T0
+            TimeWindow inner = MessageFactory.getTimeWindow( snipTo.getEarliestReferenceTime(),
+                                                             snipTo.getLatestReferenceTime(),
+                                                             snipTo.getEarliestValidTime(),
+                                                             snipTo.getLatestValidTime() );
+            TimeWindowOuter partialSnip = TimeWindowOuter.of( inner );
+
+            LOGGER.debug( "Snipping paired time-series {} to the time window of {}.",
+                          toSnip.hashCode(),
+                          partialSnip );
+
+            returnMe = TimeSeriesSlicer.filter( returnMe, partialSnip );
+
+            // For all other reference time types, filter the datetimes only
+            if ( toSnip.getReferenceTimes().containsKey( ReferenceTimeType.T0 )
+                 && !snipTo.bothLeadDurationsAreUnbounded() )
+            {
+                LOGGER.debug( "Additionally snipping paired time-series {} to lead durations ({},{}] for the reference "
+                              + "time type of {}.",
+                              toSnip.hashCode(),
+                              snipTo.getEarliestLeadDuration(),
+                              snipTo.getLatestLeadDuration(),
+                              ReferenceTimeType.T0 );
+
+                returnMe = TimeSeriesSlicer.filter( returnMe,
+                                                    snipTo,
+                                                    Set.of( ReferenceTimeType.T0 ) );
+            }
+
+        }
+
+        return returnMe;
     }
 
     /**

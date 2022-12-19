@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,7 +72,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.io.config.ConfigHelper;
 import wres.metrics.config.MetricConfigHelper;
 import wres.system.SystemSettings;
-
 
 /**
  * Helps validate project declarations at a higher level than parser, with
@@ -1678,13 +1676,13 @@ public class Validation
 
         // Check that there are no duplicate feature tuples
         Map<NamedFeature, Long> duplicateTuplesWithCounts = features.stream()
-                                                               .collect( Collectors.groupingBy( next -> next,
-                                                                                                Collectors.counting() ) )
-                                                               .entrySet()
-                                                               .stream()
-                                                               .filter( next -> next.getValue() > 1 )
-                                                               .collect( Collectors.toMap( Map.Entry::getKey,
-                                                                                           Map.Entry::getValue ) );
+                                                                    .collect( Collectors.groupingBy( next -> next,
+                                                                                                     Collectors.counting() ) )
+                                                                    .entrySet()
+                                                                    .stream()
+                                                                    .filter( next -> next.getValue() > 1 )
+                                                                    .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                                                Map.Entry::getValue ) );
 
         String contextString = "";
 
@@ -1718,8 +1716,8 @@ public class Validation
                            || ( Objects.nonNull( feature.getBaseline() ) && feature.getBaseline().isBlank() );
 
         Set<NamedFeature> featuresWithBlankNames = features.stream()
-                                                      .filter( blankPolicer )
-                                                      .collect( Collectors.toSet() );
+                                                           .filter( blankPolicer )
+                                                           .collect( Collectors.toSet() );
 
         if ( !featuresWithBlankNames.isEmpty() )
         {
@@ -1956,40 +1954,13 @@ public class Validation
                                                  LeftOrRightOrBaseline leftOrRightOrBaseline )
     {
         boolean isValid = true;
-        Set<String> distinctNames = new HashSet<>( names.size() );
-        Set<String> duplicateNames = new HashSet<>( 1 );
         int blankCount = 0;
 
         for ( String name : names )
         {
-            if ( Objects.nonNull( name ) )
+            if ( Objects.nonNull( name ) && name.isBlank() )
             {
-                if ( distinctNames.contains( name ) )
-                {
-                    duplicateNames.add( name );
-                }
-                else if ( name.isBlank() )
-                {
-                    blankCount++;
-                }
-                else
-                {
-                    distinctNames.add( name );
-                }
-            }
-        }
-
-        if ( !duplicateNames.isEmpty() )
-        {
-            isValid = false;
-
-            if ( LOGGER.isErrorEnabled() )
-            {
-                // TODO: Enhance WRES to make this statement no longer true.
-                LOGGER.error( "Found multiple instances of these names on the {}: {}. {}",
-                              leftOrRightOrBaseline.value(),
-                              duplicateNames,
-                              "This version of WRES requires that a feature be declared no more than once." );
+                blankCount++;
             }
         }
 
