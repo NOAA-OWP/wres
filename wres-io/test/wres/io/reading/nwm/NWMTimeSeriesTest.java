@@ -79,6 +79,37 @@ public class NWMTimeSeriesTest
                                     URI.create( "https://test/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f015.fake_location_label.nc" ) );
         assertEquals( expected, actual );
     }
+    
+    /**
+     * Issue #110561.
+     */
+    
+    @Test
+    public void generateFakeNwmForecastNamesWhenBaseUriIsMissingLastSlash()
+    {
+        NWMProfile nwmProfile = new NWMProfile( 5,
+                                                1,
+                                                Duration.ofHours( 3 ),
+                                                true,
+                                                "fake_range",
+                                                CHANNEL_RT,
+                                                NWMProfile.TimeLabel.f,
+                                                "fake_dir_prefix",
+                                                "fake_location_label",
+                                                Duration.ofHours( 9001 ),
+                                                false,
+                                                Duration.ZERO );
+        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+                                                       Instant.parse( "2019-10-06T08:00:00Z" ),
+                                                       URI.create( "https://test/2.0" ) );
+
+        Set<URI> expected = Set.of( URI.create( "https://test/2.0/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f003.fake_location_label.nc" ),
+                                    URI.create( "https://test/2.0/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f006.fake_location_label.nc" ),
+                                    URI.create( "https://test/2.0/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f009.fake_location_label.nc" ),
+                                    URI.create( "https://test/2.0/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f012.fake_location_label.nc" ),
+                                    URI.create( "https://test/2.0/nwm.20191006/fake_dir_prefix/nwm.t08z.fake_range.channel_rt.f015.fake_location_label.nc" ) );
+        assertEquals( expected, actual );
+    }
 
     @Test
     public void generateShortRangeForecastNames()

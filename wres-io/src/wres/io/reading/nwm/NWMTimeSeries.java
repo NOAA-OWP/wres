@@ -365,10 +365,17 @@ class NWMTimeSeries implements Closeable
         String nwmDatePath = NWM_DOT
                              + NWM_DATE_FORMATTER.format( referenceOffsetDateTime );
 
+        // Append a path separator to the base URI if one does not exist: #100561
+        String baseUriString = baseUri.toString();
+        if ( !baseUriString.endsWith( "/" ) && !baseUriString.endsWith( "\\" ) )
+        {
+            baseUri = URI.create( baseUriString.concat( "/" ) );
+        }
+
+        URI uriWithDate = baseUri.resolve( nwmDatePath + "/" );
+
         for ( short i = 1; i <= profile.getMemberCount(); i++ )
         {
-            URI uriWithDate = baseUri.resolve( nwmDatePath + "/" );
-
             String directoryName = profile.getNwmSubdirectoryPrefix();
 
             if ( profile.isEnsembleLike() )
