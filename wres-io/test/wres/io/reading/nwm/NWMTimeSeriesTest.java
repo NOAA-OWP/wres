@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
@@ -151,7 +152,6 @@ public class NWMTimeSeriesTest
         assertEquals( expected, actual );
     }
 
-
     @Test
     public void generateFakeMediumRangeLandEnsembleForecastNames()
     {
@@ -195,6 +195,31 @@ public class NWMTimeSeriesTest
         assertEquals( expected, actual );
     }
 
+    /**
+     * #110992
+     */
+    
+    @Test
+    public void generateFakeMediumRangeDeterministicForecastNamesForLegacyNwm1_2()
+    {
+        NWMProfile nwmProfile =
+                NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS );
+        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+                                                       Instant.parse( "2019-10-06T18:00:00Z" ),
+                                                       URI.create( "file:///test/1.2/" ) );
+
+        String template = "file:/test/1.2/nwm.20191006/medium_range/nwm.t18z.medium_range.channel_rt.fqux.conus.nc";
+        Set<URI> expected = new TreeSet<>();
+        for ( int i = 1; i < 81; i++ )
+        {
+            String nextTime = String.format( "%03d", i * 3 );
+            String nextUriString = template.replaceAll( "qux", nextTime );
+            URI nextUri = URI.create( nextUriString );
+            expected.add( nextUri );
+        }
+
+        assertEquals( expected, actual );
+    }
 
     @Test
     public void generateAnalysisAssimNames()

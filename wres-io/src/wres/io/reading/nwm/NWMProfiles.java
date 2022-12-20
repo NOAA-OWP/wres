@@ -218,13 +218,13 @@ class NWMProfiles
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
-                               true,
+                               true, // For 2.0 and higher, the path has an ensemble-like structure: #110992
                                Duration.ZERO );
     }
 
     private static NWMProfile getMediumRangeEnsembleChannelRtConusHourly()
     {
-        return new NWMProfile( 68*3,
+        return new NWMProfile( 68 * 3,
                                7,
                                Duration.ofHours( 1 ),
                                true,
@@ -240,7 +240,7 @@ class NWMProfiles
 
     private static NWMProfile getMediumRangeDeterministicChannelRtConusHourly()
     {
-        return new NWMProfile( 80*3,
+        return new NWMProfile( 80 * 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
@@ -250,7 +250,7 @@ class NWMProfiles
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
-                               true,
+                               true, // For 2.0 and higher, the path has an ensemble-like structure: #110992
                                Duration.ZERO );
     }
 
@@ -266,7 +266,7 @@ class NWMProfiles
                                "medium_range_no_da",
                                "conus",
                                Duration.ofHours( 6 ),
-                               false,
+                               false, // Available for 2.1 and above, no ensemble-like structure: #110992
                                Duration.ZERO );
     }
 

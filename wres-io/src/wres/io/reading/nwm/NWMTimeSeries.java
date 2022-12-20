@@ -378,7 +378,7 @@ class NWMTimeSeries implements Closeable
         {
             String directoryName = profile.getNwmSubdirectoryPrefix();
 
-            if ( profile.isEnsembleLike() )
+            if ( profile.isEnsembleLike() && !NWMTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
             {
                 directoryName += "_mem" + i;
             }
@@ -395,7 +395,7 @@ class NWMTimeSeries implements Closeable
                                        + profile.getNwmOutputType();
 
                 // Ensemble number appended if greater than one member present.
-                if ( profile.isEnsembleLike() )
+                if ( profile.isEnsembleLike() && !NWMTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
                 {
                     ncFilePartOne += "_" + i;
                 }
@@ -736,6 +736,20 @@ class NWMTimeSeries implements Closeable
         }
 
         return Collections.unmodifiableMap( byFeatureId );
+    }
+
+    /**
+     * Inspects a NWM URI and attempts to determine whether it is a "legacy" NWM version, defined as 1.1 or 1.2, since 
+     * these are supported versions that have a different file structure. Yuck, but better than adding yet more 
+     * interfaces for datasets that are (increasingly) rarely used. See #110992.
+     * 
+     * @param baseUri the base URI to check
+     * @return whether the path is consistent with a legacy 1.1 or 1.2 model version
+     */
+
+    private static boolean isLegacyNwmVersion( URI baseUri )
+    {
+        return baseUri.getPath().contains( "1.1" ) || baseUri.getPath().contains( "1.2" );
     }
 
     private Instant getReferenceDatetime()
