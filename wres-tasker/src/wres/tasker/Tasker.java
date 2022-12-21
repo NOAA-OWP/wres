@@ -5,10 +5,13 @@ import java.security.Security;
 import java.util.EnumSet;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -106,6 +109,23 @@ public class Tasker
     static final int MAX_SERVER_THREADS = 100;
 
 
+    /** 
+     * Ensure that the X-Frame-Options header element is included in the response. 
+     * If not already set, then it will be set to DENY. If it is already set when this
+     * is called, then it will be left unchanged (there is no check for DENY).    
+     */
+    private static final HttpChannel.Listener HTTP_CHANNEL_LISTENER = new HttpChannel.Listener()
+    {
+        @Override
+        public void onResponseBegin( Request request )
+        {
+            if ( request.getResponse().getHeader( "X-Frame-Options" ) == null )
+            {
+                request.getResponse().addHeader( "X-Frame-Options", "DENY" );
+            }
+        }
+    };
+
     /**
      * Tasker receives requests for wres runs and passes them along to queue.
      * Actual work is done in WresJob restlet class, Tasker sets up a server.
@@ -139,7 +159,6 @@ public class Tasker
         context.setContextPath( "/" );
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
                                                           "/*" );
-        context.addFilter(ContextFilter.class, "/*",  EnumSet.of(DispatcherType.REQUEST)) ;
 
         // Multiple ways of binding using jersey, but Application is standard,
         // see here:
@@ -195,6 +214,7 @@ public class Tasker
                                                                      httpTwo ) )
         {
             serverConnector.setPort( Tasker.SERVER_PORT );
+            serverConnector.addBean( HTTP_CHANNEL_LISTENER );
             ServerConnector[] serverConnectors = { serverConnector };
             jettyServer.setConnectors( serverConnectors );
 
@@ -233,27 +253,6 @@ public class Tasker
             super( message, cause );
         }
     }
-    
-    /**
-     * A filter that sets X-Frame-Options to DENY on the HTTP header in order to mitigate against clickbait attacks.
-     * Note that the capitalization matches that used in the proxy, so I'm sticking with X-Frame-Options for conistency.
-     */
-    public static class ContextFilter implements Filter
-    {
-        @Override
-        public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain )
-                throws IOException, ServletException
-        {
-            HttpServletResponse res = (HttpServletResponse) response;
-            res.addHeader( "X-Frame-Options", "DENY" );
-            chain.doFilter( request, response );
-        }
-
-        // Hidden constructor. Privacy level needs to be consistent with the class setting.
-        public ContextFilter()
-        {
-        }
-    }
 
     private static SslContextFactory.Server getSslContextFactory( String pathToP12 )
     {
@@ -264,4 +263,5 @@ public class Tasker
         return sslContextFactory;
     }
 }
+
 
