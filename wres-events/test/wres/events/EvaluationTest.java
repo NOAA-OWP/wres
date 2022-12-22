@@ -1,7 +1,6 @@
 package wres.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -63,12 +62,12 @@ class EvaluationTest
      * Broker connection factory.
      */
 
-    private static BrokerConnectionFactory connections = null;    
+    private static BrokerConnectionFactory connections = null;
 
     /**
      * Re-used string.
      */
-    
+
     private static final String A_CLIENT = "aClient";
 
     /**
@@ -210,13 +209,13 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
-        
+
         // Consumer factory implementation that simply adds the statistics to the above containers
         ConsumerFactory consumerTwo = new ConsumerFactory()
         {
@@ -253,10 +252,10 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -337,10 +336,10 @@ class EvaluationTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -405,10 +404,10 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -508,10 +507,10 @@ class EvaluationTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -578,10 +577,10 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -603,12 +602,8 @@ class EvaluationTest
             evaluation.markPublicationCompleteReportedSuccess();
 
             // Wait for the evaluation to complete
-            evaluation.await();
-        }
-        // All recovery attempts exhausted and now an exception is caught
-        catch ( EvaluationFailedToCompleteException | EvaluationEventException e )
-        {
-            // Nothing to do here
+            Evaluation finalEvaluation = evaluation;
+            assertThrows( EvaluationFailedToCompleteException.class, () -> finalEvaluation.await() );
         }
         finally
         {
@@ -618,9 +613,6 @@ class EvaluationTest
                 evaluation.close();
             }
         }
-
-        // Assert that the evaluation failed and that an expected exception was caught
-        assertNotEquals( 0, evaluation.getExitCode() );
     }
 
     @Test
@@ -660,10 +652,10 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -695,7 +687,6 @@ class EvaluationTest
     {
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
-        AtomicInteger exitCode = new AtomicInteger();
 
         ConsumerFactory consumer = new ConsumerFactory()
         {
@@ -721,10 +712,10 @@ class EvaluationTest
                                .addFormats( Format.PNG )
                                .build();
             }
-            
+
             @Override
             public void close()
-            {              
+            {
             }
         };
 
@@ -745,19 +736,14 @@ class EvaluationTest
             evaluation.publish( Statistics.getDefaultInstance() );
 
             // Publish one bad message
-            evaluation.publish( mockedStatistics );
+            Evaluation finalEvaluation = evaluation;
+            assertThrows( IllegalArgumentException.class, () -> finalEvaluation.publish( mockedStatistics ) );
 
             // Notify publication done
             evaluation.markPublicationCompleteReportedSuccess();
 
             // Wait for the evaluation to complete
             evaluation.await();
-        }
-        // Catch the exception thrown
-        catch ( IllegalArgumentException e )
-        {
-            evaluation.stop( e );
-            exitCode.set( evaluation.getExitCode() );
         }
         finally
         {
@@ -767,8 +753,6 @@ class EvaluationTest
                 evaluation.close();
             }
         }
-
-        assertNotEquals( 0, exitCode.get() );
     }
 
     /**

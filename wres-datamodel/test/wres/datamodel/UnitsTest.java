@@ -278,13 +278,13 @@ public class UnitsTest
                               unit.getName(),
                               unit.getSymbol(),
                               unit.getDimension() );
-                System.out.println( "Indriya parsed '" + stringToParse
-                                    + "' into '"
-                                    + unit
-                                    + "' name='"
-                                    +
-                                    unit.getName()
-                                    + "'" );
+                LOGGER.info( "Indriya parsed '" + stringToParse
+                             + "' into '"
+                             + unit
+                             + "' name='"
+                             +
+                             unit.getName()
+                             + "'" );
             }
             catch ( MeasurementParseException | TokenMgrError mpe )
             {
@@ -419,7 +419,7 @@ public class UnitsTest
 
         assertEquals( 60.0, converter.apply( 10.0 ) );
     }
-    
+
     @Test
     public void testGetMassFlowToMassConverter()
     {
