@@ -188,7 +188,7 @@ public class DataSourcesTest
     }
 
     @Test
-    public void testAccess() throws Exception
+    public void testAccess() throws LiquibaseException, SQLException
     {
         DataSources dataSourcesCache = this.initializeDataSources();
 
@@ -203,18 +203,7 @@ public class DataSourcesTest
         Assert.assertFalse(firstDetails.performedInsert());
         Assert.assertEquals( firstDetails.getHash(), "1234" );
 
-        SourceDetails secondDetails = null;
-
-        try
-        {
-            secondDetails = dataSourcesCache.get( "1234" );
-        }
-        catch(SQLException e)
-        {
-            Assert.fail("The DataSources cache tried to retrieve data "
-                        + "from the database and failed, when it shouldn't "
-                        + "have tried to go in the first place.");
-        }
+        SourceDetails secondDetails = dataSourcesCache.get( "1234" );
 
         Assert.assertNotEquals( secondDetails, null );
 
