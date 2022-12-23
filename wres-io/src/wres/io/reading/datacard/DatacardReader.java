@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -531,8 +530,7 @@ public class DatacardReader implements TimeSeriesReader
         {
             actualValue = Double.parseDouble( value );
 
-            if ( this.valueIsIgnorable( actualValue )
-                 || this.valueIsMissing( dataSource, actualValue ) )
+            if ( this.valueIsIgnorable( actualValue ) )
             {
                 actualValue = MissingValues.DOUBLE;
             }
@@ -582,45 +580,14 @@ public class DatacardReader implements TimeSeriesReader
         return width;
     }
 
+    /**
+     * @param value the value to check
+     * @return whether the value should be substituted with a missing value
+     */
+    
     private boolean valueIsIgnorable( final double value )
     {
         return DatacardReader.IGNORABLE_VALUES.contains( value );
-    }
-
-    private boolean valueIsMissing( DataSource dataSource, double value )
-    {
-        DataSourceConfig.Source source = dataSource.getSource();
-        String missingValue = this.getMissingValue( source );
-
-        return Objects.nonNull( missingValue )
-               && Precision.equals( Double.parseDouble( missingValue ), value, Precision.EPSILON );
-    }
-
-
-    /**
-     * @return The value specifying a value that is missing from the data set
-     * originating from the data source configuration. While parsing the data,
-     * if this value is encountered, it indicates that the value should be
-     * ignored as it represents invalid data. This should be ignored in data
-     * sources that define their own missing value.
-     */
-    private String getMissingValue( DataSourceConfig.Source source )
-    {
-        Objects.requireNonNull( source );
-
-        String missingValue = null;
-
-        if ( source.getMissingValue() != null && !source.getMissingValue().isEmpty() )
-        {
-            missingValue = source.getMissingValue();
-
-            if ( missingValue.lastIndexOf( '.' ) + 6 < missingValue.length() )
-            {
-                missingValue = missingValue.substring( 0, missingValue.lastIndexOf( '.' ) + 6 );
-            }
-        }
-
-        return missingValue;
     }
 
     /**

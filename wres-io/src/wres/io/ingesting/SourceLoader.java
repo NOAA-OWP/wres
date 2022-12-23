@@ -50,7 +50,9 @@ import wres.system.SystemSettings;
  * one or more {@link DataSource} for reading and ingesting and then reads and ingests them. Reading in this context 
  * means instantiating a {@link TimeSeriesReader} and supplying the reader with a {@link DataSource} to read, while 
  * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a 
- * {@link TimeSeriesIngester}, which is supplied on construction.
+ * {@link TimeSeriesIngester}, which is supplied on construction. Also handles other tasks between reading and ingest, 
+ * such as the application of a consistent missing value identifier (for missing values that are declared, rather than 
+ * integral to readers).
  * 
  * TODO: Remove the gridded features cache once #51232 is addressed.
  * 
@@ -62,6 +64,9 @@ public class SourceLoader
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoader.class );
+
+    /** Pre-ingest operations. */
+    private static final MissingValueOperator MISSING_VALUE_OPERATOR = MissingValueOperator.of();
 
     /** Executor for reading time-series formats. */
     private final ExecutorService readingExecutor;
@@ -91,10 +96,10 @@ public class SourceLoader
      */
 
     public SourceLoader( TimeSeriesIngester timeSeriesIngester,
-                          SystemSettings systemSettings,
-                          ExecutorService readingExecutor,
-                          ProjectConfig projectConfig,
-                          GriddedFeatures.Builder griddedFeatures )
+                         SystemSettings systemSettings,
+                         ExecutorService readingExecutor,
+                         ProjectConfig projectConfig,
+                         GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
@@ -134,7 +139,7 @@ public class SourceLoader
         // connection between a data source and a context or LeftOrRightOrBaseline. A link is required for each context 
         // in which the source appears within a project.
         Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.getSystemSettings(),
-                                                                            this.getProjectConfig() );
+                                                                           this.getProjectConfig() );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
@@ -250,6 +255,8 @@ public class SourceLoader
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
 
         // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. See #51232.
+        // Until this special snowflake is addressed via #51232, there is no missing value mapping for declared missing
+        // values beyond any mapping that is performed by the reader using inband missing value identifiers: #88859
         if ( source.isGridded() && this.getSystemSettings()
                                        .isInDatabase() )
         {
@@ -269,6 +276,8 @@ public class SourceLoader
         // Create a read/ingest pipeline. The ingester pulls from the reader by advancing the stream
         CompletableFuture<List<IngestResult>> task =
                 CompletableFuture.supplyAsync( () -> reader.read( source ), this.getReadingExecutor() )
+                                 // Map any declared missing values to a common missing value identifier
+                                 .thenApply( MISSING_VALUE_OPERATOR )
                                  .thenApply( timeSeries -> ingester.ingest( timeSeries, source ) );
 
         return Collections.singletonList( task );
@@ -432,7 +441,7 @@ public class SourceLoader
                 return DataDisposition.JSON_WRDS_NWM;
             }
             // Hosted NWM data, not via a WRDS API
-            else if( ReaderUtilities.isNwmVectorSource( dataSource ) )
+            else if ( ReaderUtilities.isNwmVectorSource( dataSource ) )
             {
                 return DataDisposition.NETCDF_VECTOR;
             }

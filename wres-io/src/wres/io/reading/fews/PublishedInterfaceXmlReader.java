@@ -39,7 +39,6 @@ import com.google.common.util.concurrent.AtomicDouble;
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; // NOSONAR
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.DataSourceConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
@@ -738,12 +737,10 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             traceValues.clear();
         }
+        
+        LOGGER.trace( "Setting the missing value sentinel to {}.", header.missValue );
 
-        double missing = this.getSpecifiedMissingValue( dataSource, header.missValue );
-
-        LOGGER.trace( "Setting the missing value sentinel to {}.", missing );
-
-        missingValue.set( missing );
+        missingValue.set( header.missValue );
         currentTraceName.set( header.traceName );
 
         // Create new trace for each header in PI-XML data.
@@ -1044,30 +1041,6 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
 
         return LocalDateTime.of( date, time );
-    }
-
-    /**
-     * @param dataSource the data source
-     * @param missingValue the missing value read from the header
-     * @return The value specifying a value that is missing from the data set
-     * originating from the data source configuration.
-     */
-    private double getSpecifiedMissingValue( DataSource dataSource, double missingValue )
-    {
-        if ( Precision.equals( missingValue, PIXML_DEFAULT_MISSING_VALUE, 8 )
-             && Objects.nonNull( dataSource.getContext() ) )
-        {
-            DataSourceConfig.Source source = dataSource.getSource();
-
-            if ( Objects.nonNull( source )
-                 && Objects.nonNull( source.getMissingValue() )
-                 && !source.getMissingValue().isBlank() )
-            {
-                return Double.parseDouble( source.getMissingValue() );
-            }
-        }
-
-        return missingValue;
     }
 
     /**
