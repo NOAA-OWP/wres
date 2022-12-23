@@ -14,7 +14,7 @@ import wres.datamodel.time.TimeSeries;
  * TODO: eliminate this wrapper and directly return the time-series per feature with inline metadata from the 
  * {@link Fetcher}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SingleValuedTimeSeriesResponse implements Response<Double>

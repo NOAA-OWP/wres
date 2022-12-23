@@ -79,7 +79,7 @@ public class TimeSeriesTest
                                        VARIABLE_NAME,
                                        FEATURE_NAME,
                                        UNIT );
-        testSeries = builder.setMetadata( metadata )
+        this.testSeries = builder.setMetadata( metadata )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
                             .addEvent( iterator.next() )
