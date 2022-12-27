@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -183,12 +184,7 @@ public class ReaderUtilities
                                                           .entrySet() )
             {
                 Instant validDateTime = event.getKey();
-
-                if ( !reshapedValues.containsKey( validDateTime ) )
-                {
-                    reshapedValues.put( validDateTime, new double[traceCount] );
-                }
-
+                reshapedValues.putIfAbsent( validDateTime, new double[traceCount] );
                 double[] values = reshapedValues.get( validDateTime );
                 values[i] = event.getValue();
             }
@@ -332,7 +328,7 @@ public class ReaderUtilities
                                      + timeSeries
                                      + "." );
         }
-        
+
         return timeSeries;
     }
 
@@ -549,6 +545,47 @@ public class ReaderUtilities
         LOGGER.debug( "Created year ranges: {}.", yearRanges );
 
         return Collections.unmodifiableSet( yearRanges );
+    }
+
+    /**
+     * Splits the input line by the prescribed delimiter and treats quoted strings as atomic, removing the quotes.
+     * @param line the line to split
+     * @param delimiter the delimiter
+     * @return the split string
+     */
+    public static String[] splitByDelimiter( String line, char delimiter )
+    {
+        // Could do this with a regex, but the look ahead on each character would be slow
+        List<String> tokens = new ArrayList<>();
+        int startPosition = 0;
+        boolean isInQuotes = false;
+        for ( int currentPosition = 0; currentPosition < line.length(); currentPosition++ )
+        {
+            if ( line.charAt( currentPosition ) == '\"' )
+            {
+                isInQuotes = !isInQuotes;
+            }
+            else if ( line.charAt( currentPosition ) == delimiter && !isInQuotes )
+            {
+                String substring = line.substring( startPosition, currentPosition );
+                substring = substring.replace( "\"", "" );
+                tokens.add( substring );
+                startPosition = currentPosition + 1;
+            }
+        }
+
+        String lastToken = line.substring( startPosition );
+        if ( lastToken.equals( delimiter + "" ) )
+        {
+            tokens.add( "" );
+        }
+        else
+        {
+            lastToken = lastToken.replace( "\"", "" );
+            tokens.add( lastToken );
+        }
+
+        return tokens.toArray( new String[tokens.size()] );
     }
 
     /**

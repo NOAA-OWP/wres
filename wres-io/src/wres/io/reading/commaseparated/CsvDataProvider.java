@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.data.DataProvider;
+import wres.io.reading.ReaderUtilities;
 
 /**
  * A streaming tabular dataset that doesn't require an
@@ -49,28 +51,28 @@ public class CsvDataProvider implements DataProvider
     private final Path filePath;
     private final BufferedReader reader;
     private String[] line = null;
-    private final String delimiter;
+    private final char delimiter;
     private final String commentString;
 
-    public static CsvDataProvider from( final String filePath, final String delimiter )
+    public static CsvDataProvider from( final String filePath, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CsvDataProvider from( final InputStream inputStream, final String delimiter )
+    public static CsvDataProvider from( final InputStream inputStream, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CsvDataProvider from( final URI filePath, final String delimiter )
+    public static CsvDataProvider from( final URI filePath, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
-    public static CsvDataProvider from( final URI filePath, final String delimiter, final Map<String, Integer> columns )
+    public static CsvDataProvider from( final URI filePath, final char delimiter, final Map<String, Integer> columns )
             throws IOException
     {
         return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, columns );
@@ -140,12 +142,7 @@ public class CsvDataProvider implements DataProvider
             return false;
         }
 
-        String[] futureLine = readLine.split( delimiter );
-
-        for ( int i = 0; i < futureLine.length; ++i )
-        {
-            futureLine[i] = futureLine[i].replaceAll( "(^\"|\"$)", "" );
-        }
+        String[] futureLine = ReaderUtilities.splitByDelimiter( readLine, this.delimiter );
 
         if ( this.columnNames.isEmpty() )
         {
@@ -839,7 +836,7 @@ public class CsvDataProvider implements DataProvider
     }
 
     private CsvDataProvider( Path filePath,
-                             String delimiter,
+                             char delimiter,
                              String commentString,
                              Map<String, Integer> columns )
             throws IOException
@@ -860,7 +857,7 @@ public class CsvDataProvider implements DataProvider
     }
 
     private CsvDataProvider( InputStream inputStream,
-                             String delimiter,
+                             char delimiter,
                              String commentString,
                              Map<String, Integer> columns )
             throws IOException

@@ -13,12 +13,12 @@ import jakarta.xml.bind.DatatypeConverter;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
- * Tests {@link DataSources}.
+ * Tests {@link DataSource}.
  * 
  * @author James Brown
  */
 
-class DataSourcesTest
+class DataSourceTest
 {
     @Test
     void testDetectFormatIdentifiesOneColumnDatacardWithComments() throws IOException
