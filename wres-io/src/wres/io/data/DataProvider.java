@@ -11,9 +11,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.sql.ResultSet;
 
 import javax.json.Json;
@@ -417,7 +415,7 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCsv( final URI fileName, final String delimiter ) throws IOException
+    static DataProvider fromCsv( final URI fileName, final char delimiter ) throws IOException
     {
         return CsvDataProvider.from( fileName, delimiter );
     }
@@ -429,31 +427,9 @@ public interface DataProvider extends AutoCloseable
      * @return A DataProvider containing the provided CSV data
      * @throws IOException Thrown if the file could not be read
      */
-    static DataProvider fromCsv( final InputStream inputStream, final String delimiter ) throws IOException
+    static DataProvider fromCsv( final InputStream inputStream, final char delimiter ) throws IOException
     {
         return CsvDataProvider.from( inputStream, delimiter );
-    }
-
-    /**
-     * Converts a CSV file to a DataProvider with the provided column names
-     * @param fileName The path to the csv file
-     * @param delimiter The delimiter separating values
-     * @param columnNames The names of each column
-     * @return A DataProvider containing the provided CSV data
-     * @throws IOException Thrown if the file could not be read
-     */
-    static DataProvider fromCsv(
-                                 final URI fileName,
-                                 final String delimiter,
-                                 final String... columnNames )
-            throws IOException
-    {
-        Map<String, Integer> columnIndices = new HashMap<>();
-        for ( int i = 0; i < columnNames.length; ++i )
-        {
-            columnIndices.put( columnNames[i], i );
-        }
-        return CsvDataProvider.from( fileName, delimiter, columnIndices );
     }
 
     /**

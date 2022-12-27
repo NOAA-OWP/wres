@@ -46,18 +46,20 @@ import wres.util.Strings;
  * A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed at the beginning of 
  * the CSV string and begin with a # character.
  * 
+ * TODO: consider using OpenCSV or similar for the parsing, rather than the {@link CsvDataProvider}.
+ * 
  * @author James Brown
  */
 
 public class CsvReader implements TimeSeriesReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvReader.class );
+    private static final char DELIMITER = ',';
     private static final String VALUE = "value";
     private static final String VALUE_DATE = "value_date";
     private static final String MEASUREMENT_UNIT = "measurement_unit";
     private static final String VARIABLE_NAME = "variable_name";
     private static final String LOCATION = "location";
-    private static final String DELIMITER = ",";
     private static final String REFERENCE_DATETIME_COLUMN = "start_date";
     private static final String FEATURE_DESCRIPTION_COLUMN = "location_description";
     private static final String FEATURE_SRID_COLUMN = "location_srid";

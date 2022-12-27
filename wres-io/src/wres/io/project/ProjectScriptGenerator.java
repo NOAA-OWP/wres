@@ -446,7 +446,8 @@ final class ProjectScriptGenerator
                                         && !Character.isIdeographic( c )
                                         && Character.getType( c ) != Character.DASH_PUNCTUATION
                                         && Character.getType( c ) != Character.CONNECTOR_PUNCTUATION )
-                                       throw new IllegalArgumentException( "Unsupported char '" + c + " found" );
+                                       throw new IllegalArgumentException( "Unsupported char '" + (char) c
+                                                                           + "' found" );
                                } );
 
         return possiblyDangerousString;
