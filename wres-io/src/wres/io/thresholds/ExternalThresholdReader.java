@@ -12,7 +12,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.pooling.UnitMapper;
-import wres.io.thresholds.csv.CSVThresholdReader;
+import wres.io.thresholds.csv.CsvThresholdReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.system.SystemSettings;
 
@@ -403,7 +403,7 @@ public class ExternalThresholdReader
             // function for the equivalency checks in the coming loop rather than a strict String::equals
             BiPredicate<String, String> equalityCheck = String::equals;
 
-            readThresholds = CSVThresholdReader.readThresholds(
+            readThresholds = CsvThresholdReader.readThresholds(
                                                                this.systemSettings,
                                                                thresholdsConfig,
                                                                this.getSourceMeasurementUnit( thresholdsConfig ),
