@@ -467,6 +467,8 @@ project(':wres-io')
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
+        implementation group: 'com.opencsv', name: 'opencsv', version: '5.7.1'
+
         implementation 'org.liquibase:liquibase-core:4.18.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283

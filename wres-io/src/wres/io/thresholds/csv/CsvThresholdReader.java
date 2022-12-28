@@ -2,6 +2,10 @@ package wres.io.thresholds.csv;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+
 import wres.config.MetricConfigException;
 
 import wres.config.generated.ThresholdFormat;
@@ -19,8 +23,8 @@ import wres.io.thresholds.exceptions.AllThresholdsMissingException;
 import wres.io.thresholds.exceptions.LabelInconsistencyException;
 import wres.system.SystemSettings;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,13 +36,13 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * Helps read files of Comma Separated Values (CSV).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
-public class CSVThresholdReader
+public class CsvThresholdReader
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( CSVThresholdReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( CsvThresholdReader.class );
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
@@ -127,7 +131,7 @@ public class CSVThresholdReader
 
         ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, threshold.getType(), operator );
 
-        return CSVThresholdReader.readThresholds( commaSeparated,
+        return CsvThresholdReader.readThresholds( commaSeparated,
                                                   dataTypes,
                                                   missingValue,
                                                   units,
@@ -161,102 +165,123 @@ public class CSVThresholdReader
     {
         Map<String, Set<ThresholdOuter>> returnMe = new TreeMap<>();
 
-        // Rather than drip-feeding failures, collect all expected failure types, which
-        // are IllegalArgumentException and NumberFormatException and propagate at the end.
-        // Propagate all unexpected failure types immediately
-
-        // Set of identifiers for features that failed with an inconsistency between labels
-        Set<String> featuresThatFailedWithLabelInconsistency = new TreeSet<>();
-
-        // Set of identifiers for features that failed with all missing values
-        Set<String> featuresThatFailedWithAllThresholdsMissing = new TreeSet<>();
-
-        // Set of identifiers for features that failed with non-numeric input
-        Set<String> featuresThatFailedWithNonNumericInput = new TreeSet<>();
-
-        // Set of identifiers for features that failed with other wrong input
-        // identified by IllegalArgumentException
-        Set<String> featuresThatFailedWithOtherWrongInput = new TreeSet<>();
-
         // Feature count
         int totalFeatures = 0;
 
         // Internal unit mapper
         InnerUnitMapper innerUnitMapper = InnerUnitMapper.of( units, unitMapper );
 
+        ThresholdExceptions ex = new ThresholdExceptions();
+
         // Read the input
-        try ( BufferedReader input = Files.newBufferedReader( commaSeparated, StandardCharsets.UTF_8 ) )
+        try ( Reader reader = Files.newBufferedReader( commaSeparated, StandardCharsets.UTF_8 );
+              CSVReader csvReader = new CSVReader( reader ) )
         {
-            String nextLine = input.readLine();
-            String[] header = nextLine.split( "\\s*(,)\\s*" );
+            String[] line;
+            String[] header = null;
             String[] labels = null;
-
-            // Header?
-            // Yes: process it
-            if ( header.length > 0 && "locationId".equalsIgnoreCase( header[0] ) )
+            while ( Objects.nonNull( line = csvReader.readNext() ) )
             {
-                // locationId allowed without labels
-                if ( header.length > 1 )
+                // Skip any empty lines
+                if ( line.length == 0 || line[0].isBlank() )
                 {
-                    labels = Arrays.copyOfRange( header, 1, header.length );
+                    LOGGER.debug( "Discovered an empty line in threshold source: {}.", commaSeparated );
+                    continue;
                 }
 
-                // Move to next line, which is not a header
-                nextLine = input.readLine();
+                if ( line[0].toLowerCase()
+                            .contains( "locationid" ) )
+                {
+                    header = line;
+
+                    // locationId allowed without labels
+                    if ( header.length > 1 )
+                    {
+                        labels = Arrays.copyOfRange( header, 1, header.length );
+                    }
+                }
+                else
+                {
+                    String[] featureThresholds = line;
+                    String nextFeature = featureThresholds[0].stripLeading();
+
+                    Set<ThresholdOuter> thresholds =
+                            CsvThresholdReader.getAllThresholdsForOneFeatureAndSaveExceptions( dataTypes,
+                                                                                               labels,
+                                                                                               featureThresholds,
+                                                                                               missingValue,
+                                                                                               innerUnitMapper,
+                                                                                               ex );
+                    if ( !thresholds.isEmpty() )
+                    {
+                        returnMe.put( nextFeature, thresholds );
+                    }
+
+                    totalFeatures++;
+                }
             }
-
-            // Process each feature for which information is present
-            while ( Objects.nonNull( nextLine ) && !nextLine.isBlank() )
-            {
-
-                String[] featureThresholds = nextLine.split( "\\s*(,)\\s*" );
-
-                String nextFeature = featureThresholds[0];
-
-                try
-                {
-                    returnMe.put( nextFeature,
-                                  CSVThresholdReader.getAllThresholdsForOneFeature( dataTypes,
-                                                                                 labels,
-                                                                                 featureThresholds,
-                                                                                 missingValue,
-                                                                                 innerUnitMapper ) );
-                }
-                // Catch expected exceptions and propagate finally to avoid drip-feeding
-                catch ( LabelInconsistencyException e )
-                {
-                    featuresThatFailedWithLabelInconsistency.add( nextFeature );
-                }
-                catch ( AllThresholdsMissingException e )
-                {
-                    featuresThatFailedWithAllThresholdsMissing.add( nextFeature );
-                }
-                catch ( NumberFormatException e )
-                {
-                    featuresThatFailedWithNonNumericInput.add( nextFeature );
-                }
-                catch ( ThresholdException | IllegalArgumentException e )
-                {
-                    featuresThatFailedWithOtherWrongInput.add( nextFeature );
-                }
-
-                // Move to next line
-                nextLine = input.readLine();
-
-                totalFeatures++;
-            }
-
+        }
+        catch ( CsvValidationException e )
+        {
+            throw new IOException( "Encountered an error while reading " + commaSeparated + ".", e );
         }
 
         // Propagate any exceptions that were caught to avoid drip-feeding
-        CSVThresholdReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
+        CsvThresholdReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
                                                             commaSeparated,
-                                                            featuresThatFailedWithLabelInconsistency,
-                                                            featuresThatFailedWithAllThresholdsMissing,
-                                                            featuresThatFailedWithNonNumericInput,
-                                                            featuresThatFailedWithOtherWrongInput );
+                                                            ex );
 
         return returnMe;
+    }
+
+    /**
+     * Mutates the input map, reading all thresholds for one feature and increments any exceptions encountered.
+     *
+     * @param dataType the threshold data types
+     * @param labels the optional labels (may be null)
+     * @param featureThresholds the next set of thresholds to process for a given feature, including the feature label
+     * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param unitMapper a mapper for the measurement units
+     * @param ex the incrementing exceptions encountered to avoid drip-feeding
+     * @return the thresholds for one feature
+     */
+
+    private static Set<ThresholdOuter> getAllThresholdsForOneFeatureAndSaveExceptions( ThresholdDataTypes dataTypes,
+                                                                                       String[] labels,
+                                                                                       String[] featureThresholds,
+                                                                                       Double missingValue,
+                                                                                       InnerUnitMapper unitMapper,
+                                                                                       ThresholdExceptions ex )
+    {
+        String nextFeature = featureThresholds[0].stripLeading();
+
+        try
+        {
+            return CsvThresholdReader.getAllThresholdsForOneFeature( dataTypes,
+                                                                     labels,
+                                                                     featureThresholds,
+                                                                     missingValue,
+                                                                     unitMapper );
+        }
+        // Catch expected exceptions and propagate finally to avoid drip-feeding
+        catch ( LabelInconsistencyException e )
+        {
+            ex.featuresThatFailedWithLabelInconsistency.add( nextFeature );
+        }
+        catch ( AllThresholdsMissingException e )
+        {
+            ex.featuresThatFailedWithAllThresholdsMissing.add( nextFeature );
+        }
+        catch ( NumberFormatException e )
+        {
+            ex.featuresThatFailedWithNonNumericInput.add( nextFeature );
+        }
+        catch ( ThresholdException | IllegalArgumentException e )
+        {
+            ex.featuresThatFailedWithOtherWrongInput.add( nextFeature );
+        }
+
+        return Collections.emptySet();
     }
 
     /**
@@ -270,14 +295,15 @@ public class CSVThresholdReader
      * @throws NullPointerException if the featureThresholds is null
      * @throws LabelInconsistencyException if the number of labels is inconsistent with the number of thresholds
      * @throws NumberFormatException if one of the thresholds was not a number
+     * @throws AllThresholdsMissingException if all thresholds are missing values
      * @return the thresholds for one feature
      */
 
     private static Set<ThresholdOuter> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
-                                                                 String[] labels,
-                                                                 String[] featureThresholds,
-                                                                 Double missingValue,
-                                                                 InnerUnitMapper unitMapper )
+                                                                      String[] labels,
+                                                                      String[] featureThresholds,
+                                                                      Double missingValue,
+                                                                      InnerUnitMapper unitMapper )
     {
 
         Objects.requireNonNull( featureThresholds );
@@ -298,15 +324,15 @@ public class CSVThresholdReader
         // Default to probability
         boolean isProbability = thresholdType == ThresholdConstants.ThresholdGroup.PROBABILITY;
 
-        return CSVThresholdReader.getThresholds( Arrays.copyOfRange( featureThresholds,
-                                                                  1,
-                                                                  featureThresholds.length ),
-                                              labels,
-                                              isProbability,
-                                              dataType.getOperator(),
-                                              dataType.getThresholdDataType(),
-                                              missingValue,
-                                              unitMapper );
+        return CsvThresholdReader.getThresholds( Arrays.copyOfRange( featureThresholds,
+                                                                     1,
+                                                                     featureThresholds.length ),
+                                                 labels,
+                                                 isProbability,
+                                                 dataType.getOperator(),
+                                                 dataType.getThresholdDataType(),
+                                                 missingValue,
+                                                 unitMapper );
     }
 
     /**
@@ -323,15 +349,16 @@ public class CSVThresholdReader
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold
      *            or all threshold values match the missingValue
      * @throws NumberFormatException if the strings cannot be parsed to numbers
+     * @throws AllThresholdsMissingException if all thresholds are missing values
      */
 
     private static Set<ThresholdOuter> getThresholds( String[] input,
-                                                 String[] labels,
-                                                 boolean isProbability,
-                                                 Operator condition,
-                                                 ThresholdDataType dataType,
-                                                 Double missingValue,
-                                                 InnerUnitMapper unitMapper )
+                                                      String[] labels,
+                                                      boolean isProbability,
+                                                      Operator condition,
+                                                      ThresholdDataType dataType,
+                                                      Double missingValue,
+                                                      InnerUnitMapper unitMapper )
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
@@ -353,6 +380,13 @@ public class CSVThresholdReader
         {
             double threshold = Double.parseDouble( input[i] );
 
+            // Label without leading whitespace
+            String nextLabel = iterateLabels[i];
+            if ( Objects.nonNull( nextLabel ) )
+            {
+                nextLabel = nextLabel.stripLeading();
+            }
+
             // Non-missing value?
             if ( Objects.isNull( missingValue ) || Math.abs( missingValue - threshold ) > .00000001 )
             {
@@ -361,10 +395,10 @@ public class CSVThresholdReader
                 if ( isProbability )
                 {
                     returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
-                                                                    condition,
-                                                                    dataType,
-                                                                    iterateLabels[i],
-                                                                    unitMapper.getDesiredMeasurementUnit() ) );
+                                                                         condition,
+                                                                         dataType,
+                                                                         nextLabel,
+                                                                         unitMapper.getDesiredMeasurementUnit() ) );
                 }
                 // Ordinary thresholds
                 else
@@ -372,10 +406,10 @@ public class CSVThresholdReader
                     double thresholdInDesiredUnits = unitMapper.getValueInDesiredUnits( threshold );
 
                     returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( thresholdInDesiredUnits ),
-                                                condition,
-                                                dataType,
-                                                iterateLabels[i],
-                                                unitMapper.getDesiredMeasurementUnit() ) );
+                                                     condition,
+                                                     dataType,
+                                                     nextLabel,
+                                                     unitMapper.getDesiredMeasurementUnit() ) );
                 }
             }
             else
@@ -395,34 +429,27 @@ public class CSVThresholdReader
         return returnMe;
     }
 
-
-
     /**
-     * Throws an exception if one or more of the inputs contains elements, and decorates the
-     * exception with the type of failure, based on the input.
+     * Throws an exception if one or more of the inputs contains elements, and decorates the exception with the type of 
+     * failure, based on the input.
      *
      * @param totalFeatures the total number of features processed
      * @param pathToThresholds the path to the CSV thresholds-by-feature
-     * @param featuresThatFailedWithLabelInconsistency features that failed with an inconsistency between labels and thresholds
-     * @param featuresThatFailedWithAllThresholdsMissing features that failed with all thresholds missing
-     * @param featuresThatFailedWithNonNumericInput features that failed with non-numeric input
-     * @param featuresThatFailedWithOtherWrongInput features that failed with other wrong input
+     * @param ex the threshold exceptions
      * @throws ThresholdException if one or more features failed
      */
 
     private static void throwExceptionIfOneOrMoreFailed( int totalFeatures,
                                                          Path pathToThresholds,
-                                                         Set<String> featuresThatFailedWithLabelInconsistency,
-                                                         Set<String> featuresThatFailedWithAllThresholdsMissing,
-                                                         Set<String> featuresThatFailedWithNonNumericInput,
-                                                         Set<String> featuresThatFailedWithOtherWrongInput )
+                                                         ThresholdExceptions ex )
     {
         StringJoiner exceptionMessage = new StringJoiner( " " );
 
         int failCount =
-                featuresThatFailedWithLabelInconsistency.size() + featuresThatFailedWithAllThresholdsMissing.size()
-                        + featuresThatFailedWithNonNumericInput.size()
-                        + featuresThatFailedWithOtherWrongInput.size();
+                ex.featuresThatFailedWithLabelInconsistency.size()
+                        + ex.featuresThatFailedWithAllThresholdsMissing.size()
+                        + ex.featuresThatFailedWithNonNumericInput.size()
+                        + ex.featuresThatFailedWithOtherWrongInput.size();
 
         if ( failCount > 0 )
         {
@@ -436,38 +463,38 @@ public class CSVThresholdReader
 
         }
 
-        if ( !featuresThatFailedWithLabelInconsistency.isEmpty() )
+        if ( !ex.featuresThatFailedWithLabelInconsistency.isEmpty() )
         {
             exceptionMessage.add( "    These features failed with an inconsistency between "
                                   + "the number of labels and the number of thresholds: "
-                                  + featuresThatFailedWithLabelInconsistency
+                                  + ex.featuresThatFailedWithLabelInconsistency
                                   + "." );
             exceptionMessage.add( System.lineSeparator() );
 
         }
 
-        if ( !featuresThatFailedWithAllThresholdsMissing.isEmpty() )
+        if ( !ex.featuresThatFailedWithAllThresholdsMissing.isEmpty() )
         {
             exceptionMessage.add( "    These features failed because "
                                   + "all thresholds matched the missing value: "
-                                  + featuresThatFailedWithAllThresholdsMissing
+                                  + ex.featuresThatFailedWithAllThresholdsMissing
                                   + "." );
             exceptionMessage.add( System.lineSeparator() );
         }
 
-        if ( !featuresThatFailedWithNonNumericInput.isEmpty() )
+        if ( !ex.featuresThatFailedWithNonNumericInput.isEmpty() )
         {
             exceptionMessage.add( "    These features failed with non-numeric input: "
-                                  + featuresThatFailedWithNonNumericInput
+                                  + ex.featuresThatFailedWithNonNumericInput
                                   + "." );
             exceptionMessage.add( System.lineSeparator() );
 
         }
 
-        if ( !featuresThatFailedWithOtherWrongInput.isEmpty() )
+        if ( !ex.featuresThatFailedWithOtherWrongInput.isEmpty() )
         {
             exceptionMessage.add( "    These features failed with invalid input for the threshold type: "
-                                  + featuresThatFailedWithOtherWrongInput
+                                  + ex.featuresThatFailedWithOtherWrongInput
                                   + "." );
         }
 
@@ -567,8 +594,37 @@ public class CSVThresholdReader
      * Do not construct.
      */
 
-    private CSVThresholdReader()
+    private CsvThresholdReader()
     {
     }
 
+    /**
+     * Small value class of threshold exceptions. TODO: replace with a record for JDK 14 or later.
+     */
+    private static class ThresholdExceptions
+    {
+        // Rather than drip-feeding failures, collect all expected failure types, which
+        // are IllegalArgumentException and NumberFormatException and propagate at the end.
+        // Propagate all unexpected failure types immediately
+
+        // Set of identifiers for features that failed with an inconsistency between labels
+        private final Set<String> featuresThatFailedWithLabelInconsistency = new TreeSet<>();
+
+        // Set of identifiers for features that failed with all missing values
+        private final Set<String> featuresThatFailedWithAllThresholdsMissing = new TreeSet<>();
+
+        // Set of identifiers for features that failed with non-numeric input
+        private final Set<String> featuresThatFailedWithNonNumericInput = new TreeSet<>();
+
+        // Set of identifiers for features that failed with other wrong input
+        // identified by IllegalArgumentException
+        private final Set<String> featuresThatFailedWithOtherWrongInput = new TreeSet<>();
+
+        /**
+         * Hidden constructor.
+         */
+        private ThresholdExceptions()
+        {
+        }
+    }
 }
