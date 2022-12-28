@@ -602,97 +602,11 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                          AtomicDouble missingValue )
             throws XMLStreamException
     {
-        //  If the current tag is the header tag itself, move on to the next tag
-        if ( reader.isStartElement() && reader.getLocalName().equalsIgnoreCase( HEADER ) )
-        {
-            reader.next();
-        }
-
         TimeSeriesHeader header = this.getTimeSeriesHeader( reader, dataSource );
 
-        if ( Objects.nonNull( header.ensembleMemberId )
-             && Objects.nonNull( header.ensembleMemberIndex ) )
-        {
-            throw new ReadException( "Invalid data in PI-XML source '"
-                                     + dataSource.getUri()
-                                     + "' near line "
-                                     + reader.getLocation().getLineNumber()
-                                     + ": a trace may have either an ensembleMemberId OR an "
-                                     + "ensembleMemberIndex but not both. Found ensembleMemberId"
-                                     + " '"
-                                     + header.ensembleMemberId
-                                     + "' and ensembleMemberIndex of '"
-                                     + header.ensembleMemberIndex
-                                     + "'. For more details see "
-                                     + "https://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
-        }
-
-        if ( Objects.nonNull( header.ensembleMemberId ) )
-        {
-            header.traceName = header.ensembleMemberId;
-        }
-        else if ( Objects.nonNull( header.ensembleMemberIndex ) )
-        {
-            header.traceName = header.ensembleMemberIndex;
-        }
-
-        if ( header.locationStationName != null )
-        {
-            header.locationDescription = header.locationStationName;
-        }
-
-        if ( header.locationLongName != null )
-        {
-            // Append the long name to description when already set with station
-            if ( header.locationDescription != null )
-            {
-                header.locationDescription += " " + header.locationLongName;
-            }
-            else
-            {
-                header.locationDescription = header.locationLongName;
-            }
-        }
-
-        // See #59438
-        // For accumulative data, the scalePeriod has not been set, and this is equal
-        // to the timeStep, if available
-        if ( Objects.isNull( header.scalePeriod ) )
-        {
-            header.scalePeriod = header.timeStep;
-        }
-
         TimeScaleOuter scale = TimeScaleOuter.of( header.scalePeriod, header.scaleFunction );
-
         Map<ReferenceTimeType, Instant> referenceTimes = this.getReferenceTimesFromHeader( header, zoneOffset );
-
         String locationWkt = this.getWktFromHeader( header );
-
-        LOGGER.debug( "Parsed PI-XML header: scalePeriod={}, scaleFunction={}, timeStep={}, forecastDate={}, "
-                      + "locationName={}, variableName={}, unitName={}, traceName={}, ensembleMemberId={}, "
-                      + "ensembleMemberIndex={}, missingValue={}, locationLongName={}, locationStationName={}, "
-                      + "locationDescription={}, latitude={}, longitude={}, x={}, y={}, z={}.",
-                      header.scalePeriod,
-                      header.scaleFunction,
-                      header.timeStep,
-                      header.forecastDate,
-                      header.locationName,
-                      header.variableName,
-                      header.unitName,
-                      header.traceName,
-                      header.ensembleMemberId,
-                      header.ensembleMemberIndex,
-                      header.missValue,
-                      header.locationLongName,
-                      header.locationStationName,
-                      header.locationDescription,
-                      header.latitude,
-                      header.longitude,
-                      header.x,
-                      header.y,
-                      header.z );
-
-
         Geometry geometry = MessageFactory.getGeometry( header.locationName,
                                                         header.locationDescription,
                                                         null,
@@ -720,10 +634,10 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                               justParsed,
                               currentTimeSeriesMetadata );
             }
-            else
+            else if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Saving a trace as a standalone time-series even though the metadata has not changed. "
-                              + "This occurs when there are multiple observation-like time-series wit hthe same "
+                              + "This occurs when there are multiple observation-like time-series with the same "
                               + "metadata per source. The new metadata is: {}.",
                               currentTimeSeriesMetadata );
             }
@@ -737,7 +651,21 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             traceValues.clear();
         }
-        
+
+        // Duplicate trace labels are not allowed in the same context/source: #110238
+        // Check here to allow for the trace values to be cleared above if starting a new series
+        if ( traceValues.containsKey( header.traceName ) )
+        {
+            throw new ReadException( "Found invalid data in PI-XML source '"
+                                     + dataSource.getUri()
+                                     + "' near line "
+                                     + reader.getLocation().getLineNumber()
+                                     + ": discovered two or more time-series with the same ensemble trace "
+                                     + "identifier of '"
+                                     + currentTraceName
+                                     + "', which is not allowed." );
+        }
+
         LOGGER.trace( "Setting the missing value sentinel to {}.", header.missValue );
 
         missingValue.set( header.missValue );
@@ -747,6 +675,73 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         currentTimeSeriesMetadata.set( justParsed );
 
         return returnMe;
+    }
+
+    /**
+     * Sets the ensemble trace name in the header.
+     * @param header the header that requires a trace name
+     * @param reader the reader
+     * @param dataSource the data source
+     * @param traceValues the trace values
+     * @param currentTraceName the current trace name
+     * @throws ReadException if the trace name could not be set due to an invalid header
+     */
+
+    private void setEnsembleTraceName( TimeSeriesHeader header,
+                                       XMLStreamReader reader,
+                                       DataSource dataSource )
+    {
+        if ( Objects.nonNull( header.ensembleMemberId )
+             && Objects.nonNull( header.ensembleMemberIndex ) )
+        {
+            throw new ReadException( "Found invalid data in PI-XML source '"
+                                     + dataSource.getUri()
+                                     + "' near line "
+                                     + reader.getLocation().getLineNumber()
+                                     + ": a trace may contain either an ensembleMemberId or an "
+                                     + "ensembleMemberIndex, but not both. Found ensembleMemberId"
+                                     + " '"
+                                     + header.ensembleMemberId
+                                     + "' and ensembleMemberIndex of '"
+                                     + header.ensembleMemberIndex
+                                     + "'. For more details see "
+                                     + "https://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" );
+        }
+
+        if ( Objects.nonNull( header.ensembleMemberId ) )
+        {
+            header.traceName = header.ensembleMemberId;
+        }
+        else if ( Objects.nonNull( header.ensembleMemberIndex ) )
+        {
+            header.traceName = header.ensembleMemberIndex;
+        }
+    }
+
+    /**
+     * Sets the location description.
+     * @param header the time-series header
+     */
+
+    private void setLocationDescription( TimeSeriesHeader header )
+    {
+        if ( header.locationStationName != null )
+        {
+            header.locationDescription = header.locationStationName;
+        }
+
+        if ( header.locationLongName != null )
+        {
+            // Append the long name to description when already set with station
+            if ( header.locationDescription != null )
+            {
+                header.locationDescription += " " + header.locationLongName;
+            }
+            else
+            {
+                header.locationDescription = header.locationLongName;
+            }
+        }
     }
 
     /**
@@ -762,6 +757,12 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     {
         TimeSeriesHeader header = new TimeSeriesHeader();
 
+        //  If the current tag is the header tag itself, move on to the next tag
+        if ( reader.isStartElement() && reader.getLocalName().equalsIgnoreCase( HEADER ) )
+        {
+            reader.next();
+        }
+
         //  Scrape all pertinent information from the header
         while ( reader.hasNext() )
         {
@@ -776,6 +777,47 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
             }
 
             reader.next();
+        }
+
+        // Validate and set the unique trace name
+        this.setEnsembleTraceName( header, reader, dataSource );
+
+        // Set the location description
+        this.setLocationDescription( header );
+
+        // See #59438
+        // For accumulative data, the scalePeriod has not been set, and this is equal
+        // to the timeStep, if available
+        if ( Objects.isNull( header.scalePeriod ) )
+        {
+            header.scalePeriod = header.timeStep;
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Parsed PI-XML header: scalePeriod={}, scaleFunction={}, timeStep={}, forecastDate={}, "
+                          + "locationName={}, variableName={}, unitName={}, traceName={}, ensembleMemberId={}, "
+                          + "ensembleMemberIndex={}, missingValue={}, locationLongName={}, locationStationName={}, "
+                          + "locationDescription={}, latitude={}, longitude={}, x={}, y={}, z={}.",
+                          header.scalePeriod,
+                          header.scaleFunction,
+                          header.timeStep,
+                          header.forecastDate,
+                          header.locationName,
+                          header.variableName,
+                          header.unitName,
+                          header.traceName,
+                          header.ensembleMemberId,
+                          header.ensembleMemberIndex,
+                          header.missValue,
+                          header.locationLongName,
+                          header.locationStationName,
+                          header.locationDescription,
+                          header.latitude,
+                          header.longitude,
+                          header.x,
+                          header.y,
+                          header.z );
         }
 
         return header;
