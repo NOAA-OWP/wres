@@ -3,6 +3,7 @@ package wres.io.thresholds.wrds;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -36,6 +37,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -58,10 +61,10 @@ public final class GeneralWRDSReader
         catch ( PreIngestException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
-                    + e.getMessage() );
+                                                   + e.getMessage() );
         }
     }
-    
+
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
@@ -92,7 +95,7 @@ public final class GeneralWRDSReader
         this.systemSettings = systemSettings;
     }
 
-    
+
     /**
      * Adjusts the path for access WRDS services for thresholds.
      * @param originalPath The original path.
@@ -101,7 +104,7 @@ public final class GeneralWRDSReader
      * @throws ThresholdReadingException if the user specified a path that
      * includes the feature type suffix, but its incorrect.
      */
-    private static String adjustPath(String originalPath, FeatureDimension featureDimension)
+    private static String adjustPath( String originalPath, FeatureDimension featureDimension )
     {
         String adjustedPath;
 
@@ -114,70 +117,73 @@ public final class GeneralWRDSReader
         {
             adjustedPath = originalPath;
         }
-        
+
         boolean foundUnmatchingSuffixError = false;
 
         //This uses a brute force if-then-else clause.  It could be turned into a method,
         //but that feels like overkill.
-        
+
         //NWS lid 
-        if ((featureDimension == FeatureDimension.NWS_LID) 
-                || (featureDimension == FeatureDimension.CUSTOM))
+        if ( ( featureDimension == FeatureDimension.NWS_LID )
+             || ( featureDimension == FeatureDimension.CUSTOM ) )
         {
-            if (adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) 
-                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            if ( adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" )
+                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if (!adjustedPath.endsWith (FeatureDimension.NWS_LID.value() + "/" ))
+            else if ( !adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" ) )
             {
                 adjustedPath += FeatureDimension.NWS_LID + "/";
             }
         }
-        
+
         //USGS site code
-        if (featureDimension == FeatureDimension.USGS_SITE_CODE)
+        if ( featureDimension == FeatureDimension.USGS_SITE_CODE )
         {
-            if (adjustedPath.endsWith( FeatureDimension.NWS_LID.value() +"/") 
-                    || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" )
+                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if (!adjustedPath.endsWith (FeatureDimension.USGS_SITE_CODE.value() + "/" ))
+            else if ( !adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) )
             {
                 adjustedPath += FeatureDimension.USGS_SITE_CODE + "/";
             }
         }
-        
+
         //NWM feature id
-        if (featureDimension == FeatureDimension.NWM_FEATURE_ID)
+        if ( featureDimension == FeatureDimension.NWM_FEATURE_ID )
         {
-            if (adjustedPath.endsWith( FeatureDimension.NWS_LID.value() +"/") 
-                    || adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ))
+            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" )
+                 || adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if (!adjustedPath.endsWith (FeatureDimension.NWM_FEATURE_ID.value() + "/" ))
+            else if ( !adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
             {
                 adjustedPath += FeatureDimension.NWM_FEATURE_ID + "/";
             }
         }
-       
+
         //An error was found.  Let the user know.    
-        if (foundUnmatchingSuffixError)
+        if ( foundUnmatchingSuffixError )
         {
             throw new ThresholdReadingException( "The input side for loading thresholds from WRDS"
-                    + " uses feature dimension '" + featureDimension.value() + "', but "
-                    + "the XML declared WRDS threshold source path, ..." + originalPath 
-                    + ", already includes a feature suffix that does not match that "
-                    + "feature dimension.  Either remove the suffix from the path or "
-                    + "specify a different input side for loading thresholds from WRDS.");
+                                                 + " uses feature dimension '"
+                                                 + featureDimension.value()
+                                                 + "', but "
+                                                 + "the XML declared WRDS threshold source path, ..."
+                                                 + originalPath
+                                                 + ", already includes a feature suffix that does not match that "
+                                                 + "feature dimension.  Either remove the suffix from the path or "
+                                                 + "specify a different input side for loading thresholds from WRDS." );
         }
-        
+
         return adjustedPath;
     }
-    
-    
+
+
     /**
      * The top-level method to call to obtain thresholds
      * @param systemSettings Settings.
@@ -198,39 +204,32 @@ public final class GeneralWRDSReader
     {
         //Get the declared source.
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
-        
+
         //Addresses will store a list of addresses to obtain, where each corresponds
         //to a group of locations.
         List<URI> addresses = new ArrayList<>();
-        
+
         //Those address are built from the source address.
         URI fullSourceAddress = GeneralWRDSReader.getAbsoluteUri( source.getValue(),
                                                                   systemSettings );
 
-        //If the source is a file, implying a WRDS JSON formatted file, then
-        //just use the file as is.
+        // Web service
         if ( fullSourceAddress.getScheme()
                               .toLowerCase()
-                              .equals( "file" ) )
-        {
-            addresses.add( fullSourceAddress );
-        }
-        
-        //Otherwise, the source is a path to WRDS...
-        else
+                              .startsWith( "http" ) )
         {
             //Build the location groups to use.            
             Set<String> locationGroups = groupLocations( features );
-            
+
             //Get the declared path and adjust it.  Note that adjusint could
             //result in a runtime error if the user declared a bad feature
             //dimensions suffix relative to the provided feature dimension.
             final String originalPath = fullSourceAddress.getPath();
-            final String adjustedPath = adjustPath(originalPath, featureDimension);
+            final String adjustedPath = adjustPath( originalPath, featureDimension );
 
             //Construct the URI builder.
             URIBuilder builder = new URIBuilder( fullSourceAddress );
-            
+
             LOGGER.debug( "Went from source {} to path {} to path {}",
                           source.getValue(),
                           originalPath,
@@ -253,10 +252,15 @@ public final class GeneralWRDSReader
                 catch ( URISyntaxException use )
                 {
                     throw new ThresholdReadingException( "Unable to build URI from "
-                                                + builder,
-                                                use );
+                                                         + builder,
+                                                         use );
                 }
             }
+        }
+        // File-like source
+        else
+        {
+            addresses.add( fullSourceAddress );
         }
 
         //construct the reader and the threshold map.  
@@ -265,7 +269,7 @@ public final class GeneralWRDSReader
 
         try
         {
-            //Get the non-null resonses for the addresses, extract the thresholds,
+            //Get the non-null responses for the addresses, extract the thresholds,
             //and collect them into a map.
             thresholdMapping = addresses.parallelStream()
                                         .map( reader::getResponse )
@@ -273,7 +277,7 @@ public final class GeneralWRDSReader
                                         .map( thresholdResponse -> extract( thresholdResponse, threshold, unitMapper ) )
                                         .flatMap( featurePlusSetMap -> featurePlusSetMap.entrySet().stream() )
                                         .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-            
+
         }
         catch ( StreamIOException streamReadingException )
         {
@@ -296,7 +300,7 @@ public final class GeneralWRDSReader
             throw new IOException( "No thresholds could be retrieved from " + fullSourceAddress.toString() );
         }
 
-        LOGGER.debug("The following thresholds were obtained from WRDS: " + thresholdMapping);        
+        LOGGER.debug( "The following thresholds were obtained from WRDS: " + thresholdMapping );
 
         return thresholdMapping;
     }
@@ -315,7 +319,7 @@ public final class GeneralWRDSReader
     {
         //Obtain the source.
         ThresholdsConfig.Source source = (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource();
-        
+
         //Get the applyTo side.
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
         if ( Objects.nonNull( config.getApplyTo() ) )
@@ -334,8 +338,9 @@ public final class GeneralWRDSReader
         {
             //Read the version information from the response, first.  This is used to 
             //identify version being processed.
-            WrdsLocationRootVersionDocument versionDoc = JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
-            
+            WrdsLocationRootVersionDocument versionDoc =
+                    JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
+
             //Extract using V3 API reader.
             if ( versionDoc.isDeploymentInfoPresent() )
             {
@@ -462,9 +467,7 @@ public final class GeneralWRDSReader
             }
             else
             {
-                File thresholdFile = new File( fullAddress );
-
-                try ( InputStream data = new FileInputStream( thresholdFile ) )
+                try ( InputStream data = Files.newInputStream( Paths.get( fullAddress ) ) )
                 {
                     byte[] rawForecast = IOUtils.toByteArray( data );
                     return rawForecast;
