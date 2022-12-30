@@ -116,16 +116,16 @@ public class ChartFactory
     private final Font chartFontTitle;
 
     /**
-     * Expands upon the {@link OutputTypeSelection} for extended use in this context.
+     * Expands upon the {@link OutputTypeSelection} for extended use in this and nearby contexts.
      */
 
-    private enum ChartType
+    public enum ChartType
     {
         UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
-        POOLING_WINDOW( null ), // Internal type only, not configured
-        TIMING_ERROR_SUMMARY_STATISTICS( null ), // Internal type only, not configured
+        POOLING_WINDOW( null ), // Internal type only, not declared
+        TIMING_ERROR_SUMMARY_STATISTICS( null ), // Internal type only, not declared
         SINGLE_VALUED_PAIRS( OutputTypeSelection.SINGLE_VALUED_PAIRS );
 
         private final OutputTypeSelection basis;
@@ -326,7 +326,7 @@ public class ChartFactory
             List<DiagramStatisticOuter> slicedStatistics =
                     ChartDataFactory.getSlicedStatisticsForDiagram( keyInstance,
                                                                     statistics,
-                                                                    chartType.getOutputTypeSelection() );
+                                                                    chartType );
 
             List<PoolMetadata> metadatas = slicedStatistics.stream()
                                                            .map( DiagramStatisticOuter::getMetadata )

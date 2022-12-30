@@ -43,6 +43,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.vis.charts.ChartFactory.ChartType;
 
 /**
  * Used to create datasets for constructing charts.
@@ -399,18 +400,24 @@ public class ChartDataFactory
      */
     public static List<DiagramStatisticOuter> getSlicedStatisticsForDiagram( Object keyInstance,
                                                                              List<DiagramStatisticOuter> statistics,
-                                                                             OutputTypeSelection chartType )
+                                                                             ChartType chartType )
     {
         List<DiagramStatisticOuter> inputSlice;
-        if ( chartType == OutputTypeSelection.LEAD_THRESHOLD )
+        if ( chartType == ChartType.LEAD_THRESHOLD )
         {
             inputSlice =
-                    Slicer.filter( statistics, next -> next.getMetadata().getTimeWindow().equals( keyInstance ) );
+                    Slicer.filter( statistics,
+                                   next -> next.getMetadata()
+                                               .getTimeWindow()
+                                               .equals( keyInstance ) );
         }
-        else if ( chartType == OutputTypeSelection.THRESHOLD_LEAD )
+        else if ( chartType == ChartType.THRESHOLD_LEAD )
         {
             inputSlice =
-                    Slicer.filter( statistics, next -> next.getMetadata().getThresholds().equals( keyInstance ) );
+                    Slicer.filter( statistics,
+                                   next -> next.getMetadata()
+                                               .getThresholds()
+                                               .equals( keyInstance ) );
         }
         else
         {
