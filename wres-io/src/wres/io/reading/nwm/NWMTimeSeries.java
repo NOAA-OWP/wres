@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -496,13 +497,28 @@ class NWMTimeSeries implements Closeable
 
             if ( variableVariable == null )
             {
-                throw new IllegalArgumentException( "No variable '"
+                Set<String> variables = netcdfFile.getVariables()
+                                                  .stream()
+                                                  .map( Variable::getFullName )
+                                                  .collect( Collectors.toSet() );
+
+                // Remove the metadata variables
+                variables.remove( "time" );
+                variables.remove( "reference_time" );
+                variables.remove( "feature_id" );
+                variables.remove( "crs" );
+
+                throw new IllegalArgumentException( "There was no variable '"
                                                     + variableName
-                                                    + "' found in netCDF data "
-                                                    + netcdfFile );
+                                                    + "' in the netCDF blob at '"
+                                                    + netcdfFile.getLocation()
+                                                    + "'. The blob contained the following readable variables: "
+                                                    + variables
+                                                    + ". Please declare one of these case-sensitive variable names to "
+                                                    + "evaluate." );
             }
 
-            return readAttributeAsString( variableVariable, attributeName );
+            return NWMTimeSeries.readAttributeAsString( variableVariable, attributeName );
         }
         else
         {
@@ -511,7 +527,7 @@ class NWMTimeSeries implements Closeable
     }
 
     /**
-     * Read TimeSerieses from across several netCDF single-validdatetime files.
+     * Read TimeSerieses from across several netCDF single-valid datetime files.
      * @param featureIds The NWM feature IDs to read.
      * @param variableName The NWM variable name.
      * @param unitName The unit of all variable values.
