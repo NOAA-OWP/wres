@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.DoubleUnaryOperator;
+import java.util.stream.Collectors;
 
 /**
  * Helps read files of Comma Separated Values (CSV).
@@ -53,7 +54,7 @@ public class CsvThresholdReader
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
-     * @return a map of thresholds by feature
+     * @return a map of thresholds by feature identifier
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
      * @throws ThresholdException if one or more features failed with expected problems, such as
@@ -164,6 +165,7 @@ public class CsvThresholdReader
             throws IOException
     {
         Map<String, Set<ThresholdOuter>> returnMe = new TreeMap<>();
+        Set<String> duplicates = new TreeSet<>();
 
         // Feature count
         int totalFeatures = 0;
@@ -212,10 +214,8 @@ public class CsvThresholdReader
                                                                                                missingValue,
                                                                                                innerUnitMapper,
                                                                                                ex );
-                    if ( !thresholds.isEmpty() )
-                    {
-                        returnMe.put( nextFeature, thresholds );
-                    }
+
+                    CsvThresholdReader.addThresholds( returnMe, nextFeature, thresholds, duplicates, commaSeparated );
 
                     totalFeatures++;
                 }
@@ -226,12 +226,73 @@ public class CsvThresholdReader
             throw new IOException( "Encountered an error while reading " + commaSeparated + ".", e );
         }
 
+        // Warn about duplicates
+        if ( LOGGER.isWarnEnabled() && !duplicates.isEmpty() )
+        {
+            LOGGER.warn( "While reading thresholds from {}, encountered {} duplicate feature(s) whose thresholds will "
+                         + "be pooled together. The duplicate feature(s) were: {}.",
+                         commaSeparated,
+                         duplicates.size(),
+                         duplicates );
+        }
+
         // Propagate any exceptions that were caught to avoid drip-feeding
         CsvThresholdReader.throwExceptionIfOneOrMoreFailed( totalFeatures,
                                                             commaSeparated,
                                                             ex );
 
         return returnMe;
+    }
+
+    /**
+     * Adds the thresholds to the store and records duplicates where they occur.
+     * @param thresholdStore the map of thresholds to update
+     * @param nextFeature the next feature name
+     * @param thresholds the thresholds to add
+     * @param duplicates the duplicates to record
+     * @param thresholdPath the path to the thresholds to help with error messaging
+     */
+
+    private static void addThresholds( Map<String, Set<ThresholdOuter>> thresholdStore,
+                                       String nextFeature,
+                                       Set<ThresholdOuter> thresholds,
+                                       Set<String> duplicates,
+                                       Path thresholdPath )
+    {
+        if ( !thresholds.isEmpty() )
+        {
+            // Duplicate?
+            if ( thresholdStore.containsKey( nextFeature ) )
+            {
+                // Threshold names are not allowed in this context
+                Set<String> labels = thresholdStore.get( nextFeature )
+                                                   .stream()
+                                                   .map( ThresholdOuter::getLabel )
+                                                   .filter( next -> !next.isBlank() )
+                                                   .collect( Collectors.toSet() );
+
+                if ( !labels.isEmpty() )
+                {
+                    throw new ThresholdException( "While reading thresholds from "
+                                                  + thresholdPath
+                                                  + ", encountered duplicate thresholds for feature "
+                                                  + nextFeature
+                                                  + " with duplicate threshold labels, namely: "
+                                                  + labels
+                                                  + ". This is not allowed. Please remove the duplicate features by "
+                                                  + "declaring all thresholds once for each feature." );
+                }
+
+                thresholdStore.get( nextFeature )
+                              .addAll( thresholds );
+
+                duplicates.add( nextFeature );
+            }
+            else
+            {
+                thresholdStore.put( nextFeature, thresholds );
+            }
+        }
     }
 
     /**
