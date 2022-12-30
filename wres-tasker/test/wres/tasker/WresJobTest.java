@@ -21,10 +21,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.StringJoiner;
 import jakarta.ws.rs.core.Response;
 
@@ -225,7 +223,7 @@ public class WresJobTest
             approvedCiphersJoiner.add( cipherSuite );
         }
 
-        System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+        System.setProperty( CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST,
                             approvedCiphersJoiner.toString() );
 
         // This class does not test redis integration.
