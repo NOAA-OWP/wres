@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 
@@ -124,7 +124,7 @@ public class CommaSeparatedUtilities
                                 + HEADER_DELIMITER
                                 + "OVER PAST"
                                 + HEADER_DELIMITER
-                                + DataFactory.durationToNumericUnits( timeScaleOuter.getPeriod(),
+                                + DataUtilities.durationToNumericUnits( timeScaleOuter.getPeriod(),
                                                                       timeResolution )
                                 + HEADER_DELIMITER
                                 + timeResolution.toString().toUpperCase();

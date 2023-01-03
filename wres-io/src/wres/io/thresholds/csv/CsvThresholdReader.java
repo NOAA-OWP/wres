@@ -10,10 +10,10 @@ import wres.config.MetricConfigException;
 
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
@@ -120,14 +120,14 @@ public class CsvThresholdReader
         Operator operator = Operator.GREATER;
         if ( Objects.nonNull( threshold.getOperator() ) )
         {
-            operator = DataFactory.getThresholdOperator( threshold );
+            operator = ThresholdsGenerator.getThresholdOperator( threshold );
         }
 
         // Data type: default to left
         ThresholdDataType dataType = ThresholdDataType.LEFT;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( threshold.getApplyTo() );
+            dataType = ThresholdsGenerator.getThresholdDataType( threshold.getApplyTo() );
         }
 
         ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, threshold.getType(), operator );
@@ -379,7 +379,7 @@ public class CsvThresholdReader
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
         if ( Objects.nonNull( dataType.getThresholdType() ) )
         {
-            thresholdType = DataFactory.getThresholdGroup( dataType.getThresholdType() );
+            thresholdType = ThresholdsGenerator.getThresholdGroup( dataType.getThresholdType() );
         }
 
         // Default to probability

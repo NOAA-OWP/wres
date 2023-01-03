@@ -18,11 +18,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 /**
  * Tests the {@link ThresholdOuter}. 
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ThresholdOuterTest
 {
-
     private static final String THRESHOLD_LABEL = "a threshold";
 
     /**
@@ -701,82 +700,7 @@ public final class ThresholdOuterTest
 
         assertEquals( "< Pr = 0.1 (FOO)", quantileNaN.toString() );
     }
-
-    /**
-     * Tests the {@link ThresholdOuter#toStringSafe()}.
-     */
-
-    @Test
-    public void testToStringSafe()
-    {
-        // All components
-        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
-                                                .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
-                                                .setOperator( Operator.BETWEEN )
-                                                .setDataType( ThresholdDataType.LEFT )
-                                                .setLabel( THRESHOLD_LABEL )
-                                                .build();
-
-        assertEquals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold", threshold.toStringSafe() );
-
-    }
-
-    /**
-     * See #79746
-     */
-
-    @Test
-    public void testToStringSafeEliminatesReservedCharactersInUnits()
-    {
-        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
-                                                .setOperator( Operator.GREATER )
-                                                .setDataType( ThresholdDataType.LEFT )
-                                                .setUnits( MeasurementUnit.of( "ft3/s" ) )
-                                                .build();
-
-        assertEquals( "GT_23.0_ft3s", threshold.toStringSafe() );
-    }
-
-    /**
-     * Tests the {@link ThresholdOuter#toStringWithoutUnits()}.
-     */
-
-    @Test
-    public void testToStringWithoutUnits()
-    {
-        // All components
-        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
-                                                .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
-                                                .setOperator( Operator.BETWEEN )
-                                                .setDataType( ThresholdDataType.LEFT )
-                                                .setLabel( THRESHOLD_LABEL )
-                                                .setUnits( MeasurementUnit.of( "CMS" ) )
-                                                .build();
-
-        assertEquals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
-
-        assertEquals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)", threshold.toStringWithoutUnits() );
-    }
-
-    /**
-     * Tests the {@link ThresholdOuter#toStringWithoutUnits()} with a unit string that contains regex characters. 
-     * See #109152. These characters should be interpreted literally, not as a regex.
-     */
-
-    @Test
-    public void testToStringWithoutUnitsForRegexString()
-    {
-        // All components
-        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
-                                                .setOperator( Operator.GREATER )
-                                                .setDataType( ThresholdDataType.LEFT )
-                                                .setLabel( THRESHOLD_LABEL )
-                                                .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
-                                                .build();
-
-        assertEquals( "> 0.5 (a threshold)", threshold.toStringWithoutUnits() );
-    }
-
+    
     /**
      * Tests the {@link ThresholdOuter#test(Double)}.
      */

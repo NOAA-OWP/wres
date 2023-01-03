@@ -29,7 +29,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.VectorOfDoubles;
@@ -251,7 +251,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // Write the output
             String append = CommaSeparatedDiagramWriter.getPathQualifier( output );
-            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+            Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                    meta,
                                                                    timeWindow,
                                                                    durationUnits,
@@ -313,7 +313,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // Write the output
             String append = CommaSeparatedDiagramWriter.getPathQualifier( output );
-            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+            Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                    meta,
                                                                    threshold,
                                                                    metricName,

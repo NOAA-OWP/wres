@@ -219,39 +219,11 @@ public final class OneOrTwoThresholdsTest
     }
 
     /**
-     * Constructs a {@link OneOrTwoThresholds} and tests {@link OneOrTwoThresholds#toStringSafe()} against other 
-     * instances.
-     */
-
-    @Test
-    public void testToStringSafe()
-    {
-        OneOrTwoThresholds testString =
-                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
-                                                                        OneOrTwoDoubles.of( 0.5 ),
-                                                                        Operator.GREATER_EQUAL,
-                                                                        ThresholdDataType.LEFT ) );
-
-        assertTrue( "GTE_27.0_Pr_EQ_0.5".equals( testString.toStringSafe() ) );
-
-        OneOrTwoThresholds secondTestString =
-                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
-                                                                        OneOrTwoDoubles.of( 0.2 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdDataType.LEFT ),
-                                       ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                                           Operator.GREATER,
-                                                                           ThresholdDataType.LEFT ) );
-
-        assertTrue( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1".equals( secondTestString.toStringSafe() ) );
-    }
-
-    /**
      * Constructs a {@link OneOrTwoThresholds} and tests for exceptions.
      */
 
     @Test
-    public void testExceptionOnConstructionWithNulInput()
+    public void testExceptionOnConstructionWithNullInput()
     {
         assertThrows( NullPointerException.class, () -> OneOrTwoThresholds.of( null, null ) );
     }

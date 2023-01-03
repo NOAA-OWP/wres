@@ -28,7 +28,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -207,11 +207,11 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                     String append = CommaSeparatedScoreWriter.getPathQualifier( destinationConfig,
                                                                                 nextOutput );
                     PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
-                    Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                           meta,
-                                                                           append,
-                                                                           m,
-                                                                           null );
+                    Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
+                                                                             meta,
+                                                                             append,
+                                                                             m,
+                                                                             null );
 
                     Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -421,9 +421,8 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
              && !second.isEmpty() )
         {
-            append = second.iterator()
-                           .next()
-                           .toStringSafe();
+            append = DataUtilities.toStringSafe( second.iterator()
+                                                       .next() );
         }
 
         // Non-default averaging types that should be qualified?

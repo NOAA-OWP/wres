@@ -35,7 +35,7 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
@@ -201,7 +201,7 @@ public final class MetricConfigHelperTest
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, wres.datamodel.DataFactory, 
+     * Tests the {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, wres.datamodel.DataUtilities, 
      * java.util.Collection)} by comparing actual results to expected results for a scenario where external thresholds
      * are defined, together with a dimension for value thresholds.
      * @throws MetricConfigException if an unexpected exception is encountered
@@ -300,7 +300,7 @@ public final class MetricConfigHelperTest
     /**
      * Tests a method with private scope in {@link MetricConfigHelper} using thresholds with a 
      * {@link Operator#BETWEEN} condition. TODO: expose this and test via 
-     * {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, DataFactory, java.util.Collection)} once 
+     * {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, DataUtilities, java.util.Collection)} once 
      * the {@link ProjectConfig} supports thresholds with a {@link Operator#BETWEEN} condition.
      * @throws MetricConfigException if an unexpected exception is encountered
      * @throws SecurityException if the reflection fails via a security manager

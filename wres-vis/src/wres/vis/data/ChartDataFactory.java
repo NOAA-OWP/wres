@@ -25,8 +25,7 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.OutputTypeSelection;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.metrics.MetricConstants;
@@ -216,9 +215,8 @@ public class ChartDataFactory
         // Add the data items
         for ( DurationScoreStatisticOuter entry : statistics )
         {
-            String rowKey = entry.getMetadata()
-                                 .getThresholds()
-                                 .toStringWithoutUnits();
+            String rowKey = DataUtilities.toStringWithoutUnits( entry.getMetadata()
+                                                                     .getThresholds() );
 
             for ( MetricConstants metric : entry.getComponents() )
             {
@@ -264,8 +262,8 @@ public class ChartDataFactory
         // Filter by by threshold
         for ( OneOrTwoThresholds nextSeries : thresholds )
         {
-            TimeSeries next =
-                    new TimeSeries( nextSeries.toStringWithoutUnits() );
+            String noUnits = DataUtilities.toStringWithoutUnits( nextSeries );
+            TimeSeries next = new TimeSeries( noUnits );
 
             List<DurationDiagramStatisticOuter> filtered =
                     Slicer.filter( statistics,
@@ -417,6 +415,14 @@ public class ChartDataFactory
                     Slicer.filter( statistics,
                                    next -> next.getMetadata()
                                                .getThresholds()
+                                               .equals( keyInstance ) );
+        }
+        else if ( chartType == ChartType.POOLING_WINDOW )
+        {
+            inputSlice =
+                    Slicer.filter( statistics,
+                                   next -> next.getMetadata()
+                                               .getTimeWindow()
                                                .equals( keyInstance ) );
         }
         else
@@ -588,15 +594,15 @@ public class ChartDataFactory
             // Zero-width interval
             if ( earliest.equals( latest ) )
             {
-                Number duration = DataFactory.durationToNumericUnits( latest, durationUnits );
+                Number duration = DataUtilities.durationToNumericUnits( latest, durationUnits );
                 key = key + duration + ", ";
             }
             else
             {
                 key = key + "("
-                      + DataFactory.durationToNumericUnits( earliest, durationUnits )
+                      + DataUtilities.durationToNumericUnits( earliest, durationUnits )
                       + ","
-                      + DataFactory.durationToNumericUnits( latest, durationUnits )
+                      + DataUtilities.durationToNumericUnits( latest, durationUnits )
                       + "], ";
             }
         }
@@ -619,7 +625,7 @@ public class ChartDataFactory
             }
         }
 
-        return key + thresholds.toStringWithoutUnits();
+        return key + DataUtilities.toStringWithoutUnits( thresholds );
     }
 
     /**

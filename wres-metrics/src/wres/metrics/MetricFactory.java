@@ -9,7 +9,7 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Probability;
@@ -939,7 +939,7 @@ public final class MetricFactory
     /**
      * Hidden constructor.
      * 
-     * @param outputFactory a {@link DataFactory}
+     * @param outputFactory a {@link DataUtilities}
      */
 
     private MetricFactory()

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -246,9 +246,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                              .second() );
         if ( !second.isEmpty() )
         {
-            append = second.iterator()
-                           .next()
-                           .toStringSafe();
+            append = DataUtilities.toStringSafe( second.iterator()
+                                                       .next() );
         }
 
         // Non-default averaging types that should be qualified?
@@ -317,11 +316,11 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             }
 
             // Build the output file name
-            Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                    metadata,
-                                                                    append,
-                                                                    metricName,
-                                                                    componentName );
+            Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
+                                                                      metadata,
+                                                                      append,
+                                                                      metricName,
+                                                                      componentName );
 
             JFreeChart chart = nextEntry.getValue();
 

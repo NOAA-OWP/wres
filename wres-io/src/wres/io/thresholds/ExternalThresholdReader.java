@@ -3,11 +3,12 @@ package wres.io.thresholds;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.*;
-import wres.datamodel.DataFactory;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
@@ -66,7 +67,7 @@ public class ExternalThresholdReader
 
     public void read()
     {
-        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( this.metricsConfig,
+        Set<MetricConstants> metrics = MetricFactory.getMetricsFromConfig( this.metricsConfig,
                                                                                 this.projectConfig );
 
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
@@ -211,7 +212,7 @@ public class ExternalThresholdReader
         final ThresholdConstants.ThresholdGroup thresholdGroup;
         if ( Objects.nonNull( thresholdsConfig.getType() ) )
         {
-            thresholdGroup = DataFactory.getThresholdGroup( thresholdsConfig.getType() );
+            thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
         }
         else
         {
@@ -386,7 +387,7 @@ public class ExternalThresholdReader
         final ThresholdConstants.ThresholdGroup thresholdGroup;
         if ( Objects.nonNull( thresholdsConfig.getType() ) )
         {
-            thresholdGroup = DataFactory.getThresholdGroup( thresholdsConfig.getType() );
+            thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
         }
         else
         {

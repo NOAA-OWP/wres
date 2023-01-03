@@ -14,12 +14,14 @@ import java.util.stream.Collectors;
 import wres.config.MetricConfigException;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdDataType;
+import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
+import wres.datamodel.metrics.MetricFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
@@ -27,7 +29,7 @@ import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 /**
  * Reads thresholds from project declaration.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ThresholdsGenerator
@@ -73,6 +75,76 @@ public class ThresholdsGenerator
     }
 
     /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * 
+     * TODO: make these enumerations match on name to reduce brittleness.
+     * 
+     * @param thresholdsConfig the threshold configuration
+     * @return the mapped operator
+     * @throws MetricConfigException if the operator is not mapped
+     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getOperator()} returns null
+     */
+
+    public static Operator getThresholdOperator( ThresholdsConfig thresholdsConfig )
+    {
+        Objects.requireNonNull( thresholdsConfig );
+        Objects.requireNonNull( thresholdsConfig.getOperator() );
+
+        switch ( thresholdsConfig.getOperator() )
+        {
+            case EQUAL_TO:
+                return Operator.EQUAL;
+            case LESS_THAN:
+                return Operator.LESS;
+            case GREATER_THAN:
+                return Operator.GREATER;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default:
+                throw new MetricConfigException( thresholdsConfig,
+                                                 "Unrecognized threshold operator in project configuration '"
+                                                                   + thresholdsConfig.getOperator()
+                                                                   + "'." );
+        }
+    }
+
+    /**
+     * Returns the {@link ThresholdConstants.ThresholdGroup} that corresponds to the {@link ThresholdType}
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
+     * 
+     * @param thresholdType the threshold type
+     * @return the mapped threshold group
+     * @throws IllegalArgumentException if the threshold group is not mapped
+     * @throws NullPointerException if the input is null
+     */
+
+    public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdType thresholdType )
+    {
+        Objects.requireNonNull( thresholdType );
+
+        return ThresholdConstants.ThresholdGroup.valueOf( thresholdType.name() );
+    }
+
+    /**
+     * Returns the {@link ThresholdConstants.ThresholdDataType} that corresponds to the {@link ThresholdDataType}
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
+     * 
+     * @param thresholdDataType the threshold data type
+     * @return the mapped threshold data type
+     * @throws IllegalArgumentException if the data type is not mapped
+     * @throws NullPointerException if the input is null
+     */
+
+    public static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdDataType thresholdDataType )
+    {
+        Objects.requireNonNull( thresholdDataType );
+
+        return ThresholdConstants.ThresholdDataType.valueOf( thresholdDataType.name() );
+    }
+
+    /**
      * Adds thresholds to the input builder for one metric group.
      * 
      * @param projectConfig the project configuration
@@ -89,7 +161,7 @@ public class ThresholdsGenerator
     {
 
         // Find the metrics
-        Set<MetricConstants> metrics = DataFactory.getMetricsFromMetricsConfig( metricsConfig, projectConfig );
+        Set<MetricConstants> metrics = MetricFactory.getMetricsFromConfig( metricsConfig, projectConfig );
 
         // No explicit thresholds, add an "all data" threshold
         if ( metricsConfig.getThresholds().isEmpty() )
@@ -119,7 +191,7 @@ public class ThresholdsGenerator
             ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
-                thresholdType = DataFactory.getThresholdGroup( nextThresholds.getType() );
+                thresholdType = ThresholdsGenerator.getThresholdGroup( nextThresholds.getType() );
             }
 
             // Adjust the thresholds, adding "all data" where required, then append
@@ -166,7 +238,7 @@ public class ThresholdsGenerator
         Set<ThresholdOuter> returnMe = new HashSet<>();
 
         // All data only
-        if ( ! metric.isAThresholdMetric() )
+        if ( !metric.isAThresholdMetric() )
         {
             return Set.of( ThresholdOuter.ALL_DATA );
         }
@@ -208,7 +280,7 @@ public class ThresholdsGenerator
         // Operator specified
         if ( Objects.nonNull( thresholds.getOperator() ) )
         {
-            operator = DataFactory.getThresholdOperator( thresholds );
+            operator = ThresholdsGenerator.getThresholdOperator( thresholds );
         }
 
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
@@ -216,7 +288,7 @@ public class ThresholdsGenerator
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( thresholds.getApplyTo() );
+            dataType = ThresholdsGenerator.getThresholdDataType( thresholds.getApplyTo() );
         }
 
         // Must be internally sourced: thresholds with global scope should be provided directly 

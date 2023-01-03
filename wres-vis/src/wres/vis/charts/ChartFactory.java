@@ -60,7 +60,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
@@ -116,7 +116,7 @@ public class ChartFactory
     private final Font chartFontTitle;
 
     /**
-     * Expands upon the {@link OutputTypeSelection} for extended use in this and nearby contexts.
+     * Expands upon the {@link OutputTypeSelection} for non-declared output types.
      */
 
     public enum ChartType
@@ -130,19 +130,24 @@ public class ChartFactory
 
         private final OutputTypeSelection basis;
 
-        private ChartType( OutputTypeSelection v )
-        {
-            basis = v;
-        }
-
         /**
          * @return The {@link OutputTypeSelection} corresponding to this. If null, then there is no specific matching 
          * {@link OutputTypeSelection}.
          */
-        private OutputTypeSelection getOutputTypeSelection()
+        public OutputTypeSelection getOutputTypeSelection()
         {
             return basis;
         }
+
+        /**
+         * Hidden constructor.
+         * @param basis the output type selection
+         */
+        private ChartType( OutputTypeSelection basis )
+        {
+            this.basis = basis;
+        }
+
     }
 
     /**
@@ -303,11 +308,14 @@ public class ChartFactory
                       rangeDimension,
                       hasDiagonal );
 
-        // Determine the key for each chart, lead duration by default
+        // Determine the key for each chart, time window by default
         Set<Object> keySetValues =
-                Slicer.discover( statistics, next -> next.getMetadata().getTimeWindow() );
-        boolean leadThreshold = chartType.getOutputTypeSelection() == OutputTypeSelection.LEAD_THRESHOLD;
-        if ( !leadThreshold )
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata()
+                                             .getTimeWindow() );
+
+        // Slice by threshold if not time
+        if ( chartType != ChartType.LEAD_THRESHOLD && chartType != ChartType.POOLING_WINDOW )
         {
             keySetValues = Slicer.discover( statistics,
                                             next -> next.getMetadata()
@@ -317,7 +325,6 @@ public class ChartFactory
         String rangeTitle = rangeDimension + " [" + range.getUnits() + "]";
         String domainTitle = domainDimension + " [" + domain.getUnits() + "]";
         String legendTitle = this.getLegendName( metricName, metadata, chartType, graphicShape, durationUnits );
-
 
         // One chart per key instance
         for ( Object keyInstance : keySetValues )
@@ -345,7 +352,7 @@ public class ChartFactory
             XYDataset dataset = null;
 
             // One lead duration and up to many thresholds
-            if ( leadThreshold )
+            if ( chartType == ChartType.LEAD_THRESHOLD || chartType == ChartType.POOLING_WINDOW )
             {
                 dataset = ChartDataFactory.ofVerificationDiagramByLeadThreshold( slicedStatistics,
                                                                                  domainDimension,
@@ -369,7 +376,11 @@ public class ChartFactory
                 // Do NOT set the chart theme for the combined plot because it returns the series renderer to default. 
                 // This is probably a bug in JFreeChart, since the behavior is not seen for other chart types. Instead, 
                 // set the chart theme components manually for the reliability diagram
-                chart = this.getReliabilityDiagram( title, slicedStatistics, durationUnits, leadThreshold );
+                chart = this.getReliabilityDiagram( title,
+                                                    slicedStatistics,
+                                                    durationUnits,
+                                                    chartType == ChartType.LEAD_THRESHOLD
+                                                                   || chartType == ChartType.POOLING_WINDOW );
             }
             else
             {
@@ -1553,7 +1564,7 @@ public class ChartFactory
 
                 if ( timeScaleOuter.hasPeriod() )
                 {
-                    Number periodNumber = DataFactory.durationToNumericUnits( metadata.getTimeScale()
+                    Number periodNumber = DataUtilities.durationToNumericUnits( metadata.getTimeScale()
                                                                                       .getPeriod(),
                                                                               durationUnits );
                     String period = periodNumber
@@ -1701,8 +1712,9 @@ public class ChartFactory
     {
         Objects.requireNonNull( metadata );
 
-        // No time window for pooling window plots as all elements of the time window are described in other items
-        if ( chartType == ChartType.POOLING_WINDOW )
+        // No time window for pooling window plots unless they are diagrams and hence one diagram per time window
+        if ( chartType == ChartType.POOLING_WINDOW
+             && ( statisticType == StatisticType.DOUBLE_SCORE || statisticType == StatisticType.DURATION_SCORE ) )
         {
             return "";
         }
@@ -1750,7 +1762,7 @@ public class ChartFactory
 
             String middle = "";
 
-            Number earliestNumber = DataFactory.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
+            Number earliestNumber = DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
                                                                         durationUnits );
 
             if ( timeWindow.getEarliestLeadDuration()
@@ -1760,7 +1772,7 @@ public class ChartFactory
             }
             else
             {
-                Number latestNumber = DataFactory.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                Number latestNumber = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
                                                                           durationUnits );
 
                 middle = "lead durations in ["

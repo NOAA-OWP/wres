@@ -13,7 +13,7 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -66,13 +66,13 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
     @Override
     public Number getX( int series, int item )
     {
-        return DataFactory.durationToNumericUnits( this.statistics.get( series )
-                                                                  .getRight()
-                                                                  .get( item )
-                                                                  .getMetadata()
-                                                                  .getTimeWindow()
-                                                                  .getLatestLeadDuration(),
-                                                   this.durationUnits );
+        return DataUtilities.durationToNumericUnits( this.statistics.get( series )
+                                                                    .getRight()
+                                                                    .get( item )
+                                                                    .getMetadata()
+                                                                    .getTimeWindow()
+                                                                    .getLatestLeadDuration(),
+                                                     this.durationUnits );
     }
 
     @Override
@@ -131,7 +131,7 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
                                                                                 .equals( key ) );
 
 
-            String name = key.toStringWithoutUnits();
+            String name = DataUtilities.toStringWithoutUnits( key );
             Pair<String, List<DoubleScoreComponentOuter>> pair = Pair.of( name, sliced );
             innerStatistics.add( pair );
         }

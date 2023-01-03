@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
@@ -226,7 +226,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 // Build the outputs
                 for ( Map.Entry<TimeWindowOuter, JFreeChart> nextEntry : charts.entrySet() )
                 {
-                    Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
+                    Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                             metadata,
                                                                             nextEntry.getKey(),
                                                                             helper.getDurationUnits(),
@@ -293,7 +293,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
                 String append = BoxplotGraphicsWriter.getPathQualifier( statistics );
 
-                Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
+                Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                         metadata,
                                                                         append,
                                                                         metricName,
