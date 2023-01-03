@@ -3,7 +3,6 @@ package wres.datamodel;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -12,86 +11,33 @@ import java.time.Instant;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.config.MetricConfigException;
-import wres.config.ProjectConfigs;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.MeasurementUnit;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Tests the {@link DataFactory}.
+ * Tests the {@link DataUtilities}.
  * 
  * TODO: refactor the tests of containers (as opposed to factory methods) into their own test classes.
  * 
  * @author James Brown
  * @author jesse
  */
-public final class DataFactoryTest
+public final class DataUtilitiesTest
 {
-
-    /**
-     * Expected exception on null input.
-     */
-
-    private static final String EXPECTED_EXCEPTION_ON_NULL =
-            "Specify input configuration with a non-null identifier to map.";
-
-    /**
-     * Second time for testing.
-     */
-
-    private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
-
-    /**
-     * First time for testing.
-     */
-
+    /** First time for testing. */
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    public static final double THRESHOLD = 0.00001;
+    /** Second time for testing. */
+    private static final String SECOND_TIME = "1986-01-01T00:00:00Z";
 
-    @Test
-    public void vectorOfDoublesTest()
-    {
-        final double[] arrOne = { 1.0, 2.0 };
-        final VectorOfDoubles doubleVecOne = VectorOfDoubles.of( arrOne );
-        assertNotNull( doubleVecOne );
-        assertEquals( 1.0, doubleVecOne.getDoubles()[0], THRESHOLD );
-        assertEquals( 2.0, doubleVecOne.getDoubles()[1], THRESHOLD );
-    }
-
-    @Test
-    public void vectorOfDoublesMutationTest()
-    {
-        final double[] arrOne = { 1.0, 2.0 };
-        final VectorOfDoubles doubleVecOne = VectorOfDoubles.of( arrOne );
-        arrOne[0] = 3.0;
-        arrOne[1] = 4.0;
-        assertNotNull( doubleVecOne );
-        assertEquals( 1.0, doubleVecOne.getDoubles()[0], THRESHOLD );
-        assertEquals( 2.0, doubleVecOne.getDoubles()[1], THRESHOLD );
-    }
-
-    @Test
-    public void pairOfVectorsTest()
-    {
-        final double[] arrOne = { 1.0, 2.0, 3.0 };
-        final double[] arrTwo = { 4.0, 5.0 };
-        final Pair<VectorOfDoubles, VectorOfDoubles> pair = DataFactory.pairOf( arrOne, arrTwo );
-        assertNotNull( pair );
-        assertEquals( 1.0, pair.getLeft().getDoubles()[0], THRESHOLD );
-        assertEquals( 2.0, pair.getLeft().getDoubles()[1], THRESHOLD );
-        assertEquals( 3.0, pair.getLeft().getDoubles()[2], THRESHOLD );
-        assertEquals( 4.0, pair.getRight().getDoubles()[0], THRESHOLD );
-        assertEquals( 5.0, pair.getRight().getDoubles()[1], THRESHOLD );
-    }
+    /** Threshold label. */
+    private static final String THRESHOLD_LABEL = "a threshold";
 
     /**
      * Tests for the correct implementation of {@link Comparable} by the {@link Pair}.
@@ -244,172 +190,106 @@ public final class DataFactoryTest
     }
 
     /**
-     * Tests the {@link ProjectConfigs#getThresholdOperator(ThresholdsConfig)}.
-     * @throws MetricConfigException if a mapping could not be created
+     * Constructs a {@link OneOrTwoThresholds} and tests {@link OneOrTwoThresholds#toStringSafe()} against other 
+     * instances.
      */
 
     @Test
-    public void testGetThresholdOperator()
+    public void testToStringSafeOneOrTwoThresholds()
     {
-        ThresholdsConfig first = new ThresholdsConfig( null,
-                                                       null,
-                                                       null,
-                                                       ThresholdOperator.GREATER_THAN );
-        assertTrue( DataFactory.getThresholdOperator( first ) == Operator.GREATER );
+        OneOrTwoThresholds testString =
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
+                                                                           OneOrTwoDoubles.of( 0.5 ),
+                                                                           Operator.GREATER_EQUAL,
+                                                                           ThresholdDataType.LEFT ) );
 
-        ThresholdsConfig second = new ThresholdsConfig( null,
-                                                        null,
-                                                        null,
-                                                        ThresholdOperator.LESS_THAN );
-        assertTrue( DataFactory.getThresholdOperator( second ) == Operator.LESS );
+        assertTrue( "GTE_27.0_Pr_EQ_0.5".equals( DataUtilities.toStringSafe( testString ) ) );
 
-        ThresholdsConfig third = new ThresholdsConfig( null,
-                                                       null,
-                                                       null,
-                                                       ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
-        assertTrue( DataFactory.getThresholdOperator( third ) == Operator.GREATER_EQUAL );
+        OneOrTwoThresholds secondTestString =
+                OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
+                                                                           OneOrTwoDoubles.of( 0.2 ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ),
+                                       ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) );
 
-        ThresholdsConfig fourth = new ThresholdsConfig( null,
-                                                        null,
-                                                        null,
-                                                        ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
-        assertTrue( DataFactory.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
-
-        //Test exception cases
-        assertThrows( NullPointerException.class, () -> DataFactory.getThresholdOperator( (ThresholdsConfig) null ) );
-        assertThrows( NullPointerException.class,
-                      () -> DataFactory.getThresholdOperator( new ThresholdsConfig( null,
-                                                                                    null,
-                                                                                    null,
-                                                                                    null ) ) );
+        assertTrue( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1".equals( DataUtilities.toStringSafe( secondTestString ) ) );
     }
 
     /**
-     * Tests the {@link DataFactory#getMetricName(wres.config.generated.MetricConfigName)}.
+     * Tests the {@link ThresholdOuter#toStringSafe()}.
      */
 
     @Test
-    public void testGetMetricName()
+    public void testToStringSafeThresholdOuter()
     {
-        // The MetricConfigName.ALL_VALID returns null        
-        assertNull( DataFactory.getMetricName( MetricConfigName.ALL_VALID ) );
+        // All components
+        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
+                                                .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
+                                                .setOperator( Operator.BETWEEN )
+                                                .setDataType( ThresholdDataType.LEFT )
+                                                .setLabel( THRESHOLD_LABEL )
+                                                .build();
 
-        // Check that a mapping exists in MetricConstants for all entries in the MetricConfigName
-        for ( MetricConfigName next : MetricConfigName.values() )
-        {
-            if ( next != MetricConfigName.ALL_VALID )
-            {
-                assertNotNull( DataFactory.getMetricName( next ) );
-            }
-        }
+        assertEquals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold", DataUtilities.toStringSafe( threshold ) );
+
     }
 
     /**
-     * Tests the {@link DataFactory#getMetricName(wres.config.generated.MetricConfigName)} throws an 
-     * expected exception when the input is null.
+     * See #79746
      */
 
     @Test
-    public void testGetMetricNameThrowsNPEWhenInputIsNull()
+    public void testToStringSafeEliminatesReservedCharactersInUnits()
     {
-        NullPointerException actual =
-                assertThrows( NullPointerException.class, () -> DataFactory.getMetricName( (MetricConfigName) null ) );
+        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
+                                                .setOperator( Operator.GREATER )
+                                                .setDataType( ThresholdDataType.LEFT )
+                                                .setUnits( MeasurementUnit.of( "ft3/s" ) )
+                                                .build();
 
-        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
+        assertEquals( "GT_23.0_ft3s", DataUtilities.toStringSafe( threshold ) );
     }
 
     /**
-     * Tests the {@link DataFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)}.
+     * Tests the {@link ThresholdOuter#toStringWithoutUnits()}.
      */
 
     @Test
-    public void testGetTimeSeriesMetricName()
+    public void testToStringWithoutUnits()
     {
-        // The TimeSeriesMetricConfigName.ALL_VALID returns null        
-        assertNull( DataFactory.getMetricName( TimeSeriesMetricConfigName.ALL_VALID ) );
+        // All components
+        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
+                                                .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
+                                                .setOperator( Operator.BETWEEN )
+                                                .setDataType( ThresholdDataType.LEFT )
+                                                .setLabel( THRESHOLD_LABEL )
+                                                .setUnits( MeasurementUnit.of( "CMS" ) )
+                                                .build();
 
-        // Check that a mapping exists in MetricConstants for all entries in the TimeSeriesMetricConfigName
-        for ( TimeSeriesMetricConfigName next : TimeSeriesMetricConfigName.values() )
-        {
-            if ( next != TimeSeriesMetricConfigName.ALL_VALID )
-            {
-                assertNotNull( DataFactory.getMetricName( next ) );
-            }
-        }
+        assertEquals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)", threshold.toString() );
+
+        assertEquals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)",
+                      DataUtilities.toStringWithoutUnits( threshold ) );
     }
 
     /**
-     * Tests the {@link DataFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)} throws an 
-     * expected exception when the input is null.
+     * Tests the {@link ThresholdOuter#toStringWithoutUnits()} with a unit string that contains regex characters. 
+     * See #109152. These characters should be interpreted literally, not as a regex.
      */
 
     @Test
-    public void testGetTimeSeriesMetricNameThrowsNPEWhenInputIsNull()
+    public void testToStringWithoutUnitsForRegexString()
     {
-        NullPointerException actual =
-                assertThrows( NullPointerException.class,
-                              () -> DataFactory.getMetricName( (TimeSeriesMetricConfigName) null ) );
+        // All components
+        ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
+                                                .setOperator( Operator.GREATER )
+                                                .setDataType( ThresholdDataType.LEFT )
+                                                .setLabel( THRESHOLD_LABEL )
+                                                .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
+                                                .build();
 
-        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
+        assertEquals( "> 0.5 (a threshold)", DataUtilities.toStringWithoutUnits( threshold ) );
     }
-
-    /**
-     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)}.
-     */
-
-    @Test
-    public void testGetThresholdDataType()
-    {
-        // Check that a mapping exists in the data model ThresholdDataType for all entries in the 
-        // config ThresholdDataType
-        for ( wres.config.generated.ThresholdDataType next : wres.config.generated.ThresholdDataType.values() )
-        {
-            assertNotNull( DataFactory.getThresholdDataType( next ) );
-        }
-    }
-
-    /**
-     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
-     * expected exception when the input is null.
-     */
-
-    @Test
-    public void testGetThresholdDataTypeThrowsNPEWhenInputIsNull()
-    {
-        NullPointerException actual =
-                assertThrows( NullPointerException.class,
-                              () -> DataFactory.getThresholdDataType( null ) );
-
-        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
-    }
-
-    /**
-     * Tests the {@link DataFactory#getThresholdGroup(wres.config.generated.ThresholdType)}.
-     */
-
-    @Test
-    public void testGetThresholdGroup()
-    {
-        // Check that a mapping exists in ThresholdGroup for all entries in the ThresholdType
-        for ( ThresholdType next : ThresholdType.values() )
-        {
-            assertNotNull( DataFactory.getThresholdGroup( next ) );
-        }
-    }
-
-    /**
-     * Tests the {@link DataFactory#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
-     * expected exception when the input is null.
-     */
-
-    @Test
-    public void testGetThresholdGroupThrowsNPEWhenInputIsNull()
-    {
-        NullPointerException actual =
-                assertThrows( NullPointerException.class,
-                              () -> DataFactory.getThresholdGroup( null ) );
-
-        assertEquals( EXPECTED_EXCEPTION_ON_NULL, actual.getMessage() );
-    }
-
 }

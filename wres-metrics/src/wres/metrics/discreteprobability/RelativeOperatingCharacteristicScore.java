@@ -7,8 +7,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.Probability;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricGroup;
@@ -168,7 +168,7 @@ public class RelativeOperatingCharacteristicScore
         return this.getMetricName()
                    .toString();
     }
-    
+
     /**
      * Returns the AUC using the procedure outlined in Mason and graham (2002).
      * 
@@ -183,10 +183,10 @@ public class RelativeOperatingCharacteristicScore
         Map<Boolean, List<Pair<Probability, Probability>>> mapped =
                 pairs.get()
                      .stream()
-                     .collect( Collectors.groupingBy( a -> DataFactory.doubleEquals( a.getLeft()
-                                                                                      .getProbability(),
-                                                                                     1.0,
-                                                                                     7 ) ) );
+                     .collect( Collectors.groupingBy( a -> Precision.equals( a.getLeft()
+                                                                              .getProbability(),
+                                                                             1.0,
+                                                                             Precision.EPSILON ) ) );
         if ( mapped.size() != 2 )
         {
             return Double.NaN; //Undefined

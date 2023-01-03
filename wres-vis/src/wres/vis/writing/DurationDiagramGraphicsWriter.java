@@ -16,7 +16,7 @@ import org.jfree.chart.JFreeChart;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -131,7 +131,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                                                                     helper.getDurationUnits() );
 
                 // Build the output file name
-                Path outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
+                Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                         metadata,
                                                                         metricName,
                                                                         null );

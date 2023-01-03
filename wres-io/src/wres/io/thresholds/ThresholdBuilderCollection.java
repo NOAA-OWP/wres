@@ -2,8 +2,8 @@ package wres.io.thresholds;
 
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricFactory;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
@@ -94,7 +94,7 @@ public class ThresholdBuilderCollection {
 
     public void addAllDataThresholds( final ProjectConfig projectConfig, final MetricsConfig config )
     {
-        for ( MetricConstants metricName : DataFactory.getMetricsFromMetricsConfig( config, projectConfig ) )
+        for ( MetricConstants metricName : MetricFactory.getMetricsFromConfig( config, projectConfig ) )
         {
             if ( ! ( metricName.isInGroup( MetricConstants.SampleDataGroup.DICHOTOMOUS )
                      || metricName.isInGroup( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY ) ) )

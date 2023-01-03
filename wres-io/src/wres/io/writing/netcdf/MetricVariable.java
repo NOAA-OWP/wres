@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.EnsembleAverageType;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
@@ -204,12 +204,12 @@ class MetricVariable
 
         if ( !localWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            leadLow = DataFactory.durationToNumericUnits( localWindow.getEarliestLeadDuration(),
+            leadLow = DataUtilities.durationToNumericUnits( localWindow.getEarliestLeadDuration(),
                                                           this.getDurationUnits() );
         }
         if ( !localWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            leadHigh = DataFactory.durationToNumericUnits( localWindow.getLatestLeadDuration(),
+            leadHigh = DataUtilities.durationToNumericUnits( localWindow.getLatestLeadDuration(),
                                                            this.getDurationUnits() );
         }
 
@@ -252,7 +252,7 @@ class MetricVariable
             if ( timeScale.hasPeriod() )
             {
                 // Use the default duration units
-                return DataFactory.durationToNumericUnits( timeScale.getPeriod(),
+                return DataUtilities.durationToNumericUnits( timeScale.getPeriod(),
                                                            this.getDurationUnits() )
                                   .toString();
             }

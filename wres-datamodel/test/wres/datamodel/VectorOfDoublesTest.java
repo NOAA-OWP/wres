@@ -2,12 +2,16 @@ package wres.datamodel;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class VectorOfDoublesTest
 {
+    public static final double DELTA = 0.00001;
+
     @Test
     public void itemOneDifferent()
     {
@@ -64,5 +68,28 @@ public class VectorOfDoublesTest
         VectorOfDoubles vec = VectorOfDoubles.of( doubles );
         Boolean thisIsABoolean = true;
         assertNotEquals( thisIsABoolean, vec );
+    }
+
+
+    @Test
+    public void vectorOfDoublesTest()
+    {
+        final double[] arrOne = { 1.0, 2.0 };
+        final VectorOfDoubles doubleVecOne = VectorOfDoubles.of( arrOne );
+        assertNotNull( doubleVecOne );
+        assertEquals( 1.0, doubleVecOne.getDoubles()[0], DELTA );
+        assertEquals( 2.0, doubleVecOne.getDoubles()[1], DELTA );
+    }
+
+    @Test
+    public void vectorOfDoublesMutationTest()
+    {
+        final double[] arrOne = { 1.0, 2.0 };
+        final VectorOfDoubles doubleVecOne = VectorOfDoubles.of( arrOne );
+        arrOne[0] = 3.0;
+        arrOne[1] = 4.0;
+        assertNotNull( doubleVecOne );
+        assertEquals( 1.0, doubleVecOne.getDoubles()[0], DELTA );
+        assertEquals( 2.0, doubleVecOne.getDoubles()[1], DELTA );
     }
 }

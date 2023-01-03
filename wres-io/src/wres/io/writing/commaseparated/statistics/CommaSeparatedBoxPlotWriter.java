@@ -26,7 +26,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
@@ -240,7 +240,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             // Write the output
             String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
             Path outputPath =
-                    DataFactory.getPathFromPoolMetadata( outputDirectory,
+                    DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                          meta,
                                                          nextWindow,
                                                          durationUnits,
@@ -292,7 +292,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
                                            CommaSeparatedBoxPlotWriter.getBoxPlotHeader( output, headerRow ) ) );
             // Write the output
             String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
-            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+            Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                    meta,
                                                                    append,
                                                                    metricName,

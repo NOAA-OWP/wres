@@ -2,6 +2,9 @@ package wres.datamodel.thresholds;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -328,6 +331,95 @@ public final class ThresholdsGeneratorTest
         expected.put( MetricConstants.BIAS_FRACTION, atomicExpected );
 
         assertEquals( expected, actual );
+    }
 
+    @Test
+    public void testGetThresholdOperator()
+    {
+        ThresholdsConfig first = new ThresholdsConfig( null,
+                                                       null,
+                                                       null,
+                                                       ThresholdOperator.GREATER_THAN );
+        assertTrue( ThresholdsGenerator.getThresholdOperator( first ) == Operator.GREATER );
+
+        ThresholdsConfig second = new ThresholdsConfig( null,
+                                                        null,
+                                                        null,
+                                                        ThresholdOperator.LESS_THAN );
+        assertTrue( ThresholdsGenerator.getThresholdOperator( second ) == Operator.LESS );
+
+        ThresholdsConfig third = new ThresholdsConfig( null,
+                                                       null,
+                                                       null,
+                                                       ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
+        assertTrue( ThresholdsGenerator.getThresholdOperator( third ) == Operator.GREATER_EQUAL );
+
+        ThresholdsConfig fourth = new ThresholdsConfig( null,
+                                                        null,
+                                                        null,
+                                                        ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
+        assertTrue( ThresholdsGenerator.getThresholdOperator( fourth ) == Operator.LESS_EQUAL );
+
+        //Test exception cases
+        assertThrows( NullPointerException.class,
+                      () -> ThresholdsGenerator.getThresholdOperator( (ThresholdsConfig) null ) );
+        assertThrows( NullPointerException.class,
+                      () -> ThresholdsGenerator.getThresholdOperator( new ThresholdsConfig( null,
+                                                                                            null,
+                                                                                            null,
+                                                                                            null ) ) );
+    }
+
+    /**
+     * Tests the {@link ThresholdsGenerator#getThresholdDataType(wres.config.generated.ThresholdDataType)}.
+     */
+
+    @Test
+    public void testGetThresholdDataType()
+    {
+        // Check that a mapping exists in the data model ThresholdDataType for all entries in the 
+        // config ThresholdDataType
+        for ( wres.config.generated.ThresholdDataType next : wres.config.generated.ThresholdDataType.values() )
+        {
+            assertNotNull( ThresholdsGenerator.getThresholdDataType( next ) );
+        }
+    }
+
+    /**
+     * Tests the {@link ThresholdsGenerator#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetThresholdDataTypeThrowsNPEWhenInputIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> ThresholdsGenerator.getThresholdDataType( null ) );
+    }
+
+    /**
+     * Tests the {@link ThresholdsGenerator#getThresholdGroup(wres.config.generated.ThresholdType)}.
+     */
+
+    @Test
+    public void testGetThresholdGroup()
+    {
+        // Check that a mapping exists in ThresholdGroup for all entries in the ThresholdType
+        for ( ThresholdType next : ThresholdType.values() )
+        {
+            assertNotNull( ThresholdsGenerator.getThresholdGroup( next ) );
+        }
+    }
+
+    /**
+     * Tests the {@link ThresholdsGenerator#getThresholdDataType(wres.config.generated.ThresholdDataType)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    public void testGetThresholdGroupThrowsNPEWhenInputIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> ThresholdsGenerator.getThresholdGroup( null ) );
     }
 }

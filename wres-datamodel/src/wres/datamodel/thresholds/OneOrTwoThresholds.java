@@ -85,39 +85,6 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
         return Objects.nonNull( second );
     }
 
-    /**
-     * Returns a string representation of the {@link OneOrTwoThresholds} that contains only alphanumeric characters A-Z, a-z, 
-     * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
-     * a decimal separator.
-     * 
-     * @return a safe string representation
-     */
-
-    public String toStringSafe()
-    {
-        if ( hasTwo() )
-        {
-            return first.toStringSafe() + "_AND_" + second.toStringSafe();
-        }
-        return first.toStringSafe();
-    }
-
-    /**
-     * Returns a string representation of the {@link OneOrTwoThresholds} without any units. This is useful when forming string
-     * representions of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
-     * 
-     * @return a string without any units
-     */
-
-    public String toStringWithoutUnits()
-    {
-        if ( hasTwo() )
-        {
-            return this.first.toStringWithoutUnits() + " AND " + this.second.toStringWithoutUnits();
-        }
-        return this.first.toStringWithoutUnits();
-    }
-
     @Override
     public String toString()
     {

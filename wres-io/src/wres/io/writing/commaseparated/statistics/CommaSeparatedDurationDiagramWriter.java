@@ -28,7 +28,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -173,7 +173,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
             MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
-            Path outputPath = DataFactory.getPathFromPoolMetadata( outputDirectory,
+            Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      metricName,
                                                                      null );

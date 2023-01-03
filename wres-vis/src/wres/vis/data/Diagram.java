@@ -13,7 +13,7 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.MetricDimension;
@@ -235,18 +235,17 @@ class Diagram extends AbstractXYDataset
             }
             else
             {
-                label = diagram.getMetadata()
-                               .getThresholds()
-                               .toStringWithoutUnits();
+                label = DataUtilities.toStringWithoutUnits( diagram.getMetadata()
+                                                                   .getThresholds() );
             }
         }
         // One threshold and one or more lead durations: label by lead duration
         else
         {
-            Number numericDuration = DataFactory.durationToNumericUnits( diagram.getMetadata()
-                                                                                .getTimeWindow()
-                                                                                .getLatestLeadDuration(),
-                                                                         durationUnits );
+            Number numericDuration = DataUtilities.durationToNumericUnits( diagram.getMetadata()
+                                                                                  .getTimeWindow()
+                                                                                  .getLatestLeadDuration(),
+                                                                           durationUnits );
             label = numericDuration.toString();
         }
 

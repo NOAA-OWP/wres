@@ -2,6 +2,7 @@ package wres.vis.writing;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,7 +20,7 @@ import org.jfree.chart.JFreeChart;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -147,33 +148,13 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 for ( Entry<Object, JFreeChart> nextEntry : engines.entrySet() )
                 {
                     // Build the output file name
-                    Path outputImage = null;
                     Object appendObject = nextEntry.getKey();
-                    String appendString = DiagramGraphicsWriter.getPathQualifier( statistics );
-                    if ( appendObject instanceof TimeWindowOuter )
-                    {
-                        outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                           metadata,
-                                                                           (TimeWindowOuter) appendObject,
-                                                                           helper.getDurationUnits(),
-                                                                           metricName,
-                                                                           null,
-                                                                           appendString );
-                    }
-                    else if ( appendObject instanceof OneOrTwoThresholds )
-                    {
-                        outputImage = DataFactory.getPathFromPoolMetadata( outputDirectory,
-                                                                           metadata,
-                                                                           (OneOrTwoThresholds) appendObject,
-                                                                           metricName,
-                                                                           null,
-                                                                           appendString  );
-                    }
-                    else
-                    {
-                        throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
-                                                                 + "outputImage path" );
-                    }
+                    String appendString = DiagramGraphicsWriter.getPathQualifier( appendObject, statistics, helper );
+                    Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
+                                                                              metadata,
+                                                                              appendString,
+                                                                              metricName,
+                                                                              null );
 
                     JFreeChart chart = nextEntry.getValue();
 
@@ -219,17 +200,42 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         }
 
         return Collections.unmodifiableList( sliced );
-    }    
-    
+    }
+
     /**
      * Generates a path qualifier for the graphic based on the statistics provided.
+     * @param appendObject the object to use in the path qualifier
      * @param statistics the statistics
+     * @param helper the graphics helper
      * @return a path qualifier or null if non is required
      */
 
-    private static String getPathQualifier( List<DiagramStatisticOuter> statistics )
+    private static String getPathQualifier( Object appendObject,
+                                            List<DiagramStatisticOuter> statistics,
+                                            GraphicsHelper helper )
     {
         String append = null;
+
+        if ( appendObject instanceof TimeWindowOuter )
+        {
+            TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
+
+            ChronoUnit leadUnits = helper.getDurationUnits();
+            append = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                           leadUnits )
+                     + "_"
+                     + leadUnits.name().toUpperCase();
+        }
+        else if ( appendObject instanceof OneOrTwoThresholds )
+        {
+            OneOrTwoThresholds threshold = (OneOrTwoThresholds) appendObject;
+            append = DataUtilities.toStringSafe( threshold );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
+                                                     + "outputImage path" );
+        }
 
         // Non-default averaging types that should be qualified?
         // #51670
@@ -250,8 +256,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         }
 
         return append;
-    }    
-    
+    }
+
     /**
      * Hidden constructor.
      *

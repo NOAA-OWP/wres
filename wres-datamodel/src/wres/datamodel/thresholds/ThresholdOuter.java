@@ -477,57 +477,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         return ThresholdOuter.ALL_DATA == this || ThresholdOuter.ALL_DATA.equals( this );
     }
 
-    /**
-     * Returns a string representation of the {@link ThresholdOuter} that contains only alphanumeric characters A-Z, a-z, 
-     * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
-     * a decimal separator.
-     * 
-     * @return a safe string representation
-     */
-
-    public String toStringSafe()
-    {
-        String safe = toString();
-
-        // Replace spaces and special characters: note the order of application matters
-        safe = safe.replace( ">=", "GTE" );
-        safe = safe.replace( "<=", "LTE" );
-        safe = safe.replace( ">", "GT" );
-        safe = safe.replace( "<", "LT" );
-        safe = safe.replace( "=", "EQ" );
-        safe = safe.replace( "Pr ", "Pr_" );
-        safe = safe.replace( " ", "_" );
-        safe = safe.replace( "[", "" );
-        safe = safe.replace( "]", "" );
-        safe = safe.replace( "(", "" );
-        safe = safe.replace( ")", "" );
-
-        // Any others, replace with empty
-        safe = safe.replaceAll( "[^a-zA-Z0-9_.]", "" );
-
-        return safe;
-    }
-
-    /**
-     * Returns a string representation of the {@link ThresholdOuter} without any units. This is useful when forming string
-     * representations of a collection of {@link ThresholdOuter} and abstracting the common units to a higher level.
-     * 
-     * @return a string without any units
-     */
-
-    public String toStringWithoutUnits()
-    {
-        if ( this.hasUnits() )
-        {
-            return this.toString()
-                       .replace( " " + this.getUnits()
-                                           .toString(),
-                                 "" );
-        }
-
-        return this.toString();
-    }
-
     @Override
     public boolean equals( final Object o )
     {

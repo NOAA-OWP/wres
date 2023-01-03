@@ -12,9 +12,9 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SummaryStatisticsName;
-import wres.datamodel.DataFactory;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.datamodel.metrics.MetricFactory;
 
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
@@ -184,7 +184,7 @@ public final class MetricConfigHelper
         // Iterate through the ordinary metrics and populate the map
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
-            returnMe.addAll( DataFactory.getOrdinaryMetricsFromConfig( metrics, projectConfig ) );
+            returnMe.addAll( MetricFactory.getOrdinaryMetricsFromConfig( metrics, projectConfig ) );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -210,7 +210,7 @@ public final class MetricConfigHelper
         // Iterate through the metric groups
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
-            returnMe.addAll( DataFactory.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
+            returnMe.addAll( MetricFactory.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
         }
 
         return Collections.unmodifiableSet( returnMe );

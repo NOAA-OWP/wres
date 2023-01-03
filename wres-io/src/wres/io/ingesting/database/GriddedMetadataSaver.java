@@ -22,7 +22,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.concurrency.Downloader;
@@ -139,7 +139,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
             SourceDetails griddedSource = new SourceDetails();
             griddedSource.setSourcePath( this.fileName );
 
-            Number leadNumeric = DataFactory.durationToNumericUnits( lead, TimeSeriesSlicer.LEAD_RESOLUTION );
+            Number leadNumeric = DataUtilities.durationToNumericUnits( lead, TimeSeriesSlicer.LEAD_RESOLUTION );
             griddedSource.setLead( leadNumeric.intValue() );
             griddedSource.setHash( this.hash );
             griddedSource.setIsPointData( false );

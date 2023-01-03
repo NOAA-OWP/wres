@@ -2,11 +2,12 @@ package wres.io.thresholds;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.*;
-import wres.datamodel.DataFactory;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants;
 
 import java.util.*;
@@ -35,7 +36,7 @@ public class InBandThresholdReader {
         {
             this.readThresholds(
                                  thresholdsConfig,
-                                 DataFactory.getMetricsFromMetricsConfig( this.metricsConfig, this.projectConfig ) );
+                                 MetricFactory.getMetricsFromConfig( this.metricsConfig, this.projectConfig ) );
         }
     }
 
@@ -119,7 +120,7 @@ public class InBandThresholdReader {
             ThresholdConstants.ThresholdGroup thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( thresholdsConfig.getType() ) )
             {
-                thresholdGroup = DataFactory.getThresholdGroup( thresholdsConfig.getType() );
+                thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
             }
 
             Set<ThresholdOuter> adjustedThresholds = InBandThresholdReader.includeAllDataThreshold(metric, thresholds, thresholdGroup);
@@ -149,7 +150,7 @@ public class InBandThresholdReader {
         // Operator specified
         if ( Objects.nonNull( thresholds.getOperator() ) )
         {
-            operator = DataFactory.getThresholdOperator( thresholds );
+            operator = ThresholdsGenerator.getThresholdOperator( thresholds );
         }
 
         ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
@@ -157,7 +158,7 @@ public class InBandThresholdReader {
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            dataType = DataFactory.getThresholdDataType( thresholds.getApplyTo() );
+            dataType = ThresholdsGenerator.getThresholdDataType( thresholds.getApplyTo() );
         }
 
         // Must be internally sourced: thresholds with global scope should be provided directly

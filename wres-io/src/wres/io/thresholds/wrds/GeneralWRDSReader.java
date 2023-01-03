@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataFactory;
 import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
@@ -331,7 +331,7 @@ public final class GeneralWRDSReader
         ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
         if ( Objects.nonNull( config.getOperator() ) )
         {
-            operator = DataFactory.getThresholdOperator( config );
+            operator = ThresholdsGenerator.getThresholdOperator( config );
         }
 
         try

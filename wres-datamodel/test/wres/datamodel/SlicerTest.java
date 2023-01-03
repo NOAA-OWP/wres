@@ -134,11 +134,11 @@ public final class SlicerTest
         DoubleUnaryOperator qFA = Slicer.getQuantileFunction( sorted );
         DoubleUnaryOperator qFB = Slicer.getQuantileFunction( sortedB );
 
-        assertTrue( DataFactory.doubleEquals( qFA.applyAsDouble( testA ), expectedA, 7 ) );
-        assertTrue( DataFactory.doubleEquals( qFA.applyAsDouble( testB ), expectedB, 7 ) );
-        assertTrue( DataFactory.doubleEquals( qFA.applyAsDouble( testC ), expectedC, 7 ) );
-        assertTrue( DataFactory.doubleEquals( qFA.applyAsDouble( testD ), expectedD, 7 ) );
-        assertTrue( DataFactory.doubleEquals( qFB.applyAsDouble( testE ), expectedE, 7 ) );
+        assertEquals( expectedA, qFA.applyAsDouble( testA ), 7 );
+        assertEquals( expectedB, qFA.applyAsDouble( testB ), 7 );
+        assertEquals( expectedC, qFA.applyAsDouble( testC ), 7 );
+        assertEquals( expectedD, qFA.applyAsDouble( testD ), 7 );
+        assertEquals( expectedE, qFB.applyAsDouble( testE ), 7 );
 
         //Check exceptional cases
         assertThrows( IllegalArgumentException.class, () -> qFA.applyAsDouble( -0.1 ) );

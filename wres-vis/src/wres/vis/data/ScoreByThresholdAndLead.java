@@ -13,7 +13,7 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataFactory;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -142,7 +142,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
                                                                                     .isAllDataThreshold() );
 
 
-            Number leadDuration = DataFactory.durationToNumericUnits( key.getLatestLeadDuration(),
+            Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
                                                                       this.durationUnits );
             String name = leadDuration.toString();
             Pair<String, List<DoubleScoreComponentOuter>> pair = Pair.of( name, sliced );
