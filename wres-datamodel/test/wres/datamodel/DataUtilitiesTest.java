@@ -298,13 +298,13 @@ public final class DataUtilitiesTest
     {
         Instant instant = Instant.parse( "2027-12-23T00:00:01Z" );
 
-        String expected = "2027_12_23T00_00_01Z";
+        String expected = "20271223T000001Z";
         String actual = DataUtilities.toStringSafe( instant );
 
         assertEquals( expected, actual );
 
         String actualUpperBound = DataUtilities.toStringSafe( Instant.MAX );
-        String expectedUpperBound = "_1000000000_12_31T23_59_59.999999999Z";
+        String expectedUpperBound = "MAXDATE";
 
         assertEquals( expectedUpperBound, actualUpperBound );
     }
