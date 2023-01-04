@@ -9,8 +9,8 @@ import java.util.Set;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.metrics.MetricConstants;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
-import wres.metrics.config.MetricConfigHelper;
 
 /**
  * <p>Represents a project that has been "resolved", i.e. any kind of translation
@@ -115,7 +115,7 @@ class ResolvedProject
         Set<MetricConstants> doubleScoreMetricOutputs = MetricConstants.getMetrics(
                 MetricConstants.StatisticType.DOUBLE_SCORE );
 
-        Set<MetricConstants> allMetrics = MetricConfigHelper.getMetricsFromConfig( this.getProjectConfig() );
+        Set<MetricConstants> allMetrics = MetricConstantsFactory.getMetricsFromConfig( this.getProjectConfig() );
 
         for ( MetricConstants doubleScoreMetric : doubleScoreMetricOutputs )
         {

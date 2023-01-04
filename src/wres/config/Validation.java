@@ -68,9 +68,9 @@ import wres.config.generated.UnnamedFeature;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.io.config.ConfigHelper;
-import wres.metrics.config.MetricConfigHelper;
 import wres.system.SystemSettings;
 
 /**
@@ -1110,6 +1110,9 @@ public class Validation
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
 
+        // Has legacy CSV?
+        boolean hasLegacyCsv = ProjectConfigs.hasLegacyCsv( config );
+
         // Filter for non-null and not all valid
         metrics.getMetric()
                .stream()
@@ -1118,46 +1121,45 @@ public class Validation
 
                    try
                    {
-                       MetricConstants checkMe = MetricConfigHelper.from( nextMetric.getName() );
+                       MetricConstants checkMe = MetricConstantsFactory.from( nextMetric.getName() );
 
                        // Check that the named metric is consistent with any pooling window declaration
-                       if ( checkMe != null && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
-                                                   || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
+                       if ( checkMe != null && hasLegacyCsv
+                            && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
+                                   || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
                        {
 
                            // Issued dates pooling window
                            if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null )
                            {
-                               result.set( false );
-                               if ( LOGGER.isErrorEnabled() )
+                               if ( LOGGER.isWarnEnabled() )
                                {
-                                   LOGGER.error( "In the project declaration from {}"
-                                                 + ", a metric named {} was "
-                                                 + "requested, but is not allowed. "
-                                                 + "Verification diagrams are not currently supported in "
-                                                 + "combination with issuedDatesPoolingWindow. Please remove either "
-                                                 + "the {} or the issuedDatesPoolingWindow.",
-                                                 projectConfigPlus.getOrigin(),
-                                                 nextMetric.getName(),
-                                                 nextMetric.getName() );
+                                   LOGGER.warn( "In the project declaration from {}, a metric named {} was requested, "
+                                                + "which is not currently supported in combination with "
+                                                + "issuedDatesPoolingWindow and legacy CSV/numeric output. The "
+                                                + "statistics for this metric will not be written to the legacy CSV "
+                                                + "format. Please consider using the CSV2 format instead, which "
+                                                + "supports all metrics.",
+                                                projectConfigPlus.getOrigin(),
+                                                nextMetric.getName(),
+                                                nextMetric.getName() );
                                }
                            }
 
                            // Valid dates pooling window
                            if ( projectConfigPlus.getProjectConfig().getPair().getValidDatesPoolingWindow() != null )
                            {
-                               result.set( false );
-                               if ( LOGGER.isErrorEnabled() )
+                               if ( LOGGER.isWarnEnabled() )
                                {
-                                   LOGGER.error( "In the project declaration from {}"
-                                                 + ", a metric named {} was "
-                                                 + "requested, but is not allowed. "
-                                                 + "Verification diagrams are not currently supported in "
-                                                 + "combination with validDatesPoolingWindow. Please remove either "
-                                                 + "the {} or the validDatesPoolingWindow.",
-                                                 projectConfigPlus.getOrigin(),
-                                                 nextMetric.getName(),
-                                                 nextMetric.getName() );
+                                   LOGGER.warn( "In the project declaration from {}, a metric named {} was requested, "
+                                                + "which is not currently supported in combination with "
+                                                + "validDatesPoolingWindow and legacy CSV/numeric output. The "
+                                                + "statistics for this metric will not be written to the legacy CSV "
+                                                + "format. Please consider using the CSV2 format instead, which "
+                                                + "supports all metrics.",
+                                                projectConfigPlus.getOrigin(),
+                                                nextMetric.getName(),
+                                                nextMetric.getName() );
                                }
                            }
                        }
@@ -1229,7 +1231,7 @@ public class Validation
         Set<MetricConstants> metrics = metricsConfig.getMetric()
                                                     .stream()
                                                     .filter( next -> next.getName() != MetricConfigName.ALL_VALID )
-                                                    .map( next -> MetricConfigHelper.from( next.getName() ) )
+                                                    .map( next -> MetricConstantsFactory.from( next.getName() ) )
                                                     .collect( Collectors.toSet() );
 
         // Filter categorical metrics
@@ -1365,7 +1367,7 @@ public class Validation
         Set<MetricConstants> metrics = metricsConfig.getMetric()
                                                     .stream()
                                                     .filter( next -> next.getName() != MetricConfigName.ALL_VALID )
-                                                    .map( next -> MetricConfigHelper.from( next.getName() ) )
+                                                    .map( next -> MetricConstantsFactory.from( next.getName() ) )
                                                     .collect( Collectors.toSet() );
 
 

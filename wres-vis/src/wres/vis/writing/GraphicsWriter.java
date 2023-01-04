@@ -119,7 +119,7 @@ abstract class GraphicsWriter
 
         Set<Path> returnMe = new TreeSet<>();
         Path resolvedPath = null;
-        
+
         try
         {
             // Default is png
@@ -176,7 +176,7 @@ abstract class GraphicsWriter
 
             throw new GraphicsWriteException( "Error while writing chart to '" + resolvedPath + "'.", e );
         }
-    }    
+    }
 
     /**
      * Validates that the file object represented by the path does not already exist.
@@ -187,17 +187,15 @@ abstract class GraphicsWriter
 
     private static boolean validatePath( Path path )
     {
-        File file = path.toFile();
-
-        boolean fileExists = file.exists();
+        boolean fileExists = Files.exists( path );
 
         // #81735-173 and #86077
         if ( fileExists && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Cannot write file {} because it already exists. This may occur when retrying several format "
-                         + "writers of which only some failed previously, but is otherwise unexpected behavior that "
-                         + "may indicate an error in format writing. The file has been retained and not modified.",
-                         file );
+            LOGGER.warn( "Cannot write to path {} because it already exists. This may occur when retrying several "
+                         + "format writers of which only some failed previously, but is otherwise unexpected behavior "
+                         + "that may indicate an error in format writing. The file has been retained and not modified.",
+                         path );
         }
 
         return !fileExists;

@@ -88,6 +88,16 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
+        if ( ProjectConfigs.hasPoolingWindows( super.getProjectConfig() ) )
+        {
+            LOGGER.warn( "The legacy CSV format does not support diagram metrics alongside pooling window declaration. "
+                         + "As such, {} diagram statistics will not be written to the legacy CSV format. Please "
+                         + "consider declaring the CSV2 format instead, which supports all metrics.",
+                         output.size() );
+
+            return Collections.emptySet();
+        }
+
         Set<Path> paths = new HashSet<>();
 
         // Write output
@@ -250,14 +260,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                          headerRow ) ) );
 
             // Write the output
-            String append = CommaSeparatedDiagramWriter.getPathQualifier( output );
+            String append = CommaSeparatedDiagramWriter.getPathQualifier( timeWindow, durationUnits, output );
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                   meta,
-                                                                   timeWindow,
-                                                                   durationUnits,
-                                                                   metricName,
-                                                                   null,
-                                                                   append );
+                                                                     meta,
+                                                                     append,
+                                                                     metricName,
+                                                                     null );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -312,13 +320,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                            CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
-            String append = CommaSeparatedDiagramWriter.getPathQualifier( output );
+            String append = CommaSeparatedDiagramWriter.getPathQualifier( threshold, output );
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                   meta,
-                                                                   threshold,
-                                                                   metricName,
-                                                                   null,
-                                                                   append );
+                                                                     meta,
+                                                                     append,
+                                                                     metricName,
+                                                                     null );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
 
@@ -577,13 +584,48 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Generates a path qualifier based on the statistics provided.
+     * @param timeWindow the time window
+     * @param leadUnits the lead duration units
      * @param statistics the statistics
      * @return a path qualifier or null if non is required
      */
 
-    private static String getPathQualifier( List<DiagramStatisticOuter> statistics )
+    private static String getPathQualifier( TimeWindowOuter timeWindow,
+                                            ChronoUnit leadUnits,
+                                            List<DiagramStatisticOuter> statistics )
     {
-        String append = null;
+        // Qualify all windows with the latest lead duration
+        String append = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                              leadUnits )
+                        + "_"
+                        + leadUnits.name().toUpperCase()
+                        + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
+
+        return append;
+    }
+
+    /**
+     * Generates a path qualifier based on the statistics provided.
+     * @param threshold the threshold
+     * @param statistics the statistics
+     * @return a path qualifier or null if non is required
+     */
+
+    private static String getPathQualifier( OneOrTwoThresholds threshold,
+                                            List<DiagramStatisticOuter> statistics )
+    {
+        return DataUtilities.toStringSafe( threshold ) + getEnsembleAverageQualifierString( statistics );
+    }
+
+    /**
+     * Creates qualifier string for the ensemble average type where needed.
+     * @param statistics the statistics to inspect
+     * @return the qualifier string
+     */
+
+    private static String getEnsembleAverageQualifierString( List<DiagramStatisticOuter> statistics )
+    {
+        String append = "";
 
         // Non-default averaging types that should be qualified?
         // #51670
@@ -599,8 +641,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         if ( type.isPresent() )
         {
-            append = "ENSEMBLE_" + type.get()
-                                       .name();
+            append = "_ENSEMBLE_" + type.get()
+                                        .name();
         }
 
         return append;

@@ -1,9 +1,11 @@
-package wres.metrics.config;
+package wres.datamodel.metrics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -17,8 +19,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.DestinationConfig;
@@ -29,52 +31,106 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.DataUtilities;
-import wres.datamodel.pools.MeasurementUnit;
+import wres.config.generated.TimeSeriesMetricConfigName;
+import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
-import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
-import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
- * Tests the {@link MetricConfigHelper}.
+ * Tests the {@link MetricConstantsFactory}.
  * 
  * @author James Brown
+ *
  */
-public final class MetricConfigHelperTest
+
+class MetricConstantsFactoryTest
 {
-
-    /**
-     * Test thresholds.
-     */
-
+    /** Test thresholds. */
     private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
 
-    /**
-     * Default mocked project configuration.
-     */
-
+    /** Default mocked project configuration. */
     private ProjectConfig defaultMockedConfig;
 
     /**
-     * Set-up.
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.MetricConfigName)}.
      */
 
-    @Before
-    public void setUpBeforeEachTest()
+    @Test
+    void testGetMetricName()
+    {
+        // The MetricConfigName.ALL_VALID returns null        
+        assertNull( MetricConstantsFactory.getMetricName( MetricConfigName.ALL_VALID ) );
+
+        // Check that a mapping exists in MetricConstants for all entries in the MetricConfigName
+        for ( MetricConfigName next : MetricConfigName.values() )
+        {
+            if ( next != MetricConfigName.ALL_VALID )
+            {
+                assertNotNull( MetricConstantsFactory.getMetricName( next ) );
+            }
+        }
+    }
+
+    /**
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.MetricConfigName)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    void testGetMetricNameThrowsNPEWhenInputIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> MetricConstantsFactory.getMetricName( (MetricConfigName) null ) );
+    }
+
+    /**
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)}.
+     */
+
+    @Test
+    void testGetTimeSeriesMetricName()
+    {
+        // The TimeSeriesMetricConfigName.ALL_VALID returns null        
+        assertNull( MetricConstantsFactory.getMetricName( TimeSeriesMetricConfigName.ALL_VALID ) );
+
+        // Check that a mapping exists in MetricConstants for all entries in the TimeSeriesMetricConfigName
+        for ( TimeSeriesMetricConfigName next : TimeSeriesMetricConfigName.values() )
+        {
+            if ( next != TimeSeriesMetricConfigName.ALL_VALID )
+            {
+                assertNotNull( MetricConstantsFactory.getMetricName( next ) );
+            }
+        }
+    }
+
+    /**
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)} throws an 
+     * expected exception when the input is null.
+     */
+
+    @Test
+    void testGetTimeSeriesMetricNameThrowsNPEWhenInputIsNull()
+    {
+        assertThrows( NullPointerException.class,
+                      () -> MetricConstantsFactory.getMetricName( (TimeSeriesMetricConfigName) null ) );
+    }
+
+    @BeforeEach
+    void setUpBeforeEachTest()
     {
         // Mock some metrics
         List<MetricConfig> metrics = new ArrayList<>();
@@ -89,7 +145,7 @@ public final class MetricConfigHelperTest
                                               TEST_THRESHOLDS,
                                               ThresholdOperator.GREATER_THAN ) );
 
-        defaultMockedConfig =
+        this.defaultMockedConfig =
                 new ProjectConfig( null,
                                    null,
                                    Arrays.asList( new MetricsConfig( thresholds,
@@ -108,107 +164,100 @@ public final class MetricConfigHelperTest
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#from(wres.config.generated.MetricConfigName)}.
+     * Tests the {@link MetricConstantsFactory#from(wres.config.generated.MetricConfigName)}.
      * @throws MetricConfigException if a mapping could not be created
      */
 
     @Test
-    public void testFromMetricName()
+    void testFromMetricName()
     {
         //Check for mapping without exception
         for ( MetricConfigName nextConfig : MetricConfigName.values() )
         {
             if ( nextConfig != MetricConfigName.ALL_VALID )
             {
-                assertTrue( "No mapping found for '" + nextConfig
-                            + "'.",
-                            Objects.nonNull( MetricConfigHelper.from( nextConfig ) ) );
+                assertTrue( Objects.nonNull( MetricConstantsFactory.from( nextConfig ) ),
+                            "No mapping found for '" + nextConfig + "'." );
             }
         }
 
         //Check the MetricConfigName.ALL_VALID       
-        assertTrue( "Expected a null mapping for '" + MetricConfigName.ALL_VALID
-                    + "'.",
-                    Objects.isNull( MetricConfigHelper.from( MetricConfigName.ALL_VALID ) ) );
+        assertTrue( Objects.isNull( MetricConstantsFactory.from( MetricConfigName.ALL_VALID ) ),
+                    "Expected a null mapping for '" + MetricConfigName.ALL_VALID
+                                                                                                 + "'." );
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#from(MetricConfigName)} for a checked exception on null input.
+     * Tests the {@link MetricConstantsFactory#from(MetricConfigName)} for a checked exception on null input.
      * @throws MetricConfigException if an unexpected exception is encountered
      */
 
     @Test
-    public void testExceptionFromMetricNameWithNullInput()
+    void testExceptionFromMetricNameWithNullInput()
     {
-        NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> MetricConfigHelper.from( (MetricConfigName) null ) );
-
-        assertEquals( "Specify input configuration with a non-null name to map.", actual.getMessage() );
+        assertThrows( NullPointerException.class,
+                      () -> MetricConstantsFactory.from( (MetricConfigName) null ) );
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#from(wres.config.generated.SummaryStatisticsName)}.
+     * Tests the {@link MetricConstantsFactory#from(wres.config.generated.SummaryStatisticsName)}.
      * @throws MetricConfigException if a mapping could not be created
      */
 
     @Test
-    public void testFromSummaryStatisticsName()
+    void testFromSummaryStatisticsName()
     {
         //Check for mapping without exception
         for ( SummaryStatisticsName nextStat : SummaryStatisticsName.values() )
         {
             if ( nextStat != SummaryStatisticsName.ALL_VALID )
             {
-                assertTrue( "No mapping found for '" + nextStat
-                            + "'.",
-                            Objects.nonNull( MetricConfigHelper.from( nextStat ) ) );
+                assertTrue( Objects.nonNull( MetricConstantsFactory.from( nextStat ) ),
+                            "No mapping found for '" + nextStat + "'." );
             }
         }
 
         //Check the MetricConfigName.ALL_VALID       
-        assertTrue( "Expected a null mapping for '" + SummaryStatisticsName.ALL_VALID
-                    + "'.",
-                    Objects.isNull( MetricConfigHelper.from( SummaryStatisticsName.ALL_VALID ) ) );
+        assertTrue( Objects.isNull( MetricConstantsFactory.from( SummaryStatisticsName.ALL_VALID ) ),
+                    "Expected a null mapping for '" + SummaryStatisticsName.ALL_VALID + "'." );
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#from(SummaryStatisticsName)} for a checked exception on null input.
+     * Tests the {@link MetricConstantsFactory#from(SummaryStatisticsName)} for a checked exception on null input.
      * @throws MetricConfigException if an unexpected exception is encountered
      */
 
     @Test
-    public void testExceptionFromSummaryStatisticsNameWithNullInput()
+    void testExceptionFromSummaryStatisticsNameWithNullInput()
     {
-        NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> MetricConfigHelper.from( (SummaryStatisticsName) null ) );
-
-        assertEquals( "Specify input configuration with a non-null name to map.", actual.getMessage() );
+        assertThrows( NullPointerException.class,
+                      () -> MetricConstantsFactory.from( (SummaryStatisticsName) null ) );
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#getMetricsFromConfig(wres.config.generated.ProjectConfig)} by comparing
+     * Tests the {@link MetricConstantsFactory#getMetricsFromConfig(wres.config.generated.ProjectConfig)} by comparing
      * actual results to expected results.
      * @throws MetricConfigException if an unexpected exception is encountered
      */
 
     @Test
-    public void testGetMetricsFromConfig()
+    void testGetMetricsFromConfig()
     {
         assertEquals( Set.of( MetricConstants.BIAS_FRACTION,
                               MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                               MetricConstants.MEAN_ERROR ),
-                      MetricConfigHelper.getMetricsFromConfig( this.defaultMockedConfig ) );
+                      MetricConstantsFactory.getMetricsFromConfig( this.defaultMockedConfig ) );
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, wres.datamodel.DataUtilities, 
+     * Tests the {@link MetricConstantsFactory#getThresholdsFromConfig(ProjectConfig, wres.datamodel.DataUtilities, 
      * java.util.Collection)} by comparing actual results to expected results for a scenario where external thresholds
      * are defined, together with a dimension for value thresholds.
      * @throws MetricConfigException if an unexpected exception is encountered
      */
 
     @Test
-    public void testGetThresholdsFromConfigWithExternalThresholdsAndDimension()
+    void testGetThresholdsFromConfigWithExternalThresholdsAndDimension()
     {
 
         // Obtain the threshold dimension
@@ -298,9 +347,9 @@ public final class MetricConfigHelperTest
     }
 
     /**
-     * Tests a method with private scope in {@link MetricConfigHelper} using thresholds with a 
+     * Tests a method with private scope in {@link MetricConstantsFactory} using thresholds with a 
      * {@link Operator#BETWEEN} condition. TODO: expose this and test via 
-     * {@link MetricConfigHelper#getThresholdsFromConfig(ProjectConfig, DataUtilities, java.util.Collection)} once 
+     * {@link MetricConstantsFactory#getThresholdsFromConfig(ProjectConfig, DataUtilities, java.util.Collection)} once 
      * the {@link ProjectConfig} supports thresholds with a {@link Operator#BETWEEN} condition.
      * @throws MetricConfigException if an unexpected exception is encountered
      * @throws SecurityException if the reflection fails via a security manager
@@ -312,7 +361,7 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void testGetThresholdsFromConfigWithBetweenCondition() throws NoSuchMethodException,
+    void testGetThresholdsFromConfigWithBetweenCondition() throws NoSuchMethodException,
             IllegalAccessException, InvocationTargetException
     {
 
@@ -375,17 +424,17 @@ public final class MetricConfigHelperTest
     }
 
     /**
-     * Tests the {@link MetricConfigHelper#hasTheseOutputsByThresholdLead(ProjectConfig, 
+     * Tests the {@link MetricConstantsFactory#hasTheseOutputsByThresholdLead(ProjectConfig, 
      * wres.datamodel.metrics.MetricConstants.StatisticType)}.
      * @throws MetricConfigException if the metric configuration is invalid
      */
 
     @Test
-    public void testHasTheseOutputsByThresholdLead()
+    void testHasTheseOutputsByThresholdLead()
     {
         // Outputs by threshold and lead time required
-        assertTrue( MetricConfigHelper.hasTheseOutputsByThresholdLead( defaultMockedConfig,
-                                                                       StatisticType.DOUBLE_SCORE ) );
+        assertTrue( MetricConstantsFactory.hasTheseOutputsByThresholdLead( defaultMockedConfig,
+                                                                           StatisticType.DOUBLE_SCORE ) );
 
         // No outputs configuration defined
         List<MetricConfig> metrics = new ArrayList<>();
@@ -403,8 +452,8 @@ public final class MetricConfigHelperTest
                                    null,
                                    null );
 
-        assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
-                                                                        StatisticType.DOUBLE_SCORE ) );
+        assertFalse( MetricConstantsFactory.hasTheseOutputsByThresholdLead( mockedConfig,
+                                                                            StatisticType.DOUBLE_SCORE ) );
 
         // Output configuration defined, but is not by threshold then lead
         ProjectConfig mockedConfigWithOutput =
@@ -424,13 +473,12 @@ public final class MetricConfigHelperTest
                                    null,
                                    null );
 
-        assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfigWithOutput,
-                                                                        StatisticType.DOUBLE_SCORE ) );
+        assertFalse( MetricConstantsFactory.hasTheseOutputsByThresholdLead( mockedConfigWithOutput,
+                                                                            StatisticType.DOUBLE_SCORE ) );
 
         // No output and no output groups of the specified type
-        assertFalse( MetricConfigHelper.hasTheseOutputsByThresholdLead( mockedConfig,
-                                                                        StatisticType.DIAGRAM ) );
+        assertFalse( MetricConstantsFactory.hasTheseOutputsByThresholdLead( mockedConfig,
+                                                                            StatisticType.DIAGRAM ) );
 
     }
-
 }

@@ -38,7 +38,7 @@ import wres.config.generated.SourceTransformationType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.StatisticType;
-import wres.datamodel.metrics.MetricFactory;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -1767,9 +1767,9 @@ public class MessageFactory
         {
             List<MetricsConfig> declaredMetrics = projectConfig.getMetrics();
             Set<MetricConstants> metrics = declaredMetrics.stream()
-                                                          .flatMap( a -> MetricFactory.getMetricsFromConfig( a,
-                                                                                                                  projectConfig )
-                                                                                    .stream() )
+                                                          .flatMap( a -> MetricConstantsFactory.getMetricsFromConfig( a,
+                                                                                                             projectConfig )
+                                                                                      .stream() )
                                                           .collect( Collectors.toSet() );
 
             builder.setMetricCount( metrics.size() );

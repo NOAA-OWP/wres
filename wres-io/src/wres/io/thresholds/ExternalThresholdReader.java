@@ -4,7 +4,7 @@ import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.*;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricFactory;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -67,7 +67,7 @@ public class ExternalThresholdReader
 
     public void read()
     {
-        Set<MetricConstants> metrics = MetricFactory.getMetricsFromConfig( this.metricsConfig,
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig,
                                                                                 this.projectConfig );
 
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )

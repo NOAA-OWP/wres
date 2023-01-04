@@ -42,6 +42,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 public class ProjectConfigs
 {
 
+    private static final String SPECIFY_NON_NULL_PROJECT_DECLARATION = "Specify non-null project declaration.";
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigs.class );
 
     /**
@@ -54,11 +55,45 @@ public class ProjectConfigs
 
     public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project declaration." );
+        Objects.requireNonNull( projectConfig, SPECIFY_NON_NULL_PROJECT_DECLARATION );
 
         return projectConfig.getMetrics()
                             .stream()
                             .anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
+    }
+
+    /**
+     * Returns <code>true</code> if the input configuration has legacy CSV declared, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration has legacy CSV, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasLegacyCsv( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, SPECIFY_NON_NULL_PROJECT_DECLARATION );
+        return projectConfig.getOutputs()
+                            .getDestination()
+                            .stream()
+                            .anyMatch( next -> next.getType() == DestinationType.CSV
+                                               || next.getType() == DestinationType.NUMERIC );
+    }
+
+    /**
+     * Returns <code>true</code> if the input configuration has pooling windows, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration has pooling windows, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasPoolingWindows( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, SPECIFY_NON_NULL_PROJECT_DECLARATION );
+
+        return Objects.nonNull( projectConfig.getPair().getIssuedDatesPoolingWindow() )
+               || Objects.nonNull( projectConfig.getPair().getValidDatesPoolingWindow() );
     }
 
     /**
@@ -419,7 +454,7 @@ public class ProjectConfigs
         {
             throw new ProjectConfigException( oldDeclaration,
                                               "No <inputs> section found within"
-                                              + " the <project> declaration!" );
+                                                              + " the <project> declaration!" );
         }
 
         if ( oldDeclaration.getInputs()
@@ -427,7 +462,7 @@ public class ProjectConfigs
         {
             throw new ProjectConfigException( oldDeclaration.getInputs(),
                                               "No <left> section found within "
-                                              + "the <inputs> declaration!" );
+                                                                          + "the <inputs> declaration!" );
         }
 
         if ( oldDeclaration.getInputs()
@@ -435,7 +470,7 @@ public class ProjectConfigs
         {
             throw new ProjectConfigException( oldDeclaration.getInputs(),
                                               "No <right> section found within "
-                                              + "the <inputs> declaration!" );
+                                                                          + "the <inputs> declaration!" );
         }
 
         if ( baselineSources != null
@@ -516,7 +551,7 @@ public class ProjectConfigs
                                   oldDeclaration.getLabel(),
                                   oldDeclaration.getName() );
     }
-    
+
     private ProjectConfigs()
     {
         // Prevent construction, this is a static helper class.
