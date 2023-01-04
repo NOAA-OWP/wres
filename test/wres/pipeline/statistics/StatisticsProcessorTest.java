@@ -96,68 +96,6 @@ public final class StatisticsProcessorTest
     }
 
     @Test
-    public void testDisallowNonScoresWithSingleValuedInput()
-            throws IOException, MetricParameterException
-    {
-        ProjectConfig config =
-                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
-
-        //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
-                    + "'.",
-                    processor.hasMetrics( StatisticType.DOUBLE_SCORE ) );
-
-        //Check that no non-score metrics are defined
-        for ( StatisticType next : StatisticType.values() )
-        {
-            if ( next != StatisticType.DOUBLE_SCORE )
-            {
-                assertFalse( "Did not expect metrics for '" + next
-                             + "'.",
-                             processor.hasMetrics( next ) );
-            }
-        }
-
-    }
-
-    @Test
-    public void testDisallowNonScoresForEnsembleInput()
-            throws IOException, MetricParameterException
-    {
-        ProjectConfig configEnsemble =
-                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
-
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( configEnsemble );
-        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( DRRC2 ),
-                                                                       MessageFactory.getGeometry( DRRC2 ),
-                                                                       null );
-        FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
-
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processorEnsemble =
-                new EnsembleStatisticsProcessor( metrics,
-                                                        ForkJoinPool.commonPool(),
-                                                        ForkJoinPool.commonPool() );
-        //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + StatisticType.DOUBLE_SCORE
-                    + "'.",
-                    processorEnsemble.hasMetrics( StatisticType.DOUBLE_SCORE ) );
-        //Check that no non-score metrics are defined
-        for ( StatisticType next : StatisticType.values() )
-        {
-            if ( next != StatisticType.DOUBLE_SCORE )
-            {
-                assertFalse( "Did not expect metrics for '" + next
-                             + "'.",
-                             processorEnsemble.hasMetrics( next ) );
-            }
-        }
-    }
-
-    @Test
     public void testGetAllDataThreshold()
             throws MetricParameterException
     {

@@ -4,7 +4,7 @@ import wres.config.MetricConfigException;
 import wres.config.generated.*;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricFactory;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;
@@ -36,7 +36,7 @@ public class InBandThresholdReader {
         {
             this.readThresholds(
                                  thresholdsConfig,
-                                 MetricFactory.getMetricsFromConfig( this.metricsConfig, this.projectConfig ) );
+                                 MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig, this.projectConfig ) );
         }
     }
 

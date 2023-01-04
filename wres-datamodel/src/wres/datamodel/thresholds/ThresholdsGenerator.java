@@ -21,7 +21,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.metrics.MetricConstants;
 import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricFactory;
+import wres.datamodel.metrics.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
@@ -161,7 +161,7 @@ public class ThresholdsGenerator
     {
 
         // Find the metrics
-        Set<MetricConstants> metrics = MetricFactory.getMetricsFromConfig( metricsConfig, projectConfig );
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( metricsConfig, projectConfig );
 
         // No explicit thresholds, add an "all data" threshold
         if ( metricsConfig.getThresholds().isEmpty() )

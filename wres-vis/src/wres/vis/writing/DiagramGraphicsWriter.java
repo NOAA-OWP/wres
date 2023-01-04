@@ -28,6 +28,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
@@ -155,7 +156,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                                                               appendString,
                                                                               metricName,
                                                                               null );
-
+                    
                     JFreeChart chart = nextEntry.getValue();
 
                     // Write formats
@@ -214,17 +215,28 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                             List<DiagramStatisticOuter> statistics,
                                             GraphicsHelper helper )
     {
-        String append = null;
+        String append = "";
 
         if ( appendObject instanceof TimeWindowOuter )
         {
             TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
+            GraphicShape shape = helper.getGraphicShape();
 
+            // Qualify pooling windows with the latest reference time and valid time
+            if ( shape == GraphicShape.ISSUED_DATE_POOLS || shape == GraphicShape.VALID_DATE_POOLS )
+            {
+                append = DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
+                         + "_"
+                         + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() )
+                         + "_";
+            }
+
+            // Qualify all windows with the latest lead duration
             ChronoUnit leadUnits = helper.getDurationUnits();
-            append = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                           leadUnits )
-                     + "_"
-                     + leadUnits.name().toUpperCase();
+            append += DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                            leadUnits )
+                      + "_"
+                      + leadUnits.name().toUpperCase();
         }
         else if ( appendObject instanceof OneOrTwoThresholds )
         {
@@ -251,8 +263,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
         if ( type.isPresent() )
         {
-            append = "ENSEMBLE_" + type.get()
-                                       .name();
+            append += "_ENSEMBLE_" + type.get()
+                                         .name();
         }
 
         return append;

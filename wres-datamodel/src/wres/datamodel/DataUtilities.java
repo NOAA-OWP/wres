@@ -7,6 +7,7 @@ import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -142,6 +143,23 @@ public final class DataUtilities
         }
 
         return threshold.toString();
+    }
+
+    /**
+     * Returns a safe string representation of an {@link Instant} for use in a path to a web resource.
+     * @param instant the instant
+     * @return the safe string representation
+     */
+
+    public static String toStringSafe( Instant instant )
+    {
+        Objects.requireNonNull( instant );
+
+        String baseString = instant.toString();
+
+        return baseString.replace( '+', '_' )
+                         .replace( '-', '_' )
+                         .replace( ':', '_' );
     }
 
     /**
@@ -313,7 +331,6 @@ public final class DataUtilities
             throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
-
         Objects.requireNonNull( metricName, "Specify a non-null metric name." );
 
         Pool pool = meta.getPool();
@@ -353,7 +370,8 @@ public final class DataUtilities
         // Derive a sanitized name
         String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ), "UTF-8" );
 
-        return Paths.get( outputDirectory.toString(), safeName );
+        return Paths.get( outputDirectory.toUri() )
+                    .resolve( safeName );
     }
 
     /**
