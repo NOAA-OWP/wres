@@ -156,7 +156,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                                                               appendString,
                                                                               metricName,
                                                                               null );
-                    
+
                     JFreeChart chart = nextEntry.getValue();
 
                     // Write formats
@@ -221,22 +221,27 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
             GraphicShape shape = helper.getGraphicShape();
+            ChronoUnit leadUnits = helper.getDurationUnits();
 
             // Qualify pooling windows with the latest reference time and valid time
             if ( shape == GraphicShape.ISSUED_DATE_POOLS || shape == GraphicShape.VALID_DATE_POOLS )
             {
-                append = DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
-                         + "_"
-                         + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() )
-                         + "_";
+                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
             }
+            else
+            {
+                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully 
+                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe 
+                // string helpers in the DataUtilities class.
+                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
 
-            // Qualify all windows with the latest lead duration
-            ChronoUnit leadUnits = helper.getDurationUnits();
-            append += DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                            leadUnits )
-                      + "_"
-                      + leadUnits.name().toUpperCase();
+                if ( !append.endsWith( "MAXDURATION" ) )
+                {
+                    append += "_"
+                              + leadUnits.name()
+                                         .toUpperCase();
+                }
+            }
         }
         else if ( appendObject instanceof OneOrTwoThresholds )
         {

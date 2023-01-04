@@ -149,6 +149,7 @@ public final class DataUtilities
      * Returns a safe string representation of an {@link Instant} for use in a path to a web resource.
      * @param instant the instant
      * @return the safe string representation
+     * @throws NullPointerException if the instant is null
      */
 
     public static String toStringSafe( Instant instant )
@@ -157,9 +158,91 @@ public final class DataUtilities
 
         String baseString = instant.toString();
 
-        return baseString.replace( '+', '_' )
-                         .replace( '-', '_' )
-                         .replace( ':', '_' );
+        return baseString.replace( Instant.MIN.toString(), "MINDATE" )
+                         .replace( Instant.MAX.toString(), "MAXDATE" )
+                         .replace( "+", "" )
+                         .replace( "-", "" )
+                         .replace( ":", "" );
+    }
+
+    /**
+     * Returns a safe and user-friendly string representation of an {@link Duration} for use in a path to a web 
+     * resource.
+     * @param duration the duration
+     * @param units the duration units
+     * @return the safe string representation
+     * @throws NullPointerException if either input is null
+     */
+
+    public static String toStringSafe( Duration duration, ChronoUnit units )
+    {
+        Objects.requireNonNull( duration );
+        Objects.requireNonNull( units );
+
+        if ( duration.equals( TimeWindowOuter.DURATION_MIN ) )
+        {
+            return "MINDURATION";
+        }
+        else if ( duration.equals( TimeWindowOuter.DURATION_MAX ) )
+        {
+            return "MAXDURATION";
+        }
+
+        return DataUtilities.durationToNumericUnits( duration, units )
+                            .toString();
+    }
+
+    /**
+     * Returns a safe and user-friendly string representation of a {@link TimeWindowOuter} for use in a path to a web 
+     * resource.
+     * @param timeWindow the timeWindow
+     * @param units the lead duration units
+     * @return the safe string representation
+     * @throws NullPointerException if either input is null
+     */
+
+    public static String toStringSafe( TimeWindowOuter timeWindow, ChronoUnit units )
+    {
+        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( units );
+
+        return DataUtilities.toStringSafe( timeWindow.getEarliestReferenceTime() )
+               + "_TO_"
+               + DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
+               + "_"
+               + DataUtilities.toStringSafe( timeWindow.getEarliestValidTime() )
+               + "_TO_"
+               + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() )
+               + "_"
+               + DataUtilities.toStringSafeLeadDurationsOnly( timeWindow, units );
+    }
+
+    /**
+     * Returns a safe and user-friendly string representation of the lead durations within a {@link TimeWindowOuter} 
+     * for use in a path to a web resource.
+     * @param timeWindow the timeWindow
+     * @param units the lead duration units
+     * @return the safe string representation
+     * @throws NullPointerException if either input is null
+     */
+
+    public static String toStringSafeLeadDurationsOnly( TimeWindowOuter timeWindow, ChronoUnit units )
+    {
+        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( units );
+
+        String baseString = DataUtilities.toStringSafe( timeWindow.getEarliestLeadDuration(), units )
+                            + "_TO_"
+                            + DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), units );
+
+        if ( !baseString.endsWith( "MAXDURATION" ) )
+        {
+            baseString += "_"
+                          + units.name()
+                                 .toUpperCase();
+        }
+
+        return baseString;
     }
 
     /**
@@ -252,10 +335,17 @@ public final class DataUtilities
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
 
-        String appendString = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                                    leadUnits )
-                              + "_"
-                              + leadUnits.name().toUpperCase();
+        // This is not fully qualified, but making it so will be a breaking change. It will need to be fully qualified
+        // when arbitrary pools are supported: see #86646. At that time, use the time window safe string helpers in 
+        // this class.
+        String appendString = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
+
+        if ( !appendString.endsWith( "MAXDURATION" ) )
+        {
+            appendString += "_"
+                            + leadUnits.name()
+                                       .toUpperCase();
+        }
 
         if ( Objects.nonNull( append ) )
         {
