@@ -128,13 +128,13 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
                 JFreeChart chart = chartFactory.getDurationDiagramChart( statistics,
-                                                                    helper.getDurationUnits() );
+                                                                         helper.getDurationUnits() );
 
                 // Build the output file name
                 Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                        metadata,
-                                                                        metricName,
-                                                                        null );
+                                                                          metadata,
+                                                                          metricName,
+                                                                          null );
 
                 // Write formats
                 Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,

@@ -181,9 +181,9 @@ abstract class CommaSeparatedStatisticsWriter
         // #81735-173 and #86077
         if ( fileExists && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "Cannot write file {} because it already exists. This may occur when retrying several format "
-                         + "writers of which only some failed previously, but is otherwise unexpected behavior that "
-                         + "may indicate an error in format writing. The file has been retained and not modified.",
+            LOGGER.warn( "Cannot write to path {} because it already exists. This may occur when retrying several "
+                         + "format writers of which only some failed previously, but is otherwise unexpected behavior "
+                         + "that may indicate an error in format writing. The file has been retained and not modified.",
                          file );
         }
 
@@ -265,12 +265,12 @@ abstract class CommaSeparatedStatisticsWriter
             String featureName = CommaSeparatedStatisticsWriter.getFeatureNameFromMetadata( sampleMetadata );
             String earliestLeadDuration =
                     DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
-                                                        durationUnits )
-                               .toString();
+                                                          durationUnits )
+                                 .toString();
             String latestLeadDuration =
                     DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                        durationUnits )
-                               .toString();
+                                                          durationUnits )
+                                 .toString();
             // Add the space/time metadata
             row.add( featureName )
                .add( timeWindow.getEarliestReferenceTime().toString() )

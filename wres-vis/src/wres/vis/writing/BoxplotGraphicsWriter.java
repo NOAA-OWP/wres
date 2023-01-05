@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.TimeWindow;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
@@ -165,14 +167,14 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             {
                 // Slice by ensemble averaging type
                 List<List<BoxplotStatisticOuter>> sliced =
-                        BoxplotGraphicsWriter.getSlicedStatistics( nextGroup );
+                        BoxplotGraphicsWriter.getSliceByEnsembleAverageType( nextGroup );
 
                 for ( List<BoxplotStatisticOuter> nextSlice : sliced )
                 {
                     Set<Path> innerPathsWrittenTo =
-                            BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetric( super.getOutputDirectory(),
-                                                                                 super.getOutputsDescription(),
-                                                                                 nextSlice );
+                            BoxplotGraphicsWriter.writeOneBoxPlotChartPerMetricAndLeadDurationSequence( super.getOutputDirectory(),
+                                                                                                        super.getOutputsDescription(),
+                                                                                                        nextSlice );
                     paths.addAll( innerPathsWrittenTo );
                 }
             }
@@ -226,13 +228,13 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 // Build the outputs
                 for ( Map.Entry<TimeWindowOuter, JFreeChart> nextEntry : charts.entrySet() )
                 {
+                    TimeWindowOuter appendObject = nextEntry.getKey();
+                    String appendString = GraphicsWriter.getDiagramPathQualifier( appendObject, statistics, helper );
                     Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                            metadata,
-                                                                            nextEntry.getKey(),
-                                                                            helper.getDurationUnits(),
-                                                                            metricName,
-                                                                            null,
-                                                                            null );
+                                                                              metadata,
+                                                                              appendString,
+                                                                              metricName,
+                                                                              null );
 
                     JFreeChart chart = nextEntry.getValue();
 
@@ -254,8 +256,8 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     }
 
     /**
-     * Writes a single box plot chart for all {@link BoxplotStatisticOuter} in the {@link List}
-     * provided.
+     * Writes a box plot chart for all {@link BoxplotStatisticOuter} associated with each pooling window, i.e., all 
+     * lead duration statistics for one valid time or issued time pool. If there is a single pool, creates one plot.
      *
      * @param outputDirectory the directory into which to write
      * @param destinations the destinations for the written output
@@ -264,9 +266,9 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * @return the paths actually written to
      */
 
-    private static Set<Path> writeOneBoxPlotChartPerMetric( Path outputDirectory,
-                                                            Outputs outputsDescription,
-                                                            List<BoxplotStatisticOuter> statistics )
+    private static Set<Path> writeOneBoxPlotChartPerMetricAndLeadDurationSequence( Path outputDirectory,
+                                                                                   Outputs outputsDescription,
+                                                                                   List<BoxplotStatisticOuter> statistics )
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 
@@ -287,24 +289,34 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 // One helper per set of graphics parameters.
                 GraphicsHelper helper = GraphicsHelper.of( nextOutput );
 
-                // Build the chart engine
-                JFreeChart chart = factory.getBoxplotChart( statistics,
-                                                            helper.getDurationUnits() );
+                // Slice the statistics by lead duration sequence
+                Map<TimeWindowOuter, List<BoxplotStatisticOuter>> sliced =
+                        BoxplotGraphicsWriter.getSliceByPoolingWindow( statistics );
 
-                String append = BoxplotGraphicsWriter.getPathQualifier( statistics );
+                for ( Map.Entry<TimeWindowOuter, List<BoxplotStatisticOuter>> nextPlot : sliced.entrySet() )
+                {
+                    TimeWindowOuter nextTimeWindow = nextPlot.getKey();
+                    List<BoxplotStatisticOuter> nextStatistics = nextPlot.getValue();
 
-                Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                        metadata,
-                                                                        append,
-                                                                        metricName,
-                                                                        null );
+                    // Build the chart engine
+                    JFreeChart chart = factory.getBoxplotChart( nextStatistics,
+                                                                helper.getDurationUnits() );
 
-                // Write formats
-                Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
-                                                                       chart,
-                                                                       nextOutput );
+                    String append = BoxplotGraphicsWriter.getPathQualifier( statistics, nextTimeWindow, sliced.size() );
 
-                pathsWrittenTo.addAll( finishedPaths );
+                    Path outputImage = DataUtilities.getPathFromPoolMetadata( outputDirectory,
+                                                                              metadata,
+                                                                              append,
+                                                                              metricName,
+                                                                              null );
+
+                    // Write formats
+                    Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
+                                                                           chart,
+                                                                           nextOutput );
+
+                    pathsWrittenTo.addAll( finishedPaths );
+                }
             }
         }
         catch ( ChartBuildingException | IOException e )
@@ -316,13 +328,15 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     }
 
     /**
-     * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
+     * Slices the statistics for individual graphics by {@link EnsembleAverageType}. Returns as many slices as graphics 
+     * to create.
      * 
      * @param the statistics to slice
      * @return the sliced statistics to write
      */
 
-    private static List<List<BoxplotStatisticOuter>> getSlicedStatistics( List<BoxplotStatisticOuter> statistics )
+    private static List<List<BoxplotStatisticOuter>>
+            getSliceByEnsembleAverageType( List<BoxplotStatisticOuter> statistics )
     {
         List<List<BoxplotStatisticOuter>> sliced = new ArrayList<>();
 
@@ -343,14 +357,63 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     }
 
     /**
+     * Slices the statistics for individual graphics by time-based pooling window. Returns as many slices as graphics 
+     * to create.
+     * 
+     * @param the statistics to slice
+     * @return the sliced statistics to write
+     */
+
+    private static Map<TimeWindowOuter, List<BoxplotStatisticOuter>>
+            getSliceByPoolingWindow( List<BoxplotStatisticOuter> statistics )
+    {
+        Function<BoxplotStatisticOuter, TimeWindowOuter> classifier = boxplot -> {
+            TimeWindowOuter timeWindow = boxplot.getMetadata()
+                                                .getTimeWindow();
+
+            // Create a time window without lead duration qualifiers
+            TimeWindow adjusted = timeWindow.getTimeWindow()
+                                            .toBuilder()
+                                            .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                  .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                                                                                  .setNanos( TimeWindowOuter.DURATION_MIN.getNano() ) )
+                                            .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                                .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                                                                                .setNanos( TimeWindowOuter.DURATION_MAX.getNano() ) )
+                                            .build();
+
+            return TimeWindowOuter.of( adjusted );
+        };
+
+        return statistics.stream()
+                         .collect( Collectors.groupingBy( classifier ) );
+    }
+
+    /**
      * Generates a path qualifier for the graphic based on the statistics provided.
      * @param statistics the statistics
+     * @param timeWindow the time window
+     * @param sliceCount the number of plots/slices produced
      * @return a path qualifier or null if non is required
      */
 
-    private static String getPathQualifier( List<BoxplotStatisticOuter> statistics )
+    private static String getPathQualifier( List<BoxplotStatisticOuter> statistics,
+                                            TimeWindowOuter timeWindow,
+                                            int sliceCount )
     {
-        String append = null;
+        String append = "";
+
+        // Qualify the time-based pools in the path if there is more than one plot
+        if ( sliceCount > 1 )
+        {
+            append = DataUtilities.toStringSafe( timeWindow.getEarliestReferenceTime() )
+                     + "_TO_"
+                     + DataUtilities.toStringSafe( timeWindow.getLatestReferenceTime() )
+                     + "_"
+                     + DataUtilities.toStringSafe( timeWindow.getEarliestValidTime() )
+                     + "_TO_"
+                     + DataUtilities.toStringSafe( timeWindow.getLatestValidTime() );
+        }
 
         // Non-default averaging types that should be qualified?
         // #51670
@@ -366,8 +429,13 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
         if ( type.isPresent() )
         {
-            append = "ENSEMBLE_" + type.get()
-                                       .name();
+            if ( !append.isBlank() )
+            {
+                append += "_";
+            }
+
+            append += "ENSEMBLE_" + type.get()
+                                        .name();
         }
 
         return append;

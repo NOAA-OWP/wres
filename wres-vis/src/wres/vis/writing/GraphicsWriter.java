@@ -9,8 +9,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
@@ -22,9 +25,15 @@ import org.jfree.graphics2d.svg.SVGUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataUtilities;
+import wres.datamodel.Slicer;
+import wres.datamodel.statistics.Statistic;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.charts.ChartFactory;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
@@ -176,6 +185,79 @@ abstract class GraphicsWriter
 
             throw new GraphicsWriteException( "Error while writing chart to '" + resolvedPath + "'.", e );
         }
+    }
+
+    /**
+     * Generates a path qualifier for diagram and box-plot-style graphics based on the statistics provided.
+     * 
+     * @param appendObject the object to use in the path qualifier
+     * @param statistics the statistics
+     * @param helper the graphics helper
+     * @return a path qualifier or null if non is required
+     */
+
+    static <T extends Statistic<?>> String getDiagramPathQualifier( Object appendObject,
+                                                                    List<T> statistics,
+                                                                    GraphicsHelper helper )
+    {
+        String append = "";
+
+        if ( appendObject instanceof TimeWindowOuter )
+        {
+            TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
+            GraphicShape shape = helper.getGraphicShape();
+            ChronoUnit leadUnits = helper.getDurationUnits();
+
+            // Qualify pooling windows with the latest reference time and valid time
+            if ( shape == GraphicShape.ISSUED_DATE_POOLS || shape == GraphicShape.VALID_DATE_POOLS )
+            {
+                append = DataUtilities.toStringSafe( timeWindow, leadUnits );
+            }
+            else
+            {
+                // This is not fully qualified, but making it so will be a breaking change. It will need to be fully 
+                // qualified when arbitrary pools are supported: see #86646. At that time, use the time window safe 
+                // string helpers in the DataUtilities class.
+                append = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
+
+                if ( !append.endsWith( "MAXDURATION" ) )
+                {
+                    append += "_"
+                              + leadUnits.name()
+                                         .toUpperCase();
+                }
+            }
+        }
+        else if ( appendObject instanceof OneOrTwoThresholds )
+        {
+            OneOrTwoThresholds threshold = (OneOrTwoThresholds) appendObject;
+            append = DataUtilities.toStringSafe( threshold );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unexpected situation where WRES could not create "
+                                                     + "outputImage path" );
+        }
+
+        // Non-default averaging types that should be qualified?
+        // #51670
+        SortedSet<EnsembleAverageType> types =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+
+        Optional<EnsembleAverageType> type =
+                types.stream()
+                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                                      && next != EnsembleAverageType.UNRECOGNIZED )
+                     .findFirst();
+
+        if ( type.isPresent() )
+        {
+            append += "_ENSEMBLE_" + type.get()
+                                         .name();
+        }
+
+        return append;
     }
 
     /**
