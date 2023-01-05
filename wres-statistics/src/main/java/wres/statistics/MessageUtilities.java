@@ -11,7 +11,7 @@ import wres.statistics.generated.Consumer.Format;
 /**
  * Utility class for working with statistics messages.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MessageUtilities

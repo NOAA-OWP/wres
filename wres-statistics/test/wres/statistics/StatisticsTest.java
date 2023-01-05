@@ -15,7 +15,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 /**
  * Tests the generated statistics messages.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class StatisticsTest
