@@ -86,6 +86,16 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
+        if ( ProjectConfigs.hasPoolingWindows( super.getProjectConfig() ) )
+        {
+            LOGGER.warn( "The legacy CSV format does not support box plot metrics alongside pooling window "
+                         + "declaration. As such, {} diagram statistics will not be written to the legacy CSV format. "
+                         + "Please consider declaring the CSV2 format instead, which supports all metrics.",
+                         output.size() );
+
+            return Collections.emptySet();
+        }
+
         Set<Path> paths = new HashSet<>();
 
         // Write output
@@ -241,12 +251,12 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
             Path outputPath =
                     DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                         meta,
-                                                         nextWindow,
-                                                         durationUnits,
-                                                         metricName,
-                                                         null,
-                                                         append );
+                                                           meta,
+                                                           nextWindow,
+                                                           durationUnits,
+                                                           metricName,
+                                                           null,
+                                                           append );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume
@@ -293,10 +303,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             // Write the output
             String append = CommaSeparatedBoxPlotWriter.getPathQualifier( output );
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                   meta,
-                                                                   append,
-                                                                   metricName,
-                                                                   null );
+                                                                     meta,
+                                                                     append,
+                                                                     metricName,
+                                                                     null );
 
             Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
             // If writeTabularOutputToFile did not throw an exception, assume

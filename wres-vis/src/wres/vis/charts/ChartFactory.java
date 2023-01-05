@@ -309,18 +309,7 @@ public class ChartFactory
                       hasDiagonal );
 
         // Determine the key for each chart, time window by default
-        Set<Object> keySetValues =
-                Slicer.discover( statistics,
-                                 next -> next.getMetadata()
-                                             .getTimeWindow() );
-
-        // Slice by threshold if not time
-        if ( chartType != ChartType.LEAD_THRESHOLD && chartType != ChartType.POOLING_WINDOW )
-        {
-            keySetValues = Slicer.discover( statistics,
-                                            next -> next.getMetadata()
-                                                        .getThresholds() );
-        }
+        Set<Object> keySetValues = this.getKeysForSlicingDiagrams( statistics, chartType );
 
         String rangeTitle = rangeDimension + " [" + range.getUnits() + "]";
         String domainTitle = domainDimension + " [" + domain.getUnits() + "]";
@@ -1565,8 +1554,8 @@ public class ChartFactory
                 if ( timeScaleOuter.hasPeriod() )
                 {
                     Number periodNumber = DataUtilities.durationToNumericUnits( metadata.getTimeScale()
-                                                                                      .getPeriod(),
-                                                                              durationUnits );
+                                                                                        .getPeriod(),
+                                                                                durationUnits );
                     String period = periodNumber
                                     + " "
                                     + durationUnits.name().toUpperCase();
@@ -1763,7 +1752,7 @@ public class ChartFactory
             String middle = "";
 
             Number earliestNumber = DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
-                                                                        durationUnits );
+                                                                          durationUnits );
 
             if ( timeWindow.getEarliestLeadDuration()
                            .equals( timeWindow.getLatestLeadDuration() ) )
@@ -1773,7 +1762,7 @@ public class ChartFactory
             else
             {
                 Number latestNumber = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                                          durationUnits );
+                                                                            durationUnits );
 
                 middle = "lead durations in ["
                          + earliestNumber
@@ -1836,7 +1825,7 @@ public class ChartFactory
         // Pooling windows
         else if ( chartType == ChartType.POOLING_WINDOW )
         {
-            legendTitle = this.getPoolingWindowLegendName( metadata, graphicShape, durationUnits );
+            legendTitle = this.getPoolingWindowLegendName( metricName, metadata, graphicShape, durationUnits );
         }
 
         return legendTitle;
@@ -1844,12 +1833,14 @@ public class ChartFactory
 
     /**
      * Returns a legend name from the inputs for a chart that displays statistics for each of several pools.
+     * @param metricName the metric name
      * @param metadata the pool metadata
      * @param graphicShape the graphic shape
      * @param durationUnits the duration units
      * @throws NullPointerException if any input is null
      */
-    private String getPoolingWindowLegendName( PoolMetadata metadata,
+    private String getPoolingWindowLegendName( MetricConstants metricName,
+                                               PoolMetadata metadata,
                                                GraphicShape graphicShape,
                                                ChronoUnit durationUnits )
     {
@@ -1877,24 +1868,29 @@ public class ChartFactory
         Instant latestReferenceTime = metadata.getTimeWindow()
                                               .getLatestReferenceTime();
 
-        // Lead durations where required
-        if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+        // Plots for scores contain all pools, so qualify the time components
+        if ( metricName.isInGroup( StatisticType.DOUBLE_SCORE )
+             || metricName.isInGroup( StatisticType.DURATION_SCORE ) )
         {
-            legendTitle = legendTitle + "Lead time window [" + leadUnits + "], ";
-        }
+            // Lead durations where required
+            if ( !earliest.equals( TimeWindowOuter.DURATION_MIN ) || !latest.equals( TimeWindowOuter.DURATION_MAX ) )
+            {
+                legendTitle = legendTitle + "Lead time window [" + leadUnits + "], ";
+            }
 
-        // Valid times where required
-        if ( graphicShape != GraphicShape.VALID_DATE_POOLS
-             && ( !earliestValidTime.equals( Instant.MIN ) || !latestValidTime.equals( Instant.MAX ) ) )
-        {
-            legendTitle = legendTitle + "Valid time window [UTC], ";
-        }
+            // Valid times where required
+            if ( graphicShape != GraphicShape.VALID_DATE_POOLS
+                 && ( !earliestValidTime.equals( Instant.MIN ) || !latestValidTime.equals( Instant.MAX ) ) )
+            {
+                legendTitle = legendTitle + "Valid time window [UTC], ";
+            }
 
-        // Reference times where required
-        if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
-             && ( !earliestReferenceTime.equals( Instant.MIN ) || !latestReferenceTime.equals( Instant.MAX ) ) )
-        {
-            legendTitle = legendTitle + "Issued time window [UTC], ";
+            // Reference times where required
+            if ( graphicShape != GraphicShape.ISSUED_DATE_POOLS
+                 && ( !earliestReferenceTime.equals( Instant.MIN ) || !latestReferenceTime.equals( Instant.MAX ) ) )
+            {
+                legendTitle = legendTitle + "Issued time window [UTC], ";
+            }
         }
 
         legendTitle = legendTitle + "Threshold [" + thresholdUnits + "]:";
@@ -1963,6 +1959,32 @@ public class ChartFactory
                                                     + " into a chart type." );
 
         }
+    }
+
+    /**
+     * Creates the keys by which to slice diagram statistics. Each slice produces one diagram.
+     * 
+     * @param statistics the statistics to slice
+     * @param chartType the chart type
+     * @return the keys for slicing
+     */
+
+    private Set<Object> getKeysForSlicingDiagrams( List<DiagramStatisticOuter> statistics, ChartType chartType )
+    {
+        Set<Object> keySetValues =
+                Slicer.discover( statistics,
+                                 next -> next.getMetadata()
+                                             .getTimeWindow() );
+
+        // Slice by threshold if not time
+        if ( chartType != ChartType.LEAD_THRESHOLD && chartType != ChartType.POOLING_WINDOW )
+        {
+            keySetValues = Slicer.discover( statistics,
+                                            next -> next.getMetadata()
+                                                        .getThresholds() );
+        }
+
+        return keySetValues;
     }
 
     /**

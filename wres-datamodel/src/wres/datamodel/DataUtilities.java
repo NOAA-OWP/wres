@@ -452,7 +452,7 @@ public final class DataUtilities
         }
 
         // Add optional append
-        if ( Objects.nonNull( append ) )
+        if ( Objects.nonNull( append ) && ! append.isBlank() )
         {
             joinElements.add( append );
         }
