@@ -53,7 +53,7 @@ public interface DatabaseLockManager
     boolean unlockSource( Long lockName ) throws SQLException;
 
     /**
-     * Lock the back-end database using lockName, a shared lock, non-exclusive.
+     * Lock the back-end database using exclusive lock with the supplied name.
      * @param lockName the lock name to use, must be non-zero and positive, less than {@link Integer#MAX_VALUE}
      * @throws IllegalArgumentException when lockName less than 1 or is {@link Integer#MAX_VALUE}
      * @throws DatabaseLockFailed when db reports lock acquisition failed

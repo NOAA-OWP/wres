@@ -225,8 +225,8 @@ final class Functions
     /**
      * Creates the "cleanDatabase" method
      *
-     * @return A method that will remove all dynamic forecast, observation, and variable data from the database. Prepares the
-     * database for a cold start.
+     * @return A method that will remove all dynamic forecast, observation, and variable data from the database. 
+     * Prepares the database for a cold start.
      */
     private static ExecutionResult cleanDatabase( SharedResources sharedResources )
     {
