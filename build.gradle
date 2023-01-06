@@ -794,7 +794,7 @@ project(':wres-vis')
         implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.3'
 
         // SVG graphics from JFreeChart instances
-        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.0'
+        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.2'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
@@ -991,7 +991,7 @@ project(':wres-messages')
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.21.10'
+            artifact = 'com.google.protobuf:protoc:3.21.12'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -1011,7 +1011,7 @@ project(':wres-messages')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.21.10'
+        api 'com.google.protobuf:protobuf-java:3.21.12'
 
         implementation 'org.slf4j:slf4j-api:2.0.6'
 
