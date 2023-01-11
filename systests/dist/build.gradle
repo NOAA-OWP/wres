@@ -193,21 +193,21 @@ String bytesToHex( byte[] hash )
 
 dependencies
 {
-    testCompile 'commons-io:commons-io:2.11.0'
-    testCompile 'com.google.guava:guava-testlib:31.1-jre'
-    testCompile 'com.google.guava:guava:31.1-jre'
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:4.3.1'
-    testCompile 'org.slf4j:slf4j-api:1.8.0-beta2'
+    testImplementation 'commons-io:commons-io:2.11.0'
+    testImplementation 'com.google.guava:guava-testlib:31.1-jre'
+    testImplementation 'com.google.guava:guava:31.1-jre'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:4.3.1'
+    testImplementation 'org.slf4j:slf4j-api:1.8.0-beta2'
 
     // Expose all wres contents here, using unzipArtifactToTest task.
     // Use of fileTree is important, lazily evaluated, meaning that the contents
     // from the unzipArtifactToTest task will be here by now
-    testCompile fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib",
+    testImplementation fileTree( dir: "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib",
                           include: '*.jar' )
 
     // Add the lib/conf directory to testRuntime classpath like actual WRES does
-    testRuntime files( "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf" )
+    testRuntimeOnly files( "${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf" )
 
     println( "buildDir: ${buildDir}" )
     println( "versionToTest: ${versionToTest}" )

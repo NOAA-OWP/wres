@@ -52,17 +52,16 @@ plugins
     // To print junit test reports to the console in addition to html, so that
     // remote developers can see detailed test feedback without launching a
     // browser. See #61601
-    id 'com.github.ksoichiro.console.reporter' version '0.6.3'
+    id "com.adarshr.test-logger" version "3.2.0"
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '7.4.3'
+    id 'org.owasp.dependencycheck' version '7.4.4'
     
     // Task to assist in downloading artifacts
     id "de.undercouch.download" version "5.3.0"
 
     // To discover library versions with updates available
-    // Stuck on 0.42.0 until we update the gradle baseline to 7.0 or higher: #110090
-    id 'com.github.ben-manes.versions' version '0.42.0'
+    id 'com.github.ben-manes.versions' version '0.44.0'
 
     // Run python scripts
     // TODO: cannot install miniconda in current build environment
@@ -73,11 +72,10 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.7"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.8"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
-    // Stuck on 2.25.0 until we upgrade to Gradle 7.0 or later
-    id "org.beryx.jlink" version "2.25.0"
+    id "org.beryx.jlink" version "2.26.0"
 }
 
 repositories
@@ -589,12 +587,18 @@ project(':wres-statistics')
     
     def generatedDir = "${project.projectDir}/src"
 
+    // Workaround to set duplicate strategy for all copy tasks.
+    // See: https://github.com/gradle/gradle/issues/17236
+    tasks.withType(Copy).all {
+        duplicatesStrategy 'exclude'
+    }
+
     protobuf
     {
         // Automatically download and use the correct protobuf compiler
         protoc
         {
-            artifact = 'com.google.protobuf:protoc:3.21.10'
+            artifact = 'com.google.protobuf:protoc:3.21.12'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -647,7 +651,7 @@ project(':wres-statistics')
         from fileTree("${project.projectDir}/nonsrc/wresproto").include("*.proto")
         into destinationDir
     }
-    
+
     // Generate html from markdown
     markdownToHtml
     {
@@ -676,7 +680,7 @@ project(':wres-statistics')
 
     dependencies
     {
-        api 'com.google.protobuf:protobuf-java:3.21.10'
+        api 'com.google.protobuf:protobuf-java:3.21.12'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -930,6 +934,9 @@ project(':wres-config')
     // Wiring the generation of jaxb classes into standard compilation task:
     compileJava.dependsOn copyGenerated
 
+    // Render explicit the dependency of sourcesJar on copyGenerated
+    sourcesJar.dependsOn copyGenerated
+
     // Incremental builds disabled for the XJC task as of 20220804. See #107133. 
     tasks.named("xsd-dependency-tree").configure {
         outputs.upToDateWhen { false }
@@ -985,6 +992,12 @@ project(':wres-messages')
     apply plugin: 'com.google.protobuf'
 
     def generatedDir = "${project.projectDir}/src"
+
+    // Workaround to set duplicate strategy for all copy tasks.
+    // See: https://github.com/gradle/gradle/issues/17236
+    tasks.withType(Copy).all {
+        duplicatesStrategy 'exclude'
+    }
 
     protobuf
     {
@@ -1221,7 +1234,7 @@ project(':wres-tasker')
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.21.10'
+        implementation 'com.google.protobuf:protobuf-java:3.21.12'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
         {
@@ -1248,7 +1261,7 @@ project(':wres-tasker')
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:9.0.0'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.7'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.8'
     }
 
     apply plugin: 'application'
@@ -1523,7 +1536,7 @@ project(':wres-events')
     }
 }
 
-
+// TODO: move this project into its own build.gradle.
 project( ':wres-external-services-tests' )
 {
     // A separate zip allowing independent runs against external deps.
@@ -1540,6 +1553,28 @@ project( ':wres-external-services-tests' )
     {
         runtimeOnly project( ':wres-io' )
     }
+
+    // Explicitly link the artifact creation for this project to the
+    // artifact creation for the projects on which it depends. This is 
+    // an anti-pattern as described here: 
+    // https://docs.gradle.org/current/samples/sample_cross_project_output_sharing.html
+    // However, the suggested approach did not work in this case and 
+    // the dependencies must be clarified for gradle 8.0 and above:
+    // https://docs.gradle.org/7.6/userguide/validation_problems.html#implicit_dependency
+    // In any case, would be better to move this project into a separate 
+    // build.gradle, as noted above.
+    distZip.dependsOn project( ':wres-config' ).tasks.jar
+    distZip.dependsOn project( ':wres-datamodel' ).tasks.jar
+    distZip.dependsOn project( ':wres-statistics' ).tasks.jar
+    distZip.dependsOn project( ':wres-grid' ).tasks.jar
+    distZip.dependsOn project( ':wres-system' ).tasks.jar
+    distZip.dependsOn project( ':wres-util' ).tasks.jar
+    distTar.dependsOn project( ':wres-config' ).tasks.jar
+    distTar.dependsOn project( ':wres-datamodel' ).tasks.jar
+    distTar.dependsOn project( ':wres-statistics' ).tasks.jar
+    distTar.dependsOn project( ':wres-grid' ).tasks.jar
+    distTar.dependsOn project( ':wres-system' ).tasks.jar
+    distTar.dependsOn project( ':wres-util' ).tasks.jar
 
     distributions
     {

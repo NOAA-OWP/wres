@@ -525,7 +525,7 @@ class GraphicsClient
     private ExecutorService createGraphicsExecutor()
     {
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "Encountered an internal error in a WRES Graphics Worker of WRES Graphics Client "
+            String message = "Encountered an internal error in a WRES Graphics Worker of the WRES Graphics Client "
                              + this
                              + ".";
             LOGGER.error( message, b );
