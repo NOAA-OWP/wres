@@ -1650,7 +1650,7 @@ task(jacocoRootReport, type: JacocoReport, group: 'Verification', dependsOn: [su
 
     doFirst
     {
-        executionData.setFrom files(executionData.findAll { it.exists() })
+        executionData { tasks.withType(Test).findAll { it.state.executed } }
     }
 }
 
