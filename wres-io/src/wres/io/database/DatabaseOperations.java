@@ -36,6 +36,7 @@ public class DatabaseOperations
     /**
      * Attempts a connection to the database and throws an exception if the connection fails.
      * 
+     * @param database the database
      * @throws SQLException if the connection could not be established
      * @throws IOException if the host is invalid
      * @throws NullPointerException if the database is null
