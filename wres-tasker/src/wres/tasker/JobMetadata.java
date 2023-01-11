@@ -86,7 +86,8 @@ public class JobMetadata
     @RCascade( RCascadeType.ALL )
     private List<URI> baselineInputs;
 
-    private JobState jobState;
+    //Must ensure this is not null.  Just set it to CREATED on construction.
+    private JobState jobState = JobState.CREATED;
 
     private String databaseName;
 
@@ -112,7 +113,7 @@ public class JobMetadata
         this.leftInputs = new CopyOnWriteArrayList<>();
         this.rightInputs = new CopyOnWriteArrayList<>();
         this.baselineInputs = new CopyOnWriteArrayList<>();
-        this.jobState = JobState.CREATED;
+        // Moved to the declaration: this.jobState = JobState.CREATED;
         this.databaseName = null;
         this.databaseHost = null;
         this.databasePort = null;
