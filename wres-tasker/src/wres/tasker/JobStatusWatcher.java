@@ -117,11 +117,13 @@ class JobStatusWatcher implements Runnable
                                   true,
                                   jobStatusConsumer );
             this.getCountDownLatch().countDown();
+            LOGGER.info("Now waiting for messages in the queue {}.", queueName);
             JobMessageHelper.waitForAllMessages( queueName,
                                                  this.getJobId(),
                                                  jobStatusQueue,
                                                  sharer,
                                                  TOPIC );
+            LOGGER.info("Done waiting for messages in the queue {}.", queueName);
         }
         catch ( InterruptedException ie )
         {

@@ -3,6 +3,7 @@ package wres.tasker;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -38,6 +40,8 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import jakarta.ws.rs.core.StreamingOutput;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
@@ -78,7 +82,7 @@ class JobResults
     private final RLiveObjectService objectService;
 
     /** A shared map of job metadata by ID */
-    private final ConcurrentMap<String,JobMetadata> jobMetadataById;
+    private final ConcurrentMap<String, JobMetadata> jobMetadataById;
 
 
     /**
@@ -90,8 +94,11 @@ class JobResults
      */
     private final int NUMBER_OF_THREADS = 400;
 
-    /** An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. */
-    private final ExecutorService EXECUTOR = Executors.newFixedThreadPool( NUMBER_OF_THREADS );
+    /** 
+     * An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. 
+     * Initialized in the constructor.
+     */
+    private final ExecutorService executor;
 
     /** The factory to get connections from, configured to reach broker */
     private final ConnectionFactory connectionFactory;
@@ -111,39 +118,52 @@ class JobResults
         this.connection = null;
         this.redisson = redissonClient;
 
+
+        UncaughtExceptionHandler handler = ( a, b ) -> {
+            String message = "Encountered an internal error while watching for job information.";
+            LOGGER.warn( message, b );
+        };
+        ThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern( "JobResults Thread %d" )
+                                                                      .uncaughtExceptionHandler( handler )
+                                                                      .build();
+        executor = Executors.newFixedThreadPool( NUMBER_OF_THREADS, threadFactory );
+
+
         // Use redis when available, otherwise local Caffeine instances.
         if ( Objects.nonNull( this.redisson ) )
         {
-            RMapCache<String,JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById" );
+            RMapCache<String, JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById" );
             this.objectService = this.redisson.getLiveObjectService();
             this.objectService.registerClass( JobMetadata.class );
 
             // Listen for expiration of values within the map to expire metadata
             redissonMap.addListener(
-                    ( EntryExpiredListener<?,?> ) event
-                            -> this.objectService.delete( JobMetadata.class, event.getKey() ) );
+                                     (EntryExpiredListener<?, ?>) event -> this.objectService.delete( JobMetadata.class,
+                                                                                                      event.getKey() ) );
             this.jobMetadataById = redissonMap;
         }
         else
         {
-            Cache<String,JobMetadata> caffeineCache = Caffeine.newBuilder()
-                                                              .softValues()
-                                                              .build();
+            Cache<String, JobMetadata> caffeineCache = Caffeine.newBuilder()
+                                                               .softValues()
+                                                               .build();
             this.jobMetadataById = caffeineCache.asMap();
             this.objectService = null;
         }
-        
+
         //Scan the job metadata map for jobs that are IN_QUEUE or IN_PROGRESS.  Set watchers for
         //each such job.
-        for ( Map.Entry<String,JobMetadata> nextMetadata : this.jobMetadataById.entrySet() )
+        for ( Map.Entry<String, JobMetadata> nextMetadata : this.jobMetadataById.entrySet() )
         {
             String jobId = nextMetadata.getKey();
             JobMetadata metadata = nextMetadata.getValue();
 
-            if ( (metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_QUEUE) ||
-                 (metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_PROGRESS) )
+            if ( ( metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_QUEUE ) ||
+                 ( metadata.getJobState() == wres.tasker.JobMetadata.JobState.IN_PROGRESS ) )
             {
-                LOGGER.info("Found job {} in the redis map, which has status {}.  Setting up watchers to watch it.", jobId, metadata.getJobState());
+                LOGGER.info( "Found job {} in the redis map, which has status {}.  Setting up watchers to watch it.",
+                             jobId,
+                             metadata.getJobState() );
                 CountDownLatch latch;
                 try
                 {
@@ -297,8 +317,8 @@ class JobResults
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me?
-                queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
-                
+                queueName = channel.queueDeclare( bindingKey, true, false, false, null ).getQueue();
+
                 // Does this have any effect?
                 AMQP.Queue.BindOk bindResult = channel.queueBind( queueName, exchangeName, bindingKey );
 
@@ -330,42 +350,50 @@ class JobResults
             catch ( InterruptedException ie )
             {
                 LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
-                             jobId, resultValue, ie );
+                             jobId,
+                             resultValue,
+                             ie );
                 Thread.currentThread().interrupt();
             }
             catch ( IOException ioe )
             {
                 // Since we may or may not actually consume result, log exception here
                 LOGGER.warn( "When attempting to get job results message using {}:",
-                             this, ioe );
+                             this,
+                             ioe );
                 throw ioe;
             }
             finally
             {
-                if ( (queueName != null) && (channel != null) )
+                if ( ( queueName != null ) && ( channel != null ) )
                 {
                     try
                     {
                         LOGGER.info( "Deleting the queue {}", queueName );
-                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                        if (deleteOk == null)
+                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
+                        if ( deleteOk == null )
                         {
-                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.",
+                                         queueName );
                         }
                     }
                     catch ( IOException e )
                     {
-                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                     queueName,
+                                     e );
                     }
                 }
             }
 
             JobMetadata sharedData = this.getJobMetadata();
             LOGGER.debug( "Shared metadata before setting exit code to {}: {}",
-                          resultValue, sharedData );
+                          resultValue,
+                          sharedData );
             sharedData.setExitCode( resultValue );
             LOGGER.debug( "Shared metadata after setting exit code to {}: {}",
-                          resultValue, sharedData );
+                          resultValue,
+                          sharedData );
 
             if ( resultValue == 0 )
             {
@@ -400,7 +428,7 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class StandardStreamWatcher implements Callable<Map<Integer,String>>
+    private static class StandardStreamWatcher implements Callable<Map<Integer, String>>
     {
         private static final int LOCAL_Q_SIZE = 10;
         private final Connection connection;
@@ -465,31 +493,33 @@ class JobResults
          * @throws IOException when queue declaration fails
          */
 
-        public Map<Integer,String> call() throws IOException, TimeoutException
+        public Map<Integer, String> call() throws IOException, TimeoutException
         {
             String jobId = this.getJobId();
             Consumer<GeneratedMessageV3> sharer = new JobStandardStreamSharer( this.jobMetadata,
                                                                                this.getWhichStream() );
-            BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput
-                    = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
+            BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput =
+                    new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
 
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
-            String bindingKey = "job." + jobId + "." + this.getWhichStream()
-                                                           .name();
+            String bindingKey = "job." + jobId
+                                + "."
+                                + this.getWhichStream()
+                                      .name();
             String queueName = null;
             Channel channel = null;
 
-            try 
+            try
             {
                 channel = this.getConnection().createChannel();
                 channel.exchangeDeclare( exchangeName, exchangeType );
 
                 // As the consumer, I want an exclusive queue for me.
-                queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
+                queueName = channel.queueDeclare( bindingKey, true, false, false, null ).getQueue();
                 channel.queueBind( queueName, exchangeName, bindingKey );
 
-                LOGGER.info("Watching the queue {} for {} logging.", queueName, this.getWhichStream().toString() );
+                LOGGER.info( "Watching the queue {} for {} logging.", queueName, this.getWhichStream().toString() );
 
                 JobStandardStreamConsumer jobStandardStreamConsumer =
                         new JobStandardStreamConsumer( channel,
@@ -515,25 +545,29 @@ class JobResults
             {
                 // Since we may or may not actually consume result, log exception here
                 LOGGER.warn( "When attempting to get job results message using {}:",
-                             this, ioe );
+                             this,
+                             ioe );
                 throw ioe;
             }
             finally
             {
-                if ( (queueName != null) && (channel != null) )
+                if ( ( queueName != null ) && ( channel != null ) )
                 {
                     try
                     {
                         LOGGER.info( "Deleting the queue {}", queueName );
-                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                        if (deleteOk == null)
+                        AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
+                        if ( deleteOk == null )
                         {
-                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                            LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.",
+                                         queueName );
                         }
                     }
                     catch ( IOException e )
                     {
-                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                     queueName,
+                                     e );
                     }
                 }
             }
@@ -583,7 +617,7 @@ class JobResults
         }
         return metadata;
     }
-    
+
 
     /**
      * Register a a new job, without yet watching for results from a worker.
@@ -617,7 +651,7 @@ class JobResults
             // RLiveObject instances are RExpirable, set expiration both on the
             // instance we just created, and also its reference in the RMapCache
             boolean expiring = ( ( RExpirable ) jobMetadata ).expire( EXPIRY_IN_MINUTES, TimeUnit.MINUTES );
-
+            
             if ( !expiring )
             {
                 LOGGER.warn( "Unexpectedly unable to expire jobMetadata instance {}",
@@ -626,16 +660,16 @@ class JobResults
              */
 
             metadataExisted =
-                    ( ( RMapCache<String, JobMetadata> ) this.jobMetadataById )
-                            .putIfAbsent( jobId, jobMetadata,
-                                          EXPIRY_IN_MINUTES, TimeUnit.MINUTES )
-                    != null;
+                    ( (RMapCache<String, JobMetadata>) this.jobMetadataById )
+                                                                             .putIfAbsent( jobId,
+                                                                                           jobMetadata,
+                                                                                           EXPIRY_IN_MINUTES,
+                                                                                           TimeUnit.MINUTES ) != null;
         }
         else
         {
             metadataExisted =
-                    this.jobMetadataById.putIfAbsent( jobId, jobMetadata )
-                    != null;
+                    this.jobMetadataById.putIfAbsent( jobId, jobMetadata ) != null;
         }
 
         if ( metadataExisted )
@@ -665,7 +699,7 @@ class JobResults
                                         String jobStatusExchangeName )
             throws IOException, TimeoutException
     {
-        JobMetadata jobMetadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata jobMetadata = getJobMetadataExceptIfNotFound( jobId );
 
         CountDownLatch countDownLatch = new CountDownLatch( 5 );
         JobResultWatcher jobResultWatcher = new JobResultWatcher( this.getConnection(),
@@ -698,11 +732,11 @@ class JobResults
                                                                   jobMetadata,
                                                                   countDownLatch );
 
-        EXECUTOR.submit( stdoutWatcher );
-        EXECUTOR.submit( stderrWatcher );
-        EXECUTOR.submit( jobOutputWatcher );
-        EXECUTOR.submit( jobStatusWatcher );
-        EXECUTOR.submit( jobResultWatcher );
+        executor.submit( stdoutWatcher );
+        executor.submit( stderrWatcher );
+        executor.submit( jobOutputWatcher );
+        executor.submit( jobStatusWatcher );
+        executor.submit( jobResultWatcher );
         return countDownLatch;
     }
 
@@ -712,7 +746,7 @@ class JobResults
 
     void shutdownNow()
     {
-        EXECUTOR.shutdownNow();
+        executor.shutdownNow();
     }
 
 
@@ -775,7 +809,7 @@ class JobResults
         JobMetadata jobMetadata = jobMetadataById.get( jobId );
 
         StreamingOutput streamingOutput = output -> {
-            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output, StandardCharsets.UTF_8 );
+            try ( OutputStreamWriter outputStreamWriter = new OutputStreamWriter( output, StandardCharsets.UTF_8 );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
 
@@ -785,7 +819,7 @@ class JobResults
                     return;
                 }
 
-                Map<Integer,String> stdout = jobMetadata.getStdout();
+                Map<Integer, String> stdout = jobMetadata.getStdout();
 
                 // There is an assumption that the worker starts counting at 0
                 int previousIndex = -1;
@@ -831,7 +865,7 @@ class JobResults
             return "No job id '" + jobId + "' found.'";
         }
 
-        Map<Integer,String> stderr = metadata.getStderr();
+        Map<Integer, String> stderr = metadata.getStderr();
         StringJoiner result = new StringJoiner( System.lineSeparator() );
         SortedSet<Integer> sortedKeys = new TreeSet<>( stderr.keySet() );
 
@@ -871,14 +905,14 @@ class JobResults
      */
     void removeJobOutputs( String jobId, Set<URI> outputs )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         //This call may throw an IllegalStateException.
         boolean result = metadata.removeOutputs( outputs );
 
         if ( !result )
         {
-            LOGGER.warn("Result from removeOutputs is not true; check previous warnings for why.");
+            LOGGER.warn( "Result from removeOutputs is not true; check previous warnings for why." );
         }
     }
 
@@ -889,8 +923,9 @@ class JobResults
     void setJobMessage( String jobId, byte[] jobMessage )
     {
         LOGGER.debug( "Setting declaration for jobId={} to: \n{}",
-                      jobId, jobMessage );
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+                      jobId,
+                      jobMessage );
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         byte[] originalMessage = metadata.getJobMessage();
 
@@ -908,111 +943,112 @@ class JobResults
      */
     byte[] getJobMessage( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         return metadata.getJobMessage();
     }
-    
+
     /**
      * Set the name of the database for the given job.
      */
     void setDatabaseName( String jobId, String databaseName )
     {
         LOGGER.debug( "Setting databaseName for jobId={} to: {}.", jobId, databaseName );
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         String originalValue = metadata.getDatabaseName();
         if ( Objects.nonNull( originalValue ) )
         {
             throw new IllegalStateException( "Job id " + jobId
                                              + " already had database name set,"
-                                             + originalValue + "!" );
+                                             + originalValue
+                                             + "!" );
         }
-        metadata.setDatabaseName(databaseName);    
+        metadata.setDatabaseName( databaseName );
     }
-    
+
     /**
      * Get the name of the database for the given job.
-     */ 
+     */
     String getDatabaseName( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         return metadata.getDatabaseName();
     }
 
     /**
      * Set the host of the database for the given job.
-     */ 
+     */
     void setDatabaseHost( String jobId, String databaseHost )
     {
         LOGGER.debug( "Setting databaseHost for jobId={} to: {}.", jobId, databaseHost );
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         String originalValue = metadata.getDatabaseHost();
         if ( Objects.nonNull( originalValue ) )
         {
             throw new IllegalStateException( "Job id " + jobId
                                              + " already had database host set!" );
         }
-        metadata.setDatabaseHost(databaseHost);    
+        metadata.setDatabaseHost( databaseHost );
     }
-    
+
     /**
      * Get the host of the database for the given job.
-     */ 
+     */
     String getDatabaseHost( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         return metadata.getDatabaseHost();
     }
 
     /**
      * Set the port of the database for the given job.
-     */ 
+     */
     void setDatabasePort( String jobId, String databasePort )
     {
         LOGGER.debug( "Setting databaseHost for jobId={} to: {}.", jobId, databasePort );
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         String originalValue = metadata.getDatabasePort();
         if ( Objects.nonNull( originalValue ) )
         {
             throw new IllegalStateException( "Job id " + jobId
                                              + " already had database port set!" );
         }
-        metadata.setDatabaseHost(databasePort);    
+        metadata.setDatabaseHost( databasePort );
     }
-    
+
     /**
      * Get the port of the database for the given job.
-     */ 
+     */
     String getDatabasePort( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
         return metadata.getDatabasePort();
     }
 
     List<URI> getLeftInputs( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         return Collections.unmodifiableList( metadata.getLeftInputs() );
     }
 
     List<URI> getRightInputs( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         return Collections.unmodifiableList( metadata.getRightInputs() );
     }
 
     List<URI> getBaselineInputs( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         return Collections.unmodifiableList( metadata.getBaselineInputs() );
     }
 
     void addInput( String jobId, String side, URI input )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         if ( side.equalsIgnoreCase( "left" ) )
         {
@@ -1053,7 +1089,9 @@ class JobResults
             catch ( IOException ioe )
             {
                 LOGGER.warn( "Failed to delete left data for job {} at {}",
-                             jobId, uri, ioe );
+                             jobId,
+                             uri,
+                             ioe );
             }
         }
 
@@ -1067,7 +1105,9 @@ class JobResults
             catch ( IOException ioe )
             {
                 LOGGER.warn( "Failed to delete right data for job {} at {}",
-                             jobId, uri, ioe );
+                             jobId,
+                             uri,
+                             ioe );
             }
         }
 
@@ -1081,7 +1121,9 @@ class JobResults
             catch ( IOException ioe )
             {
                 LOGGER.warn( "Failed to delete baseline data for job {} at {}",
-                             jobId, uri, ioe );
+                             jobId,
+                             uri,
+                             ioe );
             }
         }
     }
@@ -1095,7 +1137,7 @@ class JobResults
 
     void deleteInputs( String jobId )
     {
-        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound( jobId );
         JobResults.deleteInputs( sharedMetadata );
     }
 
@@ -1110,7 +1152,7 @@ class JobResults
      */
     void setInQueue( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         try
         {
@@ -1141,7 +1183,7 @@ class JobResults
 
     void setAwaitingPostInputData( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         metadata.setJobState( JobMetadata.JobState.AWAITING_POSTS_OF_DATA );
     }
@@ -1157,7 +1199,7 @@ class JobResults
 
     void setPostInputDone( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         metadata.setJobState( JobMetadata.JobState.NO_MORE_POSTS_OF_DATA );
     }
@@ -1172,9 +1214,10 @@ class JobResults
 
     void setFailedBeforeInQueue( String jobId )
     {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound(jobId);
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         metadata.setJobState( JobMetadata.JobState.FAILED_BEFORE_IN_QUEUE );
     }
 }
+
 
