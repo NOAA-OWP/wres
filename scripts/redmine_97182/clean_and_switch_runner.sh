@@ -63,38 +63,28 @@ then
     echo $(date)       >  $cron_clean_switch_status_file
     echo $db_name1     >>  $cron_clean_switch_status_file
     echo $db_host1     >>  $cron_clean_switch_status_file
+    echo $(date)       >>  $cron_clean_switch_status_file
     sleep 2 # Delay ensures the time check below leads to a run of the clean-and-switch.
 fi 
 
 # Load the parameters from the status file
-{ read -r next_run_time; read -r next_db; read -r next_host; } < <( cat $cron_clean_switch_status_file )
+{ read -r next_run_time; read -r next_db; read -r next_host; read -r next_active_db_clean; } < <( cat $cron_clean_switch_status_file )
 
 echo "Found the following information in the status file:"    
 echo "    next_run_time = $next_run_time"
 echo "    next_db = $next_db"
 echo "    next_host = $next_host"
-
-# Never run if the run_state is "running".
-test="running"
-if [[ $run_status == "running" ]]
-then
-    echo "A clean is already running.  Not going to run it again."
-    exit 1
-fi
+echo "    next_active_db_clean = $next_active_db_clean"
 
 # Compute the Unix time stamps
 next_stamp=$( date -d "${next_run_time}" +%s )
+next_active_db_clean_stamp=$( date -d "${next_active_db_clean}" +%s )
 current_stamp=$( date -d "$(date)" +%s )
-echo "The next run time stamp is $next_stamp.  The current time stamp is $current_stamp."
+echo "The next run time stamp is $next_stamp. The next active db clean is $next_active_db_clean_stamp."
+echo "The current time stamp is $current_stamp."
 if [ $next_stamp -le $current_stamp ]
 then
     echo "Next time stamp is before current time stamp.  Executing the clean and switch for $next_db."
-
-    # Update the status file to mark it as running.
-    rm $cron_clean_switch_status_file
-    echo $next_run_time >   $cron_clean_switch_status_file
-    echo $next_db       >>  $cron_clean_switch_status_file
-    echo $next_host     >>  $cron_clean_switch_status_file
 
     # Execute the clean and switch.  
     ./wres_http_cleanandswitch.sh $next_db $next_host $cowres_url
@@ -109,7 +99,7 @@ then
         # it by how often we want the clean to run, 24 hours or less, until we find a date/time in 
         # the future at least by a fixed how-far-in-the-future number of hours. That becomes the
         # next time.
-        seconds_increment=43200                              # Increment specified in seconds.
+        seconds_increment=43200                             # Increment specified in seconds.
         initial_date_str=$(date +"%F 00:00:00")             # Initial date/time 
         check_date_stamp=$(date -d "$initial_date_str" +%s) # Time stamp being checked based on initial date/time
         minimum_date_stamp=$(date -d "+1 hour" +%s)         # Minimum time required relative to now
@@ -140,18 +130,49 @@ then
         fi
         echo "The next database host will be $next_host."
 
-        # Update the status file.
+        # Update the status file.  The next active database clean time is unchanged.
         echo "Updating the status file $cron_clean_switch_status_file with $next_run_time, $next_db, $next_host..."
         rm $cron_clean_switch_status_file
-        echo $next_run_time >  $cron_clean_switch_status_file
-        echo $next_db       >> $cron_clean_switch_status_file
-        echo $next_host     >> $cron_clean_switch_status_file
+        echo $next_run_time        >  $cron_clean_switch_status_file
+        echo $next_db              >> $cron_clean_switch_status_file
+        echo $next_host            >> $cron_clean_switch_status_file
+        echo $next_active_db_clean >> $cron_clean_switch_status_file
+
+    # The clean and switch failed...
     else
-        echo "Clean failed. Status file reverted to 'not running'. Try it again the next time."
+
+        # If the current time is after the next active db clean time, then try that.
+        if [ $next_active_db_clean_stamp -le $current_stamp ]
+        then
+            echo "Clean failed; it will be tried again the next time. Attempting an active database clean..."
+            ./wres_http_cleanandswitch.sh active active $cowres_url
+
+            # If the active-db clean succeeded, let the user know and update the next time to do it.
+            if [ $? -eq 0 ]
+            then
+                echo "Active database clean succeeded. Next one will be at at least 24 hours (hardcoded) from now."
+                next_active_db_clean = $(date -ud "+24 hour")
+            
+            # Else, let the user know the clean failed.  Don't update the next active db clean time.
+            # This will result in another attempt when the next clean-and-switch is attempted -and-
+            # it fails.
+            else
+                echo "Active database clean failed.  It will be attempted again next time a clean-and-switch fails."
+            fi
+
+        # otherwise, its too soon for an active database clean.  just let the user know what happened.
+        else
+            echo "Clean failed; it will be tried again next time. Its too soon to clean the active databse."
+        fi
+
+        # Update the status file.  The next runtime, db, host are unchanged, since we want the
+        # clean-and-switch to be tried again.  The next active databse clean time depends on whethr
+        # the one just attempted succeeded.  
         rm $cron_clean_switch_status_file
-        echo $next_run_time >  $cron_clean_switch_status_file 
-        echo $next_db       >> $cron_clean_switch_status_file
-        echo $next_host     >> $cron_clean_switch_status_file
+        echo $next_run_time        >  $cron_clean_switch_status_file 
+        echo $next_db              >> $cron_clean_switch_status_file
+        echo $next_host            >> $cron_clean_switch_status_file
+        echo $next_active_db_clean >> $cron_clean_switch_status_file
     fi 
 else
     echo "Next time stamp is after current time stamp.  Not running the clean and switch, yet."
