@@ -151,7 +151,7 @@ then
             if [ $? -eq 0 ]
             then
                 echo "Active database clean succeeded. Next one will be at at least 24 hours (hardcoded) from now."
-                next_active_db_clean = $(date -ud "+24 hour")
+                next_active_db_clean=$(date -ud "+24 hour")
             
             # Else, let the user know the clean failed.  Don't update the next active db clean time.
             # This will result in another attempt when the next clean-and-switch is attempted -and-

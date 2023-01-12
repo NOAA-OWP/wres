@@ -4,6 +4,8 @@
 # This script runs a clean database on the single db used in an environment.
 # It then calls switchdatabase for that COWRES cluster.
 
+echo "CLEAN AND SWITCH EXECUTING..."
+
 # One argument is expected, currently: the target database.
 if [ "$#" -ne 3 ] && [ "$#" -ne 4 ] ; then
     echo "Illegal number of arguments provided to clean and switch."
@@ -29,7 +31,6 @@ if [ $target_host == "active" ]; then
     target_host=""
 fi
 
-echo "CLEAN AND SWITCH EXECUTING..."
 echo "User specified target db $target_db, target host $target_host, and COWRES url $cowres_url."
 
 wres_ca_file=dod_root_ca_3_expires_2029-12.pem
