@@ -5,15 +5,21 @@
 # It then calls switchdatabase for that COWRES cluster.
 
 # One argument is expected, currently: the target database.
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 3 ] && [ "$#" -ne 4 ] ; then
     echo "Illegal number of arguments provided to clean and switch."
-    echo "The following arguments are required: [target db] [target host] [cowres url]"
+    echo "The following arguments are required: <target db> <target host> <cowres url> [<switch true or false>]"
     echo "Pass in 'active' or an empty string for the db or host to use the active database."
+    echo "Pass in false for the optional switch argument if you don't want to switch databases."
     exit 1
 fi
 target_db=$1
 target_host=$2
 cowres_url=$3
+switchflag=true
+if [ "$#" -eq 4 ] ; then
+    echo "Switch flag specified at command line: $4"
+    switchflag=$4
+fi
 
 # If either the target db or host are "active", then empty it out.
 if [ $target_db == "active" ]; then
@@ -95,6 +101,14 @@ else
     echo ""
     exit 3
 fi
+
+# Don't switch the database if the host and database are active/empty.
+if [ "$switchflag" != "true" ]
+then
+    echo "Switch flag, $switchflag, indicates database is not to be switched.  Exiting."
+    exit 0
+fi
+
 
 # So far so good.  Try to switch the database.
 echo "Switching to the target database ${target_db} on host $target_host for COWRES url $cowres_url ..."

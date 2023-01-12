@@ -145,7 +145,7 @@ then
         if [ $next_active_db_clean_stamp -le $current_stamp ]
         then
             echo "Clean failed; it will be tried again the next time. Attempting an active database clean..."
-            ./wres_http_cleanandswitch.sh active active $cowres_url
+            ./wres_http_cleanandswitch.sh active active $cowres_url false
 
             # If the active-db clean succeeded, let the user know and update the next time to do it.
             if [ $? -eq 0 ]
