@@ -76,6 +76,9 @@ plugins
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
     id "org.beryx.jlink" version "2.26.0"
+
+    // Integrated code coverage report
+    id 'jacoco-report-aggregation'
 }
 
 repositories
@@ -1626,9 +1629,6 @@ project( ':wres-external-services-tests' )
     }
 }
 
-apply plugin: 'jacoco'        // code coverage tool
-apply plugin: 'org.sonarqube' // static analysis tool
-
 /**
  * Task to compile markdown to html.
  *
@@ -1709,8 +1709,13 @@ task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkd
     into destinationDir
 }
 
+apply plugin: 'jacoco'        // code coverage tool
+apply plugin: 'org.sonarqube' // static analysis tool
 apply plugin: 'application'
 apply plugin: 'java-library'
+apply plugin: 'nebula-aggregate-javadocs'
+apply plugin: 'org.owasp.dependencycheck'
+apply plugin: 'com.github.ben-manes.versions'
 
 mainClassName = 'wres.Main'
 
@@ -1742,11 +1747,6 @@ if (!gitIsClean)
 {
     version = version + '-dev'
 }
-
-apply plugin: 'nebula-aggregate-javadocs'
-
-apply plugin: 'org.owasp.dependencycheck'
-apply plugin: 'com.github.ben-manes.versions'
 
 dependencies
 {
@@ -2009,4 +2009,4 @@ configurations.runtimeOnly
     exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
 }
 
-defaultTasks 'installDist', 'test', 'javadoc', 'jacocorootreport'
+defaultTasks 'installDist', 'test', 'javadoc'

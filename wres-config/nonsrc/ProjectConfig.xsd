@@ -231,8 +231,8 @@
         </xs:annotation>
         <xs:all>
             <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
-            <xs:element name="polygon" type="PolygonSelection" minOccurs="0"/>
-            <xs:element name="circle" type="CircleSelection" minOccurs="0" />
+            <xs:element name="polygon" type="polygonSelection" minOccurs="0"/>
+            <xs:element name="circle" type="circleSelection" minOccurs="0" />
         </xs:all>
     </xs:complexType>
 
@@ -259,7 +259,7 @@
         </xs:all>
     </xs:complexType>
 
-    <xs:complexType name="CircleSelection">
+    <xs:complexType name="circleSelection">
         <xs:annotation>
             <xs:appinfo>
                 <jaxb:class name="Circle" />
@@ -273,7 +273,7 @@
         <xs:attribute name="srid" type="xs:integer" default="4326" />
     </xs:complexType>
 
-    <xs:complexType name="PolygonSelection">
+    <xs:complexType name="polygonSelection">
         <xs:annotation>
             <xs:appinfo>
                 <jaxb:class name="Polygon" />
