@@ -8,11 +8,20 @@
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of arguments provided to clean and switch."
     echo "The following arguments are required: [target db] [target host] [cowres url]"
+    echo "Pass in 'active' or an empty string for the db or host to use the active database."
     exit 1
 fi
 target_db=$1
 target_host=$2
 cowres_url=$3
+
+# If either the target db or host are "active", then empty it out.
+if [ $target_db == "active" ]; then
+    target_db=""
+fi
+if [ $target_host == "active" ]; then
+    target_host=""
+fi
 
 echo "CLEAN AND SWITCH EXECUTING..."
 echo "User specified target db $target_db, target host $target_host, and COWRES url $cowres_url."
