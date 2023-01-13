@@ -3,7 +3,7 @@ package wres.datamodel;
 /**
  * A base class for a runtime exception associated with a dataset.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class DataException extends RuntimeException

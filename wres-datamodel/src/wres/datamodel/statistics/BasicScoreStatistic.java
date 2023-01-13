@@ -123,7 +123,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     /**
      * A wrapper for a {@link DoubleScoreStatisticComponent}.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     abstract static class BasicScoreComponent<S> implements ScoreComponent<S>

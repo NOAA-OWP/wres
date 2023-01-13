@@ -16,7 +16,7 @@ import wres.datamodel.Ensemble.Labels;
 /**
  * Tests the {@link Ensemble}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 final class EnsembleTest
 {

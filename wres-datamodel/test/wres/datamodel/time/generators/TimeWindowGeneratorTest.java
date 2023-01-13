@@ -22,7 +22,7 @@ import wres.statistics.generated.TimeWindow;
 /**
  * <p>Tests the {@link TimeWindowGenerator}.
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class TimeWindowGeneratorTest

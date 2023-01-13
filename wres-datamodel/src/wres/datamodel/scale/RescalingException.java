@@ -5,7 +5,7 @@ import wres.datamodel.DataException;
 /**
  * A runtime exception associated with rescaling data.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class RescalingException extends DataException

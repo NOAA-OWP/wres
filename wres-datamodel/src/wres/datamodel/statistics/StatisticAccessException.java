@@ -3,7 +3,7 @@ package wres.datamodel.statistics;
 /**
  * A checked exception that is thrown on attempting to access a {@link Statistic} that is not available.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class StatisticAccessException extends Exception

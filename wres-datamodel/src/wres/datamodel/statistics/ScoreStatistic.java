@@ -57,7 +57,7 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
      * Abstractions of a score component.
      * 
      * @param <S> the type of component value
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
     
     public interface ScoreComponent<S> extends Statistic<S>

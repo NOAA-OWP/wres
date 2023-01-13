@@ -5,7 +5,7 @@ import wres.datamodel.DataException;
 /**
  * A runtime exception associated with an incorrect {@link Statistic}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class StatisticException extends DataException

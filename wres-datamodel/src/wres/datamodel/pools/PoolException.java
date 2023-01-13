@@ -5,7 +5,7 @@ import wres.datamodel.DataException;
 /**
  * A runtime exception associated with incorrect {@link Pool}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PoolException extends DataException

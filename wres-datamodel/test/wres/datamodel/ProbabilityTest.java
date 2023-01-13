@@ -11,7 +11,7 @@ import org.junit.Test;
 /**
  * Tests the {@link Probability}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class ProbabilityTest
 {

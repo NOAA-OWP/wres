@@ -13,7 +13,7 @@ import wres.statistics.generated.BoxplotStatistic;
 /**
  * Immutable store of several box plot statistics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable

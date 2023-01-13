@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * Immutable store of one or two double values.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class OneOrTwoDoubles implements Comparable<OneOrTwoDoubles>

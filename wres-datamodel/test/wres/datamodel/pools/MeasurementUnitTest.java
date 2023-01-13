@@ -11,7 +11,7 @@ import org.junit.Test;
 /**
  * Tests the {@link MeasurementUnit}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class MeasurementUnitTest
