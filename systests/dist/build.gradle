@@ -30,7 +30,7 @@ java
 // The default value of the versionToTest will be picked up from
 // gradle.properties file. versionToTest can be overridden at gradle run time
 // by using -PversionToTest=[version] on the gradle command line. The same is
-// true for wresZipDirectory, which is the directory to find the zip ein.
+// true for wresZipDirectory, which is the directory to find the zip in.
 
 // This task takes the software under test (a wres zip) and extracts it
 task( unzipArtifactToTest, type: Copy, group: 'test' )
@@ -46,7 +46,7 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
     println( "zipFile: " + zipFile )
     println( "outputDir: " + outputDir )
 
-    // Print the SHA-256 of the graphics artifact if it exists
+    // Print the SHA-256 of the artifact if it exists
     if( zipFile.exists() )
     {
         byte[] binaryContent = zipFile.bytes
