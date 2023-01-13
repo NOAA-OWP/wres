@@ -1337,7 +1337,7 @@ project(':wres-tasker')
         outputFileName = 'wres_openapi'
         outputFormat = 'json'
         prettyPrint = 'true'
-        openApiFile = file( '/dist/lib/static/swagger/wres_api_info.yaml' )
+        //openApiFile = file( '/dist/lib/static/swagger/wres_api_info.yaml' )
         outputDir = new File( swaggerDocsBaseDir, swaggerDocsSubdirPathString )
         classpath = sourceSets.main.runtimeClasspath
         resourcePackages = [ 'wres.tasker' ]
