@@ -1,0 +1,5 @@
+openapi: 3.0.1
+info:
+  version: '1.0'
+  title: Water Resources Evaluation Service (WRES) API
+  description: 'This is the API for the WRES.'
