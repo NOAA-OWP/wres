@@ -3,7 +3,7 @@ package wres.datamodel.thresholds;
 /**
  * A store of threshold enumerations.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class ThresholdConstants

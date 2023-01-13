@@ -11,7 +11,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 /**
  * Stores an array of ensemble member values as double values and, optionally, an array of ensemble member labels.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class Ensemble implements Comparable<Ensemble>
 {

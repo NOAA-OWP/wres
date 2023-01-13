@@ -14,7 +14,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 /**
  * Tests the {@link OneOrTwoThresholds}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class OneOrTwoThresholdsTest
 {

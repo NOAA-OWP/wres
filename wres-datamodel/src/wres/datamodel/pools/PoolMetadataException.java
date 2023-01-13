@@ -5,7 +5,7 @@ import wres.datamodel.DataException;
 /**
  * A runtime exception associated with incorrect metadata.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PoolMetadataException extends DataException

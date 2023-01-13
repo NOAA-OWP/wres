@@ -8,7 +8,7 @@ import org.junit.Test;
 /**
  * Tests the {@link PoolException}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class PoolExceptionTest
 {

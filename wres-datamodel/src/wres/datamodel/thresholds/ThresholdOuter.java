@@ -32,7 +32,7 @@ import wres.statistics.generated.Threshold.ThresholdOperator;
  * 
  * <p>The internal data is stored, and accessible, as a {@link Threshold}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredicate

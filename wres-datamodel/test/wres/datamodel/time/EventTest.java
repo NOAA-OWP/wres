@@ -13,7 +13,7 @@ import org.junit.Test;
 /**
  * Tests the {@link Event}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public final class EventTest
 {

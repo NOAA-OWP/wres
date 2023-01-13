@@ -18,7 +18,7 @@ import wres.statistics.generated.DurationDiagramStatistic;
 /**
  * A statistic that comprises a list of pairs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable

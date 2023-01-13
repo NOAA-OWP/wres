@@ -36,7 +36,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * 
  * @param <L> the left type of event value
  * @param <R> the right type of event value
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>

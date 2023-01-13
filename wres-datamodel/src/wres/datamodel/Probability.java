@@ -7,7 +7,7 @@ import org.apache.commons.math3.util.Precision;
 /**
  * A double value that falls in the unit interval.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class Probability implements Comparable<Probability>
 {

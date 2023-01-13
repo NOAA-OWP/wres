@@ -14,7 +14,7 @@ import wres.datamodel.messages.EvaluationStatusMessage;
  * <li>Any validation events encountered when rescaling, such as warnings.</li>
  * </ol>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  * @param <T> the type of event values in the time-series
  */
 

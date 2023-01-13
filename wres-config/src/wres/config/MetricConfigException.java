@@ -5,7 +5,7 @@ import com.sun.xml.bind.Locatable;
 /**
  * An unchecked exception associated with metric configuration.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public final class MetricConfigException extends ProjectConfigException
