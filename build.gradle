@@ -98,9 +98,6 @@ subprojects
     apply plugin: 'org.owasp.dependencycheck'
     apply plugin: 'com.github.ben-manes.versions'
 
-    sourceCompatibility = '11'
-    targetCompatibility = '11'
-
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1).find()
 
@@ -201,6 +198,11 @@ subprojects
     {
         withJavadocJar()
         withSourcesJar()
+
+        // Declare the Java version, self-contained to the build
+        toolchain {
+            languageVersion = JavaLanguageVersion.of( 11 )
+        }
     }
 
     tasks.withType( AbstractArchiveTask )
@@ -439,7 +441,7 @@ project(':wres-io')
         // Easier MD5
         implementation 'commons-codec:commons-codec:1.15'
 
-        // Better-than-Java-11's HTTP client
+        // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
@@ -545,7 +547,7 @@ project(':wres-io')
 }
 
 project(':wres-metrics')
-{
+{    
     dependencies
     {
         implementation project(':wres-datamodel')
@@ -1171,8 +1173,9 @@ project(':wres-tasker')
         // This separate configuration keeps swagger jars out of the zip.
         docGen
     }
-
+    
     def swaggerDocsBaseDir = new File( buildDir, "swagger" )
+    def swaggerDocsSubdirPathString = 'lib/static/swagger/doc';
 
     dependencies
     {
@@ -1283,8 +1286,8 @@ project(':wres-tasker')
         classpath += files('static')
         classpath += files('conf')
     }
-
-    // Make available static html files to classpath, also logging configuration
+    
+    // Make available openapi docs and logging configuration to the classpath
     distributions
     {
         main
@@ -1293,13 +1296,14 @@ project(':wres-tasker')
             {
                 from
                 {
-                    // Note: see lengthy note in main application below
-                    [ 'dist', swaggerDocs ]
+                    // Source from the static content in dist, plus the swaggerDocs creation task
+                    ['dist', swaggerDocs]
                 }
+                // Because this is appended directly to the API docs
+                exclude '**/wres_api_info.yaml'
             }
         }
     }
-
 
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
@@ -1327,90 +1331,27 @@ project(':wres-tasker')
         }
     }
 
-
-    // Task named "resolve" is from from swagger plugin, generates openapi.json
+    // Task named "resolve" is from from swagger plugin, generates openapi json
     resolve
-    {
-        outputDir = new File( swaggerDocsBaseDir, "lib/static/html/doc" )
+    {   
+        outputFileName = 'wres_openapi'
+        outputFormat = 'json'
+        prettyPrint = 'true'
+        openApiFile = file( '/dist/lib/static/swagger/wres_api_info.yaml' )
+        outputDir = new File( swaggerDocsBaseDir, swaggerDocsSubdirPathString )
         classpath = sourceSets.main.runtimeClasspath
         resourcePackages = [ 'wres.tasker' ]
         buildClasspath = classpath
         buildClasspath += configurations.docGen
     }
 
-    // Gets swagger ui zip that has static resources to display openapi.json
-    task ( downloadSwaggerUI, type: Download )
+    // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
+    task ( swaggerDocs, dependsOn: resolve, type: Copy )
     {
-        def name = 'v3.49.0.zip'
-        onlyIfModified true
-        overwrite false
-        src "https://github.com/swagger-api/swagger-ui/archive/refs/tags/${name}"
-        dest new File( buildDir, name )
-    }
-
-    // Extracts only the needed static resources from swagger ui zip.
-    task ( extractSwaggerUI, dependsOn: [downloadSwaggerUI, resolve], type: Copy )
-    {
-        from ( zipTree( downloadSwaggerUI.dest ) )
-        {
-            include "*/dist/**"
-
-            // While extracting, remove the first two directories from tree.
-            // https://docs.gradle.org/6.8.1/userguide/working_with_files.html#sec:unpacking_archives_example
-            eachFile {
-                fcd ->
-                    fcd.relativePath = new RelativePath( true,
-                            fcd.relativePath.segments.drop( 2 ) )
-            }
-        }
-
-        into resolve.outputDir
-    }
-
-    // The purpose of this task is to allow a reference to its output above in
-    // the distribution/main section. The reason is the path nesting. The output
-    // from the "resolve" and "extractSwaggerUI" tasks goes into
-    // "$swaggerDocsBaseDir/lib/static/html/doc" directory but we want the
-    // directory structure lib/static/html/doc included. Within the distribution
-    // the lib/static directory is added to the classpath. Then the html
-    // directory is used within the tasker as the base directory for static
-    // resources to be served.
-    // The second purpose of this task is to set the correct, local url having
-    // the generated-by-resolve-task openapi.json inside the unzipped index.html
-    task ( swaggerDocs, dependsOn: extractSwaggerUI, type: Copy )
-    {
-        def settings = "url: \"openapi.json\",\nvalidatorUrl: null,";
-
         from ( fileTree( swaggerDocsBaseDir ) )
-        {
-            eachFile
-            {
-                if ( it.getName().equals( "index.html" ) )
-                {
-                    filteringCharset = 'UTF-8'
-
-                    // Replace the default url with openapi.json generated above
-                    filter
-                    {
-                        String line ->
-                            line.contains( "url:" ) ? settings : line
-                    }
-
-                    // Doubt we need a download plugin, remove it.
-                    filter
-                    {
-                        String line ->
-                            line.contains( "SwaggerUIBundle.plugins.DownloadUrl" ) ? null : line
-                    }
-
-                }
-            }
-        }
-
-        into new File( buildDir, "swaggerDist" )
+        into swaggerDocsSubdirPathString
     }
 }
-
 
 project(':wres-eventsbroker')
 {
@@ -1719,9 +1660,6 @@ apply plugin: 'com.github.ben-manes.versions'
 
 mainClassName = 'wres.Main'
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
-
 applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
@@ -1978,6 +1916,11 @@ java
 {
     withJavadocJar()
     withSourcesJar()
+    
+     // Declare the Java version, self-contained to the build
+    toolchain {
+        languageVersion = JavaLanguageVersion.of( 11 )
+    }
 }
 
 tasks.withType( AbstractArchiveTask )

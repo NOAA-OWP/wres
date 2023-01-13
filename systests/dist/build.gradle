@@ -19,6 +19,14 @@ repositories
 apply plugin: 'java'
 apply plugin: 'jacoco'
 
+java
+{
+    // Declare the Java version, self-contained to the build
+    toolchain {
+        languageVersion = JavaLanguageVersion.of( 11 )
+    }
+}
+
 // The default value of the versionToTest will be picked up from
 // gradle.properties file. versionToTest can be overridden at gradle run time
 // by using -PversionToTest=[version] on the gradle command line. The same is
@@ -52,7 +60,7 @@ task( unzipArtifactToTest, type: Copy, group: 'test' )
     into outputDir
 }
 
-// To compile the test java code, we need the artifact libs
+// To compile the test java code, we need the core artifact
 compileTestJava.dependsOn( unzipArtifactToTest )
 
 // This task unzips a graphics client artifact, after the main artifact has been unzipped
@@ -81,6 +89,9 @@ task( unzipGraphicsArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, g
     from zipTree(zipFile)
     into outputDir
 }
+
+// To compile the test java code, we need the graphics artifact
+compileTestJava.dependsOn( unzipGraphicsArtifactToTest )
 
 // The graphics process to destroy on completion of the test task
 Process graphicsProcess = null;
@@ -264,6 +275,7 @@ test
     }
 
     systemProperties += [ "user.timezone": "UTC" ]
+    println( "Test JVM version: " + System.getProperty( "java.version" ) )
     println( "Test JVM System Properties to be applied: ${furtherSplittedTestJvmProperties}" )
     systemProperties += furtherSplittedTestJvmProperties
     println( "Test JVM Minimum Heap: ${minHeapSize}" )
