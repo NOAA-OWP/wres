@@ -1349,7 +1349,7 @@ project(':wres-tasker')
     task ( swaggerDocs, dependsOn: resolve, type: Copy )
     {
         from ( fileTree( swaggerDocsBaseDir ) )
-        into swaggerDocsSubdirPathString
+        into new File( buildDir, "swaggerDist" )
     }
 }
 
