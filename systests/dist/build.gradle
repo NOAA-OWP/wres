@@ -19,11 +19,15 @@ repositories
 apply plugin: 'java'
 apply plugin: 'jacoco'
 
+// The target Java version for declaration via a gradle toolchain
+def final TARGET_JDK = 11
+
 java
 {
     // Declare the Java version, self-contained to the build
-    toolchain {
-        languageVersion = JavaLanguageVersion.of( 11 )
+    toolchain 
+    {
+        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
     }
 }
 
@@ -109,12 +113,27 @@ task( startGraphicsClient, dependsOn: unzipGraphicsArtifactToTest, group: 'test'
 
     doLast
     {
+        // Declare the runtime environment for the graphics process as using the target JDK
+        Provider<JavaLauncher> launcherProvider = javaToolchains.launcherFor 
+        {
+            languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+        }
+
+        JavaLauncher executable = launcherProvider.get()
+        def javaPathString = executable.getMetadata()
+                                       .getInstallationPath()
+                                       .toString()
+
+        println( "Setting JAVA_HOME on the graphics client process to: " + javaPathString )
+
         // Pass on any java options
         def testJvmPropertiesGraphicsRaw = project.properties['testJvmSystemPropertiesGraphics']
 
-        ProcessBuilder pb = new ProcessBuilder( graphicsBin );
+        ProcessBuilder pb = new ProcessBuilder( graphicsBin )
         pb.environment()
-          .put( "JAVA_OPTS", testJvmPropertiesGraphicsRaw );
+          .put( "JAVA_OPTS", testJvmPropertiesGraphicsRaw )
+        pb.environment()
+          .put( "JAVA_HOME", javaPathString )
 
         println( "Starting graphics client ${graphicsVersionToTest} with JAVA_OPTS=${testJvmPropertiesGraphicsRaw}" )
         println( "Graphics client start script: " + graphicsBin )
@@ -240,8 +259,17 @@ test
     jvmArgs += "-XX:StartFlightRecording=settings=${unzipArtifactToTest.destinationDir}/wres-${versionToTest}/lib/conf/wres_jfr.jfc,maxsize=128m,dumponexit=true,filename=systests_${versionToTest}_${now}.jfr"
     jvmArgs += '-XX:FlightRecorderOptions=repository=.'
 
-    // See #95586, use CMS until Java 16+ and use ZGC when switching to that.
-    jvmArgs += '-XX:+UseConcMarkSweepGC'
+    // See #95586. Do not use the default (G1) garbage collector, use ZGC
+    if( TARGET_JDK >= 17 )
+    {
+        jvmArgs += '-XX:+UseZGC'
+    }
+    else if( TARGET_JDK < 14 )
+    {
+        jvmArgs += '-XX:+UseConcMarkSweepGC'
+    }
+    // Otherwise resort to default
+
     minHeapSize = "512m"
     maxHeapSize = "512m"
     // No longer necessary to fork on every test: see #61206
@@ -275,7 +303,6 @@ test
     }
 
     systemProperties += [ "user.timezone": "UTC" ]
-    println( "Test JVM version: " + System.getProperty( "java.version" ) )
     println( "Test JVM System Properties to be applied: ${furtherSplittedTestJvmProperties}" )
     systemProperties += furtherSplittedTestJvmProperties
     println( "Test JVM Minimum Heap: ${minHeapSize}" )

@@ -90,6 +90,8 @@ repositories
     }
 }
 
+// The target Java version for declaration via a gradle toolchain
+def final TARGET_JDK = 11
 
 subprojects
 {
@@ -202,7 +204,7 @@ subprojects
         // Declare the Java version, self-contained to the build
         toolchain 
         {
-            languageVersion = JavaLanguageVersion.of( 11 )
+            languageVersion = JavaLanguageVersion.of( TARGET_JDK )
         }
     }
 
@@ -1335,10 +1337,14 @@ project(':wres-tasker')
     // Task named "resolve" is from from swagger plugin, generates openapi json
     resolve
     {   
+        def skipDocs = 'true'
         def sourceFile = file( 'dist/lib/static/swagger/wres_api_info.yaml' )
         outputDir = new File( swaggerDocsBaseDir, swaggerDocsSubdirPathString )
-        println( "Merging the API documentation with the contents of: " + sourceFile )
-        println( "Writing the API documentation to: " + outputDir )
+        if( !skipDocs )
+        {
+            println( "Merging the API documentation with the contents of: " + sourceFile )
+            println( "Writing the API documentation to: " + outputDir )
+        }
         outputFileName = 'wres_openapi'
         outputFormat = 'yaml'
         prettyPrint = 'true'
@@ -1351,7 +1357,7 @@ project(':wres-tasker')
         // Disable the api documentation task until the swagger gradle plugin respects
         // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
         // TODO: enable the documentation when the toolchain is respected
-        skip = 'true'
+        skip = skipDocs
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
@@ -1673,14 +1679,24 @@ applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
 
-                             // See #95586. Use CMS GC in jdk 11, use ZGC in 16+
-                             '-XX:+UseConcMarkSweepGC',
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
                              '-Ducar.unidata.io.http.httpBufferSize=200000',
                              '-Djava.util.logging.config.file=logging.properties',
                              '-Dorg.jboss.logging.provider=slf4j']
+
+// See #95586. Use the ZGC garbage collector for a recent JDK, else CMS, else default.
+if( TARGET_JDK >= 17 )
+{
+    applicationDefaultJvmArgs += '-XX:+UseZGC'
+}
+else if( TARGET_JDK < 14 )
+{
+    applicationDefaultJvmArgs += '-XX:+UseConcMarkSweepGC'
+}
+// Otherwise resort to default
+
 
 // Get the commit and date from the TOP for this project, it is outermost.
 // The top level commit will also reflect changes to this build.gradle script.
@@ -1929,7 +1945,7 @@ java
      // Declare the Java version, self-contained to the build
     toolchain 
     {
-        languageVersion = JavaLanguageVersion.of( 11 )
+        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
     }
 }
 
