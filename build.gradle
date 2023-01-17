@@ -200,7 +200,8 @@ subprojects
         withSourcesJar()
 
         // Declare the Java version, self-contained to the build
-        toolchain {
+        toolchain 
+        {
             languageVersion = JavaLanguageVersion.of( 11 )
         }
     }
@@ -1173,7 +1174,7 @@ project(':wres-tasker')
         // This separate configuration keeps swagger jars out of the zip.
         docGen
     }
-    
+
     def swaggerDocsBaseDir = new File( buildDir, "swagger" )
     def swaggerDocsSubdirPathString = 'lib/static/swagger/doc';
 
@@ -1295,7 +1296,7 @@ project(':wres-tasker')
             contents
             {
                 from
-                {
+                {   
                     // Source from the static content in dist, plus the swaggerDocs creation task
                     ['dist', swaggerDocs]
                 }
@@ -1334,15 +1335,23 @@ project(':wres-tasker')
     // Task named "resolve" is from from swagger plugin, generates openapi json
     resolve
     {   
-        outputFileName = 'wres_openapi'
-        outputFormat = 'json'
-        prettyPrint = 'true'
-        //openApiFile = file( '/dist/lib/static/swagger/wres_api_info.yaml' )
+        def sourceFile = file( 'dist/lib/static/swagger/wres_api_info.yaml' )
         outputDir = new File( swaggerDocsBaseDir, swaggerDocsSubdirPathString )
+        println( "Merging the API documentation with the contents of: " + sourceFile )
+        println( "Writing the API documentation to: " + outputDir )
+        outputFileName = 'wres_openapi'
+        outputFormat = 'yaml'
+        prettyPrint = 'true'
+        openApiFile = sourceFile
         classpath = sourceSets.main.runtimeClasspath
         resourcePackages = [ 'wres.tasker' ]
         buildClasspath = classpath
         buildClasspath += configurations.docGen
+
+        // Disable the api documentation task until the swagger gradle plugin respects
+        // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
+        // TODO: enable the documentation when the toolchain is respected
+        //skip = 'true'
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
@@ -1918,7 +1927,8 @@ java
     withSourcesJar()
     
      // Declare the Java version, self-contained to the build
-    toolchain {
+    toolchain 
+    {
         languageVersion = JavaLanguageVersion.of( 11 )
     }
 }
