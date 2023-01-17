@@ -1351,7 +1351,7 @@ project(':wres-tasker')
         // Disable the api documentation task until the swagger gradle plugin respects
         // the toolchain declaration. As of v2.2.8, it falls back on JAVA_HOME.
         // TODO: enable the documentation when the toolchain is respected
-        //skip = 'true'
+        skip = 'true'
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
