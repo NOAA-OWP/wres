@@ -31,7 +31,7 @@ RUN apk add tar && \
 FROM registry.access.redhat.com/ubi8/ubi:8.7-1037
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.17.0.8-2.el8_6 \
+    java-11-openjdk-headless-1:11.0.18.0.10-2.el8_7 \
     procps-ng-3.3.15-9.el8 \
     iproute-5.18.0-1.el8 \
     libaio-0.3.112-1.el8 \
@@ -69,7 +69,7 @@ COPY --from=builder /workspace/out ${BROKER_HOME}
 # Copy configuration
 COPY nonsrc/ ${BROKER_CONFIG}
 
-# In order to set umask for file sharing, use a wrapper script
+# Use an entrypoint script
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 

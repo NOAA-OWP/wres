@@ -2,7 +2,7 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.7-1037
 
 RUN dnf install -y \
-    java-11-openjdk-headless-1:11.0.17.0.8-2.el8_6 \
+    java-11-openjdk-headless-1:11.0.18.0.10-2.el8_7 \
     unzip-6.0-46.el8 \
     fontconfig-2.13.1-4.el8 \
     dejavu-fonts-common-2.35-7.el8 \
@@ -24,9 +24,13 @@ RUN unzip wres-vis-${version}.zip \
 
 WORKDIR /opt/wres-vis-${version}
 
+# Use an entrypoint script
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+
 VOLUME /container_home
 
 # Should correspond to the port configured in WORKDIR/lib/conf/eventbroker.properties
 EXPOSE 5673
 USER wres_graphics_docker
-CMD [ "bin/wres-vis" ]
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
