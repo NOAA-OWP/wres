@@ -91,7 +91,7 @@ repositories
 }
 
 // The target Java version for declaration via a gradle toolchain
-def final TARGET_JDK = 11
+def final TARGET_JDK = 17
 
 subprojects
 {

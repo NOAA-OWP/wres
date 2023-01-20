@@ -20,7 +20,7 @@ apply plugin: 'java'
 apply plugin: 'jacoco'
 
 // The target Java version for declaration via a gradle toolchain
-def final TARGET_JDK = 11
+def final TARGET_JDK = 17
 
 java
 {
@@ -325,9 +325,9 @@ jacocoTestReport
         // jacoco still does not see the sources despite this following line.
         sourceDirectories.setFrom( fileTree( dir: buildDir,
                                              include: "wres-*/src/*.jar" ) )
-        xml.enabled false
-        csv.enabled true
-        html.enabled true
+        xml.required = false
+        csv.required = true
+        html.required = true
     }
 
     // The list of jars is found else this would not print it successfully.

@@ -48,35 +48,19 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
 
 class StatisticsConsumerFactory implements ConsumerFactory
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsConsumerFactory.class );
 
-    /**
-     * Consumer description.
-     */
-
+    /** Consumer description. */
     private final Consumer consumerDescription;
 
-    /**
-     * Project declaration.
-     */
-
+    /** Project declaration. */
     private final ProjectConfig projectConfig;
 
-    /**
-     * The netcdf writer.
-     */
-
+    /** The netcdf writer. */
     private final List<NetcdfOutputWriter> netcdfWriters;
 
-    /**
-     * Resources to close on completion.
-     */
-
+    /** Resources to close on completion. */
     private final List<Closeable> resources;
 
     @Override
@@ -88,6 +72,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
         Outputs outputs = evaluation.getOutputs();
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
+
+        LOGGER.debug( "Creating a statistics consumer for these formats: {}.", formats );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
@@ -175,6 +161,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
+
+        LOGGER.debug( "Creating a grouped statistics consumer for these formats: {}.", formats );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 

@@ -1,17 +1,8 @@
 package wres.events.subscribe;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -52,7 +43,6 @@ import wres.statistics.generated.Statistics;
 
 public interface ConsumerFactory extends Closeable
 {
-
     /**
      * Creates a consumer for a given evaluation description. An ordinary consumer writes a statistics message as soon 
      * as it arrives.
@@ -84,79 +74,4 @@ public interface ConsumerFactory extends Closeable
      */
 
     Consumer getConsumerDescription();
-
-    /**
-     * Returns a path to write, creating a temporary directory for the outputs with the correct permissions, as needed. 
-     *
-     * @param evaluationId the evaluation identifier
-     * @param consumerId the consumer identifier used to help with messaging
-     * @param jobId an optional evaluation job identifier (see #84942)
-     * @return the path to the temporary output directory
-     * @throws ConsumerException if the temporary directory cannot be created
-     * @throws NullPointerException if any input is null
-     */
-
-    static Path getPathToWrite( String evaluationId,
-                                String consumerId,
-                                String jobId )
-    {
-        Objects.requireNonNull( evaluationId );
-        Objects.requireNonNull( consumerId );
-
-        // Where outputs files will be written
-        Path outputDirectory = null;
-        String tempDir = System.getProperty( "java.io.tmpdir" );
-
-        // Is this instance running in a context that uses a wres job identifier?
-        // If so, create a directory corresponding to the job identifier
-        if ( Objects.nonNull( jobId ) )
-        {
-            tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
-        }
-
-        try
-        {
-            Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
-
-            // POSIX-compliant    
-            if ( FileSystems.getDefault().supportedFileAttributeViews().contains( "posix" ) )
-            {
-                Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
-                                                                   PosixFilePermission.OWNER_WRITE,
-                                                                   PosixFilePermission.OWNER_EXECUTE,
-                                                                   PosixFilePermission.GROUP_READ,
-                                                                   PosixFilePermission.GROUP_WRITE,
-                                                                   PosixFilePermission.GROUP_EXECUTE );
-
-                FileAttribute<Set<PosixFilePermission>> fileAttribute =
-                        PosixFilePermissions.asFileAttribute( permissions );
-
-                // Create if not exists
-                outputDirectory = Files.createDirectories( namedPath, fileAttribute );
-            }
-            // Not POSIX-compliant
-            else
-            {
-                outputDirectory = Files.createDirectories( namedPath );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new ConsumerException( "Encountered an error in subscriber " + consumerId
-                                         + " while attempting to create a temporary "
-                                         + "directory for evaluation "
-                                         + evaluationId
-                                         + ".",
-                                         e );
-        }
-
-        // Render absolute
-        if ( !outputDirectory.isAbsolute() )
-        {
-            outputDirectory = outputDirectory.toAbsolutePath();
-        }
-
-        return outputDirectory;
-    }
-
 }

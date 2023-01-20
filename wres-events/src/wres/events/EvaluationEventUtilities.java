@@ -101,8 +101,6 @@ public class EvaluationEventUtilities
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
      * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/
-     * 
-     * @author james.brown@hydrosolved.com
      */
 
     private static class RandomString
