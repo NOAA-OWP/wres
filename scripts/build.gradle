@@ -1,7 +1,7 @@
 plugins
 {
     // for ability to use git ids for versioning jar files:
-    id 'org.ajoberstar.grgit' version '4.1.1'
+    id 'org.ajoberstar.grgit' version '5.0.0'
 }
 
 apply plugin: 'distribution'

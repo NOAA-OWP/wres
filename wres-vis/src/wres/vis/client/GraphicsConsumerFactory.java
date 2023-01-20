@@ -8,6 +8,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.DestinationType;
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.events.subscribe.ConsumerFactory;
@@ -29,19 +32,26 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
 
 class GraphicsConsumerFactory implements ConsumerFactory
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( GraphicsConsumerFactory.class );
 
-    /**
-     * Consumer description.
-     */
-
+    /** Consumer description. */
     private final Consumer consumerDescription;
-    
+
     @Override
     public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( path );
-        
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            Collection<Format> formats = this.getConsumerDescription()
+                                             .getFormatsList();
+
+            LOGGER.debug( "Creating a statistics consumer for these formats: {}.", formats );
+        }
+
         Outputs outputs = evaluation.getOutputs();
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
@@ -63,6 +73,14 @@ class GraphicsConsumerFactory implements ConsumerFactory
         Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            Collection<Format> formats = this.getConsumerDescription()
+                                             .getFormatsList();
+
+            LOGGER.debug( "Creating a grouped statistics consumer for these formats: {}.", formats );
+        }
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 

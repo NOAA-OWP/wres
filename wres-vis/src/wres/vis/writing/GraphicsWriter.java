@@ -529,6 +529,8 @@ abstract class GraphicsWriter
         Objects.requireNonNull( outputs, "Specify a non-null outputs description." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
+        LOGGER.debug( "Creating a graphics format writer." );
+        
         // Validate
         if ( !Files.isDirectory( outputDirectory ) || !Files.exists( outputDirectory )
              || !Files.isWritable( outputDirectory ) )
@@ -539,5 +541,7 @@ abstract class GraphicsWriter
 
         this.outputs = outputs;
         this.outputDirectory = outputDirectory;
+        
+        LOGGER.debug( "Created a graphics format writer." );
     }
 }

@@ -2041,10 +2041,12 @@ public class ChartFactory
 
         // #81628
         String fontResource = "LiberationSans-Regular.ttf";
+        LOGGER.debug( "Attempting to find resource {} on the classpath.", fontResource );
         URL fontUrl = ChartFactory.class.getClassLoader()
                                         .getResource( fontResource );
 
         URL fontUrlTitle = fontUrl;
+        LOGGER.debug( "Found resource {} at {}.", fontResource, fontUrl );
 
         // Load the font and force it into the chart.
         if ( Objects.isNull( fontUrl ) )
@@ -2055,6 +2057,9 @@ public class ChartFactory
 
         try
         {
+            // Registering a font can apparently lead the JVM to "hang" momentarily if the OS cannot service the request
+            // See #111762 for an example
+            
             // Create from file, not stream
             // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
             File fontFile = new File( fontUrl.toURI() );
@@ -2065,6 +2070,7 @@ public class ChartFactory
 
             // Register font with graphics env
             GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+
             graphics.registerFont( font );
             graphics.registerFont( fontTitle );
 

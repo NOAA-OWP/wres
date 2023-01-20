@@ -1,13 +1,21 @@
 package wres.events.subscribe;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +68,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
  * has completed. This notification may be used by a client to trigger/release producer flow control by message group 
  * (i.e., allowing for the publication of another group of messages).
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe
@@ -71,10 +79,15 @@ class EvaluationConsumer
 
     private static final String CONSUMER_STRING = "Consumer ";
 
+    /** 
+     * Logger. 
+     */
+
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
 
-    /**
-     * Timeout period after an evaluation has started before the evaluation description message can be received.
+    /** 
+     * Timeout period after an evaluation has started before the evaluation description message can be received. 
+     * 
      */
 
     private static final long CONSUMER_TIMEOUT = 60_000;
@@ -837,8 +850,8 @@ class EvaluationConsumer
 
         int count = this.pathsWritten.size();
         String message = "Wrote " + count;
-        
-        if( count == 1 )
+
+        if ( count == 1 )
         {
             message = message + " path";
         }
@@ -1098,10 +1111,21 @@ class EvaluationConsumer
                               this.getClientId() );
 
                 // Create a path to write
-                Path path = ConsumerFactory.getPathToWrite( this.getEvaluationId(), this.getClientId(), jobId );
+                LOGGER.debug( "Attempting to acquire the path to which statistics formats should be written..." );
 
+                Path path = this.getPathToWrite( this.getEvaluationId(),
+                                                 this.getClientId(),
+                                                 jobId );
+
+                LOGGER.debug( "Acquired the path to which statistics formats should be written: {}.", path );
+
+                LOGGER.debug( "Creating a format writer for statistics messages." );
                 this.consumer = consumerFactory.getConsumer( evaluationDescription, path );
+                LOGGER.debug( "Finished creating a format writer for statistics messages." );
+
+                LOGGER.debug( "Creating a format writer for grouped statistics messages." );
                 this.consumerForGroupedMessages = consumerFactory.getGroupedConsumer( evaluationDescription, path );
+                LOGGER.debug( "Finished creating a format writer for grouped statistics messages." );
 
                 LOGGER.debug( "Finished creating consumers for evaluation {}, which are attached to subscriber {}.",
                               this.getEvaluationId(),
@@ -1112,6 +1136,86 @@ class EvaluationConsumer
                 this.consumersReady.countDown();
             }
         }
+    }
+
+    /**
+     * Returns a path to write, creating a temporary directory for the outputs with the correct permissions, as needed. 
+     *
+     * @param evaluationId the evaluation identifier
+     * @param consumerId the consumer identifier used to help with messaging
+     * @param jobId an optional evaluation job identifier (see #84942)
+     * @return the path to the temporary output directory
+     * @throws ConsumerException if the temporary directory cannot be created
+     * @throws NullPointerException if any input is null
+     */
+
+    private Path getPathToWrite( String evaluationId,
+                                 String consumerId,
+                                 String jobId )
+    {
+        Objects.requireNonNull( evaluationId );
+        Objects.requireNonNull( consumerId );
+
+        // Where outputs files will be written
+        Path outputDirectory = null;
+        String tempDir = System.getProperty( "java.io.tmpdir" );
+
+        // Is this instance running in a context that uses a wres job identifier?
+        // If so, create a directory corresponding to the job identifier
+        if ( Objects.nonNull( jobId ) )
+        {
+            tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
+        }
+
+        try
+        {
+            Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
+
+            // POSIX-compliant    
+            if ( FileSystems.getDefault()
+                            .supportedFileAttributeViews()
+                            .contains( "posix" ) )
+            {
+                Set<PosixFilePermission> permissions = EnumSet.of( PosixFilePermission.OWNER_READ,
+                                                                   PosixFilePermission.OWNER_WRITE,
+                                                                   PosixFilePermission.OWNER_EXECUTE,
+                                                                   PosixFilePermission.GROUP_READ,
+                                                                   PosixFilePermission.GROUP_WRITE,
+                                                                   PosixFilePermission.GROUP_EXECUTE );
+
+                FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                        PosixFilePermissions.asFileAttribute( permissions );
+
+                // Create if not exists
+                LOGGER.debug( "Creating or acquiring path '{}' with POSIX permissions: {}.", namedPath, permissions );
+                outputDirectory = Files.createDirectories( namedPath, fileAttribute );
+            }
+            // Not POSIX-compliant
+            else
+            {
+                LOGGER.debug( "Creating or acquiring path '{}'.", namedPath );
+                outputDirectory = Files.createDirectories( namedPath );
+            }
+
+            LOGGER.debug( "Created or acquired path '{}'.", namedPath );
+        }
+        catch ( IOException e )
+        {
+            throw new ConsumerException( "Encountered an error in subscriber " + consumerId
+                                         + " while attempting to create a temporary "
+                                         + "directory for evaluation "
+                                         + evaluationId
+                                         + ".",
+                                         e );
+        }
+
+        // Render absolute
+        if ( !outputDirectory.isAbsolute() )
+        {
+            outputDirectory = outputDirectory.toAbsolutePath();
+        }
+
+        return outputDirectory;
     }
 
     /**
