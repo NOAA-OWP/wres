@@ -91,7 +91,19 @@ repositories
 }
 
 // The target Java version for declaration via a gradle toolchain
-def final TARGET_JDK = 11
+def final TARGET_JDK = 17
+
+java
+{
+    withJavadocJar()
+    withSourcesJar()
+    
+     // Declare the Java version, self-contained to the build
+    toolchain 
+    {
+        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+    }
+}
 
 subprojects
 {
@@ -1934,18 +1946,6 @@ jar
     {
         attributes("Implementation-Title": "Water Resources Evaluation Service",
                     "Implementation-Version": archiveVersion )
-    }
-}
-
-java
-{
-    withJavadocJar()
-    withSourcesJar()
-    
-     // Declare the Java version, self-contained to the build
-    toolchain 
-    {
-        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
     }
 }
 
