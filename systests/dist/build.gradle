@@ -20,7 +20,7 @@ apply plugin: 'java'
 apply plugin: 'jacoco'
 
 // The target Java version for declaration via a gradle toolchain
-def final TARGET_JDK = 17
+def final TARGET_JDK = 11
 
 java
 {
