@@ -17,6 +17,18 @@ repositories
 
 apply plugin: 'java'
 
+// The target Java version for declaration via a gradle toolchain
+def final TARGET_JDK = 17
+
+java
+{
+     // Declare the Java version, self-contained to the build
+    toolchain 
+    {
+        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+    }
+}
+
 dependencies
 {
     testImplementation fileTree( dir: 'lib', include: '*.jar' )
