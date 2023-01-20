@@ -7,8 +7,13 @@
 
 # The sha256sum is published alongside releases visible at
 # https://www.azul.com/downloads/zulu-community/
-zulu_java_sha256sum="60e65d32e38876f81ddb623e87ac26c820465b637e263e8bed1acdecb4ca9be2"
-zulu_java_version="zulu11.54.25-ca-jdk11.0.14.1-linux_x64"
+#zulu_java_sha256sum="60e65d32e38876f81ddb623e87ac26c820465b637e263e8bed1acdecb4ca9be2"
+#zulu_java_version="zulu11.54.25-ca-jdk11.0.14.1-linux_x64"
+#zulu_java_tarball="${zulu_java_version}.tar.gz"
+#zulu_java_url="https://cdn.azul.com/zulu/bin/${zulu_java_tarball}"
+
+zulu_java_sha256sum="2867572c5af67d7bf4c53bf9d96c35977eebdfdbf26202c2dc7a1acbbea3f6b7"
+zulu_java_version="zulu17.40.19-ca-jdk17.0.6-linux_x64"
 zulu_java_tarball="${zulu_java_version}.tar.gz"
 zulu_java_url="https://cdn.azul.com/zulu/bin/${zulu_java_tarball}"
 
@@ -36,9 +41,9 @@ fi
 # Export JAVA_HOME in order to use the unpacked Java
 export JAVA_HOME=${zulu_java_version}
 
-# Test java version is in fact 11
-echo "The following should indicate 11 somewhere..."
+# Test java version is in fact 17
+echo "The following should indicate 17 somewhere..."
 $JAVA_HOME/bin/java -version
 
-echo "Running command $1 with java 11, assuming it respects JAVA_HOME..."
+echo "Running command $1 with java 17, assuming it respects JAVA_HOME..."
 $1
