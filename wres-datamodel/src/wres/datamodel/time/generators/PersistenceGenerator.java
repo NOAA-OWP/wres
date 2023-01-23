@@ -12,8 +12,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -220,7 +220,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
         List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
                                                          .stream()
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
 
@@ -239,7 +239,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                           referenceTime );
         }
 
-        Event<T> persistenceEvent = this.getNthNearestValueInstant( eventsToSearch, referenceTime, this.order );
+        Event<T> persistenceEvent = this.getNthNearestEventEarlierThanInstant( eventsToSearch,
+                                                                               referenceTime,
+                                                                               this.order );
 
         if ( Objects.isNull( persistenceEvent ) )
         {
@@ -297,7 +299,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             // No explicit valid times at which the upscaled values are required
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
                                                                                     persistenceSeries,
-                                                                                    Collections.emptySortedSet(),
+                                                                                    Collections.emptyList(),
                                                                                     this.desiredUnit );
 
             ZonedDateTime time = referenceTime.atZone( ZONE_ID );
@@ -347,9 +349,11 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             // construction
             List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
                                                              .stream()
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
-            Event<T> persistenceEvent = this.getNthNearestValueInstant( eventsToSearch, referenceTime, this.order );
+            Event<T> persistenceEvent = this.getNthNearestEventEarlierThanInstant( eventsToSearch,
+                                                                                   referenceTime,
+                                                                                   this.order );
 
             if ( Objects.isNull( persistenceEvent ) )
             {
@@ -365,12 +369,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             T persistenceValue = null;
             Instant persistenceEventTime = persistenceEvent.getTime();
 
-            SortedSet<Instant> times = new TreeSet<>();
-            times.add( persistenceEventTime );
-
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
                                                                                     persistenceSeries,
-                                                                                    times,
+                                                                                    List.of( persistenceEventTime ),
                                                                                     this.desiredUnit );
 
             if ( !upscaled.getEvents().isEmpty() )
@@ -462,15 +463,17 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
         List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
                                                          .stream()
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
         // Find a persistence event from the eventsToSearch for each valid time in the template series
         List<Instant> validTimes = template.getEvents()
                                            .stream()
                                            .map( Event::getTime )
-                                           .collect( Collectors.toList() );
+                                           .toList();
 
-        List<Event<T>> persistenceEvents = this.getNthNearestValueInstant( eventsToSearch, validTimes, this.order );
+        List<Event<T>> persistenceEvents = this.getNthNearestEventEarlierThanEachInstant( eventsToSearch,
+                                                                                          validTimes,
+                                                                                          this.order );
 
         TimeSeriesMetadata templateMetadata = template.getMetadata();
         Builder<T> builder = new Builder<>();
@@ -517,7 +520,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
                                                                                     persistenceSeries,
-                                                                                    Collections.emptySortedSet(),
+                                                                                    Collections.emptyList(),
                                                                                     this.desiredUnit );
 
             // Find the upscaled period whose valid time is N prior to each template valid time. Since a month-day 
@@ -562,36 +565,82 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                           timeScale );
 
             // The valid times from the template series at which persistence events are required
-            List<Instant> validTimes = template.getEvents()
-                                               .stream()
-                                               .map( Event::getTime )
-                                               .collect( Collectors.toList() );
+            // NOTE: if the template time-series begins after the persistence source, then the first value in the 
+            // template may not acquire a persistence value, even though the persistence source has sufficient data to 
+            // deliver one. This is because the upscaled values can only be acquired with respect to valid times in the
+            // template and not to unknown, earlier, times. In other words, the time that is of order N prior to the
+            // first valid time in the template is unknown. Extrapolating the sequence backwards is brittle. Instead, 
+            // the template series should be elongated by the user to capture this value or the persistence declared as 
+            // an absolute duration because the duration prior to the first valid time in the template is finite/known: 
+            // see #111822
+            List<Instant> templateValidTimes = template.getEvents()
+                                                       .stream()
+                                                       .map( Event::getTime )
+                                                       .toList();
 
-            // The persistence values. There are at least N+1 values in the list, established at construction
-            List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
-                                                             .stream()
-                                                             .collect( Collectors.toList() );
-
-            // Find a persistence event from the eventsToSearch for each valid time in the template
-            List<Event<T>> persistenceEvents = this.getNthNearestValueInstant( eventsToSearch, validTimes, this.order );
-
-            // Find the persistence event times at which the upscaled values must end
-            List<Instant> persistenceEventTimes = persistenceEvents.stream()
-                                                                   .filter( Objects::nonNull )
-                                                                   .map( Event::getTime )
-                                                                   .collect( Collectors.toList() );
-
-            SortedSet<Instant> persistenceEventTimesSorted = new TreeSet<>( persistenceEventTimes );
-
-            // This is the upscaled time-series for values that end at the persistence event times. Now need to map
-            // these back to the valid times for which persistence events are required
+            // Rescale the persistence source to end at the valid times in the template series
             TimeSeries<T> upscaled = this.getUpscaledPersistenceSeriesAtTheseTimes( template,
                                                                                     persistenceSeries,
-                                                                                    persistenceEventTimesSorted,
+                                                                                    templateValidTimes,
                                                                                     this.desiredUnit );
 
-            return this.mapUpscaledEventsToValidTimes( validTimes, persistenceEventTimes, upscaled );
+            // The upscaled persistence values
+            List<Event<T>> persistenceEvents = upscaled.getEvents()
+                                                       .stream()
+                                                       .toList();
+
+            // Find a persistence event for each valid time in the template
+            List<Event<T>> persistenceEventPerValidTime =
+                    this.getNthNearestEventEarlierThanEachInstant( persistenceEvents,
+                                                                   templateValidTimes,
+                                                                   this.order );
+
+            // Find the persistence event times at which the upscaled values must end, padding with null to retain shape
+            List<Instant> persistenceEventTimes = persistenceEventPerValidTime.stream()
+                                                                              .map( next -> Objects.nonNull( next ) ? next.getTime()
+                                                                                                                    : null )
+                                                                              .toList();
+
+            // Get the pairs of template valid times and persistence event times based on index positions
+            Map<Instant, Instant> pairedTimes = this.getPairedTimes( templateValidTimes, persistenceEventTimes );
+
+            return this.mapUpscaledEventsToValidTimes( pairedTimes, upscaled );
         }
+    }
+
+    /**
+     * Returns the paired times from the inputs based on corresponding index positions.
+     * 
+     * @param validTimes the valid times of the template time-series for which persistence values are required
+     * @param persistenceEventTimes the persistence event times
+     * @return the template series valid times keyed against the persistence event times
+     */
+
+    private Map<Instant, Instant> getPairedTimes( List<Instant> validTimes, List<Instant> persistenceEventTimes )
+    {
+        if ( validTimes.size() != persistenceEventTimes.size() )
+        {
+            throw new IllegalStateException( "Failed to map upscaled persistence events to their corresponding "
+                                             + "valid times because the number of valid times and persistence events "
+                                             + "was unequal, which is not expected: ["
+                                             + validTimes.size()
+                                             + ", "
+                                             + persistenceEventTimes.size()
+                                             + "]." );
+        }
+
+        Map<Instant, Instant> pairs = new TreeMap<>();
+        for ( int i = 0; i < validTimes.size(); i++ )
+        {
+            Instant left = persistenceEventTimes.get( i );
+            Instant right = validTimes.get( i );
+            if ( Objects.nonNull( left ) && Objects.nonNull( right ) )
+            {
+                pairs.put( left, right );
+            }
+        }
+
+        return Collections.unmodifiableMap( pairs );
     }
 
     /**
@@ -629,7 +678,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     private TimeSeries<T> getUpscaledPersistenceSeriesAtTheseTimes( TimeSeries<T> template,
                                                                     TimeSeries<T> seriesToUpscale,
-                                                                    SortedSet<Instant> endsAtSorted,
+                                                                    List<Instant> endsAtSorted,
                                                                     String desiredUnit )
     {
         if ( Objects.isNull( this.upscaler ) )
@@ -647,7 +696,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         TimeSeries<T> upscaled = this.upscaler.upscale( seriesToUpscale,
                                                         template.getTimeScale(),
-                                                        Collections.unmodifiableSortedSet( endsAtSorted ),
+                                                        Collections.unmodifiableSortedSet( new TreeSet<>( endsAtSorted ) ),
                                                         desiredUnit )
                                               .getTimeSeries();
 
@@ -674,11 +723,13 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return the persistence events
      */
 
-    private List<Event<T>> getNthNearestValueInstant( List<Event<T>> eventsToSearch, List<Instant> times, int order )
+    private List<Event<T>> getNthNearestEventEarlierThanEachInstant( List<Event<T>> eventsToSearch,
+                                                                     List<Instant> times,
+                                                                     int order )
     {
         return times.stream()
-                    .map( nextTime -> this.getNthNearestValueInstant( eventsToSearch, nextTime, order ) )
-                    .collect( Collectors.toList() );
+                    .map( nextTime -> this.getNthNearestEventEarlierThanInstant( eventsToSearch, nextTime, order ) )
+                    .toList();
     }
 
     /**
@@ -691,15 +742,17 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return the persistence event
      */
 
-    private Event<T> getNthNearestValueInstant( List<Event<T>> eventsToSearch, Instant time, int order )
+    private Event<T> getNthNearestEventEarlierThanInstant( List<Event<T>> eventsToSearch, Instant time, int order )
     {
-        Instant lastTime = eventsToSearch.get( 0 )
-                                         .getTime();
-
-        // If the reference time is equal to or later than the first valid time, return null
-        if ( Objects.isNull( time )
-             || lastTime.equals( time )
-             || lastTime.isAfter( time ) )
+        // If there are no events or the reference time is equal to or later than the first valid time, return null
+        if ( eventsToSearch.isEmpty() || Objects.isNull( eventsToSearch.get( 0 )
+                                                                       .getTime() )
+             || eventsToSearch.get( 0 )
+                              .getTime()
+                              .equals( time )
+             || eventsToSearch.get( 0 )
+                              .getTime()
+                              .isAfter( time ) )
         {
             return null;
         }
@@ -766,45 +819,20 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * Maps the persistence event times in the upscaled time-series to their corresponding valid event times based on 
      * the mapping implied by the times at equivalent index positions in the two supplied lists.
      * 
-     * @param validTimes the valid times to which the time-series should be remapped
-     * @param persistenceEventTimes the persistence event times
+     * @param validTimePairs the pairs of valid times and corresponding persistence event times
      * @param upscaled the upscaled time-series expressed with persistence event times
      * @return the upscaled time-series expressed with valid event times
      */
 
-    private TimeSeries<T> mapUpscaledEventsToValidTimes( List<Instant> validTimes,
-                                                         List<Instant> persistenceEventTimes,
+    private TimeSeries<T> mapUpscaledEventsToValidTimes( Map<Instant, Instant> validTimePairs,
                                                          TimeSeries<T> upscaled )
     {
-        if ( validTimes.size() != persistenceEventTimes.size() )
-        {
-            throw new IllegalStateException( "Failed to map upscaled persistence events to their corresponding "
-                                             + "valid times because the number of valid times and persistence events "
-                                             + "was unequal, which is not expected: ["
-                                             + validTimes.size()
-                                             + ", "
-                                             + persistenceEventTimes.size()
-                                             + "]." );
-        }
-        // Map the persistence event times in which the upscaled series is expressed to the corresponding valid times.
-        // This works because the two lists are indexed identically.
-        Map<Instant, Instant> mappedTimes = new HashMap<>();
-
-        for ( int i = 0; i < validTimes.size(); i++ )
-        {
-            Instant nextEventInstant = persistenceEventTimes.get( i );
-            if ( Objects.nonNull( nextEventInstant ) )
-            {
-                mappedTimes.put( nextEventInstant, validTimes.get( i ) );
-            }
-        }
-
         SortedSet<Event<T>> upscaledEvents = upscaled.getEvents();
         SortedSet<Event<T>> adjEvents = new TreeSet<>();
 
         for ( Event<T> nextEvent : upscaledEvents )
         {
-            Instant validTime = mappedTimes.get( nextEvent.getTime() );
+            Instant validTime = validTimePairs.get( nextEvent.getTime() );
             if ( Objects.nonNull( validTime ) )
             {
                 Event<T> adjusted = Event.of( validTime, nextEvent.getValue() );
@@ -893,7 +921,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Retrieve the time-series on construction
         List<TimeSeries<T>> source = persistenceSource.get()
-                                                      .collect( Collectors.toList() );
+                                                      .toList();
 
         // The persistence source cannot be empty
         if ( source.isEmpty() )
@@ -917,14 +945,25 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                     + "baseline data source." );
         }
 
-        // Consolidate into one series per feature
-        BinaryOperator<TimeSeries<T>> merger = ( a, b ) -> TimeSeriesSlicer.consolidate( Set.of( a, b ) );
-        this.persistenceSource = persistenceSource.get()
-                                                  .filter( next -> next.getEvents().size() >= order )
-                                                  .collect( Collectors.toUnmodifiableMap( next -> next.getMetadata()
-                                                                                                      .getFeature(),
-                                                                                          Function.identity(),
-                                                                                          merger ) );
+        // Perform the consolidation all at once rather than for each pair of time-series. See #111801
+        Map<Feature, List<TimeSeries<T>>> grouped = source.stream()
+                                                          .filter( next -> next.getEvents().size() >= order )
+                                                          .collect( Collectors.groupingBy( next -> next.getMetadata()
+                                                                                                       .getFeature(),
+                                                                                           Collectors.mapping( Function.identity(),
+                                                                                                               Collectors.toList() ) ) );
+
+        // Consolidate the time-series by feature
+        Map<Feature, TimeSeries<T>> consolidated = new HashMap<>();
+        for ( Map.Entry<Feature, List<TimeSeries<T>>> nextEntry : grouped.entrySet() )
+        {
+            Feature nextFeature = nextEntry.getKey();
+            List<TimeSeries<T>> series = nextEntry.getValue();
+            TimeSeries<T> nextConsolidated = TimeSeriesSlicer.consolidate( series );
+            consolidated.put( nextFeature, nextConsolidated );
+        }
+
+        this.persistenceSource = Collections.unmodifiableMap( consolidated );
 
         if ( this.persistenceSource.isEmpty() )
         {
