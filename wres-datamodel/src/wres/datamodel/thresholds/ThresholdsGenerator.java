@@ -53,8 +53,7 @@ public class ThresholdsGenerator
         MeasurementUnit units = null;
         if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
-            units = MeasurementUnit.of( projectConfig
-                                                     .getPair()
+            units = MeasurementUnit.of( projectConfig.getPair()
                                                      .getUnit() );
         }
 
