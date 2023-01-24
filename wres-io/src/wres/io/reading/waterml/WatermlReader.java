@@ -355,7 +355,8 @@ public class WatermlReader implements TimeSeriesReader
         {
             if ( LOGGER.isWarnEnabled() )
             {
-                LOGGER.warn( "Skipping site {} because multiple timeseries for variable {} from URI {}.",
+                LOGGER.warn( "Skipping site {} because multiple timeseries were discovered for variable {} from URI "
+                             + "{}.",
                              featureName,
                              variableName,
                              dataSource.getUri() );
