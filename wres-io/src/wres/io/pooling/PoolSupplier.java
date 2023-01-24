@@ -232,7 +232,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Stream<TimeSeries<R>> finalBaselineData = baselineData;
         try ( leftData; rightData; finalBaselineData )
         {
-            returnMe = this.createPool( leftData, rightData, baselineData );
+            returnMe = this.createPool( leftData, rightData, finalBaselineData );
         }
 
         poolMonitor.commit();

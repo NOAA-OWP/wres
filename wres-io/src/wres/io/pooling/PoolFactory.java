@@ -183,8 +183,7 @@ public class PoolFactory
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
             // requests associated with the feature group (as required)
             RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
-            if ( nextPoolRequests.size() > 1
-                 && ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() ) )
+            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
             {
                 LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
                               + "generated baseline data (where applicable) across all pools within feature group {}.",
@@ -263,8 +262,7 @@ public class PoolFactory
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
             // requests associated with the feature group (as required)
             RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
-            if ( nextPoolRequests.size() > 1
-                 && ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() ) )
+            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
             {
                 LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
                               + "generated baseline data (where applicable) across all pools within feature group {}.",
@@ -1341,7 +1339,9 @@ public class PoolFactory
             getFeatureBatchedSingletons( List<PoolRequest> poolRequests,
                                          PoolParameters poolParameters )
     {
-        Map<FeatureGroup, OptimizedPoolRequests> returnMe = new HashMap<>();
+        // Use a predictable order for the feature groups, since it aids with debugging/consistency across evaluations, 
+        // i.e., an ordered map
+        Map<FeatureGroup, OptimizedPoolRequests> returnMe = new TreeMap<>();
 
         // Create one collection of pool requests for each feature group
         Map<FeatureGroup, List<PoolRequest>> groups =

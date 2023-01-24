@@ -10,7 +10,7 @@ import net.jcip.annotations.Immutable;
  * result.
  * 
  * @author James Brown
- * @param <T> the type of data to retrieve
+ * @param <T> the type of data to supply
  */
 @Immutable
 public class CachingSupplier<T> implements Supplier<T>

@@ -279,6 +279,12 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         return new PoolProcessingResult( this.poolRequest, status, statusEvents );
     }
 
+    @Override
+    public String toString()
+    {
+        return "Pool processor for pool: " + this.poolRequest;
+    }
+
     /**
      * Publishes the statistics to an evaluation.
      * 

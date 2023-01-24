@@ -516,8 +516,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 // is potentially expensive and there is no need to repeat it on every call to the supplier.
                 climatologyAtScale = CachingRetriever.of( climatologyAtScale );
 
-                // Create the raw climatology, but continue to defer the data pull until required by a pool. This is 
-                // achieved by wrapping in a supplier
+                // Create the climatology abstraction from the left-ish data
                 Supplier<Climatology> climatology = this.createClimatology( climatologyAtScale,
                                                                             this.getClimateMapper() );
 
