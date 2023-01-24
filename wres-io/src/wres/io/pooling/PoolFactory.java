@@ -181,12 +181,13 @@ public class PoolFactory
                           nextPoolRequests.size() );
 
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
-            // requests if needed
+            // requests associated with the feature group (as required)
             RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
-            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
+            if ( nextPoolRequests.size() > 1
+                 && ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() ) )
             {
-                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological data "
-                              + "across all pools within feature group {}.",
+                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
+                              + "generated baseline data (where applicable) across all pools within feature group {}.",
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
@@ -260,12 +261,13 @@ public class PoolFactory
                           nextPoolRequests.size() );
 
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
-            // requests if needed
+            // requests associated with the feature group (as required)
             RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
-            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
+            if ( nextPoolRequests.size() > 1
+                 && ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() ) )
             {
-                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological data "
-                              + "across all pools within feature group {}.",
+                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
+                              + "generated baseline data (where applicable) across all pools within feature group {}.",
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
@@ -1235,7 +1237,6 @@ public class PoolFactory
                         () -> retrieverFactory.getBaselineRetriever( features )
                                               .get();
 
-                // Order 1 by default. If others are supported later, add these                              
                 return PersistenceGenerator.of( persistenceSource,
                                                 upscaler,
                                                 admissibleValue,
@@ -1854,7 +1855,7 @@ public class PoolFactory
                     if ( Objects.isNull( cached ) )
                     {
                         LOGGER.debug( "Retrieving climatological data for features: {}.", features );
-                        
+
                         Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getClimatologyRetriever( features );
                         cached = CachingRetriever.of( delegated );
                         this.climatologyCache.put( key, cached );
@@ -1897,7 +1898,7 @@ public class PoolFactory
                         if ( Objects.isNull( cached ) )
                         {
                             LOGGER.debug( "Retrieving baseline data for features: {}.", features );
-                            
+
                             Supplier<Stream<TimeSeries<R>>> delegated = this.delegate.getBaselineRetriever( features );
                             cached = CachingRetriever.of( delegated );
                             this.generatedBaselineCache.put( key, cached );

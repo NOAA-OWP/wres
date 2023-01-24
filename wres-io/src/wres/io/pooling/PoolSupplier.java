@@ -600,7 +600,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         List<TimeSeries<L>> transformedLeft = leftData.map( nextSeries -> this.applyValidTimeOffset( nextSeries,
                                                                                                      leftValidOffset,
                                                                                                      LeftOrRightOrBaseline.LEFT ) )
-                                                      .collect( Collectors.toList() );
+                                                      .toList();
 
         List<EvaluationStatusMessage> validationEvents = new ArrayList<>();
 
@@ -928,8 +928,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         int rightOrBaselineSeriesCount = 0;
 
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pairsPerFeature = new HashMap<>();
+
         // Generated baseline, if needed
+        // Get the baseline generator for all baseline features. Call with respect to a fixed feature set, defined on 
+        // construction since consistent calls can be optimized/cached more easily (e.g., cached retrieval)
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
+        UnaryOperator<TimeSeries<R>> baselineGeneratorFunction = null;
+
+        if ( this.hasBaselineGenerator() )
+        {
+            Set<Feature> allBaselineFeatures = this.getBaselineFeatures();
+            Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> generatorSupplier = this.getBaselineGenerator();
+            baselineGeneratorFunction = generatorSupplier.apply( allBaselineFeatures );
+        }
+
+        Transformers<R> rightTransformers = new Transformers<>( rightOrBaselineTransformer,
+                                                                baselineGeneratorFunction );
+
         Iterator<TimeSeries<R>> rightOrBaselineIterator = rightOrBaseline.iterator();
 
         // Loop over the right or baseline series
@@ -967,15 +982,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                        frequency,
                                                        rightOrBaselineOrientation,
                                                        timeWindow,
-                                                       rightOrBaselineTransformer );
+                                                       rightTransformers );
 
                 this.addPairsForFeature( pairsPerFeature,
                                          nextPairedSeries,
                                          TimeSeriesPlusValidation::getTimeSeries,
-                                         nextLeftFeature,
-                                         nextRightOrBaselineFeature,
-                                         validation,
-                                         rightOrBaselineOrientation );
+                                         validation );
 
                 // Bubble up the rescaled/filtered right time-series for baseline generation, if needed
                 if ( this.hasBaselineGenerator() )
@@ -983,10 +995,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                     this.addPairsForFeature( generatedBaseline,
                                              nextPairedSeries,
                                              TimeSeriesPlusValidation::getGeneratedBaselineTimeSeries,
-                                             nextLeftFeature,
-                                             nextRightOrBaselineFeature,
-                                             validation,
-                                             rightOrBaselineOrientation );
+                                             validation );
                 }
             }
 
@@ -1022,19 +1031,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @param cache the cache to update
      * @param pairsToCache the next pairs to cache
      * @param pairGetter a function that extracts the required pairs from the pairsToCache
-     * @param nextLeftFeature the left feature
-     * @param nextRightOrBaselineFeature the right or baseline feature
      * @param validation the validation to update
-     * @param orientation the orientation (right or baseline)
      */
 
     private void addPairsForFeature( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> cache,
                                      List<TimeSeriesPlusValidation<L, R>> pairsToCache,
                                      Function<TimeSeriesPlusValidation<L, R>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>> pairGetter,
-                                     Feature nextLeftFeature,
-                                     Feature nextRightOrBaselineFeature,
-                                     List<EvaluationStatusMessage> validation,
-                                     LeftOrRightOrBaseline orientation )
+                                     List<EvaluationStatusMessage> validation )
     {
         // Add to the results
         for ( TimeSeriesPlusValidation<L, R> nextSeries : pairsToCache )
@@ -1053,7 +1056,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                 // Strip any empty series
                 nextPairsList = nextPairsList.stream()
                                              .filter( next -> !next.getEvents().isEmpty() )
-                                             .collect( Collectors.toList() );
+                                             .toList();
 
                 List<TimeSeries<Pair<L, R>>> nextList = cache.get( nextFeature );
                 if ( Objects.isNull( nextList ) )
@@ -1075,7 +1078,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @param frequency the frequency of the pairs
      * @param rightOrBaselineOrientation the orientation of the pairs
      * @param timeWindow the time window
-     * @param rightOrBaselineTransformer the transformer for the right series
+     * @param rightTransformers the transformers for right-ish data
      * @return the pairs plus validation
      * @throws NullPointerException if any required input is null
      */
@@ -1086,7 +1089,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                            Duration frequency,
                                                                            LeftOrRightOrBaseline rightOrBaselineOrientation,
                                                                            TimeWindowOuter timeWindow,
-                                                                           UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer )
+                                                                           Transformers<R> rightTransformers )
     {
         Objects.requireNonNull( rightOrBaselineSeries );
         Objects.requireNonNull( rightOrBaselineOrientation );
@@ -1105,11 +1108,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         {
             TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeftSeries,
                                                                                rightOrBaselineSeries,
-                                                                               rightOrBaselineTransformer,
                                                                                desiredTimeScale,
                                                                                frequency,
                                                                                timeWindow,
-                                                                               rightOrBaselineOrientation );
+                                                                               rightOrBaselineOrientation,
+                                                                               rightTransformers );
 
             returnMe.add( pairsPlus );
 
@@ -1139,23 +1142,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * 
      * @param left the left time-series
      * @param rightOrBaseline the right or baseline time-series
-     * @param rightOrBaselineTransformer the transformer for right or baseline-ish data
      * @param desiredTimeScale the desired time scale
      * @param frequency the frequency with which to create pairs at the desired time scale
      * @param timeWindow the time window to snip the pairs
      * @param orientation the orientation of the non-left data, one of {@link LeftOrRightOrBaseline#RIGHT} or 
      *            {@link LeftOrRightOrBaseline#BASELINE}
+     * @param rightTransformers the right-ish transformers
      * @return a paired time-series
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
 
     private TimeSeriesPlusValidation<L, R> createSeriesPairs( TimeSeries<L> left,
                                                               TimeSeries<R> rightOrBaseline,
-                                                              UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer,
                                                               TimeScaleOuter desiredTimeScale,
                                                               Duration frequency,
                                                               TimeWindowOuter timeWindow,
-                                                              LeftOrRightOrBaseline orientation )
+                                                              LeftOrRightOrBaseline orientation,
+                                                              Transformers<R> rightTransformers )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
@@ -1281,7 +1284,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformer()
                                                      .apply( scaledLeft );
 
-        TimeSeries<R> scaledAndTransformedRight = rightOrBaselineTransformer.apply( scaledRight );
+        TimeSeries<R> scaledAndTransformedRight = rightTransformers.rightTransformer()
+                                                                   .apply( scaledRight );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
@@ -1328,10 +1332,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
         if ( this.hasBaselineGenerator() && orientation == LeftOrRightOrBaseline.RIGHT )
         {
-            generatedBaseline = this.getGeneratedBaselinePairs( featureTuples,
+            generatedBaseline = this.getGeneratedBaselinePairs( rightTransformers,
+                                                                featureTuples,
                                                                 scaledAndTransformedLeft,
-                                                                scaledAndTransformedRight,
-                                                                rightOrBaselineTransformer );
+                                                                scaledAndTransformedRight );
         }
 
         return new TimeSeriesPlusValidation<>( pairsToSave,
@@ -1341,30 +1345,34 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Creates generated baseline pairs.
+     * 
+     * @param rightTransformers the transformers for right-ish data
      * @param featureTuples the tuples containing the baseline features whose data sources will be used for generation
      * @param leftSeries the left series
      * @param templateSeries the right-ish series from which to generate the baseline
-     * @param transformer the transformer to apply to the generated baseline series
      * @return the generated baseline pairs
      */
 
-    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> getGeneratedBaselinePairs( Set<FeatureTuple> featureTuples,
-                                                                                       TimeSeries<L> leftSeries,
-                                                                                       TimeSeries<R> templateSeries,
-                                                                                       UnaryOperator<TimeSeries<R>> transformer )
+    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>
+            getGeneratedBaselinePairs( Transformers<R> rightTransformers,
+                                       Set<FeatureTuple> featureTuples,
+                                       TimeSeries<L> leftSeries,
+                                       TimeSeries<R> templateSeries )
     {
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
+
         for ( FeatureTuple nextFeature : featureTuples )
         {
             Feature baselineFeature = nextFeature.getBaseline();
 
             // Generate the baseline series
-            TimeSeries<R> nextGenerated = this.getGeneratedBaseline( this.getBaselineGenerator(),
+            TimeSeries<R> nextGenerated = this.getGeneratedBaseline( rightTransformers.baselineGenerator(),
                                                                      templateSeries,
                                                                      baselineFeature );
 
             // Apply the transformer (e.g., unit mapper)
-            TimeSeries<R> nextTransformed = transformer.apply( nextGenerated );
+            TimeSeries<R> nextTransformed = rightTransformers.rightTransformer()
+                                                             .apply( nextGenerated );
 
             // Create the pairs
             TimeSeries<Pair<L, R>> generatedPairs = this.getPairer()
@@ -1379,25 +1387,20 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * Generates a baseline for a template right-ish time-series using the baseline-ish feature name for the baseline 
      * source data.
-     * @param generator a function that supplies a generator for a given set of features
+     * @param baselineGenerator the baseline generator
      * @param templateSeries the template time-series for baseline generation
      * @param baselineFeature the baseline feature whose source data will be used for baseline generation
      * @return the generated baseline time-series
      */
 
-    private TimeSeries<R> getGeneratedBaseline( Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> generatorSupplier,
+    private TimeSeries<R> getGeneratedBaseline( UnaryOperator<TimeSeries<R>> baselineGenerator,
                                                 TimeSeries<R> templateSeries,
                                                 Feature baselineFeature )
     {
-        // Get the baseline generator for all baseline features. Call with respect to a fixed feature set, defined on 
-        // construction since consistent calls can be optimized/cached more easily (e.g., cached retrieval)
-        Set<Feature> allBaselineFeatures = this.getBaselineFeatures();
-        UnaryOperator<TimeSeries<R>> nextGenerator = generatorSupplier.apply( allBaselineFeatures );
-
         // Insert the baseline feature name into the template because the generation process uses the baseline
         // source data
         TimeSeries<R> nextTemplateAdjusted = this.adjustSeriesFeature( templateSeries, baselineFeature );
-        return nextGenerator.apply( nextTemplateAdjusted );
+        return baselineGenerator.apply( nextTemplateAdjusted );
     }
 
     /**
@@ -2175,5 +2178,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             this.generatedBaselineSeries = Collections.unmodifiableMap( generatedBaselineSeries );
             this.statusEvents = Collections.unmodifiableList( statusEvents );
         }
+    }
+
+    /** Record class to bundle two right-ish transformers. */
+    private record Transformers<R> ( UnaryOperator<TimeSeries<R>> rightTransformer,
+                                     UnaryOperator<TimeSeries<R>> baselineGenerator )
+    {
     }
 }
