@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
@@ -72,7 +71,6 @@ import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.CachingRetriever;
 import wres.io.retrieval.CachingSupplier;
 import wres.io.retrieval.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
@@ -170,6 +168,8 @@ public class PoolFactory
 
         Project innerProject = this.getProject();
 
+        boolean hasEqualBaselineAndClimatology = this.hasEqualBaselineAndClimatology();
+
         for ( Map.Entry<FeatureGroup, OptimizedPoolRequests> nextEntry : optimizedGroups.entrySet() )
         {
             FeatureGroup featureGroup = nextEntry.getKey();
@@ -190,7 +190,9 @@ public class PoolFactory
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
-                                                                innerProject.hasGeneratedBaseline() );
+                                                                innerProject.hasGeneratedBaseline(),
+                                                                hasEqualBaselineAndClimatology,
+                                                                Function.identity() );
             }
 
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
@@ -269,7 +271,9 @@ public class PoolFactory
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
-                                                                innerProject.hasGeneratedBaseline() );
+                                                                innerProject.hasGeneratedBaseline(),
+                                                                false,
+                                                                null );
             }
 
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
@@ -1793,194 +1797,31 @@ public class PoolFactory
     }
 
     /**
-     * Implementation of a {@link RetrieverFactory} that delegates all calls to a factory supplied on construction, 
-     * but wraps calls to any data sources that should be cached with a {@link CachingRetriever} and caches them 
-     * locally. In other words, retrieval should be cached for those instances, regardless of whether the cached 
-     * instance is further cached locally and re-used across pools or there are repeated calls to the factory methods.
-     * However, in the current pattern, there is one such factory instance for each feature group, so it should not be 
-     * necessary to cache more than one retriever (i.e., multiple requests will always consider the same collection of
-     * features). Thus, the size of the cache is currently one for each type of retrieval. Uses a coarse-grained write 
-     * lock on creating cached values that reflects the current usage pattern.
-     *  
-     * @param <L> the left data type
-     * @param <R> the right data type
+     * @return whether the climatological and baseline data sources are equal and can be de-duplicated on retrieval
      */
 
-    private static class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
+    private boolean hasEqualBaselineAndClimatology()
     {
-        /** The factory to delegate to. */
-        private final RetrieverFactory<L, R> delegate;
-
-        /** Whether the baseline is a generated baseline and should, therefore, be cached across pools. */
-        private final boolean hasGeneratedBaseline;
-
-        /** Cache of (cached) retrievers for climatology. */
-        private final Cache<Key, Supplier<Stream<TimeSeries<L>>>> climatologyCache =
-                Caffeine.newBuilder()
-                        .maximumSize( 1 )
-                        .build();
-
-        /** Cache of (cached) retrievers for generated baselines. */
-        private final Cache<Key, Supplier<Stream<TimeSeries<R>>>> generatedBaselineCache =
-                Caffeine.newBuilder()
-                        .maximumSize( 1 )
-                        .build();
-
-        /** Lock for creating a cached retriever of generated baseline data. TODO: consider a finer grained lock per 
-         * cached key (feature collection and/or time window) if the usage pattern changes from the pattern described 
-         * in the class header.*/
-        private final ReentrantLock generatedBaselineWriteLock = new ReentrantLock();
-
-        /** Lock for creating a cached retriever of climatological data. TODO: consider a finer grained lock per cached 
-         * key (feature collection and/or time window) if the usage pattern changes from the pattern described in the 
-         * class header.*/
-        private final ReentrantLock climatologyWriteLock = new ReentrantLock();
-
-        @Override
-        public Supplier<Stream<TimeSeries<L>>> getClimatologyRetriever( Set<Feature> features )
+        Project localProject = this.getProject();
+        if ( !localProject.hasGeneratedBaseline() )
         {
-            Objects.requireNonNull( features );
-
-            Key key = new Key( features );
-            Supplier<Stream<TimeSeries<L>>> cached = this.climatologyCache.getIfPresent( key );
-
-            if ( Objects.isNull( cached ) )
-            {
-                try
-                {
-                    this.climatologyWriteLock.lock();
-
-                    // Check again for any thread waiting between the first null check and the lock
-                    cached = this.climatologyCache.getIfPresent( key );
-                    if ( Objects.isNull( cached ) )
-                    {
-                        LOGGER.debug( "Retrieving climatological data for features: {}.", features );
-
-                        Supplier<Stream<TimeSeries<L>>> delegated = this.delegate.getClimatologyRetriever( features );
-                        cached = CachingRetriever.of( delegated );
-                        this.climatologyCache.put( key, cached );
-                    }
-                }
-                finally
-                {
-                    this.climatologyWriteLock.unlock();
-                }
-            }
-
-            return cached;
+            return false;
         }
 
-        @Override
-        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features )
+        if ( !Objects.equals( localProject.getVariableName( LeftOrRightOrBaseline.LEFT ),
+                              localProject.getVariableName( LeftOrRightOrBaseline.BASELINE ) ) )
         {
-            return this.delegate.getLeftRetriever( features );
+            return false;
         }
 
-        @Override
-        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features )
-        {
-            Objects.requireNonNull( features );
+        // Are the declared data sources equal?
+        // A common assumption throughout WRES is that sources can be de-duplicated on the basis of declaration and that
+        // any runtime differences, based on when reading/ingest calls an external source for a snapshot, should be 
+        // ignored - in other words, the first snapshot wins, because this allows for de-duplication
+        Inputs inputs = localProject.getProjectConfig()
+                                    .getInputs();
 
-            // Generated baseline? If so, cache and return.
-            if ( this.hasGeneratedBaseline )
-            {
-                Key key = new Key( features );
-                Supplier<Stream<TimeSeries<R>>> cached = this.generatedBaselineCache.getIfPresent( key );
-
-                if ( Objects.isNull( cached ) )
-                {
-                    try
-                    {
-                        this.generatedBaselineWriteLock.lock();
-
-                        // Check again for any thread waiting between the first null check and the lock
-                        cached = this.generatedBaselineCache.getIfPresent( key );
-                        if ( Objects.isNull( cached ) )
-                        {
-                            LOGGER.debug( "Retrieving baseline data for features: {}.", features );
-
-                            Supplier<Stream<TimeSeries<R>>> delegated = this.delegate.getBaselineRetriever( features );
-                            cached = CachingRetriever.of( delegated );
-                            this.generatedBaselineCache.put( key, cached );
-                        }
-                    }
-                    finally
-                    {
-                        this.generatedBaselineWriteLock.unlock();
-                    }
-                }
-
-                return cached;
-            }
-
-            return this.delegate.getBaselineRetriever( features );
-        }
-
-        @Override
-        public Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features, TimeWindowOuter timeWindow )
-        {
-            return this.delegate.getLeftRetriever( features, timeWindow );
-        }
-
-        @Override
-        public Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<Feature> features, TimeWindowOuter timeWindow )
-        {
-            return this.delegate.getRightRetriever( features, timeWindow );
-        }
-
-        @Override
-        public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features,
-                                                                     TimeWindowOuter timeWindow )
-        {
-            return this.delegate.getBaselineRetriever( features, timeWindow );
-        }
-
-        /**
-         * @param delegate the factory to delegate to
-         * @param hasGeneratedBaseline whether the baseline is part of a generated baseline
-         */
-        private CachingRetrieverFactory( RetrieverFactory<L, R> delegate, boolean hasGeneratedBaseline )
-        {
-            this.delegate = delegate;
-            this.hasGeneratedBaseline = hasGeneratedBaseline;
-        }
-
-        /**
-         * A cache key. TODO: add a time window if/when required. Also, implement as a record in JDK17+.
-         */
-        private static class Key
-        {
-            final Set<Feature> features;
-
-            @Override
-            public boolean equals( Object o )
-            {
-                if ( o == this )
-                {
-                    return true;
-                }
-
-                if ( ! ( o instanceof Key ) )
-                {
-                    return false;
-                }
-
-                Key in = (Key) o;
-
-                return in.features.equals( this.features );
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return Objects.hash( this.features );
-            }
-
-            private Key( Set<Feature> features )
-            {
-                this.features = features;
-            }
-        }
+        return Objects.equals( inputs.getLeft().getSource(), inputs.getBaseline().getSource() );
     }
 
     /**
