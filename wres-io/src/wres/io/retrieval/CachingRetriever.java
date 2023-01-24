@@ -9,8 +9,7 @@ import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 
 /**
- * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. This allows the retrieved 
- * data to be cached locally for re-use.
+ * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data.
  * 
  * @author James Brown
  * @param <T> the type of data to retrieve

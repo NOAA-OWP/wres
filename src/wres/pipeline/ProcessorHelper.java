@@ -564,19 +564,14 @@ class ProcessorHelper
             // this is feature-group shaped, but additional shapes may be desired in future
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
 
-            // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
-            // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
-            // completes exceptionally, whichever happens first
-            CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( poolFactory,
-                                                                                        evaluationDetails,
-                                                                                        sharedWriters,
-                                                                                        poolRequests,
-                                                                                        executors,
-                                                                                        poolReporter,
-                                                                                        groupTracker );
-
-            // Wait for the pool chain to complete
-            poolTaskChain.join();
+            // Create one or more chains of pooling tasks and evaluate them
+            ProcessorHelper.evaluatePoolChains( poolFactory, 
+                                                evaluationDetails, 
+                                                sharedWriters, 
+                                                poolRequests, 
+                                                executors, 
+                                                poolReporter, 
+                                                groupTracker );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
@@ -610,6 +605,41 @@ class ProcessorHelper
         }
     }
 
+    /**
+     * Chunks the pooling tasks into chains and evaluates them.
+     * 
+     * @param poolFactory the pool factory
+     * @param evaluationDetails the evaluation details
+     * @param sharedWriters the shared writers
+     * @param poolRequests the pool requests
+     * @param executors the executor services
+     * @param poolReporter the pool reporter that reports on a pool execution
+     * @param poolGroupTracker the group publication tracker
+     */
+    
+    private static void evaluatePoolChains( PoolFactory poolFactory,
+                                            EvaluationDetails evaluationDetails,
+                                            SharedWriters sharedWriters,
+                                            List<PoolRequest> poolRequests,
+                                            Executors executors,
+                                            PoolReporter poolReporter,
+                                            PoolGroupTracker poolGroupTracker )
+    {
+        // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
+        // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
+        // completes exceptionally, whichever happens first
+        CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( poolFactory,
+                                                                                    evaluationDetails,
+                                                                                    sharedWriters,
+                                                                                    poolRequests,
+                                                                                    executors,
+                                                                                    poolReporter,
+                                                                                    poolGroupTracker );
+
+        // Wait for the pool chain to complete
+        poolTaskChain.join();
+    }
+    
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
      *
