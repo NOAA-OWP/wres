@@ -31,6 +31,7 @@ import wres.config.Validation;
 import wres.io.concurrency.Executor;
 import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
+import wres.system.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -268,15 +269,26 @@ public class Evaluator
                                                                      productQueue,
                                                                      productFactory );
 
-        Database innerDatabase = this.getDatabase();
+        // Create database services if needed
+        DatabaseServices databaseServices = null;
+        DatabaseLockManager lockManager = null;
+        if ( innerSystemSettings.isInDatabase() )
+        {
+            Database innerDatabase = this.getDatabase();
+            lockManager =
+                    DatabaseLockManager.from( innerSystemSettings,
+                                              innerDatabase::getRawConnection );
+
+            databaseServices = new DatabaseServices( innerDatabase, lockManager );
+        }
+        else
+        {
+            // Dummy lock manager for in-memory evaluations
+            lockManager = new DatabaseLockManagerNoop();
+        }
+
         Executor ioExecutor = this.getExecutor();
 
-        DatabaseLockManager lockManager =
-                DatabaseLockManager.from( innerSystemSettings,
-                                          innerDatabase::getRawConnection );
-
-        // Compress database services into one object
-        DatabaseServices databaseServices = new DatabaseServices( innerDatabase, lockManager );
         String projectHash = null;
         Set<Path> pathsWrittenTo = new TreeSet<>();
         ScheduledExecutorService monitoringService = null;
@@ -297,7 +309,7 @@ public class Evaluator
             {
 
                 monitoringService = new ScheduledThreadPoolExecutor( 1 );
-                QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
+                QueueMonitor queueMonitor = new QueueMonitor( this.getDatabase(),
                                                               ioExecutor,
                                                               poolQueue,
                                                               thresholdQueue,
@@ -432,7 +444,7 @@ public class Evaluator
         {
             int poolCount = 0;
             int ioCount = executor.getIoExecutorQueueTaskCount();
-            int databaseCount = database.getDatabaseQueueTaskCount();
+            int databaseCount = 0;
             int hiPriCount = executor.getHiPriIoExecutorQueueTaskCount();
             int thresholdCount = 0;
             int metricCount = 0;
@@ -456,6 +468,11 @@ public class Evaluator
             if ( this.productQueue != null )
             {
                 productCount = this.productQueue.size();
+            }
+
+            if ( this.database != null )
+            {
+                databaseCount = database.getDatabaseQueueTaskCount();
             }
 
             LOGGER.info( "IoQ={}, IoHiPriQ={}, PoolQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
