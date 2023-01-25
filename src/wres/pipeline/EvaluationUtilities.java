@@ -135,11 +135,15 @@ class EvaluationUtilities
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( databaseServices );
         Objects.requireNonNull( projectConfigPlus );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( connections );
         Objects.requireNonNull( monitor );
+
+        if ( systemSettings.isInDatabase() )
+        {
+            Objects.requireNonNull( databaseServices );
+        }
 
         Set<Path> resources = new TreeSet<>();
         String projectHash = null;
@@ -213,7 +217,7 @@ class EvaluationUtilities
                                                                          evaluationId,
                                                                          subscriberApprover,
                                                                          monitor,
-                                                                         databaseServices.getDatabase() );
+                                                                         databaseServices );
 
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<Evaluation, String> evaluationAndProjectHash =
@@ -1643,7 +1647,7 @@ class EvaluationUtilities
          * @param evaluationId the evaluation identifier
          * @param subscriberApprover the subscriber approver
          * @param monitor the evaluation event monitor
-         * @param database the database
+         * @param databaseServices the database services
          */
 
         private EvaluationDetails( SystemSettings systemSettings,
@@ -1652,7 +1656,7 @@ class EvaluationUtilities
                                    String evaluationId,
                                    SubscriberApprover subscriberApprover,
                                    EvaluationEvent monitor,
-                                   Database database )
+                                   DatabaseServices databaseServices )
         {
             this.systemSettings = systemSettings;
             this.projectConfigPlus = projectConfigPlus;
@@ -1660,7 +1664,15 @@ class EvaluationUtilities
             this.evaluationId = evaluationId;
             this.subscriberApprover = subscriberApprover;
             this.monitor = monitor;
-            this.database = database;
+
+            if ( Objects.nonNull( databaseServices ) )
+            {
+                this.database = databaseServices.getDatabase();
+            }
+            else
+            {
+                this.database = null;
+            }
         }
     }
 
