@@ -88,18 +88,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** Message re-used several times. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
 
-    /** The climatology, possibly null. */
-    private final Supplier<Climatology> climatology;
-
-    /** Left data source. */
-    private final Supplier<Stream<TimeSeries<L>>> left;
-
-    /** Right data source. */
-    private final Supplier<Stream<TimeSeries<R>>> right;
-
-    /** Baseline data source. Optional. */
-    private final Supplier<Stream<TimeSeries<R>>> baseline;
-
     /** Generator for baseline data source. Optional. */
     private final Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
@@ -168,6 +156,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /** Has the supplier been called before? */
     private final AtomicBoolean done = new AtomicBoolean( false );
+    
+    /** Left data source. */
+    private Supplier<Stream<TimeSeries<L>>> left;
+
+    /** Right data source. */
+    private Supplier<Stream<TimeSeries<R>>> right;
+
+    /** Baseline data source. Optional. */
+    private Supplier<Stream<TimeSeries<R>>> baseline;
+    
+    /** The climatology, possibly null. */
+    private Supplier<Climatology> climatology;
 
     /**
      * Returns a {@link Pool} for metric calculation.
@@ -247,6 +247,12 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           pairCount );
         }
 
+        // Render any potentially expensive state eligible for gc, since this instance is one-and-done
+        this.left = null;
+        this.right = null;
+        this.baseline = null;
+        this.climatology = null;
+        
         return returnMe;
     }
 

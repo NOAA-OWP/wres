@@ -111,13 +111,10 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     /** An optional generator for baseline data (e.g., persistence or climatology). */
     private final Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
 
-    /** The pool suppliers. */
-    private final List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> pools;
-
     @Override
     public List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> get()
     {
-        return this.pools;
+        return this.createPools();
     }
 
     /**
@@ -438,9 +435,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                 + " a baseline generator should be supplied when required, "
                                                 + "otherwise it should not be supplied." );
         }
-
-        // Create the pools
-        this.pools = this.createPools();
     }
 
     /**

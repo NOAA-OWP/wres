@@ -83,19 +83,19 @@ import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
- * Class with functions to help in generating evaluation results.
+ * Utiltiy class with functions to help generate evaluation results.
  *
  * @author James Brown
  * @author Jesse Bickel
  */
-class ProcessorHelper
+class EvaluationUtilities
 {
     /** Re-used error message. */
     private static final String FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR =
             "Forcibly stopping evaluation {} upon encountering an internal error.";
 
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationUtilities.class );
 
     /** Unique identifier for this instance of the core messaging client. */
 
@@ -103,11 +103,11 @@ class ProcessorHelper
 
     /** A function that estimates the trace count of a pool that contains ensemble traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_TRACE_COUNT_ESTIMATOR =
-            ProcessorHelper.getEnsembleTraceCountEstimator();
+            EvaluationUtilities.getEnsembleTraceCountEstimator();
 
     /** A function that estimates the trace count of a pool that contains single-valued traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_TRACE_COUNT_ESTIMATOR =
-            ProcessorHelper.getSingleValuedTraceCountEstimator();
+            EvaluationUtilities.getSingleValuedTraceCountEstimator();
 
     /**
      * Processes an evaluation.
@@ -126,12 +126,12 @@ class ProcessorHelper
      * @throws IOException if the creation of outputs fails
      */
 
-    static Pair<Set<Path>, String> processEvaluation( SystemSettings systemSettings,
-                                                      DatabaseServices databaseServices,
-                                                      ProjectConfigPlus projectConfigPlus,
-                                                      Executors executors,
-                                                      BrokerConnectionFactory connections,
-                                                      EvaluationEvent monitor )
+    static Pair<Set<Path>, String> evaluate( SystemSettings systemSettings,
+                                             DatabaseServices databaseServices,
+                                             ProjectConfigPlus projectConfigPlus,
+                                             Executors executors,
+                                             BrokerConnectionFactory connections,
+                                             EvaluationEvent monitor )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -149,7 +149,7 @@ class ProcessorHelper
         monitor.setEvaluationId( evaluationId );
 
         // Create output directory
-        Path outputDirectory = ProcessorHelper.createTempOutputDirectory( evaluationId );
+        Path outputDirectory = EvaluationUtilities.createTempOutputDirectory( evaluationId );
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
@@ -158,12 +158,12 @@ class ProcessorHelper
 
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =
-                ProcessorHelper.getNetcdfWriters( projectConfig,
-                                                  systemSettings,
-                                                  outputDirectory );
+                EvaluationUtilities.getNetcdfWriters( projectConfig,
+                                                      systemSettings,
+                                                      outputDirectory );
 
         // Obtain any formats delivered by out-of-process subscribers.
-        Set<Format> externalFormats = ProcessorHelper.getFormatsDeliveredByExternalSubscribers();
+        Set<Format> externalFormats = EvaluationUtilities.getFormatsDeliveredByExternalSubscribers();
 
         LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
 
@@ -181,8 +181,8 @@ class ProcessorHelper
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
         Evaluation evaluation = null;
 
-        try ( SharedWriters sharedWriters = ProcessorHelper.getSharedWriters( projectConfig,
-                                                                              outputDirectory );
+        try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( projectConfig,
+                                                                                  outputDirectory );
               // Create a subscriber for the format writers that are within-process. The subscriber is built for this
               // evaluation only, and should not serve other evaluations, else there is a risk that short-running
               // subscribers die without managing to serve the evaluations they promised to serve. This complexity 
@@ -217,13 +217,13 @@ class ProcessorHelper
 
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<Evaluation, String> evaluationAndProjectHash =
-                    ProcessorHelper.processProjectConfig( evaluationDetails,
-                                                          databaseServices,
-                                                          executors,
-                                                          connections,
-                                                          sharedWriters,
-                                                          netcdfWriters,
-                                                          outputDirectory );
+                    EvaluationUtilities.evaluate( evaluationDetails,
+                                                  databaseServices,
+                                                  executors,
+                                                  connections,
+                                                  sharedWriters,
+                                                  netcdfWriters,
+                                                  outputDirectory );
             evaluation = evaluationAndProjectHash.getLeft();
             projectHash = evaluationAndProjectHash.getRight();
 
@@ -288,7 +288,7 @@ class ProcessorHelper
         finally
         {
             // Close the netCDF writers if not closed
-            ProcessorHelper.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
+            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -376,13 +376,13 @@ class ProcessorHelper
      * @throws IOException if an attempt was made to close the evaluation and it failed
      */
 
-    private static Pair<Evaluation, String> processProjectConfig( EvaluationDetails evaluationDetails,
-                                                                  DatabaseServices databaseServices,
-                                                                  Executors executors,
-                                                                  BrokerConnectionFactory connections,
-                                                                  SharedWriters sharedWriters,
-                                                                  List<NetcdfOutputWriter> netcdfWriters,
-                                                                  Path outputDirectory )
+    private static Pair<Evaluation, String> evaluate( EvaluationDetails evaluationDetails,
+                                                      DatabaseServices databaseServices,
+                                                      Executors executors,
+                                                      BrokerConnectionFactory connections,
+                                                      SharedWriters sharedWriters,
+                                                      List<NetcdfOutputWriter> netcdfWriters,
+                                                      Path outputDirectory )
             throws IOException
     {
         Evaluation evaluation = null;
@@ -406,7 +406,8 @@ class ProcessorHelper
             SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
             // Gridded features cache, if required. See #51232.
-            GriddedFeatures.Builder griddedFeaturesBuilder = ProcessorHelper.getGriddedFeaturesCache( projectConfig );
+            GriddedFeatures.Builder griddedFeaturesBuilder =
+                    EvaluationUtilities.getGriddedFeaturesCache( projectConfig );
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isInDatabase() )
@@ -473,8 +474,8 @@ class ProcessorHelper
                                                    projectConfig );
             // Update the evaluation description with any analyzed units and variable names
             wres.statistics.generated.Evaluation evaluationDescription =
-                    ProcessorHelper.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
-                                                                      project );
+                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
+                                                                          project );
 
             // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
             // to message the status of ingest. In order to build an evaluation before ingest, those parts of the 
@@ -482,7 +483,7 @@ class ProcessorHelper
             // (e.g., the measurement units). Indeed, the time scale is part of the pool description for this reason.
             evaluation = Evaluation.of( evaluationDescription,
                                         connections,
-                                        ProcessorHelper.CLIENT_ID,
+                                        EvaluationUtilities.CLIENT_ID,
                                         evaluationDetails.getEvaluationId(),
                                         evaluationDetails.getSubscriberApprover() );
             evaluationDetails.setEvaluation( evaluation );
@@ -506,7 +507,8 @@ class ProcessorHelper
                 Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
                 Set<FeatureTuple> innerFeaturesWithExplicitThresholds = thresholdReader.getEvaluatableFeatures();
 
-                int minimumSampleSize = ProcessorHelper.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
+                int minimumSampleSize =
+                        EvaluationUtilities.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
                 ThresholdsByMetricAndFeature nextMetrics = ThresholdsByMetricAndFeature.of( nextThresholds,
                                                                                             minimumSampleSize,
                                                                                             metricsConfig.getEnsembleAverage() );
@@ -519,8 +521,8 @@ class ProcessorHelper
             featuresWithExplicitThresholds = Collections.unmodifiableSet( featuresWithExplicitThresholds );
 
             // Create the feature groups
-            Set<FeatureGroup> featureGroups = ProcessorHelper.getFeatureGroups( project,
-                                                                                featuresWithExplicitThresholds );
+            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project,
+                                                                                    featuresWithExplicitThresholds );
 
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
@@ -551,7 +553,7 @@ class ProcessorHelper
             ProgressMonitor.deactivate();
 
             PoolFactory poolFactory = PoolFactory.of( project );
-            List<PoolRequest> poolRequests = ProcessorHelper.getPoolRequests( poolFactory, evaluationDescription );
+            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
 
             int poolCount = poolRequests.size();
             EvaluationEvent monitor = evaluationDetails.getMonitor();
@@ -564,14 +566,14 @@ class ProcessorHelper
             // this is feature-group shaped, but additional shapes may be desired in future
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
 
-            // Create one or more chains of pooling tasks and evaluate them
-            ProcessorHelper.evaluatePoolChains( poolFactory, 
-                                                evaluationDetails, 
-                                                sharedWriters, 
-                                                poolRequests, 
-                                                executors, 
-                                                poolReporter, 
-                                                groupTracker );
+            // Create one or more pool tasks and complete them
+            EvaluationUtilities.completePoolTasks( poolFactory,
+                                                   evaluationDetails,
+                                                   sharedWriters,
+                                                   poolRequests,
+                                                   executors,
+                                                   poolReporter,
+                                                   groupTracker );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected 
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
@@ -616,19 +618,24 @@ class ProcessorHelper
      * @param poolReporter the pool reporter that reports on a pool execution
      * @param poolGroupTracker the group publication tracker
      */
-    
-    private static void evaluatePoolChains( PoolFactory poolFactory,
-                                            EvaluationDetails evaluationDetails,
-                                            SharedWriters sharedWriters,
-                                            List<PoolRequest> poolRequests,
-                                            Executors executors,
-                                            PoolReporter poolReporter,
-                                            PoolGroupTracker poolGroupTracker )
+
+    private static void completePoolTasks( PoolFactory poolFactory,
+                                           EvaluationDetails evaluationDetails,
+                                           SharedWriters sharedWriters,
+                                           List<PoolRequest> poolRequests,
+                                           Executors executors,
+                                           PoolReporter poolReporter,
+                                           PoolGroupTracker poolGroupTracker )
     {
+
+        LOGGER.info( "Submitting {} pool tasks for execution, which are awaiting completion. This may take some "
+                     + "time...",
+                     poolRequests.size() );
+
         // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
         // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
         // completes exceptionally, whichever happens first
-        CompletableFuture<Object> poolTaskChain = ProcessorHelper.getPoolTaskChain( poolFactory,
+        CompletableFuture<Object> poolTaskChain = EvaluationUtilities.getPoolTasks( poolFactory,
                                                                                     evaluationDetails,
                                                                                     sharedWriters,
                                                                                     poolRequests,
@@ -639,7 +646,7 @@ class ProcessorHelper
         // Wait for the pool chain to complete
         poolTaskChain.join();
     }
-    
+
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
      *
@@ -1038,13 +1045,13 @@ class ProcessorHelper
      * @return the pool task chain
      */
 
-    private static CompletableFuture<Object> getPoolTaskChain( PoolFactory poolFactory,
-                                                               EvaluationDetails evaluationDetails,
-                                                               SharedWriters sharedWriters,
-                                                               List<PoolRequest> poolRequests,
-                                                               Executors executors,
-                                                               PoolReporter poolReporter,
-                                                               PoolGroupTracker poolGroupTracker )
+    private static CompletableFuture<Object> getPoolTasks( PoolFactory poolFactory,
+                                                           EvaluationDetails evaluationDetails,
+                                                           SharedWriters sharedWriters,
+                                                           List<PoolRequest> poolRequests,
+                                                           Executors executors,
+                                                           PoolReporter poolReporter,
+                                                           PoolGroupTracker poolGroupTracker )
     {
 
         CompletableFuture<Object> poolTasks = null;
@@ -1063,23 +1070,7 @@ class ProcessorHelper
         if ( type == DatasourceType.ENSEMBLE_FORECASTS )
         {
             List<PoolProcessor<Double, Ensemble>> poolProcessors =
-                    ProcessorHelper.getEnsemblePoolProcessors( poolFactory,
-                                                               evaluationDetails,
-                                                               poolRequests,
-                                                               sharedWriters,
-                                                               executors,
-                                                               poolGroupTracker,
-                                                               poolParameters );
-
-            poolTasks = ProcessorHelper.getPoolTaskChain( poolProcessors,
-                                                          executors.getPoolExecutor(),
-                                                          poolReporter );
-        }
-        // All other single-valued types
-        else
-        {
-            List<PoolProcessor<Double, Double>> poolProcessors =
-                    ProcessorHelper.getSingleValuedPoolProcessors( poolFactory,
+                    EvaluationUtilities.getEnsemblePoolProcessors( poolFactory,
                                                                    evaluationDetails,
                                                                    poolRequests,
                                                                    sharedWriters,
@@ -1087,9 +1078,25 @@ class ProcessorHelper
                                                                    poolGroupTracker,
                                                                    poolParameters );
 
-            poolTasks = ProcessorHelper.getPoolTaskChain( poolProcessors,
-                                                          executors.getPoolExecutor(),
-                                                          poolReporter );
+            poolTasks = EvaluationUtilities.getPoolTaskChain( poolProcessors,
+                                                              executors.getPoolExecutor(),
+                                                              poolReporter );
+        }
+        // All other single-valued types
+        else
+        {
+            List<PoolProcessor<Double, Double>> poolProcessors =
+                    EvaluationUtilities.getSingleValuedPoolProcessors( poolFactory,
+                                                                       evaluationDetails,
+                                                                       poolRequests,
+                                                                       sharedWriters,
+                                                                       executors,
+                                                                       poolGroupTracker,
+                                                                       poolParameters );
+
+            poolTasks = EvaluationUtilities.getPoolTaskChain( poolProcessors,
+                                                              executors.getPoolExecutor(),
+                                                              poolReporter );
         }
 
         return poolTasks;
@@ -1119,10 +1126,10 @@ class ProcessorHelper
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
-                ProcessorHelper.getSingleValuedProcessors( evaluationDetails.getResolvedProject()
-                                                                            .getThresholdsByMetricAndFeature(),
-                                                           executors.getThresholdExecutor(),
-                                                           executors.getMetricExecutor() );
+                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getResolvedProject()
+                                                                                .getThresholdsByMetricAndFeature(),
+                                                               executors.getThresholdExecutor(),
+                                                               executors.getMetricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
         RetrieverFactory<Double, Double> retrieverFactory = null;
@@ -1208,10 +1215,10 @@ class ProcessorHelper
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
-                ProcessorHelper.getEnsembleProcessors( evaluationDetails.getResolvedProject()
-                                                                        .getThresholdsByMetricAndFeature(),
-                                                       executors.getThresholdExecutor(),
-                                                       executors.getMetricExecutor() );
+                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getResolvedProject()
+                                                                            .getThresholdsByMetricAndFeature(),
+                                                           executors.getThresholdExecutor(),
+                                                           executors.getMetricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
         RetrieverFactory<Double, Ensemble> retrieverFactory = null;
@@ -1312,9 +1319,6 @@ class ProcessorHelper
         // Create a future that completes when all pool tasks succeed
         CompletableFuture<Void> allDone =
                 CompletableFuture.allOf( poolTasks.toArray( new CompletableFuture[poolTasks.size()] ) );
-
-        LOGGER.info( "Submitted {} pool tasks for execution, which are awaiting completion. This may take some time...",
-                     poolTasks.size() );
 
         // Chain the two futures together so that either: 1) all pool tasks succeed; or 2) one fails exceptionally.
         return CompletableFuture.anyOf( allDone, oneExceptional );
@@ -1767,7 +1771,7 @@ class ProcessorHelper
         }
     }
 
-    private ProcessorHelper()
+    private EvaluationUtilities()
     {
         // Helper class with static methods therefore no construction allowed.
     }
