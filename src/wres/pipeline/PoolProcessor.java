@@ -58,9 +58,6 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** A unique identifier for the group to which this pool belongs for messaging purposes. */
     private final String messageGroupId;
 
-    /** The pool supplier. */
-    private final Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
-
     /** The pool request or description. */
     private final PoolRequest poolRequest;
 
@@ -72,6 +69,9 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /** A group publication tracker. */
     private final PoolGroupTracker poolGroupTracker;
+
+    /** The pool supplier. */
+    private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
 
     /**
      * Builder.
@@ -244,8 +244,19 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                + "." );
         }
 
+        if ( Objects.isNull( this.poolSupplier ) )
+        {
+            throw new WresProcessingException( "A pool processor cannot be re-used. An attempt was made to re-use this "
+                                               + "processor: "
+                                               + this
+                                               + "." );
+        }
+
         // Get the pool
         Pool<TimeSeries<Pair<L, R>>> pool = this.poolSupplier.get();
+
+        // Render any potentially expensive state eligible for gc
+        this.poolSupplier = null;
 
         LOGGER.debug( "Created pool {}.", pool.getMetadata() );
 

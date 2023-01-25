@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import wres.ExecutionResult;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.ProjectConfig;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.config.Validation;
 import wres.io.concurrency.Executor;
@@ -36,7 +35,7 @@ import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
- * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
+ * A complete implementation of an evaluation pipeline that begins with a project declaration string.
  *
  * @author James Brown
  * @author Jesse Bickel
@@ -269,25 +268,18 @@ public class Evaluator
                                                                      productQueue,
                                                                      productFactory );
 
-        ScheduledExecutorService monitoringService = new ScheduledThreadPoolExecutor( 1 );
-
         Database innerDatabase = this.getDatabase();
         Executor ioExecutor = this.getExecutor();
-        QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
-                                                      ioExecutor,
-                                                      poolQueue,
-                                                      thresholdQueue,
-                                                      metricQueue,
-                                                      productQueue );
 
         DatabaseLockManager lockManager =
                 DatabaseLockManager.from( innerSystemSettings,
-                                          () -> innerDatabase.getRawConnection() );
+                                          innerDatabase::getRawConnection );
 
         // Compress database services into one object
         DatabaseServices databaseServices = new DatabaseServices( innerDatabase, lockManager );
         String projectHash = null;
         Set<Path> pathsWrittenTo = new TreeSet<>();
+        ScheduledExecutorService monitoringService = null;
         try
         {
             // Mark the WRES as doing an evaluation.
@@ -300,8 +292,18 @@ public class Evaluator
                                                  metricExecutor,
                                                  productExecutor );
 
+            // Monitor the task queues if required
             if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
             {
+
+                monitoringService = new ScheduledThreadPoolExecutor( 1 );
+                QueueMonitor queueMonitor = new QueueMonitor( innerDatabase,
+                                                              ioExecutor,
+                                                              poolQueue,
+                                                              thresholdQueue,
+                                                              metricQueue,
+                                                              productQueue );
+
                 monitoringService.scheduleAtFixedRate( queueMonitor,
                                                        1,
                                                        500,
@@ -309,12 +311,12 @@ public class Evaluator
             }
 
             // Process the configuration
-            Pair<Set<Path>, String> innerPathsAndProjectHash = ProcessorHelper.processEvaluation( innerSystemSettings,
-                                                                                                  databaseServices,
-                                                                                                  projectConfigPlus,
-                                                                                                  executors,
-                                                                                                  this.getBrokerConnectionFactory(),
-                                                                                                  monitor );
+            Pair<Set<Path>, String> innerPathsAndProjectHash = EvaluationUtilities.evaluate( innerSystemSettings,
+                                                                                             databaseServices,
+                                                                                             projectConfigPlus,
+                                                                                             executors,
+                                                                                             this.getBrokerConnectionFactory(),
+                                                                                             monitor );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );
@@ -343,11 +345,14 @@ public class Evaluator
         // Shutdown
         finally
         {
-            shutDownGracefully( monitoringService );
-            shutDownGracefully( productExecutor );
-            shutDownGracefully( metricExecutor );
-            shutDownGracefully( thresholdExecutor );
-            shutDownGracefully( poolExecutor );
+            if ( Objects.nonNull( monitoringService ) )
+            {
+                Evaluator.shutDownGracefully( monitoringService );
+            }
+            Evaluator.shutDownGracefully( productExecutor );
+            Evaluator.shutDownGracefully( metricExecutor );
+            Evaluator.shutDownGracefully( thresholdExecutor );
+            Evaluator.shutDownGracefully( poolExecutor );
             lockManager.shutdown();
         }
 
