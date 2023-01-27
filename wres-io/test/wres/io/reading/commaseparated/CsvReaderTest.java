@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +22,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import wres.config.generated.DataSourceConfig.Variable;
+import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -53,6 +53,71 @@ class CsvReaderTest
     private static final Instant T1985_06_02T12_00_00Z = Instant.parse( "1985-06-02T12:00:00Z" );
     private static final Instant T1985_06_02T13_00_00Z = Instant.parse( "1985-06-02T13:00:00Z" );
     private static final Instant T1985_06_02T14_00_00Z = Instant.parse( "1985-06-02T14:00:00Z" );
+
+    @Test
+    void testReadObservationsWithEmptyValueResultsInOneTimeSeries() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new csv file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
+            Path csvPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( csvPath ) )
+            {
+                writer.append( "value_date,variable_name,location,measurement_unit,value\n" )
+                      .append( "1985-06-01T13:00:00Z,QINE,DRRC2,CFS,1\n" )
+                      .append( "1985-06-01T14:00:00Z,QINE,DRRC2,CFS,\n" )
+                      .append( "1985-06-01T15:00:00Z,QINE,DRRC2,CFS,3" );
+            }
+
+            DataSource dataSource = Mockito.mock( DataSource.class );
+            Mockito.when( dataSource.getUri() )
+                   .thenReturn( csvPath.toUri() );
+            Mockito.when( dataSource.getVariable() )
+                   .thenReturn( new Variable( QINE, null ) );
+            Mockito.when( dataSource.getDisposition() )
+                   .thenReturn( DataDisposition.CSV_WRES );
+
+            CsvReader reader = CsvReader.of();
+
+            // No reading yet, we are just opening a pipe to the file here
+            try ( Stream<TimeSeriesTuple> tupleStream = reader.read( dataSource ) )
+            {
+                // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
+                // creates as many reads from the file system as necessary to read that time-series into memory
+                List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                             .toList();
+
+                TimeSeriesMetadata expectedMetadataOne =
+                        TimeSeriesMetadata.of( Collections.emptyMap(),
+                                               null,
+                                               QINE,
+                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               CFS );
+
+                TimeSeries<Double> expectedOne =
+                        new TimeSeries.Builder<Double>().setMetadata( expectedMetadataOne )
+                                                        .addEvent( Event.of( T1985_06_01T13_00_00Z, 1.0 ) )
+                                                        .addEvent( Event.of( T1985_06_01T14_00_00Z,
+                                                                             MissingValues.DOUBLE ) )
+                                                        .addEvent( Event.of( T1985_06_01T15_00_00Z, 3.0 ) )
+                                                        .build();
+
+                List<TimeSeries<Double>> expected = List.of( expectedOne );
+
+                assertEquals( expected, actual );
+            }
+
+            // Clean up
+            if ( Files.exists( csvPath ) )
+            {
+                Files.delete( csvPath );
+            }
+        }
+    }
 
     @Test
     void testReadObservationsResultsInTwoTimeSeries() throws IOException
@@ -92,7 +157,7 @@ class CsvReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
@@ -177,7 +242,7 @@ class CsvReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
@@ -259,7 +324,7 @@ class CsvReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
@@ -340,7 +405,7 @@ class CsvReaderTest
                 // Now we trigger reading because there is a terminal stream operation. Each pull on a time-series 
                 // creates as many reads from the file system as necessary to read that time-series into memory
                 List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                             .collect( Collectors.toList() );
+                                                             .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
                         TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_01T12_00_00Z ),
