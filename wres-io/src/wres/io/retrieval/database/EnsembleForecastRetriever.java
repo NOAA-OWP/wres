@@ -1,6 +1,7 @@
 package wres.io.retrieval.database;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.DataProvider;
 import wres.io.data.caching.Ensembles;
@@ -198,12 +200,13 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
      * @return a function to obtain the measured value
      */
 
-    private Function<DataProvider, Ensemble> getDataSupplier()
+    private Function<DataProvider, Event<Ensemble>> getDataSupplier()
     {
         return provider -> {
 
             Double[] members = provider.getDoubleArray( "ensemble_members" );
             Integer[] ids = provider.getIntegerArray( "ensemble_ids" );
+            Instant validTime = provider.getInstant( "valid_time" );
 
             // Re-duplication is handled in the superclass, so do not consider here, instead map by label
             Map<String, Double> ensemble = new TreeMap<>();
@@ -235,7 +238,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
                                        .mapToDouble( Double::doubleValue )
                                        .toArray();
 
-            return Ensemble.of( unboxed, labels );
+            return Event.of( validTime, Ensemble.of( unboxed, labels ) );
         };
     }
 

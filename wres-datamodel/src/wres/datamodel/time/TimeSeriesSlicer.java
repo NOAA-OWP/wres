@@ -866,7 +866,7 @@ public final class TimeSeriesSlicer
                     membersByTime.put( label, nextTime );
                 }
 
-                nextTime.add( Event.of( next.getTime(), members[i] ) );
+                nextTime.add( DoubleEvent.of( next.getTime(), members[i] ) );
             }
         }
 

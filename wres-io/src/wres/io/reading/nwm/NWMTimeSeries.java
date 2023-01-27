@@ -50,6 +50,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
+import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -1673,7 +1674,7 @@ class NWMTimeSeries implements Closeable
                                                           attributes );
                 }
 
-                Event<Double> event = Event.of( validDatetime, variableValue );
+                Event<Double> event = DoubleEvent.of( validDatetime, variableValue );
 
                 if ( isEnsemble )
                 {

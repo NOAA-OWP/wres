@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -122,8 +121,8 @@ class TimeSeriesRetrieverTest
                .thenReturn( 1, 1, 1, 1, 1 );
 
         Feature featureKey = Feature.of( Geometry.newBuilder()
-                                                       .setName( A_FEATURE )
-                                                       .build() );
+                                                 .setName( A_FEATURE )
+                                                 .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( 1L ) )
@@ -145,12 +144,16 @@ class TimeSeriesRetrieverTest
                .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
-        List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0, 4.0, 5.0 );
-        Function<DataProvider, Double> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
+        List<Event<Double>> timeSeriesValues = List.of( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T02:00:00Z" ), 2.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T03:00:00Z" ), 3.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ) );
+        Function<DataProvider, Event<Double>> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
 
         Stream<TimeSeries<Double>> series = retriever.getTimeSeriesFromScript( scripter, mapper );
 
-        List<TimeSeries<Double>> actual = series.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actual = series.toList();
 
         TimeSeries<Double> expectedSeries =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ) )
@@ -265,8 +268,8 @@ class TimeSeriesRetrieverTest
                .thenReturn( 1, 1, 1, 1, 1, 2, 2, 2, 2, 2 );
 
         Feature featureKey = Feature.of( Geometry.newBuilder()
-                                                       .setName( A_FEATURE )
-                                                       .build() );
+                                                 .setName( A_FEATURE )
+                                                 .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( Mockito.anyLong() ) )
@@ -288,12 +291,22 @@ class TimeSeriesRetrieverTest
                .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
-        List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 );
-        Function<DataProvider, Double> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
+
+        List<Event<Double>> timeSeriesValues = List.of( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T02:00:00Z" ), 2.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T03:00:00Z" ), 3.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ),
+                                                        Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T01:00:00Z" ), 6.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T02:00:00Z" ), 7.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T03:00:00Z" ), 8.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T04:00:00Z" ), 9.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T05:00:00Z" ), 10.0 ) );
+        Function<DataProvider, Event<Double>> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
 
         Stream<TimeSeries<Double>> series = retriever.getTimeSeriesFromScript( scripter, mapper );
 
-        List<TimeSeries<Double>> actual = series.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actual = series.toList();
 
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ) )
@@ -401,8 +414,8 @@ class TimeSeriesRetrieverTest
                .thenReturn( 1, 3, 2 );
 
         Feature featureKey = Feature.of( Geometry.newBuilder()
-                                                       .setName( A_FEATURE )
-                                                       .build() );
+                                                 .setName( A_FEATURE )
+                                                 .build() );
 
         Features features = Mockito.mock( Features.class );
         Mockito.when( features.getFeatureKey( Mockito.anyLong() ) )
@@ -424,12 +437,15 @@ class TimeSeriesRetrieverTest
                .thenReturn( units );
 
         AtomicInteger next = new AtomicInteger();
-        List<Double> timeSeriesValues = List.of( 1.0, 2.0, 3.0 );
-        Function<DataProvider, Double> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
+
+        List<Event<Double>> timeSeriesValues = List.of( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ),
+                                                        Event.of( Instant.parse( "1985-12-02T01:00:00Z" ), 2.0 ),
+                                                        Event.of( Instant.parse( "1985-12-03T01:00:00Z" ), 3.0 ) );
+        Function<DataProvider, Event<Double>> mapper = dataProvider -> timeSeriesValues.get( next.getAndIncrement() );
 
         Stream<TimeSeries<Double>> series = retriever.getTimeSeriesFromScript( scripter, mapper );
 
-        List<TimeSeries<Double>> actual = series.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actual = series.toList();
 
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ) )
