@@ -81,7 +81,7 @@ public class CsvReader implements TimeSeriesReader
     public Stream<TimeSeriesTuple> read( DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
-        
+
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
 
@@ -105,7 +105,7 @@ public class CsvReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.CSV_WRES );
-        
+
         try
         {
             DataProvider provider = DataProvider.fromCsv( inputStream, DELIMITER );
@@ -245,45 +245,55 @@ public class CsvReader implements TimeSeriesReader
                                                                           unconfiguredVariableNames );
 
         String traceName = this.getEnsembleName( provider );
-        Instant valueDate = provider.getInstant( VALUE_DATE );
-        Double value = provider.getDouble( VALUE );
-        TimeSeriesTuple tuple = null;
 
-        if ( !currentTimeSeriesMetadata.equals( lastTraceMetadata.get() )
-             && Objects.nonNull( lastTraceMetadata.get() ) )
+        try
         {
-            tuple = this.createTimeSeries( dataSource,
-                                           lastTraceMetadata.get(),
-                                           traceValues,
-                                           lastTraceName.get(),
-                                           provider.getRowIndex() + 1 );
+            Instant valueDate = provider.getInstant( VALUE_DATE );
+            Double value = provider.getDouble( VALUE );
+            TimeSeriesTuple tuple = null;
 
-            // New timeseries
-            traceValues.clear();
+            if ( !currentTimeSeriesMetadata.equals( lastTraceMetadata.get() )
+                 && Objects.nonNull( lastTraceMetadata.get() ) )
+            {
+                tuple = this.createTimeSeries( dataSource,
+                                               lastTraceMetadata.get(),
+                                               traceValues,
+                                               lastTraceName.get(),
+                                               provider.getRowIndex() + 1 );
+
+                // New timeseries
+                traceValues.clear();
+            }
+            else
+            {
+                LOGGER.debug( "Current time-series metadata equals metadata from the previous row. The metadata: {}.",
+                              currentTimeSeriesMetadata );
+            }
+
+            // Get the currently-building trace
+            SortedMap<Instant, Double> trace = traceValues.get( traceName );
+
+            // If the trace holder doesn't exist, create it
+            if ( Objects.isNull( trace ) )
+            {
+                trace = new TreeMap<>();
+                traceValues.put( traceName, trace );
+            }
+
+            // Save the data into a temporary structure
+            trace.put( valueDate, value );
+
+            lastTraceMetadata.set( currentTimeSeriesMetadata );
+            lastTraceName.set( traceName );
+
+            return tuple;
         }
-        else
+        catch ( IllegalStateException | ClassCastException e )
         {
-            LOGGER.debug( "Current time-series metadata equals metadata from the previous row. The metadata: {}.",
-                          currentTimeSeriesMetadata );
+            throw new ReadException( "Encountered an error while reading the CSV data source at "
+                                     + dataSource.getUri(),
+                                     e );
         }
-
-        // Get the currently-building trace
-        SortedMap<Instant, Double> trace = traceValues.get( traceName );
-
-        // If the trace holder doesn't exist, create it
-        if ( Objects.isNull( trace ) )
-        {
-            trace = new TreeMap<>();
-            traceValues.put( traceName, trace );
-        }
-
-        // Save the data into a temporary structure
-        trace.put( valueDate, value );
-
-        lastTraceMetadata.set( currentTimeSeriesMetadata );
-        lastTraceName.set( traceName );
-
-        return tuple;
     }
 
     /**
@@ -328,7 +338,7 @@ public class CsvReader implements TimeSeriesReader
 
             // Validate
             ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
-            
+
             return TimeSeriesTuple.ofSingleValued( timeSeries, dataSource );
         }
         else
@@ -337,7 +347,7 @@ public class CsvReader implements TimeSeriesReader
                                                                                  traceValues,
                                                                                  lineNumber,
                                                                                  dataSource.getUri() );
-            
+
             // Validate
             ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeries, dataSource.getUri() );
 
@@ -481,7 +491,7 @@ public class CsvReader implements TimeSeriesReader
                         dataSource.getUri()
                         +
                         "', which prevented reading. ";
-        
+
         StringJoiner errorJoiner = new StringJoiner( " ", prefix, "" );
 
         // Validate the date-times

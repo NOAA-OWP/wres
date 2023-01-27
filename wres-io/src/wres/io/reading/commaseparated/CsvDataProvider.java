@@ -19,7 +19,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -502,9 +501,9 @@ public class CsvDataProvider implements DataProvider
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject( columnName );
+        String value = this.getString( columnName );
 
-        if ( value == null )
+        if ( value == null || value.isBlank() )
         {
             return MissingValues.DOUBLE;
         }
@@ -513,12 +512,11 @@ public class CsvDataProvider implements DataProvider
         {
             // If the string representation of whatever object can be used as a double, use that
             // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
-            return Double.parseDouble( value.toString() );
+            return Double.parseDouble( value );
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                                          "The value '" + value.toString()
+            throw new ClassCastException( "The value '" + value
                                           +
                                           "' in the field '"
                                           + columnName
