@@ -4,6 +4,7 @@ import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
+import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -138,7 +139,7 @@ public class GriddedReader
                                                 feature.getSrid(),
                                                 feature.getWkt() );
 
-                    Event<Double> event = Event.of( griddedValue.getValidTime(), griddedValue.getValue() );
+                    Event<Double> event = DoubleEvent.of( griddedValue.getValidTime(), griddedValue.getValue() );
                     Pair<Instant,Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.getIssueTime(), event );
                     events.add( eventPlusIssueTime );
                     measurementUnit = griddedValue.getMeasurementUnit();

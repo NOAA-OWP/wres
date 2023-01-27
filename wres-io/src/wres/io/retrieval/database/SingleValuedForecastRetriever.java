@@ -3,6 +3,7 @@ package wres.io.retrieval.database;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -10,6 +11,8 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import wres.datamodel.MissingValues;
+import wres.datamodel.time.DoubleEvent;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.DataProvider;
 import wres.io.database.DataScripter;
@@ -261,18 +264,19 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * @return a function to obtain the measured value
      */
 
-    private Function<DataProvider, Double> getDataSupplier()
+    private Function<DataProvider, Event<Double>> getDataSupplier()
     {
         return provider -> {
             // Raw value
             double unmapped = provider.getDouble( "trace_value" );
+            Instant validTime = provider.getInstant( "valid_time" );
 
             if ( MissingValues.isMissingValue( unmapped ) )
             {
-                return MissingValues.DOUBLE;
+                return DoubleEvent.of( validTime, MissingValues.DOUBLE );
             }
 
-            return unmapped;
+            return DoubleEvent.of( validTime, unmapped );
         };
     }
 

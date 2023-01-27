@@ -38,6 +38,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
+import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -402,7 +403,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                 usedValue = MissingValues.DOUBLE;
             }
 
-            Event<Double> event = Event.of( dataPoint.getTime()
+            Event<Double> event = DoubleEvent.of( dataPoint.getTime()
                                                      .toInstant(),
                                             usedValue );
 

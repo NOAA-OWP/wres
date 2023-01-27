@@ -44,6 +44,7 @@ import wres.config.generated.PairConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -106,7 +107,7 @@ public class ReaderUtilities
 
         for ( Map.Entry<Instant, Double> events : trace.entrySet() )
         {
-            Event<Double> event = Event.of( events.getKey(), events.getValue() );
+            Event<Double> event = DoubleEvent.of( events.getKey(), events.getValue() );
             builder.addEvent( event );
         }
 

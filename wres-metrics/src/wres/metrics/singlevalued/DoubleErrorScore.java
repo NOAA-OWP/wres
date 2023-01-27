@@ -63,9 +63,13 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
         double doubleScore = MissingValues.DOUBLE;
         if ( !pool.get().isEmpty() )
         {
-            double[] doubles = pool.get().stream().mapToDouble( this.getErrorFunction() ).toArray();
+            double[] doubles = pool.get()
+                                   .stream()
+                                   .mapToDouble( this.getErrorFunction() )
+                                   .toArray();
             VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
-            doubleScore = this.getErrorAccumulator().applyAsDouble( wrappedDoubles );
+            doubleScore = this.getErrorAccumulator()
+                              .applyAsDouble( wrappedDoubles );
         }
 
         Optional<DoubleScoreMetricComponent> main = this.metric.getComponentsList()

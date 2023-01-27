@@ -37,6 +37,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
+import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -466,7 +467,7 @@ public class WatermlReader implements TimeSeriesReader
             }
 
             Instant dateTime = value.getDateTime();
-            Event<Double> event = Event.of( dateTime, readValue );
+            Event<Double> event = DoubleEvent.of( dateTime, readValue );
             rawTimeSeries.add( event );
         }
 

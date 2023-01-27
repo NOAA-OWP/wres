@@ -178,7 +178,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the data could not be accessed for any reason
      */
 
-    <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( DataScripter scripter, Function<DataProvider, S> mapper )
+    <S> Stream<TimeSeries<S>> getTimeSeriesFromScript( DataScripter scripter, Function<DataProvider, Event<S>> mapper )
     {
         Objects.requireNonNull( scripter );
         Objects.requireNonNull( mapper );
@@ -754,7 +754,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the data could not be accessed for any reason
      */
 
-    private <S> Supplier<TimeSeries<S>> getTimeSeriesSupplier( Function<DataProvider, S> mapper,
+    private <S> Supplier<TimeSeries<S>> getTimeSeriesSupplier( Function<DataProvider, Event<S>> mapper,
                                                                Connection connection,
                                                                DataProvider provider )
     {
@@ -849,7 +849,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @throws DataAccessException if the data could not be accessed for any reason
      */
 
-    private <S> List<TimeSeries<S>> incrementOrCompleteSeries( Function<DataProvider, S> mapper,
+    private <S> List<TimeSeries<S>> incrementOrCompleteSeries( Function<DataProvider, Event<S>> mapper,
                                                                DataProvider provider,
                                                                TimeSeries.Builder<S> lastBuilder,
                                                                AtomicLong lastSeriesId,
@@ -913,8 +913,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         // Add the event     
-        S value = mapper.apply( provider );
-        Event<S> event = Event.of( validTime, value );
+        Event<S> event = mapper.apply( provider );
         this.addEventToTimeSeries( event, lastBuilder );
 
         // Add the time-scale info
