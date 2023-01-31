@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,7 +50,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
-import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.GeometryGroup;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -156,7 +154,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /** Has the supplier been called before? */
     private final AtomicBoolean done = new AtomicBoolean( false );
-    
+
     /** Left data source. */
     private Supplier<Stream<TimeSeries<L>>> left;
 
@@ -165,7 +163,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /** Baseline data source. Optional. */
     private Supplier<Stream<TimeSeries<R>>> baseline;
-    
+
     /** The climatology, possibly null. */
     private Supplier<Climatology> climatology;
 
@@ -252,7 +250,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.right = null;
         this.baseline = null;
         this.climatology = null;
-        
+
         return returnMe;
     }
 
@@ -1237,7 +1235,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             }
 
             // Log any warnings
-            PoolSupplier.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
+            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
 
             rescalingMonitor.commit();
         }
@@ -1281,7 +1279,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             }
 
             // Log any warnings
-            PoolSupplier.logScaleValidationWarnings( rightOrBaseline, upscaledRight.getValidationEvents() );
+            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( rightOrBaseline,
+                                                                         upscaledRight.getValidationEvents() );
 
             rescalingMonitor.commit();
         }
@@ -1835,65 +1834,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     private Set<Feature> getBaselineFeatures()
     {
         return this.baselineFeatures;
-    }
-
-    /**
-     * Logs the validation events of type {@link EventType#WARN} associated with rescaling.
-     * 
-     * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
-     * more complete metadata information to the times-series.
-     * 
-     * @param context the context for the warnings
-     * @param scaleValidationEvents the scale validation events
-     */
-
-    private static void logScaleValidationWarnings( TimeSeries<?> context,
-                                                    List<EvaluationStatusMessage> scaleValidationEvents )
-    {
-        Objects.requireNonNull( scaleValidationEvents );
-
-        // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
-        if ( LOGGER.isWarnEnabled() )
-        {
-            Set<EvaluationStatusMessage> warnEvents = scaleValidationEvents.stream()
-                                                                           .filter( a -> a.getStatusLevel() == StatusLevel.WARN )
-                                                                           .collect( Collectors.toSet() );
-            if ( !warnEvents.isEmpty() )
-            {
-                StringJoiner message = new StringJoiner( System.lineSeparator() );
-                String spacer = "    ";
-                warnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
-
-                LOGGER.warn( "While rescaling time-series with metadata {}, encountered {} validation "
-                             + "warnings, as follows: {}{}",
-                             context.getMetadata(),
-                             warnEvents.size(),
-                             System.lineSeparator(),
-                             message );
-            }
-        }
-
-        // Any user-facing debug-level events? Push to log for now, but see #61930 (logging isn't for users)
-        if ( LOGGER.isDebugEnabled() )
-        {
-            Set<EvaluationStatusMessage> debugWarnEvents = scaleValidationEvents.stream()
-                                                                                .filter( a -> a.getStatusLevel() == StatusLevel.DEBUG )
-                                                                                .collect( Collectors.toSet() );
-            if ( !debugWarnEvents.isEmpty() )
-            {
-                StringJoiner message = new StringJoiner( System.lineSeparator() );
-                String spacer = "    ";
-                debugWarnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
-
-                LOGGER.debug( "While rescaling time-series with metadata {}, encountered {} detailed validation "
-                              + "warnings, as follows: {}{}",
-                              context.getMetadata(),
-                              debugWarnEvents.size(),
-                              System.lineSeparator(),
-                              message );
-            }
-        }
-
     }
 
     /**
