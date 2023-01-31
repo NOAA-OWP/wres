@@ -30,11 +30,13 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Climatology;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.time.RescaledTimeSeriesPlusValidation;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -937,22 +939,29 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 {
                     if ( Objects.isNull( upscaler ) )
                     {
-                        throw new IllegalArgumentException( "The climatological time-series "
-                                                            + nextSeries.hashCode()
-                                                            + " needed upscaling from "
+                        throw new IllegalArgumentException( "A climatological time-series required upscaling from "
                                                             + nextScale
                                                             + " to "
                                                             + desiredTimeScale
-                                                            + " but no upscaler was provided." );
+                                                            + ", but no upscaler was provided. The time-series "
+                                                            + "metadata was: "
+                                                            + nextSeries.getMetadata() );
                     }
 
                     String desiredUnit = this.getProject()
                                              .getMeasurementUnit();
 
-                    nextSeries = upscaler.upscale( nextSeries, desiredTimeScale, desiredUnit )
-                                         .getTimeSeries();
+                    RescaledTimeSeriesPlusValidation<L> rescaled = upscaler.upscale( nextSeries,
+                                                                                     desiredTimeScale,
+                                                                                     desiredUnit );
 
-                    LOGGER.debug( "Upscaled the climatological time-series {} from {} to {}.",
+                    nextSeries = rescaled.getTimeSeries();
+
+                    RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( nextSeries,
+                                                                                 rescaled.getValidationEvents() );
+
+                    LOGGER.debug( "Upscaled a climatological time-series from {} to {}. The time-series metadata was: "
+                                  + "{}.",
                                   nextSeries.hashCode(),
                                   nextScale,
                                   desiredTimeScale );
@@ -982,10 +991,51 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                 returnMe.add( climatologyAtScale );
             }
 
+            this.validateUpscaledClimatology( climData, returnMe, desiredTimeScale );
+
             LOGGER.debug( "Created {} climatological time-series.", returnMe.size() );
 
             return returnMe.stream();
         };
+    }
+
+    /**
+     * Verifies that one or more event values was produced when upscaling the climatology, given one or more event 
+     * values prior to upscaling, and throws an exception if upscaling failed to produce any values.
+     * 
+     * @param upscaled the upscaled time-series to check for events
+     * @param unscaled the unscaled time-series to check for events
+     * @param desiredTimeScale the desired time scale
+     * @throws PoolException if no upscaled values were produced 
+     */
+
+    private void validateUpscaledClimatology( List<TimeSeries<L>> unscaled,
+                                              List<TimeSeries<L>> upscaled,
+                                              TimeScaleOuter desiredTimeScale )
+    {
+        int unscaledCount = unscaled.stream()
+                                    .mapToInt( next -> next.getEvents().size() )
+                                    .sum();
+
+        int upscaledCount = upscaled.stream()
+                                    .mapToInt( next -> next.getEvents().size() )
+                                    .sum();
+
+        if ( unscaledCount > 0 && upscaledCount == 0 )
+        {
+            throw new PoolException( "Failed to produce any upscaled event values for the climatological time-series, "
+                                     + "despite encountering "
+                                     + unscaledCount
+                                     + " event values to upscale. Please check that the climatological time-series can "
+                                     + "be upscaled to the desired time scale of "
+                                     + desiredTimeScale
+                                     + ". In general, upscaling can only be performed if there are sufficient event "
+                                     + "values within each upscaled period (two or more) and they are equally spaced." );
+        }
+
+        LOGGER.debug( "Encountered {} events in the climatological time-series prior to upscaling and {} afterwards.",
+                      unscaledCount,
+                      upscaledCount );
     }
 
     /**
