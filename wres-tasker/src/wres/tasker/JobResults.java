@@ -696,6 +696,10 @@ class JobResults
             jobMetadata = this.getObjectService()
                               .attach( jobMetadata );
 
+            //Since field are discarded when making the metadata "live", ensure
+            //the state is CREATED.
+            jobMetadata.setJobState(JobMetadata.JobState.CREATED);
+
             /* For whatever reason, the following simply does not work. Sigh.
                Instead, see the listener above attached to the map when created.
             // RLiveObject instances are RExpirable, set expiration both on the
