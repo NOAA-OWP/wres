@@ -252,6 +252,8 @@ public class JobMetadata
 
     public void setJobState( JobState jobState )
     {
+        Objects.requireNonNull( jobState );
+        
         if ( this.jobState == null )
         {
             if ( !jobState.equals( JobState.CREATED ) )
@@ -261,12 +263,12 @@ public class JobMetadata
                                                  + JobState.CREATED );
             }
         }
-        else if ( jobState.equals( JobState.NOT_FOUND ) )
+        else if ( jobState == JobState.NOT_FOUND )
         {
             throw new IllegalArgumentException( "Cannot set to "
                                                 + JobState.NOT_FOUND );
         }
-        else if ( this.jobState.equals( JobState.CREATED ) )
+        else if ( this.jobState == JobState.CREATED )
         {
             Set<JobState> createdToThese = Set.of( JobState.IN_QUEUE,
                                                    JobState.AWAITING_POSTS_OF_DATA,
@@ -278,7 +280,7 @@ public class JobMetadata
                                                  + createdToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.AWAITING_POSTS_OF_DATA ) )
+        else if ( this.jobState == JobState.AWAITING_POSTS_OF_DATA )
         {
             Set<JobState> awaitingPostsToThese = Set.of( JobState.NO_MORE_POSTS_OF_DATA,
                                                          JobState.FAILED_BEFORE_IN_QUEUE );
@@ -289,7 +291,7 @@ public class JobMetadata
                                                  + TO + awaitingPostsToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.NO_MORE_POSTS_OF_DATA ) )
+        else if ( this.jobState == JobState.NO_MORE_POSTS_OF_DATA )
         {
             Set<JobState> noMorePostsToThese = Set.of( JobState.IN_QUEUE,
                                                        JobState.FAILED_BEFORE_IN_QUEUE );
@@ -300,7 +302,7 @@ public class JobMetadata
                                                  + TO + noMorePostsToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.IN_QUEUE ) )
+        else if ( this.jobState == JobState.IN_QUEUE )
         {
             Set<JobState> inQueueToThese = Set.of( JobState.IN_PROGRESS,
                                                    JobState.COMPLETED_REPORTED_FAILURE,
@@ -312,7 +314,7 @@ public class JobMetadata
                                                  + TO + inQueueToThese );
             }
         }
-        else if ( this.jobState.equals( JobState.IN_PROGRESS ) )
+        else if ( this.jobState == JobState.IN_PROGRESS )
         {
             Set<JobState> inProgressToThese = Set.of( JobState.COMPLETED_REPORTED_FAILURE,
                                                       JobState.COMPLETED_REPORTED_SUCCESS );
@@ -471,3 +473,4 @@ public class JobMetadata
     }
 
 }
+
