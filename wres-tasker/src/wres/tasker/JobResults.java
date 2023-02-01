@@ -23,11 +23,16 @@ import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -126,8 +131,53 @@ class JobResults
         ThreadFactory threadFactory = new BasicThreadFactory.Builder().namingPattern( "JobResults Thread %d" )
                                                                       .uncaughtExceptionHandler( handler )
                                                                       .build();
-        executor = Executors.newFixedThreadPool( NUMBER_OF_THREADS, threadFactory );
 
+
+        //We were encountering run time exceptions in the status watcher that were not being logged. Apparently,
+        //one of the wrapping classes established to run the watcher was resulting in the exception be caught,
+        //but not logged.  The below is the recommended solution to see that exception. 
+        //See ticket #112063 for the stack overflow from where this code was copied and reformatted.
+        executor = new ThreadPoolExecutor( NUMBER_OF_THREADS,
+                                           NUMBER_OF_THREADS,
+                                           0L,
+                                           TimeUnit.MILLISECONDS,
+                                           new LinkedBlockingQueue<Runnable>(),
+                                           threadFactory )
+        {
+            @Override
+            protected void afterExecute( Runnable r, Throwable t )
+            {
+                super.afterExecute( r, t );
+                if ( t == null && r instanceof Future<?> )
+                {
+                    try
+                    {
+                        Future<?> future = (Future<?>) r;
+                        if ( future.isDone() )
+                        {
+                            future.get();
+                        }
+                    }
+                    catch ( CancellationException ce )
+                    {
+                        t = ce;
+                    }
+                    catch ( ExecutionException ee )
+                    {
+                        t = ee.getCause();
+                    }
+                    catch ( InterruptedException ie )
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                if ( t != null )
+                {
+                    LOGGER.warn( "A throwable was received while watching for messages in a queue.",
+                                 t );
+                }
+            }
+        };
 
         // Use redis when available, otherwise local Caffeine instances.
         if ( Objects.nonNull( this.redisson ) )
