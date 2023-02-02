@@ -445,6 +445,20 @@ public class SourceLoader
             {
                 return DataDisposition.NETCDF_VECTOR;
             }
+
+            String append = "";
+
+            if ( Objects.isNull( dataSource.getSource()
+                                           .getInterface() ) )
+            {
+                append = " Please declare the interface for the source and try again.";
+            }
+
+            throw new UnsupportedOperationException( "Discovered an unsupported data source: "
+                                                     + dataSource
+                                                     + ". The data source was identified as a web source, but its "
+                                                     + "disposition could not be discovered."
+                                                     + append );
         }
 
         throw new UnsupportedOperationException( "Discovered an unsupported data source: "

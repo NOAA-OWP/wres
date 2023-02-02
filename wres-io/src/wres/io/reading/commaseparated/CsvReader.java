@@ -43,8 +43,8 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.util.Strings;
 
 /**
- * A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed at the beginning of 
- * the CSV string and begin with a # character.
+ * A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed and begin with a # 
+ * character.
  * 
  * TODO: consider using OpenCSV or similar for the parsing, rather than the {@link CsvDataProvider}.
  * 
@@ -639,7 +639,7 @@ public class CsvReader implements TimeSeriesReader
      * Constructor.
      */
 
-    public CsvReader()
+    private CsvReader()
     {
         // Do not construct
     }

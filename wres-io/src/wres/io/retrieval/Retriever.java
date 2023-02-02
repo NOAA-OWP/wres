@@ -8,8 +8,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
- * <p>An API for performing read operations on data objects of type <code>T</code>. Retrievers that read specific data 
- * types from specific data stores should implement this interface.
+ * <p>Retrieves a data stream from an underlying persistence store, such as a database.
  * 
  * @author James Brown
  * @param <T> the type of object to retrieve
@@ -38,8 +37,8 @@ public interface Retriever<T> extends Supplier<Stream<T>>
     LongStream getAllIdentifiers();
 
     /**
-     * Reads a collection of objects, by unique identifier, into a stream. This implementation reads each object
-     * sequentially. Implementations that benefit from reading multiple objects at once should override this default.
+     * Reads a prescribed collection of objects into a stream. This implementation reads each object sequentially. 
+     * Implementations that benefit from reading multiple objects at once should override this default.
      * 
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects

@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.util.stream.Stream;
 
 /**
- * <p>An API for reading different types of time-series data from a {@link DataSource}. <p>When reading from a stream 
+ * <p>An API for reading different types of time-series data from a {@link DataSource}. When reading from a stream 
  * supplied by a {@link TimeSeriesReader}, use a try-with-resources block to ensure that the underlying resources are 
  * closed. 
  * 
@@ -22,9 +22,7 @@ import java.util.stream.Stream;
  * underlying read.
  * 
  * <p>If this implementation is followed, then production will be naturally throttled according to the rate of 
- * consumption allowed by the terminal operator or consumer. Conversely, supplying this class with streams that read 
- * through to an in-memory collection (where all time-series have been read into memory upfront) will consume more 
- * memory than strictly required when the consumer writes to a persistent store of time-series, such as a database. 
+ * consumption allowed by the terminal operator or consumer.
  * 
  * <p>Implementations that rely on closable resources should close resources by registering a callback via 
  * {@link Stream#onClose(Runnable)}.
@@ -49,7 +47,8 @@ public interface TimeSeriesReader
 
     /**
      * Reads and returns all time-series from the prescribed stream using the data source only for a description of the 
-     * source. To read from a source without an existing stream, use {@link #read(DataSource, InputStream)}.
+     * source.
+     * 
      * @see #read(DataSource)
      * @param dataSource the data source, required
      * @param stream the input stream, required
