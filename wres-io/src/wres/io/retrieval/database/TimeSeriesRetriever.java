@@ -47,10 +47,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Abstract base class for retrieving {@link TimeSeries} from the WRES database.
- * 
- * TODO: remove measurement unit mapping from this retriever and place in the {@link PoolFactory}, specifically in the
- * left and right transformers.
+ * Abstract base class for retrieving {@link TimeSeries} from a database.
  * 
  * @author James Brown
  */
@@ -58,7 +55,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
     // Re-used strings
-    static final String REFERENCE_TIME = "reference_time";
+    private static final String REFERENCE_TIME = "reference_time";
     private static final String OCCURRENCES = "occurrences";
     private static final String AND = " = ? AND ";
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
@@ -196,7 +193,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         retrievalEvent.begin();
 
         // This connection remains open for the duration that the time-series data stream remains open and is closed on 
-        // exception or when the retrieval completes. Another option would be to implement Closeable.
+        // exception or when the retrieval completes.
         Connection connection = null;
 
         try

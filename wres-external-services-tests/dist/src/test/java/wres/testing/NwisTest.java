@@ -19,7 +19,6 @@ import wres.io.reading.web.WebClient;
 public class NwisTest
 {
     private static final WebClient WEB_CLIENT = new WebClient();
-    // Use an ObjectMapper like what is used in WaterMLBasicSource
     private static final ObjectMapper OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
