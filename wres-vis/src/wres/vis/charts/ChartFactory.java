@@ -121,12 +121,16 @@ public class ChartFactory
 
     public enum ChartType
     {
+        /** Not one of the other types, unique. */
         UNIQUE( null ),
+        /** Arranged by lead duration and then threshold. */
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
+        /** Arranged by threshold and then lead duration. */
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
+        /** Pooling windows. */
         POOLING_WINDOW( null ), // Internal type only, not declared
-        TIMING_ERROR_SUMMARY_STATISTICS( null ), // Internal type only, not declared
-        SINGLE_VALUED_PAIRS( OutputTypeSelection.SINGLE_VALUED_PAIRS );
+        /** Timing error summary statistics. */
+        TIMING_ERROR_SUMMARY_STATISTICS( null ); // Internal type only, not declared
 
         private final OutputTypeSelection basis;
 
@@ -2059,7 +2063,7 @@ public class ChartFactory
         {
             // Registering a font can apparently lead the JVM to "hang" momentarily if the OS cannot service the request
             // See #111762 for an example
-            
+
             // Create from file, not stream
             // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
             File fontFile = new File( fontUrl.toURI() );

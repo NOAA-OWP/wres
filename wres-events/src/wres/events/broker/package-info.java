@@ -1,5 +1,5 @@
 /**
- * A package that supports connections to an AMQP 1.0 broker for statistics messaging.
+ * A package that supports interactions with a messaging broker for statistics messaging.
  * 
  * @author James Brown
  */

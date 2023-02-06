@@ -52,13 +52,13 @@ plugins
     // To print junit test reports to the console in addition to html, so that
     // remote developers can see detailed test feedback without launching a
     // browser. See #61601
-    id "com.adarshr.test-logger" version "3.2.0"
+    id 'com.adarshr.test-logger' version '3.2.0'
 
     // To discover library versions with known vulnerabilities
     id 'org.owasp.dependencycheck' version '7.4.4'
     
     // Task to assist in downloading artifacts
-    id "de.undercouch.download" version "5.3.0"
+    id 'de.undercouch.download' version '5.3.0'
 
     // To discover library versions with updates available
     id 'com.github.ben-manes.versions' version '0.44.0'
@@ -75,7 +75,7 @@ plugins
     id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.8"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
-    id "org.beryx.jlink" version "2.26.0"
+    id 'org.beryx.jlink' version '2.26.0'
 
     // Integrated code coverage report
     id 'jacoco-report-aggregation'
@@ -90,7 +90,7 @@ repositories
     }
 }
 
-// The target Java version for declaration via a gradle toolchain
+// The target Java version for use in a gradle toolchain
 def final TARGET_JDK = 17
 
 java
@@ -872,7 +872,6 @@ project(':wres-config')
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.6'
 
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.11'
-
 
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:10.0.0'
@@ -1690,7 +1689,6 @@ mainClassName = 'wres.Main'
 applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
-
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
