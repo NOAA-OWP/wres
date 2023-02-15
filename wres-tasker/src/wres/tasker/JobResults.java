@@ -50,7 +50,10 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
+import org.redisson.api.map.event.EntryRemovedListener;
+import org.redisson.api.map.event.EntryCreatedListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +72,11 @@ import wres.messages.generated.JobStandardStream;
 class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
+    
+    /** The length of time a JobMetadata "lives" before expiring from the persister. */
     private static final long EXPIRY_IN_MINUTES = Duration.ofDays( 14 )
                                                           .toMinutes();
+
     /** To generate job ids. The job id is a kind of token: use SecureRandom */
     private static final Random RANDOM = new SecureRandom();
 
@@ -180,6 +186,7 @@ class JobResults
         };
 
         // Use redis when available, otherwise local Caffeine instances.
+        // Set up Redisson.
         if ( Objects.nonNull( this.redisson ) )
         {
             RMapCache<String, JobMetadata> redissonMap = this.redisson.getMapCache( "jobMetadataById" );
@@ -187,11 +194,19 @@ class JobResults
             this.objectService.registerClass( JobMetadata.class );
 
             // Listen for expiration of values within the map to expire metadata
-            redissonMap.addListener(
-                                     (EntryExpiredListener<?, ?>) event -> this.objectService.delete( JobMetadata.class,
-                                                                                                      event.getKey() ) );
+            redissonMap.addListener(  new EntryExpiredListener() {
+                @Override
+                public void onExpired( EntryEvent event )
+                {
+                    LOGGER.info("The persister is expiring the metadata associated with job id "  + event.getKey()
+                                + ". Deleting the metadata and all of its fields." );
+                    objectService.delete( objectService.get( JobMetadata.class, event.getKey() ) );
+                }
+            } );
+            
             this.jobMetadataById = redissonMap;
         }
+        // Set up Caffeine.
         else
         {
             Cache<String, JobMetadata> caffeineCache = Caffeine.newBuilder()
@@ -698,7 +713,7 @@ class JobResults
 
             //Since field are discarded when making the metadata "live", ensure
             //the state is CREATED.
-            jobMetadata.setJobState(JobMetadata.JobState.CREATED);
+            jobMetadata.setJobState( JobMetadata.JobState.CREATED );
 
             /* For whatever reason, the following simply does not work. Sigh.
                Instead, see the listener above attached to the map when created.
@@ -857,7 +872,6 @@ class JobResults
      * @param jobId the job to look for
      * @return A StreamingOutput having standard out
      */
-
     StreamingOutput getJobStdout( String jobId )
     {
         JobMetadata jobMetadata = jobMetadataById.get( jobId );
