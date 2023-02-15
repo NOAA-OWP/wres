@@ -545,12 +545,7 @@ class EvaluationUtilities
 
             // The project code - ideally project hash
             String projectIdentifier = project.getHash();
-
-            ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
-                                                                  projectIdentifier,
-                                                                  thresholdsByMetricAndFeature,
-                                                                  outputDirectory );
-            evaluationDetails.setResolvedProject( resolvedProject );
+            evaluationDetails.setThresholdsByMetricAndFeature( thresholdsByMetricAndFeature );
 
             // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
             // completion state of features has no value when reported in this way
@@ -707,11 +702,10 @@ class EvaluationUtilities
     /**
      * Get the netCDF writers requested by this project declaration.
      *
-     * @param projectConfig The declaration.
-     * @param systemSettings The system settings.
-     * @param executor The executor to pass to NetcdfOutputWriters.
-     * @param outputDirectory The output directory into which to write.
-     * @return A list of netCDF writers, zero to two.
+     * @param projectConfig The declaration
+     * @param systemSettings The system settings
+     * @param outputDirectory The output directory into which to write
+     * @return A list of netCDF writers, zero to two
      */
 
     private static List<NetcdfOutputWriter> getNetcdfWriters( ProjectConfig projectConfig,
@@ -885,8 +879,7 @@ class EvaluationUtilities
                 if ( nextGroup.getFeatures().size() > 1
                      && !featuresWithExplicitThresholds.containsAll( nextGroup.getFeatures() ) )
                 {
-                    Set<FeatureTuple> missingFeatures = new HashSet<>();
-                    missingFeatures.addAll( nextGroup.getFeatures() );
+                    Set<FeatureTuple> missingFeatures = new HashSet<>( nextGroup.getFeatures() );
                     missingFeatures.removeAll( featuresWithExplicitThresholds );
 
                     // Show abbreviated information only
@@ -1130,8 +1123,7 @@ class EvaluationUtilities
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
-                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getResolvedProject()
-                                                                                .getThresholdsByMetricAndFeature(),
+                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
                                                                executors.getThresholdExecutor(),
                                                                executors.getMetricExecutor() );
 
@@ -1219,8 +1211,7 @@ class EvaluationUtilities
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
-                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getResolvedProject()
-                                                                            .getThresholdsByMetricAndFeature(),
+                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
                                                            executors.getThresholdExecutor(),
                                                            executors.getMetricExecutor() );
 
@@ -1455,10 +1446,10 @@ class EvaluationUtilities
         private final Database database;
         /** The caches.*/
         private DatabaseCaches caches;
+        /** The thresholds by metric and feature, possibly null. */
+        private List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature;
         /** The project, possibly null. */
         private Project project;
-        /** The resolved project, possibly null. */
-        private ResolvedProject resolvedProject;
         /** The messaging component of an evaluation, possibly null. */
         private Evaluation evaluation;
         /** An in-memory store of time-series data, possibly null. */
@@ -1524,12 +1515,12 @@ class EvaluationUtilities
         }
 
         /**
-         * @return the resolvedProject, possibly null
+         * @return the thresholds by metric and feature
          */
 
-        private ResolvedProject getResolvedProject()
+        private List<ThresholdsByMetricAndFeature> getThresholdsByMetricAndFeature()
         {
-            return this.resolvedProject;
+            return this.thresholdsByMetricAndFeature;
         }
 
         /**
@@ -1582,16 +1573,16 @@ class EvaluationUtilities
         }
 
         /**
-         * Set the resolved project, not null.
-         * @param resolvedProject the resolved project
-         * @throws NullPointerException if the resolvedProject is null
+         * Set the thresholds, not null.
+         * @param thresholdsByMetricAndFeature the thresholds
+         * @throws NullPointerException if the input is null
          */
 
-        private void setResolvedProject( ResolvedProject resolvedProject )
+        private void setThresholdsByMetricAndFeature( List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
         {
-            Objects.requireNonNull( resolvedProject );
+            Objects.requireNonNull( thresholdsByMetricAndFeature );
 
-            this.resolvedProject = resolvedProject;
+            this.thresholdsByMetricAndFeature = thresholdsByMetricAndFeature;
         }
 
         /**
@@ -1677,111 +1668,92 @@ class EvaluationUtilities
     }
 
     /**
-     * A value object for shared writers.
+         * A value object for shared writers.
+     * @param sharedSampleWriters
+    Shared writers for sample data.
+     * @param sharedBaselineSampleWriters
+    Shared writers for baseline sampled data.
      */
 
-    private static class SharedWriters implements Closeable
-    {
-        /**
-         * Shared writers for sample data.
-         */
-
-        private final SharedSampleDataWriters sharedSampleWriters;
-
-        /**
-         * Shared writers for baseline sampled data.
-         */
-
-        private final SharedSampleDataWriters sharedBaselineSampleWriters;
-
-        /**
-         * Returns an instance.
-         *
-         * @param sharedSampleWriters shared writer of pairs
-         * @param sharedBaselineSampleWriters shared writer of baseline pairs
-         */
-        private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
-                                         SharedSampleDataWriters sharedBaselineSampleWriters )
-
+        private record SharedWriters( SharedSampleDataWriters sharedSampleWriters,
+                                      SharedSampleDataWriters sharedBaselineSampleWriters ) implements Closeable
         {
-            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
-        }
+            /**
+             * Returns an instance.
+             *
+             * @param sharedSampleWriters shared writer of pairs
+             * @param sharedBaselineSampleWriters shared writer of baseline pairs
+             */
+            private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
+                                             SharedSampleDataWriters sharedBaselineSampleWriters )
 
-        /**
-         * Returns the shared sample data writers.
-         * 
-         * @return the shared sample data writers.
-         */
-
-        private SharedSampleDataWriters getSampleDataWriters()
-        {
-            return this.sharedSampleWriters;
-        }
-
-        /**
-         * Returns the shared sample data writers for baseline data.
-         * 
-         * @return the shared sample data writers  for baseline data.
-         */
-
-        private SharedSampleDataWriters getBaselineSampleDataWriters()
-        {
-            return this.sharedBaselineSampleWriters;
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
-         * 
-         * @return true if shared sample writers are available
-         */
-
-        private boolean hasSharedSampleWriters()
-        {
-            return Objects.nonNull( this.sharedSampleWriters );
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise 
-         * <code>false</code>.
-         * 
-         * @return true if shared sample writers are available for the baseline samples
-         */
-
-        private boolean hasSharedBaselineSampleWriters()
-        {
-            return Objects.nonNull( this.sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Attempts to close all shared writers.
-         * @throws IOException when a resource could not be closed
-         */
-        @Override
-        public void close() throws IOException
-        {
-            if ( this.hasSharedSampleWriters() )
             {
-                this.getSampleDataWriters().close();
+                return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
             }
 
-            if ( this.hasSharedBaselineSampleWriters() )
+            /**
+             * Returns the shared sample data writers.
+             *
+             * @return the shared sample data writers.
+             */
+
+            private SharedSampleDataWriters getSampleDataWriters()
             {
-                this.getBaselineSampleDataWriters().close();
+                return this.sharedSampleWriters;
+            }
+
+            /**
+             * Returns the shared sample data writers for baseline data.
+             *
+             * @return the shared sample data writers  for baseline data.
+             */
+
+            private SharedSampleDataWriters getBaselineSampleDataWriters()
+            {
+                return this.sharedBaselineSampleWriters;
+            }
+
+            /**
+             * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
+             *
+             * @return true if shared sample writers are available
+             */
+
+            private boolean hasSharedSampleWriters()
+            {
+                return Objects.nonNull( this.sharedSampleWriters );
+            }
+
+            /**
+             * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise
+             * <code>false</code>.
+             *
+             * @return true if shared sample writers are available for the baseline samples
+             */
+
+            private boolean hasSharedBaselineSampleWriters()
+            {
+                return Objects.nonNull( this.sharedBaselineSampleWriters );
+            }
+
+            /**
+             * Attempts to close all shared writers.
+             * @throws IOException when a resource could not be closed
+             */
+            @Override
+            public void close() throws IOException
+            {
+                if ( this.hasSharedSampleWriters() )
+                {
+                    this.getSampleDataWriters().close();
+                }
+
+                if ( this.hasSharedBaselineSampleWriters() )
+                {
+                    this.getBaselineSampleDataWriters().close();
+                }
             }
         }
-
-        /**
-         * Hidden constructor.
-         * @param sharedSampleWriters the shared writer for pairs
-         * @param sharedBaselineSampleWriters the shared writer for baseline pairs
-         */
-        private SharedWriters( SharedSampleDataWriters sharedSampleWriters,
-                               SharedSampleDataWriters sharedBaselineSampleWriters )
-        {
-            this.sharedSampleWriters = sharedSampleWriters;
-            this.sharedBaselineSampleWriters = sharedBaselineSampleWriters;
-        }
-    }
 
     private EvaluationUtilities()
     {

@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
+
 import wres.events.EvaluationEventException;
 import wres.events.EvaluationEventUtilities;
 import wres.events.TimedCountDownLatch;
@@ -61,13 +62,13 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
  * message group, the {@link EvaluationConsumer} manages the semantics associated with that, forwarding the messages to 
  * a caching consumer, which caches the statistics messages until all expected messages have arrived and then writes 
  * them. 
- * 
+ *
  * <p>Also notifies all listening clients of various stages within the lifecycle of an evaluation or exposes methods 
  * that allow a subscriber to drive that notification. In particular, on closure, notifies all listening clients whether 
  * the evaluation succeeded or failed. Additionally notifies listening clients when the consumption of a message group 
  * has completed. This notification may be used by a client to trigger/release producer flow control by message group 
  * (i.e., allowing for the publication of another group of messages).
- * 
+ *
  * @author James Brown
  */
 
@@ -79,18 +80,18 @@ class EvaluationConsumer
 
     private static final String CONSUMER_STRING = "Consumer ";
 
-    /** 
+    /**
      * Logger. 
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
 
-    /** 
+    /**
      * Timeout period after an evaluation has started before the evaluation description message can be received. 
-     * 
+     *
      */
 
-    private static final long CONSUMER_TIMEOUT = 60_000;
+    private static final long CONSUMER_TIMEOUT = 600_000;
 
     /**
      * Evaluation identifier.
@@ -238,7 +239,7 @@ class EvaluationConsumer
 
     /**
      * Builds a consumer.
-     * 
+     *
      * @param evaluationId the evaluation identifier
      * @param consumerDescription a description of the consumer
      * @param consumerFactory the consumer factory
@@ -290,7 +291,7 @@ class EvaluationConsumer
     /**
      * Marks an evaluation as failed unrecoverably due to an error in this consumer or in the subscriber that wraps it
      * (i.e., with an internal cause), as distinct from an evaluation that was notified to this consumer as failed.
-     * 
+     *
      * @see #markEvaluationFailedOnProduction(EvaluationStatus)
      * @param exception an exception to notify in an evaluation status message
      * @throws JMSException if the failure cannot be notified
@@ -326,9 +327,8 @@ class EvaluationConsumer
     /**
      * Notifies and publishes success. It is the responsibility of a subscriber to trigger this notification because 
      * the subscriber controls the messaging semantics, such as ACKnowledging an incoming message and handling retries.
-     * 
+     *
      * @see #isComplete()
-     * @see #isFailed()
      * @throws EvaluationEventException if the notification fails for any reason
      */
 
@@ -430,6 +430,8 @@ class EvaluationConsumer
     void acceptEvaluationMessage( Evaluation evaluationDescription, String messageId, String jobId )
             throws JMSException
     {
+        LOGGER.debug( "Accepting an evaluation message with messageId {} and jobId {}.", messageId, jobId );
+
         // This consumer should be retry friendly. Warn if an evaluation description has already arrived, but allow 
         // because this method may trigger the consumption of statistics messages, which could retry.
         if ( !this.hasEvaluationDescriptionArrived.getAndSet( true ) )
@@ -437,15 +439,13 @@ class EvaluationConsumer
             Objects.requireNonNull( evaluationDescription );
 
             this.createConsumers( evaluationDescription, this.getConsumerFactory(), jobId );
+            LOGGER.debug( "Finished creating consumers for evaluation {}.", this.getEvaluationId() );
 
-            if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Consumer {} received and consumed an evaluation description message with "
-                              + "identifier {} for evaluation {}.",
-                              this.getClientId(),
-                              messageId,
-                              this.getEvaluationId() );
-            }
+            LOGGER.debug( "Consumer {} received and consumed an evaluation description message with "
+                          + "identifier {} for evaluation {}.",
+                          this.getClientId(),
+                          messageId,
+                          this.getEvaluationId() );
 
             // Record consumption
             this.consumed.incrementAndGet();
@@ -512,7 +512,7 @@ class EvaluationConsumer
         this.registerProgress();
     }
 
-    /** 
+    /**
      * @return true if consumption is complete, otherwise false.
      */
 
@@ -588,7 +588,7 @@ class EvaluationConsumer
     /**
      * Marks an evaluation as failed for reasons outside the control of this consumer, i.e., during production. In 
      * other words, the evaluation should be marked complete from the perspective of this consumer.
-     * 
+     *
      * @see #markEvaluationFailedOnConsumption(Exception)
      * @param status the completion status notified to this consumer
      */
@@ -615,7 +615,7 @@ class EvaluationConsumer
     /**
      * Notifies the failure of this evaluation by first notifying any incomplete groups as completed and then notifying
      * the overall consumption complete. Only notifies if the notification has not already happened.
-     * 
+     *
      * @param cause an optional exception to notify 
      * @throws EvaluationEventException if the notification fails for any reason
      */
@@ -690,7 +690,7 @@ class EvaluationConsumer
 
     /**
      * Publishes the completion status of a message group or the overall consumer.
-     * 
+     *
      * @param completionStatus the completion status, not null
      * @param groupId the groupId, possibly null
      * @param events evaluation status events, not null
@@ -838,7 +838,7 @@ class EvaluationConsumer
 
     /**
      * Returns a message about paths written.
-     * 
+     *
      * @return a message about paths written.
      */
 
@@ -978,7 +978,7 @@ class EvaluationConsumer
 
     /**
      * Sets the expected message count for message groups.
-     * 
+     *
      * @param status the evaluation status message
      * @throws JMSException if the group completion could not be notified
      * @throws EvaluationEventException if the completion state could not be published
@@ -1092,7 +1092,7 @@ class EvaluationConsumer
 
     /**
      * Attempts to create the consumers.
-     * 
+     *
      * @param evaluationDescription a description of the evaluation
      * @param consumerFactory the consumer factory
      * @param jobId an optional job identifier
@@ -1276,7 +1276,7 @@ class EvaluationConsumer
      * nested interface for a grouped consumer whose statistics types are visible and can then be filtered by this 
      * method before they are forwarded to the grouped consumer. In the mean time, forward all statistics that are not 
      * box plots per pair.
-     * 
+     *
      * @param statistics the statistics of which some may not be for grouped consumption
      * @param groupId a message group identifier to help with logging
      * @param messageId the message identifier to help with logging
@@ -1305,7 +1305,7 @@ class EvaluationConsumer
     /**
      * Checks the group consumer for completion and, if complete, publishes a status message 
      * {@link CompletionStatus#GROUP_CONSUMPTION_COMPLETE} and updates the paths written.
-     * 
+     *
      * @param groupCon the group consumer
      * @throws EvaluationEventException if the completion state could not be published
      * @throws NullPointerException if the input is null
@@ -1370,7 +1370,7 @@ class EvaluationConsumer
 
     /**
      * Adds paths written to the cache of all paths written.
-     * 
+     *
      * @param paths the paths to append
      */
 

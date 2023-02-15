@@ -123,7 +123,7 @@ public class EvaluationSubscriber implements Closeable
     private static final String CONSUMER_ID_STRING = MessageProperty.CONSUMER_ID.toString();
 
     /**
-     * String representation of the {@link MessageProperty#GROUP_ID}.
+     * String representation of the {@link MessageProperty#JMSX_GROUP_ID}.
      */
 
     private static final String GROUP_ID_STRING = MessageProperty.JMSX_GROUP_ID.toString();
@@ -1051,7 +1051,7 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}. 
+     * <p>Attempts to recover the session.
      * 
      * <p>A well-behaving consumer cleans up after itself. Thus, it is considered a consumer bug if the consumer reports
      * a failure to overwrite on attempting a retry when the consumer failed exceptionally on an earlier attempt. By way 
@@ -1222,7 +1222,7 @@ public class EvaluationSubscriber implements Closeable
     /**
      * Marks consumption as failed unrecoverably for a given evaluation.
      * @param evaluationId the evaluation identifier
-     * @param an exception to notify
+     * @param exception an exception to notify
      * @throws UnrecoverableSubscriberException if the subscriber fails unrecoverably
      */
 

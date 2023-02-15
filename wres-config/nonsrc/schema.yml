@@ -1,0 +1,1064 @@
+---
+"$schema": http://json-schema.org/draft/2019-09/schema#
+"$ref": "#/definitions/EvaluationDeclaration"
+definitions:
+
+  # The root node for an evaluation declaration
+  EvaluationDeclaration:
+    type: object
+    additionalProperties: false
+    properties:
+      left:
+        anyOf:
+          - "$ref": "#/definitions/LeftOrRight"
+          - type: array
+            items: 
+              type: string
+              minLength: 1
+              maxLength: 2083
+            minItems: 1
+      right:
+        anyOf:
+          - "$ref": "#/definitions/LeftOrRight"
+          - type: array
+            items: 
+              type: string
+              minLength: 1
+              maxLength: 2083
+            minItems: 1
+      baseline:
+        anyOf:
+          - "$ref": "#/definitions/Baseline"
+          - type: array
+            items: 
+              type: string
+              minLength: 1
+              maxLength: 2083
+            minItems: 1
+      features:
+        type: array
+        items:
+          "$ref": "#/definitions/Feature"
+        uniqueItems: true
+      feature_groups:
+        type: array
+        items:
+          "$ref": "#/definitions/FeatureGroup"
+        uniqueItems: true
+      feature_service:
+        "$ref": "#/definitions/FeatureService"
+      spatial_mask:
+        "$ref": "#/definitions/SpatialMask"
+      reference_dates:
+        "$ref": "#/definitions/Dates"
+      reference_date_pools:
+        "$ref": "#/definitions/TimePools"
+      valid_dates:
+        "$ref": "#/definitions/Dates"
+      valid_date_pools:
+        "$ref": "#/definitions/TimePools"
+      lead_times:
+        "$ref": "#/definitions/LeadTimes"
+      lead_time_pools:
+        "$ref": "#/definitions/TimePools"
+      time_scale:
+        "$ref": "#/definitions/TimeScale"
+      unit:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      unit_aliases:
+        type: array
+        items:
+          "$ref": "#/definitions/UnitAlias"
+        minItems: 1
+      pair_frequency:
+        "$ref": "#/definitions/PairFrequency"
+      cross_pair:
+        "$ref": "#/definitions/CrossPairEnum"
+      ensemble_average:
+        "$ref": "#/definitions/EnsembleAverageEnum"
+      season_filter:
+        "$ref": "#/definitions/SeasonFilter"
+      value_filter:
+        "$ref": "#/definitions/ValueFilter"
+      analysis_durations:
+        "$ref": "#/definitions/AnalysisDurations"
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      classifier_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/ValueThresholds"
+      threshold_service:
+        "$ref": "#/definitions/ThresholdService"
+      threshold_sets:
+        type: array
+        items:
+          "$ref": "#/definitions/ThresholdSet"
+        minItems: 1
+      metrics:
+        type: array
+        items:
+          anyOf:
+            - "$ref": "#/definitions/Metric"
+            - "$ref": "#/definitions/TimeSeriesMetric"
+        minItems: 1
+      formats:
+        type: array
+        items:
+          "$ref": "#/definitions/Format"
+        minItems: 1
+    required:
+      - left
+      - right
+    title: EvaluationDeclaration
+
+  # The left or right-ish datasets
+  LeftOrRight:
+    type: object
+    additionalProperties: false
+    properties:
+      sources:
+        type: array
+        items:
+          "$ref": "#/definitions/Source"
+        minItems: 1
+      variable:
+        anyOf:
+          - "$ref": "#/definitions/Variable"
+          - type: string
+      feature_authority:
+        "$ref": "#/definitions/FeatureAuthorityEnum"
+      type:
+        "$ref": "#/definitions/DataTypeEnum"
+      label:
+        type: string
+      ensemble_filter:
+        anyOf:
+          - "$ref": "#/definitions/EnsembleFilter"
+          - type: array
+            items: 
+              type: string
+              minLength: 1
+              maxLength: 2083
+            minItems: 1
+      time_shift:
+        "$ref": "#/definitions/TimeShift"
+    required:
+      - sources
+    title: LeftOrRight
+
+  # Should be possible to re-use LeftOrRight by adding an additional persistence
+  # property within an allOf block, but this does not work in practice while
+  # retaining additionalProperties: false to prevent unknown declaration, so
+  # go ahead and allow the repetition/overlap with LeftOrRight. Also does not
+  # work when using unevaluatedProperties instead of additionalProperties.
+  
+  # The baseline-ish datasets
+  Baseline:
+    type: object
+    additionalProperties: false
+    properties:
+      sources:
+        type: array
+        items:
+          "$ref": "#/definitions/Source"
+        minItems: 1
+      feature_authority:
+        "$ref": "#/definitions/FeatureAuthorityEnum"
+      variable:
+        anyOf:
+          - "$ref": "#/definitions/Variable"
+          - type: string
+      label:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      ensemble_filter:
+        anyOf:
+          - "$ref": "#/definitions/EnsembleFilter"
+          - type: array
+            items: 
+              type: string
+            minItems: 1
+      time_shift:
+        "$ref": "#/definitions/TimeShift"
+      persistence:
+        type: integer
+        minimum: 0
+      type:
+        "$ref": "#/definitions/DataTypeEnum"
+    required:
+      - sources
+    title: Baseline
+
+  # A data source, such as a file on a file system or a web service. A data 
+  # source may be a plain uri without any label or a fully elaborated source.
+  Source:
+    anyOf:
+      - "$ref": "#/definitions/SourceElement"
+      - type: string
+        minLength: 1
+        maxLength: 2083
+    title: Source
+
+  # A fully elaborated data source
+  SourceElement:
+    type: object
+    additionalProperties: false
+    properties:
+      uri:
+        type: string
+        format: uri
+        minLength: 1
+        maxLength: 2083
+      pattern:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      time_zone:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      interface:
+        "$ref": "#/definitions/SourceInterfaceEnum"
+      time_scale:
+        "$ref": "#/definitions/TimeScale"
+      missing_value:
+        type: number
+    required:
+      - uri
+    title: SourceElement
+
+  # A variable to evaluate
+  Variable:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      label:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - name
+    title: Variable
+
+  # The time scale of a dataset or the evaluation.
+  TimeScale:
+    type: object
+    additionalProperties: false
+    properties:
+      function:
+        "$ref": "#/definitions/TimeScaleFunctionEnum"
+      period:
+        type: integer
+        minimum: 1
+      unit:
+        "$ref": "#/definitions/DurationEnum"
+      lenient:
+        "$ref": "#/definitions/TimeScaleLenienceEnum"
+      minimum_month:
+        type: integer
+        minimum: 1
+        maximum: 12
+      minimum_day:
+        type: integer
+        minimum: 1
+        maximum: 31
+      maximum_month:
+        type: integer
+        minimum: 1
+        maximum: 12
+      maximum_day:
+        type: integer
+        minimum: 1
+        maximum: 31
+      # Complex schema-level validation of the allowed combinations of above 
+      # properties is possible - see #111987-70, for example - but the 
+      # resulting validation does not produce intelligible errors, so a balance 
+      # is needed between schema-level validation (fail early) and application-
+      # level validation (fail later, but better).  
+    required:
+    - function
+    title: TimeScale
+
+  # A time shift to be applied to a dataset
+  TimeShift:
+    type: object
+    additionalProperties: false
+    properties:
+      amount:
+        type: integer
+      unit:
+        "$ref": "#/definitions/DurationEnum"
+    required:
+      - amount
+      - unit
+    title: TimeShift
+
+  # A geospatial feature, composed of a simple name or a tuple of names.
+  Feature:
+    anyOf:
+      - "$ref": "#/definitions/FeatureTuple"
+      - type: string
+        minLength: 1
+        maxLength: 2083
+    title: Feature
+
+  # A feature tuple
+  FeatureTuple:
+    type: object
+    additionalProperties: false
+    properties:
+      left:
+        anyOf:
+          - "$ref": "#/definitions/FeatureTupleFull"
+          - type: string
+            minLength: 1
+            maxLength: 2083
+      right:
+        anyOf:
+          - "$ref": "#/definitions/FeatureTupleFull"
+          - type: string
+            minLength: 1
+            maxLength: 2083
+      baseline:
+        anyOf:
+          - "$ref": "#/definitions/FeatureTupleFull"
+          - type: string
+            minLength: 1
+            maxLength: 2083
+    title: FeatureTuple
+  
+  # A feature tuple with additional properties
+  FeatureTupleFull:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      wkt:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    title: FeatureTupleFull
+
+  # A group of feature tuples, such as all features within a geospatial region.
+  FeatureGroup:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      features:
+        type: array
+        items:
+          "$ref": "#/definitions/Feature"
+        uniqueItems: true
+    required:
+      - features
+    title: FeatureGroup
+
+  # A feature service from which feature tuples may be acquired.
+  FeatureService:
+    type: object
+    additionalProperties: false
+    properties:
+      uri:
+        type: string
+        format: uri
+        minLength: 1
+        maxLength: 2083
+      groups:
+        type: array
+        items:
+          "$ref": "#/definitions/FeatureServiceGroup"
+        minItems: 1
+    required:
+      - groups
+      - uri
+    title: FeatureService
+
+  # The declaration of a feature group to acquire from a feature service.
+  FeatureServiceGroup:
+    type: object
+    additionalProperties: false
+    properties:
+      type:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      value:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      pool:
+        type: boolean
+    required:
+      - type
+      - value
+    title: FeatureServiceGroup
+
+  # A geospatial mask based on a WKT shape.
+  SpatialMask:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      wkt:
+        type: string
+        minLength: 1
+    required:
+      - wkt
+    title: SpatialMask
+
+  # The durations to consider when evaluating model analyses.
+  AnalysisDurations:
+    type: object
+    additionalProperties: false
+    properties:
+      minimum:
+        type: integer
+      maximum_exclusive:
+        type: integer
+      unit:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - unit
+    title: AnalysisDurations
+
+  # The date constraints on an evaluation.
+  Dates:
+    type: object
+    additionalProperties: false
+    properties:
+      minimum:
+        type: string
+        format: date-time
+      maximum:
+        type: string
+        format: date-time
+    required:
+      - maximum
+      - minimum
+    title: Dates
+
+  # The lead time constraints on an evaluation.
+  LeadTimes:
+    type: object
+    additionalProperties: false
+    properties:
+      minimum:
+        type: integer
+      maximum:
+        type: integer
+      unit:
+        "$ref": "#/definitions/DurationEnum"
+    title: LeadTimes
+
+  # The declaration of a regular sequence of time pools. Each pool contains an 
+  # interval of times whose corresponding pairs will be pooled together when 
+  # calculating statistics. The regular sequence contains pools that are as 
+  # wide as the period and as frequent as the frequency, both in the same time 
+  # units, which are prescribed.
+  TimePools:
+    type: object
+    additionalProperties: false
+    properties:
+      period:
+        type: integer
+        minimum: 0
+      frequency:
+        type: integer
+        minimum: 0
+      unit:
+        "$ref": "#/definitions/DurationEnum"
+    required:
+      - period
+      - unit
+    title: TimePools
+
+  # A filter to only include pairs whose valid times fall within a prescribed 
+  # season.
+  SeasonFilter:
+    type: object
+    additionalProperties: false
+    properties:
+      minimum_month:
+        type: integer
+        minimum: 1
+        maximum: 12
+      minimum_day:
+        type: integer
+        minimum: 1
+        maximum: 31
+      maximum_month:
+        type: integer
+        minimum: 1
+        maximum: 12
+      maximum_day:
+        type: integer
+        minimum: 1
+        maximum: 31
+    title: SeasonFilter
+
+  # A filter to include only those paired values that fall between a minimum 
+  # and a maximum.
+  ValueFilter:
+    type: object
+    additionalProperties: false
+    properties:
+      minimum:
+        type: number
+      maximum:
+        type: number
+      below_minimum:
+        type: number
+      above_maximum:
+        type: number
+    required:
+    title: ValueFilter
+
+  # A filter on the ensemble member names to consider when evaluating an 
+  # ensemble time-series whose individual traces or members are named.
+  EnsembleFilter:
+    type: object
+    additionalProperties: false
+    properties:
+      members:
+        type: array
+        items:
+          type: string
+          minLength: 1
+          maxLength: 2083
+        minItems: 1
+      exclude:
+        type: boolean
+    required:
+      - members
+    title: EnsembleFilter
+
+  # The frequency with which pairs should be included. Use this to "thin" the 
+  # paired data in time.
+  PairFrequency:
+    type: object
+    additionalProperties: false
+    properties:
+      period:
+        type: integer
+      unit:
+        "$ref": "#/definitions/DurationEnum"
+    required:
+      - period
+      - unit
+    title: PairFrequency
+
+  # A mapping between known UCUM units and informal unit names.
+  UnitAlias:
+    type: object
+    additionalProperties: false
+    properties:
+      unit:
+        type: array
+        items:
+          type: string
+      alias:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - alias
+      - unit
+    title: UnitAlias
+
+  # A single set of value thresholds
+  ValueThresholds:
+    anyOf:
+      # Thresholds with attributes
+      - "$ref": "#/definitions/ElaboratedValueThresholds"
+      # Plain thresholds
+      - type: array
+        items:
+          type: number
+        minItems: 1
+    required:
+    title: ValueThresholds
+
+  # A single set of value thresholds with additional attributes
+  ElaboratedValueThresholds:
+    type: object
+    additionalProperties: false
+    properties:
+      values:
+        type: array
+        items:
+          "$ref": "#/definitions/ValueThreshold"
+        minItems: 1
+      operator:
+        "$ref": "#/definitions/ThresholdOperatorEnum"
+      apply_to:
+        "$ref": "#/definitions/ThresholdDataTypeEnum"
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      unit:
+        type: string
+    required:
+      - values
+    title: ElaboratedValueThresholds
+
+  # A value threshold
+  ValueThreshold:
+    anyOf:
+      # A value threshold with a feature
+      - "$ref": "#/definitions/FeaturedValueThreshold"
+      # A plain value threshold
+      - type: number
+    title: ValueThreshold
+
+  # A value threshold with an optional feature
+  FeaturedValueThreshold:
+    type: object
+    additionalProperties: false
+    properties:
+      value:
+        type: number
+      feature:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - value
+    title: FeaturedValueThreshold
+
+  # A single set of probability thresholds
+  ProbabilityThresholds:
+    anyOf:
+      # Thresholds with attributes
+      - "$ref": "#/definitions/ElaboratedProbabilityThresholds"
+      # Plain thresholds
+      - type: array
+        items:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+        minItems: 1
+    required:
+    title: ProbabilityThresholds
+
+  # A single set of probability thresholds with additional attributes
+  ElaboratedProbabilityThresholds:
+    type: object
+    additionalProperties: false
+    properties:
+      values:
+        type: array
+        items:
+          "$ref": "#/definitions/ProbabilityThreshold"
+        minItems: 1
+      operator:
+        "$ref": "#/definitions/ThresholdOperatorEnum"
+      apply_to:
+        "$ref": "#/definitions/ThresholdDataTypeEnum"
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - values
+    title: ElaboratedProbabilityThresholds
+
+  # A probability threshold
+  ProbabilityThreshold:
+    anyOf:
+      # A probability threshold with a feature
+      - "$ref": "#/definitions/FeaturedProbabilityThreshold"
+      # A plain probability threshold
+      - type: number
+        minimum: 0
+        maximum: 1.0
+    title: ProbabilityThreshold
+
+  # A probability threshold with an optional feature
+  FeaturedProbabilityThreshold:
+    type: object
+    additionalProperties: false
+    properties:
+      value:
+        type: number
+        minimum: 0.0
+        maximum: 1.0
+      feature:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - value
+    title: FeaturedProbabilityThreshold
+
+  # A list of threshold sets to be used when multiple thresholds of the same 
+  # type are required in a single evaluation.
+  ThresholdSet:
+    type: object
+    additionalProperties: false
+    properties:
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      classifier_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/ValueThresholds"
+    title: ThresholdSet
+
+  # A service from which to acquire threshold values.
+  ThresholdService:
+    type: object
+    additionalProperties: false
+    properties:
+      uri:
+        type: string
+        format: uri
+        minLength: 1
+        maxLength: 2083
+      missing_value:
+        type: number
+      provider:
+        type: string
+      rating_provider:
+        type: string
+      parameter:
+        type: string
+      feature_name_from:
+        "$ref": "#/definitions/LeftOrRightOrBaselineEnum"
+    required:
+      - feature_name_from
+      - missing_value
+      - parameter
+      - provider
+      - rating_provider
+      - uri
+    title: ThresholdService
+
+  # An evaluation metric, which may contain a simple name or a parameterized 
+  # metric.
+  Metric:
+    anyOf:
+      - "$ref": "#/definitions/MetricWithParameters"
+      - "$ref": "#/definitions/MetricEnum"
+    title: Metric
+
+  # A parameterized metric.
+  MetricWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        "$ref": "#/definitions/MetricEnum"
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/ValueThresholds"
+      classifier_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      minimum_sample_size:
+        type: integer
+    required:
+      - name
+    title: MetricWithParameters
+
+  # A time=series evaluation metric, which is a special type of metric. It may 
+  # contain a simple name or a parameterized metric.
+  TimeSeriesMetric:
+    anyOf:
+      - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
+      - "$ref": "#/definitions/TimeSeriesMetricEnum"
+    title: TimeSeriesMetric
+
+  # A parameterized time-series metric.
+  TimeSeriesMetricWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        "$ref": "#/definitions/TimeSeriesMetricEnum"
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/Thresholds"
+      minimum_sample_size::
+        type: integer
+      summary_statistics:
+        type: array
+        items:
+          "$ref": "#/definitions/SummaryStatisticsEnum"
+        minItems: 1
+    required:
+      - name
+    title: TimeSeriesMetricWithParameters
+
+  # The formats for writing statistics. May be a simple name or a parameterized
+  # format.
+  Format:
+    anyOf:
+      - "$ref": "#/definitions/FormatWithParameters"
+      - "$ref": "#/definitions/FormatEnum"
+    title: Format
+
+  # A parameterized format for writing statistics.
+  FormatWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      format:
+        "$ref": "#/definitions/FormatEnum"
+      precision:
+        type: string
+      orientation:
+        "$ref": "#/definitions/OrientationEnum"
+      duration_format:
+        "$ref": "#/definitions/DurationEnum"
+      width:
+        type: integer
+        minimum: 400
+      height:
+        type: integer
+        minimum: 300
+      suppress_metrics:
+        type: array
+        items:
+          "$ref": "#/definitions/MetricEnum"
+        minItems: 1
+    required:
+      - format
+    title: FormatWithParameters
+
+  DurationEnum:
+    type: string
+    enum:
+      - seconds
+      - minutes
+      - hours
+      - days
+    title: DurationEnum
+
+  SourceInterfaceEnum:
+    type: string
+    enum:
+      - wrds_ahps
+      - wrds_obs
+      - wrds_nwm
+      - usgs_nwis
+      - nwm_short_range_channel_rt_conus
+      - nwm_short_range_channel_rt_hawaii
+      - nwm_short_range_no_da_channel_rt_hawaii
+      - nwm_short_range_channel_rt_puertorico
+      - nwm_short_range_no_da_channel_rt_puertorico
+      - nwm_medium_range_ensemble_channel_rt_conus
+      - nwm_medium_range_deterministic_channel_rt_conus
+      - nwm_medium_range_ensemble_channel_rt_conus_hourly
+      - nwm_medium_range_deterministic_channel_rt_conus_hourly
+      - nwm_medium_range_no_da_deterministic_channel_rt_conus
+      - nwm_analysis_assim_channel_rt_conus
+      - nwm_analysis_assim_no_da_channel_rt_conus
+      - nwm_analysis_assim_extend_channel_rt_conus
+      - nwm_analysis_assim_extend_no_da_channel_rt_conus
+      - nwm_analysis_assim_channel_rt_hawaii
+      - nwm_analysis_assim_no_da_channel_rt_hawaii
+      - nwm_analysis_assim_channel_rt_puertorico
+      - nwm_analysis_assim_no_da_channel_rt_puertorico
+      - nwm_long_range_channel_rt_conus
+    title: SourceInterfaceEnum
+
+  FeatureAuthorityEnum:
+    type: string
+    enum:
+      - nws_lid
+      - usgs_site_code
+      - nwm_feature_id
+      - custom
+    title: FeatureAuthorityEnum
+
+  LeftOrRightOrBaselineEnum:
+    type: string
+    enum:
+      - left
+      - right
+      - baseline
+    title: LeftOrRightOrBaselineEnum
+
+  TimeScaleFunctionEnum:
+    type: string
+    enum:
+      - total
+      - mean
+      - minimum
+      - maximum
+    title: TimeScaleFunctionEnum
+
+  TimeScaleLenienceEnum:
+    type: string
+    enum:
+      - all
+      - none
+      - left
+      - right
+      - baseline
+      - rightAndBaseline
+      - leftAndBaseline
+      - leftAndRight
+      - true
+      - false
+    title: TimeScaleLenienceEnum
+
+  CrossPairEnum:
+    type: string
+    enum:
+      - true
+      - false
+      - exact
+      - fuzzy
+    title: CrossPairEnum
+
+  EnsembleAverageEnum:
+    type: string
+    enum:
+      - mean
+      - median
+    title: EnsembleAverageEnum
+
+  MetricEnum:
+    type: string
+    enum:
+      - all valid
+      - bias fraction
+      - box plot of errors
+      - box plot of percentage errors
+      - box plot of errors by observed value
+      - box plot of errors by forecast value
+      - brier score
+      - brier skill score
+      - coefficient of determination
+      - contingency table
+      - pearson correlation coefficient
+      - continuous ranked probability score
+      - continuous ranked probability skill score
+      - threat score
+      - equitable threat score
+      - ensemble quantile quantile diagram
+      - frequency bias
+      - index of agreement
+      - kling gupta efficiency
+      - maximum
+      - mean absolute error
+      - mean
+      - mean error
+      - mean square error
+      - mean square error skill score
+      - mean square error skill score normalized
+      - median error
+      - minimum
+      - peirce skill score
+      - probability of detection
+      - probability of false detection
+      - quantile quantile diagram
+      - rank histogram
+      - relative operating characteristic diagram
+      - relative operating characteristic score
+      - reliability diagram
+      - root mean square error
+      - root mean square error normalized
+      - sample size
+      - sum of square error
+      - standard deviation
+      - volumetric efficiency
+      - false alarm ratio
+      - mean absolute error skill score
+    title: MetricEnum
+
+  TimeSeriesMetricEnum:
+    type: string
+    enum:
+      - all valid
+      - time to peak relative error
+      - time to peak error
+    title: TimeSeriesMetricEnum
+
+  FormatEnum:
+    type: string
+    enum:
+      - csv
+      - csv2
+      - png
+      - svg
+      - netcdf
+      - netcdf2
+      - numeric
+      - graphic
+      - pairs
+      - protobuf
+    title: FormatEnum
+
+  OrientationEnum:
+    type: string
+    enum:
+      - lead threshold
+      - threshold lead
+    title: OrientationEnum
+
+  SummaryStatisticsEnum:
+    type: string
+    enum:
+      - mean
+      - median
+      - minimum
+      - maximum
+      - standard deviation
+      - mean absolute
+    title: SummaryStatisticsEnum
+
+  ThresholdDataTypeEnum:
+    type: string
+    enum:
+      - left
+      - right
+      - left and right
+      - any right
+      - left and any right
+      - right mean
+      - left and right mean
+    title: ThresholdDataTypeEnum
+
+  ThresholdOperatorEnum:
+    type: string
+    enum:
+      - equal to
+      - greater than
+      - greater than or equal to
+      - less than
+      - less than or equal to
+    title: ThresholdOperatorEnum
+
+  DataTypeEnum:
+    type: string
+    enum:
+      - ensemble forecasts
+      - single valued forecasts
+      - observations
+      - simulations
+      - analyses 
+    title: DataTypeEnum

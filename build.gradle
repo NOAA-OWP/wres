@@ -859,7 +859,14 @@ project(':wres-config')
 
     dependencies
     {
+        implementation project(':wres-statistics')
         implementation 'org.slf4j:slf4j-api:2.0.6'
+
+        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
+        {
+            // Not used at runtime, bloat
+            exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
+        }
 
         // For Java 9+ compatibility:
         implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
@@ -872,6 +879,22 @@ project(':wres-config')
         runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:2.3.6'
 
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.11'
+
+        // For YAML (de)serialization.
+        implementation 'com.fasterxml.jackson:jackson-bom:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.14.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.14.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.1'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.1'
+        implementation 'com.hubspot.jackson:jackson-datatype-protobuf:0.9.13'
+
+        // YAML/JSON schema validation
+        implementation 'com.networknt:json-schema-validator:1.0.76'
+
+        // To auto-generate builders for Java records through annotation processing
+        //annotationProcessor 'io.soabase.record-builder:record-builder-processor:35'
+        //implementation 'io.soabase.record-builder:record-builder-core:35'
 
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:10.0.0'

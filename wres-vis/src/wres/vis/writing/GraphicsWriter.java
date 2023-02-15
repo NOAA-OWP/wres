@@ -30,6 +30,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.events.subscribe.ConsumerException;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -39,7 +40,7 @@ import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 
 /**
- * Helps to write a {@link ChartEngine} to a graphic in various formats.
+ * An abstract base class for writing graphics formats.
  * 
  * @author James Brown
  */
@@ -113,7 +114,6 @@ abstract class GraphicsWriter
      *
      * @param path the path to write, without the image format extension
      * @param chart the chart
-     * @param dest the destination configuration
      * @return the path actually written
      * @throws GraphicsWriteException if the chart could not be written
      */
@@ -262,8 +262,7 @@ abstract class GraphicsWriter
 
     /**
      * Validates that the file object represented by the path does not already exist.
-     * 
-     * @throws CommaSeparatedWriteException if the path exists
+     *
      * @return true if the path is valid to write, false if it exists and is, therefore, invalid
      */
 
@@ -313,7 +312,7 @@ abstract class GraphicsWriter
 
     /**
      * @param height the height
-     * @return the height if the height is greater than zero, else the {@link GraphicWriter#DEFAULT_GRAPHIC_HEIGHT}.
+     * @return the height if the height is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_HEIGHT}.
      */
 
     private static int getGraphicHeight( int height )
@@ -328,7 +327,7 @@ abstract class GraphicsWriter
 
     /**
      * @param width the height
-     * @return the width if the width is greater than zero, else the {@link GraphicWriter#DEFAULT_GRAPHIC_WIDTH}.
+     * @return the width if the width is greater than zero, else the {@link GraphicsWriter#DEFAULT_GRAPHIC_WIDTH}.
      */
 
     private static int getGraphicWidth( int width )

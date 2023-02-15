@@ -27,7 +27,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions
- * when compared to another. The MSE-SS is equivalent to the Nash-Sutcliffe Efficiency. The perfect MSE-SS is 1.0.
+ * when compared to another. The MSE-SS is equivalent to the Nash-Sutcliffe Efficiency when using the average
+ * observation as the baseline. The perfect MSE-SS is 1.0.
  * 
  * @author James Brown
  */
