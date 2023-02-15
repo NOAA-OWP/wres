@@ -35,6 +35,7 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer.Format;
+import wres.vis.charts.ChartFactory;
 import wres.vis.writing.BoxplotGraphicsWriter;
 import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;
@@ -132,8 +133,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
         if ( this.hasGraphics( formats ) )
         {
             // Specific formats are filtered at runtime via the router using the Outputs declaration
+            BoxplotGraphicsWriter boxPlotWriter = BoxplotGraphicsWriter.of( outputs, path );
             builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
-                                               BoxplotGraphicsWriter.of( outputs, path ) );
+                                               boxPlotWriter );
         }
 
         // Old-style CSV

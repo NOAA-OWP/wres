@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItem;
@@ -84,13 +83,12 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.data.ChartDataFactory;
 
-
 /**
  * Factory to create a chart from a chart dataset.
- * 
+ *
  * TODO: eliminate all references to specific metrics from the charting process. There are 2-3 instances left with 
  * associated TODOs.
- * 
+ *
  * @author James Brown
  * @author Hank Herr
  */
@@ -105,6 +103,15 @@ public class ChartFactory
 
     /** Grid paint. */
     private static final Paint GRID_PAINT = new Color( 225, 225, 225 );
+
+    /** Default font name. */
+    private static final String DEFAULT_FONT_NAME = "verdana";
+
+    /** Default chart font if the preferred font cannot be found. */
+    private static final Font DEFAULT_CHART_FONT = new Font( DEFAULT_FONT_NAME, Font.PLAIN, 10 );
+
+    /** Default chart title font if the preferred font cannot be found. */
+    private static final Font DEFAULT_CHART_TITLE_FONT = new Font( DEFAULT_FONT_NAME, Font.PLAIN, 11 );
 
     /** Series colors. */
     private final Color[] seriesColors;
@@ -166,7 +173,7 @@ public class ChartFactory
 
     /**
      * Creates a chart for each component of a score.
-     * 
+     *
      * @param statistics The metric output to plot.
      * @param graphicShape The shape of the graphic to plot.
      * @param durationUnits the duration units
@@ -206,7 +213,7 @@ public class ChartFactory
 
     /**
      * Creates a chart for each component of a duration score.
-     *      
+     *
      * @param statistics the statistics from which to build the categorical plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart}
@@ -330,7 +337,7 @@ public class ChartFactory
 
             List<PoolMetadata> metadatas = slicedStatistics.stream()
                                                            .map( DiagramStatisticOuter::getMetadata )
-                                                           .collect( Collectors.toList() );
+                                                           .toList();
 
             PoolMetadata union = PoolSlicer.unionOf( metadatas );
 
@@ -373,7 +380,7 @@ public class ChartFactory
                                                     slicedStatistics,
                                                     durationUnits,
                                                     chartType == ChartType.LEAD_THRESHOLD
-                                                                   || chartType == ChartType.POOLING_WINDOW );
+                                                    || chartType == ChartType.POOLING_WINDOW );
             }
             else
             {
@@ -431,7 +438,7 @@ public class ChartFactory
 
     /**
      * Creates a chart for one diagram that plots timing error statistics.
-     * 
+     *
      * @param statistics the metric output to plot 
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance
@@ -479,8 +486,8 @@ public class ChartFactory
                                                                                false );
 
         // Set the date/time format
-        DateAxis dateAxis = (DateAxis) chart.getXYPlot()
-                                            .getDomainAxis();
+        DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
+                                              .getDomainAxis();
         dateAxis.setDateFormatOverride( new SimpleDateFormat( "yyyy-MM-dd+HH" ) );
 
         XYPlot plot = chart.getXYPlot();
@@ -503,7 +510,7 @@ public class ChartFactory
 
     /**
      * Creates a box plot chart containing data for several pools.
-     * 
+     *
      * @param statistics the metric output to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance
@@ -576,7 +583,7 @@ public class ChartFactory
 
     /**
      * Creates a box plot chart for each pool.
-     * 
+     *
      * @param statistics the metric output to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance for each pool
@@ -635,7 +642,7 @@ public class ChartFactory
 
     /**
      * Creates a box plot chart containing data for one pool.
-     * 
+     *
      * @param statistics the metric output to plot
      * @param valueType the type of linked value for the domain axis
      * @param valueUnits the type of value units for the domain axis
@@ -721,7 +728,7 @@ public class ChartFactory
 
     /**
      * Creates a chart for one score component.
-     * 
+     *
      * @param metricName the metric name
      * @param statistics the metric output to plot 
      * @param graphicShape the shape of the graphic to plot
@@ -837,8 +844,8 @@ public class ChartFactory
                                                                         false,
                                                                         false );
             // Set the date/time format
-            DateAxis dateAxis = (DateAxis) chart.getXYPlot()
-                                                .getDomainAxis();
+            DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
+                                                  .getDomainAxis();
             dateAxis.setDateFormatOverride( new SimpleDateFormat( "yyyy-MM-dd+HH" ) );
         }
         else
@@ -959,7 +966,7 @@ public class ChartFactory
 
     /**
      * Sets the chart theme
-     * 
+     *
      * @param chart the chart
      * @throws NullPointerException if either input is null
      */
@@ -1012,7 +1019,7 @@ public class ChartFactory
         ValueAxis domainAxis = plot.getDomainAxis();
         domainAxis.setAxisLineVisible( false );
 
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        NumberAxis rangeAxis = ( NumberAxis ) plot.getRangeAxis();
         rangeAxis.setAxisLineVisible( false );
         rangeAxis.setAutoRangeIncludesZero( true );
 
@@ -1101,7 +1108,7 @@ public class ChartFactory
 
         plot.setDomainGridlinesVisible( true );
 
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        NumberAxis rangeAxis = ( NumberAxis ) plot.getRangeAxis();
         rangeAxis.setAxisLineVisible( false );
         rangeAxis.setAutoRangeIncludesZero( true );
     }
@@ -1145,7 +1152,7 @@ public class ChartFactory
         // Use decimal notation for the domain axis labels with up to 5 d.p.
         DecimalFormat newFormat = new DecimalFormat( "#.#" );
         newFormat.setMaximumFractionDigits( 5 );
-        NumberAxis domainAxis = (NumberAxis) plot.getDomainAxis();
+        NumberAxis domainAxis = ( NumberAxis ) plot.getDomainAxis();
         domainAxis.setNumberFormatOverride( newFormat );
     }
 
@@ -1180,7 +1187,7 @@ public class ChartFactory
 
     /**
      * Sets the color and shape for each series.
-     * 
+     *
      * @param plot the plot
      * @throws NullPointerException if the plot is null
      */
@@ -1216,7 +1223,7 @@ public class ChartFactory
 
     /**
      * Sets the color and shape for each series.
-     * 
+     *
      * @param plot the category plot
      * @throws NullPointerException if the plot is null
      */
@@ -1257,9 +1264,8 @@ public class ChartFactory
 
     /**
      * Sets legend on when there is a sufficiently small number of legend items (currently, fewer than 101).
-     * 
+     *
      * @param chart the chart
-     * @param legendTitle the legend title
      * @param isCategoryPlot is true for a category plot, false for an XY plot
      * @throws NullPointerException if either input is null
      */
@@ -1301,7 +1307,7 @@ public class ChartFactory
 
     /**
      * Sets the flush legend title of a chart by adding a new legend item.
-     * 
+     *
      * @param chart the chart
      * @param legendTitle the legend title
      * @param isCategoryPlot is true for a category plot, false for an XY plot
@@ -1339,7 +1345,7 @@ public class ChartFactory
 
     /**
      * Creates a chart title.
-     * 
+     *
      * @param metadata the pool metadata, required
      * @param metricName the metric name, required
      * @param metricComponentName the metric component name, optional
@@ -1447,7 +1453,7 @@ public class ChartFactory
 
     /**
      * Uncovers the scenario name for the plot title.
-     * 
+     *
      * @param metadata the sample metadata
      * @param metric the metric name
      * @return the scenario name
@@ -1481,7 +1487,7 @@ public class ChartFactory
 
     /**
      * Uncovers the variable name for the plot title.
-     * 
+     *
      * @param metadata the sample metadata
      * @param metric the metric name
      * @param component the metric component name
@@ -1528,7 +1534,7 @@ public class ChartFactory
 
     /**
      * Returns the time scale of the evaluation for the plot title.
-     * 
+     *
      * @param metadata the statistics metadata
      * @param durationUnits the lead duration units
      * @return the time scale
@@ -1592,7 +1598,7 @@ public class ChartFactory
 
     /**
      * Uncovers the threshold for the plot title.
-     * 
+     *
      * @param metadata the sample metadata
      * @param chartType the chart type
      * @param statisticType the type of statistic
@@ -1664,7 +1670,7 @@ public class ChartFactory
 
     /**
      * Uncovers the georeferencing information for the plot title.
-     * 
+     *
      * @param metadata the sample metadata
      * @return the geographic name
      * @throws NullPointerException if the metadata is null
@@ -1689,7 +1695,7 @@ public class ChartFactory
 
     /**
      * Uncovers the time window for the plot title.
-     * 
+     *
      * @param metadata the sample metadata
      * @param chartType the chart type
      * @param statisticType the type of statistic
@@ -1945,17 +1951,9 @@ public class ChartFactory
 
         switch ( statisticType )
         {
-            case BOXPLOT_PER_PAIR:
+            case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM:
                 return ChartType.UNIQUE;
-            case BOXPLOT_PER_POOL:
-                return ChartType.UNIQUE;
-            case DIAGRAM:
-                return ChartType.LEAD_THRESHOLD;
-            case DOUBLE_SCORE:
-                return ChartType.LEAD_THRESHOLD;
-            case DURATION_DIAGRAM:
-                return ChartType.UNIQUE;
-            case DURATION_SCORE:
+            case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE:
                 return ChartType.LEAD_THRESHOLD;
             default:
                 throw new IllegalArgumentException( "Could not translate the statistic type "
@@ -1967,7 +1965,7 @@ public class ChartFactory
 
     /**
      * Creates the keys by which to slice diagram statistics. Each slice produces one diagram.
-     * 
+     *
      * @param statistics the statistics to slice
      * @param chartType the chart type
      * @return the keys for slicing
@@ -2049,42 +2047,53 @@ public class ChartFactory
         URL fontUrl = ChartFactory.class.getClassLoader()
                                         .getResource( fontResource );
 
-        URL fontUrlTitle = fontUrl;
-        LOGGER.debug( "Found resource {} at {}.", fontResource, fontUrl );
+        LOGGER.debug( "The URL for the font '{}' is: {}.", fontResource, fontUrl );
+
+        Font chartFontInner = DEFAULT_CHART_FONT;
+        Font chartFontTitleInner = DEFAULT_CHART_TITLE_FONT;
 
         // Load the font and force it into the chart.
         if ( Objects.isNull( fontUrl ) )
         {
-            throw new FontLoadingException( "Could not find the " + fontResource
-                                            + " file on the class path." );
+            LOGGER.warn( "Failed to load font resource {} from the classpath. Using the default font '{}' for all "
+                         + "graphics.", fontResource, DEFAULT_FONT_NAME );
         }
-
-        try
+        else
         {
-            // Registering a font can apparently lead the JVM to "hang" momentarily if the OS cannot service the request
-            // See #111762 for an example
+            try
+            {
+                LOGGER.debug( "Registering font {}...", fontResource );
+                // Registering a font can apparently lead the JVM to "hang" momentarily if the OS cannot service the request
+                // See #111762 for an example
 
-            // Create from file, not stream
-            // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
-            File fontFile = new File( fontUrl.toURI() );
-            Font font = Font.createFont( Font.TRUETYPE_FONT, fontFile ).deriveFont( 10.0f );
+                // Create from file, not stream
+                // https://stackoverflow.com/questions/38783010/huge-amount-of-jf-tmp-files-in-var-cache-tomcat7-temp
+                File fontFile = new File( fontUrl.toURI() );
+                chartFontInner = Font.createFont( Font.TRUETYPE_FONT, fontFile )
+                                     .deriveFont( 10.0f );
 
-            File fontFileTitle = new File( fontUrlTitle.toURI() );
-            Font fontTitle = Font.createFont( Font.TRUETYPE_FONT, fontFileTitle ).deriveFont( 11.0f );
+                File fontFileTitle = new File( fontUrl.toURI() );
+                chartFontTitleInner = Font.createFont( Font.TRUETYPE_FONT, fontFileTitle )
+                                          .deriveFont( 11.0f );
 
-            // Register font with graphics env
-            GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                // Register font with graphics env
+                GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-            graphics.registerFont( font );
-            graphics.registerFont( fontTitle );
+                graphics.registerFont( chartFontInner );
+                graphics.registerFont( chartFontTitleInner );
 
-            this.chartFont = font;
-            this.chartFontTitle = fontTitle;
+                LOGGER.debug( "Finished registering font {}.", fontResource );
+            }
+            catch ( URISyntaxException | FontFormatException | IOException e )
+            {
+                LOGGER.warn( "Failed to read font resource {} from {}. Using the default font '{}' for all "
+                             + "graphics.", fontResource, fontUrl, DEFAULT_FONT_NAME );
+            }
         }
-        catch ( URISyntaxException | FontFormatException | IOException e )
-        {
-            throw new FontLoadingException( "While attempting to read a font.", e );
-        }
+
+        // Set the fonts
+        this.chartFont = chartFontInner;
+        this.chartFontTitle = chartFontTitleInner;
     }
 
 }

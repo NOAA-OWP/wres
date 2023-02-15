@@ -786,8 +786,6 @@ public class DatabaseDataProvider implements DataProvider
             OffsetDateTime resultObject = resultSet.getObject( columnName,
                                                                OffsetDateTime.class );
             result = resultObject.toInstant();
-            LOGGER.debug( "getInstant( '{}' ) turned OffsetDateTime '{}' into Instant '{}'",
-                          columnName, resultObject, result );
         }
         catch (SQLException e)
         {

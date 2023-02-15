@@ -6,6 +6,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Execution result.
+ */
+
 public class ExecutionResult
 {
     /**
@@ -20,10 +24,8 @@ public class ExecutionResult
     private final String hash;
 
     /**
-     * The exception that stopped execution if execution failed without Error.
-     *
-     * When an Error occurs, this should not be constructed and the Error should
-     * propagate.
+     * The exception that stopped execution if execution failed without Error. When an Error occurs, this should not be
+     * constructed and the Error should propagate.
      */
     private final Exception exception;
 
