@@ -74,10 +74,6 @@
     <!-- Qpid message logs with level "warn" or "error" -->
     <logger name="qpid.message" level="warn" />
 
-    <logger name="wres.vis" level="debug" />
-
-    <logger name="wres.events.subscribe" level="debug" />
-
     <!-- Qpid logs with level "error" -->
     <logger name="org.apache.qpid" level="error" />
 
