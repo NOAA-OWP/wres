@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -35,6 +36,8 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
     @Override
     public Set<GeometryTuple> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
+        Objects.requireNonNull( jp );
+
         ObjectReader reader = ( ObjectReader ) jp.getCodec();
         JsonNode node = reader.readTree( jp );
 
@@ -100,21 +103,19 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
         for ( int i = 0; i < nodeCount; i++ )
         {
             JsonNode nextNode = featuresNode.get( i );
-            GeometryTuple nextFeature = null;
 
             if ( nextNode.has( LEFT )
                  || nextNode.has( RIGHT )
                  || nextNode.has( BASELINE ) )
             {
-                nextFeature = this.getGeometryTuple( reader, nextNode );
+                GeometryTuple nextFeature = this.getGeometryTuple( reader, nextNode );
+                features.add( nextFeature );
             }
             else if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Skipping feature {} because it must be generated when all declaration has been parsed.",
                               nextNode.asText() );
             }
-
-            features.add( nextFeature );
         }
 
         return features;

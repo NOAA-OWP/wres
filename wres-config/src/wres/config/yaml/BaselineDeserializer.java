@@ -21,6 +21,8 @@ class BaselineDeserializer extends JsonDeserializer<BaselineDataset>
     @Override
     public BaselineDataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
+        Objects.requireNonNull( jp );
+
         // Build a deserializer here because it is stateful
         DatasetDeserializer deserializer = new DatasetDeserializer();
         Dataset basicDataset = deserializer.deserialize( jp, context );

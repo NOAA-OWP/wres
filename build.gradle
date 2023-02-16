@@ -893,8 +893,8 @@ project(':wres-config')
         implementation 'com.networknt:json-schema-validator:1.0.76'
 
         // To auto-generate builders for Java records through annotation processing
-        //annotationProcessor 'io.soabase.record-builder:record-builder-processor:35'
-        //implementation 'io.soabase.record-builder:record-builder-core:35'
+        annotationProcessor 'io.soabase.record-builder:record-builder-processor:35'
+        compileOnly 'io.soabase.record-builder:record-builder-core:35'
 
         // Trying json-values based on vavr, potential replacement for xjc/jaxb.
         testImplementation 'com.github.imrafaelmerino:json-values:10.0.0'
@@ -921,7 +921,7 @@ project(':wres-config')
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
     }
 
-    def generatedIntermediateDir = "${project.buildDir}/generated"
+    def generatedIntermediateDir = "${project.buildDir}/generated/wres/config/generated"
 
     jaxb
     {
@@ -978,6 +978,12 @@ project(':wres-config')
 
     // Render explicit the dependency of sourcesJar on copyGenerated
     sourcesJar.dependsOn copyGenerated
+
+    // Set the output directory for sources generated via annotation processing
+    compileJava {
+        File generatedSourceDir = file("${project.projectDir}/build/generated")
+        options.generatedSourceOutputDirectory = generatedSourceDir
+    }
 
     // Incremental builds disabled for the XJC task as of 20220804. See #107133. 
     tasks.named("xsd-dependency-tree").configure {

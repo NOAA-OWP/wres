@@ -37,6 +37,8 @@ class DatasetDeserializer extends JsonDeserializer<Dataset>
     @Override
     public Dataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
+        Objects.requireNonNull( jp );
+
         ObjectReader reader = (ObjectReader) jp.getCodec();
         JsonNode node = reader.readTree( jp );
 
