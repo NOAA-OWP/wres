@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -24,6 +25,8 @@ class TimeScaleDeserializer extends JsonDeserializer<TimeScale>
     public TimeScale deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
+        Objects.requireNonNull( jp );
+
         ObjectReader mapper = (ObjectReader) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 

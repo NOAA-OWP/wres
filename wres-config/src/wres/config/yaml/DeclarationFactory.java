@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +85,7 @@ public class DeclarationFactory
     private static final String SCHEMA = "schema.yml";
 
     /** Root class for an evaluation declaration. */
+    @RecordBuilder
     record EvaluationDeclaration(
             @JsonDeserialize( using = DatasetDeserializer.class ) @JsonProperty( "left" ) Dataset left,
             @JsonDeserialize( using = DatasetDeserializer.class ) @JsonProperty( "right" ) Dataset right,
@@ -102,6 +104,7 @@ public class DeclarationFactory
             @JsonDeserialize( using = MetricsDeserializer.class ) @JsonProperty( "metrics" ) List<Metric> metrics ) {}
 
     /** Left or right dataset. */
+    @RecordBuilder
     record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                     @JsonProperty( "variable" ) Variable variable,
                     @JsonProperty( "feature_authority" ) String featureAuthority,
@@ -111,17 +114,21 @@ public class DeclarationFactory
                     @JsonProperty( "time_shift" ) Duration timeShift ) {}
 
     /** Baseline dataset. */
+    @RecordBuilder
     record BaselineDataset( Dataset dataset,
                             @JsonProperty( "persistence" ) Integer persistence ) {}
 
     /** Variable. */
+    @RecordBuilder
     record Variable( @JsonProperty( "name" ) String name, @JsonProperty( "label" ) String label ) {}
 
     /** Variable. */
+    @RecordBuilder
     record EnsembleFilter( @JsonProperty( "members" ) List<String> members,
                            @JsonProperty( "exclude" ) boolean exclude ) {}
 
     /** A data source. */
+    @RecordBuilder
     record Source( @JsonProperty( "uri" ) URI uri,
                    @JsonProperty( "interface" ) String api,
                    @JsonProperty( "pattern" ) String pattern,
@@ -130,25 +137,32 @@ public class DeclarationFactory
                    @JsonProperty( "missing_value" ) Double missingValue ) {}
 
     /** A metric. */
+    @RecordBuilder
     record Metric( @JsonProperty( "name" ) MetricName name, MetricParameters parameters ) {}
 
     /** Metric parameters. */
+    @RecordBuilder
     record MetricParameters( @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
                              @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
                              @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-                             @JsonProperty( "summary_statistics" ) Set<ComponentName> summaryStatistics ) {}
+                             @JsonProperty( "summary_statistics" ) Set<ComponentName> summaryStatistics,
+                             @JsonProperty( "minimum_sample_size" ) int minimumSampleSize ) {}
 
     /** Time interval. */
+    @RecordBuilder
     record TimeInterval( @JsonProperty( "minimum" ) Instant minimum, @JsonProperty( "maximum" ) Instant maximum ) {}
 
     /** Lead time interval. */
+    @RecordBuilder
     record LeadTimeInterval( @JsonProperty( "minimum" ) int minimum, @JsonProperty( "maximum" ) int maximum ) {}
 
     /** Time pools. */
+    @RecordBuilder
     record TimePools( @JsonProperty( "period" ) int period, @JsonProperty( "frequency" ) int frequency,
                       @JsonProperty( "unit" ) ChronoUnit unit ) {}
 
     /** A threshold, optionally attached to a named feature. */
+    @RecordBuilder
     record Threshold( wres.statistics.generated.Threshold threshold, String featureName ) {}
 
     /**

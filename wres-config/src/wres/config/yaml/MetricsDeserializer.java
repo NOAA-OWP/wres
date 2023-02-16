@@ -3,6 +3,7 @@ package wres.config.yaml;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -34,9 +35,23 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricsDeserializer.class );
 
+    /** Threshold deserializer. */
+    private static final ThresholdsDeserializer THRESHOLDS_DESERIALIZER = new ThresholdsDeserializer();
+
+    /** Probability thresholds string used repeatedly. */
+    public static final String PROBABILITY_THRESHOLDS = "probability_thresholds";
+
+    /** Value thresholds string used repeatedly. */
+    public static final String VALUE_THRESHOLDS = "value_thresholds";
+
+    /** Classifier thresholds string used repeatedly. */
+    public static final String CLASSIFIER_THRESHOLDS = "classifier_thresholds";
+
     @Override
     public List<Metric> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
+        Objects.requireNonNull( jp );
+
         ObjectReader reader = ( ObjectReader ) jp.getCodec();
         JsonNode node = reader.readTree( jp );
 
@@ -44,12 +59,12 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
         if ( node instanceof ObjectNode )
         {
             TreeNode metricsNode = node.get( "metrics" );
-            return this.getMetricsFromArray( ( ArrayNode ) metricsNode );
+            return this.getMetricsFromArray( ( ArrayNode ) metricsNode, reader );
         }
         // Plain array of metrics
         else if ( node instanceof ArrayNode arrayNode )
         {
-            return this.getMetricsFromArray( arrayNode );
+            return this.getMetricsFromArray( arrayNode, reader );
         }
         else
         {
@@ -62,10 +77,13 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
     /**
      * Creates a collection of metrics from an array node.
      * @param metricsNode the metrics node
+     * @param reader the reader
      * @return the metrics
+     * @throws IOException if a metric could not be parsed
      */
 
-    private List<Metric> getMetricsFromArray( ArrayNode metricsNode )
+    private List<Metric> getMetricsFromArray( ArrayNode metricsNode,
+                                              ObjectReader reader ) throws IOException
     {
         List<Metric> metrics = new ArrayList<>();
         int nodeCount = metricsNode.size();
@@ -73,11 +91,11 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
         for ( int i = 0; i < nodeCount; i++ )
         {
             JsonNode nextNode = metricsNode.get( i );
-            Metric nextMetric = null;
+            Metric nextMetric;
 
             if ( nextNode.has( "name" ) )
             {
-                nextMetric = this.getMetric( nextNode );
+                nextMetric = this.getMetric( nextNode, reader );
                 LOGGER.debug( "Discovered a metric with parameters, {}. ", nextMetric.name() );
             }
             else
@@ -97,10 +115,12 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
     /**
      * Creates a metric from a json node.
      * @param node the metric node
+     * @param reader the reader
      * @return the metric
+     * @throws IOException if the metric could not be parsed
      */
 
-    private Metric getMetric( JsonNode node )
+    private Metric getMetric( JsonNode node, ObjectReader reader ) throws IOException
     {
         MetricParameters parameters = null;
         JsonNode nameNode = node.get( "name" );
@@ -110,18 +130,58 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
         Set<Threshold> probabilityThresholds = null;
         Set<Threshold> valueThresholds = null;
         Set<Threshold> classifierThresholds = null;
+        int minimumSampleSize = 0;
         boolean hasParameters = false;
 
         // Summary statistics for timing errors
         if ( node.has( "summary_statistics" ) )
         {
             JsonNode summaryStatisticsNode = node.get( "summary_statistics" );
-
             summaryStatistics = StreamSupport.stream( summaryStatisticsNode.spliterator(), false )
                                              .map( this::getEnumFriendlyName )
                                              .map( ComponentName::valueOf )
                                              .collect( Collectors.toUnmodifiableSet() );
+            hasParameters = true;
+        }
 
+        // Probability thresholds
+        if ( node.has( PROBABILITY_THRESHOLDS ) )
+        {
+            JsonNode thresholdsNode = node.get( PROBABILITY_THRESHOLDS );
+            probabilityThresholds = THRESHOLDS_DESERIALIZER.deserialize( reader,
+                                                                         thresholdsNode,
+                                                                         true,
+                                                                         PROBABILITY_THRESHOLDS );
+            hasParameters = true;
+        }
+
+        // Value thresholds
+        if ( node.has( VALUE_THRESHOLDS ) )
+        {
+            JsonNode thresholdsNode = node.get( VALUE_THRESHOLDS );
+            valueThresholds = THRESHOLDS_DESERIALIZER.deserialize( reader,
+                                                                   thresholdsNode,
+                                                                   false,
+                                                                   VALUE_THRESHOLDS );
+            hasParameters = true;
+        }
+
+        // Classifier thresholds
+        if ( node.has( CLASSIFIER_THRESHOLDS ) )
+        {
+            JsonNode thresholdsNode = node.get( CLASSIFIER_THRESHOLDS );
+            classifierThresholds = THRESHOLDS_DESERIALIZER.deserialize( reader,
+                                                                        thresholdsNode,
+                                                                        true,
+                                                                        CLASSIFIER_THRESHOLDS );
+            hasParameters = true;
+        }
+
+        // Minimum sample size
+        if ( node.has( "minimum_sample_size" ) )
+        {
+            JsonNode minimumSampleSizeNode = node.get( "minimum_sample_size" );
+            minimumSampleSize = minimumSampleSizeNode.asInt();
             hasParameters = true;
         }
 
@@ -130,7 +190,8 @@ class MetricsDeserializer extends JsonDeserializer<List<Metric>>
             parameters = new MetricParameters( probabilityThresholds,
                                                valueThresholds,
                                                classifierThresholds,
-                                               summaryStatistics );
+                                               summaryStatistics,
+                                               minimumSampleSize );
         }
 
         return new Metric( metricName, parameters );

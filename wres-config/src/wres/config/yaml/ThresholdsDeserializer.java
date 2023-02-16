@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -47,23 +48,51 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     @Override
     public Set<Threshold> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
+        Objects.requireNonNull( jp );
+
         ObjectReader reader = ( ObjectReader ) jp.getCodec();
         JsonNode node = reader.readTree( jp );
 
         String currentName = jp.currentName();
+
+        LOGGER.debug( "Attempting to deserialize thresholds from the node named {}.", currentName );
+
         boolean probabilities = "probability_thresholds".equals( currentName )
                                 || "classifier_thresholds".equals( currentName );
 
+        return this.deserialize( reader, node, probabilities, currentName );
+    }
+
+    /**
+     * Deserializes a threshold node.
+     *
+     * @param reader the reader, required
+     * @param thresholdsNode the thresholds node, required
+     * @param probabilities is true if the threshold values are probabilities, false for regular values
+     * @param nodeName the name of the node to help with messaging
+     * @return the thresholds
+     * @throws IOException if the thresholds could not be read
+     * @throws NullPointerException if any required input is null
+     */
+
+    Set<Threshold> deserialize( ObjectReader reader,
+                                JsonNode thresholdsNode,
+                                boolean probabilities,
+                                String nodeName ) throws IOException
+    {
+        Objects.requireNonNull( reader );
+        Objects.requireNonNull( thresholdsNode );
+
         // Thresholds with attributes
-        if ( node instanceof ObjectNode )
+        if ( thresholdsNode instanceof ObjectNode )
         {
-            LOGGER.debug( "Encountered an embellished set of thresholds for node {}.", currentName );
-            return this.getThresholds( reader, node, probabilities );
+            LOGGER.debug( "Encountered an embellished set of thresholds for node {}.", nodeName );
+            return this.getThresholds( reader, thresholdsNode, probabilities );
         }
         // Plain array of thresholds
-        else if ( node instanceof ArrayNode arrayNode )
+        else if ( thresholdsNode instanceof ArrayNode arrayNode )
         {
-            LOGGER.debug( "Encountered a plain array of thresholds for node {}.", currentName );
+            LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
             wres.statistics.generated.Threshold.Builder builder
                     = wres.statistics.generated.Threshold.newBuilder()
                                                          .setOperator( ThresholdOperator.GREATER )
@@ -72,7 +101,7 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         }
         else
         {
-            throw new IOException( "When reading the '" + currentName
+            throw new IOException( "When reading the '" + nodeName
                                    + "' declaration of 'thresholds', discovered an unrecognized data type. Please "
                                    + "fix this declaration and try again." );
         }
@@ -80,7 +109,7 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
     /**
      * Creates a collection of thresholds from an array node.
-     * @param reader the mapper
+     * @param reader the reader
      * @param thresholdsNode the thresholds node
      * @param probabilities is true if the threshold values are probabilities, false for regular values
      * @param thresholdBuilder the threshold builder
