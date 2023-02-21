@@ -887,7 +887,18 @@ project(':wres-config')
         implementation 'com.fasterxml.jackson.core:jackson-core:2.14.2'
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.2'
         implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.2'
-        implementation 'com.hubspot.jackson:jackson-datatype-protobuf:0.9.13'
+        implementation( 'com.hubspot.jackson:jackson-datatype-protobuf:0.9.13' )
+        {
+            // Exclude old modules to eliminate several CVEs
+            // Remove older protobuf version and include later version below
+            exclude group: 'com.google.protobuf', module: 'protobuf-java'
+            exclude group: 'com.google.protobuf', module: 'protobuf-java-util'
+            // Remove older guava version
+            exclude group: 'com.google.guava', module: 'guava'
+        }
+        // Include later dependency versions for the excluded dependencies above
+        implementation 'com.google.protobuf:protobuf-java:3.21.12'
+        implementation 'com.google.guava:guava:31.1-jre'
 
         // YAML/JSON schema validation
         implementation 'com.networknt:json-schema-validator:1.0.77'
