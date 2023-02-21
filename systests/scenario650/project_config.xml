@@ -8,7 +8,6 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <!--<source>data/griddedExamples/precip_ellicott_city/short_range/</source> -->
             <source pattern="**/*nwm.t*0[0-9]z*">data/griddedExamples/precip_ellicott_city/short_range/nwm.20180526/</source>
             <variable>RAINRATE</variable>
         </right>
@@ -43,9 +42,9 @@
         </leadTimesPoolingWindow>
     </pair>
     <metrics>
-        <metric> <name>mean error</name> </metric>
+        <metric><name>mean error</name> </metric>
         <metric><name>pearson correlation coefficient</name></metric>
-        <metric> <name>sample size</name> </metric>
+        <metric><name>sample size</name> </metric>
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000" />

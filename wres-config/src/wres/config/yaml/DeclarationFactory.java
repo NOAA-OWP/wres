@@ -91,6 +91,7 @@ public class DeclarationFactory
             @JsonDeserialize( using = DatasetDeserializer.class ) @JsonProperty( "right" ) Dataset right,
             @JsonDeserialize( using = BaselineDeserializer.class ) @JsonProperty( "baseline" ) BaselineDataset baseline,
             @JsonDeserialize( using = FeaturesDeserializer.class ) @JsonProperty( "features" ) Set<GeometryTuple> features,
+            @JsonProperty( "feature_service" ) FeatureService featureService,
             @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
             @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
             @JsonProperty( "valid_dates" ) TimeInterval validDates,
@@ -154,7 +155,8 @@ public class DeclarationFactory
 
     /** Lead time interval. */
     @RecordBuilder
-    record LeadTimeInterval( @JsonProperty( "minimum" ) int minimum, @JsonProperty( "maximum" ) int maximum ) {}
+    record LeadTimeInterval( @JsonProperty( "minimum" ) int minimum, @JsonProperty( "maximum" ) int maximum,
+                             @JsonProperty( "unit" ) ChronoUnit unit ) {}
 
     /** Time pools. */
     @RecordBuilder
@@ -164,6 +166,10 @@ public class DeclarationFactory
     /** A threshold, optionally attached to a named feature. */
     @RecordBuilder
     record Threshold( wres.statistics.generated.Threshold threshold, String featureName ) {}
+
+    /** A feature service. */
+    @RecordBuilder
+    record FeatureService( @JsonProperty( "uri" ) URI uri ) {}
 
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema.
@@ -180,7 +186,8 @@ public class DeclarationFactory
         Objects.requireNonNull( yaml );
 
         // Get the schema from the classpath
-        URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
+        URL schema = DeclarationFactory.class.getClassLoader()
+                                             .getResource( SCHEMA );
 
         LOGGER.debug( "Read the declaration schema from classpath resource '{}'.", SCHEMA );
 
@@ -267,21 +274,9 @@ public class DeclarationFactory
                 }
             }
 
-            adjustedDeclaration = new EvaluationDeclaration( declaration.left(),
-                                                             declaration.right(),
-                                                             declaration.baseline(),
-                                                             features,
-                                                             declaration.referenceDates(),
-                                                             declaration.referenceDatePools(),
-                                                             declaration.validDates(),
-                                                             declaration.validDatePools(),
-                                                             declaration.leadTimes(),
-                                                             declaration.leadTimePools(),
-                                                             declaration.timeScale(),
-                                                             declaration.probabilityThresholds(),
-                                                             declaration.valueThresholds(),
-                                                             declaration.classifierThresholds(),
-                                                             declaration.metrics() );
+            adjustedDeclaration = DeclarationFactoryEvaluationDeclarationBuilder.builder( adjustedDeclaration )
+                                                                                .features( features )
+                                                                                .build();
         }
 
         return adjustedDeclaration;

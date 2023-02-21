@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -15,9 +16,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
-import jakarta.jms.JMSException;
-import javax.naming.NamingException;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -166,8 +164,7 @@ class EvaluationTest
     }
 
     @Test
-    void publishAndConsumeTwoEvaluationsSimultaneously()
-            throws IOException, NamingException, JMSException, InterruptedException
+    void publishAndConsumeTwoEvaluationsSimultaneously() throws IOException
     {
         // Containers to hold the statistics
         List<Statistics> actualStatistics = new ArrayList<>();
@@ -260,11 +257,12 @@ class EvaluationTest
         };
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( EvaluationSubscriber subscriberOne =
+        // Subscribers are pub-sub, so technically not referenced inband, aka "ignored", but are used out-of-band
+        try ( EvaluationSubscriber ignoredOne =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
-              EvaluationSubscriber subscriberTwo =
+              EvaluationSubscriber ignoredTwo =
                       EvaluationSubscriber.of( consumerTwo,
                                                Executors.newSingleThreadExecutor(),
                                                EvaluationTest.connections );
@@ -316,9 +314,7 @@ class EvaluationTest
             public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    return Set.of();
-                };
+                return statistics -> Set.of();
             }
 
             @Override
@@ -343,7 +339,8 @@ class EvaluationTest
             }
         };
 
-        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationTest.connections );
               Evaluation evaluation =
@@ -364,7 +361,7 @@ class EvaluationTest
 
     @Test
     void publishAndConsumeOneEvaluationWithTwoGroupsAndOneConsumerForEachGroupAndOneOverallConsumer()
-            throws IOException, NamingException, JMSException, InterruptedException
+            throws IOException
     {
         // Statistics incremented as the pipeline progresses
         List<Statistics> actualStatistics = new ArrayList<>();
@@ -412,13 +409,14 @@ class EvaluationTest
         };
 
         // Create and start a broker and open an evaluation, closing on completion
-        try ( EvaluationSubscriber subscriber =
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
               Evaluation evaluation = Evaluation.of( this.oneEvaluation,
                                                      EvaluationTest.connections,
-                                                     A_CLIENT ); )
+                                                     A_CLIENT ) )
         {
             // First group
             for ( Statistics next : this.oneStatistics )
@@ -463,10 +461,10 @@ class EvaluationTest
         assertEquals( 2, actualAggregatedStatistics.size() );
 
         Statistics.Builder expectedOneBuilder = Statistics.newBuilder();
-        this.oneStatistics.forEach( next -> expectedOneBuilder.mergeFrom( next ) );
+        this.oneStatistics.forEach( expectedOneBuilder::mergeFrom );
 
         Statistics.Builder expectedTwoBuilder = Statistics.newBuilder();
-        this.anotherStatistics.forEach( next -> expectedTwoBuilder.mergeFrom( next ) );
+        this.anotherStatistics.forEach( expectedTwoBuilder::mergeFrom );
 
         List<Statistics> expectedAggregatedStatistics = List.of( expectedOneBuilder.build(),
                                                                  expectedTwoBuilder.build() );
@@ -487,9 +485,7 @@ class EvaluationTest
             public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    return Set.of();
-                };
+                return statistics -> Set.of();
             }
 
             @Override
@@ -514,9 +510,10 @@ class EvaluationTest
             }
         };
 
-        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
-                                                                         EvaluationTest.connections ); )
+                                                                         EvaluationTest.connections ) )
         {
             evaluation =
                     Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
@@ -586,10 +583,11 @@ class EvaluationTest
 
         // Open an evaluation, closing on completion
         Evaluation evaluation = null;
-        try ( EvaluationSubscriber subscriberOne =
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections ); )
+                                         EvaluationTest.connections ) )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
                                         EvaluationTest.connections,
@@ -603,7 +601,7 @@ class EvaluationTest
 
             // Wait for the evaluation to complete
             Evaluation finalEvaluation = evaluation;
-            assertThrows( EvaluationFailedToCompleteException.class, () -> finalEvaluation.await() );
+            assertThrows( EvaluationFailedToCompleteException.class, finalEvaluation::await );
         }
         finally
         {
@@ -660,7 +658,8 @@ class EvaluationTest
         };
 
         // Open an evaluation, closing on completion
-        try ( EvaluationSubscriber subscriberOne =
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
                                          EvaluationTest.connections );
@@ -719,10 +718,11 @@ class EvaluationTest
             }
         };
 
-        try ( EvaluationSubscriber subscriberOne =
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored =
                 EvaluationSubscriber.of( consumer,
                                          Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections ); )
+                                         EvaluationTest.connections ) )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
                                         EvaluationTest.connections,
@@ -771,16 +771,11 @@ class EvaluationTest
 
             // Sort the statistics
             List<Statistics> sortedStatistics = new ArrayList<>( statistics );
-            sortedStatistics.sort( ( a, b ) -> Double.compare( a.getScoresList()
-                                                                .get( 0 )
-                                                                .getStatisticsList()
-                                                                .get( 0 )
-                                                                .getValue(),
-                                                               b.getScoresList()
-                                                                .get( 0 )
-                                                                .getStatisticsList()
-                                                                .get( 0 )
-                                                                .getValue() ) );
+            sortedStatistics.sort( Comparator.comparingDouble( a -> a.getScoresList()
+                                                                     .get( 0 )
+                                                                     .getStatisticsList()
+                                                                     .get( 0 )
+                                                                     .getValue() ) );
 
             // Merge the cached statistics
             for ( Statistics next : sortedStatistics )
