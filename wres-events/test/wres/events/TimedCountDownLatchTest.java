@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 
 class TimedCountDownLatchTest
 {
-
     @Test
     void testResetLatchWaitsForLonger() throws InterruptedException
     {
@@ -51,5 +50,4 @@ class TimedCountDownLatchTest
         // Latch exited via countdown
         assertEquals( 0, latch.getCount() );
     }
-
 }

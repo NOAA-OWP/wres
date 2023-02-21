@@ -921,8 +921,6 @@ project(':wres-config')
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
     }
 
-    def generatedIntermediateDir = "${project.buildDir}/generated/wres/config/generated"
-
     jaxb
     {
         xsdDir = "${project.projectDir}/nonsrc"
@@ -932,7 +930,7 @@ project(':wres-config')
         {
             taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
             generatePackage = 'wres.config.generated'
-            destinationDir = "${generatedIntermediateDir}"
+            destinationDir = "${project.buildDir}/generated/"
             // For location information to be in classes, -Xlocator is needed
             // here. For location information to be in instances at runtime, the
             // eclipselink moxy library is required at runtime (see runtime dep)
@@ -967,9 +965,9 @@ project(':wres-config')
     // the latest version (this seems to happen on each build)
     task copyGenerated(type:Copy, dependsOn: xjc, group: 'Parse') {
         description = 'Ensures generated code is created and available in src.'
-        destinationDir = file("${project.projectDir}/src")
+        destinationDir = file("${project.projectDir}/src/wres/config/generated")
         delete fileTree(dir: destinationDir).include('**/generated/*.java')
-        from fileTree("${generatedIntermediateDir}")
+        from fileTree("${project.buildDir}/generated/wres/config/generated")
         into destinationDir
     }
 

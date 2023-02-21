@@ -104,6 +104,8 @@ definitions:
             - "$ref": "#/definitions/Metric"
             - "$ref": "#/definitions/TimeSeriesMetric"
         minItems: 1
+      duration_unit:
+        "$ref": "#/definitions/DurationEnum"
       formats:
         type: array
         items:
@@ -370,6 +372,34 @@ definitions:
 
   # A feature service from which feature tuples may be acquired.
   FeatureService:
+    anyOf:
+      - "$ref": "#/definitions/SingletonFeatureService"
+      - "$ref": "#/definitions/MultiGroupFeatureService"
+
+  # A feature service with up to one feature group.
+  SingletonFeatureService:
+    type: object
+    additionalProperties: false
+    properties:
+      uri:
+        type: string
+        format: uri
+        minLength: 1
+        maxLength: 2083
+      group:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      value:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    required:
+      - uri
+    title: SingletonFeatureService
+
+  # A feature service with up to many feature groups.
+  MultiGroupFeatureService:
     type: object
     additionalProperties: false
     properties:
@@ -384,16 +414,15 @@ definitions:
           "$ref": "#/definitions/FeatureServiceGroup"
         minItems: 1
     required:
-      - groups
       - uri
-    title: FeatureService
+    title: MultiGroupFeatureService
 
   # The declaration of a feature group to acquire from a feature service.
   FeatureServiceGroup:
     type: object
     additionalProperties: false
     properties:
-      type:
+      group:
         type: string
         minLength: 1
         maxLength: 2083
@@ -404,12 +433,19 @@ definitions:
       pool:
         type: boolean
     required:
-      - type
+      - group
       - value
     title: FeatureServiceGroup
 
   # A geospatial mask based on a WKT shape.
   SpatialMask:
+    oneOf:
+      - type: string
+        minLength: 1
+      - "$ref": "#/definitions/NamedSpatialMask"    
+
+  # A geospatial mask based on a WKT shape and optional name.
+  NamedSpatialMask:
     type: object
     additionalProperties: false
     properties:
@@ -422,7 +458,7 @@ definitions:
         minLength: 1
     required:
       - wkt
-    title: SpatialMask
+    title: NamedSpatialMask
 
   # The durations to consider when evaluating model analyses.
   AnalysisDurations:
@@ -800,7 +836,7 @@ definitions:
         "$ref": "#/definitions/ProbabilityThresholds"
       value_thresholds:
         "$ref": "#/definitions/Thresholds"
-      minimum_sample_size::
+      minimum_sample_size:
         type: integer
       summary_statistics:
         type: array

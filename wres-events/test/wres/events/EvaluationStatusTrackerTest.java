@@ -77,9 +77,7 @@ class EvaluationStatusTrackerTest
             public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    return Set.of();
-                };
+                return statistics -> Set.of();
             }
 
             @Override
@@ -107,7 +105,8 @@ class EvaluationStatusTrackerTest
         // Approve any offer
         SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().build();
 
-        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
               Evaluation evaluation =
@@ -124,13 +123,13 @@ class EvaluationStatusTrackerTest
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
         {
-            // A less-good subscriber: delivers only one of the required formats
+            // A less-good ignored: delivers only one of the required formats
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
                                            .addFormats( Format.PNG )
                                            .build();
 
-            // The best subscriber: two formats, both required 
+            // The best ignored: two formats, both required
             Consumer consumerTwo = Consumer.newBuilder()
                                            .setConsumerId( "anotherConsumer" )
                                            .addFormats( Format.PNG )
@@ -179,9 +178,7 @@ class EvaluationStatusTrackerTest
             public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    return Set.of();
-                };
+                return statistics -> Set.of();
             }
 
             @Override
@@ -209,7 +206,8 @@ class EvaluationStatusTrackerTest
         // Approve any offer
         SubscriberApprover subscriberApprover = new SubscriberApprover.Builder().build();
 
-        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
               Evaluation evaluation =
@@ -291,9 +289,7 @@ class EvaluationStatusTrackerTest
             public Function<Statistics, Set<Path>>
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    return Set.of();
-                };
+                return statistics -> Set.of();
             }
 
             @Override
@@ -326,7 +322,8 @@ class EvaluationStatusTrackerTest
                                                                                                         "anotherConsumer" )
                                                                                 .build();
 
-        try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
+        // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
+        try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
               Evaluation evaluation =
