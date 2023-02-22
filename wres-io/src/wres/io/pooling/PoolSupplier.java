@@ -727,8 +727,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                           .map( FeatureTuple::getRight )
                                                           .collect( Collectors.toSet() );
 
-                LOGGER.warn( "Failed to identify any pairs for feature: {}. Pairs were available for these features: "
-                             + "{}.",
+                LOGGER.warn( "When evaluating a pool for time window {}, failed to identify any pairs for feature: {}. "
+                             + "Pairs were available for these features: {}.",
+                             this.getMetadata().getTimeWindow(),
                              nextFeature.getRight(),
                              availableFeatures );
             }
@@ -756,8 +757,9 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                               .map( FeatureTuple::getBaseline )
                                                               .collect( Collectors.toSet() );
 
-                    LOGGER.warn( "Failed to identify any baseline pairs for feature: {}. Baseline pairs were available "
-                                 + "for these features: {}.",
+                    LOGGER.warn( "When evaluating a pool for time window {}, failed to identify any baseline pairs for "
+                                 + "feature: {}. Baseline pairs were available for these features: {}.",
+                                 this.getMetadata().getTimeWindow(),
                                  nextFeature.getBaseline(),
                                  availableFeatures );
                 }
