@@ -65,9 +65,6 @@ public class InMemoryProject implements Project
     /** Time-series data. */
     private final TimeSeriesStore timeSeriesStore;
 
-    /** The project identifier. */
-    private long projectId;
-
     /** The measurement unit. */
     private String measurementUnit = null;
 
@@ -122,10 +119,10 @@ public class InMemoryProject implements Project
 
         if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
-            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
-                                       + "the variables and other declaration supplied. Please check that the "
-                                       + "declaration is expected to produce some features with time-series data on "
-                                       + "both sides of the pairing." );
+            throw new NoDataException( "Failed to identify any features with data on all required sides (left, right "
+                                       + "and, when declared, baseline) for the variables and other declaration "
+                                       + "supplied. Please check that the declaration is expected to produce some "
+                                       + "features with time-series data on both sides of the pairing." );
         }
     }
 
@@ -170,7 +167,7 @@ public class InMemoryProject implements Project
                                                 .max( Map.Entry.comparingByValue() )
                                                 .map( Map.Entry::getKey );
 
-            if ( !mostCommon.isPresent() )
+            if ( mostCommon.isEmpty() )
             {
                 throw new DataAccessException( "Failed to determine the most common measurement unit associated with "
                                                + "the right-ish data." );
@@ -193,17 +190,17 @@ public class InMemoryProject implements Project
 
     /**
      * Returns the desired time scale. In order of availability, this is:
-     * 
+     *
      * <ol>
      * <li>The desired time scale provided on construction;</li>
      * <li>The Least Common Scale (LCS) computed from the input data; or</li>
      * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
      * </ol>
-     * 
+     *
      * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given 
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
-     * 
+     *
      * @return the desired time scale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained
      */
@@ -332,18 +329,14 @@ public class InMemoryProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getLeft();
-            case RIGHT:
-                return this.getRight();
-            case BASELINE:
-                return this.getBaseline();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + EXPECTED_LEFT_OR_RIGHT_OR_BASELINE );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getLeft();
+                    case RIGHT -> this.getRight();
+                    case BASELINE -> this.getBaseline();
+                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
+                                                                   + EXPECTED_LEFT_OR_RIGHT_OR_BASELINE );
+                };
     }
 
     /**
@@ -358,19 +351,15 @@ public class InMemoryProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getLeftVariableName();
-            case RIGHT:
-                return this.getRightVariableName();
-            case BASELINE:
-                return this.getBaselineVariableName();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + "': expected LEFT or "
-                                                    + "RIGHT or BASELINE." );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getLeftVariableName();
+                    case RIGHT -> this.getRightVariableName();
+                    case BASELINE -> this.getBaselineVariableName();
+                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
+                                                                   + "': expected LEFT or "
+                                                                   + "RIGHT or BASELINE." );
+                };
     }
 
     /**
@@ -385,19 +374,15 @@ public class InMemoryProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getDeclaredLeftVariableName();
-            case RIGHT:
-                return this.getDeclaredRightVariableName();
-            case BASELINE:
-                return this.getDeclaredBaselineVariableName();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + "': expected LEFT or "
-                                                    + "RIGHT or BASELINE." );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getDeclaredLeftVariableName();
+                    case RIGHT -> this.getDeclaredRightVariableName();
+                    case BASELINE -> this.getDeclaredBaselineVariableName();
+                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
+                                                                   + "': expected LEFT or "
+                                                                   + "RIGHT or BASELINE." );
+                };
     }
 
     /**
@@ -443,19 +428,15 @@ public class InMemoryProject implements Project
     {
         LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.leftUsesGriddedData;
-            case RIGHT:
-                return this.rightUsesGriddedData;
-            case BASELINE:
-                return this.baselineUsesGriddedData;
-            default:
-                throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                    + lrb
-                                                    + "'." );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.leftUsesGriddedData;
+                    case RIGHT -> this.rightUsesGriddedData;
+                    case BASELINE -> this.baselineUsesGriddedData;
+                    default -> throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
+                                                                   + lrb
+                                                                   + "'." );
+                };
     }
 
     /**
@@ -467,16 +448,22 @@ public class InMemoryProject implements Project
     {
         this.leftUsesGriddedData = ingestResults.stream()
                                                 .map( IngestResult::getDataSource )
-                                                .filter( next -> next.getLeftOrRightOrBaseline() == LeftOrRightOrBaseline.LEFT )
-                                                .anyMatch( next -> next.getDisposition() == DataDisposition.NETCDF_GRIDDED );
+                                                .filter( next -> next.getLeftOrRightOrBaseline()
+                                                                 == LeftOrRightOrBaseline.LEFT )
+                                                .anyMatch( next -> next.getDisposition()
+                                                                   == DataDisposition.NETCDF_GRIDDED );
         this.rightUsesGriddedData = ingestResults.stream()
                                                  .map( IngestResult::getDataSource )
-                                                 .filter( next -> next.getLeftOrRightOrBaseline() == LeftOrRightOrBaseline.RIGHT )
-                                                 .anyMatch( next -> next.getDisposition() == DataDisposition.NETCDF_GRIDDED );
+                                                 .filter( next -> next.getLeftOrRightOrBaseline()
+                                                                  == LeftOrRightOrBaseline.RIGHT )
+                                                 .anyMatch( next -> next.getDisposition()
+                                                                    == DataDisposition.NETCDF_GRIDDED );
         this.baselineUsesGriddedData = ingestResults.stream()
                                                     .map( IngestResult::getDataSource )
-                                                    .filter( next -> next.getLeftOrRightOrBaseline() == LeftOrRightOrBaseline.BASELINE )
-                                                    .anyMatch( next -> next.getDisposition() == DataDisposition.NETCDF_GRIDDED );
+                                                    .filter( next -> next.getLeftOrRightOrBaseline()
+                                                                     == LeftOrRightOrBaseline.BASELINE )
+                                                    .anyMatch( next -> next.getDisposition()
+                                                                       == DataDisposition.NETCDF_GRIDDED );
 
         LOGGER.debug( "Set the status of gridded data to left={}, right={}, baseline={}.",
                       this.leftUsesGriddedData,
@@ -519,12 +506,12 @@ public class InMemoryProject implements Project
     @Override
     public long getId()
     {
-        return this.projectId;
+        return 0;
     }
 
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     * 
+     *
      * @return Whether or not the project uses probability thresholds
      */
     @Override
@@ -577,7 +564,7 @@ public class InMemoryProject implements Project
 
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
-     * 
+     *
      * @throws NoDataException if the conditions select no data
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
@@ -615,7 +602,7 @@ public class InMemoryProject implements Project
      * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
      * thrown because declaration is require to disambiguate. Otherwise, it chooses the single variable name and warns 
      * about the assumption made when using the data to disambiguate.
-     * 
+     *
      * @throws DataAccessException if the variable information could not be determined from the data
      */
 
@@ -713,13 +700,13 @@ public class InMemoryProject implements Project
     {
         Stream<TimeSeries<?>> series = Stream.concat( store.getSingleValuedSeries(), store.getEnsembleSeries() );
 
-        return Integer.toString( series.collect( Collectors.toList() )
+        return Integer.toString( series.toList()
                                        .hashCode() );
     }
 
     /**
      * Determines the possible variable names by inspecting the data.
-     * 
+     *
      * @param lrb the context
      * @return the possible variable names
      * @throws DataAccessException if the variable information could not be determined from the data
@@ -736,7 +723,7 @@ public class InMemoryProject implements Project
 
     /**
      * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
-     * 
+     *
      * @param lrb the orientation of the source
      * @param config the source configuration whose ensemble conditions should be validated
      * @return a string representation of the invalid conditions 
@@ -783,7 +770,7 @@ public class InMemoryProject implements Project
     /**
      * Builds a set of gridded feature tuples. Assumes that all dimensions have the same tuple (i.e., cannot currently
      * pair grids with different features. Feature groupings are also not supported.
-     * 
+     *
      * @return a set of gridded feature tuples
      */
 
@@ -796,15 +783,15 @@ public class InMemoryProject implements Project
                                this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.LEFT ) );
 
         Set<Feature> griddedFeatures = leftSeries.map( next -> next.getMetadata()
-                                                                      .getFeature() )
-                                                    .collect( Collectors.toSet() );
+                                                                   .getFeature() )
+                                                 .collect( Collectors.toSet() );
 
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( Feature nextFeature : griddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
-            GeometryTuple geoTuple = null;
+            GeometryTuple geoTuple;
             if ( this.hasBaseline() )
             {
                 geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
@@ -836,13 +823,12 @@ public class InMemoryProject implements Project
         {
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
 
-            this.features = Collections.unmodifiableSet( griddedTuples );
-            Set<FeatureGroup> fGroups = ProjectUtilities.getFeatureGroups( this.features,
-                                                                           Set.of(),
-                                                                           this.getProjectConfig()
-                                                                               .getPair(),
-                                                                           this.getId() );
-            this.featureGroups = fGroups;
+            this.features = griddedTuples;
+            this.featureGroups = ProjectUtilities.getFeatureGroups( this.features,
+                                                                    Set.of(),
+                                                                    this.getProjectConfig()
+                                                                        .getPair(),
+                                                                    this.getId() );
 
             LOGGER.debug( "Finished setting the features for project {}. Discovered {} gridded features.",
                           this.getId(),
@@ -900,21 +886,20 @@ public class InMemoryProject implements Project
 
             // Create the feature groups
             List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
-                                                      .stream()
-                                                      .flatMap( next -> next.getFeature().stream() )
-                                                      .collect( Collectors.toList() );
+                                                           .stream()
+                                                           .flatMap( next -> next.getFeature().stream() )
+                                                           .toList();
 
             Set<FeatureTuple> groupedTuples = this.getFeatureTuplesFromDeclaredFeatures( groupedFeatures,
                                                                                          leftFeatures,
                                                                                          rightFeatures,
                                                                                          baselineFeatures );
 
-            Set<FeatureGroup> fGroups = ProjectUtilities.getFeatureGroups( singletons,
+            this.featureGroups = ProjectUtilities.getFeatureGroups( singletons,
                                                                            groupedTuples,
                                                                            pairConfig,
                                                                            this.getId() );
 
-            this.featureGroups = Collections.unmodifiableSet( fGroups );
             this.features = Collections.unmodifiableSet( singletons );
 
             LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",

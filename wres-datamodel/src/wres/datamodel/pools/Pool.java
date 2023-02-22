@@ -12,15 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
+
 import wres.datamodel.Climatology;
 
 /**
  * <p>An atomic collection of samples from which a statistic is computed using a metric. The samples may comprise paired 
  * or unpaired values. Optionally, it may contain a baseline dataset to be used in the same context (e.g. for skill 
  * scores) and a climatological dataset, which is used to derive quantiles from climatological probabilities.
- * 
+ *
  * <p>A dataset may contain values that correspond to a missing value identifier.
- * 
+ *
  * @param <T> the type of pooled data
  * @author James Brown
  */
@@ -73,7 +74,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Returns the pooled data.
-     * 
+     *
      * @return the pooled data
      */
     public List<T> get()
@@ -83,7 +84,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Returns <code>true</code> if the sample has a baseline for skill calculations, <code>false</code> otherwise.
-     * 
+     *
      * @return true if a baseline is defined, false otherwise
      */
 
@@ -95,7 +96,7 @@ public class Pool<T> implements Supplier<List<T>>
     /**
      * Returns <code>true</code> if the sample has a climatological dataset associated with it, <code>false</code> 
      * otherwise.
-     * 
+     *
      * @return true if a climatological dataset is defined, false otherwise
      */
 
@@ -106,7 +107,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Returns the metadata associated with the sample.
-     * 
+     *
      * @return the metadata associated with the sample
      */
 
@@ -117,7 +118,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Returns a climatological dataset if {@link #hasClimatology()} returns true, otherwise null.
-     * 
+     *
      * @return a climatological dataset or null
      */
 
@@ -129,7 +130,7 @@ public class Pool<T> implements Supplier<List<T>>
     /**
      * Returns a view of the miniature pools from which this pool was constructed, else this pool wrapped in a singleton
      * list if this pool was built from raw data.
-     * 
+     *
      * @return a view of the smaller pools from which this pool was built, else this pool, wrapped
      */
 
@@ -148,7 +149,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Returns the baseline data as a {@link Pool} or null if no baseline is defined.
-     * 
+     *
      * @return the baseline
      */
 
@@ -163,9 +164,9 @@ public class Pool<T> implements Supplier<List<T>>
                                              .setClimatology( this.climatology );
 
         // Preserve the mini-pool view of the data
-        List<Pool<T>> miniPools = this.getMiniPools();
+        List<Pool<T>> miniPoolsInner = this.getMiniPools();
 
-        for ( Pool<T> next : miniPools )
+        for ( Pool<T> next : miniPoolsInner )
         {
             if ( next.hasBaseline() )
             {
@@ -185,21 +186,21 @@ public class Pool<T> implements Supplier<List<T>>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "mainMetadata",
-                                                                                     this.getMetadata() )
-                                                                            .append( "mainData", this.get() )
-                                                                            .append( "baselineMetadata",
-                                                                                     this.baselineMeta )
-                                                                            .append( "baselineData",
-                                                                                     this.baselineSampleData )
-                                                                            .append( "climatology",
-                                                                                     this.getClimatology() )
-                                                                            .toString();
+                .append( "mainMetadata",
+                         this.getMetadata() )
+                .append( "mainData", this.get() )
+                .append( "baselineMetadata",
+                         this.baselineMeta )
+                .append( "baselineData",
+                         this.baselineSampleData )
+                .append( "climatology",
+                         this.getClimatology() )
+                .toString();
     }
 
     /**
      * Construct an instance.
-     * 
+     *
      * @param <T> the type of data
      * @param sampleData the data
      * @param meta the metadata
@@ -219,7 +220,7 @@ public class Pool<T> implements Supplier<List<T>>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof Pool ) )
+        if ( !( o instanceof Pool<?> input ) )
         {
             return false;
         }
@@ -230,8 +231,6 @@ public class Pool<T> implements Supplier<List<T>>
         }
 
         // The mini-pools represent a view of the underlying data and are not part of a test for equality.
-        Pool<?> input = (Pool<?>) o;
-
         boolean returnMe = input.hasClimatology() == this.hasClimatology()
                            && input.hasBaseline() == this.hasBaseline()
                            && input.getMetadata().equals( this.getMetadata() );
@@ -242,7 +241,7 @@ public class Pool<T> implements Supplier<List<T>>
         }
 
         // Start checking the actual data
-        returnMe = returnMe && input.get().equals( this.get() );
+        returnMe = input.get().equals( this.get() );
 
         if ( !returnMe )
         {
@@ -252,7 +251,7 @@ public class Pool<T> implements Supplier<List<T>>
         // Check the actual data        
         if ( this.hasClimatology() )
         {
-            returnMe = returnMe && input.getClimatology().equals( this.getClimatology() );
+            returnMe = input.getClimatology().equals( this.getClimatology() );
         }
 
         if ( this.hasBaseline() )
@@ -278,7 +277,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Construct an instance.
-     * 
+     *
      * @param <T> the type of data
      * @param sampleData the data
      * @param sampleMeta the sample metadata
@@ -348,7 +347,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Sets the metadata associated with the input.
-         * 
+         *
          * @param mainMeta the metadata
          * @return the builder
          */
@@ -361,7 +360,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Sets the metadata associated with the baseline input.
-         * 
+         *
          * @param baselineMeta the metadata for the baseline
          * @return the builder
          */
@@ -375,7 +374,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Sets a climatological dataset for the input.
-         * 
+         *
          * @param climatology the climatology
          * @return the builder
          */
@@ -389,7 +388,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Adds sample data, appending to any existing sample data, as necessary.
-         * 
+         *
          * @param sample the sample data
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -405,7 +404,7 @@ public class Pool<T> implements Supplier<List<T>>
         /**
          * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, as
          * necessary.
-         * 
+         *
          * @param baselineSample the sample data for the baseline
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -420,7 +419,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Adds sample data, appending to any existing sample data, as necessary.
-         * 
+         *
          * @param sampleData the sample data
          * @return the builder
          */
@@ -435,13 +434,13 @@ public class Pool<T> implements Supplier<List<T>>
             return this;
         }
 
-        /** 
-        * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample, 
-        * as necessary.
-        * 
-        * @param baselineSampleData the sample data for the baseline
-        * @return the builder
-        */
+        /**
+         * Adds sample data for a baseline, which is used to calculate skill, appending to any existing baseline sample,
+         * as necessary.
+         *
+         * @param baselineSampleData the sample data for the baseline
+         * @return the builder
+         */
 
         public Builder<T> addDataForBaseline( List<T> baselineSampleData )
         {
@@ -455,7 +454,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Adds a pool of pairs to the builder.
-         * 
+         *
          * @param pool the pool to add
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -508,7 +507,7 @@ public class Pool<T> implements Supplier<List<T>>
 
         /**
          * Builds the metric input.
-         * 
+         *
          * @return the metric input
          */
 
@@ -521,16 +520,16 @@ public class Pool<T> implements Supplier<List<T>>
 
     /**
      * Construct with a builder.
-     * 
+     *
      * @param b the builder
      * @throws PoolException if the pairs are invalid
      */
 
     private Pool( Builder<T> b )
     {
-        //Ensure safe types
-        this.sampleData = Collections.unmodifiableList( new ArrayList<>( b.sampleData ) );
-        this.miniPools = Collections.unmodifiableList( new ArrayList<>( b.miniPools ) );
+        // Ensure safe types that do not allow nulls. Construction will throw an NPE if there is a null item
+        this.sampleData = List.copyOf( b.sampleData );
+        this.miniPools = List.copyOf( b.miniPools );
         this.mainMeta = b.mainMeta;
         this.climatology = b.climatology;
 
@@ -540,45 +539,19 @@ public class Pool<T> implements Supplier<List<T>>
         // Baseline data? If metadata supplied or some data supplied, yes.
         if ( Objects.nonNull( this.baselineMeta ) || !b.baselineSampleData.isEmpty() )
         {
-            this.baselineSampleData = Collections.unmodifiableList( new ArrayList<>( b.baselineSampleData ) );
+            this.baselineSampleData = List.copyOf( b.baselineSampleData );
         }
         else
         {
             this.baselineSampleData = null;
         }
 
-        //Validate
-        this.validateMainInput();
-        this.validateBaselineInput();
-    }
-
-    /**
-     * Validates the main pairs and associated metadata after the constructor has copied it.
-     * 
-     * @throws PoolException if the input is invalid
-     */
-
-    private void validateMainInput()
-    {
+        // Validate
         if ( Objects.isNull( this.mainMeta ) )
         {
             throw new PoolException( "Specify non-null metadata for the pool." );
         }
 
-        if ( this.sampleData.contains( (T) null ) )
-        {
-            throw new PoolException( "One or more of the pairs is null." );
-        }
-    }
-
-    /**
-     * Validates the baseline pairs and associated metadata after the constructor has copied it.
-     * 
-     * @throws PoolException if the baseline input is invalid
-     */
-
-    private void validateBaselineInput()
-    {
         if ( Objects.isNull( this.baselineSampleData ) != Objects.isNull( this.baselineMeta ) )
         {
             throw new PoolException( "Specify a non-null baseline input and associated metadata or leave both "
@@ -587,11 +560,6 @@ public class Pool<T> implements Supplier<List<T>>
                                      + ","
                                      + Objects.isNull( this.baselineMeta )
                                      + "]" );
-        }
-
-        if ( Objects.nonNull( this.baselineSampleData ) && this.baselineSampleData.contains( (T) null ) )
-        {
-            throw new PoolException( "One or more of the baseline pairs is null." );
         }
 
         if ( Objects.nonNull( this.baselineMeta ) && !this.baselineMeta.getPool().getIsBaselinePool() )

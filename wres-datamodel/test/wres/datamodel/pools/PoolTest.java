@@ -364,7 +364,7 @@ class PoolTest
 
         builder.addData( Arrays.asList( (String) null ) ).setMetadata( PoolMetadata.of() );
 
-        assertThrows( PoolException.class, () -> builder.build() );
+        assertThrows( NullPointerException.class, () -> builder.build() );
     }
 
     @Test
@@ -375,7 +375,7 @@ class PoolTest
                                                        .addDataForBaseline( Arrays.asList( (String) null ) )
                                                        .setMetadataForBaseline( PoolMetadata.of() );
 
-        assertThrows( PoolException.class, () -> builder.build() );
+        assertThrows( NullPointerException.class, () -> builder.build() );
     }
 
     @Test
