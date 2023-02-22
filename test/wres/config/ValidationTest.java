@@ -361,23 +361,16 @@ public class ValidationTest
     
 
     @Test
-    public void testUsgsNwisSourceWithoutVariableFailsValidation()
+    public void testUsgsNwisSourceWithoutVariableFailsValidation() throws URISyntaxException
     {
         List<DestinationConfig> destinations = new ArrayList<>();
 
         DataSourceConfig.Source nwisSource = null;
-        try
-        {
-            nwisSource = new DataSourceConfig.Source( new URI( "https://nwis.waterservices.usgs.gov/nwis/iv" ),
-                                                      InterfaceShortHand.USGS_NWIS,
-                                                      null,
-                                                      null,
-                                                      null );
-        }
-        catch ( URISyntaxException e )
-        {
-            fail( "Unexpected exception creating URI during unit test.", e );
-        }
+        nwisSource = new DataSourceConfig.Source( new URI( "https://nwis.waterservices.usgs.gov/nwis/iv" ),
+                                                  InterfaceShortHand.USGS_NWIS,
+                                                  null,
+                                                  null,
+                                                  null );
         ArrayList<DataSourceConfig.Source> sourceList = new ArrayList<>();
         sourceList.add( nwisSource );
         DataSourceConfig left = new DataSourceConfig( DatasourceType.OBSERVATIONS,
@@ -404,23 +397,17 @@ public class ValidationTest
     }
 
     @Test
-    public void testWrdsNwmSourceWithVariablePassesValidation()
+    public void testWrdsNwmSourceWithVariablePassesValidation() throws URISyntaxException
     {
         List<DestinationConfig> destinations = new ArrayList<>();
 
         DataSourceConfig.Source wrdsNwmSource = null;
-        try
-        {
-            wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/medium_range" ),
-                                                      InterfaceShortHand.WRDS_NWM,
-                                                      null,
-                                                      null,
-                                                      null );
-        }
-        catch ( URISyntaxException e )
-        {
-            fail( "Unexpected exception creating URI during unit test.", e );
-        }
+       
+        wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/medium_range" ),
+                                                     InterfaceShortHand.WRDS_NWM,
+                                                     null,
+                                                     null,
+                                                     null );
         ArrayList<DataSourceConfig.Source> sourceList = new ArrayList<>();
         sourceList.add( wrdsNwmSource );
         DataSourceConfig right = new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
