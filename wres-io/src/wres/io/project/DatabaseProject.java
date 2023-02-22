@@ -737,9 +737,10 @@ public class DatabaseProject implements Project
 
         if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
-            throw new NoDataException( "Failed to identify any features with data on both the left and right sides for "
-                                       + "the variables and other declaration supplied. Please check that the declaration is expected to "
-                                       + "produce some features with time-series data on both sides of the pairing." );
+            throw new NoDataException( "Failed to identify any features with data on all required sides (left, right "
+                                       + "and, when declared, baseline) for the variables and other declaration "
+                                       + "supplied. Please check that the declaration is expected to produce some "
+                                       + "features with time-series data on both sides of the pairing." );
         }
 
         // Validate any ensemble conditions

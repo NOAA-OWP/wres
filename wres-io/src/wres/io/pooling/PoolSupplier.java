@@ -25,11 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
+
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Climatology;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.pools.pairs.CrossPairs;
@@ -59,7 +59,7 @@ import wres.config.generated.ProjectConfig;
  * <p>Supplies a {@link Pool}, which is used to compute one or more verification statistics. The overall 
  * responsibility of the {@link PoolSupplier} is to supply a {@link Pool} on request. This is fulfilled by completing 
  * several smaller activities in sequence, namely:</p> 
- * 
+ *
  * <ol>
  * <li>Consuming the (possibly pool-shaped) left/right/baseline data for pairing, which is supplied by retrievers;</li>
  * <li>Rescaling the data, where needed, so that pairs can be formed at the desired time scale;</li>
@@ -67,11 +67,11 @@ import wres.config.generated.ProjectConfig;
  * <li>Trimming pairs to the pool boundaries; and</li>
  * <li>Supplying the pool-shaped pairs.</li>
  * </ol>
- * 
+ *
  * <p><b>Implementation notes:</b></p>
- * 
+ *
  * <p>This class is thread safe. A pool supplier cannot be re-used, it is "one and done".
- * 
+ *
  * @author James Brown
  * @param <L> the type of left value in each pair
  * @param <R> the type of right value in each pair and, where applicable, the type of baseline value
@@ -169,7 +169,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Returns a {@link Pool} for metric calculation.
-     * 
+     *
      * @return a pool of pairs
      * @throws DataAccessException if the pool data could not be retrieved
      * @throws RescalingException if the pool data could not be rescaled
@@ -194,7 +194,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Creates a {@link Pool}.
-     * 
+     *
      * @throws DataAccessException if the pool data could not be retrieved
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
@@ -256,7 +256,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Builder for a {@link PoolSupplier}.
-     * 
+     *
      * @author James Brown
      * @param <L> the left type of paired value
      * @param <R> the right type of paired value and, where required, the baseline type
@@ -560,7 +560,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         /**
          * Builds a {@link PoolSupplier}.
-         * 
+         *
          * @return a pool supplier
          */
 
@@ -606,8 +606,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                                      LeftOrRightOrBaseline.LEFT ) )
                                                       .toList();
 
-        List<EvaluationStatusMessage> validationEvents = new ArrayList<>();
-
         // Calculate the main pairs
         TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairsPerFeature( transformedLeft.stream(),
                                                                                    rightData,
@@ -617,7 +615,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                                                                                    this.getMetadata()
                                                                                        .getTimeWindow() );
 
-        validationEvents.addAll( mainPairsPlus.getEvaluationStatusMessages() );
+        List<EvaluationStatusMessage> validationEvents = new ArrayList<>( mainPairsPlus.getEvaluationStatusMessages() );
 
         // Main pairs indexed by feature tuple
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs = mainPairsPlus.getTimeSeries();
@@ -628,8 +626,6 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // Create the baseline pairs
         if ( this.hasBaseline() )
         {
-            Stream<TimeSeries<R>> baselineDataInner = baselineData;
-
             // Baseline that is generated?
             if ( this.hasBaselineGenerator() )
             {
@@ -640,7 +636,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             {
                 TimeSeriesPlusValidation<L, R> basePairsPlus =
                         this.createPairsPerFeature( transformedLeft.stream(),
-                                                    baselineDataInner,
+                                                    baselineData,
                                                     desiredTimeScaleToUse,
                                                     pairedFrequency,
                                                     LeftOrRightOrBaseline.BASELINE,
@@ -653,7 +649,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             // Cross-pair the main and baseline pairs?
             if ( Objects.nonNull( this.crossPairer ) )
             {
-                Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>> cp =
+                Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
+                        cp =
                         this.getCrossPairs( mainPairs, basePairs );
 
                 mainPairs = cp.getLeft();
@@ -697,13 +694,13 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         Objects.requireNonNull( mainPairs );
         Objects.requireNonNull( statusMessages );
 
-        // No data? Then build an empty mini-pool for each feature, as needed
+        // No pairs for any features? Then build an empty mini-pool for each feature, as needed
         mainPairs = this.getExistingPoolsOrEmpty( mainPairs, this.getMetadata() );
         basePairs = this.getExistingPoolsOrEmpty( basePairs, this.getBaselineMetadata() );
 
         Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
 
-        // Create and set the climatology#
+        // Create and set the climatology
         Climatology nextClimatology = null;
         if ( this.hasClimatology() )
         {
@@ -713,25 +710,27 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         }
 
         // Create the mini pools, one per feature
-        // TODO: this assumes that an empty main means empty baseline too. Probably need to relax
+        // TODO: this assumes that an empty main means empty baseline too. Probably need to relax because baseline
+        // statistics can be requested independently of right statistics
         for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairs.entrySet() )
         {
             FeatureTuple nextFeature = nextEntry.getKey();
 
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
 
-            // Pairs can be empty but not null
-            if ( Objects.isNull( nextMainPairs ) )
+            // If there are no pairs for this feature, warn
+            if ( this.areNoPairs( nextMainPairs ) )
             {
                 Set<Feature> availableFeatures = mainPairs.keySet()
                                                           .stream()
+                                                          .filter( next -> !next.equals( nextFeature ) )
                                                           .map( FeatureTuple::getRight )
                                                           .collect( Collectors.toSet() );
 
-                throw new PoolException( "Failed to identify any pairs for feature: " + nextFeature
-                                         + ". The available features were: "
-                                         + availableFeatures
-                                         + "." );
+                LOGGER.warn( "Failed to identify any pairs for feature: {}. Pairs were available for these features: "
+                             + "{}.",
+                             nextFeature.getRight(),
+                             availableFeatures );
             }
 
             Pool.Builder<TimeSeries<Pair<L, R>>> nextMiniPoolBuilder = new Pool.Builder<>();
@@ -748,26 +747,19 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
 
-                // Pairs can be empty but not null
-                if ( Objects.isNull( nextBasePairs ) )
+                // If there are no baseline pairs for this feature, warn
+                if ( this.areNoPairs( nextBasePairs ) )
                 {
                     Set<Feature> availableFeatures = basePairs.keySet()
                                                               .stream()
+                                                              .filter( next -> !next.equals( nextFeature ) )
                                                               .map( FeatureTuple::getBaseline )
                                                               .collect( Collectors.toSet() );
 
-                    Set<Feature> availableMainFeatures = mainPairs.keySet()
-                                                                  .stream()
-                                                                  .map( FeatureTuple::getRight )
-                                                                  .collect( Collectors.toSet() );
-
-                    throw new PoolException( "Failed to identify any baseline pairs for feature: "
-                                             + nextFeature.getBaselineName()
-                                             + ". The available features for the baseline pairs were: "
-                                             + availableFeatures
-                                             + ". The available features for the main pairs were: "
-                                             + availableMainFeatures
-                                             + "." );
+                    LOGGER.warn( "Failed to identify any baseline pairs for feature: {}. Baseline pairs were available "
+                                 + "for these features: {}.",
+                                 nextFeature.getBaseline(),
+                                 availableFeatures );
                 }
 
                 PoolMetadata nextInnerBaseMeta = this.getAdjustedMetadata( this.getBaselineMetadata(),
@@ -823,6 +815,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /**
+     * @param pairs the pairs to check
+     * @return true if there are no pairs, otherwise false
+     */
+    private boolean areNoPairs( List<TimeSeries<Pair<L, R>>> pairs )
+    {
+        if ( Objects.isNull( pairs ) )
+        {
+            return true;
+        }
+
+        return pairs.stream()
+                    .mapToInt( next -> next.getEvents()
+                                           .size() )
+                    .sum() == 0;
+    }
+
+    /**
      * Adjusts the input metadata to represent the supplied feature and time scale.
      * @param metadata the input metadata
      * @param feature the feature to use when adjusting the input metadata
@@ -863,8 +872,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      */
 
     private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>
-            getExistingPoolsOrEmpty( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pools,
-                                     PoolMetadata metadata )
+    getExistingPoolsOrEmpty( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pools,
+                             PoolMetadata metadata )
     {
         if ( Objects.nonNull( pools ) && pools.isEmpty() )
         {
@@ -882,7 +891,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Creates a paired dataset from the input, rescaling the data as needed.
-     * 
+     *
      * @param left the left data, required
      * @param rightOrBaseline the right or baseline data, required
      * @param desiredTimeScale the desired time scale
@@ -1031,7 +1040,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Adds the pairs for the next left and right/baseline feature.
-     * 
+     *
      * @param cache the cache to update
      * @param pairsToCache the next pairs to cache
      * @param pairGetter a function that extracts the required pairs from the pairsToCache
@@ -1143,7 +1152,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Returns a time-series of pairs from a left and right or baseline series, rescaling as needed.
-     * 
+     *
      * @param left the left time-series
      * @param rightOrBaseline the right or baseline time-series
      * @param desiredTimeScale the desired time scale
@@ -1350,7 +1359,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Creates generated baseline pairs.
-     * 
+     *
      * @param rightTransformers the transformers for right-ish data
      * @param featureTuples the tuples containing the baseline features whose data sources will be used for generation
      * @param leftSeries the left series
@@ -1359,10 +1368,10 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      */
 
     private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>
-            getGeneratedBaselinePairs( Transformers<R> rightTransformers,
-                                       Set<FeatureTuple> featureTuples,
-                                       TimeSeries<L> leftSeries,
-                                       TimeSeries<R> templateSeries )
+    getGeneratedBaselinePairs( Transformers<R> rightTransformers,
+                               Set<FeatureTuple> featureTuples,
+                               TimeSeries<L> leftSeries,
+                               TimeSeries<R> templateSeries )
     {
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
 
@@ -1410,7 +1419,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Discovers the feature tuples associated with the prescribed feature pair and orientation.
-     * 
+     *
      * @param leftFeature the left feature
      * @param rightOrBaselineFeature the right or baseline feature
      * @param rightOrBaselineOrientation the right or baseline orientation of the rightOrBaselineFeature
@@ -1453,8 +1462,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      */
 
     private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-            getCrossPairs( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
-                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
+    getCrossPairs( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
+                   Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
         LOGGER.debug( "Conducting cross-pairing of {} and {}.",
                       this.getMetadata(),
@@ -1500,7 +1509,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * Discovers the left features associated with the specified right or baseline feature.
      * @param rightOrBaselineFeature the left feature
-     * @param isRight is true if the right feature is required, false for the baseline
+     * @param lrb the orientation of the feature, right or baseline
      * @return the left features for the specified right or baseline feature
      */
 
@@ -1533,27 +1542,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private Duration getValidTimeOffset( LeftOrRightOrBaseline lrb )
     {
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.leftOffset;
-            case RIGHT:
-                return this.rightOffset;
-            case BASELINE:
-                return this.baselineOffset;
-            default:
-                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
-                                                    + ". "
-                                                    + "Expected one of "
-                                                    + Set.of( LeftOrRightOrBaseline.LEFT,
-                                                              LeftOrRightOrBaseline.RIGHT,
-                                                              LeftOrRightOrBaseline.BASELINE ) );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.leftOffset;
+                    case RIGHT -> this.rightOffset;
+                    case BASELINE -> this.baselineOffset;
+                    default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                                   + ". "
+                                                                   + "Expected one of "
+                                                                   + Set.of( LeftOrRightOrBaseline.LEFT,
+                                                                             LeftOrRightOrBaseline.RIGHT,
+                                                                             LeftOrRightOrBaseline.BASELINE ) );
+                };
     }
 
     /**
      * Returns the period from the prescribed time scale or <code>null</code> if the time scale is <code>null</code>.
-     * 
+     *
      * @return the period associated with the time scale or null
      */
 
@@ -1619,7 +1624,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * Returns the upscaler for left values. Throws an exception if not available, because this is an internal call and 
      * is only requested when necessary.
-     * 
+     *
      * @return the upscaler for left values
      * @throws NullPointerException if the upscaler is not available
      */
@@ -1634,7 +1639,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /**
      * Returns the upscaler for right or baseline values. Throws an exception if not available, because this is 
      * an internal call and is only requested when necessary.
-     * 
+     *
      * @param lrb the orientation required
      * @return the upscaler for right or baseline values
      * @throws NullPointerException if the upscaler is not available
@@ -1719,21 +1724,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case RIGHT:
-                return this.getRightTransformer();
-            case BASELINE:
-                return this.getBaselineTransformer();
-            default:
-                throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
-                                                    + ". "
-                                                    + "Expected "
-                                                    + LeftOrRightOrBaseline.RIGHT
-                                                    + " or "
-                                                    + LeftOrRightOrBaseline.BASELINE
-                                                    + "." );
-        }
+        return switch ( lrb )
+                {
+                    case RIGHT -> this.getRightTransformer();
+                    case BASELINE -> this.getBaselineTransformer();
+                    default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                                   + ". "
+                                                                   + "Expected "
+                                                                   + LeftOrRightOrBaseline.RIGHT
+                                                                   + " or "
+                                                                   + LeftOrRightOrBaseline.BASELINE
+                                                                   + "." );
+                };
     }
 
     /**
@@ -1747,26 +1749,23 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case RIGHT:
-                return this.getRightFilter();
-            case BASELINE:
-                return this.getBaselineFilter();
-            default:
-                throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
-                                                    + ". "
-                                                    + "Expected "
-                                                    + LeftOrRightOrBaseline.RIGHT
-                                                    + " or "
-                                                    + LeftOrRightOrBaseline.BASELINE
-                                                    + "." );
-        }
+        return switch ( lrb )
+                {
+                    case RIGHT -> this.getRightFilter();
+                    case BASELINE -> this.getBaselineFilter();
+                    default -> throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
+                                                                   + ". "
+                                                                   + "Expected "
+                                                                   + LeftOrRightOrBaseline.RIGHT
+                                                                   + " or "
+                                                                   + LeftOrRightOrBaseline.BASELINE
+                                                                   + "." );
+                };
     }
 
     /**
      * Returns the pairer.
-     * 
+     *
      * @return the pairer
      */
 
@@ -1798,7 +1797,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * {@link TimeScaleOuter#getPeriod()} associated with the {@link #desiredTimeScale}, where defined, otherwise the 
      * value supplied on construction, which normally corresponds to the <code>frequency</code> associated with the 
      * {@link DesiredTimeScaleConfig}. Otherwise <code>null</code>.
-     * 
+     *
      * @return the frequency or null if undefined
      */
 
@@ -1838,7 +1837,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Adds a prescribed offset to the valid time of the prescribed time-series.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param toTransform the time-series to transform
      * @param offset the offset to add
@@ -1915,7 +1914,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Hidden constructor.  
-     * 
+     *
      * @param builder the builder
      * @throws NullPointerException if a required input is null
      * @throws IllegalArgumentException if some input is inconsistent
@@ -2026,8 +2025,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * Inspects the input declaration for any valid time offsets and returns them when discovered.
-     * 
-     * @param inputsConfig
+     *
+     * @param inputsConfig the inputs declaration
      * @return the valid time offsets, if any
      */
 
@@ -2071,22 +2070,18 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     /**
      * A value class for storing time series plus their associated validation events.
-     * 
+     *
      * @author James Brown
      * @param <L> the left-ish data type
      * @param <R> the right-ish data type
+     * @param series  The paired time-series.
+     * @param generatedBaselineSeries  The generated baseline time-series, where applicable.
+     * @param statusEvents  The status events.
      */
-    private static class TimeSeriesPlusValidation<L, R>
+    private record TimeSeriesPlusValidation<L, R>( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> series,
+                                                   Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaselineSeries,
+                                                   List<EvaluationStatusMessage> statusEvents )
     {
-        /** The paired time-series. */
-        private final Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> series;
-
-        /** The generated baseline time-series, where applicable. */
-        private final Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaselineSeries;
-
-        /** The status events. */
-        private final List<EvaluationStatusMessage> statusEvents;
-
         /**
          * @return the time series
          */
@@ -2114,7 +2109,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         /**
          * @param series the time series
          * @param generatedBaselineSeries the optional series for generated baselines
-         * @param validation the validation events
+         * @param statusEvents the validation events
          */
         private TimeSeriesPlusValidation( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> series,
                                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaselineSeries,
@@ -2127,8 +2122,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     }
 
     /** Record class to bundle two right-ish transformers. */
-    private record Transformers<R> ( UnaryOperator<TimeSeries<R>> rightTransformer,
-                                     UnaryOperator<TimeSeries<R>> baselineGenerator )
+    private record Transformers<R>( UnaryOperator<TimeSeries<R>> rightTransformer,
+                                    UnaryOperator<TimeSeries<R>> baselineGenerator )
     {
     }
 }
