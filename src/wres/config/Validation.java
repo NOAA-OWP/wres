@@ -3495,7 +3495,11 @@ public class Validation
 
             result = false;
         }
-
+        
+        result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, left ) && result;
+        
+        result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, right ) && result;
+        
         result = Validation.areDataSourcesValid( projectConfigPlus, left ) && result;
 
         result = Validation.areDataSourcesValid( projectConfigPlus, right ) && result;
@@ -3510,6 +3514,8 @@ public class Validation
 
         if ( baseline != null )
         {
+            result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, baseline ) && result;
+            
             result = Validation.areDataSourcesValid( projectConfigPlus, baseline ) && result;
 
             result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
@@ -3520,6 +3526,40 @@ public class Validation
                      && result;
         }
 
+        return result;
+    }
+
+    /**
+     * Ticket 112950. Checks that given DataSourceConfig has a variable if that is required.
+     * It is only required for the USGS NWIS and WRDS NWM sources, currently.
+     * @param projectConfigPlus the evaluation project declaration plus
+     * @param sideConfig the inputs side declaration to validate
+     * @return true when valid, false otherwise.
+     */
+    protected static boolean isVariableSpecifiedIfRequired( ProjectConfigPlus projectConfigPlus,
+                                                          DataSourceConfig sideConfig )
+    {
+        boolean result = true;
+
+        if ( sideConfig
+                       .getSource()
+                       .stream()
+                       .map( Source::getInterface )
+                       .anyMatch( next -> next == InterfaceShortHand.USGS_NWIS
+                                          || next == InterfaceShortHand.WRDS_NWM )
+             && sideConfig.getVariable() == null )
+        {
+            LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
+                          " A source uses either the {} or {} interface, both of which require a "
+                          + "variable in the side declaration, but the variable is not specified. "
+                          + "Add a variable to the side and try again.",
+                          projectConfigPlus,
+                          sideConfig.sourceLocation().getLineNumber(),
+                          sideConfig.sourceLocation().getColumnNumber(),
+                          InterfaceShortHand.USGS_NWIS,
+                          InterfaceShortHand.WRDS_NWM );
+            result = false;
+        }
         return result;
     }
 

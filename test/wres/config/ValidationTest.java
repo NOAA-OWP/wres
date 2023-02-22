@@ -1,22 +1,28 @@
 package wres.config;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.xml.sax.Locator;
+import org.xml.sax.helpers.LocatorImpl;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DataSourceConfig.Variable;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
+import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.NamedFeature;
 import wres.config.generated.LenienceType;
 import wres.config.generated.PairConfig;
@@ -353,4 +359,92 @@ public class ValidationTest
         assertFalse( Validation.isProjectValid( mockSystemSettings, mockProjectConfigPlus ) );
     }
     
+
+    @Test
+    public void testUsgsNwisSourceWithoutVariableFailsValidation()
+    {
+        List<DestinationConfig> destinations = new ArrayList<>();
+
+        DataSourceConfig.Source nwisSource = null;
+        try
+        {
+            nwisSource = new DataSourceConfig.Source( new URI( "https://nwis.waterservices.usgs.gov/nwis/iv" ),
+                                                      InterfaceShortHand.USGS_NWIS,
+                                                      null,
+                                                      null,
+                                                      null );
+        }
+        catch ( URISyntaxException e )
+        {
+            fail( "Unexpected exception creating URI during unit test.", e );
+        }
+        ArrayList<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        sourceList.add( nwisSource );
+        DataSourceConfig left = new DataSourceConfig( DatasourceType.OBSERVATIONS,
+                                                      sourceList,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      "testUsgsNwisSourceWithoutVariableFailsValidation",
+                                                      null );
+        left.setSourceLocation( fakeSourceLocator );
+
+        Inputs inputs = new Inputs(left, null, null);
+        ProjectConfig mockProjectConfig = new ProjectConfig( inputs, null, null, null, null, null );
+        ProjectConfigPlus mockProjectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockProjectConfigPlus.getProjectConfig() )
+               .thenReturn( mockProjectConfig );
+
+        boolean isValid = Validation.isVariableSpecifiedIfRequired( mockProjectConfigPlus, left );
+        assertFalse( isValid );
+    }
+
+    @Test
+    public void testWrdsNwmSourceWithVariablePassesValidation()
+    {
+        List<DestinationConfig> destinations = new ArrayList<>();
+
+        DataSourceConfig.Source wrdsNwmSource = null;
+        try
+        {
+            wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/medium_range" ),
+                                                      InterfaceShortHand.WRDS_NWM,
+                                                      null,
+                                                      null,
+                                                      null );
+        }
+        catch ( URISyntaxException e )
+        {
+            fail( "Unexpected exception creating URI during unit test.", e );
+        }
+        ArrayList<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        sourceList.add( wrdsNwmSource );
+        DataSourceConfig right = new DataSourceConfig( DatasourceType.ENSEMBLE_FORECASTS,
+                                                      sourceList,
+                                                      new Variable( "streamflow", "label" ),
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      "testWrdsNwmSourceWithVariablePassesValidation",
+                                                      null );
+        right.setSourceLocation( fakeSourceLocator );
+
+        Inputs inputs = new Inputs(null, right, null);
+        ProjectConfig mockProjectConfig = new ProjectConfig( inputs, null, null, null, null, null );
+        ProjectConfigPlus mockProjectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
+        Mockito.when( mockProjectConfigPlus.getProjectConfig() )
+               .thenReturn( mockProjectConfig );
+
+        boolean isValid = Validation.isVariableSpecifiedIfRequired( mockProjectConfigPlus, right );
+        assertTrue( isValid );
+    }
+
 }
+
