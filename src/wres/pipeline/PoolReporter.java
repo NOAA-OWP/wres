@@ -1,9 +1,7 @@
 package wres.pipeline;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,7 +9,6 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,7 +29,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 /**
  * Reports on the completion status of the pools associated with an evaluation. A pool is the atomic unit of work in an 
  * evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -49,9 +46,6 @@ class PoolReporter implements Consumer<PoolProcessingResult>
     /** List of successful pools.*/
     private final ConcurrentLinkedQueue<PoolRequest> successfulPools;
 
-    /** Set of paths modified by this feature. */
-    private final Set<Path> pathsWrittenTo;
-
     /** The total number of pools to process. */
     private final int totalPools;
 
@@ -59,7 +53,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
     private final ProjectConfigPlus projectConfigPlus;
 
     /** The number of pools processed so far. */
-    private AtomicInteger processed;
+    private final AtomicInteger processed;
 
     /** The time when the first pool was completed. */
     private Instant startTime;
@@ -72,7 +66,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
 
     /**
      * Build a {@link PoolReporter}.
-     * 
+     *
      * @param projectConfigPlus the project configuration
      * @param totalPools the total number of pools to process
      * @param printDetailedReport is true to print a detailed report on completion, false to summarize
@@ -89,12 +83,11 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         this.printDetailedReport = printDetailedReport;
         this.successfulPools = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 0 );
-        this.pathsWrittenTo = new ConcurrentSkipListSet<>();
     }
 
     /**
      * Document a new {@link PoolProcessingResult}.
-     * 
+     *
      * @param result the result
      */
 
@@ -118,18 +111,15 @@ class PoolReporter implements Consumer<PoolProcessingResult>
 
         switch ( result.getStatus() )
         {
-            case STATISTICS_AVAILABLE_NOT_PUBLISHED:
-                reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
-                break;
-            case STATISTICS_NOT_AVAILABLE:
-                reportStatisticsNotAvailable( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
-                break;
-            case STATISTICS_PUBLISHED:
+            case STATISTICS_AVAILABLE_NOT_PUBLISHED ->
+                    reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
+            case STATISTICS_NOT_AVAILABLE ->
+                    reportStatisticsNotAvailable( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
+            case STATISTICS_PUBLISHED ->
+            {
                 this.successfulPools.add( result.getPoolRequest() );
                 reportStatisticsPublished( featureGroup, timeWindow );
-                break;
-            default:
-                break;
+            }
         }
 
         // Register end time
@@ -141,7 +131,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
 
     /**
      * Reports by logging information about the status of features.
-     *  
+     *
      * @throws WresProcessingException if no features were completed successfully
      */
 
@@ -219,11 +209,6 @@ class PoolReporter implements Consumer<PoolProcessingResult>
         }
     }
 
-    Set<Path> getPathsWrittenTo()
-    {
-        return Collections.unmodifiableSet( this.pathsWrittenTo );
-    }
-
     /**
      * Get a comma separated description of a set of items with extra spacing
      *
@@ -260,7 +245,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
                     statusEvents.stream()
                                 .filter( next -> next.getStatusLevel() == StatusLevel.WARN
                                                  || next.getStatusLevel() == StatusLevel.DEBUG )
-                                .collect( Collectors.toList() );
+                                .toList();
 
             // Any status events that might help a user?
             if ( !warnings.isEmpty() )
@@ -307,10 +292,11 @@ class PoolReporter implements Consumer<PoolProcessingResult>
 
                 // One example warning per evaluation stage
                 Map<EvaluationStage, EvaluationStatusMessage> oneWarningPerStage = warnings.stream()
-                                                                                           .collect( Collectors.toMap( EvaluationStatusMessage::getEvaluationStage,
-                                                                                                                       Function.identity(),
-                                                                                                                       ( s,
-                                                                                                                         a ) -> s ) );
+                                                                                           .collect( Collectors.toMap(
+                                                                                                   EvaluationStatusMessage::getEvaluationStage,
+                                                                                                   Function.identity(),
+                                                                                                   ( s,
+                                                                                                     a ) -> s ) );
                 message.append( oneWarningPerStage )
                        .append( "." );
 

@@ -84,8 +84,6 @@ public class ScenarioHelper
             DATABASE = null;
         }
     }
-    
-    private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
     private ScenarioHelper()
     {
@@ -138,7 +136,6 @@ public class ScenarioHelper
         {
             Evaluator wresEvaluation = new Evaluator( SYSTEM_SETTINGS,
                                                       DATABASE,
-                                                      EXECUTOR,
                                                       brokerConnectionFactory );
 
             ExecutionResult result = wresEvaluation.evaluate( args );

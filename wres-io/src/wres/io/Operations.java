@@ -43,7 +43,7 @@ import wres.system.SystemSettings;
 
 /**
  * Helpers to conduct ingest and prepare for operations on time-series data.
- * 
+ *
  * TODO: consider moving the purely database-related helpers, such as {@link DatabaseOperations#cleanDatabase(Database)} from here to 
  * {@link Database}.
  */
@@ -224,41 +224,32 @@ public final class Operations
     /**
      * Gracefully shuts down all IO operations
      * @param database The database to use.
-     * @param executor The executor to use.
      */
-    public static void shutdown( Database database,
-                                 Executor executor )
+    public static void shutdown( Database database )
     {
         LOGGER.info( "Shutting down the IO layer..." );
-        executor.complete();
         database.shutdown();
     }
 
     /**
      * Forces the IO to shutdown all IO operations without finishing stored tasks
      * @param database The database to use.
-     * @param executor The executor to use.
      * @param timeOut The amount of time to wait while shutting down tasks
      * @param timeUnit The unit with which to measure the shutdown
      */
     public static void forceShutdown( Database database,
-                                      Executor executor,
                                       long timeOut,
                                       TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
 
-        List<Runnable> executorTasks =
-                executor.forceShutdown( timeOut / 2, timeUnit );
         List<Runnable> databaseTasks =
                 database.forceShutdown( timeOut / 2, timeUnit );
 
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "IO module was forcefully shut down. "
-                         + "Abandoned around {} executor tasks and "
-                         + "around {} database tasks.",
-                         executorTasks.size(),
+                         + "Abandoned around {} database tasks.",
                          databaseTasks.size() );
         }
     }

@@ -29,7 +29,7 @@ import wres.statistics.generated.Statistics;
 
 /**
  * Processes a pool of pairs, creating and publishing statistics.
- * 
+ *
  * @param <L> the type of left-ish data in the pool of pairs
  * @param <R> the type of right-ish data in the pool of pairs
  * @author James Brown
@@ -75,7 +75,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /**
      * Builder.
-     * 
+     *
      * @author James Brown
      * @param <L> the left data type
      * @param <R> the right data type
@@ -193,7 +193,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         /**
-         * @param metricProcessor the metricProcessor to set
+         * @param metricProcessors the metricProcessor to set
          * @return this builder
          */
         Builder<L, R> setMetricProcessors( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> metricProcessors )
@@ -298,12 +298,11 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /**
      * Publishes the statistics to an evaluation.
-     * 
+     *
      * @param evaluation the evaluation
      * @param statistics the statistics
      * @param groupId the statistics group identifier
      * @return the status
-     * @throws EvaluationEventException if the statistics could not be published
      */
 
     private Status publish( Evaluation evaluation,
@@ -366,7 +365,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /**
      * Returns a task that writes pairs.
-     * 
+     *
      * @param useBaseline is true to write the baseline pairs
      * @param sharedWriters the consumers of paired data for writing
      * @return a task that writes pairs
@@ -403,7 +402,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /**
      * Returns a function that consumes a {@link Pool} and produces a list of {@link StatisticsStore}. The list 
      * contains one blob of statistics for each metrics declaration.
-     * 
+     *
      * @param processors the metric processors
      * @param projectConfig the project declaration
      * @param traceCountEstimator a function that estimates trace count, in order to help with monitoring
@@ -411,9 +410,9 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      */
 
     private Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>>
-            getStatisticsProcessingTask( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
-                                         ProjectConfig projectConfig,
-                                         ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
+    getStatisticsProcessingTask( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
+                                 ProjectConfig projectConfig,
+                                 ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
     {
         return pool -> {
             Objects.requireNonNull( pool );
@@ -489,7 +488,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /**
      * Build a pool processor. 
-     * 
+     *
      * @param builder the builder
      * @throws NullPointerException if any required input is null
      */

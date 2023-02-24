@@ -44,7 +44,7 @@ import wres.statistics.generated.Pairs;
 
 /**
  * Tests the {@link Evaluation}.
- * 
+ *
  * @author James Brown
  */
 
@@ -175,7 +175,7 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     if ( path.toString().contains( "evaluationOne" ) )
@@ -193,7 +193,7 @@ class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -218,7 +218,7 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     if ( path.toString().contains( "evaluationOne" ) )
@@ -236,7 +236,7 @@ class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -259,9 +259,9 @@ class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         // Subscribers are pub-sub, so technically not referenced inband, aka "ignored", but are used out-of-band
         try ( EvaluationSubscriber ignoredOne =
-                EvaluationSubscriber.of( consumer,
-                                         Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections );
+                      EvaluationSubscriber.of( consumer,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections );
               EvaluationSubscriber ignoredTwo =
                       EvaluationSubscriber.of( consumerTwo,
                                                Executors.newSingleThreadExecutor(),
@@ -312,14 +312,14 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -341,8 +341,8 @@ class EvaluationTest
 
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
-                                                                         Executors.newSingleThreadExecutor(),
-                                                                         EvaluationTest.connections );
+                                                                      Executors.newSingleThreadExecutor(),
+                                                                      EvaluationTest.connections );
               Evaluation evaluation =
                       Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                          .setOutputs( Outputs.newBuilder()
@@ -374,7 +374,7 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     actualStatistics.add( statistics );
@@ -384,7 +384,7 @@ class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statisticsMessages -> {
                     actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
@@ -411,9 +411,9 @@ class EvaluationTest
         // Create and start a broker and open an evaluation, closing on completion
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored =
-                EvaluationSubscriber.of( consumer,
-                                         Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections );
+                      EvaluationSubscriber.of( consumer,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections );
               Evaluation evaluation = Evaluation.of( this.oneEvaluation,
                                                      EvaluationTest.connections,
                                                      A_CLIENT ) )
@@ -483,14 +483,14 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -512,8 +512,8 @@ class EvaluationTest
 
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
-                                                                         Executors.newSingleThreadExecutor(),
-                                                                         EvaluationTest.connections ) )
+                                                                      Executors.newSingleThreadExecutor(),
+                                                                      EvaluationTest.connections ) )
         {
             evaluation =
                     Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
@@ -540,7 +540,7 @@ class EvaluationTest
             }
         }
 
-        assertEquals( (Integer) 0, exitCode );
+        assertEquals( ( Integer ) 0, exitCode );
     }
 
     @Test
@@ -552,16 +552,16 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
-                    throw new ConsumerException( "Consumption failed!" );
+                    throw new ConsumerException( "This is an expected consumption failure that tests error recovery!" );
                 };
             }
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -585,9 +585,9 @@ class EvaluationTest
         Evaluation evaluation = null;
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored =
-                EvaluationSubscriber.of( consumer,
-                                         Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections ) )
+                      EvaluationSubscriber.of( consumer,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections ) )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
                                         EvaluationTest.connections,
@@ -623,12 +623,13 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
                     if ( failureCount.getAndIncrement() < 1 )
                     {
-                        throw new ConsumerException( "Consumption failed!" );
+                        throw new ConsumerException( "This is an expected consumption failure that tests error "
+                                                     + "recovery!" );
                     }
 
                     return Collections.emptySet();
@@ -637,7 +638,7 @@ class EvaluationTest
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -660,9 +661,9 @@ class EvaluationTest
         // Open an evaluation, closing on completion
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored =
-                EvaluationSubscriber.of( consumer,
-                                         Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections );
+                      EvaluationSubscriber.of( consumer,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections );
               Evaluation evaluation = Evaluation.of( this.oneEvaluation,
                                                      EvaluationTest.connections,
                                                      A_CLIENT ) )
@@ -691,14 +692,14 @@ class EvaluationTest
         {
             @Override
             public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
 
             @Override
             public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> Set.of();
             }
@@ -720,9 +721,9 @@ class EvaluationTest
 
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored =
-                EvaluationSubscriber.of( consumer,
-                                         Executors.newSingleThreadExecutor(),
-                                         EvaluationTest.connections ) )
+                      EvaluationSubscriber.of( consumer,
+                                               Executors.newSingleThreadExecutor(),
+                                               EvaluationTest.connections ) )
         {
             evaluation = Evaluation.of( this.oneEvaluation,
                                         EvaluationTest.connections,
@@ -758,7 +759,7 @@ class EvaluationTest
     /**
      * Helper that returns an aggregator for statistics messages, which collects and sorts according to the first 
      * score.
-     * 
+     *
      * @return a statistics aggregator
      */
 
