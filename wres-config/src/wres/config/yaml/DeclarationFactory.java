@@ -102,7 +102,18 @@ public class DeclarationFactory
             @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
             @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
             @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-            @JsonDeserialize( using = MetricsDeserializer.class ) @JsonProperty( "metrics" ) List<Metric> metrics ) {}
+            @JsonDeserialize( using = MetricsDeserializer.class ) @JsonProperty( "metrics" ) List<Metric> metrics )
+    {
+        // Set default metrics
+        EvaluationDeclaration
+        {
+            if ( Objects.isNull( metrics ) )
+            {
+                // Undefined is the sentinel for "all valid"
+                metrics = List.of( new Metric( MetricName.UNDEFINED, null ) );
+            }
+        }
+    }
 
     /** Left or right dataset. */
     @RecordBuilder

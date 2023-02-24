@@ -69,7 +69,7 @@ class EvaluationSubscriberTest
                     getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statistics -> {
-                    throw new ConsumerException( "Evaluation failed!" );
+                    throw new ConsumerException( "This is an expected subscriber failure that tests error recovery!" );
                 };
             }
 

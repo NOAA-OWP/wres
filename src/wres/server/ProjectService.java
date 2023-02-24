@@ -49,7 +49,6 @@ public class ProjectService
 
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
     private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
-    private static final Executor EXECUTOR = new Executor( SYSTEM_SETTINGS );
 
     // Migrate the database, as needed
     static
@@ -107,7 +106,6 @@ public class ProjectService
         {
             Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
                                                  ProjectService.DATABASE,
-                                                 ProjectService.EXECUTOR,
                                                  brokerConnections );
 
             ProjectConfigPlus projectPlus =

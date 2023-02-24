@@ -24,13 +24,13 @@ import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
+
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.Operations;
-import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
@@ -48,38 +48,34 @@ import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
- * @author ctubbs
- *
+ * @author Chris Tubbs
+ * @author James Brown
  */
 final class Functions
 {
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Functions.class );
 
-    private Functions()
-    {
-    }
-
     // Mapping of String names to corresponding methods
-    private static final Map<WresFunction, Function<SharedResources, ExecutionResult>> FUNCTIONS = createMap();
+    private static final Map<WresFunction, Function<SharedResources, ExecutionResult>>
+            FUNCTIONS_MAP = Functions.createMap();
 
-    static void shutdown( Database database, Executor executor )
+    static void shutdown( Database database )
     {
         ProgressMonitor.deactivate();
         LOGGER.info( "Shutting down the application..." );
-        wres.io.Operations.shutdown( database, executor );
+        Operations.shutdown( database );
     }
 
     static void forceShutdown( Database database,
-                               Executor executor,
                                long timeOut,
                                TimeUnit timeUnit )
     {
         ProgressMonitor.deactivate();
         LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
-        wres.io.Operations.forceShutdown( database,
-                                          executor,
-                                          timeOut,
-                                          timeUnit );
+        Operations.forceShutdown( database,
+                                  timeOut,
+                                  timeUnit );
     }
 
     /**
@@ -90,10 +86,10 @@ final class Functions
      */
     static boolean hasOperation( final String operation )
     {
-        return FUNCTIONS.keySet()
-                        .stream()
-                        .anyMatch( next -> operation.equalsIgnoreCase( next.shortName )
-                                           || operation.equalsIgnoreCase( next.longName ) );
+        return FUNCTIONS_MAP.keySet()
+                            .stream()
+                            .anyMatch( next -> operation.equalsIgnoreCase( next.shortName )
+                                               || operation.equalsIgnoreCase( next.longName ) );
     }
 
     /**
@@ -108,12 +104,12 @@ final class Functions
 
         final String finalOperation = operation;
         Optional<Function<SharedResources, ExecutionResult>> function =
-                FUNCTIONS.entrySet()
-                         .stream()
-                         .filter( next -> finalOperation.equals( next.getKey().shortName )
-                                          || finalOperation.equals( next.getKey().longName ) )
-                         .findFirst()
-                         .map( Entry::getValue );
+                FUNCTIONS_MAP.entrySet()
+                             .stream()
+                             .filter( next -> finalOperation.equals( next.getKey().shortName )
+                                              || finalOperation.equals( next.getKey().longName ) )
+                             .findFirst()
+                             .map( Entry::getValue );
 
         if ( function.isPresent() )
         {
@@ -145,29 +141,29 @@ final class Functions
         functions.put( new WresFunction( "-e",
                                          "execute",
                                          "Executes an evaluation with the declaration supplied as a path or string "
-                                                    + "(e.g., execute /foo/bar/project.xml)." ),
+                                         + "(e.g., execute /foo/bar/project.xml)." ),
                        Functions::execute );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database." ),
                        Functions::refreshDatabase );
         functions.put( new WresFunction( "-i",
                                          "ingest",
                                          "Ingests data supplied in a declaration path or string (e.g., ingest "
-                                                   + "/foo/bar/project.xml)." ),
+                                         + "/foo/bar/project.xml)." ),
                        Functions::ingest );
         functions.put( new WresFunction( "-cn",
                                          "createnetcdftemplate",
                                          "Creates a NetCDF template with the supplied NetCDF source (e.g., "
-                                                                 + "createnetcdftemplate /foo/bar/source.nc)." ),
+                                         + "createnetcdftemplate /foo/bar/source.nc)." ),
                        Functions::createNetCDFTemplate );
         functions.put( new WresFunction( "-v",
                                          "validate",
                                          "Validates the declaration supplied as a path or string (e.g., validate "
-                                                     + "/foo/bar/project.xml)." ),
+                                         + "/foo/bar/project.xml)." ),
                        Functions::validate );
         functions.put( new WresFunction( "-vg",
                                          "validategrid",
                                          "Validates a netcdf grid supplied as a path and a corresponding variable "
-                                                         + "name (e.g., validategrid /foo/bar/grid.nc baz)." ),
+                                         + "name (e.g., validategrid /foo/bar/grid.nc baz)." ),
                        Functions::validateNetcdfGrid );
 
         return functions;
@@ -175,12 +171,11 @@ final class Functions
 
     private static ExecutionResult execute( SharedResources sharedResources )
     {
-        Evaluator evaluator = new Evaluator( sharedResources.getSystemSettings(),
-                                             sharedResources.getDatabase(),
-                                             sharedResources.getExecutor(),
-                                             sharedResources.getBrokerConnectionFactory() );
+        Evaluator evaluator = new Evaluator( sharedResources.systemSettings(),
+                                             sharedResources.database(),
+                                             sharedResources.brokerConnectionFactory() );
 
-        return evaluator.evaluate( sharedResources.getArguments() );
+        return evaluator.evaluate( sharedResources.arguments() );
     }
 
     /**
@@ -191,7 +186,7 @@ final class Functions
     private static ExecutionResult printCommands( final SharedResources sharedResources )
     {
         LOGGER.info( "\tAvailable functions:" );
-        for ( final WresFunction command : FUNCTIONS.keySet() )
+        for ( final WresFunction command : FUNCTIONS_MAP.keySet() )
         {
             LOGGER.info( "\t{}", command );
         }
@@ -209,8 +204,8 @@ final class Functions
     {
         try
         {
-            DatabaseOperations.testDatabaseConnection( sharedResources.getDatabase() );
-            
+            DatabaseOperations.testDatabaseConnection( sharedResources.database() );
+
             return ExecutionResult.success();
         }
         catch ( SQLException | IOException se )
@@ -230,7 +225,7 @@ final class Functions
      */
     private static ExecutionResult cleanDatabase( SharedResources sharedResources )
     {
-        if ( sharedResources.getSystemSettings()
+        if ( sharedResources.systemSettings()
                             .isInMemory() )
         {
             throw new IllegalArgumentException( "This is an in-memory execution. Cannot clean a database because there "
@@ -238,14 +233,14 @@ final class Functions
         }
 
         DatabaseLockManager lockManager =
-                DatabaseLockManager.from( sharedResources.getSystemSettings(),
-                                          () -> sharedResources.getDatabase()
+                DatabaseLockManager.from( sharedResources.systemSettings(),
+                                          () -> sharedResources.database()
                                                                .getRawConnection() );
 
         try
         {
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            DatabaseOperations.cleanDatabase( sharedResources.getDatabase() );
+            DatabaseOperations.cleanDatabase( sharedResources.database() );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
         catch ( SQLException se )
@@ -265,7 +260,7 @@ final class Functions
 
     private static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
-        String[] args = sharedResources.getArguments();
+        String[] args = sharedResources.arguments();
 
         String path = args[0];
         String variableName = args[1];
@@ -308,14 +303,14 @@ final class Functions
     private static ExecutionResult refreshDatabase( final SharedResources sharedResources )
     {
         DatabaseLockManager lockManager =
-                DatabaseLockManager.from( sharedResources.getSystemSettings(),
-                                          () -> sharedResources.getDatabase()
+                DatabaseLockManager.from( sharedResources.systemSettings(),
+                                          () -> sharedResources.database()
                                                                .getRawConnection() );
 
         try
         {
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            DatabaseOperations.refreshDatabase( sharedResources.getDatabase() );
+            DatabaseOperations.refreshDatabase( sharedResources.database() );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             return ExecutionResult.success();
         }
@@ -332,7 +327,7 @@ final class Functions
 
     private static ExecutionResult ingest( SharedResources sharedResources )
     {
-        String[] args = sharedResources.getArguments();
+        String[] args = sharedResources.arguments();
 
         if ( args.length > 0 )
         {
@@ -352,8 +347,8 @@ final class Functions
             }
 
             DatabaseLockManager lockManager =
-                    DatabaseLockManager.from( sharedResources.getSystemSettings(),
-                                              () -> sharedResources.getDatabase()
+                    DatabaseLockManager.from( sharedResources.systemSettings(),
+                                              () -> sharedResources.database()
                                                                    .getRawConnection() );
 
             try
@@ -361,10 +356,10 @@ final class Functions
                 lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
                 // Build the database caches/ORMs
-                DatabaseCaches caches = DatabaseCaches.of( sharedResources.getDatabase(), projectConfig );
+                DatabaseCaches caches = DatabaseCaches.of( sharedResources.database(), projectConfig );
                 TimeSeriesIngester timeSeriesIngester =
-                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.getSystemSettings() )
-                                                                .setDatabase( sharedResources.getDatabase() )
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.systemSettings() )
+                                                                .setDatabase( sharedResources.database() )
                                                                 .setCaches( caches )
                                                                 .setProjectConfig( projectConfig )
                                                                 .setLockManager( lockManager )
@@ -382,7 +377,7 @@ final class Functions
                 }
 
                 Operations.ingest( timeSeriesIngester,
-                                   sharedResources.getSystemSettings(),
+                                   sharedResources.systemSettings(),
                                    projectConfig,
                                    griddedFeatures );
 
@@ -412,7 +407,7 @@ final class Functions
 
     private static ExecutionResult validate( SharedResources sharedResources )
     {
-        String[] args = sharedResources.getArguments();
+        String[] args = sharedResources.arguments();
 
         if ( args.length > 0 )
         {
@@ -469,7 +464,7 @@ final class Functions
 
     private static ExecutionResult createNetCDFTemplate( SharedResources sharedResources )
     {
-        String[] args = sharedResources.getArguments();
+        String[] args = sharedResources.arguments();
 
         if ( args.length > 1 )
         {
@@ -521,29 +516,19 @@ final class Functions
         }
     }
 
-    static final class SharedResources
+    /** Small value class of shared resources. */
+    record SharedResources( SystemSettings systemSettings, Database database,
+                            BrokerConnectionFactory brokerConnectionFactory, String[] arguments )
     {
-        private final SystemSettings systemSettings;
-        private final Database database;
-        private final Executor executor;
-        private final BrokerConnectionFactory brokerConnectionFactory;
-        private final String[] arguments;
-
         /**
          * @param systemSettings the system settings, not null
          * @param database the database, optional if a database is not required
-         * @param executor the executor
          * @param brokerConnectionFactory the broker connection factory
          * @param arguments the arguments
          */
-        public SharedResources( SystemSettings systemSettings,
-                                Database database,
-                                Executor executor,
-                                BrokerConnectionFactory brokerConnectionFactory,
-                                String[] arguments )
+        SharedResources
         {
             Objects.requireNonNull( systemSettings );
-            Objects.requireNonNull( executor );
             Objects.requireNonNull( arguments );
             Objects.requireNonNull( brokerConnectionFactory );
 
@@ -551,64 +536,13 @@ final class Functions
             {
                 Objects.requireNonNull( database );
             }
-
-            this.systemSettings = systemSettings;
-            this.database = database;
-            this.executor = executor;
-            this.arguments = arguments;
-            this.brokerConnectionFactory = brokerConnectionFactory;
-        }
-
-        public SystemSettings getSystemSettings()
-        {
-            return this.systemSettings;
-        }
-
-        public Database getDatabase()
-        {
-            return this.database;
-        }
-
-        public Executor getExecutor()
-        {
-            return this.executor;
-        }
-
-        public String[] getArguments()
-        {
-            return this.arguments;
-        }
-
-        public BrokerConnectionFactory getBrokerConnectionFactory()
-        {
-            return this.brokerConnectionFactory;
         }
     }
 
-    /**
-     * Small wrapper class for WRES functions.
-     */
-
-    private static class WresFunction implements Comparable<WresFunction>
+    /** Small wrapper class for WRES functions. */
+    private record WresFunction( String shortName, String longName, String description )
+            implements Comparable<WresFunction>
     {
-        private final String longName;
-        private final String shortName;
-        private final String description;
-
-        /**
-         * Creates an instance.
-         * @param shortName the short name of the function
-         * @param longName the long name of the function
-         * @param description the description
-         */
-
-        private WresFunction( String shortName, String longName, String description )
-        {
-            this.shortName = shortName;
-            this.longName = longName;
-            this.description = description;
-        }
-
         @Override
         public String toString()
         {
@@ -679,23 +613,18 @@ final class Functions
         @Override
         public boolean equals( Object o )
         {
-            if ( ! ( o instanceof WresFunction ) )
+            if ( !( o instanceof WresFunction in ) )
             {
                 return false;
             }
 
-            WresFunction in = (WresFunction) o;
-
             return Objects.equals( in.shortName, this.shortName ) && Objects.equals( in.longName, this.longName )
                    && Objects.equals( in.description, this.description );
         }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( this.shortName, this.longName, this.description );
-        }
-
     }
 
+    /** Do not construct. */
+    private Functions()
+    {
+    }
 }

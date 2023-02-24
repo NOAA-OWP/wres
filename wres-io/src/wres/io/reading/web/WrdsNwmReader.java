@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.net.ssl.SSLContext;
@@ -68,7 +67,7 @@ import wres.system.SystemSettings;
  * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the National Water 
  * Model (NWM). Time-series requests are chunked by feature and date range into 25-feature blocks and weekly date 
  * ranges, respectively.
- *  
+ *
  * @author James Brown
  */
 
@@ -219,7 +218,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     /**
      * Reads the data source by forming separate requests by feature and time range.
-     * 
+     *
      * @param dataSource the data source
      * @param pairConfig the pair declaration used for chunking
      * @throws NullPointerException if either input is null
@@ -237,7 +236,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                                                                         dataSource.getContext(),
                                                                         dataSource.getLeftOrRightOrBaseline() );
 
-        List<String> features = Collections.unmodifiableList( new ArrayList<>( featureSet ) );
+        List<String> features = List.copyOf( featureSet );
 
         // The chunked features
         List<List<String>> featureBlocks = ListUtils.partition( features, this.getFeatureChunkSize() );
@@ -275,7 +274,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param chunks the data chunks to iterate
      * @return a time-series supplier
@@ -398,7 +397,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                            if ( Objects.nonNull( inputStream ) )
                            {
                                return NWM_READER.read( dataSource, inputStream )
-                                                .collect( Collectors.toList() ); // Terminal
+                                                .toList(); // Terminal
                            }
 
                            return List.of();
@@ -413,7 +412,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     private void validateSource( DataSource dataSource )
     {
-        if ( ! ( ReaderUtilities.isWrdsNwmSource( dataSource ) ) )
+        if ( !( ReaderUtilities.isWrdsNwmSource( dataSource ) ) )
         {
             throw new ReadException( "Expected a WRDS NWM data source, but got: " + dataSource + "." );
         }
@@ -527,7 +526,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      * Gets a URI for given date range and feature.
      *
      * <p>Expecting a wrds URI like this:
-     * http://redacted/api/v1/forecasts/streamflow/ahps</p>
+     * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/api/v1/forecasts/streamflow/ahps</a></p>
      * @param baseUri the base URI
      * @param dataSource the data source
      * @param range the range of dates (from left to right)
@@ -646,9 +645,9 @@ public class WrdsNwmReader implements TimeSeriesReader
         String rightWrdsFormattedDate = WrdsNwmReader.iso8601TruncatedToHourFromInstant( range.getRight() );
         urlParameters.put( "reference_time",
                            "(" + leftWrdsFormattedDate
-                                             + ","
-                                             + rightWrdsFormattedDate
-                                             + "]" );
+                           + ","
+                           + rightWrdsFormattedDate
+                           + "]" );
         urlParameters.put( "validTime", "all" );
 
         return Collections.unmodifiableMap( urlParameters );
@@ -669,7 +668,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     /**
      * Returns a byte stream from a URI.
-     * 
+     *
      * @param uri the URI
      * @return the byte stream
      * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
@@ -729,7 +728,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      *   "error": "API Currently only supports querying by the following: ('nwm_feature_id', 'nws_lid', ... )"
      * }
      *
-     * If anything goes wrong, returns null.
+     * <p></>If anything goes wrong, returns null.
      *
      * @param inputStream the stream containing a potential error message
      * @return the value from the above map, null if not found.
@@ -784,7 +783,7 @@ public class WrdsNwmReader implements TimeSeriesReader
             {
                 throw new ProjectConfigException( pairConfig,
                                                   WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "either the dates or issuedDates." );
+                                                  + "either the dates or issuedDates." );
             }
 
             if ( Objects.nonNull( pairConfig.getDates() ) && ( Objects.isNull( pairConfig.getDates().getEarliest() )
@@ -793,9 +792,9 @@ public class WrdsNwmReader implements TimeSeriesReader
             {
                 throw new ProjectConfigException( pairConfig,
                                                   WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "both the earliest and latest dates (e.g. "
-                                                              + "<dates earliest=\"2019-08-10T14:30:00Z\" "
-                                                              + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                                                  + "both the earliest and latest dates (e.g. "
+                                                  + "<dates earliest=\"2019-08-10T14:30:00Z\" "
+                                                  + "latest=\"2019-08-15T18:00:00Z\" />)." );
             }
 
             if ( Objects.nonNull( pairConfig.getIssuedDates() )
@@ -805,9 +804,9 @@ public class WrdsNwmReader implements TimeSeriesReader
             {
                 throw new ProjectConfigException( pairConfig,
                                                   WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "both the earliest and latest issued dates (e.g. "
-                                                              + "<issuedDates earliest=\"2019-08-10T14:30:00Z\" "
-                                                              + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                                                  + "both the earliest and latest issued dates (e.g. "
+                                                  + "<issuedDates earliest=\"2019-08-10T14:30:00Z\" "
+                                                  + "latest=\"2019-08-15T18:00:00Z\" />)." );
             }
 
             LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete pair "

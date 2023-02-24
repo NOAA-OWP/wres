@@ -19,7 +19,6 @@ import wres.events.broker.BrokerUtilities;
 import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.eventsbroker.embedded.EmbeddedBroker;
-import wres.io.concurrency.Executor;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
@@ -30,10 +29,15 @@ import wres.util.Collections;
 import com.google.common.collect.Range;
 
 /**
- * Entry point for the WRES standalone application.
+ * Entry point for the standalone application.
+ *
+ * @author James Brown
+ * @author Jesse Bickel
+ * @author Chris Tubbs
  */
 public class Main
 {
+    // Allow for logging of the native process ID of the process running this standalone
     static
     {
         ProcessHandle processHandle = ProcessHandle.current();
@@ -78,7 +82,7 @@ public class Main
             function = "execute";
         }
         // Apply the known function
-        else if ( args.length > 0 && Functions.hasOperation( args[0] ) )
+        else if ( Functions.hasOperation( args[0] ) )
         {
             function = args[0];
 
@@ -104,7 +108,7 @@ public class Main
 
         // Log any uncaught exceptions
         UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "The WRES encountered an uncaught exception in thread " + a + ".";
+            String message = "Encountered an uncaught exception in thread " + a + ".";
             LOGGER.error( message, b );
         };
 
@@ -142,9 +146,6 @@ public class Main
     private static void completeExecution( String function, String[] args, Instant beganExecution )
     {
         ExecutionResult result = null;
-
-        Executor executor = new Executor( SYSTEM_SETTINGS );
-
         Database database = Main.getAndMigrateDatabaseIfRequired();
 
         // Create the broker connections for statistics messaging
@@ -159,12 +160,11 @@ public class Main
         }
 
         try ( BrokerConnectionFactory brokerConnectionFactory =
-                BrokerConnectionFactory.of( brokerConnectionProperties ) )
+                      BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
             Functions.SharedResources sharedResources =
                     new Functions.SharedResources( SYSTEM_SETTINGS,
                                                    database,
-                                                   executor,
                                                    brokerConnectionFactory,
                                                    args );
 
@@ -185,7 +185,7 @@ public class Main
                 argsToLog[0] = function;
                 System.arraycopy( args, 0, argsToLog, 1, args.length );
 
-                sharedResources.getDatabase()
+                sharedResources.database()
                                .logExecution( argsToLog,
                                               result.getName(),
                                               result.getHash(),
@@ -217,11 +217,11 @@ public class Main
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
                 {
-                    Functions.shutdown( database, executor );
+                    Functions.shutdown( database );
                 }
                 else
                 {
-                    Functions.forceShutdown( database, executor, 6, TimeUnit.SECONDS );
+                    Functions.forceShutdown( database, 6, TimeUnit.SECONDS );
                 }
             }
 
@@ -244,7 +244,7 @@ public class Main
 
     /**
      * Returns a database, if required, and migrates it as needed.
-     *  
+     *
      * @return a database or null 
      */
 
@@ -275,7 +275,7 @@ public class Main
 
     /**
      * Exits the application. 
-     * 
+     *
      * @param result the execution result on exit
      */
 

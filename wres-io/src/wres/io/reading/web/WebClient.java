@@ -57,12 +57,12 @@ public class WebClient
     // the need to add the two timeouts.
     private static final Duration MAX_RETRY_DURATION = CONNECT_TIMEOUT.plus( REQUEST_TIMEOUT )
                                                                       .multipliedBy( 2 );
-    private static final List<Integer> DEFAULT_RETRY_STATI = List.of( 500,
-                                                                      502,
-                                                                      503,
-                                                                      504,
-                                                                      523,
-                                                                      524 );
+    private static final List<Integer> DEFAULT_RETRY_STATES = List.of( 500,
+                                                                       502,
+                                                                       503,
+                                                                       504,
+                                                                       523,
+                                                                       524 );
     private final OkHttpClient httpClient;
     private final boolean trackTimings;
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
@@ -125,7 +125,7 @@ public class WebClient
 
     public ClientResponse getFromWeb( URI uri ) throws IOException
     {
-        return this.getFromWeb( uri, DEFAULT_RETRY_STATI );
+        return this.getFromWeb( uri, DEFAULT_RETRY_STATES );
     }
 
     /**

@@ -15,13 +15,14 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
+
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.time.TimeSeries;
 
 /**
  * A custom event for monitoring and exposing an evaluation to the Java Flight Recorder.
- * 
+ *
  * @author James Brown
  */
 
@@ -126,7 +127,6 @@ class EvaluationEvent extends Event
 
     /**
      * Sets an error message on failure.
-     * @param error, the error
      */
 
     void setFailed()
@@ -149,7 +149,7 @@ class EvaluationEvent extends Event
 
     /**
      * Sets information about the resources created.
-     * 
+     *
      * @param resources the resources
      */
 
@@ -187,7 +187,7 @@ class EvaluationEvent extends Event
 
     /**
      * Registers a new pool with the evaluation and increments related statistics. 
-     * 
+     *
      * @param pool a pool
      * @param traceCount an estimate of the number of traces in the pool for left/right data
      * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data

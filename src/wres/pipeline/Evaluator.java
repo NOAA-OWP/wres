@@ -43,14 +43,14 @@ import wres.system.SystemSettings;
  */
 public class Evaluator
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( Evaluator.class );
+
     /** System settings.*/
     private final SystemSettings systemSettings;
 
     /** Database instance.*/
     private final Database database;
-
-    /** Executor that executes i/o. TODO: reconsider this one.*/
-    private final Executor executor;
 
     /** Broker connections.*/
     private final BrokerConnectionFactory brokerConnectionFactory;
@@ -59,17 +59,14 @@ public class Evaluator
      * Creates an instance.
      * @param systemSettings the system settings, not null
      * @param database the database, if required
-     * @param executor an executor, not null
      * @param brokerConnectionFactory a broker connection factory, not null
      * @throws NullPointerException if any required input is null
      */
     public Evaluator( SystemSettings systemSettings,
                       Database database,
-                      Executor executor,
                       BrokerConnectionFactory brokerConnectionFactory )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( executor );
         Objects.requireNonNull( brokerConnectionFactory );
 
         if ( systemSettings.isInDatabase() )
@@ -79,13 +76,11 @@ public class Evaluator
 
         this.systemSettings = systemSettings;
         this.database = database;
-        this.executor = executor;
         this.brokerConnectionFactory = brokerConnectionFactory;
     }
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
-     * possible TODO: propagate exceptions and return void rather than Integer
      * @param args the paths to one or more project configurations
      * @return the result of the execution
      * @throws UserInputException when WRES detects problem with project config
@@ -194,7 +189,6 @@ public class Evaluator
         return this.evaluate( projectConfigPlus );
     }
 
-
     /**
      * Runs a WRES project.
      * @param projectConfigPlus the project configuration to run
@@ -216,18 +210,18 @@ public class Evaluator
         // tasks within pools with the same number of threads in each.
 
         ThreadFactory poolFactory = new BasicThreadFactory.Builder()
-                                                                    .namingPattern( "Pool Thread %d" )
-                                                                    .build();
+                .namingPattern( "Pool Thread %d" )
+                .build();
 
         ThreadFactory thresholdFactory = new BasicThreadFactory.Builder()
-                                                                         .namingPattern( "Threshold Dispatch Thread %d" )
-                                                                         .build();
+                .namingPattern( "Threshold Dispatch Thread %d" )
+                .build();
         ThreadFactory metricFactory = new BasicThreadFactory.Builder()
-                                                                      .namingPattern( "Metric Thread %d" )
-                                                                      .build();
+                .namingPattern( "Metric Thread %d" )
+                .build();
         ThreadFactory productFactory = new BasicThreadFactory.Builder()
-                                                                       .namingPattern( "Product Thread %d" )
-                                                                       .build();
+                .namingPattern( "Product Thread %d" )
+                .build();
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
         // Create some unbounded work queues. For evaluations that produce faster than they consume, production is flow 
@@ -269,6 +263,9 @@ public class Evaluator
                                                                      productQueue,
                                                                      productFactory );
 
+        // IO executors
+        Executor ioExecutor = new Executor( innerSystemSettings );
+
         // Create database services if needed
         DatabaseServices databaseServices = null;
         DatabaseLockManager lockManager = null;
@@ -286,8 +283,6 @@ public class Evaluator
             // Dummy lock manager for in-memory evaluations
             lockManager = new DatabaseLockManagerNoop();
         }
-
-        Executor ioExecutor = this.getExecutor();
 
         String projectHash = null;
         Set<Path> pathsWrittenTo = new TreeSet<>();
@@ -365,6 +360,7 @@ public class Evaluator
             Evaluator.shutDownGracefully( metricExecutor );
             Evaluator.shutDownGracefully( thresholdExecutor );
             Evaluator.shutDownGracefully( poolExecutor );
+            Evaluator.shutDownGracefully( ioExecutor );
             lockManager.shutdown();
         }
 
@@ -379,7 +375,7 @@ public class Evaluator
     /**
      * Kill off the executors passed in even if there are remaining tasks.
      *
-     * @param executor the executor to shutdown
+     * @param executor the executor to shut down
      */
     private static void shutDownGracefully( final ExecutorService executor )
     {
@@ -410,35 +406,52 @@ public class Evaluator
     }
 
     /**
-     * Default logger.
+     * Kill off the executors passed in even if there are remaining tasks.
+     *
+     * @param executor the executor to shut down
      */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( Evaluator.class );
-
-    private static class QueueMonitor implements Runnable
+    private static void shutDownGracefully( final Executor executor )
     {
-        private final Database database;
-        private final Executor executor;
-        private final Queue<?> poolQueue;
-        private final Queue<?> thresholdQueue;
-        private final Queue<?> metricQueue;
-        private final Queue<?> productQueue;
+        Objects.requireNonNull( executor );
 
-        QueueMonitor( Database database,
-                      Executor executor,
-                      Queue<?> poolQueue,
-                      Queue<?> thresholdQueue,
-                      Queue<?> metricQueue,
-                      Queue<?> productQueue )
+        List<Runnable> abandoned = executor.awaitTermination( 5, TimeUnit.SECONDS );
+
+        if ( !abandoned.isEmpty() && LOGGER.isInfoEnabled() )
         {
-            this.database = database;
-            this.executor = executor;
-            this.poolQueue = poolQueue;
-            this.thresholdQueue = thresholdQueue;
-            this.metricQueue = metricQueue;
-            this.productQueue = productQueue;
+            LOGGER.info( "Abandoned {} tasks from {}",
+                         abandoned.size(),
+                         executor );
         }
+    }
 
+    /**
+     * @return the system settings.
+     */
+    private SystemSettings getSystemSettings()
+    {
+        return this.systemSettings;
+    }
+
+    /**
+     * @return the database.
+     */
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
+    /**
+     * @return the broker connections.
+     */
+    private BrokerConnectionFactory getBrokerConnectionFactory()
+    {
+        return this.brokerConnectionFactory;
+    }
+
+    /** Queue monitor. */
+    private record QueueMonitor( Database database, Executor executor, Queue<?> poolQueue, Queue<?> thresholdQueue,
+                                 Queue<?> metricQueue, Queue<?> productQueue ) implements Runnable
+    {
         @Override
         public void run()
         {
@@ -489,187 +502,21 @@ public class Evaluator
     /**
      * Small value object to collate a {@link Database} with an {@link DatabaseLockManager}. This may be disaggregated
      * for transparency if we can reduce the number of input arguments to some methods.
+     * @param database The database instance.
+     * @param databaseLockManager The Database lock manager instance.
      */
 
-    static class DatabaseServices
+    record DatabaseServices( Database database, DatabaseLockManager databaseLockManager )
     {
-        /**The database instance.**/
-        private final Database database;
-
-        /**The Database lock manager instance.**/
-        private final DatabaseLockManager databaseLockManager;
-
-        /**
-         * Build an instance.
-         * 
-         * @param database the database
-         * @param databaseLockManager the database lock manager
-         * @throws NullPointerException if either input is null
-         */
-
-        DatabaseServices( Database database, DatabaseLockManager databaseLockManager )
-        {
-            this.database = database;
-            this.databaseLockManager = databaseLockManager;
-        }
-
-        /**
-         * @return the database instance.
-         */
-
-        Database getDatabase()
-        {
-            return this.database;
-        }
-
-        /**
-         * @Return the database lock manager.
-         */
-
-        DatabaseLockManager getDatabaseLockManager()
-        {
-            return this.databaseLockManager;
-        }
     }
 
     /**
      * A value object that a) reduces count of args for some methods and
-     * b) provides names for those objects. Can be removed if we can reduce the
-     * count of dependencies in some of our methods, or if we prefer to see all
-     * dependencies clearly laid out in the method signature.
+     * b) provides names for those objects.
      */
 
-    static class Executors
+    record Executors( Executor ioExecutor, ExecutorService poolExecutor, ExecutorService thresholdExecutor,
+                      ExecutorService metricExecutor, ExecutorService productExecutor )
     {
-        /**
-         * Executor for input/output operations, such as ingest.
-         */
-
-        private final Executor ioExecutor;
-
-        /**
-         * The pool executor.
-         */
-        private final ExecutorService poolExecutor;
-
-        /**
-         * The threshold executor.
-         */
-        private final ExecutorService thresholdExecutor;
-
-        /**
-         * The metric executor.
-         */
-        private final ExecutorService metricExecutor;
-
-        /**
-         * The product executor.
-         */
-        private final ExecutorService productExecutor;
-
-        /**
-         * Build. 
-         * 
-         * @param ioExecutor the executor for io operations
-         * @param poolExecutor the outer pool executor
-         * @param thresholdExecutor the threshold executor
-         * @param metricExecutor the metric executor
-         * @param productExecutor the product executor
-         */
-        Executors( Executor ioExecutor,
-                   ExecutorService poolExecutor,
-                   ExecutorService thresholdExecutor,
-                   ExecutorService metricExecutor,
-                   ExecutorService productExecutor )
-        {
-            this.ioExecutor = ioExecutor;
-            this.poolExecutor = poolExecutor;
-            this.thresholdExecutor = thresholdExecutor;
-            this.metricExecutor = metricExecutor;
-            this.productExecutor = productExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for pool tasks.
-         * @return the outer pool executor
-         */
-
-        ExecutorService getPoolExecutor()
-        {
-            return this.poolExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for thresholds.
-         * @return the threshold executor
-         */
-
-        ExecutorService getThresholdExecutor()
-        {
-            return this.thresholdExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for metrics.
-         * @return the metric executor
-         */
-
-        ExecutorService getMetricExecutor()
-        {
-            return this.metricExecutor;
-        }
-
-        /**
-         * Returns the {@link ExecutorService} for products.
-         * @return the product executor
-         */
-
-        ExecutorService getProductExecutor()
-        {
-            return this.productExecutor;
-        }
-
-        /**
-         * Returns the {@link Executor} for io operations.
-         * @return the io executor
-         */
-
-        Executor getIoExecutor()
-        {
-            return this.ioExecutor;
-        }
     }
-
-    /**
-     * @return the system settings.
-     */
-    private SystemSettings getSystemSettings()
-    {
-        return this.systemSettings;
-    }
-
-    /**
-     * @return the database.
-     */
-    private Database getDatabase()
-    {
-        return this.database;
-    }
-
-    /**
-     * @return the executor.
-     */
-    private Executor getExecutor()
-    {
-        return this.executor;
-    }
-
-    /**
-     * @return the broker connections.
-     */
-    private BrokerConnectionFactory getBrokerConnectionFactory()
-    {
-        return this.brokerConnectionFactory;
-    }
-
 }

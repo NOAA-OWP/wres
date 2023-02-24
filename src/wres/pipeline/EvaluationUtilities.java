@@ -83,7 +83,7 @@ import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
- * Utiltiy class with functions to help generate evaluation results.
+ * <p>Utility class with functions to help generate evaluation results.
  *
  * @author James Brown
  * @author Jesse Bickel
@@ -110,9 +110,7 @@ class EvaluationUtilities
             EvaluationUtilities.getSingleValuedTraceCountEstimator();
 
     /**
-     * Processes an evaluation.
-     *
-     * Assumes that a shared lock for evaluation has already been obtained.
+     * Processes an evaluation. Assumes that a shared lock for evaluation has already been obtained.
      * @param systemSettings the system settings
      * @param databaseServices the database services
      * @param projectConfigPlus the project configuration
@@ -195,10 +193,11 @@ class EvaluationUtilities
                                                                                new HashSet<>( internalFormats ),
                                                                                netcdfWriters,
                                                                                projectConfig );
-              EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
-                                                                                executors.getProductExecutor(),
-                                                                                connections,
-                                                                                evaluationId ); )
+              // Out-of-band statistics format subscriber/writer, ignored locally
+              EvaluationSubscriber ignoredFormatsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                                                       executors.productExecutor(),
+                                                                                       connections,
+                                                                                       evaluationId ); )
         {
             // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
             // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
@@ -226,8 +225,7 @@ class EvaluationUtilities
                                                   executors,
                                                   connections,
                                                   sharedWriters,
-                                                  netcdfWriters,
-                                                  outputDirectory );
+                                                  netcdfWriters );
             evaluation = evaluationAndProjectHash.getLeft();
             projectHash = evaluationAndProjectHash.getRight();
 
@@ -265,23 +263,15 @@ class EvaluationUtilities
         // Allow a user-error to be distinguished separately
         catch ( ProjectConfigException userError )
         {
-            LOGGER.debug( "Forcibly stopping evaluation {} upon encountering a user error.", evaluationId );
+            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
 
-            // Stop forcibly
-            evaluation.stop( userError );
-
+            // Rethrow
             throw userError;
         }
         // Internal error
         catch ( RuntimeException internalError )
         {
-            if ( Objects.nonNull( evaluation ) )
-            {
-                // Stop forcibly
-                LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
-
-                evaluation.stop( internalError );
-            }
+            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
 
             // Decorate and rethrow
             throw new WresProcessingException( "Encountered an error while processing evaluation '"
@@ -297,7 +287,7 @@ class EvaluationUtilities
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
             {
-                if ( outputs.count() == 0 )
+                if ( outputs.findAny().isEmpty() )
                 {
                     // Will only succeed for an empty directory
                     boolean status = Files.deleteIfExists( outputDirectory );
@@ -333,6 +323,23 @@ class EvaluationUtilities
     }
 
     /**
+     * Forcibly stops an evaluation on encountering an error, if already created.
+     * @param evaluation the evaluation
+     * @param error the error
+     * @param evaluationId the evaluation identifier
+     */
+    private static void forceStop( Evaluation evaluation, RuntimeException error, String evaluationId )
+    {
+        if ( Objects.nonNull( evaluation ) )
+        {
+            // Stop forcibly
+            LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
+
+            evaluation.stop( error );
+        }
+    }
+
+    /**
      * Closes the netcdf writers.
      * @param netcdfWriters the writers to close
      * @param evaluation the evaluation
@@ -364,17 +371,16 @@ class EvaluationUtilities
     }
 
     /**
-     * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
+     * <p>Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs,
      * thresholds and metrics.
      *
-     * Assumes that a shared lock for evaluation has already been obtained.
+     * <p>Assumes that a shared lock for evaluation has already been obtained.
      * @param evaluationDetails the evaluation details
      * @param databaseServices the database services
      * @param executors the executors
      * @param connections the broker connections
      * @param netcdfWriters netCDF writers
      * @param sharedWriters for writing
-     * @param outputDirectory the output directory
      * @throws WresProcessingException if the processing failed for any reason
      * @return the evaluation and the hash of the project data
      * @throws IOException if an attempt was made to close the evaluation and it failed
@@ -385,8 +391,7 @@ class EvaluationUtilities
                                                       Executors executors,
                                                       BrokerConnectionFactory connections,
                                                       SharedWriters sharedWriters,
-                                                      List<NetcdfOutputWriter> netcdfWriters,
-                                                      Path outputDirectory )
+                                                      List<NetcdfOutputWriter> netcdfWriters )
             throws IOException
     {
         Evaluation evaluation = null;
@@ -417,15 +422,15 @@ class EvaluationUtilities
             if ( systemSettings.isInDatabase() )
             {
                 // Build the database caches/ORMs, if required
-                DatabaseCaches caches = DatabaseCaches.of( databaseServices.getDatabase(), projectConfig );
+                DatabaseCaches caches = DatabaseCaches.of( databaseServices.database(), projectConfig );
                 evaluationDetails.setCaches( caches );
                 try ( DatabaseTimeSeriesIngester databaseIngester =
-                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
-                                                                .setDatabase( databaseServices.getDatabase() )
-                                                                .setCaches( caches )
-                                                                .setProjectConfig( projectConfig )
-                                                                .setLockManager( databaseServices.getDatabaseLockManager() )
-                                                                .build(); )
+                              new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
+                                                                      .setDatabase( databaseServices.database() )
+                                                                      .setCaches( caches )
+                                                                      .setProjectConfig( projectConfig )
+                                                                      .setLockManager( databaseServices.databaseLockManager() )
+                                                                      .build(); )
                 {
                     List<IngestResult> ingestResults = Operations.ingest( databaseIngester,
                                                                           evaluationDetails.getSystemSettings(),
@@ -440,7 +445,7 @@ class EvaluationUtilities
                     }
 
                     // Get the project, which provides an interface to the underlying store of time-series data
-                    project = Operations.getProject( databaseServices.getDatabase(),
+                    project = Operations.getProject( databaseServices.database(),
                                                      featurefulProjectConfig,
                                                      caches,
                                                      griddedFeatures,
@@ -543,8 +548,6 @@ class EvaluationUtilities
                 LOGGER.info( "Finished creating NetCDF blobs, which are now ready to accept statistics." );
             }
 
-            // The project code - ideally project hash
-            String projectIdentifier = project.getHash();
             evaluationDetails.setThresholdsByMetricAndFeature( thresholdsByMetricAndFeature );
 
             // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
@@ -608,7 +611,7 @@ class EvaluationUtilities
 
     /**
      * Chunks the pooling tasks into chains and evaluates them.
-     * 
+     *
      * @param poolFactory the pool factory
      * @param evaluationDetails the evaluation details
      * @param sharedWriters the shared writers
@@ -746,26 +749,27 @@ class EvaluationUtilities
         {
             // Use the template-based netcdf writer.
             NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of(
-                                                                               systemSettings,
-                                                                               projectConfig,
-                                                                               firstDeprecatedNetcdf,
-                                                                               durationUnits,
-                                                                               outputDirectory,
-                                                                               true );
+                    systemSettings,
+                    projectConfig,
+                    firstDeprecatedNetcdf,
+                    durationUnits,
+                    outputDirectory,
+                    true );
             writers.add( netcdfWriterDeprecated );
-            LOGGER.warn( "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
+            LOGGER.warn(
+                    "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
         }
 
         if ( Objects.nonNull( firstNetcdf2 ) )
         {
             // Use the newer from-scratch netcdf writer.
             NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
-                                                                     systemSettings,
-                                                                     projectConfig,
-                                                                     firstNetcdf2,
-                                                                     durationUnits,
-                                                                     outputDirectory,
-                                                                     false );
+                    systemSettings,
+                    projectConfig,
+                    firstNetcdf2,
+                    durationUnits,
+                    outputDirectory,
+                    false );
             writers.add( netcdfWriter );
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
@@ -833,7 +837,7 @@ class EvaluationUtilities
 
     /**
      * Returns a set of formats that are delivered by external subscribers, according to relevant system properties.
-     * 
+     *
      * @return the formats delivered by external subscribers
      */
 
@@ -910,7 +914,7 @@ class EvaluationUtilities
 
     /**
      * Obtain the minimum sample size from a possible null input. If null, return zero.
-     * 
+     *
      * @param minimumSampleSize the minimum sample size, which is nullable and defaults to zero
      */
     private static int getMinimumSampleSize( Integer minimumSampleSize )
@@ -934,8 +938,8 @@ class EvaluationUtilities
      */
 
     private static wres.statistics.generated.Evaluation
-            setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
-                                              Project project )
+    setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
+                                      Project project )
     {
         String desiredMeasurementUnit = project.getMeasurementUnit();
         wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
@@ -960,7 +964,7 @@ class EvaluationUtilities
 
     /**
      * Creates the pool requests from the project.
-     * 
+     *
      * @param evaluationDescription the evaluation description
      * @param poolFactory the pool factory
      * @return the pool requests
@@ -1031,7 +1035,7 @@ class EvaluationUtilities
     /**
      * Creates one pool task for each pool request and then chains them together, such that all of the pools complete 
      * nominally or one completes exceptionally.
-     * 
+     *
      * @param poolFactory the pool factory
      * @param evaluationDetails the evaluation details
      * @param sharedWriters the shared writers
@@ -1076,7 +1080,7 @@ class EvaluationUtilities
                                                                    poolParameters );
 
             poolTasks = EvaluationUtilities.getPoolTaskChain( poolProcessors,
-                                                              executors.getPoolExecutor(),
+                                                              executors.poolExecutor(),
                                                               poolReporter );
         }
         // All other single-valued types
@@ -1092,7 +1096,7 @@ class EvaluationUtilities
                                                                        poolParameters );
 
             poolTasks = EvaluationUtilities.getPoolTaskChain( poolProcessors,
-                                                              executors.getPoolExecutor(),
+                                                              executors.poolExecutor(),
                                                               poolReporter );
         }
 
@@ -1112,20 +1116,20 @@ class EvaluationUtilities
      */
 
     private static List<PoolProcessor<Double, Double>>
-            getSingleValuedPoolProcessors( PoolFactory poolFactory,
-                                           EvaluationDetails evaluationDetails,
-                                           List<PoolRequest> poolRequests,
-                                           SharedWriters sharedWriters,
-                                           Executors executors,
-                                           PoolGroupTracker groupPublicationTracker,
-                                           PoolParameters poolParameters )
+    getSingleValuedPoolProcessors( PoolFactory poolFactory,
+                                   EvaluationDetails evaluationDetails,
+                                   List<PoolRequest> poolRequests,
+                                   SharedWriters sharedWriters,
+                                   Executors executors,
+                                   PoolGroupTracker groupPublicationTracker,
+                                   PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
-                                                               executors.getThresholdExecutor(),
-                                                               executors.getMetricExecutor() );
+                                                               executors.thresholdExecutor(),
+                                                               executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
         RetrieverFactory<Double, Double> retrieverFactory = null;
@@ -1176,7 +1180,8 @@ class EvaluationUtilities
                                                                .setPoolSupplier( poolSupplier )
                                                                .setEvaluation( evaluationDetails.getEvaluation() )
                                                                .setMonitor( evaluationDetails.getMonitor() )
-                                                               .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
+                                                               .setTraceCountEstimator(
+                                                                       SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                                                                .setProjectConfig( project.getProjectConfig() )
                                                                .setPoolGroupTracker( groupPublicationTracker )
                                                                .build();
@@ -1200,20 +1205,20 @@ class EvaluationUtilities
      */
 
     private static List<PoolProcessor<Double, Ensemble>>
-            getEnsemblePoolProcessors( PoolFactory poolFactory,
-                                       EvaluationDetails evaluationDetails,
-                                       List<PoolRequest> poolRequests,
-                                       SharedWriters sharedWriters,
-                                       Executors executors,
-                                       PoolGroupTracker groupPublicationTracker,
-                                       PoolParameters poolParameters )
+    getEnsemblePoolProcessors( PoolFactory poolFactory,
+                               EvaluationDetails evaluationDetails,
+                               List<PoolRequest> poolRequests,
+                               SharedWriters sharedWriters,
+                               Executors executors,
+                               PoolGroupTracker groupPublicationTracker,
+                               PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
-                                                           executors.getThresholdExecutor(),
-                                                           executors.getMetricExecutor() );
+                                                           executors.thresholdExecutor(),
+                                                           executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
         RetrieverFactory<Double, Ensemble> retrieverFactory = null;
@@ -1313,7 +1318,7 @@ class EvaluationUtilities
 
         // Create a future that completes when all pool tasks succeed
         CompletableFuture<Void> allDone =
-                CompletableFuture.allOf( poolTasks.toArray( new CompletableFuture[poolTasks.size()] ) );
+                CompletableFuture.allOf( poolTasks.toArray( new CompletableFuture[0] ) );
 
         // Chain the two futures together so that either: 1) all pool tasks succeed; or 2) one fails exceptionally.
         return CompletableFuture.anyOf( allDone, oneExceptional );
@@ -1327,9 +1332,9 @@ class EvaluationUtilities
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
-            getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics,
-                                       ExecutorService thresholdExecutor,
-                                       ExecutorService metricExecutor )
+    getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics,
+                               ExecutorService thresholdExecutor,
+                               ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
 
@@ -1353,9 +1358,9 @@ class EvaluationUtilities
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-            getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics,
-                                   ExecutorService thresholdExecutor,
-                                   ExecutorService metricExecutor )
+    getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics,
+                           ExecutorService thresholdExecutor,
+                           ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
 
@@ -1631,7 +1636,7 @@ class EvaluationUtilities
 
         /**
          * Builds an instance.
-         * 
+         *
          * @param systemSettings the system settings
          * @param projectConfigPlus the project declaration
          * @param evaluationDescription the evaluation description
@@ -1658,7 +1663,7 @@ class EvaluationUtilities
 
             if ( Objects.nonNull( databaseServices ) )
             {
-                this.database = databaseServices.getDatabase();
+                this.database = databaseServices.database();
             }
             else
             {
@@ -1668,92 +1673,92 @@ class EvaluationUtilities
     }
 
     /**
-         * A value object for shared writers.
+     * A value object for shared writers.
      * @param sharedSampleWriters
     Shared writers for sample data.
      * @param sharedBaselineSampleWriters
     Shared writers for baseline sampled data.
      */
 
-        private record SharedWriters( SharedSampleDataWriters sharedSampleWriters,
-                                      SharedSampleDataWriters sharedBaselineSampleWriters ) implements Closeable
+    private record SharedWriters( SharedSampleDataWriters sharedSampleWriters,
+                                  SharedSampleDataWriters sharedBaselineSampleWriters ) implements Closeable
+    {
+        /**
+         * Returns an instance.
+         *
+         * @param sharedSampleWriters shared writer of pairs
+         * @param sharedBaselineSampleWriters shared writer of baseline pairs
+         */
+        private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
+                                         SharedSampleDataWriters sharedBaselineSampleWriters )
+
         {
-            /**
-             * Returns an instance.
-             *
-             * @param sharedSampleWriters shared writer of pairs
-             * @param sharedBaselineSampleWriters shared writer of baseline pairs
-             */
-            private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
-                                             SharedSampleDataWriters sharedBaselineSampleWriters )
+            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
+        }
 
+        /**
+         * Returns the shared sample data writers.
+         *
+         * @return the shared sample data writers.
+         */
+
+        private SharedSampleDataWriters getSampleDataWriters()
+        {
+            return this.sharedSampleWriters;
+        }
+
+        /**
+         * Returns the shared sample data writers for baseline data.
+         *
+         * @return the shared sample data writers  for baseline data.
+         */
+
+        private SharedSampleDataWriters getBaselineSampleDataWriters()
+        {
+            return this.sharedBaselineSampleWriters;
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
+         *
+         * @return true if shared sample writers are available
+         */
+
+        private boolean hasSharedSampleWriters()
+        {
+            return Objects.nonNull( this.sharedSampleWriters );
+        }
+
+        /**
+         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise
+         * <code>false</code>.
+         *
+         * @return true if shared sample writers are available for the baseline samples
+         */
+
+        private boolean hasSharedBaselineSampleWriters()
+        {
+            return Objects.nonNull( this.sharedBaselineSampleWriters );
+        }
+
+        /**
+         * Attempts to close all shared writers.
+         * @throws IOException when a resource could not be closed
+         */
+        @Override
+        public void close() throws IOException
+        {
+            if ( this.hasSharedSampleWriters() )
             {
-                return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
+                this.getSampleDataWriters().close();
             }
 
-            /**
-             * Returns the shared sample data writers.
-             *
-             * @return the shared sample data writers.
-             */
-
-            private SharedSampleDataWriters getSampleDataWriters()
+            if ( this.hasSharedBaselineSampleWriters() )
             {
-                return this.sharedSampleWriters;
-            }
-
-            /**
-             * Returns the shared sample data writers for baseline data.
-             *
-             * @return the shared sample data writers  for baseline data.
-             */
-
-            private SharedSampleDataWriters getBaselineSampleDataWriters()
-            {
-                return this.sharedBaselineSampleWriters;
-            }
-
-            /**
-             * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
-             *
-             * @return true if shared sample writers are available
-             */
-
-            private boolean hasSharedSampleWriters()
-            {
-                return Objects.nonNull( this.sharedSampleWriters );
-            }
-
-            /**
-             * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise
-             * <code>false</code>.
-             *
-             * @return true if shared sample writers are available for the baseline samples
-             */
-
-            private boolean hasSharedBaselineSampleWriters()
-            {
-                return Objects.nonNull( this.sharedBaselineSampleWriters );
-            }
-
-            /**
-             * Attempts to close all shared writers.
-             * @throws IOException when a resource could not be closed
-             */
-            @Override
-            public void close() throws IOException
-            {
-                if ( this.hasSharedSampleWriters() )
-                {
-                    this.getSampleDataWriters().close();
-                }
-
-                if ( this.hasSharedBaselineSampleWriters() )
-                {
-                    this.getBaselineSampleDataWriters().close();
-                }
+                this.getBaselineSampleDataWriters().close();
             }
         }
+    }
 
     private EvaluationUtilities()
     {

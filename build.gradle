@@ -111,6 +111,7 @@ subprojects
     apply plugin: 'jacoco'
     apply plugin: 'org.owasp.dependencycheck'
     apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'com.adarshr.test-logger'
 
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1).find()

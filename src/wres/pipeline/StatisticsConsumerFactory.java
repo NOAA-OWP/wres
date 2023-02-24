@@ -35,7 +35,6 @@ import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer.Format;
-import wres.vis.charts.ChartFactory;
 import wres.vis.writing.BoxplotGraphicsWriter;
 import wres.vis.writing.DiagramGraphicsWriter;
 import wres.vis.writing.DoubleScoreGraphicsWriter;

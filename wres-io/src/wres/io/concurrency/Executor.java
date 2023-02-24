@@ -18,20 +18,21 @@ import wres.system.SystemSettings;
 
 /**
  * The static thread executor 
- * 
+ *
  * @author Christopher Tubbs
  */
-public class Executor {
+public class Executor
+{
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Executor.class );
 
     private final SystemSettings systemSettings;
 
-	// The underlying thread executor
+    // The underlying thread executor
     private final ThreadPoolExecutor service;
     private final ThreadPoolExecutor highPriorityService;
 
-    public Executor( SystemSettings systemSettings)
+    public Executor( SystemSettings systemSettings )
     {
         this.systemSettings = systemSettings;
         this.service = createService();
@@ -39,80 +40,81 @@ public class Executor {
     }
 
 
-	/**
-	 * Creates a new thread executor
-	 * @return A new thread executor that may run the maximum number of configured threads
-	 */
+    /**
+     * Creates a new thread executor
+     * @return A new thread executor that may run the maximum number of configured threads
+     */
     private ThreadPoolExecutor createService()
-	{
+    {
         ThreadFactory factory = new BasicThreadFactory.Builder()
                 .namingPattern( "Normal Priority I/O Thread %d" )
                 .build();
-		ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 this.systemSettings.maximumThreadCount(),
                 this.systemSettings.maximumThreadCount(),
                 this.systemSettings.poolObjectLifespan(),
-				TimeUnit.MILLISECONDS,
+                TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>( this.systemSettings.maximumThreadCount() * 5 ),
-				factory
-		);
+                factory
+        );
 
-		executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-		return executor;
-	}
+        executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        return executor;
+    }
 
-	private static ThreadPoolExecutor createHighPriorityService()
-	{
+    private static ThreadPoolExecutor createHighPriorityService()
+    {
         ThreadFactory factory = new BasicThreadFactory.Builder()
                 .namingPattern( "High Priority I/O Thread %d" )
                 .build();
-		return (ThreadPoolExecutor) Executors.newFixedThreadPool(10, factory);
-	}
+        return ( ThreadPoolExecutor ) Executors.newFixedThreadPool( 10, factory );
+    }
 
-    public <V> Future<V> submitHighPriorityTask(Callable<V> task)
-	{
+    public <V> Future<V> submitHighPriorityTask( Callable<V> task )
+    {
         return this.highPriorityService.submit( task );
-	}
-	
-	/**
-	 * Submits the passed in callable thread for execution
-	 * @param <U> the result type
-	 * @param task The thread whose task to call
-	 * @return An object containing the value returned in the future
-	 */
-    public <U> Future<U> submit(Callable<U> task)
-	{
-        return this.service.submit( task);
-	}
-	
-	/**
-	 * Submits the passed in runnable task for execution
-	 * @param task The thread whose task to execute
-	 * @return An object containing an empty value generated at the end of thread execution
-	 */
-    public Future<?> execute(Runnable task)
-	{
-        return this.service.submit( task);
-	}
-	
-	/**
-	 * Waits until all passed in jobs have executed.
-	 */
+    }
+
+    /**
+     * Submits the passed in callable thread for execution
+     * @param <U> the result type
+     * @param task The thread whose task to call
+     * @return An object containing the value returned in the future
+     */
+    public <U> Future<U> submit( Callable<U> task )
+    {
+        return this.service.submit( task );
+    }
+
+    /**
+     * Submits the passed in runnable task for execution
+     * @param task The thread whose task to execute
+     * @return An object containing an empty value generated at the end of thread execution
+     */
+    public Future<?> execute( Runnable task )
+    {
+        return this.service.submit( task );
+    }
+
+    /**
+     * Waits until all passed in jobs have executed.
+     */
     public void complete()
-	{
-        if (!service.isShutdown())
-		{
+    {
+        if ( !service.isShutdown() )
+        {
             this.service.shutdown();
-            while (!this.service.isTerminated());
-		}
+            while ( !this.service.isTerminated() )
+                ;
+        }
 
-        if (!this.highPriorityService.isShutdown())
-		{
+        if ( !this.highPriorityService.isShutdown() )
+        {
             this.highPriorityService.shutdown();
-            while (!highPriorityService.isTerminated());
-		}
-	}
-
+            while ( !highPriorityService.isTerminated() )
+                ;
+        }
+    }
 
     /**
      * Shuts down the executors using a timeout. The caller is giving a holistic
@@ -122,13 +124,14 @@ public class Executor {
      * @return the list of abandoned tasks as a result of forced shutdown
      */
 
-    public List<Runnable> forceShutdown( long timeOut,
-                                         TimeUnit timeUnit )
+    public List<Runnable> awaitTermination( long timeOut,
+                                            TimeUnit timeUnit )
     {
         long halfTheTimeout = timeOut / 2;
         List<Runnable> abandonedTasks = new ArrayList<>();
 
         service.shutdown();
+
         try
         {
             service.awaitTermination( halfTheTimeout, timeUnit );
@@ -163,23 +166,22 @@ public class Executor {
         return abandonedTasks;
     }
 
-
-	/**
-	 * For system-level monitoring information, return the number of tasks in
-	 * the io executor queue.
-	 * @return the count of tasks waiting to be performed by the workers.
-	 */
+    /**
+     * For system-level monitoring information, return the number of tasks in
+     * the io executor queue.
+     * @return the count of tasks waiting to be performed by the workers.
+     */
 
     public int getIoExecutorQueueTaskCount()
-	{
+    {
         if ( this.service != null
              && this.service.getQueue() != null )
         {
             return this.service.getQueue().size();
         }
 
-		return 0;
-	}
+        return 0;
+    }
 
 
     /**

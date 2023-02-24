@@ -24,8 +24,8 @@ import wres.events.EvaluationEventUtilities;
  * so that consumers can be notified that all expected statistics are ready for some grouped operation, such as the 
  * creation of a graphic from a group of pools (e.g., all lead durations). The grouping logic is embedded within this
  * class and is currently based on feature groups. The API itself is more general and allows for this implementation 
- * logic to change by adding a new static constructor, akin to {@link #ofFeatureGroupTracker(List)}.
- *  
+ * logic to change by adding a new static constructor, akin to {@link #ofFeatureGroupTracker(Evaluation, List)}.
+ *
  * @author James Brown
  */
 
@@ -118,7 +118,8 @@ class PoolGroupTracker
     }
 
     /**
-     * @param builder the builder
+     * @param evaluation the evaluation
+     * @param groupIdentities the group identities
      */
 
     private PoolGroupTracker( Evaluation evaluation, Map<PoolRequest, String> groupIdentities )
@@ -160,7 +161,7 @@ class PoolGroupTracker
         /** The group identifier. */
         private final String groupId;
 
-        /** 
+        /**
          * The number of messages published and whether statistics were actually published for one or more groups or
          * all groups contained no statistics. These two things must be updated atomically. When the count reaches zero
          * and the flag is true, group completion occurs.
@@ -205,7 +206,7 @@ class PoolGroupTracker
 
             Pair<Long, Boolean> result = this.publicationState.updateAndGet( updater );
 
-            if ( result.getLeft() == 0 && result.getRight().booleanValue() && ! this.evaluation.isFailed() )
+            if ( Boolean.TRUE.equals( result.getLeft() == 0 && result.getRight() ) && !this.evaluation.isFailed() )
             {
                 this.evaluation.markGroupPublicationCompleteReportedSuccess( this.groupId );
 
