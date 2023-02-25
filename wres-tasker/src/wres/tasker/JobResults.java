@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -52,8 +51,6 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
-import org.redisson.api.map.event.EntryRemovedListener;
-import org.redisson.api.map.event.EntryCreatedListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +69,7 @@ import wres.messages.generated.JobStandardStream;
 class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
-    
+
     /** The length of time a JobMetadata "lives" before expiring from the persister. */
     private static final long EXPIRY_IN_MINUTES = Duration.ofDays( 14 )
                                                           .toMinutes();
@@ -83,7 +80,7 @@ class JobResults
     public enum WhichStream
     {
         STDOUT,
-        STDERR;
+        STDERR
     }
 
     /** A client for redis, optional */
@@ -105,7 +102,7 @@ class JobResults
      */
     private final int NUMBER_OF_THREADS = 400;
 
-    /** 
+    /**
      * An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. 
      * Initialized in the constructor.
      */
@@ -158,7 +155,7 @@ class JobResults
                 {
                     try
                     {
-                        Future<?> future = (Future<?>) r;
+                        Future<?> future = ( Future<?> ) r;
                         if ( future.isDone() )
                         {
                             future.get();
@@ -194,16 +191,17 @@ class JobResults
             this.objectService.registerClass( JobMetadata.class );
 
             // Listen for expiration of values within the map to expire metadata
-            redissonMap.addListener(  new EntryExpiredListener() {
+            redissonMap.addListener( new EntryExpiredListener()
+            {
                 @Override
                 public void onExpired( EntryEvent event )
                 {
-                    LOGGER.info("The persister is expiring the metadata associated with job id "  + event.getKey()
-                                + ". Deleting the metadata and all of its fields." );
+                    LOGGER.info( "The persister is expiring the metadata associated with job id {}. Deleting the "
+                                 + "metadata and all of its fields.", event.getKey() );
                     objectService.delete( objectService.get( JobMetadata.class, event.getKey() ) );
                 }
             } );
-            
+
             this.jobMetadataById = redissonMap;
         }
         // Set up Caffeine.
@@ -238,9 +236,10 @@ class JobResults
                 }
                 catch ( IOException | TimeoutException e )
                 {
-                    LOGGER.warn( "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
-                                 jobId,
-                                 e );
+                    LOGGER.warn(
+                            "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
+                            jobId,
+                            e );
                 }
                 catch ( InterruptedException e )
                 {
@@ -444,9 +443,10 @@ class JobResults
                     }
                     catch ( IOException e )
                     {
-                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                     queueName,
-                                     e );
+                        LOGGER.warn(
+                                "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                queueName,
+                                e );
                     }
                 }
             }
@@ -630,9 +630,10 @@ class JobResults
                     }
                     catch ( IOException e )
                     {
-                        LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                     queueName,
-                                     e );
+                        LOGGER.warn(
+                                "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                queueName,
+                                e );
                     }
                 }
             }
@@ -729,11 +730,11 @@ class JobResults
              */
 
             metadataExisted =
-                    ( (RMapCache<String, JobMetadata>) this.jobMetadataById )
-                                                                             .putIfAbsent( jobId,
-                                                                                           jobMetadata,
-                                                                                           EXPIRY_IN_MINUTES,
-                                                                                           TimeUnit.MINUTES ) != null;
+                    ( ( RMapCache<String, JobMetadata> ) this.jobMetadataById )
+                            .putIfAbsent( jobId,
+                                          jobMetadata,
+                                          EXPIRY_IN_MINUTES,
+                                          TimeUnit.MINUTES ) != null;
         }
         else
         {
