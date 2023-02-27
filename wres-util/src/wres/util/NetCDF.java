@@ -8,6 +8,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
+
 import wres.datamodel.DataException;
 
 import java.io.IOException;
@@ -18,31 +19,17 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
-import java.nio.file.Paths;
 
 /**
- * Created by ctubbs on 7/7/17.
+ * @author Chris Tubbs.
  */
-public final class NetCDF {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetCDF.class);
-
-    // TODO: Maybe change this to support forcing data?
-    private static final Pattern NWM_NAME_PATTERN = Pattern.compile(
-            "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$"
-    );
-
-    private static final Pattern NWM_CATEGORY_PATTERN =
-            Pattern.compile( "(?<=(assim|range)\\.)[a-zA-Z_\\d]+(?=\\.(tm\\d\\d|f\\d\\d\\d))" );
-
-    private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?$" );
-    
-    private static final DateTimeFormatter STANDARD_DATE_FORMAT = DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss z" );
-
+public final class NetCDF
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger( NetCDF.class );
+    private static final DateTimeFormatter STANDARD_DATE_FORMAT =
+            DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss z" );
 
     /**
      * A buffered iterator over Netcdf Variable values
@@ -59,9 +46,9 @@ public final class NetCDF {
          * @param variable The variable to iterate over
          * @return A new VectorVariableIterator instance
          */
-        public static VectorVariableIterator from(final Variable variable)
+        public static VectorVariableIterator from( final Variable variable )
         {
-            return VectorVariableIterator.from(variable, DEFAULT_BUFFER_SIZE);
+            return VectorVariableIterator.from( variable, DEFAULT_BUFFER_SIZE );
         }
 
         /**
@@ -70,7 +57,7 @@ public final class NetCDF {
          * @param bufferSize The number of values to load at a time when iterating
          * @return A new VectorVariableIterator instance
          */
-        public static VectorVariableIterator from(final Variable variable, final int bufferSize)
+        public static VectorVariableIterator from( final Variable variable, final int bufferSize )
         {
             return new VectorVariableIterator( variable, bufferSize );
         }
@@ -110,11 +97,11 @@ public final class NetCDF {
          */
         private Array currentData;
 
-        private VectorVariableIterator(final Variable variable, final int bufferSize)
+        private VectorVariableIterator( final Variable variable, final int bufferSize )
         {
             this.variable = variable;
             this.bufferSize = bufferSize;
-            this.length = (int)variable.getSize();
+            this.length = ( int ) variable.getSize();
             this.variableName = variable.getShortName();
             this.location = variable.getDatasetLocation();
         }
@@ -124,7 +111,7 @@ public final class NetCDF {
         {
             boolean canBufferMoreData = this.index < this.length;
 
-            if (canBufferMoreData && (this.currentData == null || !this.currentData.hasNext()))
+            if ( canBufferMoreData && ( this.currentData == null || !this.currentData.hasNext() ) )
             {
                 this.loadBufferData();
             }
@@ -136,7 +123,7 @@ public final class NetCDF {
         @SuppressWarnings( "unchecked" )
         public Object next()
         {
-            if (this.hasNext())
+            if ( this.hasNext() )
             {
                 Object value = this.currentData.next();
                 this.index++;
@@ -145,28 +132,16 @@ public final class NetCDF {
             }
             else
             {
-                throw new NoSuchElementException("There are no more values to iterate over.");
+                throw new NoSuchElementException( "There are no more values to iterate over." );
             }
         }
 
-        public int nextInt()
-        {
-            if (this.hasNext())
-            {
-                int value = this.currentData.nextInt();
-                this.index++;
-
-                return value;
-            }
-            else
-            {
-                throw new NoSuchElementException("There are no more values to iterate over.");
-            }
-        }
-
+        /**
+         * @return the next double
+         */
         public double nextDouble()
         {
-            if (this.hasNext())
+            if ( this.hasNext() )
             {
                 double value = this.currentData.nextDouble();
                 this.index++;
@@ -175,7 +150,7 @@ public final class NetCDF {
             }
             else
             {
-                throw new NoSuchElementException("There are no more values to iterate over.");
+                throw new NoSuchElementException( "There are no more values to iterate over." );
             }
         }
 
@@ -185,12 +160,12 @@ public final class NetCDF {
 
             // We want the origin to be the index we're on; we start at 0, then continue through the
             // buffer size and we'll be at 0 + bufferSize, 0 + bufferSize * 2, etc
-            int[] origin = new int[] {this.index};
+            int[] origin = new int[] { this.index };
 
             // We want to pull in the up to bufferSize values, but we'll suffer an
             // InvalidRangeException if we try to pull to much. As a result, we want to pull through
             // the very end if there's less than bufferSize elements left
-            int[] shape = new int[] {Math.min(this.bufferSize, this.length - this.index)};
+            int[] shape = new int[] { Math.min( this.bufferSize, this.length - this.index ) };
 
             try
             {
@@ -208,7 +183,7 @@ public final class NetCDF {
                 message += "The iterator tried to read %d elements starting at the index %d, ";
                 message += "but there were only %d elements available to read.";
 
-                message = String.format(message, shape[0], origin[0], this.length);
+                message = String.format( message, shape[0], origin[0], this.length );
                 throw new NoSuchElementException( message );
             }
         }
@@ -216,7 +191,7 @@ public final class NetCDF {
         @Override
         public void forEachRemaining( Consumer<? super Object> action )
         {
-            while(this.hasNext())
+            while ( this.hasNext() )
             {
                 action.accept( this.next() );
             }
@@ -231,25 +206,16 @@ public final class NetCDF {
         }
     }
 
-    private NetCDF() {}
-
-    public static DateTimeFormatter getStandardDateFormat()
+    private NetCDF()
     {
-        return STANDARD_DATE_FORMAT;
     }
 
     /**
-     * Determines if a variable with the indicated short name exists within the NetCDF file
-     * The provided "findVariable" function searches by full name, rather than short name. Since we only
-     * care about the short name, this function had to be implemented.
-     *
-     * @param file The NetCDF file to look into
-     * @param variableName The short name of the variable to find
-     * @return A boolean indicating whether or not the file has the given variable name
+     * @return a date formatter
      */
-    public static boolean hasVariable (NetcdfFile file, String variableName)
+    public static DateTimeFormatter getStandardDateFormat()
     {
-        return NetCDF.getVariable( file, variableName ) != null;
+        return STANDARD_DATE_FORMAT;
     }
 
     /**
@@ -258,44 +224,28 @@ public final class NetCDF {
      * @param variableName The short name of the variable to retrieve
      * @return If the variable exists, the variable is retrieved. Otherwise, it is null.
      */
-    public static Variable getVariable(NetcdfFile file, String variableName)
+    public static Variable getVariable( NetcdfFile file, String variableName )
     {
         return file.findVariable( variableName );
     }
 
     /**
-     * Finds the coordinate variable within a Netcdf file that is used to index other single parametered variables
-     * @param file The source file
-     * @return The main coordinate variable
+     * @param file the file
+     * @return the lead duration
+     * @throws IOException if the lead duration could not be determined
      */
-    public static Variable getVectorCoordinateVariable(NetcdfFile file)
-    {
-        Variable nonCoordinate = Collections.find(
-                file.getVariables(),
-                variable -> variable.getDimensions().size() == 1 && !variable.isCoordinateVariable()
-        );
-
-        String coordinateName = nonCoordinate.getDimensions().get( 0 ).getShortName();
-
-        Variable vectorCoordinate = file.findVariable( coordinateName );
-
-        Objects.requireNonNull( vectorCoordinate, "A vector coordinate variable could not be found."  );
-
-        return vectorCoordinate;
-    }
-
-    public static Duration getLeadTime( NetcdfFile file) throws IOException
+    public static Duration getLeadTime( NetcdfFile file ) throws IOException
     {
         Duration lead = Duration.ZERO;
         Instant initializedTime = NetCDF.getReferenceTime( file );
         Instant validTime = NetCDF.getTime( file );
 
-        if (initializedTime != null && validTime != null)
+        if ( initializedTime != null && validTime != null )
         {
             lead = Duration.between( initializedTime, validTime );
         }
 
-        if (lead.equals( Duration.ZERO ))
+        if ( lead.equals( Duration.ZERO ) )
         {
             LOGGER.warn( "A proper lead time could not be determined for the "
                          + "forecast data in '{}'", file.getLocation() );
@@ -304,7 +254,12 @@ public final class NetCDF {
         return lead;
     }
 
-    public static Instant getTime( NetcdfFile file)
+    /**
+     * @param file the file
+     * @return the valid time
+     * @throws IOException if the file could not be read
+     */
+    public static Instant getTime( NetcdfFile file )
             throws IOException
     {
         Variable time = NetCDF.getVariable( file, "time" );
@@ -312,37 +267,44 @@ public final class NetCDF {
 
         try
         {
-            timeValues = time.read( new int[]{0}, new int[]{1} );
+            timeValues = time.read( new int[] { 0 }, new int[] { 1 } );
         }
         catch ( InvalidRangeException e )
         {
-            throw new IOException( "A valid time value could not be retrieved from '" + file.getLocation() + "#time'", e );
+            throw new IOException( "A valid time value could not be retrieved from '" + file.getLocation() + "#time'",
+                                   e );
         }
 
         int minutes = timeValues.getInt( 0 );
-        return Instant.ofEpochSecond( minutes * 60 );
+        return Instant.ofEpochSecond( minutes * 60L );
     }
 
-    public static Instant getReferenceTime(NetcdfFile file)
+    /**
+     * @param file the file
+     * @return the reference time
+     * @throws IOException if the file could not be read
+     */
+
+    public static Instant getReferenceTime( NetcdfFile file )
             throws IOException
     {
         Variable time = NetCDF.getVariable( file, "reference_time" );
 
-        if (time == null)
+        if ( time == null )
         {
             time = NetCDF.getVariable( file, "analysis_time" );
         }
 
-        if (time == null)
+        if ( time == null )
         {
-            return NetCDF.getTime(file);
+            return NetCDF.getTime( file );
         }
 
         Array timeValues;
 
         try
         {
-            timeValues = time.read( new int[]{0}, new int[]{1} );
+            timeValues = time.read( new int[] { 0 }, new int[] { 1 } );
         }
         catch ( InvalidRangeException e )
         {
@@ -351,86 +313,30 @@ public final class NetCDF {
         }
 
         int minutes = timeValues.getInt( 0 );
-        return Instant.ofEpochSecond( minutes * 60 );
+        return Instant.ofEpochSecond( minutes * 60L );
     }
-
-    public static Attribute getVariableAttribute(final Variable variable, final String attributeName)
-    {
-        return Collections.find(variable.getAttributes(), attribute ->
-            attribute.getShortName().equalsIgnoreCase(attributeName)
-        );
-    }
-
-    private static String[] getNWMFilenameParts(NetcdfFile file)
-    {
-        String name = Strings.getFileName(file.getLocation());
-        name = Strings.removePattern(name, "\\.gz");
-        name = Strings.removePattern(name, "nwm\\.");
-        name = Strings.removePattern(name, "\\.nc");
-        return name.split("\\.");
-    }
-
-    public static boolean isNetCDFFile(String filename)
-    {
-        return NetCDF.NETCDF_FILENAME_PATTERN.matcher( filename ).matches();
-    }
-
-    private static boolean isNWMData(NetcdfFile file)
-    {
-        return NetCDF.isNWMData( Strings.getFileName(file.getLocation()) );
-    }
-
-    // TODO: Introduce logic that takes advantage of new attributes in NWM 1.2+
-    private static boolean isNWMData(String filename)
-    {
-        return NetCDF.NWM_NAME_PATTERN.matcher( filename ).matches();
-    }
-
-    // TODO: Introduce logic that takes advantage of new attributes in NWM 1.2+
-    private static String getNWMCategory(NetcdfFile file)
-    {
-        return Strings.extractWord( Paths.get(file.getLocation()).getFileName().toString(),
-                                    NWM_CATEGORY_PATTERN,
-                                    "Unknown" );
-    }
-
 
     /**
-     * Evaluates a unique identifier for the source of NetCDF data
-     * @param filepath The path to the NetCDF data
-     * @param variableName The variable of interest for the NetCDF data
-     * @return An Unique Identifier for specific data
-     * @throws IOException Thrown if the file could not be found
-     * @throws IOException Thrown if the file could not be opened
-     * @throws IOException Thrown if the file could not be read in order to produce a hash
+     * @param filepath the path to a file
+     * @param variableName the variable name
+     * @return a unique identifier for the gridded data
+     * @throws IOException if the identifier could not be determined
      */
-    public static String getUniqueIdentifier( final URI filepath, final String variableName ) throws IOException
-    {
-        String uniqueIdentifier;
-
-        // While including variable name is less efficient, it is more congruent
-        if (NetCDF.isGridded( filepath.toURL().getFile() ))
-        {
-            uniqueIdentifier = NetCDF.getGriddedUniqueIdentifier( filepath, variableName );
-        }
-        else
-        {
-            // With vector data, we need to know a) what data it is and b) what variable we're looking to ingest
-            uniqueIdentifier = Strings.getMD5Checksum( filepath );
-            uniqueIdentifier += "::" + variableName;
-        }
-
-        return uniqueIdentifier;
-    }
-
     public static String getGriddedUniqueIdentifier( final URI filepath, String variableName ) throws IOException
     {
-        try (NetcdfFile file = NetcdfFiles.open( filepath.toURL().getFile() ))
+        try ( NetcdfFile file = NetcdfFiles.open( filepath.toURL().getFile() ) )
         {
             return NetCDF.getGriddedUniqueIdentifier( file, filepath, variableName );
         }
     }
 
+    /**
+     * @param file the file
+     * @param target the target
+     * @param variableName the variable name
+     * @return a unique identifier for the gridded data
+     * @throws IOException if the identifier could not be determined
+     */
     public static String getGriddedUniqueIdentifier( final NetcdfFile file,
                                                      final URI target,
                                                      final String variableName ) throws IOException
@@ -438,7 +344,7 @@ public final class NetCDF {
         String uniqueIdentifier;
         StringJoiner identityJoiner = new StringJoiner( "::" );
 
-        identityJoiner.add( InetAddress.getLocalHost().getHostName());
+        identityJoiner.add( InetAddress.getLocalHost().getHostName() );
         identityJoiner.add( InetAddress.getLocalHost().getHostAddress() );
         identityJoiner.add( target.toURL().toString() );
 
@@ -452,11 +358,15 @@ public final class NetCDF {
         return uniqueIdentifier;
     }
 
-    public static void addNetcdfIdentifiers(final NetcdfFile file, final StringJoiner joiner)
+    /**
+     * @param file the file
+     * @param joiner a joiner
+     */
+    public static void addNetcdfIdentifiers( final NetcdfFile file, final StringJoiner joiner )
     {
-        for ( Variable var : file.getVariables() )
+        for ( Variable variable : file.getVariables() )
         {
-            joiner.add( var.getNameAndDimensions() );
+            joiner.add( variable.getNameAndDimensions() );
         }
 
         for ( Attribute attr : file.getGlobalAttributes() )
@@ -465,202 +375,4 @@ public final class NetCDF {
         }
     }
 
-    public static Integer getYLength(Variable var)
-    {
-        Integer length = null;
-
-        switch (var.getDimensions().size())
-        {
-            case 2:
-                length = var.getDimension(1).getLength();
-                break;
-            case 3:
-                length = var.getDimension(2).getLength();
-                break;
-        }
-
-        return length;
-    }
-
-    // TODO: We need a way to determine if the first variable is time and the
-    // second variable is the coordinate; in that case, this will return true,
-    // but the data will be vector, not gridded.
-    public static boolean isGridded(Variable var)
-    {
-        Integer length = NetCDF.getYLength(var);
-
-        return length != null && length > 0;
-    }
-
-    public static boolean isGridded(final String filename) throws IOException
-    {
-        try (NetcdfFile file = NetcdfFile.open( filename ))
-        {
-            for ( Variable var : file.getVariables() )
-            {
-                if ( !var.isCoordinateVariable() && var.getDimensions().size() > 2 )
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public static double getScaleFactor(Variable var)
-    {
-        double scaleFactor = 1.0;
-        Attribute factor = NetCDF.getVariableAttribute(var, "scale_factor");
-
-        if (factor != null)
-        {
-            scaleFactor = factor.getNumericValue().doubleValue();
-        }
-
-        return scaleFactor;
-    }
-
-    public static double getMinimumValue(Variable var)
-    {
-        double minimum = -Double.MAX_VALUE;
-
-        Attribute range = NetCDF.getVariableAttribute( var, "valid_range" );
-
-        if (range != null)
-        {
-            minimum = range.getNumericValue( 0 ).doubleValue();
-        }
-
-        return minimum;
-    }
-
-    public static double getMaximumValue(Variable var)
-    {
-        double maximum = Double.MAX_VALUE;
-
-        Attribute range = NetCDF.getVariableAttribute( var, "valid_range" );
-
-        if (range != null)
-        {
-            maximum = range.getNumericValue( 1 ).doubleValue();
-        }
-
-        return maximum;
-    }
-
-    public static double getAddOffset(Variable var)
-    {
-        double addOffset = 0.0;
-
-        Attribute offset = NetCDF.getVariableAttribute(var, "add_offset");
-
-        if (offset != null)
-        {
-            addOffset = offset.getNumericValue().doubleValue();
-        }
-
-        return addOffset;
-    }
-
-    public static Double getMissingValue(Variable var)
-    {
-        Double value = null;
-
-        Attribute missingValue = NetCDF.getVariableAttribute(var, "missing_value");
-        if (missingValue == null)
-        {
-            missingValue = NetCDF.getVariableAttribute(var, "_FillValue");
-        }
-
-        if (missingValue != null)
-        {
-            value = missingValue.getNumericValue().doubleValue() * NetCDF.getScaleFactor(var);
-        }
-
-        return value;
-    }
-
-    public static Double getGlobalMissingValue(NetcdfFile file)
-    {
-        Double value = null;
-
-        Attribute missingValue = file.findGlobalAttribute("missing_value");
-
-        if (missingValue == null)
-        {
-            missingValue = file.findGlobalAttribute("_FillValue");
-        }
-
-        if (missingValue != null)
-        {
-            value = missingValue.getNumericValue().doubleValue();
-        }
-
-        return value;
-    }
-
-    /**
-     *
-     * @param variable The coordinate variable holding the value
-     * @param value The value whose index to find
-     * @return The index at which the value may be found in the variable
-     * @throws IOException Thrown if values could not be read from the variable
-     * @throws IOException Thrown if the variable is not a coordinate variable
-     * @throws InvalidRangeException Thrown if the dimensions that are read
-     * from the variable are out of range
-     */
-    public static Integer getCoordinateIndex(final Variable variable, Object value)
-            throws IOException, InvalidRangeException
-    {
-        if (!variable.isCoordinateVariable())
-        {
-            throw new IOException( "A coordinate index cannot be read from a non-coordinate variable." );
-        }
-
-        // This will be the number of indices we traverse and return
-        int indexCount = 0;
-        Array values;
-        try
-        {
-            try
-            {
-                values = variable.read();
-            }
-            catch (ArrayIndexOutOfBoundsException e)
-            {
-                LOGGER.error("Reading array indexes failed.");
-                throw e;
-            }
-
-            while ( values.hasNext() )
-            {
-                Object readValue;
-                try
-                {
-                    readValue = values.next();
-                }
-                catch (ArrayIndexOutOfBoundsException e)
-                {
-                    LOGGER.error("Reading next array value failed.");
-                    throw e;
-                }
-
-                if ( readValue == value || readValue.equals( value ) )
-                {
-                    LOGGER.info( "Coordinate value for {} found at {}.",
-                                 value,
-                                 indexCount );
-                    return indexCount;
-                }
-                indexCount++;
-            }
-        }
-        catch (ArrayIndexOutOfBoundsException e)
-        {
-            LOGGER.error("Reading array indexes failed.");
-            throw e;
-        }
-        return null;
-    }
 }

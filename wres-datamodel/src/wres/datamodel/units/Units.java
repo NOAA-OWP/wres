@@ -50,14 +50,31 @@ import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
  */
 public class Units
 {
+    /** m3/s. */
     public static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
+    /** [ft_i]3/s */
     public static final String OFFICIAL_CUBIC_FEET_PER_SECOND = "[ft_i]3/s";
+    /** 1000.[ft_i]3/s */
     public static final String OFFICIAL_KILO_CUBIC_FEET_PER_SECOND = "1000.[ft_i]3/s";
+    /** Cel */
     public static final String OFFICIAL_DEGREES_CELSIUS = "Cel";
+    /** [degF] */
     public static final String OFFICIAL_DEGREES_FAHRENHEIT = "[degF]";
+    /** [in_i] */
     public static final String OFFICIAL_INCHES = "[in_i]";
+    /** /h */
     public static final String OFFICIAL_INCHES_PER_HOUR = OFFICIAL_INCHES + "/h";
+    /** mm */
     public static final String OFFICIAL_MILLIMETERS = "mm";
+    /** kg/m2 */
+    public static final String KG_M_2 = "kg/m2";
+    /** kg/m2.h*/
+    public static final String KG_M_2_H = "kg/m2.h";
+    /** kg/m2.s*/
+    public static final String KG_M_2_S = "kg/m2.s";
+    /** kg/kg */
+    public static final String KG_KG = "kg/kg";
+
     private static final Logger LOGGER = LoggerFactory.getLogger( Units.class );
     private static final UnitFormat UNIT_FORMAT = UCUMFormat.getInstance( CASE_SENSITIVE );
 
@@ -167,14 +184,6 @@ public class Units
      */
 
     private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
-
-    public static final String KG_M_2 = "kg/m2";
-
-    public static final String KG_M_2_H = "kg/m2.h";
-
-    public static final String KG_M_2_S = "kg/m2.s";
-
-    public static final String KG_KG = "kg/kg";
 
     static
     {

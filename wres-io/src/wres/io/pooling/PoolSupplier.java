@@ -2,6 +2,7 @@ package wres.io.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Climatology;
 import wres.datamodel.messages.EvaluationStatusMessage;
@@ -48,7 +50,6 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.NoSuchUnitConversionException;
-import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.statistics.generated.GeometryGroup;
@@ -135,14 +136,8 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     /** A function that filters baseline-ish time-series. */
     private final Predicate<TimeSeries<R>> baselineFilter;
 
-    /** An offset to apply to the valid times of the left data. */
-    private final Duration leftOffset;
-
-    /** An offset to apply to the valid times of the right data. */
-    private final Duration rightOffset;
-
-    /** An offset to apply to the valid times of the baseline data. */
-    private final Duration baselineOffset;
+    /** Any offsets to apply to the valid times of the time-series data by side of data. */
+    private final Map<LeftOrRightOrBaseline, Duration> validTimeShifts;
 
     /** Frequency with which pairs should be constructed at the desired time scale. */
     private final Duration frequency;
@@ -601,10 +596,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         // forecasts). Thus, each right-ish series is transformed per series in a later loop. However, the left-ish 
         // series are brought into memory, so transform them now. See #95488.        
         // Apply any valid time offset to the left-ish data upfront.
-        Duration leftValidOffset = this.getValidTimeOffset( LeftOrRightOrBaseline.LEFT );
-        List<TimeSeries<L>> transformedLeft = leftData.map( nextSeries -> this.applyValidTimeOffset( nextSeries,
-                                                                                                     leftValidOffset,
-                                                                                                     LeftOrRightOrBaseline.LEFT ) )
+        Duration leftValidOffset = this.getValidTimeShift( LeftOrRightOrBaseline.LEFT );
+        UnaryOperator<TimeSeries<L>> mapper = nextSeries -> this.applyValidTimeOffset( nextSeries,
+                                                                                       leftValidOffset,
+                                                                                       LeftOrRightOrBaseline.LEFT );
+        List<TimeSeries<L>> transformedLeft = leftData.map( mapper )
                                                       .toList();
 
         // Calculate the main pairs
@@ -922,7 +918,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
         UnaryOperator<TimeSeries<R>> rightOrBaselineTransformer =
                 this.getRightOrBaselineTransformer( rightOrBaselineOrientation );
-        Duration rightOrBaselineValidOffset = this.getValidTimeOffset( rightOrBaselineOrientation );
+        Duration rightOrBaselineValidOffset = this.getValidTimeShift( rightOrBaselineOrientation );
 
         Predicate<TimeSeries<L>> leftFilterInner = this.getLeftFilter();
         Predicate<TimeSeries<R>> rightOrBaselineFilter = this.getRightOrBaselineFilter( rightOrBaselineOrientation );
@@ -1540,23 +1536,11 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @param lrb the orientation of the required valid time offset
      * @return the offset
      * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unexpected
      */
 
-    private Duration getValidTimeOffset( LeftOrRightOrBaseline lrb )
+    private Duration getValidTimeShift( LeftOrRightOrBaseline lrb )
     {
-        return switch ( lrb )
-                {
-                    case LEFT -> this.leftOffset;
-                    case RIGHT -> this.rightOffset;
-                    case BASELINE -> this.baselineOffset;
-                    default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
-                                                                   + ". "
-                                                                   + "Expected one of "
-                                                                   + Set.of( LeftOrRightOrBaseline.LEFT,
-                                                                             LeftOrRightOrBaseline.RIGHT,
-                                                                             LeftOrRightOrBaseline.BASELINE ) );
-                };
+        return this.validTimeShifts.get( lrb );
     }
 
     /**
@@ -1949,18 +1933,15 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         this.climatology = builder.climatology;
 
         // Set any time offsets required
-        Map<LeftOrRightOrBaseline, Duration> offsets = this.getValidTimeOffsets( this.getInputs() );
-        this.leftOffset = offsets.get( LeftOrRightOrBaseline.LEFT );
-        this.rightOffset = offsets.get( LeftOrRightOrBaseline.RIGHT );
-        this.baselineOffset = offsets.get( LeftOrRightOrBaseline.BASELINE );
+        this.validTimeShifts = this.getValidTimeShifts( this.getInputs() );
         this.featureCorrelator = FeatureCorrelator.of( this.metadata.getFeatureTuples() );
 
-        if ( !offsets.isEmpty() && LOGGER.isDebugEnabled() )
+        if ( !this.validTimeShifts.isEmpty() && LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR
                           + "discovered these time offsets by data type {}.",
                           this.metadata,
-                          offsets );
+                          this.validTimeShifts );
         }
 
         if ( this.hasBaseline() )
@@ -2033,42 +2014,48 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
      * @return the valid time offsets, if any
      */
 
-    private Map<LeftOrRightOrBaseline, Duration> getValidTimeOffsets( Inputs inputsConfig )
+    private Map<LeftOrRightOrBaseline, Duration> getValidTimeShifts( Inputs inputsConfig )
     {
         Map<LeftOrRightOrBaseline, Duration> returnMe = new EnumMap<>( LeftOrRightOrBaseline.class );
 
         if ( Objects.nonNull( inputsConfig ) )
         {
-            if ( Objects.nonNull( inputsConfig.getLeft().getTimeShift() ) )
-            {
-                Duration leftOff = ConfigHelper.getTimeShift( inputsConfig.getLeft() );
-                returnMe.put( LeftOrRightOrBaseline.LEFT, leftOff );
-            }
+            Duration leftOff = PoolSupplier.getTimeShift( inputsConfig.getLeft() );
+            returnMe.put( LeftOrRightOrBaseline.LEFT, leftOff );
 
-            if ( Objects.nonNull( inputsConfig.getRight().getTimeShift() ) )
-            {
-                Duration rightOff = ConfigHelper.getTimeShift( inputsConfig.getRight() );
-                returnMe.put( LeftOrRightOrBaseline.RIGHT, rightOff );
-            }
+            Duration rightOff = PoolSupplier.getTimeShift( inputsConfig.getRight() );
+            returnMe.put( LeftOrRightOrBaseline.RIGHT, rightOff );
 
-            if ( Objects.nonNull( inputsConfig.getBaseline() )
-                 && Objects.nonNull( inputsConfig.getBaseline().getTimeShift() ) )
+            if ( Objects.nonNull( inputsConfig.getBaseline() ) )
             {
-                Duration baselineOff = ConfigHelper.getTimeShift( inputsConfig.getLeft() );
+                Duration baselineOff = PoolSupplier.getTimeShift( inputsConfig.getBaseline() );
                 returnMe.put( LeftOrRightOrBaseline.BASELINE, baselineOff );
             }
         }
 
-        // Add benign offsets
-        returnMe.putIfAbsent( LeftOrRightOrBaseline.LEFT, Duration.ZERO );
-        returnMe.putIfAbsent( LeftOrRightOrBaseline.RIGHT, Duration.ZERO );
-        if ( Objects.nonNull( inputsConfig )
-             && Objects.nonNull( inputsConfig.getBaseline() ) )
+        return returnMe;
+    }
+
+    /**
+     * @param dataSourceConfig the data source declaration
+     * @return the declared time shift or null if no time shift is declared
+     */
+    private static Duration getTimeShift( final DataSourceConfig dataSourceConfig )
+    {
+        Duration timeShift = Duration.ZERO; // Benign time shift
+
+        if ( Objects.nonNull( dataSourceConfig )
+             && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
         {
-            returnMe.putIfAbsent( LeftOrRightOrBaseline.BASELINE, Duration.ZERO );
+            ChronoUnit chronoUnit = ChronoUnit.valueOf( dataSourceConfig.getTimeShift()
+                                                                        .getUnit()
+                                                                        .toString()
+                                                                        .toUpperCase() );
+            timeShift = Duration.of( dataSourceConfig.getTimeShift().getWidth(),
+                                     chronoUnit );
         }
 
-        return returnMe;
+        return timeShift;
     }
 
     /**

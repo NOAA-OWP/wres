@@ -317,23 +317,6 @@ public class ConfigHelper
         }
     }
 
-    public static Duration getTimeShift( final DataSourceConfig dataSourceConfig )
-    {
-        Duration timeShift = null;
-
-        if ( Objects.nonNull( dataSourceConfig )
-             && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
-        {
-            timeShift = Duration.of( dataSourceConfig.getTimeShift().getWidth(),
-                                     ChronoUnit.valueOf( dataSourceConfig.getTimeShift()
-                                                                         .getUnit()
-                                                                         .toString()
-                                                                         .toUpperCase() ) );
-        }
-
-        return timeShift;
-    }
-
     /**
      * Given a config and a data source, return which kind the datasource is
      *

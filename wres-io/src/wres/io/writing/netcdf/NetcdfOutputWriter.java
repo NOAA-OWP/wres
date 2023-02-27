@@ -1524,8 +1524,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     GridDatatype variable = gridDataset.findGridDatatype( name );
                     int[] xyIndex = variable.getCoordinateSystem()
-                                            .findXYindexFromLatLon( point.getY(),
-                                                                    point.getX(),
+                                            .findXYindexFromLatLon( point.y(),
+                                                                    point.x(),
                                                                     null );
 
                     origin[0] = xyIndex[1];

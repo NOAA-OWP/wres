@@ -2,6 +2,7 @@ package wres.grid.reading;
 
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
+
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
@@ -45,6 +46,10 @@ import ucar.nc2.dt.grid.GridDataset;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
+/**
+ * Reads gridded data.
+ */
+
 public class GriddedReader
 {
     /**
@@ -80,7 +85,7 @@ public class GriddedReader
 
     /**
      * Returns a single-valued time-series response for the input request.
-     * 
+     *
      * @param request the request
      * @return the time-series response
      * @throws IOException if the gridded values cannot be read for any reason
@@ -94,9 +99,9 @@ public class GriddedReader
         if ( request.getPaths().isEmpty() )
         {
             throw new InvalidRequestException( "A request for gridded data must contain at least one path to read. The "
-                    + "request was: " + request );
+                                               + "request was: " + request );
         }
-        
+
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "Processing the following request for gridded data {}.", request );
@@ -110,7 +115,7 @@ public class GriddedReader
         Map<Feature, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
 
         String measurementUnit = "UNKNOWN";
-        
+
         while ( !paths.isEmpty() )
         {
             String path = paths.remove();
@@ -134,13 +139,13 @@ public class GriddedReader
                     // We'll need to eventually iterate through time, but now is
                     // not the... time!
                     griddedValue = reader.read(
-                                                null,
-                                                request.getVariableName(),
-                                                feature.getSrid(),
-                                                feature.getWkt() );
+                            null,
+                            request.getVariableName(),
+                            feature.getSrid(),
+                            feature.getWkt() );
 
                     Event<Double> event = DoubleEvent.of( griddedValue.getValidTime(), griddedValue.getValue() );
-                    Pair<Instant,Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.getIssueTime(), event );
+                    Pair<Instant, Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.getIssueTime(), event );
                     events.add( eventPlusIssueTime );
                     measurementUnit = griddedValue.getMeasurementUnit();
                 }
@@ -152,7 +157,7 @@ public class GriddedReader
         for ( Map.Entry<Feature, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
-                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(), 
+                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(),
                                                                  request.getTimeScale(),
                                                                  request.isForecast(),
                                                                  request.getVariableName(),
@@ -169,11 +174,11 @@ public class GriddedReader
 
     /**
      * Attempts to compose a list of {@link TimeSeries} from a list of events.
-     * 
+     *
      * TODO: replace with retrieval based around uniquely identified time-series. In the presence of duplicate events
      * whose values are different, it is impossible, by definition, to know the time-series to which a duplicate 
      * belongs; rather time-series must be composed with reference to a time-series identifier.
-     *  
+     *
      * @param <T> the type of event
      * @param events the events
      * @param timeScale optional time scale information
@@ -203,9 +208,9 @@ public class GriddedReader
             Event<T> nextEvent = nextPair.getRight();
 
             Instant referenceTime = nextPair.getLeft();
-            
+
             // Use a dummy reference time for non-forecasts so that the values are composed as a single series
-            if( ! isForecast )
+            if ( !isForecast )
             {
                 referenceTime = Instant.MIN;
             }
@@ -242,10 +247,10 @@ public class GriddedReader
         for ( Map.Entry<Instant, SortedSet<Event<T>>> nextEntry : eventsByReferenceTime.entrySet() )
         {
             Builder<T> builder = new Builder<T>().setEvents( nextEntry.getValue() );
-            Map<ReferenceTimeType,Instant> referenceTimes = Collections.emptyMap();
+            Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
 
             // Add the reference time for forecasts
-            if( isForecast )
+            if ( isForecast )
             {
                 referenceTimes = Map.of( ReferenceTimeType.T0, nextEntry.getKey() );
             }
@@ -271,17 +276,17 @@ public class GriddedReader
                                                                           feature,
                                                                           unit ) );
         }
-        
+
         return Collections.unmodifiableList( returnMe );
     }
 
     private static class GridValue
     {
         GridValue(
-                   final double value,
-                   final String measurementUnit,
-                   final Instant issueTime,
-                   final Instant validTime )
+                final double value,
+                final String measurementUnit,
+                final Instant issueTime,
+                final Instant validTime )
         {
             this.value = value;
             this.measurementUnit = measurementUnit;
@@ -354,16 +359,16 @@ public class GriddedReader
                                            + " was not discovered inside the dataset. Please "
                                            + "correct the declared variable name or the source and try again." );
                 }
-                
+
                 // Returns XY from YX parameters
-                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.getY(), point.getX(), null );
+                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.y(), point.x(), null );
 
                 // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
                 // the two, yielding indexes 1 then 0
                 Array data = variable.readDataSlice( time, 0, xIndexYIndex[1], xIndexYIndex[0] );
 
                 double value = data.getDouble( 0 );
-                
+
                 return new GridValue( value, variable.getUnitsString(), this.getIssueTime(), this.getValidTime() );
             }
             finally
@@ -376,7 +381,7 @@ public class GriddedReader
         {
             return this.readLock.isLocked();
         }
-        
+
         /**
          * Parse a point from a point WKT, ignoring srid.
          *
