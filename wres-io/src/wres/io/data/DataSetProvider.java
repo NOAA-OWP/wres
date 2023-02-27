@@ -41,6 +41,11 @@ public class DataSetProvider implements DataProvider
         rows = new ArrayList<>(  );
     }
 
+    /**
+     * Creates an instance from a provider.
+     * @param provider the provider
+     * @return an instance
+     */
     public static DataSetProvider from(final DataProvider provider)
     {
         if (provider == null || provider.isClosed())

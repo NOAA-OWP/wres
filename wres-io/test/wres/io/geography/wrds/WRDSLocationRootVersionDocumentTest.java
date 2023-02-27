@@ -199,7 +199,7 @@ public class WRDSLocationRootVersionDocumentTest
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
     {
         WrdsLocationRootVersionDocument versionInfo = new ObjectMapper().readValue(GOOD_TEST_CASE.getBytes(), WrdsLocationRootVersionDocument.class);
-        Assert.assertEquals("v3.1.0", versionInfo.getDeploymentInfo().getVersion());
+        Assert.assertEquals("v3.1.0", versionInfo.getDeploymentInfo().version());
         Assert.assertTrue( versionInfo.isDeploymentInfoPresent() );
     }
     

@@ -14,16 +14,24 @@ import wres.io.data.DataProvider;
 
 import java.util.IllegalFormatException;
 
+/**
+ * A class to help with running scripts against a database.
+ */
+
 public class DataScripter extends ScriptBuilder
 {
     private final Database database;
     private boolean isHighPriority = false;
-    private final List<Object> arguments = new ArrayList<>(  );
+    private final List<Object> arguments = new ArrayList<>();
     private boolean useTransaction;
     private Set<String> sqlStatesToRetry = Collections.emptySet();
     private List<Long> insertedIds;
     private int maxRows;
 
+    /**
+     * Creates an instance.
+     * @param database the database
+     */
     public DataScripter( Database database )
     {
         super();
@@ -34,10 +42,10 @@ public class DataScripter extends ScriptBuilder
      * @param database the database
      * @param beginning the beginning of the script
      */
-    
+
     public DataScripter( Database database, final String beginning )
     {
-        super(beginning);
+        super( beginning );
         this.database = database;
     }
 
@@ -45,7 +53,7 @@ public class DataScripter extends ScriptBuilder
      * Sets whether or not the script should use high priority connections
      * @param highPriority Whether or not high priority connections should be used
      */
-    public void setHighPriority(boolean highPriority)
+    public void setHighPriority( boolean highPriority )
     {
         this.isHighPriority = highPriority;
     }
@@ -54,7 +62,7 @@ public class DataScripter extends ScriptBuilder
      * Sets whether or not to run the query within a single transaction
      * @param useTransaction Whether or not to run the query within a transaction
      */
-    public void setUseTransaction(boolean useTransaction)
+    public void setUseTransaction( boolean useTransaction )
     {
         this.useTransaction = useTransaction;
     }
@@ -64,28 +72,16 @@ public class DataScripter extends ScriptBuilder
      * @param argument The argument to run in the database
      * @return The updated DataScripter
      */
-    public DataScripter addArgument(final Object argument)
+    public DataScripter addArgument( final Object argument )
     {
-        this.arguments.add(argument);
-        
+        this.arguments.add( argument );
+
         return this;
     }
 
     /**
-     * Add a SQLSTATE that causes indefinite retry of the query
-     * @param sqlState The SQLSTATE to retry.
+     * Retries on encountering a serialization failure.
      */
-
-    public void retryOnSqlState( String sqlState )
-    {
-        if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
-        {
-            this.sqlStatesToRetry = new HashSet<>( 2 );
-        }
-
-        this.sqlStatesToRetry.add( sqlState );
-    }
-
     public void retryOnSerializationFailure()
     {
         if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
@@ -96,6 +92,9 @@ public class DataScripter extends ScriptBuilder
         this.sqlStatesToRetry.add( "40001" );
     }
 
+    /**
+     * Retries on encountering a unique constraint violation.
+     */
     public void retryOnUniqueViolation()
     {
         if ( this.sqlStatesToRetry.equals( Collections.emptySet() ) )
@@ -105,7 +104,6 @@ public class DataScripter extends ScriptBuilder
 
         this.sqlStatesToRetry.add( "23505" );
     }
-
 
     /**
      * Sets jdbc maximum rows AND adds a LIMIT clause if supported by database.
@@ -135,7 +133,7 @@ public class DataScripter extends ScriptBuilder
      * @return The number of modified rows
      * @throws SQLException Thrown if execution of the script fails
      */
-    public int execute(Object... parameters) throws SQLException
+    public int execute( Object... parameters ) throws SQLException
     {
         Query query = this.formQuery()
                           .setParameters( parameters );
@@ -151,7 +149,7 @@ public class DataScripter extends ScriptBuilder
      * @return the total number of rows modified by the batch operation
      * @throws SQLException Thrown if the script cannot execute in full
      */
-    public int execute(List<Object[]> parameters) throws SQLException
+    public int execute( List<Object[]> parameters ) throws SQLException
     {
         Query query = this.formQuery()
                           .setBatchParameters( parameters );
@@ -180,7 +178,7 @@ public class DataScripter extends ScriptBuilder
      * @return The retrieved value
      * @throws SQLException Thrown if the value could not be retrieved
      */
-    public <V> V retrieve(String label) throws SQLException
+    public <V> V retrieve( String label ) throws SQLException
     {
         return this.database.retrieve( this.formQuery(), label, this.isHighPriority );
     }
@@ -191,7 +189,7 @@ public class DataScripter extends ScriptBuilder
      * @return The collection of data loaded from the database
      * @throws SQLException Thrown if an issue was encountered while communicating with the database
      */
-    public DataProvider getData(Object... parameters) throws SQLException
+    public DataProvider getData( Object... parameters ) throws SQLException
     {
         return this.database.getData( this.formQuery().setParameters( parameters ), this.isHighPriority );
     }
@@ -203,7 +201,7 @@ public class DataScripter extends ScriptBuilder
      * @param <V> The type of the value to retrieve
      * @return The task that retrieves the value
      */
-    public <V> Future<V> submit(final String label)
+    public <V> Future<V> submit( final String label )
     {
         return this.database.submit( this.formQuery(), label, this.isHighPriority );
     }
@@ -252,7 +250,7 @@ public class DataScripter extends ScriptBuilder
     {
         return this.insertedIds;
     }
-    
+
     /**
      * @return the parameters associated with the script.
      */
@@ -261,7 +259,7 @@ public class DataScripter extends ScriptBuilder
     {
         return Collections.unmodifiableList( this.arguments );
     }
-    
+
     /**
      * @return a string representation of the parameters, pretty printing long[] and Long[]
      */
@@ -273,11 +271,11 @@ public class DataScripter extends ScriptBuilder
         {
             if ( next instanceof long[] )
             {
-                parameterStrings.add( Arrays.toString( (long[]) next ) );
+                parameterStrings.add( Arrays.toString( ( long[] ) next ) );
             }
             else if ( next instanceof Long[] )
             {
-                parameterStrings.add( Arrays.toString( (Long[]) next ) );
+                parameterStrings.add( Arrays.toString( ( Long[] ) next ) );
             }
             else
             {
@@ -291,23 +289,23 @@ public class DataScripter extends ScriptBuilder
     /**
      * <p>Returns a string representation of the script that is runnable on a database instance. If the script contains 
      * a prepared statement, then the parameters are added inline to the script.
-     * 
+     *
      * <p>This is a utility method to assist in logging scripts that can be copied from the log and executed against a 
      * database instance, in order to assist in debugging. It should not be used to obtain a script to run in code 
      * against a database. Instead, use the runnable methods in this class to directly execute the script instance. 
      * Examples of these methods are {@link #execute()} and {@link #buffer(Connection)}.
-     * 
+     *
      * <p>When inserting a parameter into a prepared statement, the string representation of the parameter is used.
      * There is currently no special treatment of arrays, for example.
      *
      * @return a runnable string representation of the script
      * @throws IllegalFormatException if the script could not be formatted
      */
-    
+
     public String toStringRunnableForDebugPurposes()
     {
         // Already runnable?
-        if( this.arguments.isEmpty() )
+        if ( this.arguments.isEmpty() )
         {
             return super.toString();
         }
@@ -319,7 +317,7 @@ public class DataScripter extends ScriptBuilder
             return String.format( script, this.arguments.toArray() );
         }
     }
-    
+
     /**
      * Creates the query to run in the database based on the configured settings
      * @return The query to run
@@ -329,7 +327,7 @@ public class DataScripter extends ScriptBuilder
         Query query = new Query( this.database.getSystemSettings(), this.toString() )
                 .inTransaction( this.useTransaction );
 
-        if (!this.arguments.isEmpty())
+        if ( !this.arguments.isEmpty() )
         {
             query.setParameters( this.arguments.toArray() );
         }

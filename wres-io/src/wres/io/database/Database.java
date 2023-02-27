@@ -91,6 +91,10 @@ public class Database
     private final Map<Integer, String> timeSeriesValuePartitionNames =
             new ConcurrentHashMap<>( 163 );
 
+    /**
+     * Creates an instance
+     * @param systemSettings the system settings
+     */
     public Database( SystemSettings systemSettings )
     {
         this.systemSettings = systemSettings;

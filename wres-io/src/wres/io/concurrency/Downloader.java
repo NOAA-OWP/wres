@@ -20,12 +20,21 @@ public final class Downloader implements Runnable
     private static final Logger LOGGER = LoggerFactory.getLogger( Downloader.class );
     private static final Object DIRECTORY_CREATION_LOCK = new Object();
 
+    /**
+     * Creates an instance.
+     * @param targetPath the target path
+     * @param address the address
+     */
     public Downloader( Path targetPath, URI address )
     {
         this.targetPath = targetPath;
         this.address = address;
     }
 
+    /**
+     * Sets the output display state.
+     * @param displayOutput is true to display output, false to hide
+     */
     public void setDisplayOutput( boolean displayOutput )
     {
         this.displayOutput = displayOutput;

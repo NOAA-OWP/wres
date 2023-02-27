@@ -15,11 +15,18 @@ import wres.io.database.Database;
  */
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
 {
+    /**
+     * Creates an instance.
+     * @param name the name
+     */
     public EnsembleDetails( String name )
     {
         this.ensembleName = name;
     }
 
+    /**
+     * Creates an instance.
+     */
     public EnsembleDetails()
     {
         super();
@@ -29,7 +36,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, String>
 
     /**
      The name of the ensemble trace being represented
-      */
+     */
     private String ensembleName = null;
 
     /**

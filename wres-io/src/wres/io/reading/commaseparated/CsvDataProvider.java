@@ -53,23 +53,54 @@ public class CsvDataProvider implements DataProvider
     private final char delimiter;
     private final String commentString;
 
+    /**
+     * Creates an instance.
+     * @param filePath the file path
+     * @param delimiter the delimiter
+     * @return the data provider
+     * @throws IOException if the path could not be read
+     */
     public static CsvDataProvider from( final String filePath, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
+    /**
+     * Creates an instance.
+     * @param inputStream the input stream
+     * @param delimiter the delimiter
+     * @return the data provider
+     * @throws IOException if the path could not be read
+     */
     public static CsvDataProvider from( final InputStream inputStream, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( inputStream, delimiter, DEFAULT_COMMENT_STRING, null );
     }
 
+    /**
+     * Creates an instance.
+     * @param filePath the file path
+     * @param delimiter the delimiter
+     * @return the data provider
+     * @throws IOException if the path could not be read
+     */
+
     public static CsvDataProvider from( final URI filePath, final char delimiter )
             throws IOException
     {
         return new CsvDataProvider( Paths.get( filePath ), delimiter, DEFAULT_COMMENT_STRING, null );
     }
+
+    /**
+     * Creates an instance.
+     * @param filePath the file path
+     * @param delimiter the delimiter
+     * @param columns the columns
+     * @return the data provider
+     * @throws IOException if the path could not be read
+     */
 
     public static CsvDataProvider from( final URI filePath, final char delimiter, final Map<String, Integer> columns )
             throws IOException
@@ -174,7 +205,7 @@ public class CsvDataProvider implements DataProvider
 
         while ( this.next() )
         {
-            LOGGER.trace( "Moving to the end of the FileDataProvider for {}", this.filePath.toString() );
+            LOGGER.trace( "Moving to the end of the FileDataProvider for {}.", this.filePath );
         }
     }
 

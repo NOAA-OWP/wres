@@ -140,6 +140,10 @@ public class DataBuilder
         return provider;
     }
 
+    /**
+     * Resets the builder.
+     * @return the reset builder
+     */
     public DataBuilder reset()
     {
         this.currentRow = -1;
