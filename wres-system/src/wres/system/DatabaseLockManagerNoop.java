@@ -13,6 +13,9 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseLockManagerNoop.class );
 
+    /**
+     * Creates an instance.
+     */
     public DatabaseLockManagerNoop()
     {
         LOGGER.warn( "Using no-op database lock manager, appropriate for in-memory evaluations only." );

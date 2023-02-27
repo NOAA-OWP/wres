@@ -61,6 +61,10 @@ public class SystemSettings extends XMLReader
     /** The number of features contained within each feature batch when feature-batched retrieval is conducted. **/
     private int featureBatchSize = 50;
 
+    /**
+     * @return a default instance from an XML file discovered on the classpath
+     */
+
     public static SystemSettings fromDefaultClasspathXmlFile()
     {
         try
@@ -75,21 +79,13 @@ public class SystemSettings extends XMLReader
         }
     }
 
+    /**
+     * @return a default instance
+     */
+
     public static SystemSettings withDefaults()
     {
         return new SystemSettings();
-    }
-
-    public static SystemSettings fromUri( URI uri )
-    {
-        try
-        {
-            return new SystemSettings( uri );
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Could not read system settings from " + uri, e );
-        }
     }
 
     /**
@@ -135,26 +131,26 @@ public class SystemSettings extends XMLReader
         return this.maximumThreadCount;
     }
 
+    /**
+     * @return the maximum number of archive threads
+     */
     public int maximumArchiveThreads()
     {
         if ( this.maximumArchiveThreads == null )
         {
-            int threadCount = ( (Double) Math.ceil(
-                                                    this.maximumThreadCount() / 10F ) ).intValue();
+            int threadCount = ( (Double) Math.ceil( this.maximumThreadCount() / 10F ) ).intValue();
             return Math.max( threadCount, 2 );
         }
 
         return this.maximumArchiveThreads;
     }
 
+    /**
+     * @return the maximum number of web client threads
+     */
     public int getMaximumWebClientThreads()
     {
         return this.maximumWebClientThreads;
-    }
-
-    public int getMaxiumNwmIngestThreads()
-    {
-        return this.maximumNwmIngestThreads;
     }
 
     /**

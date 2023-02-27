@@ -140,6 +140,9 @@ public abstract class XMLReader
         this.fastInfoset = false;
     }
 
+    /**
+     * @return the file name
+     */
     protected URI getFilename()
     {
         return filename;
@@ -164,6 +167,10 @@ public abstract class XMLReader
         return this.fastInfoset;
     }
 
+    /**
+     * Parse the XML.
+     * @throws IOException if the XML could not be parsed
+     */
     public void parse() throws IOException
     {
         XMLStreamReader reader = null;
@@ -214,6 +221,9 @@ public abstract class XMLReader
         }
     }
 
+    /**
+     * @throws IOException if the parsing failed
+     */
     protected void completeParsing()
             throws IOException
     {
@@ -232,20 +242,10 @@ public abstract class XMLReader
         }
     }
 
-    public String getRawXML() throws XMLStreamException, TransformerException
-    {
-        XMLStreamReader reader = createReader();
-
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        // Prohibit the use of all protocols by external entities:
-        transformerFactory.setAttribute( XMLConstants.ACCESS_EXTERNAL_DTD, "" );
-        transformerFactory.setAttribute( XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "" );
-        Transformer transformer = transformerFactory.newTransformer();
-        StringWriter stringWriter = new StringWriter();
-        transformer.transform( new StAXSource( reader ), new StreamResult( stringWriter ) );
-        return stringWriter.toString();
-    }
-
+    /**
+     * @param reader the reader
+     * @throws IOException if the element could not be parsed
+     */
     protected void parseElement( XMLStreamReader reader ) throws IOException
     {
         switch ( reader.getEventType() )
