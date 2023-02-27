@@ -3,7 +3,7 @@ package wres.io.thresholds.wrds.v3;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.exceptions.NoThresholdsFoundException;
 import wres.io.thresholds.wrds.WRDSThresholdType;
 

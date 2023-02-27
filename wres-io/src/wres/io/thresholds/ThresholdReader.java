@@ -5,7 +5,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.system.SystemSettings;
 
 import java.util.*;

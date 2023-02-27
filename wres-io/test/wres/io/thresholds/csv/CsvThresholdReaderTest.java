@@ -15,7 +15,7 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.system.SystemSettings;

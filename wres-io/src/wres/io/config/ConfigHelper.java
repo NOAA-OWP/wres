@@ -324,10 +324,8 @@ public class ConfigHelper
         if ( Objects.nonNull( dataSourceConfig )
              && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
         {
-            timeShift = Duration.of(
-                                     dataSourceConfig.getTimeShift().getWidth(),
-                                     ChronoUnit.valueOf(
-                                                         dataSourceConfig.getTimeShift()
+            timeShift = Duration.of( dataSourceConfig.getTimeShift().getWidth(),
+                                     ChronoUnit.valueOf( dataSourceConfig.getTimeShift()
                                                                          .getUnit()
                                                                          .toString()
                                                                          .toUpperCase() ) );

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
+import wres.io.writing.netcdf.NetCDFCopier;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -260,10 +262,10 @@ final class Functions
 
     private static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
-        String[] args = sharedResources.arguments();
+        List<String> args = sharedResources.arguments();
 
-        String path = args[0];
-        String variableName = args[1];
+        String path = args.get( 0 );
+        String variableName = args.get( 1 );
 
         try ( NetcdfDataset dataset = NetcdfDatasets.openDataset( path );
               GridDataset grid = new GridDataset( dataset ) )
@@ -327,11 +329,11 @@ final class Functions
 
     private static ExecutionResult ingest( SharedResources sharedResources )
     {
-        String[] args = sharedResources.arguments();
+        List<String> args = sharedResources.arguments();
 
-        if ( args.length > 0 )
+        if ( !args.isEmpty() )
         {
-            String projectPath = args[0];
+            String projectPath = args.get( 0 );
             ProjectConfig projectConfig;
 
             try
@@ -407,11 +409,11 @@ final class Functions
 
     private static ExecutionResult validate( SharedResources sharedResources )
     {
-        String[] args = sharedResources.arguments();
+        List<String> args = sharedResources.arguments();
 
-        if ( args.length > 0 )
+        if ( !args.isEmpty() )
         {
-            Path configPath = Paths.get( args[0] );
+            Path configPath = Paths.get( args.get( 0 ) );
             ProjectConfigPlus projectConfigPlus;
 
             String fullPath = configPath.toAbsolutePath().toString();
@@ -464,14 +466,14 @@ final class Functions
 
     private static ExecutionResult createNetCDFTemplate( SharedResources sharedResources )
     {
-        String[] args = sharedResources.arguments();
+        List<String> args = sharedResources.arguments();
 
-        if ( args.length > 1 )
+        if ( args.size() > 1 )
         {
             try
             {
-                String fromFileName = args[0];
-                String toFileName = args[1];
+                String fromFileName = args.get( 0 );
+                String toFileName = args.get( 1 );
 
                 if ( !Files.exists( Paths.get( fromFileName ) ) )
                 {
@@ -496,7 +498,11 @@ final class Functions
                     return ExecutionResult.failure( e );
                 }
 
-                Operations.createNetCDFOutputTemplate( fromFileName, toFileName );
+                try ( NetCDFCopier writer = new NetCDFCopier( fromFileName, toFileName, ZonedDateTime.now() ) )
+                {
+                    writer.write();
+                }
+
                 return ExecutionResult.success();
             }
             catch ( IOException | RuntimeException error )
@@ -518,7 +524,7 @@ final class Functions
 
     /** Small value class of shared resources. */
     record SharedResources( SystemSettings systemSettings, Database database,
-                            BrokerConnectionFactory brokerConnectionFactory, String[] arguments )
+                            BrokerConnectionFactory brokerConnectionFactory, List<String> arguments )
     {
         /**
          * @param systemSettings the system settings, not null

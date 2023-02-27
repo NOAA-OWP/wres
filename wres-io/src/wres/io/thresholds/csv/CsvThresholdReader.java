@@ -18,7 +18,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdException;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.exceptions.AllThresholdsMissingException;
 import wres.io.thresholds.exceptions.LabelInconsistencyException;
 import wres.system.SystemSettings;

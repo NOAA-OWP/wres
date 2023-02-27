@@ -17,14 +17,13 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
 import wres.system.SystemSettings;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
