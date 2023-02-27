@@ -106,6 +106,9 @@ public final class Downloader implements Runnable
         }
     }
 
+    /**
+     * @return true if the file has been downloaded.
+     */
     public boolean fileHasBeenDownloaded()
     {
         return this.fileDownloaded;
