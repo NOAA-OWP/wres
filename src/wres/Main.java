@@ -5,6 +5,8 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -162,11 +164,13 @@ public class Main
         try ( BrokerConnectionFactory brokerConnectionFactory =
                       BrokerConnectionFactory.of( brokerConnectionProperties ) )
         {
+            List<String> argList = Arrays.stream( args )
+                                         .toList();
             Functions.SharedResources sharedResources =
                     new Functions.SharedResources( SYSTEM_SETTINGS,
                                                    database,
                                                    brokerConnectionFactory,
-                                                   args );
+                                                   argList );
 
             result = Functions.call( function, sharedResources );
             Instant endedExecution = Instant.now();
@@ -298,19 +302,30 @@ public class Main
         }
     }
 
+    /**
+     * @return the software version
+     */
+
     public static String getVersion()
     {
         return version.toString();
     }
+
+    /**
+     * @return the software version description
+     */
 
     public static String getVersionDescription()
     {
         return version.getDescription();
     }
 
+    /**
+     * @return a verbose runtime description
+     */
+
     private static String getVerboseRuntimeDescription()
     {
         return version.getVerboseRuntimeDescription();
     }
-
 }

@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.datamodel.units;
 
 /**
  * Runtime exception associated with a unit conversion.

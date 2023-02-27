@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
@@ -24,12 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.Pipelines;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
 import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
@@ -38,14 +34,10 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.project.InMemoryProject;
 import wres.io.project.Project;
-import wres.io.writing.netcdf.NetCDFCopier;
 import wres.system.SystemSettings;
 
 /**
  * Helpers to conduct ingest and prepare for operations on time-series data.
- *
- * TODO: consider moving the purely database-related helpers, such as {@link DatabaseOperations#cleanDatabase(Database)} from here to 
- * {@link Database}.
  */
 
 public final class Operations
@@ -153,7 +145,7 @@ public final class Operations
         }
 
         List<IngestResult> composedResults = projectSources.stream()
-                                                           .collect( Collectors.toList() );
+                                                           .toList();
 
         List<IngestResult> safeToShareResults =
                 Collections.unmodifiableList( composedResults );
@@ -251,15 +243,6 @@ public final class Operations
             LOGGER.info( "IO module was forcefully shut down. "
                          + "Abandoned around {} database tasks.",
                          databaseTasks.size() );
-        }
-    }
-
-    public static void createNetCDFOutputTemplate( final String sourceName, final String templateName )
-            throws IOException
-    {
-        try ( NetCDFCopier writer = new NetCDFCopier( sourceName, templateName, ZonedDateTime.now() ) )
-        {
-            writer.write();
         }
     }
 

@@ -15,7 +15,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.v3.GeneralThresholdMetadata;

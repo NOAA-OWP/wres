@@ -1,5 +1,6 @@
-package wres.datamodel;
+package wres.datamodel.units;
 
+import java.io.Serial;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -37,15 +38,16 @@ import systems.uom.ucum.internal.format.TokenMgrError;
 import tech.units.indriya.quantity.Quantities;
 import tech.units.indriya.quantity.time.TemporalQuantity;
 import tech.units.indriya.unit.UnitDimension;
+
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 
 /**
- * Build units using javax.measure. See also wres.io.retrieval.UnitMapper class.
+ * Build units using javax.measure.
  */
-
 public class Units
 {
     public static final String OFFICIAL_CUBIC_METERS_PER_SECOND = "m3/s";
@@ -84,7 +86,7 @@ public class Units
                                                                      .build();
 
     /**
-     * For backward compatibility, a map from weird unit names to official ones,
+     * <p>For backward compatibility, a map from weird unit names to official ones,
      * "official ones" being those supported by the indriya implementation.
      * Here was the table as of WRES 5.14. Here we omit "NONE", "-", "fraction"
      * because they aren't units, and omit "%" because it's already supported.
@@ -92,7 +94,7 @@ public class Units
      * cased versions of each previously supported unit. It seemed too far to do
      * mixed case for each and every unit. This is already too far anyway.
      *
-     * select * from wres.measurementunit;
+     * <p>select * from wres.measurementunit;
      *  measurementunit_id | unit_name
      * --------------------+-----------
      *                   1 | NONE
@@ -166,6 +168,14 @@ public class Units
 
     private static final Map<String, String> CONVENIENCE_ALIASES = new HashMap<>( 116 );
 
+    public static final String KG_M_2 = "kg/m2";
+
+    public static final String KG_M_2_H = "kg/m2.h";
+
+    public static final String KG_M_2_S = "kg/m2.s";
+
+    public static final String KG_KG = "kg/kg";
+
     static
     {
         // These are for backward compatibility with pre-5.14 units that were
@@ -208,8 +218,8 @@ public class Units
         CONVENIENCE_ALIASES.put( "S", "s" );
         CONVENIENCE_ALIASES.put( "MM", OFFICIAL_MILLIMETERS );
         CONVENIENCE_ALIASES.put( "CM", "cm" );
-        CONVENIENCE_ALIASES.put( "kg m{-2}", "kg/m2" );
-        CONVENIENCE_ALIASES.put( "KG M{-2}", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "kg m{-2}", KG_M_2 );
+        CONVENIENCE_ALIASES.put( "KG M{-2}", KG_M_2 );
         CONVENIENCE_ALIASES.put( "ft/sec", "[ft_i]/s" );
         CONVENIENCE_ALIASES.put( "FT/SEC", "[ft_i]/s" );
         CONVENIENCE_ALIASES.put( "gal/min", "[gal_us]/min" );
@@ -240,15 +250,15 @@ public class Units
         CONVENIENCE_ALIASES.put( "MM H-1", "mm/h" );
         CONVENIENCE_ALIASES.put( "mm h{-1}", "mm/h" );
         CONVENIENCE_ALIASES.put( "MM H{-1}", "mm/h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2", "kg/m2" );
-        CONVENIENCE_ALIASES.put( "kg/m^2h", "kg/m2.h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2H", "kg/m2.h" );
-        CONVENIENCE_ALIASES.put( "kg/m^2s", "kg/m2.s" );
-        CONVENIENCE_ALIASES.put( "KG/M^2S", "kg/m2.s" );
-        CONVENIENCE_ALIASES.put( "kg/m^2/s", "kg/m2.s" );
-        CONVENIENCE_ALIASES.put( "KG/M^2/S", "kg/m2.s" );
-        CONVENIENCE_ALIASES.put( "kg/m^2/h", "kg/m2.h" );
-        CONVENIENCE_ALIASES.put( "KG/M^2/H", "kg/m2.h" );
+        CONVENIENCE_ALIASES.put( "KG/M^2", KG_M_2 );
+        CONVENIENCE_ALIASES.put( "kg/m^2h", KG_M_2_H );
+        CONVENIENCE_ALIASES.put( "KG/M^2H", KG_M_2_H );
+        CONVENIENCE_ALIASES.put( "kg/m^2s", KG_M_2_S );
+        CONVENIENCE_ALIASES.put( "KG/M^2S", KG_M_2_S );
+        CONVENIENCE_ALIASES.put( "kg/m^2/s", KG_M_2_S );
+        CONVENIENCE_ALIASES.put( "KG/M^2/S", KG_M_2_S );
+        CONVENIENCE_ALIASES.put( "kg/m^2/h", KG_M_2_H );
+        CONVENIENCE_ALIASES.put( "KG/M^2/H", KG_M_2_H );
         CONVENIENCE_ALIASES.put( "PA", "Pa" );
         CONVENIENCE_ALIASES.put( "pa", "Pa" );
         CONVENIENCE_ALIASES.put( "w/m^2", "W/m2" );
@@ -264,12 +274,12 @@ public class Units
         CONVENIENCE_ALIASES.put( "M/S", "m/s" );
         CONVENIENCE_ALIASES.put( "M S{-1}", "m/s" );
         CONVENIENCE_ALIASES.put( "m s{-1}", "m/s" );
-        CONVENIENCE_ALIASES.put( "kg kg-1", "kg/kg" );
-        CONVENIENCE_ALIASES.put( "KG KG-1", "kg/kg" );
-        CONVENIENCE_ALIASES.put( "kg kg{-1}", "kg/kg" );
-        CONVENIENCE_ALIASES.put( "KG KG{-1}", "kg/kg" );
-        CONVENIENCE_ALIASES.put( "kg m-2", "kg/m2" );
-        CONVENIENCE_ALIASES.put( "KG M-2", "kg/m2" );
+        CONVENIENCE_ALIASES.put( "kg kg-1", KG_KG );
+        CONVENIENCE_ALIASES.put( "KG KG-1", KG_KG );
+        CONVENIENCE_ALIASES.put( "kg kg{-1}", KG_KG );
+        CONVENIENCE_ALIASES.put( "KG KG{-1}", KG_KG );
+        CONVENIENCE_ALIASES.put( "kg m-2", KG_M_2 );
+        CONVENIENCE_ALIASES.put( "KG M-2", KG_M_2 );
         CONVENIENCE_ALIASES.put( "k", "K" );
         CONVENIENCE_ALIASES.put( "IN/HR", OFFICIAL_INCHES_PER_HOUR );
         CONVENIENCE_ALIASES.put( "in/hr", OFFICIAL_INCHES_PER_HOUR );
@@ -309,7 +319,7 @@ public class Units
 
     /**
      * Given a unit name, return the official UCUM unit name.
-     * 
+     *
      * @param unitName the unit name
      * @param overrideAliases a map of override aliases, possibly empty
      * @return the official unit name
@@ -326,9 +336,9 @@ public class Units
     }
 
     /**
-     * Given a unit name, return the formal javax.measure Unit of Measure.
+     * <p>Given a unit name, return the formal javax.measure Unit of Measure.
      *
-     * Look in overrides and use the value found (when found).
+     * <p>Look in overrides and use the value found (when found).
      * If not found in overrides, look in convenient defaults.
      * If not found in convenient defaults, parse straightaway.
      *
@@ -362,12 +372,10 @@ public class Units
         {
             LOGGER.debug( "getUnit parsing a unit {}, given {}", officialName, unitName );
             unit = UNIT_FORMAT.parse( officialName );
-            
+
             // Cache
             UNIT_CACHE.put( officialName, unit );
         }
-        // TODO: remove TokenMgrError and TokenException when the libraries
-        // change to not throw these internal exceptions.
         catch ( MeasurementParseException | TokenMgrError | TokenException e )
         {
             SortedSet<String> aliases = new TreeSet<>();
@@ -395,9 +403,9 @@ public class Units
     }
 
     /**
-     * Given a unit name, return the formal javax.measure Unit of Measure.
+     * <p>Given a unit name, return the formal javax.measure Unit of Measure.
      *
-     * Look in convenient defaults.
+     * <p>Look in convenient defaults.
      * If not found in convenient defaults, parse straightaway.
      *
      * @param unitName The name String
@@ -412,7 +420,7 @@ public class Units
 
     /**
      * Creates a converter that integrates the existing unit over time to form the desired unit.
-     * 
+     *
      * @see #isSupportedTimeIntegralConversion(Unit, Unit)
      * @param timeScale the time scale
      * @param existingUnit the existing measurement unit
@@ -436,9 +444,9 @@ public class Units
         {
             // These casts are awkward but safe because they are guarded by the check above
             @SuppressWarnings( "unchecked" )
-            Unit<VolumetricFlowRate> existingFlowUnit = (Unit<VolumetricFlowRate>) existingUnit;
+            Unit<VolumetricFlowRate> existingFlowUnit = ( Unit<VolumetricFlowRate> ) existingUnit;
             @SuppressWarnings( "unchecked" )
-            Unit<Volume> desiredVolumeUnit = (Unit<Volume>) desiredUnit;
+            Unit<Volume> desiredVolumeUnit = ( Unit<Volume> ) desiredUnit;
 
             return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
         }
@@ -447,9 +455,9 @@ public class Units
         {
             // These casts are awkward but safe because they are guarded by the check above
             @SuppressWarnings( "unchecked" )
-            Unit<Speed> existingFlowUnit = (Unit<Speed>) existingUnit;
+            Unit<Speed> existingFlowUnit = ( Unit<Speed> ) existingUnit;
             @SuppressWarnings( "unchecked" )
-            Unit<Length> desiredVolumeUnit = (Unit<Length>) desiredUnit;
+            Unit<Length> desiredVolumeUnit = ( Unit<Length> ) desiredUnit;
 
             return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
         }
@@ -458,9 +466,9 @@ public class Units
         {
             // These casts are awkward but safe because they are guarded by the check above
             @SuppressWarnings( "unchecked" )
-            Unit<MassFlowRate> existingFlowUnit = (Unit<MassFlowRate>) existingUnit;
+            Unit<MassFlowRate> existingFlowUnit = ( Unit<MassFlowRate> ) existingUnit;
             @SuppressWarnings( "unchecked" )
-            Unit<Mass> desiredVolumeUnit = (Unit<Mass>) desiredUnit;
+            Unit<Mass> desiredVolumeUnit = ( Unit<Mass> ) desiredUnit;
 
             return Units.getTimeIntegralConverterInner( timeScale, existingFlowUnit, desiredVolumeUnit );
         }
@@ -547,7 +555,7 @@ public class Units
     /**
      * Creates a converter that performs a time integration of the input. The time scale must represent a mean average
      * over the scale period, i.e., a {@link TimeScaleFunction#MEAN} and cannot be an instantaneous time scale.
-     * 
+     *
      * @param timeScale the time scale
      * @param existingUnit the existing measurement unit
      * @param desiredUnit the desired measurement unit
@@ -557,9 +565,9 @@ public class Units
      */
 
     private static <S extends Quantity<S>, T extends Quantity<T>> UnaryOperator<Double>
-            getTimeIntegralConverterInner( TimeScaleOuter timeScale,
-                                           Unit<S> existingUnit,
-                                           Unit<T> desiredUnit )
+    getTimeIntegralConverterInner( TimeScaleOuter timeScale,
+                                   Unit<S> existingUnit,
+                                   Unit<T> desiredUnit )
     {
         Objects.requireNonNull( timeScale );
         Objects.requireNonNull( existingUnit );
@@ -591,7 +599,7 @@ public class Units
 
             Quantity<S> someFlowQuantity = Quantities.getQuantity( flowInFlowUnits, existingUnit );
             @SuppressWarnings( "unchecked" )
-            Quantity<T> someVolume = (Quantity<T>) someFlowQuantity.multiply( scalePeriodMillis );
+            Quantity<T> someVolume = ( Quantity<T> ) someFlowQuantity.multiply( scalePeriodMillis );
             Quantity<T> someVolumeInDesiredUnits = someVolume.to( desiredUnit );
 
             return someVolumeInDesiredUnits.getValue()
@@ -605,6 +613,7 @@ public class Units
 
     public static final class UnrecognizedUnitException extends RuntimeException
     {
+        @Serial
         private static final long serialVersionUID = -6873574285493867322L;
 
         UnrecognizedUnitException( String unitNameGiven,
@@ -649,5 +658,12 @@ public class Units
                    + unitAliases,
                    cause );
         }
+    }
+
+    /**
+     * Do not construct.
+     */
+    private Units()
+    {
     }
 }

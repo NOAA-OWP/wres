@@ -475,7 +475,7 @@ public class WatermlReader implements TimeSeriesReader
     }
 
     /**
-     * @param traces the traces
+     * @param timeSeriesValues the traces
      * @return the count of traces that contain one or more valid times and values.
      */
 

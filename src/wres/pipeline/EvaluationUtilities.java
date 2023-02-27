@@ -62,7 +62,7 @@ import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
 import wres.io.pooling.PoolFactory;
 import wres.io.pooling.PoolParameters;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.database.EnsembleRetrieverFactory;

@@ -18,7 +18,7 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
-import wres.io.pooling.UnitMapper;
+import wres.datamodel.units.UnitMapper;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 import wres.io.thresholds.ThresholdReadingException;
@@ -31,8 +31,6 @@ import wres.system.SystemSettings;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

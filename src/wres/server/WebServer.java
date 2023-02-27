@@ -29,8 +29,12 @@ public class WebServer
      */
     private static final int MAX_SERVER_THREADS = 20;
 
-    public static void main( String[] args )
-            throws Exception
+    /**
+     * @param args the arguments
+     * @throws Exception if the web server could not be created for any reason
+     */
+
+    public static void main( String[] args ) throws Exception
     {
         // See comments etc. in wres-tasker/src/wres/tasker/Tasker.java
         // for explanation on steps below.

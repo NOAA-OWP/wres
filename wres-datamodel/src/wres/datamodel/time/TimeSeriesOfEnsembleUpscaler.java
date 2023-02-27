@@ -20,7 +20,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.MissingValues;
-import wres.datamodel.Units;
+import wres.datamodel.units.Units;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;

@@ -87,13 +87,13 @@ public class Evaluator
      * @throws InternalWresException when WRES detects problem not with project
      */
 
-    public ExecutionResult evaluate( final String[] args )
+    public ExecutionResult evaluate( final List<String> args )
     {
         // Create a record of failure, but only commit if a failure actually occurs
         EvaluationEvent failure = EvaluationEvent.of();
         failure.begin();
 
-        if ( args.length != 1 )
+        if ( args.size() != 1 )
         {
             String message = "Please correct project configuration file name and "
                              + "pass it like this: "
@@ -105,11 +105,13 @@ public class Evaluator
             return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
         }
 
-        String evaluationConfigArgument = args[0].trim();
+        String evaluationConfigArgument = args.get( 0 )
+                                              .trim();
 
         ProjectConfigPlus projectConfigPlus;
 
         // Declaration passed directly as an argument
+        // TODO: use Tika to detect
         if ( evaluationConfigArgument.startsWith( "<?xml " ) )
         {
             // Successfully detected a project passed directly as an argument.

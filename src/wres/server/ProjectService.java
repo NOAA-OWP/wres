@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -79,6 +80,11 @@ public class ProjectService
                                                                                 .maximumSize( 100 )
                                                                                 .build();
 
+    /**
+     * @param rawProjectConfig the evaluation project declaration string
+     * @return the state of the evaluation
+     */
+
     @POST
     @Consumes( MediaType.TEXT_XML )
     @Produces( MediaType.TEXT_PLAIN )
@@ -125,24 +131,24 @@ public class ProjectService
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
-                                    "I received something I could not parse. The top-level exception was: "
-                                    + e.getMessage() )
+                                   "I received something I could not parse. The top-level exception was: "
+                                   + e.getMessage() )
                            .build();
         }
         catch ( InternalWresException iwe )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
-                                    "WRES experienced an internal issue. The top-level exception was: "
-                                    + iwe.getMessage() )
+                                   "WRES experienced an internal issue. The top-level exception was: "
+                                   + iwe.getMessage() )
                            .build();
         }
         catch ( Exception e )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
-                                    "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                    + e.getMessage() )
+                                   "WRES experienced an unexpected internal issue. The top-level exception was: "
+                                   + e.getMessage() )
                            .build();
         }
         finally
@@ -167,6 +173,11 @@ public class ProjectService
                        .build();
     }
 
+    /**
+     * @param id the evaluation job identifier
+     * @return the evaluation results
+     */
+
     @GET
     @Path( "/{id}" )
     @Produces( MediaType.TEXT_PLAIN )
@@ -186,6 +197,12 @@ public class ProjectService
         return Response.ok( "Here are result resources: " + resources )
                        .build();
     }
+
+    /**
+     * @param id the evaluation job identifier
+     * @param resourceName the resource name
+     * @return the resource
+     */
 
     @GET
     @Path( "/{id}/{resourceName}" )

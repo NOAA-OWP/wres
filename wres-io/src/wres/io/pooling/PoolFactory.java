@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.measure.Unit;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,8 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
-import wres.datamodel.Units;
+import wres.datamodel.units.UnitMapper;
+import wres.datamodel.units.Units;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -78,7 +80,7 @@ import wres.statistics.generated.GeometryGroup;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -121,7 +123,7 @@ public class PoolFactory
 
     /**
      * Creates an instance from a {@link Project}.
-     * 
+     *
      * @param project the project
      * @return an instance
      * @throws NullPointerException if the project is null
@@ -133,15 +135,15 @@ public class PoolFactory
     }
 
     /**
-     * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
+     * <p>Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to
      * multiple pools. In particular, it will cache the climatological data for all pool requests that belong to a 
      * single feature group because the climatological data is shared across feature groups. The order returned is the
      * intended execution order for optimal heap usage because pools with data affinities are grouped together. The 
      * order returned may differ from the order of pool requests received.
-     * 
-     * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
+     *
+     * <p>TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than
      * climatology, such as one feature that is part of several feature groups.
-     * 
+     *
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
      * @param poolParameters the pool parameters
@@ -152,9 +154,9 @@ public class PoolFactory
      */
 
     public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>>
-            getSingleValuedPools( List<PoolRequest> poolRequests,
-                                  RetrieverFactory<Double, Double> retrieverFactory,
-                                  PoolParameters poolParameters )
+    getSingleValuedPools( List<PoolRequest> poolRequests,
+                          RetrieverFactory<Double, Double> retrieverFactory,
+                          PoolParameters poolParameters )
     {
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
@@ -174,7 +176,7 @@ public class PoolFactory
         {
             FeatureGroup featureGroup = nextEntry.getKey();
             OptimizedPoolRequests optimized = nextEntry.getValue();
-            List<PoolRequest> nextPoolRequests = optimized.getOptimizedRequests();
+            List<PoolRequest> nextPoolRequests = optimized.optimizedRequests();
 
             LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
                           featureGroup,
@@ -216,15 +218,15 @@ public class PoolFactory
     }
 
     /**
-     * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
+     * <p>Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple
      * pools. In particular, it will cache the climatological data for all pool requests that belong to a single 
      * feature group because the climatological data is shared across feature groups. The order returned is the intended 
      * execution order for optimal heap usage because pools with data affinities are grouped together. The order 
      * returned may differ from the order of pool requests received.
-     * 
-     * TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than 
+     *
+     * <p>TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than
      * climatology, such as one feature that is part of several feature groups.
-     * 
+     *
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
      * @param poolParameters the pool parameters
@@ -234,9 +236,9 @@ public class PoolFactory
      */
 
     public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>>
-            getEnsemblePools( List<PoolRequest> poolRequests,
-                              RetrieverFactory<Double, Ensemble> retrieverFactory,
-                              PoolParameters poolParameters )
+    getEnsemblePools( List<PoolRequest> poolRequests,
+                      RetrieverFactory<Double, Ensemble> retrieverFactory,
+                      PoolParameters poolParameters )
     {
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
@@ -255,7 +257,7 @@ public class PoolFactory
         {
             FeatureGroup featureGroup = nextEntry.getKey();
             OptimizedPoolRequests optimized = nextEntry.getValue();
-            List<PoolRequest> nextPoolRequests = optimized.getOptimizedRequests();
+            List<PoolRequest> nextPoolRequests = optimized.optimizedRequests();
 
             LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
                           featureGroup,
@@ -297,7 +299,7 @@ public class PoolFactory
 
     /**
      * Generates the {@link PoolRequest} in order to drive pool creation.
-     * 
+     *
      * @param evaluation the evaluation description
      * @return the pool requests
      * @throws NullPointerException if any input is null
@@ -329,19 +331,19 @@ public class PoolFactory
                                                                          desiredTimeScale,
                                                                          timeWindows )
                                                        .stream() )
-                            .collect( Collectors.toUnmodifiableList() );
+                            .toList();
     }
 
     /**
-     * Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to 
+     * <p>Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to
      * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
      * such as pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
      * unconnected pools, such as pools that belong to many feature groups.
-     * 
-     * TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In that
-     * case, there should be one call to this method per evaluation, which should then forward each group of requests 
-     * for batched creation of suppliers, as this method currently assumes the caller will do.
-     * 
+     *
+     * <p>TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In
+     * that case, there should be one call to this method per evaluation, which should then forward each group of
+     * requests for batched creation of suppliers, as this method currently assumes the caller will do.
+     *
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
@@ -352,9 +354,9 @@ public class PoolFactory
      */
 
     private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>>
-            getSingleValuedPoolsInner( Project project,
-                                       List<PoolRequest> poolRequests,
-                                       RetrieverFactory<Double, Double> retrieverFactory )
+    getSingleValuedPoolsInner( Project project,
+                               List<PoolRequest> poolRequests,
+                               RetrieverFactory<Double, Double> retrieverFactory )
     {
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -421,7 +423,7 @@ public class PoolFactory
         // Create any required transformers for value constraints and units
         DoubleUnaryOperator valueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
         UnaryOperator<TimeSeries<Double>> valueAndUnitTransformer =
-                this.getSingleValuedTransformer( valueTransformer::applyAsDouble );
+                this.getSingleValuedTransformer( valueTransformer );
 
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( pairConfig.getSeason() );
@@ -457,7 +459,7 @@ public class PoolFactory
      * pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
      * unconnected pools, such as pools that belong to many feature groups. Specifically, it will cache the 
      * climatological data for all pool requests if climatological data is needed.
-     * 
+     *
      * @param project the project for which pools are required, not null
      * @param poolRequests the pool requests, not null
      * @param retrieverFactory the retriever factory, not null
@@ -467,9 +469,9 @@ public class PoolFactory
      */
 
     private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-            getEnsemblePoolsInner( Project project,
-                                   List<PoolRequest> poolRequests,
-                                   RetrieverFactory<Double, Ensemble> retrieverFactory )
+    getEnsemblePoolsInner( Project project,
+                           List<PoolRequest> poolRequests,
+                           RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
         ProjectConfig projectConfig = project.getProjectConfig();
         PairConfig pairConfig = projectConfig.getPair();
@@ -521,7 +523,7 @@ public class PoolFactory
         // Left transformer
         DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getSingleValuedTransformer( leftValueTransformer::applyAsDouble );
+                this.getSingleValuedTransformer( leftValueTransformer );
 
         // Right transformer
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
@@ -567,7 +569,7 @@ public class PoolFactory
     /**
      * Composes the raw suppliers with feature group information based on the pool requests, which are ordered 
      * identically to the suppliers.
-     * 
+     *
      * @param <T> the type of supplied data
      * @param poolRequests the pool requests
      * @param rawSuppliers the raw suppliers
@@ -607,7 +609,7 @@ public class PoolFactory
      * original request and the corresponding request attached to the supplier and obtained from 
      * {@link SupplierWithPoolRequest#getPoolRequest()} is the pool identifier and it is friendly to preserve these 
      * identifiers, which are otherwise destroyed by feature-batching.
-     * 
+     *
      * @param <T> the type of data supplied
      * @param optimizedGroups the optimized pool requests
      * @param suppliers the suppliers
@@ -615,8 +617,8 @@ public class PoolFactory
      */
 
     private <T> List<Pair<PoolRequest, Supplier<T>>>
-            unpack( Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups,
-                    List<SupplierWithPoolRequest<T>> suppliers )
+    unpack( Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups,
+            List<SupplierWithPoolRequest<T>> suppliers )
     {
         List<Pair<PoolRequest, Supplier<T>>> returnMe = new ArrayList<>();
 
@@ -648,7 +650,7 @@ public class PoolFactory
     /**
      * Generates the {@link PoolRequest} associated with a particular {@link FeatureGroup} in order to drive pool 
      * creation.
-     * 
+     *
      * @param evaluation the evaluation description
      * @param projectConfig the project declaration
      * @param featureGroup the feature group
@@ -701,8 +703,6 @@ public class PoolFactory
 
     /**
      * Returns an instance of a {@link TimeSeriesCrossPairer} or null if none is required.
-     * 
-     * 
      * @return a cross-pairer or null
      */
 
@@ -722,7 +722,7 @@ public class PoolFactory
 
     /**
      * Returns a metadata representation of the input.
-     * 
+     *
      * @param evaluation the evaluation description
      * @param featureGroup the feature group
      * @param timeWindow the time window
@@ -743,7 +743,8 @@ public class PoolFactory
                                                                       timeWindow, // Default to start with
                                                                       desiredTimeScale,
                                                                       null,
-                                                                      leftOrRightOrBaseline == LeftOrRightOrBaseline.BASELINE,
+                                                                      leftOrRightOrBaseline
+                                                                      == LeftOrRightOrBaseline.BASELINE,
                                                                       innerPoolId );
 
         return PoolMetadata.of( evaluation, pool );
@@ -772,7 +773,7 @@ public class PoolFactory
 
     /**
      * Returns a transformer that applies a unit conversion, followed by the input transformation.
-     * 
+     *
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
@@ -800,7 +801,7 @@ public class PoolFactory
                                                                                   .setUnit( desiredUnitString )
                                                                                   .build();
 
-            DoubleUnaryOperator transformer = basicTransformer.compose( innerUnitMapper::applyAsDouble );
+            DoubleUnaryOperator transformer = basicTransformer.compose( innerUnitMapper );
             TimeSeries<Double> transformed = TimeSeriesSlicer.transform( toTransform,
                                                                          transformer::applyAsDouble,
                                                                          metaMapper );
@@ -818,14 +819,13 @@ public class PoolFactory
 
     /**
      * Returns a transformer that applies a unit conversion, followed by the input transformation.
-     * 
-     * @param <T> the event value type
+     *
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
 
     private UnaryOperator<TimeSeries<Ensemble>>
-            getEnsembleTransformer( UnaryOperator<Event<Ensemble>> basicTransformer )
+    getEnsembleTransformer( UnaryOperator<Event<Ensemble>> basicTransformer )
     {
         return toTransform -> {
             // Apply the unit mapping first, then the basic transformer
@@ -959,7 +959,7 @@ public class PoolFactory
 
     /**
      * Returns a transformer for single-valued data if required.
-     * 
+     *
      * @param valueConfig the value declaration 
      * @return a transformer or null
      */
@@ -1026,7 +1026,7 @@ public class PoolFactory
 
     /**
      * Returns a transformer for ensemble data if required.
-     * 
+     *
      * @param valueTransformer the value transformer to compose
      * @param dataSource the data source declaration
      * @return a transformer or null
@@ -1051,12 +1051,12 @@ public class PoolFactory
                                   .stream()
                                   .filter( EnsembleCondition::isExclude )
                                   .map( EnsembleCondition::getName )
-                                  .collect( Collectors.toList() );
+                                  .toList();
             inclusive = dataSource.getEnsemble()
                                   .stream()
                                   .filter( next -> !next.isExclude() )
                                   .map( EnsembleCondition::getName )
-                                  .collect( Collectors.toList() );
+                                  .toList();
         }
 
         List<String> finalInclusive = inclusive;
@@ -1133,7 +1133,7 @@ public class PoolFactory
 
             // Labels are cached centrally
             String[] names = valuesToUse.keySet()
-                                        .toArray( new String[valuesToUse.size()] );
+                                        .toArray( new String[0] );
             ensLabels = Labels.of( names );
             members = valuesToUse.values()
                                  .stream()
@@ -1170,7 +1170,7 @@ public class PoolFactory
     }
 
     /**
-     * @param the season
+     * @param season the season
      * @return a seasonal filter
      */
 
@@ -1196,20 +1196,19 @@ public class PoolFactory
      * baseline is generated; and 2) the template time-series data that is mimicked. For example, when generating a 
      * persistence baseline, the former is a source of observation-like data and the latter may be a source of forecast-
      * like data, each of which has a different feature name.
-     * 
+     *
      * @param baselineConfig the baseline declaration
      * @param retrieverFactory the factory to acquire a data source for a generated baseline
      * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
-     * @param baselineMeta the baseline metadata to assist with logging
      * @param admissibleValue a guard for admissible values of the generated baseline
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
     private <L, R> Function<Set<Feature>, UnaryOperator<TimeSeries<R>>>
-            getGeneratedBaseline( DataSourceConfig baselineConfig,
-                                  RetrieverFactory<L, R> retrieverFactory,
-                                  TimeSeriesUpscaler<R> upscaler,
-                                  Predicate<R> admissibleValue )
+    getGeneratedBaseline( DataSourceConfig baselineConfig,
+                          RetrieverFactory<L, R> retrieverFactory,
+                          TimeSeriesUpscaler<R> upscaler,
+                          Predicate<R> admissibleValue )
     {
         Objects.requireNonNull( baselineConfig );
         Objects.requireNonNull( retrieverFactory );
@@ -1259,7 +1258,7 @@ public class PoolFactory
 
     /**
      * Returns the type of time-based pairing to perform given the declared input type of the datasets in the project.
-     * 
+     *
      * @param inputsConfig the inputs declaration
      * @return the type of time-based pairing to perform
      */
@@ -1281,7 +1280,7 @@ public class PoolFactory
     /**
      * Checks the project declaration and throws an exception when the declared type is inconsistent with the type of
      * pools requested. 
-     * 
+     *
      * @param inputsConfig the input declaration
      * @param ensemble is true if ensemble pools were requested, false for single-valued pools
      * @throws IllegalArgumentException if the requested pools are inconsistent with the declaration
@@ -1340,8 +1339,8 @@ public class PoolFactory
      */
 
     private Map<FeatureGroup, OptimizedPoolRequests>
-            getFeatureBatchedSingletons( List<PoolRequest> poolRequests,
-                                         PoolParameters poolParameters )
+    getFeatureBatchedSingletons( List<PoolRequest> poolRequests,
+                                 PoolParameters poolParameters )
     {
         // Use a predictable order for the feature groups, since it aids with debugging/consistency across evaluations, 
         // i.e., an ordered map
@@ -1361,8 +1360,7 @@ public class PoolFactory
         boolean shouldBatch = this.isFeatureBatchingAllowed( groups, poolParameters );
 
         // Group size for retrieval: either the batched retrieval size or the total number of features, if less
-        int groupSize = groups.size() < poolParameters.getFeatureBatchSize() ? groups.size()
-                                                                             : poolParameters.getFeatureBatchSize();
+        int groupSize = Math.min( groups.size(), poolParameters.getFeatureBatchSize() );
 
         int newPoolRequestCount = 0;
         int originalPoolRequestCount = 0;
@@ -1451,7 +1449,7 @@ public class PoolFactory
 
     /**
      * Determines whether feature-batching is allowed, based on the pool requests.
-     * 
+     *
      * @param requests the pool requests
      * @param poolParameters the pool parameters
      * @return true if feature-batching is allowed, otherwise false
@@ -1490,7 +1488,7 @@ public class PoolFactory
     /**
      * Tests whether the pools are suitable for feature-batched retrieval; they are suitable if an identical set of 
      * pools is associated with every feature group, except for the feature group information itself.
-     * 
+     *
      * @param requests the pool requests
      * @return whether the pools are suitable for feature-batched retrieval
      */
@@ -1552,7 +1550,7 @@ public class PoolFactory
 
     /**
      * Updates the pool requests to use the specified feature group.
-     * 
+     *
      * @param featureGroup the feature group
      * @param poolRequests the pool requests to updated with the supplied feature group
      * @return the pool requests, each containing the new the feature group
@@ -1584,7 +1582,7 @@ public class PoolFactory
     /**
      * Decomposes a list of pool suppliers that supply the pairs associated with all feature tuples in the specified 
      * feature groups into suppliers that supply the pairs for each feature tuple separately.
-     * 
+     *
      * @param <L> the left-ish data type
      * @param <R> the right-ish data type
      * @param toDecompose the pools suppliers to decompose
@@ -1592,7 +1590,7 @@ public class PoolFactory
      */
 
     private <L, R> List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>>
-            decompose( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toDecompose )
+    decompose( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toDecompose )
     {
         // Decomposed suppliers
         List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> flattened = new ArrayList<>();
@@ -1674,15 +1672,15 @@ public class PoolFactory
      * supplied list belong to the same feature batch and, therefore, have strong data affinities. The sorting places
      * the suppliers in order of feature-tuple and then time window order to minimize heap usage. Pools should 
      * complete in an order that ensures common datasets become eligible for gc as soon as possible.
-     * 
+     *
      * @param <L> the left-ish data type
      * @param <R> the right-ish data type
-     * @param suppliers the suppliers to sort
+     * @param toSort the suppliers to sort
      * @return the suppliers in optimal execution order
      */
 
     private <L, R> List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>>
-            sortForExecution( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toSort )
+    sortForExecution( List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> toSort )
     {
         List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> mod = new ArrayList<>( toSort );
         Comparator<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> c = ( a, b ) -> {
@@ -1709,7 +1707,7 @@ public class PoolFactory
 
     /**
      * Decomposes a feature-batched pool request that contains several features into separate pool requests.
-     *     
+     *
      * @param poolRequest the pool request to decompose
      * @return the decomposed pool requests
      */
@@ -1825,33 +1823,20 @@ public class PoolFactory
     }
 
     /**
-     * A possibly optimized collection of pool requests. There are up to N optimized pool requests and M corresponding 
+     * A possibly optimized collection of pool requests. There are up to N optimized pool requests and M corresponding
      * original requests. The original pool requests are optimized if M > N. There is one original request for each
-     * geographic feature group and time window and an interface is provided to acquire the original request that 
+     * geographic feature group and time window and an interface is provided to acquire the original request that
      * corresponds to a prescribed feature group and time window. Where M > N, the supply that corresponds to each
-     * optimized request will ultimately need to be decomposed into the separate supplies that correspond to the 
+     * optimized request will ultimately need to be decomposed into the separate supplies that correspond to the
      * original pool requests.
+     * @param optimizedRequests  The optimized pool request.
+     * @param originalRequests  The original pool requests.
      */
 
-    private static class OptimizedPoolRequests
+    private record OptimizedPoolRequests( List<PoolRequest> optimizedRequests, List<PoolRequest> originalRequests )
     {
-        /** The optimized pool request. */
-        private final List<PoolRequest> optimizedRequests;
-
-        /** The original pool requests. */
-        private final List<PoolRequest> originalRequests;
-
         /**
-         * @return the optimized pool request
-         */
-
-        private List<PoolRequest> getOptimizedRequests()
-        {
-            return this.optimizedRequests;
-        }
-
-        /**
-         * @return true if the pool request is an optimized request 
+         * @return true if the pool request is an optimized request
          */
 
         private boolean isOptimized()
@@ -1876,7 +1861,7 @@ public class PoolFactory
                                                                                                    .getFeatureGroup() )
                                                                                && timeWindow.equals( next.getMetadata()
                                                                                                          .getTimeWindow() ) )
-                                                              .collect( Collectors.toList() );
+                                                              .toList();
 
             if ( requests.size() != 1 )
             {
@@ -1903,7 +1888,7 @@ public class PoolFactory
          * @param optimizedRequests the optimized requests, required and not empty
          * @param originalRequests, the original requests, required and not empty
          * @throws NullPointerException if any input is null
-         * @throws IllegalArgumentException if either set of requests is empty or the features in the original 
+         * @throws IllegalArgumentException if either set of requests is empty or the features in the original
          *            requests don't match the features in the optimized requests
          */
 
@@ -1987,9 +1972,9 @@ public class PoolFactory
          * @param optimizedPoolRequest either the same as the poolRequest or a composed/optimized pool request
          */
 
-        private static final <T> SupplierWithPoolRequest<T> of( Supplier<T> delegated,
-                                                                PoolRequest poolRequest,
-                                                                PoolRequest optimizedPoolRequest )
+        private static <T> SupplierWithPoolRequest<T> of( Supplier<T> delegated,
+                                                          PoolRequest poolRequest,
+                                                          PoolRequest optimizedPoolRequest )
         {
             return new SupplierWithPoolRequest<>( delegated, poolRequest, optimizedPoolRequest );
         }
@@ -2031,9 +2016,8 @@ public class PoolFactory
 
     /**
      * Creates an instance from a {@link Project}.
-     * 
+     *
      * @param project the project
-     * @return an instance
      * @throws NullPointerException if the project is null
      */
 
@@ -2049,5 +2033,4 @@ public class PoolFactory
         this.unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                          projectConfig );
     }
-
 }

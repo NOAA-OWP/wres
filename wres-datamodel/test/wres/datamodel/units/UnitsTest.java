@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.units;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

@@ -47,6 +47,7 @@ import wres.datamodel.time.TimeSeriesPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.units.NoSuchUnitConversionException;
 import wres.io.config.ConfigHelper;
 import wres.io.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;

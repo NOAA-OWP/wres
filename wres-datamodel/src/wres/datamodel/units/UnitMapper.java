@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.datamodel.units;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,11 +20,10 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
-import wres.datamodel.Units;
-import wres.datamodel.Units.UnrecognizedUnitException;
+import wres.datamodel.units.Units.UnrecognizedUnitException;
 
 /**
- * Replaced UnitMapper, uses javax.measure/indriya instead of db unitconversion.
+ * Supplies functions that map from an existing measurement unit to a desired unit supplied on construction.
  */
 public class UnitMapper
 {
@@ -41,7 +40,7 @@ public class UnitMapper
      * @return an instance
      * @throws NullPointerException if the desiredMeasurementUnit is null
      */
-    
+
     public static UnitMapper of( String desiredMeasurementUnit )
     {
         return new UnitMapper( desiredMeasurementUnit,
@@ -55,12 +54,12 @@ public class UnitMapper
      * @return an instance
      * @throws NullPointerException if either input is null
      */
-    
+
     public static UnitMapper of( String desiredMeasurementUnit,
                                  ProjectConfig projectConfig )
     {
         Objects.requireNonNull( projectConfig );
-        
+
         List<UnitAlias> aliases = projectConfig.getPair()
                                                .getUnitAlias();
         if ( aliases == null )
@@ -75,23 +74,24 @@ public class UnitMapper
     /**
      * @return the desired measurement unit name
      */
-    
+
     public String getDesiredMeasurementUnitName()
     {
         return this.desiredMeasurementUnitName;
     }
-    
+
     /**
      * @return a map of declared unit aliases
      */
 
-    public Map<String,String> getUnitAliases()
+    public Map<String, String> getUnitAliases()
     {
         return this.aliases;
     }
-    
+
     /**
-     * Returns a unit mapper to this UnitMapper's unit from the given unit name.
+     * Returns a unit mapper that maps from the provided existing unit to the desired unit supplied on construction of
+     * this instance.
      * @param unitName The name of an existing measurement unit.
      * @return A unit mapper for the prescribed existing units to this unit.
      * @throws NoSuchUnitConversionException When unable to create a converter.
@@ -229,28 +229,24 @@ public class UnitMapper
 
     /**
      * Returns a map of internal unit converters to use before library converters for improved performance. See #105929.
-     * 
+     *
      * @return internal converters
      */
 
     private Map<Pair<String, String>, DoubleUnaryOperator> getInternalMappers()
     {
-        Map<Pair<String, String>, DoubleUnaryOperator> returnMe = new HashMap<>( 6 );
-
-        returnMe.put( Pair.of( Units.OFFICIAL_DEGREES_FAHRENHEIT, Units.OFFICIAL_DEGREES_CELSIUS ),
-                      f -> ( f - 32.0 ) / 1.8 );
-        returnMe.put( Pair.of( Units.OFFICIAL_DEGREES_CELSIUS, Units.OFFICIAL_DEGREES_FAHRENHEIT ),
-                      c -> c * 1.8 + 32.0 );
-        returnMe.put( Pair.of( Units.OFFICIAL_CUBIC_FEET_PER_SECOND, Units.OFFICIAL_CUBIC_METERS_PER_SECOND ),
-                      cfs -> cfs * 0.028316846592 );
-        returnMe.put( Pair.of( Units.OFFICIAL_CUBIC_METERS_PER_SECOND, Units.OFFICIAL_CUBIC_FEET_PER_SECOND ),
-                      cms -> cms / 0.028316846592 );
-        returnMe.put( Pair.of( Units.OFFICIAL_INCHES, Units.OFFICIAL_MILLIMETERS ),
-                      inch -> inch * 25.4 );
-        returnMe.put( Pair.of( Units.OFFICIAL_MILLIMETERS, Units.OFFICIAL_INCHES ),
-                      mm -> mm / 25.4 );
-
-        return Collections.unmodifiableMap( returnMe );
+        return Map.of( Pair.of( Units.OFFICIAL_DEGREES_FAHRENHEIT, Units.OFFICIAL_DEGREES_CELSIUS ),
+                       f -> ( f - 32.0 ) / 1.8,
+                       Pair.of( Units.OFFICIAL_DEGREES_CELSIUS, Units.OFFICIAL_DEGREES_FAHRENHEIT ),
+                       c -> c * 1.8 + 32.0,
+                       Pair.of( Units.OFFICIAL_CUBIC_FEET_PER_SECOND, Units.OFFICIAL_CUBIC_METERS_PER_SECOND ),
+                       cfs -> cfs * 0.028316846592,
+                       Pair.of( Units.OFFICIAL_CUBIC_METERS_PER_SECOND, Units.OFFICIAL_CUBIC_FEET_PER_SECOND ),
+                       cms -> cms / 0.028316846592,
+                       Pair.of( Units.OFFICIAL_INCHES, Units.OFFICIAL_MILLIMETERS ),
+                       inch -> inch * 25.4,
+                       Pair.of( Units.OFFICIAL_MILLIMETERS, Units.OFFICIAL_INCHES ),
+                       mm -> mm / 25.4 );
     }
 
     /**
@@ -258,7 +254,7 @@ public class UnitMapper
      * @param aliases the aliases
      * @throws NullPointerException if either input is null
      */
-    
+
     private UnitMapper( String desiredMeasurementUnitName,
                         List<UnitAlias> aliases )
     {
@@ -286,15 +282,15 @@ public class UnitMapper
             {
                 throw new ProjectConfigException( alias,
                                                   "Multiple declarations for a "
-                                                         + "single unit alias are not "
-                                                         + "supported. Found repeated "
-                                                         + "'"
-                                                         + alias.getAlias()
-                                                         + "' alias. Remove all but "
-                                                         + "one declaration for alias "
-                                                         + "'"
-                                                         + alias.getAlias()
-                                                         + "'." );
+                                                  + "single unit alias are not "
+                                                  + "supported. Found repeated "
+                                                  + "'"
+                                                  + alias.getAlias()
+                                                  + "' alias. Remove all but "
+                                                  + "one declaration for alias "
+                                                  + "'"
+                                                  + alias.getAlias()
+                                                  + "'." );
             }
         }
 
@@ -353,5 +349,5 @@ public class UnitMapper
         this.aliases = Collections.unmodifiableMap( aliasToUnitStrings );
         this.internalMappers = this.getInternalMappers();
     }
-    
+
 }

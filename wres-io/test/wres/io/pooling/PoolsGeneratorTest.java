@@ -32,6 +32,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.units.UnitMapper;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.database.Database;
 import wres.io.project.Project;
