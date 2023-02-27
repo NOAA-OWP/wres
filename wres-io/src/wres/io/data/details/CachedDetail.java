@@ -23,51 +23,9 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	 * @return The primary ID of the detail definition
 	 */
 	public abstract Long getId();
-	
-	/**
-	 * @return The name of the column that stores the ID in the database
-	 */
-	protected abstract String getIDName();
-	
-	/**
-	 * Sets the ID of the detail as defined in the database
-	 * @param id The ID for the detail in the database
-	 */
-	protected abstract void setID( long id );
 
-    /**
-	 * @param database The database to use.
-     * @return A statement that can be used to safely execute an insert and select query
-     * @throws SQLException Thrown if the connection and query cannot be used
-     * to create the statement
-     */
-	protected abstract DataScripter getInsertSelect( Database database ) throws SQLException;
-
-	protected abstract Object getSaveLock();
-
-	/**
-	 * Updates the detail with information loaded from the database
-	 * @param databaseResults Information retrieved from the database
-	 * @throws SQLException Thrown if the requested values couldn't be retrieved from the resultset
-	 */
-	protected void update(DataProvider databaseResults) throws SQLException
-	{
-		if (databaseResults.hasColumn( this.getIDName() ))
-		{
-			this.setID( databaseResults.getLong( this.getIDName() ));
-		}
-		else
-        {
-            throw new SQLException( "No data could be loaded for " + this );
-        }
-	}
-
-	public CachedDetail(DataProvider resultSet) throws SQLException
-	{
-		this.update( resultSet );
-	}
-
-	CachedDetail(){}
+	@Override
+	public abstract String toString();
 
     /**
 	 * @param database The database to use.
@@ -91,14 +49,58 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 			}
 			catch(SQLException e)
             {
-                this.getLogger().error( "Failed to save: ", this );
+                this.getLogger()
+					.error( "Failed to save: {}", this );
                 throw e;
             }
 		}
 	}
 
+	/**
+	 * @return the logger
+	 */
 	protected abstract Logger getLogger();
 
-	@Override
-	public abstract String toString();
+	/**
+	 * @return The name of the column that stores the ID in the database
+	 */
+	protected abstract String getIDName();
+
+	/**
+	 * Sets the ID of the detail as defined in the database
+	 * @param id The ID for the detail in the database
+	 */
+	protected abstract void setID( long id );
+
+	/**
+	 * @param database The database to use.
+	 * @return A statement that can be used to safely execute an insert and select query
+	 * @throws SQLException Thrown if the connection and query cannot be used
+	 * to create the statement
+	 */
+	protected abstract DataScripter getInsertSelect( Database database ) throws SQLException;
+
+	/**
+	 * @return the save lock
+	 */
+	protected abstract Object getSaveLock();
+
+	/**
+	 * Updates the detail with information loaded from the database
+	 * @param databaseResults Information retrieved from the database
+	 * @throws SQLException Thrown if the requested values couldn't be retrieved from the resultset
+	 */
+	protected void update(DataProvider databaseResults) throws SQLException
+	{
+		if (databaseResults.hasColumn( this.getIDName() ))
+		{
+			this.setID( databaseResults.getLong( this.getIDName() ));
+		}
+		else
+		{
+			throw new SQLException( "No data could be loaded for " + this );
+		}
+	}
+
+	CachedDetail(){}
 }

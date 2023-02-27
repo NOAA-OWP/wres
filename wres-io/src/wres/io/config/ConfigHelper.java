@@ -37,34 +37,34 @@ import wres.io.ingesting.PreIngestException;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * The purpose of io's ConfigHelper is to help the io module translate raw
+ * <p>The purpose of io's ConfigHelper is to help the io module translate raw
  * user-specified configuration elements into a reduced form, a more
  * actionable or meaningful form such as a SQL script, or to extract specific
  * elements from a particular config element, or other purposes that are common
  * to the io module.
  *
- * The general form of a helper method appropriate for ConfigHelper has a
+ * <p>The general form of a helper method appropriate for ConfigHelper has a
  * ProjectConfig as the first argument and some other element(s) or hint(s) as
  * additional args. These are not hard-and-fast-rules. But the original purpose
  * was to help the io module avoid tedious repetition of common interpretations
  * of the raw user-specified configuration.
  *
- * Candidates for removal to a wres-config helper are those that purely operate
+ * <p>Candidates for removal to a wres-config helper are those that purely operate
  * on, use, and return objects of classes that are specified in the wres-config
  * or JDK.
  *
- * Candidates that should stay are those returning SQL statements or are
+ * <p>Candidates that should stay are those returning SQL statements or are
  * currently useful only to the wres-io module.
  */
 
 public class ConfigHelper
 {
     private static final String EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH =
-            "External threshold identifiers cannot be interpretted if the input data is both ";
+            "External threshold identifiers cannot be interpreted if the input data is both ";
 
     private static final String AND = " and ";
 
-    public static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
     /**
      * Default exception message when a destination cannot be established.
@@ -82,7 +82,7 @@ public class ConfigHelper
     private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
 
     /**
-     * Creates a hash for the indicated project configuration based on its
+     * <p>Creates a hash for the indicated project configuration based on its
      * data ingested.
      *
      * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
@@ -154,7 +154,11 @@ public class ConfigHelper
                || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
-
+    /**
+     * @param path the path
+     * @return the project declaration
+     * @throws IOException if the declaration could not be read
+     */
     public static ProjectConfig read( final String path ) throws IOException
     {
         Path actualPath = Paths.get( path );
@@ -491,26 +495,26 @@ public class ConfigHelper
     }
 
     /**
-     * Get the feature names relevant to a particular dataSource.
+     * <p>Get the feature names relevant to a particular dataSource.
      *
-     * The declaration only references names, not complete feature identities,
+     * <p>The declaration only references names, not complete feature identities,
      * therefore we cannot have a full feature at this point, nor do we get one
      * from a database here, because the purpose here is to read names only.
      *
-     * A dataset will have complete feature identities which will be ingested
+     * <p>A dataset will have complete feature identities which will be ingested
      * at ingest-time. But to bootstrap ingest, we start with names only, which
      * can limit requests for data from data sources. After ingest we will have
      * the ability to get the full list of features for a dataset.
      *
-     * This method is intended to be called by readers and with a fully dense
+     * <p>This method is intended to be called by readers and with a fully dense
      * project declaration of features. In other words the project declaration
      * should have already been filled out either by the caller or by WRES
      * control module earlier, to have complete feature correlations.
      *
-     * Not all readers require declared features, so those projects including
+     * <p>Not all readers require declared features, so those projects including
      * solely CSV or PI-XML, for example, will not need this method.
      *
-     * This method is also used by FeatureFinder to get what is available from
+     * <p>This method is also used by FeatureFinder to get what is available from
      * a sparse declaration. It will give a dense declaration to the rest of the
      * evaluation pipeline so that reader will have a dense declaration.
      *
@@ -609,6 +613,10 @@ public class ConfigHelper
         return Collections.unmodifiableSortedSet( featureNames );
     }
 
+    /**
+     * @param datasource the data source
+     * @return the feature dimension
+     */
     public static FeatureDimension getConcreteFeatureDimension( final DataSourceConfig datasource )
     {
         FeatureDimension dimension = datasource.getFeatureDimension();

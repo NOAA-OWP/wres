@@ -35,6 +35,10 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 
+/**
+ * A data source.
+ */
+
 public class DataSource
 {
     private static final String WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE =
@@ -86,7 +90,7 @@ public class DataSource
      * The count of bytes to use for detecting WRES-compatible type.
      */
 
-    static final int DETECTION_BYTES = 1024;
+    private static final int DETECTION_BYTES = 1024;
 
     /**
      * The disposition of the data for this source.
