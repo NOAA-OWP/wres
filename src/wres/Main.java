@@ -26,7 +26,6 @@ import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.SystemSettings;
-import wres.util.Collections;
 
 import com.google.common.collect.Range;
 
@@ -89,7 +88,8 @@ public class Main
             function = args[0];
 
             // Remove the function from the args
-            finalArgs = Collections.removeIndexFromArray( args, 0 );
+            finalArgs = new String[args.length - 1];
+            System.arraycopy( args, 1, finalArgs, 0, finalArgs.length );
         }
         // Unknown function, log and print help information without any other start-up details
         else

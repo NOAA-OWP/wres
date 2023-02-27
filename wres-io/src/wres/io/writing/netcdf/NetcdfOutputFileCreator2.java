@@ -636,8 +636,8 @@ class NetcdfOutputFileCreator2
                 if ( Objects.nonNull( point ) )
                 {
                     int[] index = { i };
-                    Array ncArrayX = ArrayDouble.D1.makeFromJavaArray( new double[] { point.getX() } );
-                    Array ncArrayY = ArrayDouble.D1.makeFromJavaArray( new double[] { point.getY() } );
+                    Array ncArrayX = ArrayDouble.D1.makeFromJavaArray( new double[] { point.x() } );
+                    Array ncArrayY = ArrayDouble.D1.makeFromJavaArray( new double[] { point.y() } );
 
                     try
                     {
@@ -649,8 +649,8 @@ class NetcdfOutputFileCreator2
                         throw new WriteException( "Failed to write geometry X/Y point metadata in "
                                                   + writer.getNetcdfFile()
                                                           .getLocation()
-                                                  + " for x=" + point.getX()
-                                                  + " for y=" + point.getY() ,
+                                                  + " for x=" + point.x()
+                                                  + " for y=" + point.y() ,
                                                   e );
                     }
                 }

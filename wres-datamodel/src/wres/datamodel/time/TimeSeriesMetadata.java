@@ -18,7 +18,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Value object the stores the metadata associated with an {@link TimeSeries}. 
- * 
+ *
  * TODO: currently the time-series metadata is inflexible in how it represents geospatial information that is common to
  * all events in the time-series. In practice, a time-series may have no common geospatial information (e.g., because
  * that information is modeled per-event, such as for an environmental tracer or a time-series of inundation extent) or
@@ -119,26 +119,41 @@ public class TimeSeriesMetadata
                             .setUnit( this.unit );
     }
 
+    /**
+     * @return the time scale
+     */
     public TimeScaleOuter getTimeScale()
     {
         return this.timeScale;
     }
 
+    /**
+     * @return the reference times
+     */
     public Map<ReferenceTimeType, Instant> getReferenceTimes()
     {
         return this.referenceTimes;
     }
 
+    /**
+     * @return the variable name
+     */
     public String getVariableName()
     {
         return this.variableName;
     }
 
+    /**
+     * @return the feature
+     */
     public Feature getFeature()
     {
         return this.feature;
     }
 
+    /**
+     * @return the units
+     */
     public String getUnit()
     {
         return this.unit;
@@ -157,7 +172,7 @@ public class TimeSeriesMetadata
             return false;
         }
 
-        TimeSeriesMetadata metadata = (TimeSeriesMetadata) o;
+        TimeSeriesMetadata metadata = ( TimeSeriesMetadata ) o;
         return Objects.equals( this.timeScale, metadata.timeScale ) &&
                this.referenceTimes.equals( metadata.referenceTimes )
                && this.variableName.equals( metadata.variableName )
@@ -179,13 +194,13 @@ public class TimeSeriesMetadata
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "timeScale", this.timeScale )
-                                                                            .append( "referenceTimes",
-                                                                                     this.referenceTimes )
-                                                                            .append( "variableName", this.variableName )
-                                                                            .append( "feature", this.feature )
-                                                                            .append( "unit", this.unit )
-                                                                            .toString();
+                .append( "timeScale", this.timeScale )
+                .append( "referenceTimes",
+                         this.referenceTimes )
+                .append( "variableName", this.variableName )
+                .append( "feature", this.feature )
+                .append( "unit", this.unit )
+                .toString();
     }
 
     /**
@@ -229,7 +244,7 @@ public class TimeSeriesMetadata
 
         /**
          * Sets the time-scale.
-         * 
+         *
          * @param timeScale the time-scale
          * @return the builder
          */
@@ -243,7 +258,7 @@ public class TimeSeriesMetadata
 
         /**
          * Sets the time-scale.
-         * 
+         *
          * @param referenceTimes the reference times (zero or more)
          * @return the builder
          */
@@ -285,7 +300,7 @@ public class TimeSeriesMetadata
 
         /**
          * Sets the measurement unit.
-         * 
+         *
          * @param unit the measurement unit
          * @return the builder
          */
@@ -299,7 +314,7 @@ public class TimeSeriesMetadata
 
         /**
          * Builds an instance of the metadata.
-         * 
+         *
          * @return the metadata
          */
 
@@ -318,7 +333,7 @@ public class TimeSeriesMetadata
 
         /**
          * Creates a builder initialized with a prototype.
-         * 
+         *
          * @param prototype the prototype metadata
          */
 
@@ -338,7 +353,7 @@ public class TimeSeriesMetadata
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param builder the builder
      * @throws NullPointerException if any arg besides timeScale is null
      */

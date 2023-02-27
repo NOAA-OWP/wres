@@ -33,11 +33,6 @@ public class Fetcher
             throw new IOException( "Data could not be retrieved from one or more NetCDF files", e );
         }
     }
-
-    public static SingleValuedTimeSeriesResponse getSingleValuedTimeSeries() throws IOException
-    {
-        return null;
-    }
     
     /**
      * Returns an instance.

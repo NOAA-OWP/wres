@@ -1,9 +1,9 @@
 package wres.datamodel.space;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import wres.statistics.generated.Geometry;
 
@@ -20,7 +20,7 @@ public class Feature implements Comparable<Feature>
 
     /**
      * Returns an instance from a {@link Geometry}.
-     * 
+     *
      * @param geometry the geometry
      * @return an instance from a geometry
      * @throws NullPointerException if the geometry is null
@@ -31,26 +31,41 @@ public class Feature implements Comparable<Feature>
         return new Feature( geometry );
     }
 
+    /**
+     * @return the feature name
+     */
     public String getName()
     {
         return this.geometry.getName();
     }
 
+    /**
+     * @return the feature description
+     */
     public String getDescription()
     {
         return this.geometry.getDescription();
     }
 
+    /**
+     * @return the spatial reference identifier
+     */
     public Integer getSrid()
     {
         return this.geometry.getSrid();
     }
 
+    /**
+     * @return the wkt string
+     */
     public String getWkt()
     {
         return this.geometry.getWkt();
     }
-    
+
+    /**
+     * @return the geometry
+     */
     public Geometry getGeometry()
     {
         return this.geometry;
@@ -68,7 +83,7 @@ public class Feature implements Comparable<Feature>
             return false;
         }
 
-        Geometry in = ( (Feature) o ).geometry;
+        Geometry in = ( ( Feature ) o ).geometry;
 
         return this.geometry.equals( in );
     }
@@ -82,11 +97,6 @@ public class Feature implements Comparable<Feature>
     @Override
     public int compareTo( Feature o )
     {
-        if ( this.equals( o ) )
-        {
-            return 0;
-        }
-
         int nameComparison = this.getName()
                                  .compareTo( o.getName() );
 
@@ -95,85 +105,39 @@ public class Feature implements Comparable<Feature>
             return nameComparison;
         }
 
-        if ( Objects.nonNull( this.getDescription() ) )
+        int descriptionComparison = Comparator.nullsFirst( String::compareTo )
+                                              .compare( this.getDescription(),
+                                                        o.getDescription() );
+
+        if ( descriptionComparison != 0 )
         {
-            if ( Objects.nonNull( o.getDescription() ) )
-            {
-                int descriptionComparison = this.getDescription()
-                                                .compareTo( o.getDescription() );
-                if ( descriptionComparison != 0 )
-                {
-                    return descriptionComparison;
-                }
-            }
-            else
-            {
-                return 1;
-            }
-        }
-        else if ( Objects.nonNull( o.getDescription() ) )
-        {
-            return -1;
+            return descriptionComparison;
         }
 
-        if ( Objects.nonNull( this.getSrid() ) )
+        int sridComparison = Comparator.nullsFirst( Integer::compareTo )
+                                       .compare( this.getSrid(),
+                                                 o.getSrid() );
+
+        if ( sridComparison != 0 )
         {
-            if ( Objects.nonNull( o.getSrid() ) )
-            {
-                int sridComparison = this.getSrid()
-                                         .compareTo( o.getSrid() );
-                if ( sridComparison != 0 )
-                {
-                    return sridComparison;
-                }
-            }
-            else
-            {
-                return 1;
-            }
-        }
-        else if ( Objects.nonNull( o.getSrid() ) )
-        {
-            return -1;
+            return sridComparison;
         }
 
-        if ( Objects.nonNull( this.getWkt() ) )
-        {
-            if ( Objects.nonNull( o.getWkt() ) )
-            {
-                int wktComparison = this.getWkt()
-                                        .compareTo( o.getWkt() );
-                if ( wktComparison != 0 )
-                {
-                    return wktComparison;
-                }
-            }
-            else
-            {
-                return 1;
-            }
-        }
-        else if ( Objects.nonNull( o.getWkt() ) )
-        {
-            return -1;
-        }
-
-        throw new IllegalStateException( "Could not find the difference between FeatureKey "
-                                         + this
-                                         + " and FeatureKey "
-                                         + o );
+        return Comparator.nullsFirst( String::compareTo )
+                         .compare( this.getWkt(),
+                                   o.getWkt() );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "name", this.getName() )
-                                                                            .append( "description",
-                                                                                     this.getDescription() )
-                                                                            .append( "srid", this.getSrid() )
-                                                                            .append( "wkt", this.getWkt() )
-                                                                            .toString();
+                .append( "name", this.getName() )
+                .append( "description",
+                         this.getDescription() )
+                .append( "srid", this.getSrid() )
+                .append( "wkt", this.getWkt() )
+                .toString();
     }
 
 
@@ -181,27 +145,8 @@ public class Feature implements Comparable<Feature>
      * Geometric or geographic point with double x and double y.
      */
 
-    public static class GeoPoint
+    public record GeoPoint( double x, double y )
     {
-        private final double x;
-        private final double y;
-
-        public GeoPoint( double x, double y )
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        public double getX()
-        {
-            return this.x;
-        }
-
-        public double getY()
-        {
-            return this.y;
-        }
-
         @Override
         public boolean equals( Object o )
         {
@@ -213,27 +158,26 @@ public class Feature implements Comparable<Feature>
             {
                 return false;
             }
-            GeoPoint geoPoint = (GeoPoint) o;
-            return Double.compare( geoPoint.getX(), getX() ) == 0 &&
-                   Double.compare( geoPoint.getY(), getY() ) == 0;
+            GeoPoint geoPoint = ( GeoPoint ) o;
+            return Double.compare( geoPoint.x(), x() ) == 0 &&
+                   Double.compare( geoPoint.y(), y() ) == 0;
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( getX(), getY() );
+            return Objects.hash( x(), y() );
         }
 
         @Override
         public String toString()
         {
             return new ToStringBuilder( this )
-                                              .append( "x", x )
-                                              .append( "y", y )
-                                              .toString();
+                    .append( "x", x )
+                    .append( "y", y )
+                    .toString();
         }
     }
-
 
     /**
      * Return x,y from a wkt with a POINT in it.
@@ -262,7 +206,7 @@ public class Feature implements Comparable<Feature>
         String[] wktParts = wktUpperCase.split( "[ )(]", 30 );
         List<String> parts = Arrays.stream( wktParts )
                                    .filter( s -> !s.isBlank() )
-                                   .collect( Collectors.toList() );
+                                   .toList();
 
         if ( parts.size() != 3 )
         {
@@ -313,7 +257,7 @@ public class Feature implements Comparable<Feature>
         String[] wktParts = wktUpperCase.split( "[ )(]", 30 );
         List<String> parts = Arrays.stream( wktParts )
                                    .filter( s -> !s.isBlank() )
-                                   .collect( Collectors.toList() );
+                                   .toList();
 
         if ( parts.size() < 3 || parts.size() > 4 )
         {

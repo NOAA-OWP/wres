@@ -20,21 +20,34 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 {
     private final GeometryTuple geometryTuple;
 
+    /**
+     * @param geometryTuple the geometry tuple
+     * @return an instance
+     */
     public static FeatureTuple of( GeometryTuple geometryTuple )
     {
         return new FeatureTuple( geometryTuple );
     }
 
+    /**
+     * @return the left feature
+     */
     public Feature getLeft()
     {
         return Feature.of( this.geometryTuple.getLeft() );
     }
 
+    /**
+     * @return the right feature
+     */
     public Feature getRight()
     {
         return Feature.of( this.geometryTuple.getRight() );
     }
 
+    /**
+     * @return the baseline feature
+     */
     public Feature getBaseline()
     {
         Feature returnMe = null;
@@ -66,7 +79,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         {
             return false;
         }
-        FeatureTuple that = (FeatureTuple) o;
+        FeatureTuple that = ( FeatureTuple ) o;
         return this.getGeometryTuple().equals( that.getGeometryTuple() );
     }
 
@@ -76,12 +89,9 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         return this.geometryTuple.hashCode();
     }
 
-
     @Override
     public int compareTo( FeatureTuple o )
     {
-        Objects.requireNonNull( o );
-        
         return MessageUtilities.compare( this.getGeometryTuple(), o.getGeometryTuple() );
     }
 
@@ -89,10 +99,10 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "left", this.getLeft() )
-                                                                            .append( "right", this.getRight() )
-                                                                            .append( "baseline", this.getBaseline() )
-                                                                            .toString();
+                .append( "left", this.getLeft() )
+                .append( "right", this.getRight() )
+                .append( "baseline", this.getBaseline() )
+                .toString();
     }
 
     /**
@@ -122,9 +132,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     }
 
     /**
-     * Get the name of the left feature.
-     *
-     * Convenience method.
+     * Get the name of the left feature. Convenience method.
      * @return The name of the left feature.
      */
 
@@ -135,9 +143,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     }
 
     /**
-     * Get the name of the right feature.
-     *
-     * Convenience method.
+     * Get the name of the right feature. Convenience method.
      * @return The name of the right feature.
      */
 
@@ -148,9 +154,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     }
 
     /**
-     * Get the name of the baseline feature.
-     *
-     * Convenience method.
+     * Get the name of the baseline feature. Convenience method.
      * @return The name of the baseline feature, null if no baseline.
      */
 
@@ -166,9 +170,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
     }
 
     /**
-     * Get the name of the feature based on the left/right/baseline given.
-     *
-     * Convenience method.
+     * Get the name of the feature based on the left/right/baseline given. Convenience method.
      * @param leftOrRightOrBaseline Which name to get.
      * @return The name of the feature according to the l/r/b dataset.
      */
@@ -198,7 +200,7 @@ public class FeatureTuple implements Comparable<FeatureTuple>
      * @param geometryTuple the geometry tuple
      * @throws NullPointerException if the input is null
      */
-    
+
     private FeatureTuple( GeometryTuple geometryTuple )
     {
         Objects.requireNonNull( geometryTuple );
