@@ -72,16 +72,21 @@ public class SSLStuffThatTrustsOneCertificate
                    .getSocketFactory();
     }
 
+    /**
+     * @return the trust manager
+     */
     public X509TrustManager getTrustManager()
     {
         return this.trustManager;
     }
 
+    /**
+     * @return the TLS context
+     */
     public SSLContext getSSLContext()
     {
         return this.sslContext;
     }
-
 
     /**
      * Returns a TrustManager that trusts only the certificate passed in

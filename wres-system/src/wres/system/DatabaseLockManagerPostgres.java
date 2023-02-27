@@ -93,6 +93,10 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
     private final ScheduledExecutorService connectionMonitorService;
 
+    /**
+     * Creates an instance.
+     * @param connectionProducer the connection producer
+     */
     public DatabaseLockManagerPostgres( Supplier<Connection> connectionProducer )
     {
         LOGGER.debug( "Began construction of lock manager {}.", this );

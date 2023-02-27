@@ -2,6 +2,10 @@ package wres.system;
 
 import java.util.Objects;
 
+/**
+ * Runtime exception that indicates a database lock could not be acquired.
+ */
+
 public class DatabaseLockFailed extends RuntimeException
 {
     private static final long serialVersionUID = -8951384634940360610L;
