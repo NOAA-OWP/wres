@@ -6,6 +6,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import wres.util.Strings;
 
+/**
+ * Data point that contains a value and an associated time.
+ */
+
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class DataPoint
 {
