@@ -1,4 +1,4 @@
-package wres.pipeline;
+package wres.pipeline.pooling;
 
 import java.util.Collections;
 import java.util.List;

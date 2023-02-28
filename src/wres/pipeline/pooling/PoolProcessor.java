@@ -1,4 +1,4 @@
-package wres.pipeline;
+package wres.pipeline.pooling;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,7 +23,9 @@ import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
 import wres.io.writing.commaseparated.pairs.PairsWriter;
-import wres.pipeline.PoolProcessingResult.Status;
+import wres.pipeline.EvaluationEvent;
+import wres.pipeline.WresProcessingException;
+import wres.pipeline.pooling.PoolProcessingResult.Status;
 import wres.pipeline.statistics.StatisticsProcessor;
 import wres.statistics.generated.Statistics;
 
@@ -35,7 +37,7 @@ import wres.statistics.generated.Statistics;
  * @author James Brown
  */
 
-class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
+public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolProcessor.class );
@@ -80,7 +82,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * @param <L> the left data type
      * @param <R> the right data type
      */
-    static class Builder<L, R>
+    public static class Builder<L, R>
     {
         /** The project declaration. */
         private ProjectConfig projectConfig;
@@ -116,7 +118,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param projectConfig the projectConfig to set
          * @return this builder
          */
-        Builder<L, R> setProjectConfig( ProjectConfig projectConfig )
+        public Builder<L, R> setProjectConfig( ProjectConfig projectConfig )
         {
             this.projectConfig = projectConfig;
             return this;
@@ -126,7 +128,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param evaluation the evaluation to set
          * @return this builder
          */
-        Builder<L, R> setEvaluation( Evaluation evaluation )
+        public Builder<L, R> setEvaluation( Evaluation evaluation )
         {
             this.evaluation = evaluation;
             return this;
@@ -136,7 +138,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param pairsWriter the pairsWriter to set
          * @return this builder
          */
-        Builder<L, R> setPairsWriter( PairsWriter<L, R> pairsWriter )
+        public Builder<L, R> setPairsWriter( PairsWriter<L, R> pairsWriter )
         {
             this.pairsWriter = pairsWriter;
             return this;
@@ -146,7 +148,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param basePairsWriter the basePairsWriter to set
          * @return this builder
          */
-        Builder<L, R> setBasePairsWriter( PairsWriter<L, R> basePairsWriter )
+        public Builder<L, R> setBasePairsWriter( PairsWriter<L, R> basePairsWriter )
         {
             this.basePairsWriter = basePairsWriter;
             return this;
@@ -156,7 +158,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param monitor the monitor to set
          * @return this builder
          */
-        Builder<L, R> setMonitor( EvaluationEvent monitor )
+        public Builder<L, R> setMonitor( EvaluationEvent monitor )
         {
             this.monitor = monitor;
             return this;
@@ -166,7 +168,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param poolSupplier the poolSupplier to set
          * @return this builder
          */
-        Builder<L, R> setPoolSupplier( Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier )
+        public Builder<L, R> setPoolSupplier( Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier )
         {
             this.poolSupplier = poolSupplier;
             return this;
@@ -176,7 +178,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param poolRequest the poolRequest to set
          * @return this builder
          */
-        Builder<L, R> setPoolRequest( PoolRequest poolRequest )
+        public Builder<L, R> setPoolRequest( PoolRequest poolRequest )
         {
             this.poolRequest = poolRequest;
             return this;
@@ -186,7 +188,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param groupPublicationTracker the group publication tracker
          * @return this builder
          */
-        Builder<L, R> setPoolGroupTracker( PoolGroupTracker groupPublicationTracker )
+        public Builder<L, R> setPoolGroupTracker( PoolGroupTracker groupPublicationTracker )
         {
             this.poolGroupTracker = groupPublicationTracker;
             return this;
@@ -196,7 +198,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param metricProcessors the metricProcessor to set
          * @return this builder
          */
-        Builder<L, R> setMetricProcessors( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> metricProcessors )
+        public Builder<L, R> setMetricProcessors( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> metricProcessors )
         {
             this.metricProcessors = metricProcessors;
             return this;
@@ -206,7 +208,7 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param traceCountEstimator the traceCountEstimator to set
          * @return this builder
          */
-        Builder<L, R> setTraceCountEstimator( ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
+        public Builder<L, R> setTraceCountEstimator( ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
         {
             this.traceCountEstimator = traceCountEstimator;
             return this;
@@ -216,16 +218,9 @@ class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @return an instance of a pool processor
          */
 
-        PoolProcessor<L, R> build()
+        public PoolProcessor<L, R> build()
         {
             return new PoolProcessor<>( this );
-        }
-
-        /**
-         * Package private constructor.
-         */
-        Builder()
-        {
         }
     }
 
