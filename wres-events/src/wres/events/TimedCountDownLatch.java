@@ -1,5 +1,6 @@
 package wres.events;
 
+import java.io.Serial;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -8,27 +9,27 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Similar to {@link CountDownLatch} but facilitates waiting for a fixed period that is reset after each mutation. 
  * Thus, if there is no progress within a fixed period, an evaluation may still complete.
- * 
+ *
  * @author James Brown
  */
 
 public class TimedCountDownLatch
 {
     private final Sync sync;
-    private final AtomicLong timestamp;
+    private final AtomicLong nanoTime;
     private int resetCount;
     private boolean timedOut = false;
-    
+
     /**
      * Constructs a {@link TimedCountDownLatch} initialized to the prescribed count.
-     * 
+     *
      * @param count the count
      */
 
     public TimedCountDownLatch( int count )
     {
         this.sync = new Sync( count );
-        this.timestamp = new AtomicLong( System.nanoTime() );
+        this.nanoTime = new AtomicLong( System.nanoTime() );
     }
 
     /**
@@ -48,10 +49,10 @@ public class TimedCountDownLatch
 
     public void resetClock()
     {
-        this.timestamp.set( System.nanoTime() );
+        this.nanoTime.set( System.nanoTime() );
         this.resetCount++;
     }
-    
+
     /**
      * @return {@code true} if the timer timed out, otherwise {@code false}.
      */
@@ -60,10 +61,10 @@ public class TimedCountDownLatch
     {
         return this.timedOut;
     }
-    
+
     /**
      * Causes the current thread to wait for a fixed period relative to the last mutation.
-     * 
+     *
      * @param timeout the timeout period
      * @param unit the time unit
      * @return true if acquired, false if timed out
@@ -73,34 +74,34 @@ public class TimedCountDownLatch
     public boolean await( long timeout, TimeUnit unit ) throws InterruptedException
     {
         long start = this.getTime();
-        long periodToWait = unit.toNanos( timeout );
-        for ( ;; )
+        long periodToWaitInNanos = unit.toNanos( timeout );
+        for ( ; ; )
         {
             // Wait until the timeout occurs or the count reaches zero, whichever is sooner
-            boolean acquired = this.waitFor( periodToWait, TimeUnit.NANOSECONDS );
-            
+            boolean acquired = this.waitFor( periodToWaitInNanos );
+
             this.timedOut = !acquired;
-            
+
             // If the count reached zero or the original timeout occurred, then return
             if ( acquired || start == this.getTime() )
             {
                 return acquired;
             }
-            
+
             // Subtract the time already waited from the period to wait
-            periodToWait = periodToWait - ( System.nanoTime() - start );
+            periodToWaitInNanos = periodToWaitInNanos - ( System.nanoTime() - start );
         }
     }
-    
+
     /**
      * @return the number of times the timeout was reset
      */
-    
+
     int getResetCount()
     {
         return this.resetCount;
     }
-    
+
     /**
      * Returns the current count.
      *
@@ -113,43 +114,37 @@ public class TimedCountDownLatch
 
     /**
      * Returns the current timestamp.
-     * 
+     *
      * @return the current timestamp
      */
 
     private long getTime()
     {
-        return this.timestamp.get();
-    }    
+        return this.nanoTime.get();
+    }
 
     /**
      * Causes the current thread to wait until the latch has counted down to zero, unless the thread is interrupted, or
      * the specified waiting time elapses.
      *
-     * @param timeout the timeout period
-     * @param unit the time unit
+     * @param timeInNanos the timeout period
      * @return true if acquired, false if timed out
-     * @see CountDownLatch#await(long,TimeUnit)
+     * @see CountDownLatch#await(long, TimeUnit)
      */
 
-    private boolean waitFor( final long timeout, final TimeUnit unit ) throws InterruptedException
+    private boolean waitFor( final long timeInNanos ) throws InterruptedException
     {
-        return this.sync.tryAcquireSharedNanos( 1, unit.toNanos( timeout ) );
+        return this.sync.tryAcquireSharedNanos( 1, timeInNanos );
     }
 
     /**
-     * Synchronization control.
-     * 
-     * Uses the {@link AbstractQueuedSynchronizer} state to represent count.
+     * Synchronization control. Uses the {@link AbstractQueuedSynchronizer} state to represent count.
      */
 
     private static final class Sync extends AbstractQueuedSynchronizer
     {
+        @Serial
         private static final long serialVersionUID = -7639904478060101736L;
-
-        private Sync()
-        {
-        }
 
         private Sync( int count )
         {
@@ -176,7 +171,7 @@ public class TimedCountDownLatch
             }
 
             // Loop until count is zero
-            for ( ;; )
+            for ( ; ; )
             {
                 final int c = super.getState();
                 int nextc = c + delta;

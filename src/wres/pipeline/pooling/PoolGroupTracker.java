@@ -1,4 +1,4 @@
-package wres.pipeline;
+package wres.pipeline.pooling;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +29,7 @@ import wres.events.EvaluationEventUtilities;
  * @author James Brown
  */
 
-class PoolGroupTracker
+public class PoolGroupTracker
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolGroupTracker.class );
@@ -51,7 +51,7 @@ class PoolGroupTracker
      * @throws NullPointerException if either input is null
      */
 
-    static PoolGroupTracker ofFeatureGroupTracker( Evaluation evaluation, List<PoolRequest> poolRequests )
+    public static PoolGroupTracker ofFeatureGroupTracker( Evaluation evaluation, List<PoolRequest> poolRequests )
     {
         // Group the requests by feature group and then identify each group
         Map<FeatureGroup, List<PoolRequest>> groups =

@@ -7,17 +7,17 @@ import java.io.Serial;
  * Needed because Java 8 Function world does not
  * deal kindly with checked Exceptions.
  */
-class WresProcessingException extends RuntimeException
+public class WresProcessingException extends RuntimeException
 {
     @Serial
     private static final long serialVersionUID = 6988169716259295343L;
 
-    WresProcessingException( String message )
+    public WresProcessingException( String message )
     {
         super( message );
     }
 
-    WresProcessingException( String message, Throwable cause )
+    public WresProcessingException( String message, Throwable cause )
     {
         super( message, cause );
     }

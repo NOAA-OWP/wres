@@ -1,4 +1,4 @@
-package wres.pipeline;
+package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -23,6 +23,7 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.pipeline.WresProcessingException;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.EvaluationStage;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 
@@ -33,7 +34,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
  * @author James Brown
  */
 
-class PoolReporter implements Consumer<PoolProcessingResult>
+public class PoolReporter implements Consumer<PoolProcessingResult>
 {
 
     /** Logger. */
@@ -73,7 +74,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
      * @throws NullPointerException if the project configuration is null
      */
 
-    PoolReporter( ProjectConfigPlus projectConfigPlus, int totalPools, boolean printDetailedReport )
+    public PoolReporter( ProjectConfigPlus projectConfigPlus, int totalPools, boolean printDetailedReport )
     {
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify non-null project configuration when building the feature report." );
@@ -135,7 +136,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
      * @throws WresProcessingException if no features were completed successfully
      */
 
-    void report()
+    public void report()
     {
         // Finalize results
         Set<PoolRequest> successfulPoolsToReport = Set.copyOf( this.successfulPools );
@@ -215,7 +216,7 @@ class PoolReporter implements Consumer<PoolProcessingResult>
      * @param items the items, not null
      * @return a summary description of the items
      */
-    static <T> String getPoolItemDescription( Set<T> items, Function<T, String> stringifier )
+    public static <T> String getPoolItemDescription( Set<T> items, Function<T, String> stringifier )
     {
         StringJoiner outer = new StringJoiner( ", ", "[ ", " ]" );
 

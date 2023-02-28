@@ -29,7 +29,7 @@ import wres.datamodel.time.TimeSeries;
 @Name( "wres.control.EvaluationEvent" )
 @Label( "Evaluation Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core" } )
-class EvaluationEvent extends Event
+public class EvaluationEvent extends Event
 {
     @Label( "Evaluation Identifier" )
     @Description( "The unique identifier of the evaluation." )
@@ -94,6 +94,31 @@ class EvaluationEvent extends Event
 
     /** Internal/incremental state of {@link #traceCount} for left/baseline data during an evaluation. */
     private final AtomicLong traceCountBaselineInternal;
+
+    /**
+     * Registers a new pool with the evaluation and increments related statistics.
+     *
+     * @param pool a pool
+     * @param traceCount an estimate of the number of traces in the pool for left/right data
+     * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data
+     */
+
+    public <L, R> void registerPool( Pool<TimeSeries<Pair<L, R>>> pool, long traceCount, long traceCountBaseline )
+    {
+        if ( Objects.nonNull( pool ) )
+        {
+            this.seriesCountRightInternal.addAndGet( pool.get().size() );
+            this.pairCountRightInternal.addAndGet( PoolSlicer.getPairCount( pool ) );
+            this.traceCountRightInternal.addAndGet( traceCount );
+
+            if ( pool.hasBaseline() )
+            {
+                this.seriesCountBaselineInternal.addAndGet( pool.getBaselineData().get().size() );
+                this.pairCountBaselineInternal.addAndGet( PoolSlicer.getPairCount( pool.getBaselineData() ) );
+                this.traceCountBaselineInternal.addAndGet( traceCountBaseline );
+            }
+        }
+    }
 
     /**
      * @return an instance
@@ -183,31 +208,6 @@ class EvaluationEvent extends Event
     void setPoolCount( int poolCount )
     {
         this.poolCount = poolCount;
-    }
-
-    /**
-     * Registers a new pool with the evaluation and increments related statistics. 
-     *
-     * @param pool a pool
-     * @param traceCount an estimate of the number of traces in the pool for left/right data
-     * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data
-     */
-
-    <L, R> void registerPool( Pool<TimeSeries<Pair<L, R>>> pool, long traceCount, long traceCountBaseline )
-    {
-        if ( Objects.nonNull( pool ) )
-        {
-            this.seriesCountRightInternal.addAndGet( pool.get().size() );
-            this.pairCountRightInternal.addAndGet( PoolSlicer.getPairCount( pool ) );
-            this.traceCountRightInternal.addAndGet( traceCount );
-
-            if ( pool.hasBaseline() )
-            {
-                this.seriesCountBaselineInternal.addAndGet( pool.getBaselineData().get().size() );
-                this.pairCountBaselineInternal.addAndGet( PoolSlicer.getPairCount( pool.getBaselineData() ) );
-                this.traceCountBaselineInternal.addAndGet( traceCountBaseline );
-            }
-        }
     }
 
     /**
