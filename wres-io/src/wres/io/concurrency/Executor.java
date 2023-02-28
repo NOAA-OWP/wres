@@ -32,6 +32,10 @@ public class Executor
     private final ThreadPoolExecutor service;
     private final ThreadPoolExecutor highPriorityService;
 
+    /**
+     * Creates an instance.
+     * @param systemSettings the system settings
+     */
     public Executor( SystemSettings systemSettings )
     {
         this.systemSettings = systemSettings;
@@ -68,11 +72,6 @@ public class Executor
                 .namingPattern( "High Priority I/O Thread %d" )
                 .build();
         return ( ThreadPoolExecutor ) Executors.newFixedThreadPool( 10, factory );
-    }
-
-    public <V> Future<V> submitHighPriorityTask( Callable<V> task )
-    {
-        return this.highPriorityService.submit( task );
     }
 
     /**

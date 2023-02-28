@@ -18,14 +18,13 @@ public class Variables
 {
     private final Database database;
 
+    /**
+     * Creates an instance.
+     * @param database the database
+     */
     public Variables( Database database )
     {
         this.database = database;
-    }
-
-    private Database getDatabase()
-    {
-        return this.database;
     }
 
     /**
@@ -39,8 +38,8 @@ public class Variables
                                                final String projectMember )
             throws SQLException
     {
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
+        Database db = this.getDatabase();
+        DataScripter script = new DataScripter( db );
 
         script.addLine( "SELECT DISTINCT( S.variable_name )" );
         script.addLine( "FROM wres.Source S" );
@@ -85,8 +84,8 @@ public class Variables
         Objects.requireNonNull( projectMember );
         Objects.requireNonNull( variableName );
 
-        Database database = this.getDatabase();
-        DataScripter script = new DataScripter( database );
+        Database db = this.getDatabase();
+        DataScripter script = new DataScripter( db );
         script.addLine( "SELECT 1" );
         script.addLine( "FROM wres.Source S" );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
@@ -105,4 +104,13 @@ public class Variables
             return provider.next();
         }
     }
+
+    /**
+     * @return the database
+     */
+    private Database getDatabase()
+    {
+        return this.database;
+    }
+
 }

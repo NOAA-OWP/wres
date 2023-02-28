@@ -21,7 +21,7 @@ import wres.statistics.generated.Consumer.Format;
  * it is desirable that all subscribers are considered equal and hence that all format writers should be placed in 
  * long-running processes eventually.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -62,7 +62,7 @@ public class SubscriberApprover
     /**
      * Builds a {@link SubscriberApprover}.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     public static class Builder

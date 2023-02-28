@@ -1,6 +1,8 @@
 package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -9,6 +11,7 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,28 +22,39 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * Represents the combined elements that defined an atomic set of thresholds
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class ThresholdDefinition implements Serializable {
-
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class ThresholdDefinition implements Serializable
+{
+    @Serial
     private static final long serialVersionUID = 7011802048254614431L;
-    
-    /**
-     * Metadata describing where the values are valid and who produced them
-     */
+
+    /** Original values. */
+    @JsonProperty( "original_values" )
+    OriginalThresholdValues originalValues;
+    /** Calculated values. */
+    @JsonProperty( "calculated_values" )
+    CalculatedThresholdValues calculatedValues;
+
+    /** Metadata describing where the values are valid and who produced them. */
     ThresholdMetadata metadata;
 
     /**
      * @return The metadata for the combined set of thresholds
      */
-    public ThresholdMetadata getMetadata() {
+    public ThresholdMetadata getMetadata()
+    {
         return metadata;
     }
 
-    public WrdsLocation getLocation() {
+    /**
+     * @return the location
+     */
+    public WrdsLocation getLocation()
+    {
         return new WrdsLocation(
-                this.metadata.getNwm_feature_id(),
-                this.metadata.getUsgs_site_code(),
-                this.metadata.getNws_lid()
+                this.metadata.getNwmFeatureId(),
+                this.metadata.getUsgsSiteCode(),
+                this.metadata.getNwsLid()
         );
     }
 
@@ -51,7 +65,8 @@ public class ThresholdDefinition implements Serializable {
      *
      * @param metadata The metadata for the combined set of thresholds
      */
-    public void setMetadata(ThresholdMetadata metadata) {
+    public void setMetadata( ThresholdMetadata metadata )
+    {
         this.metadata = metadata;
     }
 
@@ -62,407 +77,601 @@ public class ThresholdDefinition implements Serializable {
      *
      * @return The set of measured thresholds
      */
-    public OriginalThresholdValues getOriginal_values() {
-        return original_values;
+    public OriginalThresholdValues getOriginalValues()
+    {
+        return originalValues;
     }
 
-    public void setOriginal_values(OriginalThresholdValues original_values) {
-        this.original_values = original_values;
+    /**
+     * Sets the original values.
+     * @param originalValues the original values
+     */
+    public void setOriginalValues( OriginalThresholdValues originalValues )
+    {
+        this.originalValues = originalValues;
     }
 
-    public CalculatedThresholdValues getCalculated_values() {
-        return calculated_values;
+    /**
+     * @return the calculated values
+     */
+    public CalculatedThresholdValues getCalculatedValues()
+    {
+        return calculatedValues;
     }
 
-    public void setCalculated_values(CalculatedThresholdValues calculated_values) {
-        this.calculated_values = calculated_values;
+    /**
+     * Sets the calculated values.
+     * @param calculatedValues the calculated values
+     */
+    public void setCalculatedValues( CalculatedThresholdValues calculatedValues )
+    {
+        this.calculatedValues = calculatedValues;
     }
 
-    public String getThresholdProvider() {
+    /**
+     * @return the threshold provider
+     */
+    public String getThresholdProvider()
+    {
         String thresholdProvider = null;
-        if( Objects.nonNull( this.getMetadata() ) )
+        if ( Objects.nonNull( this.getMetadata() ) )
         {
-            thresholdProvider = this.getMetadata().getThreshold_source();
+            thresholdProvider = this.getMetadata().getThresholdSource();
         }
-        
+
         return thresholdProvider;
     }
 
-    public String getRatingProvider() {
+    /**
+     * @return the ratings provider
+     */
+    public String getRatingProvider()
+    {
         String ratingProvider = null;
-        if( Objects.nonNull( this.getMetadata() ) )
+        if ( Objects.nonNull( this.getMetadata() ) )
         {
-            ratingProvider = this.getMetadata().getRating_source();
+            ratingProvider = this.getMetadata().getRatingSource();
         }
-        
+
         return ratingProvider;
     }
 
-    public Double getLowFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the low flow threshold.
+     * @param getCalculated is true to return the calculated flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the low flow
+     */
+    public Double getLowFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getLow_flow() != null) {
-            flow = this.getCalculated_values().getLow_flow();
+        if ( getCalculated && this.getCalculatedValues().getLowFlow() != null )
+        {
+            flow = this.getCalculatedValues().getLowFlow();
         }
-        else {
-            flow = this.getOriginal_values().getLow_flow();
+        else
+        {
+            flow = this.getOriginalValues().getLowFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getLowStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the low stage.
+     * @param getCalculated is true to return the calculated stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the low stage
+     */
+    public Double getLowStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getLow_stage() != null) {
-            stage = this.getCalculated_values().getLow_stage();
+        if ( getCalculated && this.getCalculatedValues().getLowStage() != null )
+        {
+            stage = this.getCalculatedValues().getLowStage();
         }
-        else {
-            stage = this.getOriginal_values().getLow_stage();
+        else
+        {
+            stage = this.getOriginalValues().getLowStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getActionFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the action flow.
+     * @param getCalculated is true to return the calculated flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the action flow
+     */
+    public Double getActionFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getAction_flow() != null) {
-            flow = this.getCalculated_values().getAction_flow();
+        if ( getCalculated && this.getCalculatedValues().getActionFlow() != null )
+        {
+            flow = this.getCalculatedValues().getActionFlow();
         }
-        else {
-            flow = this.getOriginal_values().getAction_flow();
+        else
+        {
+            flow = this.getOriginalValues().getActionFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getActionStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the action stage.
+     * @param getCalculated is true to return the calculated stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the action stage
+     */
+
+    public Double getActionStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getAction_stage() != null) {
-            stage = this.getCalculated_values().getAction_stage();
+        if ( getCalculated && this.getCalculatedValues().getActionStage() != null )
+        {
+            stage = this.getCalculatedValues().getActionStage();
         }
-        else {
-            stage = this.getOriginal_values().getAction_stage();
+        else
+        {
+            stage = this.getOriginalValues().getActionStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getMinorFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the minor flood flow.
+     * @param getCalculated is true to return the calculated minor flood flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the minor flood flow
+     */
+
+    public Double getMinorFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getMinor_flow() != null) {
-            flow = this.getCalculated_values().getMinor_flow();
+        if ( getCalculated && this.getCalculatedValues().getMinorFlow() != null )
+        {
+            flow = this.getCalculatedValues().getMinorFlow();
         }
-        else {
-            flow = this.getOriginal_values().getMinor_flow();
+        else
+        {
+            flow = this.getOriginalValues().getMinorFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getMinorStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the minor flood stage.
+     * @param getCalculated is true to return the calculated minor flood stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the minor flood stage
+     */
+
+    public Double getMinorStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getMinor_stage() != null) {
-            stage = this.getCalculated_values().getMinor_stage();
+        if ( getCalculated && this.getCalculatedValues().getMinorStage() != null )
+        {
+            stage = this.getCalculatedValues().getMinorStage();
         }
-        else {
-            stage = this.getOriginal_values().getMinor_stage();
+        else
+        {
+            stage = this.getOriginalValues().getMinorStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getModerateFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the moderate flood flow.
+     * @param getCalculated is true to return the calculated moderate flood flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the moderate flood flow
+     */
+
+    public Double getModerateFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getModerate_flow() != null)  {
-            flow = this.getCalculated_values().getModerate_flow();
+        if ( getCalculated && this.getCalculatedValues().getModerateFlow() != null )
+        {
+            flow = this.getCalculatedValues().getModerateFlow();
         }
-        else {
-            flow = this.getOriginal_values().getModerate_flow();
+        else
+        {
+            flow = this.getOriginalValues().getModerateFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getModerateStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the moderate flood stage.
+     * @param getCalculated is true to return the calculated moderate flood stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the moderate flood stage
+     */
+
+    public Double getModerateStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getModerate_stage() != null) {
-            stage = this.getCalculated_values().getModerate_stage();
+        if ( getCalculated && this.getCalculatedValues().getModerateStage() != null )
+        {
+            stage = this.getCalculatedValues().getModerateStage();
         }
-        else {
-            stage = this.getOriginal_values().getModerate_stage();
+        else
+        {
+            stage = this.getOriginalValues().getModerateStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getMajorFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the major flood flow.
+     * @param getCalculated is true to return the calculated major flood flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the major flood flow
+     */
+    public Double getMajorFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getMajor_flow() != null) {
-            flow = this.getCalculated_values().getMajor_flow();
+        if ( getCalculated && this.getCalculatedValues().getMajorFlow() != null )
+        {
+            flow = this.getCalculatedValues().getMajorFlow();
         }
-        else {
-            flow = this.getOriginal_values().getMajor_flow();
+        else
+        {
+            flow = this.getOriginalValues().getMajorFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getMajorStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the major flood stage.
+     * @param getCalculated is true to return the calculated major flood stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the major flood stage
+     */
+
+    public Double getMajorStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getMajor_stage() != null) {
-            stage = this.getCalculated_values().getMajor_stage();
+        if ( getCalculated && this.getCalculatedValues().getMajorStage() != null )
+        {
+            stage = this.getCalculatedValues().getMajorStage();
         }
-        else {
-            stage = this.getOriginal_values().getMajor_stage();
+        else
+        {
+            stage = this.getOriginalValues().getMajorStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getBankfulFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the bankful flow.
+     * @param getCalculated is true to return the calculated bankful flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the bankful flow
+     */
+    public Double getBankfulFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getBankfull_flow() != null) {
-            flow = this.getCalculated_values().getBankfull_flow();
+        if ( getCalculated && this.getCalculatedValues().getBankfullFlow() != null )
+        {
+            flow = this.getCalculatedValues().getBankfullFlow();
         }
-        else {
-            flow = this.getOriginal_values().getBankfull_flow();
+        else
+        {
+            flow = this.getOriginalValues().getBankfullFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getBankfulStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the bankful stage.
+     * @param getCalculated is true to return the calculated bankful stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the bankful stage
+     */
+
+    public Double getBankfulStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getBankfull_stage() != null) {
-            stage = this.getCalculated_values().getBankfull_stage();
+        if ( getCalculated && this.getCalculatedValues().getBankfullStage() != null )
+        {
+            stage = this.getCalculatedValues().getBankfullStage();
         }
-        else {
-            stage = this.getOriginal_values().getBankfull_stage();
+        else
+        {
+            stage = this.getOriginalValues().getBankfullStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public Double getRecordFlow(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the record flood flow.
+     * @param getCalculated is true to return the calculated record flood flow, false for regular
+     * @param unitMapper the unit mapper
+     * @return the record flood flow
+     */
+    public Double getRecordFlow( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double flow;
 
-        if (getCalculated && this.getCalculated_values().getRecord_flow() != null) {
-            flow = this.getCalculated_values().getRecord_flow();
+        if ( getCalculated && this.getCalculatedValues().getRecordFlow() != null )
+        {
+            flow = this.getCalculatedValues().getRecordFlow();
         }
-        else {
-            flow = this.getOriginal_values().getRecord_flow();
+        else
+        {
+            flow = this.getOriginalValues().getRecordFlow();
         }
 
-        if (flow == null) {
+        if ( flow == null )
+        {
             return null;
         }
 
-        return this.getFlowUnitConversion(unitMapper).applyAsDouble(flow);
+        return this.getFlowUnitConversion( unitMapper ).applyAsDouble( flow );
     }
 
-    public Double getRecordStage(boolean getCalculated, UnitMapper unitMapper) {
+    /**
+     * Gets the record flood stage.
+     * @param getCalculated is true to return the calculated record flood stage, false for regular
+     * @param unitMapper the unit mapper
+     * @return the record flood stage
+     */
+    public Double getRecordStage( boolean getCalculated, UnitMapper unitMapper )
+    {
         Double stage;
 
-        if (getCalculated && this.getCalculated_values().getRecord_stage() != null) {
-            stage = this.getCalculated_values().getRecord_stage();
+        if ( getCalculated && this.getCalculatedValues().getRecordStage() != null )
+        {
+            stage = this.getCalculatedValues().getRecordStage();
         }
-        else {
-            stage = this.getOriginal_values().getRecord_stage();
+        else
+        {
+            stage = this.getOriginalValues().getRecordStage();
         }
 
-        if (stage == null) {
+        if ( stage == null )
+        {
             return null;
         }
 
-        return this.getStageUnitConversion(unitMapper).applyAsDouble(stage);
+        return this.getStageUnitConversion( unitMapper ).applyAsDouble( stage );
     }
 
-    public MeasurementUnit getFlowMeasurementUnit() {
-        return MeasurementUnit.of(this.getMetadata().getFlow_unit());
+    /**
+     * @return the flow measurement unit
+     */
+    public MeasurementUnit getFlowMeasurementUnit()
+    {
+        return MeasurementUnit.of( this.getMetadata().getFlowUnit() );
     }
 
-    public MeasurementUnit getStageMeasurementUnit() {
-        return MeasurementUnit.of(this.getMetadata().getStage_unit());
+    /**
+     * @return the stage measurement unit
+     */
+    public MeasurementUnit getStageMeasurementUnit()
+    {
+        return MeasurementUnit.of( this.getMetadata().getStageUnit() );
     }
 
-    OriginalThresholdValues original_values;
-    CalculatedThresholdValues calculated_values;
+    /**
+     * The thresholds by feature.
+     * @param thresholdType the threshold type
+     * @param thresholdOperator the threshold operator
+     * @param dataType the data type
+     * @param getCalculated whether the thresholds are calculated
+     * @param desiredUnitMapper the desired unit mapper
+     * @return the thresholds
+     */
 
-    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds(
-            WRDSThresholdType thresholdType,
-            ThresholdConstants.Operator thresholdOperator,
-            ThresholdConstants.ThresholdDataType dataType,
-            boolean getCalculated,
-            UnitMapper desiredUnitMapper
-    ) {
+    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds( WRDSThresholdType thresholdType,
+                                                                 ThresholdConstants.Operator thresholdOperator,
+                                                                 ThresholdConstants.ThresholdDataType dataType,
+                                                                 boolean getCalculated,
+                                                                 UnitMapper desiredUnitMapper
+    )
+    {
         WrdsLocation location = this.getLocation();
 
         Set<ThresholdOuter> thresholds;
 
-        if (thresholdType.equals(WRDSThresholdType.FLOW)) {
-            thresholds = this.getFlowThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
+        if ( thresholdType.equals( WRDSThresholdType.FLOW ) )
+        {
+            thresholds = this.getFlowThresholds( getCalculated, thresholdOperator, dataType, desiredUnitMapper );
         }
-        else {
-            thresholds = this.getStageThresholds(getCalculated, thresholdOperator, dataType, desiredUnitMapper);
+        else
+        {
+            thresholds = this.getStageThresholds( getCalculated, thresholdOperator, dataType, desiredUnitMapper );
         }
         return Map.of( location, thresholds );
     }
 
-    private Set<ThresholdOuter> getFlowThresholds(
-            boolean getCalculated,
-            ThresholdConstants.Operator thresholdOperator,
-            ThresholdConstants.ThresholdDataType dataType,
-            UnitMapper desiredUnitMapper
-    ) {
+    private Set<ThresholdOuter> getFlowThresholds( boolean getCalculated,
+                                                   ThresholdConstants.Operator thresholdOperator,
+                                                   ThresholdConstants.ThresholdDataType dataType,
+                                                   UnitMapper desiredUnitMapper
+    )
+    {
         Set<ThresholdOuter> thresholds = new HashSet<>();
 
-        Double low = this.getLowFlow(getCalculated, desiredUnitMapper);
-        Double action = this.getActionFlow(getCalculated, desiredUnitMapper);
-        Double minor = this.getMinorFlow(getCalculated, desiredUnitMapper);
-        Double moderate = this.getModerateFlow(getCalculated, desiredUnitMapper);
-        Double major = this.getMajorFlow(getCalculated, desiredUnitMapper);
-        Double bankful = this.getBankfulFlow(getCalculated, desiredUnitMapper);
-        Double record = this.getRecordFlow(getCalculated, desiredUnitMapper);
+        Double low = this.getLowFlow( getCalculated, desiredUnitMapper );
+        Double action = this.getActionFlow( getCalculated, desiredUnitMapper );
+        Double minor = this.getMinorFlow( getCalculated, desiredUnitMapper );
+        Double moderate = this.getModerateFlow( getCalculated, desiredUnitMapper );
+        Double major = this.getMajorFlow( getCalculated, desiredUnitMapper );
+        Double bankful = this.getBankfulFlow( getCalculated, desiredUnitMapper );
+        Double recordFlow = this.getRecordFlow( getCalculated, desiredUnitMapper );
 
-        if (low != null) {
+        if ( low != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(low),
+                            OneOrTwoDoubles.of( low ),
                             thresholdOperator,
                             dataType,
                             "low",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (action != null) {
+        if ( action != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(action),
+                            OneOrTwoDoubles.of( action ),
                             thresholdOperator,
                             dataType,
                             "action",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (minor != null) {
+        if ( minor != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(minor),
+                            OneOrTwoDoubles.of( minor ),
                             thresholdOperator,
                             dataType,
                             "minor",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (moderate != null) {
+        if ( moderate != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(moderate),
+                            OneOrTwoDoubles.of( moderate ),
                             thresholdOperator,
                             dataType,
                             "moderate",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (major != null) {
+        if ( major != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(major),
+                            OneOrTwoDoubles.of( major ),
                             thresholdOperator,
                             dataType,
                             "major",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (bankful != null) {
+        if ( bankful != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(bankful),
+                            OneOrTwoDoubles.of( bankful ),
                             thresholdOperator,
                             dataType,
                             "bankfull",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (record != null) {
+        if ( recordFlow != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(record),
+                            OneOrTwoDoubles.of( recordFlow ),
                             thresholdOperator,
                             dataType,
                             "record",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
@@ -475,97 +684,105 @@ public class ThresholdDefinition implements Serializable {
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             UnitMapper desiredUnitMapper
-    ) {
+    )
+    {
         Set<ThresholdOuter> thresholds = new HashSet<>();
 
-        Double low = this.getLowStage(getCalculated, desiredUnitMapper);
-        Double action = this.getActionStage(getCalculated, desiredUnitMapper);
-        Double minor = this.getMinorStage(getCalculated, desiredUnitMapper);
-        Double moderate = this.getModerateStage(getCalculated, desiredUnitMapper);
-        Double major = this.getMajorStage(getCalculated, desiredUnitMapper);
-        Double bankful = this.getBankfulStage(getCalculated, desiredUnitMapper);
-        Double record = this.getRecordStage(getCalculated, desiredUnitMapper);
+        Double low = this.getLowStage( getCalculated, desiredUnitMapper );
+        Double action = this.getActionStage( getCalculated, desiredUnitMapper );
+        Double minor = this.getMinorStage( getCalculated, desiredUnitMapper );
+        Double moderate = this.getModerateStage( getCalculated, desiredUnitMapper );
+        Double major = this.getMajorStage( getCalculated, desiredUnitMapper );
+        Double bankful = this.getBankfulStage( getCalculated, desiredUnitMapper );
+        Double recordFlow = this.getRecordStage( getCalculated, desiredUnitMapper );
 
-        if (low != null) {
+        if ( low != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(low),
+                            OneOrTwoDoubles.of( low ),
                             thresholdOperator,
                             dataType,
                             "low",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (action != null) {
+        if ( action != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(action),
+                            OneOrTwoDoubles.of( action ),
                             thresholdOperator,
                             dataType,
                             "action",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (minor != null) {
+        if ( minor != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(minor),
+                            OneOrTwoDoubles.of( minor ),
                             thresholdOperator,
                             dataType,
                             "minor",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (moderate != null) {
+        if ( moderate != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(moderate),
+                            OneOrTwoDoubles.of( moderate ),
                             thresholdOperator,
                             dataType,
                             "moderate",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (major != null) {
+        if ( major != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(major),
+                            OneOrTwoDoubles.of( major ),
                             thresholdOperator,
                             dataType,
                             "major",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (bankful != null) {
+        if ( bankful != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(bankful),
+                            OneOrTwoDoubles.of( bankful ),
                             thresholdOperator,
                             dataType,
                             "bankfull",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
 
-        if (record != null) {
+        if ( recordFlow != null )
+        {
             thresholds.add(
                     ThresholdOuter.of(
-                            OneOrTwoDoubles.of(record),
+                            OneOrTwoDoubles.of( recordFlow ),
                             thresholdOperator,
                             dataType,
                             "record",
-                            MeasurementUnit.of(desiredUnitMapper.getDesiredMeasurementUnitName())
+                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
                     )
             );
         }
@@ -573,11 +790,13 @@ public class ThresholdDefinition implements Serializable {
         return thresholds;
     }
 
-    private DoubleUnaryOperator getStageUnitConversion(UnitMapper mapper) {
-        return mapper.getUnitMapper(this.getStageMeasurementUnit().getUnit());
+    private DoubleUnaryOperator getStageUnitConversion( UnitMapper mapper )
+    {
+        return mapper.getUnitMapper( this.getStageMeasurementUnit().getUnit() );
     }
 
-    private DoubleUnaryOperator getFlowUnitConversion(UnitMapper mapper) {
-        return mapper.getUnitMapper(this.getFlowMeasurementUnit().getUnit());
+    private DoubleUnaryOperator getFlowUnitConversion( UnitMapper mapper )
+    {
+        return mapper.getUnitMapper( this.getFlowMeasurementUnit().getUnit() );
     }
 }

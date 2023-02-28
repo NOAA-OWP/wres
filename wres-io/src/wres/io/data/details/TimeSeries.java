@@ -25,13 +25,17 @@ public class TimeSeries
      */
     private Long timeSeriesID = null;
 
-
     /**
      * The ID of the initial source of the data for the time series
      */
     private final long sourceID;
 
-
+    /**
+     * Creates an instance.
+     * @param database the database
+     * @param ensembleID the ensemble ID
+     * @param sourceID the source ID
+     */
     public TimeSeries( Database database,
                        long ensembleID,
                        long sourceID )
@@ -42,11 +46,6 @@ public class TimeSeries
         this.sourceID = sourceID;
     }
 
-    public long getEnsembleId()
-    {
-        return this.ensembleID;
-    }
-	
 	/**
 	 * @return Returns the ID in the database corresponding to this
      * Time Series. If the ID is not present, it is retrieved from the database
@@ -88,7 +87,7 @@ public class TimeSeries
                                              + script );
         }
 
-        if ( script.getInsertedIds().size() <= 0 )
+        if ( script.getInsertedIds().isEmpty() )
         {
             throw new IllegalStateException( "Failed to get inserted id using"
                                              + script );

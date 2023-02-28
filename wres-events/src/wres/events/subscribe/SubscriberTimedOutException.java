@@ -3,7 +3,7 @@ package wres.events.subscribe;
 /**
  * Exception to throw when consumption has timed out. This corresponds to HTTP status code 408.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class SubscriberTimedOutException extends RuntimeException

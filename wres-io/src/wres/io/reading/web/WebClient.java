@@ -26,8 +26,10 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
 import wres.io.ingesting.IngestException;
 
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,7 @@ public class WebClient
     static
     {
         java.util.logging.Logger.getLogger( OkHttpClient.class
-                                                              .getName() )
+                                                    .getName() )
                                 .setLevel( Level.FINE );
     }
 
@@ -68,6 +70,10 @@ public class WebClient
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
     private String userAgent;
 
+    /**
+     * Creates an instance.
+     * @param trackTimings whether to track the timings
+     */
     public WebClient( boolean trackTimings )
     {
         this.httpClient = new OkHttpClient().newBuilder()
@@ -80,6 +86,11 @@ public class WebClient
         this.setUserAgent();
     }
 
+    /**
+     * Creates an instance
+     * @param sslGoo the TLS configuration
+     * @param trackTimings whether to track the timings
+     */
     public WebClient( Pair<SSLContext, X509TrustManager> sslGoo, boolean trackTimings )
     {
         Objects.requireNonNull( sslGoo );
@@ -96,16 +107,26 @@ public class WebClient
         this.setUserAgent();
     }
 
+    /**
+     * Creates an instance.
+     */
     public WebClient()
     {
         this( false );
     }
 
+    /**
+     * Creates an instance
+     * @param sslGoo the TLS configuration
+     */
     public WebClient( Pair<SSLContext, X509TrustManager> sslGoo )
     {
         this( sslGoo, false );
     }
 
+    /**
+     * @return an HTTP client
+     */
     private OkHttpClient getHttpClient()
     {
         return this.httpClient;
@@ -149,7 +170,7 @@ public class WebClient
         if ( !uri.getScheme().startsWith( "http" ) )
         {
             throw new IllegalArgumentException(
-                                                "Must pass an http uri, got " + uri );
+                    "Must pass an http uri, got " + uri );
         }
 
         LOGGER.debug( "getFromWeb {}", uri );
@@ -159,10 +180,10 @@ public class WebClient
         try
         {
             Request request = new Request.Builder()
-                                                   .url( uri.toURL() )
-                                                   .header( "Accept-Encoding", "gzip" )
-                                                   .header( "User-Agent", this.getUserAgent() )
-                                                   .build();
+                    .url( uri.toURL() )
+                    .header( "Accept-Encoding", "gzip" )
+                    .header( "User-Agent", this.getUserAgent() )
+                    .build();
 
             monitorEvent.begin();
 
@@ -349,7 +370,7 @@ public class WebClient
      * Only supports empty/non-existent encoding and gzip encoding.
      * In other words, unwrap gzipped HTTP responses.
      * Credit:
-     * https://stackoverflow.com/questions/53502626/does-java-http-client-handle-compression#answer-54064189
+     * <a href="https://stackoverflow.com/questions/53502626/does-java-http-client-handle-compression#answer-54064189">Compression</a>
      * @param response The HttpResponse having an InputStream.
      * @return An InputStream ready for consumption.
      * @throws IOException When creation of an underlying GZIPInputStream fails.
@@ -359,8 +380,10 @@ public class WebClient
     private static InputStream getDecodedInputStream( Response response )
             throws IOException
     {
-        InputStream rawStream = response.body()
-                                        .byteStream();
+        Objects.requireNonNull( response );
+        ResponseBody body = response.body();
+        Objects.requireNonNull( body );
+        InputStream rawStream = body.byteStream();
         String encoding = response.headers()
                                   .get( "Content-Encoding" );
 
@@ -453,16 +476,11 @@ public class WebClient
             return true;
         }
 
-        if ( t instanceof IOException
-             && Objects.nonNull( t.getMessage() )
-             && t.getMessage()
-                 .toLowerCase()
-                 .contains( "connection reset" ) )
-        {
-            return true;
-        }
-
-        return false;
+        return t instanceof IOException
+               && Objects.nonNull( t.getMessage() )
+               && t.getMessage()
+                   .toLowerCase()
+                   .contains( "connection reset" );
     }
 
 
@@ -573,28 +591,47 @@ public class WebClient
                + slowestMessage;
     }
 
+    /**
+     * A client response.
+     */
     public static class ClientResponse implements AutoCloseable
     {
         private final int statusCode;
         private final InputStream response;
 
-        public ClientResponse( Response httpResponse ) throws IOException
+        /**
+         * Creates an instance.
+         * @param httpResponse the response code
+         * @throws IOException if the client could not be created
+         */
+        private ClientResponse( Response httpResponse ) throws IOException
         {
             this.statusCode = httpResponse.code();
             this.response = WebClient.getDecodedInputStream( httpResponse );
         }
 
-        public ClientResponse( int statusCode )
+        /**
+         * Creates an instance.
+         * @param statusCode the status code
+         */
+        private ClientResponse( int statusCode )
         {
             this.statusCode = statusCode;
             this.response = InputStream.nullInputStream();
         }
+
+        /**
+         * @return the HTTP status code
+         */
 
         public int getStatusCode()
         {
             return this.statusCode;
         }
 
+        /**
+         * @return the response stream
+         */
         public InputStream getResponse()
         {
             return this.response;

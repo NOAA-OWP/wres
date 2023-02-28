@@ -1,6 +1,7 @@
 package wres.io.reading.wrds.nwm;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -16,32 +17,39 @@ import wres.datamodel.MissingValues;
 /**
  * Custom deserializer to allow for handling a null value in a NWM data point.
  * @author Hank.Herr
- *
  */
 public class NwmDataPointDeserializer extends StdDeserializer<NwmDataPoint>
 {
+    @Serial
     private static final long serialVersionUID = 5616289115474402095L;
 
-    public NwmDataPointDeserializer()
-    {
-        this( null );
-    }
-
+    /**
+     * Creates an instance.
+     *
+     * @param vc the value class
+     */
     public NwmDataPointDeserializer( Class<?> vc )
     {
         super( vc );
     }
 
+    /**
+     * Creates an instance.
+     */
+    public NwmDataPointDeserializer()
+    {
+        this( null );
+    }
+
     @Override
-    public NwmDataPoint deserialize( JsonParser jp, DeserializationContext ctxt )
-            throws IOException, JsonProcessingException
+    public NwmDataPoint deserialize( JsonParser jp, DeserializationContext ctxt ) throws IOException
     {
         JsonNode node = jp.getCodec().readTree( jp );
 
         //Parse the instant.
         DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                                                                    .appendPattern( "uuuuMMdd'T'HHX" )
-                                                                    .toFormatter();
+                .appendPattern( "uuuuMMdd'T'HHX" )
+                .toFormatter();
         Instant instant = formatter.parse( node.get( "time" ).asText(), Instant::from );
 
         //Parse the value.  Note that if the value is null, the node will not be

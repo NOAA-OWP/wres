@@ -882,15 +882,15 @@ public class FeatureFinder
 
             if ( leftDimension.equals( FeatureDimension.NWS_LID ) )
             {
-                leftName = wrdsLocation.getNwsLid();
+                leftName = wrdsLocation.nwsLid();
             }
             else if ( leftDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
             {
-                leftName = wrdsLocation.getUsgsSiteCode();
+                leftName = wrdsLocation.usgsSiteCode();
             }
             else if ( leftDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
             {
-                leftName = wrdsLocation.getNwmFeatureId();
+                leftName = wrdsLocation.nwmFeatureId();
             }
             else
             {
@@ -907,15 +907,15 @@ public class FeatureFinder
 
             if ( rightDimension.equals( FeatureDimension.NWS_LID ) )
             {
-                rightName = wrdsLocation.getNwsLid();
+                rightName = wrdsLocation.nwsLid();
             }
             else if ( rightDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
             {
-                rightName = wrdsLocation.getUsgsSiteCode();
+                rightName = wrdsLocation.usgsSiteCode();
             }
             else if ( rightDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
             {
-                rightName = wrdsLocation.getNwmFeatureId();
+                rightName = wrdsLocation.nwmFeatureId();
             }
             else
             {
@@ -934,15 +934,15 @@ public class FeatureFinder
             {
                 if ( baselineDimension.equals( FeatureDimension.NWS_LID ) )
                 {
-                    baselineName = wrdsLocation.getNwsLid();
+                    baselineName = wrdsLocation.nwsLid();
                 }
                 else if ( baselineDimension.equals( FeatureDimension.USGS_SITE_CODE ) )
                 {
-                    baselineName = wrdsLocation.getUsgsSiteCode();
+                    baselineName = wrdsLocation.usgsSiteCode();
                 }
                 else if ( baselineDimension.equals( FeatureDimension.NWM_FEATURE_ID ) )
                 {
-                    baselineName = wrdsLocation.getNwmFeatureId();
+                    baselineName = wrdsLocation.nwmFeatureId();
                 }
                 else
                 {

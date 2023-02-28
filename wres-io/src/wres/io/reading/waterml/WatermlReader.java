@@ -21,7 +21,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.utils.IOUtils;
@@ -57,27 +56,27 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Reads time-series data formatted in WaterML. Further information on the Water ML standard can be found here:
- * 
+ *
  * <p><a href="https://www.ogc.org/standards/waterml">WaterML</a> 
- * 
+ *
  * <p>The above link was last accessed: 20220803T12:00Z.
- * 
+ *
  * <p>Implementation notes:
- * 
+ *
  * <p>This reader currently performs eager reading of time-series data. It relies on the Jackson framework, 
  * specifically an {@link ObjectMapper}, which maps a WaterML byte array into time-series objects. An improved 
  * implementation would stream the underlying bytes into {@link TimeSeries} on demand. Thus, particularly when the 
  * underlying data source is a large file or a large stream that is not chunked at a higher level, this implementation
  * is not very memory efficient, contrary to the recommended implementation in {@link TimeSeriesReader}.
- * 
+ *
  * <p>This implementation currently assumes time-series with a fixed time-scale. This it obtained from the URI embedded
  * within the data source via {@link ReaderUtilities#getTimeScaleFromUri(java.net.URI)}.
- * 
- * TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example: 
- * https://www.baeldung.com/jackson-streaming-api. As of v6.7, this is not a tremendous problem because the main
- * application of this class is reading from USGS NWIS whereby the responses are chunked. However, this limitation 
- * would become more acute were there a need to read a large waterml file from a local disk.
- * 
+ *
+ * <p>TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example:
+ * <a href="https://www.baeldung.com/jackson-streaming-api">Jackson</a>. As of v6.7, this is not a tremendous problem
+ * because the main application of this class is reading from USGS NWIS whereby the responses are chunked. However,
+ * this limitation would become more acute were there a need to read a large waterml file from a local disk.
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -109,7 +108,7 @@ public class WatermlReader implements TimeSeriesReader
 
         // Validate that the source contains a readable file
         ReaderUtilities.validateFileSource( dataSource, false );
-        
+
         try
         {
             Path path = Paths.get( dataSource.getUri() );
@@ -142,7 +141,7 @@ public class WatermlReader implements TimeSeriesReader
 
         // Validate the disposition of the data source
         ReaderUtilities.validateDataDisposition( dataSource, DataDisposition.JSON_WATERML );
-        
+
         // Get the lazy supplier of time-series data
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource, inputStream );
 
@@ -168,10 +167,10 @@ public class WatermlReader implements TimeSeriesReader
     }
 
     /**
-     * Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
-     * 
-     * TODO: implement incremental reading using the Jackson Streaming API or similar.
-     * 
+     * <p>Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
+     *
+     * <p>TODO: implement incremental reading using the Jackson Streaming API or similar.
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -211,7 +210,7 @@ public class WatermlReader implements TimeSeriesReader
 
     /**
      * Returns the time-series from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -295,7 +294,7 @@ public class WatermlReader implements TimeSeriesReader
 
         String variableName = timeSeries.getVariable()
                                         .getVariableCode()[0]
-                                                             .getValue();
+                .getValue();
 
         // Get the measurement unit from the series in the actual data.
         // (Assumes above check for variable has already happened as well)
@@ -326,7 +325,7 @@ public class WatermlReader implements TimeSeriesReader
         List<String> siteCodesFound = Arrays.stream( timeSeries.getSourceInfo().getSiteCode() )
                                             .map( SiteCode::getValue )
                                             .filter( Objects::nonNull )
-                                            .collect( Collectors.toList() );
+                                            .toList();
 
         if ( siteCodesFound.size() != 1 )
         {
@@ -343,8 +342,8 @@ public class WatermlReader implements TimeSeriesReader
 
         String featureName = siteCodesFound.get( 0 );
         Feature featureKey = this.translateGeographicFeature( dataSource,
-                                                                 featureName,
-                                                                 timeSeries );
+                                                              featureName,
+                                                              timeSeries );
 
         // Attempt to guess the time-scale from the URI
         TimeScaleOuter timeScale = ReaderUtilities.getTimeScaleFromUri( dataSource.getUri() );
@@ -394,7 +393,7 @@ public class WatermlReader implements TimeSeriesReader
 
             Method[] methods = valueSet.getMethod();
 
-            if ( Objects.nonNull( methods ) && methods.length > 0 )
+            if ( Objects.nonNull( methods ) )
             {
                 for ( Method method : methods )
                 {
@@ -426,11 +425,11 @@ public class WatermlReader implements TimeSeriesReader
             try
             {
                 TimeSeries<Double> timeSeriesInternal = TimeSeries.of( metadata, rawTimeSeries );
-                
+
                 // Validate
                 ReaderUtilities.validateAgainstEmptyTimeSeries( timeSeriesInternal, dataSource.getUri() );
-                
-                TimeSeriesTuple tuple = TimeSeriesTuple.ofSingleValued( timeSeriesInternal, dataSource );                
+
+                TimeSeriesTuple tuple = TimeSeriesTuple.ofSingleValued( timeSeriesInternal, dataSource );
                 timeSeriesTuples.add( tuple );
             }
             catch ( IllegalArgumentException iae )
@@ -502,8 +501,8 @@ public class WatermlReader implements TimeSeriesReader
      */
 
     private Feature translateGeographicFeature( DataSource dataSource,
-                                                   String featureName,
-                                                   wres.io.reading.waterml.timeseries.TimeSeries series )
+                                                String featureName,
+                                                wres.io.reading.waterml.timeseries.TimeSeries series )
     {
         String siteDescription = null;
         Integer siteSrid = null;

@@ -3,7 +3,7 @@ package wres.datamodel.units;
 /**
  * Runtime exception associated with a unit conversion.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class NoSuchUnitConversionException extends RuntimeException

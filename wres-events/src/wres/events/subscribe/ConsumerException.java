@@ -3,7 +3,7 @@ package wres.events.subscribe;
 /**
  * Exception to throw when an evaluation message could not be consumed for any reason.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ConsumerException extends RuntimeException

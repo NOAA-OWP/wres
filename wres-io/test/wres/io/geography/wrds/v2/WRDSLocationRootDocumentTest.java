@@ -77,8 +77,8 @@ public class WRDSLocationRootDocumentTest
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
     {
         WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue(GOOD_TEST_CASE_V2.getBytes(), WrdsLocationRootDocument.class);
-        Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).getNwsLid());
-        Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).getNwmFeatureId());
-        Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).getUsgsSiteCode());
+        Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
+        Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
+        Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
     }
 }

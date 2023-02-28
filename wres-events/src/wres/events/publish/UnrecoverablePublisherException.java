@@ -3,7 +3,7 @@ package wres.events.publish;
 /**
  * An unchecked exception that indicates an unrecoverable failure in a publisher that must be propagated.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class UnrecoverablePublisherException extends RuntimeException

@@ -31,7 +31,7 @@ import net.jcip.annotations.ThreadSafe;
  * message body. As such, this consumer is "retry friendly". A retry will replace an already mapped message.
  * 
  * @param <T> the type of message to be consumed
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe

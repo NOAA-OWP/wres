@@ -3,7 +3,7 @@ package wres.events.subscribe;
 /**
  * An unchecked exception that indicates an unrecoverable failure in an evaluation that must be propagated.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class UnrecoverableEvaluationException extends RuntimeException

@@ -32,7 +32,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 /**
  * A class that negotiates subscriptions that deliver formats for an evaluation.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe

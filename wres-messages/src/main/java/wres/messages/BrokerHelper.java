@@ -50,9 +50,14 @@ public class BrokerHelper
 
     static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
 
+    /**
+     * The role.
+     */
     public enum Role
     {
+        /** Worker role. */
         WORKER,
+        /** Tasker role. */
         TASKER
     }
 

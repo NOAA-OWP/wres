@@ -954,7 +954,7 @@ public class Evaluation implements Closeable
     /**
      * Small bag of evaluation state for sharing.
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     static class EvaluationInfo

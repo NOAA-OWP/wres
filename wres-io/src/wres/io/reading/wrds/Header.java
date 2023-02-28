@@ -1,31 +1,49 @@
 package wres.io.reading.wrds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * A header.
+ */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class Header
 {
+    private ForecastRequest request;
+    @JsonProperty( "missing_values" )
+    private double[] missingValues;
+
+    /**
+     * @return the forecast request
+     */
     public ForecastRequest getRequest()
     {
         return request;
     }
 
+    /**
+     * Sets the forecast request.
+     * @param request the request
+     */
     public void setRequest( ForecastRequest request )
     {
         this.request = request;
     }
 
-    public double[] getMissing_values()
+    /**
+     * @return the missing values
+     */
+    public double[] getMissingValues()
     {
-        return missing_values;
+        return missingValues;
     }
 
-    public void setMissing_values( double[] missing_values)
+    /**
+     * Sets the missing values.
+     * @param missingValues the missing values
+     */
+    public void setMissingValues( double[] missingValues )
     {
-        this.missing_values = missing_values;
+        this.missingValues = missingValues;
     }
-
-    ForecastRequest request;
-
-    double[] missing_values;
 }

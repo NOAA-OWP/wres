@@ -27,15 +27,15 @@ public class NwmDataPointDeserializerTest
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
     {
             NwmDataPoint dataPoint = new ObjectMapper().readValue(GOOD_TEST_CASE.getBytes(), NwmDataPoint.class);
-            Assert.assertEquals("2021-05-23T02:00:00Z", dataPoint.getTime().toString());
-            Assert.assertEquals(0.04d, dataPoint.getValue(), 0.0d);
+            Assert.assertEquals("2021-05-23T02:00:00Z", dataPoint.time().toString());
+            Assert.assertEquals( 0.04d, dataPoint.value(), 0.0d);
     }
 
     @Test
     public void readNullTestCase() throws JsonParseException, JsonMappingException, IOException
     {
             NwmDataPoint dataPoint = new ObjectMapper().readValue(NULL_TEST_CASE.getBytes(), NwmDataPoint.class);
-            Assert.assertEquals("2021-05-23T02:00:00Z", dataPoint.getTime().toString());
-            Assert.assertEquals(MissingValues.DOUBLE, dataPoint.getValue(), 0.0d);
+            Assert.assertEquals("2021-05-23T02:00:00Z", dataPoint.time().toString());
+            Assert.assertEquals( MissingValues.DOUBLE, dataPoint.value(), 0.0d);
     }
 }

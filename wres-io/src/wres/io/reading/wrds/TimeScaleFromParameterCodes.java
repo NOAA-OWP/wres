@@ -18,24 +18,19 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  * {@link ParameterCodes#getDuration()}, which describes the <code>period</code> 
  * over which the value applies. The <code>function</code> depends on the 
  * {@link ParameterCodes#getPhysicalElement()}. See #60158-11. 
- * 
- * TODO: implement this class more fully, accounting for other types of {@link ParameterCodes#getPhysicalElement()}.
- * 
+ * <p> TODO: implement this class more fully, accounting for other types of {@link ParameterCodes#getPhysicalElement()}.
+ *
  * @author James Brown
  */
 
 public class TimeScaleFromParameterCodes
 {
-
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeScaleFromParameterCodes.class );
 
     /**
      * Returns a {@link TimeScaleOuter} from the input parameter codes.
-     * 
+     *
      * @param parameterCodes the parameter codes
      * @param source a source URI, which is used to help with logging
      * @return a time scale or null if one could not be interpreted
@@ -65,7 +60,7 @@ public class TimeScaleFromParameterCodes
     /**
      * Attempts to acquire a non-instantaneous time-scale by inspecting the <code>physicalElement</code> and the 
      * <code>duration</code>. Currently accepts only one physical element and a selection of durations.
-     * 
+     *
      * @param parameterCodes the parameter codes
      * @param source the source data to help with messaging
      * @return a non-instantaneous time-scale
@@ -76,9 +71,9 @@ public class TimeScaleFromParameterCodes
     {
         Objects.requireNonNull( parameterCodes.getPhysicalElement(),
                                 "Cannot determine the time scale of the time-series in '"
-                                                                     + source
-                                                                     + "' because no "
-                                                                     + "physicalElement parameter code is defined." );
+                                + source
+                                + "' because no "
+                                + "physicalElement parameter code is defined." );
 
         String physicalElement = parameterCodes.getPhysicalElement();
 
@@ -114,7 +109,7 @@ public class TimeScaleFromParameterCodes
      * Attempts to acquire a {@link Duration} from the {@link ParameterCodes#getDuration()}, which uses the SHEF 
      * encoding. See <a href="https://www.weather.gov/media/mdl/SHEF_CodeManual_5July2012.pdf">
      * https://www.weather.gov/media/mdl/SHEF_CodeManual_5July2012.pdf</a>
-     * 
+     *
      * @param durationCode the duration code
      * @param source the source data to help with messaging
      * @return a duration
@@ -126,50 +121,43 @@ public class TimeScaleFromParameterCodes
     {
         Objects.requireNonNull( durationCode,
                                 "Cannot determine the time scale of the time-series in '"
-                                              + source
-                                              + "' because no duration parameter code is "
-                                              + "defined." );
+                                + source
+                                + "' because no duration parameter code is "
+                                + "defined." );
 
-        switch ( durationCode )
-        {
-            case "U":
-                return Duration.ofMinutes( 1 );
-            case "E":
-                return Duration.ofMinutes( 5 );
-            case "G":
-                return Duration.ofMinutes( 10 );
-            case "C":
-                return Duration.ofMinutes( 15 );
-            case "J":
-                return Duration.ofMinutes( 30 );
-            case "H":
-                return Duration.ofHours( 1 );
-            case "B":
-                return Duration.ofHours( 2 );
-            case "T":
-                return Duration.ofHours( 3 );
-            case "F":
-                return Duration.ofHours( 4 );
-            case "Q":
-                return Duration.ofHours( 6 );
-            case "A":
-                return Duration.ofHours( 8 );
-            case "K":
-                return Duration.ofHours( 12 );
-            case "L":
-                return Duration.ofHours( 18 );
-            case "D":
-                return Duration.ofDays( 1 );
-            default:
-                throw new UnsupportedOperationException( "While attempting to deserialize a WRDS json response "
-                                                         + "contained in "
-                                                         + source
-                                                         + ", found an unsupported duration code '"
-                                                         + durationCode
-                                                         + "'." );
-        }
+        return switch ( durationCode )
+                {
+                    case "U" -> Duration.ofMinutes( 1 );
+                    case "E" -> Duration.ofMinutes( 5 );
+                    case "G" -> Duration.ofMinutes( 10 );
+                    case "C" -> Duration.ofMinutes( 15 );
+                    case "J" -> Duration.ofMinutes( 30 );
+                    case "H" -> Duration.ofHours( 1 );
+                    case "B" -> Duration.ofHours( 2 );
+                    case "T" -> Duration.ofHours( 3 );
+                    case "F" -> Duration.ofHours( 4 );
+                    case "Q" -> Duration.ofHours( 6 );
+                    case "A" -> Duration.ofHours( 8 );
+                    case "K" -> Duration.ofHours( 12 );
+                    case "L" -> Duration.ofHours( 18 );
+                    case "D" -> Duration.ofDays( 1 );
+                    default -> throw new UnsupportedOperationException(
+                            "While attempting to deserialize a WRDS json response "
+                            + "contained in "
+                            + source
+                            + ", found an unsupported duration code '"
+                            + durationCode
+                            + "'." );
+                };
 
     }
 
+    /**
+     * Do not construct.
+     */
+
+    private TimeScaleFromParameterCodes()
+    {
+    }
 
 }

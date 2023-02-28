@@ -10,6 +10,9 @@ import wres.system.SystemSettings;
 
 import java.util.*;
 
+/**
+ * Threshold reader.
+ */
 public class ThresholdReader
 {
     private final SystemSettings systemSettings;
@@ -20,8 +23,15 @@ public class ThresholdReader
     private final Set<FeatureTuple> encounteredFeatures = new HashSet<>();
     private final ThresholdBuilderCollection builders = new ThresholdBuilderCollection();
 
-    public ThresholdReader(
-                            final SystemSettings settings,
+    /**
+     * Creates an instance.
+     * @param settings the settings
+     * @param projectConfig the project declaration
+     * @param metricsConfig the metrics declaration
+     * @param unitMapper the unit mapper
+     * @param features the features
+     */
+    public ThresholdReader( final SystemSettings settings,
                             final ProjectConfig projectConfig,
                             final MetricsConfig metricsConfig,
                             final UnitMapper unitMapper,
@@ -35,15 +45,19 @@ public class ThresholdReader
         this.builders.initialize( this.features );
     }
 
+    /**
+     * Reads the thresholds.
+     * @return the thresholds by feature
+     */
     public Map<FeatureTuple, ThresholdsByMetric> read()
     {
         ExternalThresholdReader externalReader = new ExternalThresholdReader(
-                                                                              this.systemSettings,
-                                                                              this.projectConfig,
-                                                                              this.metricsConfig,
-                                                                              this.features,
-                                                                              this.desiredMeasurementUnitConverter,
-                                                                              this.builders );
+                this.systemSettings,
+                this.projectConfig,
+                this.metricsConfig,
+                this.features,
+                this.desiredMeasurementUnitConverter,
+                this.builders );
 
         MeasurementUnit units =
                 MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
@@ -66,7 +80,7 @@ public class ThresholdReader
      * @return the set of features with thresholds, not including the "all data" threshold, which is added for every
      * feature.
      */
-    
+
     public Set<FeatureTuple> getEvaluatableFeatures()
     {
         return Collections.unmodifiableSet( this.encounteredFeatures );

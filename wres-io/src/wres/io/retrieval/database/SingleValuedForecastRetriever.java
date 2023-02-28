@@ -23,7 +23,7 @@ import wres.io.retrieval.DataAccessException;
 /**
  * Retrieves {@link TimeSeries} of single-valued forecasts from the WRES database.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>

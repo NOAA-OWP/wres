@@ -70,6 +70,10 @@ public class WrdsLocationRootDocument
 {
     private final List<WrdsLocation> locations;
 
+    /**
+     * Creates an instance.
+     * @param locations the locations
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public WrdsLocationRootDocument( @JsonProperty( "locations" )
                                      List<WrdsLocation> locations )
@@ -77,6 +81,9 @@ public class WrdsLocationRootDocument
         this.locations = locations;
     }
 
+    /**
+     * @return the locations
+     */
     public List<WrdsLocation> getLocations()
     {
         return this.locations;

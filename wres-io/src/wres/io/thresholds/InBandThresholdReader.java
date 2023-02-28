@@ -13,7 +13,23 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class InBandThresholdReader {
+/**
+ * Reads thresholds from the project declaration.
+ */
+public class InBandThresholdReader
+{
+    private final ProjectConfig projectConfig;
+    private final MetricsConfig metricsConfig;
+    private final MeasurementUnit measurementUnits;
+    private final ThresholdBuilderCollection sharedBuilders;
+
+    /**
+     * Creates an instance.
+     * @param projectConfig the project declaration
+     * @param metricsConfig the metrics declaration
+     * @param sharedBuilders the shared builders
+     * @param measurementUnits the measurement units
+     */
     public InBandThresholdReader( final ProjectConfig projectConfig,
                                   final MetricsConfig metricsConfig,
                                   final ThresholdBuilderCollection sharedBuilders,
@@ -23,29 +39,39 @@ public class InBandThresholdReader {
         Objects.requireNonNull( metricsConfig );
         Objects.requireNonNull( sharedBuilders );
         Objects.requireNonNull( measurementUnits );
-        
+
         this.sharedBuilders = sharedBuilders;
         this.projectConfig = projectConfig;
         this.metricsConfig = metricsConfig;
         this.measurementUnits = measurementUnits;
     }
 
+    /**
+     * Read the thresholds.
+     */
     public void read()
     {
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
             this.readThresholds(
-                                 thresholdsConfig,
-                                 MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig, this.projectConfig ) );
+                    thresholdsConfig,
+                    MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig, this.projectConfig ) );
         }
     }
 
-    private Set<ThresholdsConfig> getThresholds(MetricsConfig metrics) {
+    /**
+     * @param metrics the metrics declaration
+     * @return the thresholds
+     */
+    private Set<ThresholdsConfig> getThresholds( MetricsConfig metrics )
+    {
         Set<ThresholdsConfig> thresholdsWithoutSources = new HashSet<>();
 
-        for (ThresholdsConfig thresholdsConfig : metrics.getThresholds()) {
-            if (!(thresholdsConfig.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source)) {
-                thresholdsWithoutSources.add(thresholdsConfig);
+        for ( ThresholdsConfig thresholdsConfig : metrics.getThresholds() )
+        {
+            if ( !( thresholdsConfig.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source ) )
+            {
+                thresholdsWithoutSources.add( thresholdsConfig );
             }
         }
 
@@ -64,9 +90,9 @@ public class InBandThresholdReader {
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<ThresholdOuter> includeAllDataThreshold(MetricConstants metric,
-                                                          Set<ThresholdOuter> thresholds,
-                                                          ThresholdConstants.ThresholdGroup group )
+    private static Set<ThresholdOuter> includeAllDataThreshold( MetricConstants metric,
+                                                                Set<ThresholdOuter> thresholds,
+                                                                ThresholdConstants.ThresholdGroup group )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
 
@@ -87,19 +113,19 @@ public class InBandThresholdReader {
 
         // All data only
         if ( metric.getMetricOutputGroup() == MetricConstants.StatisticType.BOXPLOT_PER_PAIR
-                || metric.getMetricOutputGroup() == MetricConstants.StatisticType.BOXPLOT_PER_POOL
-                || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
+             || metric.getMetricOutputGroup() == MetricConstants.StatisticType.BOXPLOT_PER_POOL
+             || metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
         {
-            return Set.copyOf(Collections.singletonList(allData));
+            return Set.copyOf( Collections.singletonList( allData ) );
         }
 
         // Otherwise, add the input thresholds
-        Set<ThresholdOuter> combinedThresholds = new HashSet<>(thresholds);
+        Set<ThresholdOuter> combinedThresholds = new HashSet<>( thresholds );
 
         // Add all data for appropriate types
         if ( metric.isInGroup( MetricConstants.SampleDataGroup.ENSEMBLE )
-                || metric.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED )
-                || metric.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
+             || metric.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED )
+             || metric.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
             combinedThresholds.add( allData );
         }
@@ -107,14 +133,21 @@ public class InBandThresholdReader {
         return Collections.unmodifiableSet( combinedThresholds );
     }
 
-    private void readThresholds(ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics) {
+    /**
+     * Reads the thresholds.
+     * @param thresholdsConfig the thresholds declaration
+     * @param metrics the metrics
+     */
+    private void readThresholds( ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics )
+    {
         Objects.requireNonNull( projectConfig, "Specify a non-null project configuration." );
 
         // Thresholds
-        Set<ThresholdOuter> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig, 
+        Set<ThresholdOuter> thresholds = InBandThresholdReader.createThresholds( thresholdsConfig,
                                                                                  this.measurementUnits );
 
-        for (MetricConstants metric : metrics) {
+        for ( MetricConstants metric : metrics )
+        {
 
             // Type of thresholds
             ThresholdConstants.ThresholdGroup thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
@@ -123,9 +156,10 @@ public class InBandThresholdReader {
                 thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
             }
 
-            Set<ThresholdOuter> adjustedThresholds = InBandThresholdReader.includeAllDataThreshold(metric, thresholds, thresholdGroup);
+            Set<ThresholdOuter> adjustedThresholds =
+                    InBandThresholdReader.includeAllDataThreshold( metric, thresholds, thresholdGroup );
 
-            this.sharedBuilders.addThresholdsToAll(thresholdGroup, metric, adjustedThresholds);
+            this.sharedBuilders.addThresholdsToAll( thresholdGroup, metric, adjustedThresholds );
         }
     }
 
@@ -141,7 +175,7 @@ public class InBandThresholdReader {
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<ThresholdOuter> createThresholds(ThresholdsConfig thresholds, MeasurementUnit units )
+    private static Set<ThresholdOuter> createThresholds( ThresholdsConfig thresholds, MeasurementUnit units )
     {
         Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
@@ -216,8 +250,8 @@ public class InBandThresholdReader {
 
         //Parse the double values
         List<Double> valuesToAdd = Arrays.stream( inputString.split( "," ) )
-                .map( Double::parseDouble )
-                .collect( Collectors.toList() );
+                                         .map( Double::parseDouble )
+                                         .collect( Collectors.toList() );
 
         Set<ThresholdOuter> commaSeparatedThresholds = new TreeSet<>();
 
@@ -265,17 +299,25 @@ public class InBandThresholdReader {
         return Collections.unmodifiableSet( commaSeparatedThresholds );
     }
 
-    public static Set<ThresholdOuter> readBetweenThresholds(
-            List<Double> valuesToAdd,
-            ThresholdConstants.ThresholdDataType dataType,
-            boolean valuesAreProbabilistic,
-            MeasurementUnit units
-    ) {
+    /**
+     * Reads thresholds that have a lower and an upper bound.
+     * @param valuesToAdd the values to add
+     * @param dataType the data type
+     * @param valuesAreProbabilistic whether the values are probabilities
+     * @param units the units
+     * @return the thresholds
+     */
+    public static Set<ThresholdOuter> readBetweenThresholds( List<Double> valuesToAdd,
+                                                             ThresholdConstants.ThresholdDataType dataType,
+                                                             boolean valuesAreProbabilistic,
+                                                             MeasurementUnit units
+    )
+    {
         Set<ThresholdOuter> thresholdsBetween = new HashSet<>();
         if ( valuesToAdd.size() < 2 )
         {
             throw new MetricConfigException( "At least two values are required to compose a "
-                    + "threshold that operates between a lower and an upper bound." );
+                                             + "threshold that operates between a lower and an upper bound." );
         }
         for ( int i = 0; i < valuesToAdd.size() - 1; i++ )
         {
@@ -300,14 +342,9 @@ public class InBandThresholdReader {
                 );
             }
 
-            thresholdsBetween.add(newThreshold);
+            thresholdsBetween.add( newThreshold );
         }
 
-        return Collections.unmodifiableSet(thresholdsBetween);
+        return Collections.unmodifiableSet( thresholdsBetween );
     }
-
-    private final ProjectConfig projectConfig;
-    private final MetricsConfig metricsConfig;
-    private final MeasurementUnit measurementUnits;
-    private final ThresholdBuilderCollection sharedBuilders;
 }

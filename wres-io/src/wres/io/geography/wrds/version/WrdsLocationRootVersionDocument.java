@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/*
-Parse deployment and version information from JSON that starts like this: 
+/**
+Parse deployment and version information from JSON that starts like this:
 {
     "_metrics": {
         "location_count": 1,
@@ -27,33 +27,41 @@ Parse deployment and version information from JSON that starts like this:
         "version": "v3.1.0"
     },...
 }
-
-Note that older API will not include deployment, so I need to allow for a null deployment object.
+ Note that older API will not include deployment, so I need to allow for a null deployment object.
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class WrdsLocationRootVersionDocument
 {
-
+    /** Deployment information. */
     private final DeploymentInformation deploymentInfo;
 
+    /**
+     * Creates an instance.
+     * @param deploymentInfo deployment information
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public WrdsLocationRootVersionDocument( @JsonProperty( "deployment" )
                                      DeploymentInformation deploymentInfo )
     {
         this.deploymentInfo = deploymentInfo;
     }
-    
+
+    /**
+     * @return the deployment information
+     */
     public DeploymentInformation getDeploymentInfo()
     {
         return this.deploymentInfo;
     }
-    
+
+    /**
+     * @return whether deployment information is present
+     */
     public boolean isDeploymentInfoPresent()
     {
         return (this.deploymentInfo != null);
     }
-
 
     @Override
     public String toString()
@@ -62,5 +70,5 @@ public class WrdsLocationRootVersionDocument
                 .append( "deployment", deploymentInfo )
                 .toString();
     }
-    
+
 }

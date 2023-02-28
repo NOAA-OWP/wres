@@ -46,20 +46,21 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * <p>Reads time-series data from the U.S. National Weather Service (NWS) National Water Model (NWM) supplied in a JSON 
  * time-series format defined by the NWS Water Resources Data Service (WRDS).
- * 
+ *
  * <p>Implementation notes:
- * 
+ *
  * <p>This reader currently performs eager reading of time-series data. It relies on the Jackson framework, 
  * specifically an {@link ObjectMapper}, which maps a JSON byte array into time-series objects. An improved 
  * implementation would stream the underlying bytes into {@link TimeSeries} on demand. Thus, particularly when the 
  * underlying data source is a large file or a large stream that is not chunked at a higher level, this implementation
  * is not very memory efficient, contrary to the recommended implementation in {@link TimeSeriesReader}.
- * 
- * TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example: 
- * https://www.baeldung.com/jackson-streaming-api. As of v6.7, this is not a tremendous problem because the main
- * application of this class is reading directly from WRDS whereby the responses are chunked at a higher level. However, 
- * this limitation would become more acute were there a need to read a large WRDS-formatted JSON file from a local disk.
- * 
+ *
+ * <p>TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example:
+ * <a href="https://www.baeldung.com/jackson-streaming-api">Jackson</a>. As of v6.7, this is not a tremendous problem
+ * because the main application of this class is reading directly from WRDS whereby the responses are chunked at a
+ * higher level. However, this limitation would become more acute were there a need to read a large WRDS-formatted
+ * JSON file from a local disk.
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -138,10 +139,10 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
     }
 
     /**
-     * Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
-     * 
-     * TODO: implement incremental reading using the Jackson Streaming API or similar.
-     * 
+     * <p>Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
+     *
+     * <p>TODO: implement incremental reading using the Jackson Streaming API or similar.
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -184,7 +185,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
 
     /**
      * Returns the time-series from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -304,7 +305,6 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
      * @param timeScale the time scale, if available
      * @param variableName the variable name
      * @param measurementUnit the measurement unit
-     * @param uri the uri of the source
      * @return the internal time-series
      */
 
@@ -340,8 +340,8 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
                     continue;
                 }
 
-                Instant validTime = dataPoint.getTime();
-                double member = dataPoint.getValue();
+                Instant validTime = dataPoint.time();
+                double member = dataPoint.value();
 
                 if ( values.containsKey( validTime ) )
                 {

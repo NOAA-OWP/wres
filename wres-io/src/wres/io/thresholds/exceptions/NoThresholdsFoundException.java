@@ -3,7 +3,7 @@ package wres.io.thresholds.exceptions;
 /**
  * Runtime exception indicating no thresholds were found, possibly after filtering by user declaration.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class NoThresholdsFoundException extends RuntimeException

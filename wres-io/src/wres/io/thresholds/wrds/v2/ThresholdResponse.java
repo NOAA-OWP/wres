@@ -1,43 +1,81 @@
 package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import javax.xml.bind.annotation.XmlRootElement;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * A threshold response.
+ */
+@JsonIgnoreProperties( ignoreUnknown = true )
 @XmlRootElement
-public class ThresholdResponse implements Serializable {
-
+public class ThresholdResponse implements Serializable
+{
+    @Serial
     private static final long serialVersionUID = 508326690122422103L;
-    
-    Map<String, Double> _metrics;
-    String _documentation;
-    Collection<ThresholdDefinition> thresholds;
 
-    public Map<String, Double> get_metrics() {
-        return _metrics;
+    /** Metrics. */
+    @JsonProperty( "_metrics" )
+    private Map<String, Double> metrics;
+    /** Documentation. */
+    @JsonProperty( "_documentation" )
+    private String documentation;
+    /** Thresholds. */
+    private Collection<ThresholdDefinition> thresholds;
+
+    /**
+     * @return the metrics
+     */
+    public Map<String, Double> getMetrics()
+    {
+        return metrics;
     }
 
-    public void set_metrics(Map<String, Double> _metrics) {
-        this._metrics = _metrics;
+    /**
+     * Sets the metrics.
+     * @param metrics the metrics
+     */
+    public void setMetrics( Map<String, Double> metrics )
+    {
+        this.metrics = metrics;
     }
 
-    public String get_documentation() {
-        return _documentation;
+    /**
+     * @return the documentation
+     */
+    public String getDocumentation()
+    {
+        return documentation;
     }
 
-    public void set_documentation(String _documentation) {
-        this._documentation = _documentation;
+    /**
+     * Sets the documentation
+     * @param documentation the documentation
+     */
+    public void setDocumentation( String documentation )
+    {
+        this.documentation = documentation;
     }
 
-    public Collection<ThresholdDefinition> getThresholds() {
+    /**
+     * @return the thresholds
+     */
+    public Collection<ThresholdDefinition> getThresholds()
+    {
         return thresholds;
     }
 
-    public void setThresholds(Collection<ThresholdDefinition> thresholds) {
+    /**
+     * Sets the thresholds.
+     * @param thresholds the thresholds
+     */
+    public void setThresholds( Collection<ThresholdDefinition> thresholds )
+    {
         this.thresholds = thresholds;
     }
 }

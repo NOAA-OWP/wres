@@ -60,15 +60,22 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 public class NwmRootDocument
 {
     private final List<NwmForecast> forecasts;
-    private final Map<String,String> variable;
+    private final Map<String, String> variable;
     private final ParameterCodes parameterCodes;
     private final List<String> warnings;
 
+    /**
+     * Creates an instance.
+     * @param forecasts the forecasts
+     * @param variable the variable
+     * @param parameterCodes the parameter codes
+     * @param warnings the warnings
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmRootDocument( @JsonProperty( "forecasts" )
                             List<NwmForecast> forecasts,
                             @JsonProperty( "variable" )
-                            Map<String,String> variable,
+                            Map<String, String> variable,
                             @JsonProperty( "parameter_codes" )
                             ParameterCodes parameterCodes,
                             @JsonProperty( "_warnings" )
@@ -80,21 +87,33 @@ public class NwmRootDocument
         this.warnings = warnings;
     }
 
+    /**
+     * @return the forecasts
+     */
     public List<NwmForecast> getForecasts()
     {
         return this.forecasts;
     }
 
-    public Map<String,String> getVariable()
+    /**
+     * @return the variable
+     */
+    public Map<String, String> getVariable()
     {
         return this.variable;
     }
 
+    /**
+     * @return the parameter codes
+     */
     public ParameterCodes getParameterCodes()
     {
         return this.parameterCodes;
     }
 
+    /**
+     * @return the warnings
+     */
     public List<String> getWarnings()
     {
         return this.warnings;

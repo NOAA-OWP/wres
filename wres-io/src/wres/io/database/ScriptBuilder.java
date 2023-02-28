@@ -1,16 +1,26 @@
 package wres.io.database;
 
+/**
+ * Utility for building a script.
+ */
 public class ScriptBuilder
 {
-    protected static final String NEWLINE = System.lineSeparator();
+    private static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
 
+    /**
+     * Creates an instance.
+     */
     public ScriptBuilder()
     {
-        this.script = new StringBuilder(  );
+        this.script = new StringBuilder();
     }
 
-    public ScriptBuilder (String beginning)
+    /**
+     * Creates an instance.
+     * @param beginning the start of the script.
+     */
+    public ScriptBuilder( String beginning )
     {
         this.script = new StringBuilder( beginning );
     }
@@ -21,11 +31,11 @@ public class ScriptBuilder
      *                be added to the script
      * @return The updated ScriptBuilder
      */
-    public ScriptBuilder add(Object... details)
+    public ScriptBuilder add( Object... details )
     {
-        for (Object detail : details)
+        for ( Object detail : details )
         {
-            this.script.append(detail);
+            this.script.append( detail );
         }
 
         return this;
@@ -37,7 +47,7 @@ public class ScriptBuilder
      */
     public ScriptBuilder addLine()
     {
-        return this.add(NEWLINE);
+        return this.add( NEWLINE );
     }
 
     /**
@@ -46,9 +56,9 @@ public class ScriptBuilder
      *                be added to the script
      * @return The updated ScriptBuilder
      */
-    public ScriptBuilder addLine(Object... details)
+    public ScriptBuilder addLine( Object... details )
     {
-        return this.add(details).addLine();
+        return this.add( details ).addLine();
     }
 
     /**
@@ -60,11 +70,11 @@ public class ScriptBuilder
      *                     number is less than one, no tabs will be added.
      * @return The updated ScriptBuilder
      */
-    public ScriptBuilder addTab(int numberOfTabs)
+    public ScriptBuilder addTab( int numberOfTabs )
     {
         for ( int i = 0; i < numberOfTabs; i++ )
         {
-            this.add("    ");
+            this.add( "    " );
         }
 
         return this;
@@ -79,7 +89,7 @@ public class ScriptBuilder
      */
     public ScriptBuilder addTab()
     {
-        return addTab(1);
+        return addTab( 1 );
     }
 
     @Override

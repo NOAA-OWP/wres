@@ -13,7 +13,7 @@ import net.jcip.annotations.ThreadSafe;
  * A mutable container that records the status of the subscriber and the jobs completed so far. All status 
  * information is updated atomically.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe

@@ -13,10 +13,11 @@ import wres.io.geography.wrds.WrdsLocation;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-/*
+/**
 Parse relevant portions of a a document similar to this (which is generated when 
-"?identifiers=true" is included at the end of the URL: 
-{
+"?identifiers=true" is included at the end of the URL:
+
+ <pre>{@code {
     "_metrics": {
         "location_count": 1,
         "model_tracing_api_call": 0.008665323257446289,
@@ -66,10 +67,10 @@ Parse relevant portions of a a document similar to this (which is generated when
             ]
         }
     ]
-}
+}}</pre>
 
-OR this when "?identiers=true" is NOT included at the end, resulting in full output:
-
+<p>OR this when "?identiers=true" is NOT included at the end, resulting in full output:
+<pre>{@code
 {
     "_metrics": {
         "location_count": 1,
@@ -187,7 +188,7 @@ OR this when "?identiers=true" is NOT included at the end, resulting in full out
             ]
         }
     ]
-}
+}}</pre>
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
@@ -195,12 +196,15 @@ public class WrdsLocationRootDocumentV3
 {
     private final List<WrdsLocationInformation> locationInfos;
 
+    /**
+     * Creates an instance.
+     * @param locationInfos the location information
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public WrdsLocationRootDocumentV3( @JsonProperty( "locations" ) List<WrdsLocationInformation> locationInfos )
     {
         this.locationInfos = locationInfos;
     }
-
 
     /**
      * Pass through the locations, extracting the identifier information, and 
@@ -217,11 +221,13 @@ public class WrdsLocationRootDocumentV3
         return locations;
     }
 
+    /**
+     * @return the location information
+     */
     public List<WrdsLocationInformation> getLocationInfos()
     {
         return locationInfos;
     }
-
 
     @Override
     public String toString()

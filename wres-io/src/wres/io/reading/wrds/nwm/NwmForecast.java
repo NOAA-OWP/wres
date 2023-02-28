@@ -9,12 +9,21 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+/**
+ * A NWM forecast.
+ */
+
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmForecast
 {
     private final Instant referenceDatetime;
     private final List<NwmFeature> nwmFeatures;
 
+    /**
+     * Creates an instance.
+     * @param referenceDatetime the reference time
+     * @param nwmFeatures the NWM features
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public NwmForecast( @JsonProperty( "reference_time" )
                         @JsonFormat( shape = JsonFormat.Shape.STRING,
@@ -27,11 +36,17 @@ public class NwmForecast
         this.nwmFeatures = nwmFeatures;
     }
 
+    /**
+     * @return the reference time
+     */
     public Instant getReferenceDatetime()
     {
         return this.referenceDatetime;
     }
 
+    /**
+     * @return the NWM features
+     */
     public List<NwmFeature> getFeatures()
     {
         return this.nwmFeatures;

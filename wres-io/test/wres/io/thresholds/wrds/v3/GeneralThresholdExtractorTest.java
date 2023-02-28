@@ -69,14 +69,14 @@ class GeneralThresholdExtractorTest
 
         //Metadata
         GeneralThresholdMetadata ptsa1NWSMetadata = new GeneralThresholdMetadata();
-        ptsa1NWSMetadata.setNws_lid( "PTSA1" );
-        ptsa1NWSMetadata.setUsgs_site_code( "02372250" );
-        ptsa1NWSMetadata.setNwm_feature_id( "2323396" );
-        ptsa1NWSMetadata.setThreshold_source( "NWS-CMS" );
-        ptsa1NWSMetadata.setThreshold_source_description( "NONE" );
-        ptsa1NWSMetadata.setFlow_units( "CFS" );
-        ptsa1NWSMetadata.setCalc_flow_units( "CFS" );
-        ptsa1NWSMetadata.setStage_units( "FT" );
+        ptsa1NWSMetadata.setNwsLid( "PTSA1" );
+        ptsa1NWSMetadata.setUsgsSideCode( "02372250" );
+        ptsa1NWSMetadata.setNwmFeatureId( "2323396" );
+        ptsa1NWSMetadata.setThresholdSource( "NWS-CMS" );
+        ptsa1NWSMetadata.setThresholdSourceDescription( "NONE" );
+        ptsa1NWSMetadata.setFlowUnits( "CFS" );
+        ptsa1NWSMetadata.setCalcFlowUnits( "CFS" );
+        ptsa1NWSMetadata.setStageUnits( "FT" );
 
         //Stage thresholds
         GeneralThresholdValues ptsa1NWSOriginalValues = new GeneralThresholdValues();
@@ -91,20 +91,20 @@ class GeneralThresholdExtractorTest
         //No flow or calculated.
         GeneralThresholdDefinition ptsa1NWS = new GeneralThresholdDefinition();
         ptsa1NWS.setMetadata( ptsa1NWSMetadata );
-        ptsa1NWS.setStage_values( ptsa1NWSOriginalValues );
+        ptsa1NWS.setStageValues( ptsa1NWSOriginalValues );
 
         // ==== Second set of thresholds.
 
         //Metadata
         GeneralThresholdMetadata mntg1NWSMetadata = new GeneralThresholdMetadata();
-        mntg1NWSMetadata.setNws_lid( "MNTG1" );
-        mntg1NWSMetadata.setUsgs_site_code( "02349605" );
-        mntg1NWSMetadata.setNwm_feature_id( "6444276" );
-        mntg1NWSMetadata.setThreshold_source( "NWS-CMS" );
-        mntg1NWSMetadata.setThreshold_source_description( "NONE" );
-        mntg1NWSMetadata.setFlow_units( "CFS" );
-        mntg1NWSMetadata.setCalc_flow_units( "CFS" );
-        mntg1NWSMetadata.setStage_units( "FT" );
+        mntg1NWSMetadata.setNwsLid( "MNTG1" );
+        mntg1NWSMetadata.setUsgsSideCode( "02349605" );
+        mntg1NWSMetadata.setNwmFeatureId( "6444276" );
+        mntg1NWSMetadata.setThresholdSource( "NWS-CMS" );
+        mntg1NWSMetadata.setThresholdSourceDescription( "NONE" );
+        mntg1NWSMetadata.setFlowUnits( "CFS" );
+        mntg1NWSMetadata.setCalcFlowUnits( "CFS" );
+        mntg1NWSMetadata.setStageUnits( "FT" );
 
         //Stage thresholds
         GeneralThresholdValues mntg1NWSOriginalValues = new GeneralThresholdValues();
@@ -119,20 +119,20 @@ class GeneralThresholdExtractorTest
         //No flow or calculated.
         GeneralThresholdDefinition mntg1NWS = new GeneralThresholdDefinition();
         mntg1NWS.setMetadata( mntg1NWSMetadata );
-        mntg1NWS.setStage_values( mntg1NWSOriginalValues );
+        mntg1NWS.setStageValues( mntg1NWSOriginalValues );
 
         // ==== Third set of thresholds.
 
         //Metadata
         GeneralThresholdMetadata mntg1NRLDBMetadata = new GeneralThresholdMetadata();
-        mntg1NRLDBMetadata.setNws_lid( "MNTG1" );
-        mntg1NRLDBMetadata.setUsgs_site_code( "02349605" );
-        mntg1NRLDBMetadata.setNwm_feature_id( "6444276" );
-        mntg1NRLDBMetadata.setThreshold_source( "NWS-NRLDB" );
-        mntg1NRLDBMetadata.setThreshold_source_description( "NONE" );
-        mntg1NRLDBMetadata.setFlow_units( "CFS" );
-        mntg1NRLDBMetadata.setCalc_flow_units( "CFS" );
-        mntg1NRLDBMetadata.setStage_units( "FT" );
+        mntg1NRLDBMetadata.setNwsLid( "MNTG1" );
+        mntg1NRLDBMetadata.setUsgsSideCode( "02349605" );
+        mntg1NRLDBMetadata.setNwmFeatureId( "6444276" );
+        mntg1NRLDBMetadata.setThresholdSource( "NWS-NRLDB" );
+        mntg1NRLDBMetadata.setThresholdSourceDescription( "NONE" );
+        mntg1NRLDBMetadata.setFlowUnits( "CFS" );
+        mntg1NRLDBMetadata.setCalcFlowUnits( "CFS" );
+        mntg1NRLDBMetadata.setStageUnits( "FT" );
 
         //Stage thresholds
         GeneralThresholdValues mntg1NRLDBOriginalValues = new GeneralThresholdValues();
@@ -147,7 +147,7 @@ class GeneralThresholdExtractorTest
         //No flow or calculated.
         GeneralThresholdDefinition mntg1NRLDB = new GeneralThresholdDefinition();
         mntg1NRLDB.setMetadata( mntg1NRLDBMetadata );
-        mntg1NRLDB.setStage_values( mntg1NRLDBOriginalValues );
+        mntg1NRLDB.setStageValues( mntg1NRLDBOriginalValues );
 
         GeneralThresholdResponse response = new GeneralThresholdResponse();
         response.setThresholds( List.of( ptsa1NWS, mntg1NWS, mntg1NRLDB ) );
@@ -162,11 +162,11 @@ class GeneralThresholdExtractorTest
 
         //Metadata
         GeneralThresholdMetadata steakMetadata = new GeneralThresholdMetadata();
-        steakMetadata.setNws_lid( "STEAK" );
-        steakMetadata.setThreshold_source( "FlavorTown" );
-        steakMetadata.setFlow_units( "CFS" );
-        steakMetadata.setCalc_flow_units( "CFS" );
-        steakMetadata.setStage_units( "MM" );
+        steakMetadata.setNwsLid( "STEAK" );
+        steakMetadata.setThresholdSource( "FlavorTown" );
+        steakMetadata.setFlowUnits( "CFS" );
+        steakMetadata.setCalcFlowUnits( "CFS" );
+        steakMetadata.setStageUnits( "MM" );
 
         //Stage thresholds
         GeneralThresholdValues steakStageValues = new GeneralThresholdValues();
@@ -200,24 +200,24 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo rcInfo = new RatingCurveInfo();
         rcInfo.setSource( "DonkeySauce" );
         rcInfo.setDescription( "NONE" );
-        steakCalcFlowValues.setRating_curve( rcInfo );
+        steakCalcFlowValues.setRatingCurve( rcInfo );
 
         //The definition
         GeneralThresholdDefinition steakDef = new GeneralThresholdDefinition();
         steakDef.setMetadata( steakMetadata );
-        steakDef.setStage_values( steakStageValues );
-        steakDef.setFlow_values( steakFlowValues );
-        steakDef.setCalc_flow_values( steakCalcFlowValues );
+        steakDef.setStageValues( steakStageValues );
+        steakDef.setFlowValues( steakFlowValues );
+        steakDef.setCalcFlowValues( steakCalcFlowValues );
 
         // ==== Second set of thresholds
 
         //Metadata
         GeneralThresholdMetadata grossSteakMetadata = new GeneralThresholdMetadata();
-        grossSteakMetadata.setNws_lid( "STEAK" );
-        grossSteakMetadata.setThreshold_source( "NWS-NRLDB" );
-        grossSteakMetadata.setFlow_units( "CFS" );
-        grossSteakMetadata.setCalc_flow_units( "CFS" );
-        grossSteakMetadata.setStage_units( "MM" );
+        grossSteakMetadata.setNwsLid( "STEAK" );
+        grossSteakMetadata.setThresholdSource( "NWS-NRLDB" );
+        grossSteakMetadata.setFlowUnits( "CFS" );
+        grossSteakMetadata.setCalcFlowUnits( "CFS" );
+        grossSteakMetadata.setStageUnits( "MM" );
 
         //Calculated flow thresholds
         GeneralThresholdValues grossSteakCalcFlowValues = new GeneralThresholdValues();
@@ -231,22 +231,22 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo grossRCInfo = new RatingCurveInfo();
         grossRCInfo.setSource( "DuckSauce" );
         grossRCInfo.setDescription( "NONE" );
-        grossSteakCalcFlowValues.setRating_curve( grossRCInfo );
+        grossSteakCalcFlowValues.setRatingCurve( grossRCInfo );
 
         //The definition; no stage or flow.
         GeneralThresholdDefinition grossSteakDef = new GeneralThresholdDefinition();
         grossSteakDef.setMetadata( grossSteakMetadata );
-        grossSteakDef.setCalc_flow_values( grossSteakCalcFlowValues );
+        grossSteakDef.setCalcFlowValues( grossSteakCalcFlowValues );
 
         // ==== Another set of thresholds.
 
         //Metadata
         GeneralThresholdMetadata flatIronSteakMetadata = new GeneralThresholdMetadata();
-        flatIronSteakMetadata.setNws_lid( "STEAK" );
-        flatIronSteakMetadata.setThreshold_source( "FlatIron" );
-        flatIronSteakMetadata.setFlow_units( "CFS" );
-        flatIronSteakMetadata.setCalc_flow_units( "CFS" );
-        flatIronSteakMetadata.setStage_units( "MM" );
+        flatIronSteakMetadata.setNwsLid( "STEAK" );
+        flatIronSteakMetadata.setThresholdSource( "FlatIron" );
+        flatIronSteakMetadata.setFlowUnits( "CFS" );
+        flatIronSteakMetadata.setCalcFlowUnits( "CFS" );
+        flatIronSteakMetadata.setStageUnits( "MM" );
 
         //Stage thresholds
         GeneralThresholdValues flatIronSteakStageValues = new GeneralThresholdValues();
@@ -280,24 +280,24 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo flatIronRCInfo = new RatingCurveInfo();
         flatIronRCInfo.setSource( "DonkeySauce" );
         flatIronRCInfo.setDescription( "NONE" );
-        flatIronSteakCalcFlowValues.setRating_curve( flatIronRCInfo );
+        flatIronSteakCalcFlowValues.setRatingCurve( flatIronRCInfo );
 
         //The definition
         GeneralThresholdDefinition flatIronSteakDef = new GeneralThresholdDefinition();
         flatIronSteakDef.setMetadata( flatIronSteakMetadata );
-        flatIronSteakDef.setStage_values( flatIronSteakStageValues );
-        flatIronSteakDef.setFlow_values( flatIronSteakFlowValues );
-        flatIronSteakDef.setCalc_flow_values( flatIronSteakCalcFlowValues );
+        flatIronSteakDef.setStageValues( flatIronSteakStageValues );
+        flatIronSteakDef.setFlowValues( flatIronSteakFlowValues );
+        flatIronSteakDef.setCalcFlowValues( flatIronSteakCalcFlowValues );
 
         // ==== Another set of thresholds.
 
         //Metadata
         GeneralThresholdMetadata bakedPotatoMetadata = new GeneralThresholdMetadata();
-        bakedPotatoMetadata.setNws_lid( "BakedPotato" );
-        bakedPotatoMetadata.setThreshold_source( "FlavorTown" );
-        bakedPotatoMetadata.setFlow_units( "CFS" );
-        bakedPotatoMetadata.setCalc_flow_units( "CFS" );
-        bakedPotatoMetadata.setStage_units( "MM" );
+        bakedPotatoMetadata.setNwsLid( "BakedPotato" );
+        bakedPotatoMetadata.setThresholdSource( "FlavorTown" );
+        bakedPotatoMetadata.setFlowUnits( "CFS" );
+        bakedPotatoMetadata.setCalcFlowUnits( "CFS" );
+        bakedPotatoMetadata.setStageUnits( "MM" );
 
         //Stage thresholds
         GeneralThresholdValues bakedPotatoStageValues = new GeneralThresholdValues();
@@ -331,25 +331,25 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo bakedPotatoRCInfo = new RatingCurveInfo();
         bakedPotatoRCInfo.setSource( "DonkeySauce" );
         bakedPotatoRCInfo.setDescription( "NONE" );
-        bakedPotatoCalcFlowValues.setRating_curve( bakedPotatoRCInfo );
+        bakedPotatoCalcFlowValues.setRatingCurve( bakedPotatoRCInfo );
 
         //The definition
         GeneralThresholdDefinition bakedPotatoDef = new GeneralThresholdDefinition();
         bakedPotatoDef.setMetadata( bakedPotatoMetadata );
-        bakedPotatoDef.setStage_values( bakedPotatoStageValues );
-        bakedPotatoDef.setFlow_values( bakedPotatoFlowValues );
-        bakedPotatoDef.setCalc_flow_values( bakedPotatoCalcFlowValues );
+        bakedPotatoDef.setStageValues( bakedPotatoStageValues );
+        bakedPotatoDef.setFlowValues( bakedPotatoFlowValues );
+        bakedPotatoDef.setCalcFlowValues( bakedPotatoCalcFlowValues );
 
         // ==== Another set of thresholds.
 
         //Metadata
         GeneralThresholdMetadata grossBakedPotatoMetadata = new GeneralThresholdMetadata();
-        grossBakedPotatoMetadata.setNws_lid( "BakedPotato" );
-        grossBakedPotatoMetadata.setThreshold_source( "NWS-NRLDB" );
-        grossBakedPotatoMetadata.setThreshold_source_description( "NONE" );
-        grossBakedPotatoMetadata.setFlow_units( "CFS" );
-        grossBakedPotatoMetadata.setCalc_flow_units( "CFS" );
-        grossBakedPotatoMetadata.setStage_units( "MM" );
+        grossBakedPotatoMetadata.setNwsLid( "BakedPotato" );
+        grossBakedPotatoMetadata.setThresholdSource( "NWS-NRLDB" );
+        grossBakedPotatoMetadata.setThresholdSourceDescription( "NONE" );
+        grossBakedPotatoMetadata.setFlowUnits( "CFS" );
+        grossBakedPotatoMetadata.setCalcFlowUnits( "CFS" );
+        grossBakedPotatoMetadata.setStageUnits( "MM" );
 
         //Stage thresholds
         GeneralThresholdValues grossBakedPotatoStageValues = new GeneralThresholdValues();
@@ -383,14 +383,14 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo grossBakedPotatoRCInfo = new RatingCurveInfo();
         grossBakedPotatoRCInfo.setSource( "DonkeySauce" );
         grossBakedPotatoRCInfo.setDescription( "NONE" );
-        grossBakedPotatoCalcFlowValues.setRating_curve( grossBakedPotatoRCInfo );
+        grossBakedPotatoCalcFlowValues.setRatingCurve( grossBakedPotatoRCInfo );
 
         //The definition
         GeneralThresholdDefinition grossBakedPotatoDef = new GeneralThresholdDefinition();
         grossBakedPotatoDef.setMetadata( grossBakedPotatoMetadata );
-        grossBakedPotatoDef.setStage_values( grossBakedPotatoStageValues );
-        grossBakedPotatoDef.setFlow_values( grossBakedPotatoFlowValues );
-        grossBakedPotatoDef.setCalc_flow_values( grossBakedPotatoCalcFlowValues );
+        grossBakedPotatoDef.setStageValues( grossBakedPotatoStageValues );
+        grossBakedPotatoDef.setFlowValues( grossBakedPotatoFlowValues );
+        grossBakedPotatoDef.setCalcFlowValues( grossBakedPotatoCalcFlowValues );
 
 
         //Put together the response.
@@ -425,15 +425,15 @@ class GeneralThresholdExtractorTest
         //Metadata
         GeneralThresholdDefinition aThreshold = new GeneralThresholdDefinition();
         GeneralThresholdMetadata aThresholdMetadata = new GeneralThresholdMetadata();
-        aThresholdMetadata.setNws_lid( "BLUO2" );
-        aThresholdMetadata.setUsgs_site_code( "07332500" );
-        aThresholdMetadata.setNwm_feature_id( "700694" );
-        aThresholdMetadata.setThreshold_source( "NWS-NRLDB" );
-        aThresholdMetadata.setThreshold_source_description( "National Weather Service - National River Location "
-                                                            + "Database" );
-        aThresholdMetadata.setFlow_units( "CFS" );
-        aThresholdMetadata.setCalc_flow_units( "CFS" );
-        aThresholdMetadata.setStage_units( "FT" );
+        aThresholdMetadata.setNwsLid( "BLUO2" );
+        aThresholdMetadata.setUsgsSideCode( "07332500" );
+        aThresholdMetadata.setNwmFeatureId( "700694" );
+        aThresholdMetadata.setThresholdSource( "NWS-NRLDB" );
+        aThresholdMetadata.setThresholdSourceDescription( "National Weather Service - National River Location "
+                                                          + "Database" );
+        aThresholdMetadata.setFlowUnits( "CFS" );
+        aThresholdMetadata.setCalcFlowUnits( "CFS" );
+        aThresholdMetadata.setStageUnits( "FT" );
         aThreshold.setMetadata( aThresholdMetadata );
         
         //Stage thresholds
@@ -445,7 +445,7 @@ class GeneralThresholdExtractorTest
         stageValues.add( "moderate", 31.0d );
         stageValues.add( "major", 43.0d );
         stageValues.add( "record", 50.83d );
-        aThreshold.setStage_values( stageValues );
+        aThreshold.setStageValues( stageValues );
         
         //Calculated flow thresholds with rating curve info.
         GeneralThresholdValues calcFlowValues = new GeneralThresholdValues();
@@ -459,8 +459,8 @@ class GeneralThresholdExtractorTest
         RatingCurveInfo rcInfo = new RatingCurveInfo();
         rcInfo.setSource( "NRLDB" );
         rcInfo.setDescription( "NRLDB" );
-        calcFlowValues.setRating_curve( rcInfo );
-        aThreshold.setCalc_flow_values( calcFlowValues );
+        calcFlowValues.setRatingCurve( rcInfo );
+        aThreshold.setCalcFlowValues( calcFlowValues );
 
         thresholds.add( aThreshold );
 

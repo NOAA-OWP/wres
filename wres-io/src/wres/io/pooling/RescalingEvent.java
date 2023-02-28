@@ -13,7 +13,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 /**
  * A custom event for monitoring the rescaling of time-series data and exposing it to the Java Flight Recorder.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Name( "wres.io.pooling.RescalingEvent" )
