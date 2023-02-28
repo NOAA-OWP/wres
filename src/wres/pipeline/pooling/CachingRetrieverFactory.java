@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.util.Objects;
 import java.util.Set;

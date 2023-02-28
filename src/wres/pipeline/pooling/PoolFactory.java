@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.time.MonthDay;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -50,7 +50,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.NoSuchUnitConversionException;
-import wres.io.pooling.RescalingEvent.RescalingType;
+import wres.pipeline.pooling.RescalingEvent.RescalingType;
 import wres.io.retrieval.DataAccessException;
 import wres.statistics.generated.GeometryGroup;
 import wres.config.generated.DesiredTimeScaleConfig;

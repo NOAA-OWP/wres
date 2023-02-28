@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.util.Objects;
 
@@ -23,7 +23,7 @@ import wres.datamodel.pools.PoolMetadata;
  * @author James Brown
  */
 
-@Name( "wres.io.pooling.PoolCreationEvent" )
+@Name( "wres.pooling.pipeline.PoolCreationEvent" )
 @Label( "Pool Creation Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling" } )
 class PoolCreationEvent extends Event

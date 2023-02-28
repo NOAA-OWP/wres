@@ -1806,6 +1806,9 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
+    // JCIP annotations
+    compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
+
     runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.1'
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.1'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.1'

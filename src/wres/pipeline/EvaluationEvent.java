@@ -98,6 +98,8 @@ public class EvaluationEvent extends Event
     /**
      * Registers a new pool with the evaluation and increments related statistics.
      *
+     * @param <L> the left-ish data type
+     * @param <R> the right-ish data type
      * @param pool a pool
      * @param traceCount an estimate of the number of traces in the pool for left/right data
      * @param traceCountBaseline an estimate of the number of traces in the pool for left/baseline data
