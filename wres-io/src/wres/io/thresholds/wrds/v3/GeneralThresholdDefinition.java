@@ -1,6 +1,8 @@
 package wres.io.thresholds.wrds.v3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -9,6 +11,7 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,11 +22,12 @@ import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 
 /**
- * Represents the combined elements that defined an atomic set of thresholds
+ * Represents the combined elements that defined an atomic set of thresholds.
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class GeneralThresholdDefinition implements Serializable
 {
+    @Serial
     private static final long serialVersionUID = -7094110343140389566L;
 
     /**
@@ -34,20 +38,20 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * The stage values presented by the all-in-one NWS API.
      */
-    GeneralThresholdValues stage_values;
-
+    @JsonProperty( "stage_values" )
+    GeneralThresholdValues stageValues;
 
     /**
      * The flow values presented by the all-in-one NWS API.
      */
-    GeneralThresholdValues flow_values;
-
+    @JsonProperty( "flow_values" )
+    GeneralThresholdValues flowValues;
 
     /**
      * The calculated flow values presented by the all-in-one NWS API.
      */
-    GeneralThresholdValues calc_flow_values;
-
+    @JsonProperty( "calc_flow_values" )
+    GeneralThresholdValues calcFlowValues;
 
     /**
      * The general values presented by other APIs, including the NWS
@@ -55,59 +59,93 @@ public class GeneralThresholdDefinition implements Serializable
      */
     GeneralThresholdValues values;
 
+    /**
+     * @return the metadata
+     */
 
     public GeneralThresholdMetadata getMetadata()
     {
         return metadata;
     }
 
+    /**
+     * Sets the metadata.
+     * @param metadata the metadata
+     */
     public void setMetadata( GeneralThresholdMetadata metadata )
     {
         this.metadata = metadata;
     }
 
-    public GeneralThresholdValues getStage_values()
+    /**
+     * @return the stage values
+     */
+    public GeneralThresholdValues getStageValues()
     {
-        return stage_values;
+        return stageValues;
     }
 
-    public void setStage_values( GeneralThresholdValues stage_values )
+    /**
+     * Sets the stage values.
+     * @param stageValues the stage values
+     */
+    public void setStageValues( GeneralThresholdValues stageValues )
     {
-        this.stage_values = stage_values;
+        this.stageValues = stageValues;
     }
 
-    public GeneralThresholdValues getFlow_values()
+    /**
+     * @return the flow values
+     */
+    public GeneralThresholdValues getFlowValues()
     {
-        return flow_values;
+        return flowValues;
     }
 
-    public void setFlow_values( GeneralThresholdValues flow_values )
+    /**
+     * Sets the flow values
+     * @param flowValues the flow values
+     */
+    public void setFlowValues( GeneralThresholdValues flowValues )
     {
-        this.flow_values = flow_values;
+        this.flowValues = flowValues;
     }
 
-    public GeneralThresholdValues getCalc_flow_values()
+    /**
+     * @return the calculated flow values
+     */
+    public GeneralThresholdValues getCalcFlowValues()
     {
-        return calc_flow_values;
+        return calcFlowValues;
     }
 
-    public void setCalc_flow_values( GeneralThresholdValues calc_flow_values )
+    /**
+     * Sets the calculated flow values.
+     * @param calcFlowValues the calculated flow values
+     */
+    public void setCalcFlowValues( GeneralThresholdValues calcFlowValues )
     {
-        this.calc_flow_values = calc_flow_values;
+        this.calcFlowValues = calcFlowValues;
     }
 
+    /**
+     * @return the threshold values
+     */
     public GeneralThresholdValues getValues()
     {
         return values;
     }
 
+    /**
+     * Sets the threshold values.
+     * @param values the values
+     */
     public void setValues( GeneralThresholdValues values )
     {
         this.values = values;
     }
 
     /**
-     * 
      * @return The threshold source or null if it is not specified.
      */
     public String getThresholdProvider()
@@ -115,22 +153,24 @@ public class GeneralThresholdDefinition implements Serializable
         String thresholdProvider = null;
         if ( Objects.nonNull( this.getMetadata() ) )
         {
-            thresholdProvider = this.getMetadata().getThreshold_source();
+            thresholdProvider = this.getMetadata().getThresholdSource();
         }
 
         return thresholdProvider;
     }
 
+    /**
+     * @return the WRDS location
+     */
     public WrdsLocation getLocation()
     {
-        return new WrdsLocation(
-                                 this.metadata.getNwm_feature_id(),
-                                 this.metadata.getUsgs_site_code(),
-                                 this.metadata.getNws_lid());
+        return new WrdsLocation( this.metadata.getNwmFeatureId(),
+                                 this.metadata.getUsgsSideCode(),
+                                 this.metadata.getNwsLid() );
     }
 
     /**
-     * 
+     *
      * @return Null if no rating curve is found in the response.  Otherwise,
      * it returns the rating curve's source.  The rating curve info is currently
      * found inside of the calc_flow_values for NWS thresholds only.
@@ -138,18 +178,17 @@ public class GeneralThresholdDefinition implements Serializable
     public String getRatingProvider()
     {
         String ratingProvider = null;
-        if ( Objects.nonNull( this.getCalc_flow_values() ) )
+        if ( Objects.nonNull( this.getCalcFlowValues() ) )
         {
 
-            ratingProvider = this.getCalc_flow_values().getRating_curve().getSource();
+            ratingProvider = this.getCalcFlowValues().getRatingCurve().getSource();
         }
 
         return ratingProvider;
     }
 
-
     /**
-     * 
+     *
      * @param thresholdType the threshold type
      * @param thresholdOperator the threshold operator
      * @param dataType the data type
@@ -159,8 +198,7 @@ public class GeneralThresholdDefinition implements Serializable
      * @return a map of thresholds by location.  This is a singleton map: only one location will be
      * returned at most.  
      */
-    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds(
-                                                                 WRDSThresholdType thresholdType,
+    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds( WRDSThresholdType thresholdType,
                                                                  ThresholdConstants.Operator thresholdOperator,
                                                                  ThresholdConstants.ThresholdDataType dataType,
                                                                  boolean getCalculated,
@@ -193,34 +231,31 @@ public class GeneralThresholdDefinition implements Serializable
         //based on provided threshold type.
         else if ( thresholdType.equals( WRDSThresholdType.STAGE ) )
         {
-            if ( getStage_values() != null )
+            if ( getStageValues() != null )
             {
-                originalThresholds = getStage_values().getThresholdValues();
+                originalThresholds = getStageValues().getThresholdValues();
                 originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getStage_units() )
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getStageUnits() )
                                                                         .getUnit() );
             }
         }
         else
         {
-            if ( getFlow_values() != null )
+            if ( getFlowValues() != null )
             {
-                originalThresholds = getFlow_values().getThresholdValues();
+                originalThresholds = getFlowValues().getThresholdValues();
                 originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getFlow_units() )
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getFlowUnits() )
                                                                         .getUnit() );
             }
 
-            if ( getCalculated )
+            if ( getCalculated && this.getCalcFlowValues() != null )
             {
-                if ( getCalc_flow_values() != null )
-                {
-                    calculatedThresholds = getCalc_flow_values().getThresholdValues();
-                    calculatedUnitConversionOperator =
-                            desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
-                                                                                     .getCalc_flow_units() )
-                                                                            .getUnit() );
-                }
+                calculatedThresholds = getCalcFlowValues().getThresholdValues();
+                calculatedUnitConversionOperator =
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
+                                                                                 .getCalcFlowUnits() )
+                                                                        .getUnit() );
             }
         }
 
@@ -234,11 +269,11 @@ public class GeneralThresholdDefinition implements Serializable
                     double value = originalUnitConversionOperator.applyAsDouble( threshold.getValue() );
                     thresholdMap.put( threshold.getKey(),
                                       ThresholdOuter.of(
-                                                         OneOrTwoDoubles.of( value ),
-                                                         thresholdOperator,
-                                                         dataType,
-                                                         threshold.getKey(),
-                                                         MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
+                                              OneOrTwoDoubles.of( value ),
+                                              thresholdOperator,
+                                              dataType,
+                                              threshold.getKey(),
+                                              MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
                 }
             }
         }
@@ -252,20 +287,20 @@ public class GeneralThresholdDefinition implements Serializable
                 {
                     //Build the label.  It will be the threshold key unless that's already used.
                     //If it is already used, then the rating curve source will be added.
-                    String label = getCalc_flow_values().getRating_curve().getSource().toString() + " " + threshold.getKey();
+                    String label =
+                            getCalcFlowValues().getRatingCurve().getSource() + " " + threshold.getKey();
                     double value = calculatedUnitConversionOperator.applyAsDouble( threshold.getValue() );
                     thresholdMap.put( label,
                                       ThresholdOuter.of(
-                                                         OneOrTwoDoubles.of( value ),
-                                                         thresholdOperator,
-                                                         dataType,
-                                                         label,
-                                                         MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
+                                              OneOrTwoDoubles.of( value ),
+                                              thresholdOperator,
+                                              dataType,
+                                              label,
+                                              MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
                 }
             }
         }
 
         return Map.of( location, new HashSet<>( thresholdMap.values() ) );
     }
-
 }

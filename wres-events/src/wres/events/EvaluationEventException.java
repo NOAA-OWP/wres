@@ -3,7 +3,7 @@ package wres.events;
 /**
  * Exception to throw when an evaluation event occurs. These events may be recoverable.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EvaluationEventException extends RuntimeException

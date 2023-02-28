@@ -14,20 +14,25 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * within the "locations" list.  Part of that element is "identifiers", which will be 
  * stored in {@link WrdsLocation}.
  * @author Hank.Herr
- *
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class WrdsLocationInformation
 {
     private final WrdsLocation locations;
 
+    /**
+     * Creates an instance.
+     * @param locations the locations
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationInformation(
-                                    @JsonProperty( "identifiers" ) WrdsLocation locations )
+    public WrdsLocationInformation( @JsonProperty( "identifiers" ) WrdsLocation locations )
     {
         this.locations = locations;
     }
 
+    /**
+     * @return the locations
+     */
     public WrdsLocation getLocations()
     {
         return this.locations;
@@ -37,7 +42,7 @@ public class WrdsLocationInformation
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "locations", locations )
-                                                                            .toString();
+                .append( "locations", locations )
+                .toString();
     }
 }

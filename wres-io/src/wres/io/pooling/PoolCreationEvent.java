@@ -20,7 +20,7 @@ import wres.datamodel.pools.PoolMetadata;
  * <li>Pairing.</li>
  * </ol>
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Name( "wres.io.pooling.PoolCreationEvent" )

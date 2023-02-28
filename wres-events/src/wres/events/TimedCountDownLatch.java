@@ -9,12 +9,11 @@ import java.util.concurrent.CountDownLatch;
  * Similar to {@link CountDownLatch} but facilitates waiting for a fixed period that is reset after each mutation. 
  * Thus, if there is no progress within a fixed period, an evaluation may still complete.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class TimedCountDownLatch
 {
-
     private final Sync sync;
     private final AtomicLong timestamp;
     private int resetCount;

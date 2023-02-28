@@ -5,39 +5,53 @@ import java.util.Objects;
 import com.sun.xml.bind.Locatable;
 
 /**
- * When any part of the system cannot proceed with processing due to incomplete,
+ * <p>When any part of the system cannot proceed with processing due to incomplete,
  * missing, ambiguous, or otherwise problematic configuration, it is appropriate
  * to throw this exception.
  *
- * The throwing code should include a specific message, appropriate to display
+ * <p>The throwing code should include a specific message, appropriate to display
  * to a user, at least explaining why the software could not proceed, or at best
  * explaining the steps the user could take to solve the issue.
  *
- * Additionally the throwing code must include an element where the issue was
+ * <p>Additionally, the throwing code must include an element where the issue was
  * detected. The purpose of this is so that the location can be included in the
  * message.
  *
- * The thrower does not need to print the location in the message, it is
+ * <p>The thrower does not need to print the location in the message, it is
  * inserted automatically at the beginning of the exception message.
  */
-
 public class ProjectConfigException extends RuntimeException
 {
-
-    public ProjectConfigException(final Locatable problemElement,
-            final String s,
-            final Throwable t)
+    /**
+     * Creates an instance
+     * @param problemElement the problem element
+     * @param message the message
+     * @param cause the cause
+     */
+    public ProjectConfigException( final Locatable problemElement,
+                                   final String message,
+                                   final Throwable cause )
     {
-        super( getMessagePrefix( problemElement ) + s, t);
+        super( ProjectConfigException.getMessagePrefix( problemElement ) + message, cause );
     }
 
-    public ProjectConfigException(final Locatable problemElement,
-            final String s)
+    /**
+     * Creates an instance
+     * @param problemElement the problem element
+     * @param message the message
+     */
+    public ProjectConfigException( final Locatable problemElement,
+                                   final String message )
     {
-        super( getMessagePrefix( problemElement ) + s);
+        super( ProjectConfigException.getMessagePrefix( problemElement ) + message );
     }
 
-    private static String getMessagePrefix(final Locatable problemElement)
+    /**
+     * Creates a message prefix.
+     * @param problemElement the problem element
+     * @return the message prefix
+     */
+    private static String getMessagePrefix( final Locatable problemElement )
     {
         // If there is no sourceLocation available, use an empty prefix.
         if ( Objects.isNull( problemElement ) || problemElement.sourceLocation() == null )

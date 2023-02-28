@@ -70,51 +70,51 @@ class ThresholdExtractorTest
 
         ThresholdDefinition aThreshold = new ThresholdDefinition();
         ThresholdMetadata aThresholdMetadata = new ThresholdMetadata();
-        aThresholdMetadata.setLocation_id( "BLUO2" );
-        aThresholdMetadata.setNws_lid( "BLUO2" );
-        aThresholdMetadata.setUsgs_site_code( "07332500" );
+        aThresholdMetadata.setLocationId( "BLUO2" );
+        aThresholdMetadata.setNwsLid( "BLUO2" );
+        aThresholdMetadata.setUsgsSiteCode( "07332500" );
 
-        aThresholdMetadata.setNwm_feature_id( "700694" );
-        aThresholdMetadata.setId_type( "NWS Station" );
-        aThresholdMetadata.setThreshold_source( "NWS-NRLDB" );
-        aThresholdMetadata.setThreshold_source_description( "National Weather Service - National River Location "
-                                                            + "Database" );
-        aThresholdMetadata.setRating_source( "NRLDB" );
-        aThresholdMetadata.setRating_source_description( "NRLDB" );
-        aThresholdMetadata.setFlow_unit( "CFS" );
-        aThresholdMetadata.setStage_unit( "FT" );
+        aThresholdMetadata.setNwmFeatureId( "700694" );
+        aThresholdMetadata.setIdType( "NWS Station" );
+        aThresholdMetadata.setThresholdSource( "NWS-NRLDB" );
+        aThresholdMetadata.setThresholdSourceDescription( "National Weather Service - National River Location "
+                                                          + "Database" );
+        aThresholdMetadata.setRatingSource( "NRLDB" );
+        aThresholdMetadata.setRatingSourceDescription( "NRLDB" );
+        aThresholdMetadata.setFlowUnit( "CFS" );
+        aThresholdMetadata.setStageUnit( "FT" );
 
         aThreshold.setMetadata( aThresholdMetadata );
 
         OriginalThresholdValues originalValues = new OriginalThresholdValues();
-        originalValues.setLow_stage( "1.5" );
-        originalValues.setBankfull_stage( "28.0" );
-        originalValues.setAction_stage( "26.0" );
-        originalValues.setMinor_stage( "28.0" );
-        originalValues.setModerate_stage( "31.0" );
-        originalValues.setMajor_stage( "43.0" );
-        originalValues.setRecord_stage( "50.83" );
+        originalValues.setLowStage( "1.5" );
+        originalValues.setBankfullStage( "28.0" );
+        originalValues.setActionStage( "26.0" );
+        originalValues.setMinorStage( "28.0" );
+        originalValues.setModerateStage( "31.0" );
+        originalValues.setMajorStage( "43.0" );
+        originalValues.setRecordStage( "50.83" );
 
-        aThreshold.setOriginal_values( originalValues );
+        aThreshold.setOriginalValues( originalValues );
 
         CalculatedThresholdValues calculatedValues = new CalculatedThresholdValues();
-        calculatedValues.setLow_flow( "0.0" );
-        calculatedValues.setBankfull_flow( "7614.916318407959" );
-        calculatedValues.setAction_flow( "6608.18" );
-        calculatedValues.setMinor_flow( "7614.916318407959" );
-        calculatedValues.setModerate_flow( "9248.87268292683" );
-        calculatedValues.setMajor_flow( "49279.61515624999" );
-        calculatedValues.setRecord_flow( "102933.03851562498" );
+        calculatedValues.setLowFlow( "0.0" );
+        calculatedValues.setBankfullFlow( "7614.916318407959" );
+        calculatedValues.setActionFlow( "6608.18" );
+        calculatedValues.setMinorFlow( "7614.916318407959" );
+        calculatedValues.setModerateFlow( "9248.87268292683" );
+        calculatedValues.setMajorFlow( "49279.61515624999" );
+        calculatedValues.setRecordFlow( "102933.03851562498" );
 
-        aThreshold.setCalculated_values( calculatedValues );
+        aThreshold.setCalculatedValues( calculatedValues );
 
         thresholds.add( aThreshold );
 
         thresholdResponse.setThresholds( thresholds );
         Map<String, Double> metrics = new HashMap<>();
         metrics.put( "threshold_count", 1.0 );
-        thresholdResponse.set_metrics( metrics );
-        thresholdResponse.set_documentation( "redacted/docs/dev/v2/location/swagger/" );
+        thresholdResponse.setMetrics( metrics );
+        thresholdResponse.setDocumentation( "redacted/docs/dev/v2/location/swagger/" );
 
         this.extractor = new ThresholdExtractor( thresholdResponse );
 
@@ -223,70 +223,70 @@ class ThresholdExtractorTest
     private ThresholdResponse createOldThresholdResponse()
     {
         ThresholdMetadata ptsa1NWSMetadata = new ThresholdMetadata();
-        ptsa1NWSMetadata.setLocation_id( "PTSA1" );
-        ptsa1NWSMetadata.setNws_lid( "PTSA1" );
-        ptsa1NWSMetadata.setUsgs_site_code( "02372250" );
-        ptsa1NWSMetadata.setNwm_feature_id( "2323396" );
-        ptsa1NWSMetadata.setThreshold_source( "NWS-CMS" );
-        ptsa1NWSMetadata.setStage_unit( "FT" );
+        ptsa1NWSMetadata.setLocationId( "PTSA1" );
+        ptsa1NWSMetadata.setNwsLid( "PTSA1" );
+        ptsa1NWSMetadata.setUsgsSiteCode( "02372250" );
+        ptsa1NWSMetadata.setNwmFeatureId( "2323396" );
+        ptsa1NWSMetadata.setThresholdSource( "NWS-CMS" );
+        ptsa1NWSMetadata.setStageUnit( "FT" );
 
         OriginalThresholdValues ptsa1NWSOriginalValues = new OriginalThresholdValues();
-        ptsa1NWSOriginalValues.setLow_stage( "None" );
-        ptsa1NWSOriginalValues.setBankfull_stage( "None" );
-        ptsa1NWSOriginalValues.setAction_stage( "0.0" );
-        ptsa1NWSOriginalValues.setMinor_stage( "0.0" );
-        ptsa1NWSOriginalValues.setModerate_stage( "0.0" );
-        ptsa1NWSOriginalValues.setMajor_stage( "0.0" );
-        ptsa1NWSOriginalValues.setRecord_stage( "None" );
+        ptsa1NWSOriginalValues.setLowStage( "None" );
+        ptsa1NWSOriginalValues.setBankfullStage( "None" );
+        ptsa1NWSOriginalValues.setActionStage( "0.0" );
+        ptsa1NWSOriginalValues.setMinorStage( "0.0" );
+        ptsa1NWSOriginalValues.setModerateStage( "0.0" );
+        ptsa1NWSOriginalValues.setMajorStage( "0.0" );
+        ptsa1NWSOriginalValues.setRecordStage( "None" );
 
         ThresholdDefinition ptsa1NWS = new ThresholdDefinition();
         ptsa1NWS.setMetadata( ptsa1NWSMetadata );
-        ptsa1NWS.setOriginal_values( ptsa1NWSOriginalValues );
-        ptsa1NWS.setCalculated_values( new CalculatedThresholdValues() );
+        ptsa1NWS.setOriginalValues( ptsa1NWSOriginalValues );
+        ptsa1NWS.setCalculatedValues( new CalculatedThresholdValues() );
 
         ThresholdMetadata mntg1NWSMetadata = new ThresholdMetadata();
-        mntg1NWSMetadata.setLocation_id( "MNTG1" );
-        mntg1NWSMetadata.setNws_lid( "MNTG1" );
-        mntg1NWSMetadata.setUsgs_site_code( "02349605" );
-        mntg1NWSMetadata.setNwm_feature_id( "6444276" );
-        mntg1NWSMetadata.setThreshold_source( "NWS-CMS" );
-        mntg1NWSMetadata.setStage_unit( "FT" );
+        mntg1NWSMetadata.setLocationId( "MNTG1" );
+        mntg1NWSMetadata.setNwsLid( "MNTG1" );
+        mntg1NWSMetadata.setUsgsSiteCode( "02349605" );
+        mntg1NWSMetadata.setNwmFeatureId( "6444276" );
+        mntg1NWSMetadata.setThresholdSource( "NWS-CMS" );
+        mntg1NWSMetadata.setStageUnit( "FT" );
 
         OriginalThresholdValues mntg1NWSOriginalValues = new OriginalThresholdValues();
-        mntg1NWSOriginalValues.setLow_stage( "None" );
-        mntg1NWSOriginalValues.setBankfull_stage( "None" );
-        mntg1NWSOriginalValues.setAction_stage( "11.0" );
-        mntg1NWSOriginalValues.setMinor_stage( "20.0" );
-        mntg1NWSOriginalValues.setModerate_stage( "28.0" );
-        mntg1NWSOriginalValues.setMajor_stage( "31.0" );
-        mntg1NWSOriginalValues.setRecord_stage( "None" );
+        mntg1NWSOriginalValues.setLowStage( "None" );
+        mntg1NWSOriginalValues.setBankfullStage( "None" );
+        mntg1NWSOriginalValues.setActionStage( "11.0" );
+        mntg1NWSOriginalValues.setMinorStage( "20.0" );
+        mntg1NWSOriginalValues.setModerateStage( "28.0" );
+        mntg1NWSOriginalValues.setMajorStage( "31.0" );
+        mntg1NWSOriginalValues.setRecordStage( "None" );
 
         ThresholdDefinition mntg1NWS = new ThresholdDefinition();
         mntg1NWS.setMetadata( mntg1NWSMetadata );
-        mntg1NWS.setOriginal_values( mntg1NWSOriginalValues );
-        mntg1NWS.setCalculated_values( new CalculatedThresholdValues() );
+        mntg1NWS.setOriginalValues( mntg1NWSOriginalValues );
+        mntg1NWS.setCalculatedValues( new CalculatedThresholdValues() );
 
         ThresholdMetadata mntg1NRLDBMetadata = new ThresholdMetadata();
-        mntg1NRLDBMetadata.setLocation_id( "MNTG1" );
-        mntg1NRLDBMetadata.setNws_lid( "MNTG1" );
-        mntg1NRLDBMetadata.setUsgs_site_code( "02349605" );
-        mntg1NRLDBMetadata.setNwm_feature_id( "6444276" );
-        mntg1NRLDBMetadata.setThreshold_source( "NWS-NRLDB" );
-        mntg1NRLDBMetadata.setStage_unit( "FT" );
+        mntg1NRLDBMetadata.setLocationId( "MNTG1" );
+        mntg1NRLDBMetadata.setNwsLid( "MNTG1" );
+        mntg1NRLDBMetadata.setUsgsSiteCode( "02349605" );
+        mntg1NRLDBMetadata.setNwmFeatureId( "6444276" );
+        mntg1NRLDBMetadata.setThresholdSource( "NWS-NRLDB" );
+        mntg1NRLDBMetadata.setStageUnit( "FT" );
 
         OriginalThresholdValues mntg1NRLDBOriginalValues = new OriginalThresholdValues();
-        mntg1NRLDBOriginalValues.setLow_stage( "None" );
-        mntg1NRLDBOriginalValues.setBankfull_stage( "11.0" );
-        mntg1NRLDBOriginalValues.setAction_stage( "11.0" );
-        mntg1NRLDBOriginalValues.setMinor_stage( "20.0" );
-        mntg1NRLDBOriginalValues.setModerate_stage( "28.0" );
-        mntg1NRLDBOriginalValues.setMajor_stage( "31.0" );
-        mntg1NRLDBOriginalValues.setRecord_stage( "34.11" );
+        mntg1NRLDBOriginalValues.setLowStage( "None" );
+        mntg1NRLDBOriginalValues.setBankfullStage( "11.0" );
+        mntg1NRLDBOriginalValues.setActionStage( "11.0" );
+        mntg1NRLDBOriginalValues.setMinorStage( "20.0" );
+        mntg1NRLDBOriginalValues.setModerateStage( "28.0" );
+        mntg1NRLDBOriginalValues.setMajorStage( "31.0" );
+        mntg1NRLDBOriginalValues.setRecordStage( "34.11" );
 
         ThresholdDefinition mntg1NRLDB = new ThresholdDefinition();
         mntg1NRLDB.setMetadata( mntg1NRLDBMetadata );
-        mntg1NRLDB.setOriginal_values( mntg1NRLDBOriginalValues );
-        mntg1NRLDB.setCalculated_values( new CalculatedThresholdValues() );
+        mntg1NRLDB.setOriginalValues( mntg1NRLDBOriginalValues );
+        mntg1NRLDB.setCalculatedValues( new CalculatedThresholdValues() );
 
         ThresholdResponse response = new ThresholdResponse();
         response.setThresholds( List.of( ptsa1NWS, mntg1NWS, mntg1NRLDB ) );

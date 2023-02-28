@@ -3,7 +3,7 @@ package wres.eventsbroker.embedded;
 /**
  * A runtime exception indicating a failure to start an embedded broker.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class CouldNotStartEmbeddedBrokerException extends RuntimeException

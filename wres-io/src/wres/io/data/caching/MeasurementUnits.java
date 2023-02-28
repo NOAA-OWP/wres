@@ -35,11 +35,18 @@ public class MeasurementUnits
                                                            .maximumSize( MAX_DETAILS )
                                                            .build();
 
+    /**
+     * Creates an instance.
+     * @param database the database
+     */
     public MeasurementUnits( Database database )
     {
         this.database = database;
     }
 
+    /**
+     * @return the database
+     */
     private Database getDatabase()
     {
         return this.database;
@@ -56,7 +63,12 @@ public class MeasurementUnits
         this.onlyReadFromDatabase = true;
     }
 
-
+    /**
+     * Gets a measurement unit ID, creating one a new one as needed.
+     * @param unit the unit
+     * @return the measurement unit ID
+     * @throws SQLException if the unit ID could not be created
+     */
     public Long getOrCreateMeasurementUnitId( String unit ) throws SQLException
     {
         if ( this.onlyReadFromDatabase )
@@ -91,15 +103,18 @@ public class MeasurementUnits
         return id;
     }
 
-
+    /**
+     * @param id the unit ID
+     * @return the unit
+     */
     public String getUnit( long id )
     {
         String unit = keyToValue.getIfPresent( id );
 
         if ( unit == null )
         {
-            Database database = this.getDatabase();
-            DataScripter dataScripter = new DataScripter( database );
+            Database db = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( db );
             dataScripter.addLine( "SELECT unit_name" );
             dataScripter.addLine( "FROM wres.MeasurementUnit" );
             dataScripter.addLine( "WHERE measurementunit_id = ?" );

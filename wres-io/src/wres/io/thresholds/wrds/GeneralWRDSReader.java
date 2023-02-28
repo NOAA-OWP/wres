@@ -48,8 +48,12 @@ import java.util.stream.Collectors;
  */
 public final class GeneralWRDSReader
 {
+    /** The number of location requests." */
+    static final int LOCATION_REQUEST_COUNT = 20;
+
     private static final Logger LOGGER = LoggerFactory.getLogger( GeneralWRDSReader.class );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+
     static
     {
         try
@@ -67,13 +71,12 @@ public final class GeneralWRDSReader
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    public static final int LOCATION_REQUEST_COUNT = 20;
     private final SystemSettings systemSettings;
 
     /**
      * The purpose for allowing an instance is to maintain the single-parameter
      * functional interface of getResponse to facilitate stream usage ~L110.
-     * 
+     *
      * The reason SystemSettings is needed is to get the data directory to
      * complete relative paths given, for example "dir/file.csv" is given rather
      * than "file:///path/to/dir/file.csv".
@@ -193,15 +196,15 @@ public final class GeneralWRDSReader
      * @throws IOException At various points, this can be thrown.
      */
     public static Map<WrdsLocation, Set<ThresholdOuter>> readThresholds(
-                                                                         final SystemSettings systemSettings,
-                                                                         final ThresholdsConfig threshold,
-                                                                         final UnitMapper unitMapper,
-                                                                         final FeatureDimension featureDimension,
-                                                                         final Set<String> features )
+            final SystemSettings systemSettings,
+            final ThresholdsConfig threshold,
+            final UnitMapper unitMapper,
+            final FeatureDimension featureDimension,
+            final Set<String> features )
             throws IOException
     {
         //Get the declared source.
-        ThresholdsConfig.Source source = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
+        ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) threshold.getCommaSeparatedValuesOrSource();
 
         //Addresses will store a list of addresses to obtain, where each corresponds
         //to a group of locations.
@@ -284,14 +287,14 @@ public final class GeneralWRDSReader
 
         // Filter out locations that only have all data
         thresholdMapping = thresholdMapping
-                                           .entrySet()
-                                           .parallelStream()
-                                           .filter(
-                                                    entry -> !entry.getValue()
-                                                                   .stream()
-                                                                   .allMatch( ThresholdOuter::isAllDataThreshold ) )
-                                           .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
-                                                                                   Map.Entry::getValue ) );
+                .entrySet()
+                .parallelStream()
+                .filter(
+                        entry -> !entry.getValue()
+                                       .stream()
+                                       .allMatch( ThresholdOuter::isAllDataThreshold ) )
+                .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
+                                                        Map.Entry::getValue ) );
 
         if ( thresholdMapping.isEmpty() )
         {
@@ -316,7 +319,7 @@ public final class GeneralWRDSReader
             throws StreamIOException
     {
         //Obtain the source.
-        ThresholdsConfig.Source source = (ThresholdsConfig.Source) config.getCommaSeparatedValuesOrSource();
+        ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) config.getCommaSeparatedValuesOrSource();
 
         //Get the applyTo side.
         ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
@@ -346,9 +349,9 @@ public final class GeneralWRDSReader
                 GeneralThresholdResponse response =
                         JSON_OBJECT_MAPPER.readValue( responseBytes, GeneralThresholdResponse.class );
                 GeneralThresholdExtractor extractor = new GeneralThresholdExtractor( response )
-                                                                                               .from( source.getProvider() )
-                                                                                               .operatesBy( operator )
-                                                                                               .onSide( side );
+                        .from( source.getProvider() )
+                        .operatesBy( operator )
+                        .onSide( side );
 
                 //If rating provider is not null, add it, too.
                 if ( source.getRatingProvider() != null )
@@ -379,9 +382,9 @@ public final class GeneralWRDSReader
             {
                 ThresholdResponse response = JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
                 ThresholdExtractor extractor = new ThresholdExtractor( response )
-                                                                                 .from( source.getProvider() )
-                                                                                 .operatesBy( operator )
-                                                                                 .onSide( side );
+                        .from( source.getProvider() )
+                        .operatesBy( operator )
+                        .onSide( side );
 
                 if ( source.getRatingProvider() != null )
                 {

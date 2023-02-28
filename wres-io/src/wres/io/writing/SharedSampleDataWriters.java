@@ -27,7 +27,7 @@ import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
  * {@link SingleValuedPairsWriter} or {@link EnsemblePairsWriter} once the wres-io 
  * uses non-wildcard types of {@link Pool}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
 {

@@ -3,7 +3,7 @@ package wres.io.writing;
 /**
  * A runtime exception associated with writing metric outputs.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class WriteException extends RuntimeException

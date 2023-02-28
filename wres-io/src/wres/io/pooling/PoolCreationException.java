@@ -3,7 +3,7 @@ package wres.io.pooling;
 /**
  * Runtime exception associated with pool creation.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PoolCreationException extends RuntimeException

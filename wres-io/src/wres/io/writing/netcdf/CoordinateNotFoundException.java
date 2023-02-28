@@ -2,6 +2,9 @@ package wres.io.writing.netcdf;
 
 import java.io.Serial;
 
+/**
+ * An exception that indicates a cooordinate could not be found.
+ */
 public class CoordinateNotFoundException extends RuntimeException
 {
     @Serial

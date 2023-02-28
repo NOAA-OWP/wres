@@ -334,7 +334,7 @@ abstract class CommaSeparatedStatisticsWriter
      * A helper class that contains a single row whose natural order is based on the {@link TimeWindowOuter} of the row
      * and one or more additional strings, not the contents of the row value.
      *
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     static class RowCompareByLeft implements Comparable<RowCompareByLeft>

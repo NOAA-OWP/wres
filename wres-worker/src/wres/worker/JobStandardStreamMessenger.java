@@ -32,9 +32,12 @@ public class JobStandardStreamMessenger implements Runnable
     /** Flag to indicate whether to also send output to system.out, system.err*/
     private static final boolean PASS_THROUGH = true;
 
+    /** Stream identifier. */
     public enum WhichStream
     {
+        /** Standard out. */
         STDOUT,
+        /** Standard error. */
         STDERR;
     }
 

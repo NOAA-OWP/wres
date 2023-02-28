@@ -31,29 +31,29 @@ import wres.config.generated.ObjectFactory;
 import wres.config.generated.ProjectConfig;
 
 /**
- * Associates a project configuration object with its graphgen xml string.
+ * <p>Associates a project configuration object with its graphgen xml string.
  *
- * Also useful for jaxb-discovered validation issues during parsing.
+ * <p>Also useful for jaxb-discovered validation issues during parsing.
  *
- * At the highest level, when reading the project config from a path, we also
+ * <p>At the highest level, when reading the project config from a path, we also
  * gather the xml string needed by wres-vis to generate graphics.
  *
- * The reason for this extra step is to facilitate re-use of existing code that
+ * <p>The reason for this extra step is to facilitate re-use of existing code that
  * expects an unmarshaled xml string, and this works OK for now.
  *
- * It is anticipated that most parts of WRES will use ProjectConfig.
+ * <p>It is anticipated that most parts of WRES will use ProjectConfig.
  *
- * When performing initial read of the config and validation, it will be handy
+ * <p>When performing initial read of the config and validation, it will be handy
  * to keep a copy of the (stateful) information that was found during read, so
  * as of 2017-07-24 ProjectConfigPlus is anticipated to be used primarily by
  * the control module.
  *
- * Intended to be Thread-safe, and the object is. Performs one read then uses
+ * <p>Intended to be Thread-safe, and the object is. Performs one read then uses
  * and keeps the resulting file in a string.
  */
 public class ProjectConfigPlus
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectConfigPlus.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigPlus.class );
 
     private final String origin;
     private final String rawConfig;
@@ -70,8 +70,8 @@ public class ProjectConfigPlus
         this.origin = origin;
         this.rawConfig = rawConfig;
         this.projectConfig = projectConfig;
-        List<ValidationEvent> copiedList = new ArrayList<>(validationEvents);
-        this.validationEvents = Collections.unmodifiableList(copiedList);
+        List<ValidationEvent> copiedList = new ArrayList<>( validationEvents );
+        this.validationEvents = Collections.unmodifiableList( copiedList );
     }
 
 
@@ -86,23 +86,31 @@ public class ProjectConfigPlus
         return this.origin;
     }
 
+    /**
+     * @return the raw project declaration
+     */
     public String getRawConfig()
     {
         return this.rawConfig;
     }
 
+    /**
+     * @return the project declaration
+     */
     public ProjectConfig getProjectConfig()
     {
         // safety ops performed at construction
         return this.projectConfig;
     }
 
+    /**
+     * @return the validation events
+     */
     public List<ValidationEvent> getValidationEvents()
     {
         // safety ops performed at construction
         return this.validationEvents;
     }
-
 
     /**
      * An event handler that collects validation events during xml parsing
@@ -115,9 +123,9 @@ public class ProjectConfigPlus
         private final List<ValidationEvent> events = new ArrayList<>();
 
         @Override
-        public boolean handleEvent(final ValidationEvent validationEvent)
+        public boolean handleEvent( final ValidationEvent validationEvent )
         {
-            events.add(validationEvent);
+            events.add( validationEvent );
             return true;
         }
 
@@ -127,7 +135,6 @@ public class ProjectConfigPlus
             return Collections.unmodifiableList( events );
         }
     }
-
 
     /**
      * Parse a projectconfig from a string, store validation events, get
@@ -149,7 +156,7 @@ public class ProjectConfigPlus
               InputStream schemaStream = ClassLoader.getSystemResourceAsStream( XSD_NAME ) )
         {
             Source xmlSource = new StreamSource( reader );
-            JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
+            JAXBContext jaxbContext = JAXBContext.newInstance( ObjectFactory.class );
 
             // Validate against schema during unmarshaling
             Source schemaSource = new StreamSource( schemaStream );
@@ -160,32 +167,33 @@ public class ProjectConfigPlus
             Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
             jaxbUnmarshaller.setSchema( schema );
             jaxbUnmarshaller.setEventHandler( validationEventCollector );
-            final JAXBElement<ProjectConfig> wrappedConfig = jaxbUnmarshaller.unmarshal(xmlSource, ProjectConfig.class);
+            final JAXBElement<ProjectConfig> wrappedConfig =
+                    jaxbUnmarshaller.unmarshal( xmlSource, ProjectConfig.class );
             projectConfig = wrappedConfig.getValue();
 
             LOGGER.info( "Unmarshalled project configuration from {}", origin );
 
-            if (projectConfig == null
-                || projectConfig.getInputs() == null
-                || projectConfig.getOutputs() == null
-                || projectConfig.getPair() == null)
+            if ( projectConfig == null
+                 || projectConfig.getInputs() == null
+                 || projectConfig.getOutputs() == null
+                 || projectConfig.getPair() == null )
             {
-                throw new IOException("Please add required sections in project config from "
-                                      + origin + " : <inputs>, <outputs>, <pair>");
+                throw new IOException( "Please add required sections in project config from "
+                                       + origin + " : <inputs>, <outputs>, <pair>" );
             }
         }
-        catch (final JAXBException je)
+        catch ( final JAXBException je )
         {
             String message = "Could not parse project from " + origin;
             // communicate failure back up the stack
-            throw new IOException(message, je);
+            throw new IOException( message, je );
         }
-        catch (final NumberFormatException nfe)
+        catch ( final NumberFormatException nfe )
         {
             String message = "A value in the project from " + origin
                              + " was unable to be converted to a number.";
             // communicate failure back up the stack
-            throw new IOException(message, nfe);
+            throw new IOException( message, nfe );
         }
         catch ( SAXException e )
         {
@@ -201,7 +209,6 @@ public class ProjectConfigPlus
                                       projectConfig,
                                       validationEvents );
     }
-
 
     /**
      * Parse a WRES project from a file, store validation events,
@@ -244,7 +251,7 @@ public class ProjectConfigPlus
             throw new IOException( message, ioe );
         }
 
-        String rawConfig = String.join(System.lineSeparator(), xmlLines);
+        String rawConfig = String.join( System.lineSeparator(), xmlLines );
 
         return ProjectConfigPlus.from( rawConfig, projectConfigOrigin );
     }

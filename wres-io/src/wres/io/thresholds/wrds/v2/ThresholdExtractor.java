@@ -110,6 +110,11 @@ public class ThresholdExtractor
         return this;
     }
 
+    /**
+     * Creates an instance.
+     * @param mapper the mapper
+     * @return the instance
+     */
     public ThresholdExtractor convertTo( UnitMapper mapper )
     {
         this.desiredUnitMapper = mapper;
@@ -129,8 +134,8 @@ public class ThresholdExtractor
 
         // Check that the user-declared filters return one or more locations with thresholds
         Set<String> providers = thresholdDefinitions.stream()
-                                                    .filter( next -> Objects.nonNull( next.getThresholdProvider() ) )
                                                     .map( ThresholdDefinition::getThresholdProvider )
+                                                    .filter( Objects::nonNull )
                                                     .collect( Collectors.toUnmodifiableSet() );
 
         if ( Objects.nonNull( this.provider ) && !providers.contains( this.provider ) )
@@ -147,8 +152,8 @@ public class ThresholdExtractor
         }
 
         Set<String> ratingsProviders = thresholdDefinitions.stream()
-                                                           .filter( next -> Objects.nonNull( next.getRatingProvider() ) )
                                                            .map( ThresholdDefinition::getRatingProvider )
+                                                           .filter( Objects::nonNull )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
         if ( Objects.nonNull( this.ratingProvider ) && !ratingsProviders.contains( this.ratingProvider ) )
@@ -166,20 +171,20 @@ public class ThresholdExtractor
 
         return thresholdDefinitions.stream()
                                    .filter(
-                                            ( ThresholdDefinition definition ) -> definition.getThresholdProvider()
-                                                                                            .equals( this.provider )
-                                                                                  &&
-                                                                                  ( this.ratingProvider == null
-                                                                                    || definition.getRatingProvider()
-                                                                                                 .equals( this.ratingProvider ) ) )
+                                           ( ThresholdDefinition definition ) -> definition.getThresholdProvider()
+                                                                                           .equals( this.provider )
+                                                                                 &&
+                                                                                 ( this.ratingProvider == null
+                                                                                   || definition.getRatingProvider()
+                                                                                                .equals( this.ratingProvider ) ) )
                                    .parallel()
                                    .map(
-                                         definition -> definition.getThresholds(
-                                                                                 this.thresholdType,
-                                                                                 this.thresholdOperator,
-                                                                                 this.sides,
-                                                                                 this.calculated,
-                                                                                 this.desiredUnitMapper ) )
+                                           definition -> definition.getThresholds(
+                                                   this.thresholdType,
+                                                   this.thresholdOperator,
+                                                   this.sides,
+                                                   this.calculated,
+                                                   this.desiredUnitMapper ) )
                                    .flatMap( locationThresholds -> locationThresholds.entrySet().stream() )
                                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }

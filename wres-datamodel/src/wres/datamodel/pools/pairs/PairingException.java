@@ -5,7 +5,7 @@ import wres.datamodel.DataException;
 /**
  * A runtime exception associated with pairing data.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class PairingException extends DataException

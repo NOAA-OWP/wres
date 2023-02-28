@@ -2,29 +2,47 @@ package wres.io.reading.wrds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * A forecast request.
+ */
+
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class ForecastRequest
 {
+    private String url;
+    private String path;
+
+    /**
+     * @return the URL
+     */
     public String getUrl()
     {
         return this.url;
     }
 
-    public void setUrl(String url)
+    /**
+     * Sets the URL.
+     * @param url the URL
+     */
+    public void setUrl( String url )
     {
         this.url = url;
     }
 
+    /**
+     * @return the path
+     */
     public String getPath()
     {
         return path;
     }
 
-    public void setPath(String path)
+    /**
+     * Sets the path.
+     * @param path the path
+     */
+    public void setPath( String path )
     {
         this.path = path;
     }
-
-    String url;
-    String path;
 }

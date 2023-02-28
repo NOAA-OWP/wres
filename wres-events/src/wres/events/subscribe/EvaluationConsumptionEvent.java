@@ -24,7 +24,7 @@ import wres.statistics.generated.Statistics;
  * a consumer can only consume as quickly as a producer can produce. Also, an {@link EvaluationConsumptionEvent} covers
  * the complete lifecycle of an {@link EvaluationConsumer}, which begins before the first statistics message arrives.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Name( "wres.events.subscribe.EvaluationConsumptionEvent" )

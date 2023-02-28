@@ -22,6 +22,7 @@ import wres.datamodel.time.TimeWindowOuter;
 /**
  * @deprecated in 5.2, replaced by NetcdfOutputFileCreator2
  */
+@Deprecated( since = "5.2" )
 class NetcdfOutputFileCreator
 {
     private NetcdfOutputFileCreator(){}

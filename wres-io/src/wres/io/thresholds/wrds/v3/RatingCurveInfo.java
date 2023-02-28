@@ -1,32 +1,59 @@
 package wres.io.thresholds.wrds.v3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * Rating curve information.
+ */
+
+@JsonIgnoreProperties( ignoreUnknown = true )
 public class RatingCurveInfo implements Serializable
 {
+    @Serial
     private static final long serialVersionUID = 1947722676033834492L;
-    
-    String location_id;
-    String id_type;
-    String source;
-    String description;
-    String interpolation_method;
-    String interpolation_description;
 
-    public String getLocation_id()
+    /** Location ID. */
+    @JsonProperty( "location_id" )
+    private String locationId;
+    /** Type of ID. */
+    @JsonProperty( "id_type" )
+    private String idType;
+    /** Source. */
+    private String source;
+    /** Description. */
+    private String description;
+    /** Interpolation scheme. */
+    @JsonProperty( "interpolation_method" )
+    /** Interpolation method. */
+    private String interpolationMethod;
+    /** Interpolation description. */
+    @JsonProperty( "interpolation_description" )
+    private String interpolationDescription;
+
+    /**
+     * @return the location ID
+     */
+    public String getLocationId()
     {
-        return this.location_id;
+        return this.locationId;
     }
 
-    public String getId_type()
+    /**
+     * @return the identifier type
+     */
+    public String getIdType()
     {
-        return id_type;
+        return idType;
     }
 
+    /**
+     * @return the sources
+     */
     public String getSource()
     {
         if ( Objects.isNull( this.source ) || this.source.equals( "None" ) )
@@ -36,37 +63,62 @@ public class RatingCurveInfo implements Serializable
         return this.source;
     }
 
+    /**
+     * @return the description
+     */
     public String getDescription()
     {
         return this.description;
     }
-    
-    public String getInterpolation_method()
+
+    /**
+     * @return the interpolation method
+     */
+    public String getInterpolationMethod()
     {
-        return this.interpolation_method;
-    }
-    
-    public String getInterplolation_description()
-    {
-        return this.interpolation_description;
+        return this.interpolationMethod;
     }
 
-    public void setLocation_id(String location_id)
+    /**
+     * @return the interpolation description
+     */
+    public String getInterplolationDescription()
     {
-        this.location_id = location_id;
+        return this.interpolationDescription;
     }
 
-    public void setId_type(String id_type)
+    /**
+     * Sets trhe location ID.
+     * @param locationId the location ID
+     */
+    public void setLocationId( String locationId )
     {
-        this.id_type = id_type;
+        this.locationId = locationId;
     }
 
-    public void setSource(String source)
+    /**
+     * Sets the identifier type.
+     * @param idType the identifier type
+     */
+    public void setIdType( String idType )
+    {
+        this.idType = idType;
+    }
+
+    /**
+     * Sets the sources.
+     * @param source the source
+     */
+    public void setSource( String source )
     {
         this.source = source;
     }
-    
-    public void setDescription(String description)
+
+    /**
+     * Sets the description.
+     * @param description the description
+     */
+    public void setDescription( String description )
     {
         this.description = description;
     }

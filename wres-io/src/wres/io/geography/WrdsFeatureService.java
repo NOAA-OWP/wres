@@ -358,7 +358,7 @@ class WrdsFeatureService
 
             if ( from.equals( FeatureDimension.NWS_LID ) )
             {
-                String nwsLid = location.getNwsLid();
+                String nwsLid = location.nwsLid();
 
                 if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
                 {
@@ -369,7 +369,7 @@ class WrdsFeatureService
             }
             else if ( from.equals( FeatureDimension.USGS_SITE_CODE ) )
             {
-                String usgsSiteCode = location.getUsgsSiteCode();
+                String usgsSiteCode = location.usgsSiteCode();
 
                 if ( Objects.isNull( usgsSiteCode )
                      || usgsSiteCode.isBlank() )
@@ -381,7 +381,7 @@ class WrdsFeatureService
             }
             else if ( from.equals( FeatureDimension.NWM_FEATURE_ID ) )
             {
-                String nwmFeatureId = location.getNwmFeatureId();
+                String nwmFeatureId = location.nwmFeatureId();
 
                 if ( Objects.isNull( nwmFeatureId )
                      || nwmFeatureId.isBlank() )
@@ -399,7 +399,7 @@ class WrdsFeatureService
 
             if ( to.equals( FeatureDimension.NWS_LID ) )
             {
-                String nwsLid = location.getNwsLid();
+                String nwsLid = location.nwsLid();
 
                 if ( Objects.isNull( nwsLid ) || nwsLid.isBlank() )
                 {
@@ -410,7 +410,7 @@ class WrdsFeatureService
             }
             else if ( to.equals( FeatureDimension.USGS_SITE_CODE ) )
             {
-                String usgsSiteCode = location.getUsgsSiteCode();
+                String usgsSiteCode = location.usgsSiteCode();
 
                 if ( Objects.isNull( usgsSiteCode )
                      || usgsSiteCode.isBlank() )
@@ -422,7 +422,7 @@ class WrdsFeatureService
             }
             else if ( to.equals( FeatureDimension.NWM_FEATURE_ID ) )
             {
-                String nwmFeatureId = location.getNwmFeatureId();
+                String nwmFeatureId = location.nwmFeatureId();
 
                 if ( Objects.isNull( nwmFeatureId )
                      || nwmFeatureId.isBlank() )

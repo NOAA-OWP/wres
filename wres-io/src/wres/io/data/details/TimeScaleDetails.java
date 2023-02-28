@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,19 +28,13 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
     private long id = PLACEHOLDER_ID;
     private TimeScaleOuter key = null;
 
-    public TimeScaleDetails()
-    {
-        super();
-    }
-
+    /**
+     * Creates an instance.
+     * @param key the key
+     */
     public TimeScaleDetails( TimeScaleOuter key )
     {
         this.key = key;
-    }
-
-    public TimeScaleDetails( DataProvider row )
-    {
-        this.update( row );
     }
 
     @Override
@@ -65,7 +60,7 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
     }
 
     @Override
-    public int compareTo( TimeScaleDetails other )
+    public int compareTo( @NotNull TimeScaleDetails other )
     {
         if ( this.equals( other ) )
         {
@@ -132,7 +127,7 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
         return script;
     }
 
-    private void addInsert(final DataScripter script)
+    private void addInsert( final DataScripter script )
     {
         Duration duration = this.getKey()
                                 .getPeriod();
@@ -147,7 +142,7 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
                                  .getFunction()
                                  .toString();
 
-        script.addLine( "INSERT INTO wres.TimeScale ( duration_ms, function_name ) ");
+        script.addLine( "INSERT INTO wres.TimeScale ( duration_ms, function_name ) " );
         script.addTab().addLine( "SELECT ?, ?" );
 
         script.addArgument( durationInMillis );
@@ -157,23 +152,23 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
         script.addTab().addLine( "(" );
         script.addTab( 2 ).addLine( "SELECT 1" );
         script.addTab( 2 ).addLine( "FROM wres.TimeScale" );
-        script.addTab( 2 ).addLine( "WHERE function_name = ?");
+        script.addTab( 2 ).addLine( "WHERE function_name = ?" );
         script.addArgument( functionRaw );
 
         if ( Objects.isNull( durationInMillis ) )
         {
-            script.addTab(  3  ).addLine( "AND duration_ms IS NULL" );
+            script.addTab( 3 ).addLine( "AND duration_ms IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND duration_ms = ?");
+            script.addTab( 3 ).addLine( "AND duration_ms = ?" );
             script.addArgument( durationInMillis );
         }
 
         script.addTab().addLine( ")" );
     }
 
-    private void addSelect(final DataScripter script)
+    private void addSelect( final DataScripter script )
     {
 
         Duration duration = this.getKey()
@@ -196,11 +191,11 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
 
         if ( Objects.isNull( durationInMillis ) )
         {
-            script.addTab(  3  ).addLine( "AND duration_ms IS NULL" );
+            script.addTab( 3 ).addLine( "AND duration_ms IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND duration_ms = ?");
+            script.addTab( 3 ).addLine( "AND duration_ms = ?" );
             script.addArgument( durationInMillis );
         }
 
@@ -269,7 +264,6 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
         return id == that.id &&
                Objects.equals( key, that.key );
     }
-
 
     @Override
     public int hashCode()

@@ -3,7 +3,7 @@ package wres.vis.writing;
 /**
  * A runtime exception associated with writing metric outputs to graphics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class GraphicsWriteException extends RuntimeException

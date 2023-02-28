@@ -3,7 +3,7 @@ package wres.io.thresholds;
 /**
  * Runtime exception associated with threshold reading.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class ThresholdReadingException extends RuntimeException

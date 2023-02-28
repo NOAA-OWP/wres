@@ -39,7 +39,7 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
  * to graphics.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 class GraphicsClient

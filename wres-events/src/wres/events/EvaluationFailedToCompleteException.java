@@ -3,7 +3,7 @@ package wres.events;
 /**
  * Exception to throw when the evaluation messaging fails in an unrecoverable way.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class EvaluationFailedToCompleteException extends RuntimeException

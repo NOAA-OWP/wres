@@ -1,156 +1,279 @@
 package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class ThresholdMetadata implements Serializable {
+/**
+ * Threshold metadata.
+ */
 
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class ThresholdMetadata implements Serializable
+{
+    @Serial
     private static final long serialVersionUID = 3373661366972125521L;
-    
-    String location_id;
-    String nws_lid;
-    String usgs_site_code;
-    String nwm_feature_id;
-    String id_type;
-    String threshold_source;
-    String threshold_source_description;
-    String rating_source;
-    String rating_source_description;
-    String stage_unit;
-    String flow_unit;
-    Map<String, String> rating;
 
-    public String getLocation_id()
+    /** Location ID. */
+    @JsonProperty( "location_id" )
+    private String locationId;
+    /** NWS LID. */
+    @JsonProperty( "nws_lid" )
+    private String nwsLid;
+    /** USGS site code. */
+    @JsonProperty( "usgs_site_code" )
+    private String usgsSiteCode;
+    /** NWS feature ID. */
+    @JsonProperty( "nwm_feature_id" )
+    private String nwmFeatureId;
+    /** Feature ID type. */
+    @JsonProperty( "id_type" )
+    private String idType;
+    /** Threshold source. */
+    @JsonProperty( "threshold_source" )
+    private String thresholdSource;
+    /** Threshold source description. */
+    @JsonProperty( "threshold_source_description" )
+    private String thresholdSourceDescription;
+    /** Rating source. */
+    @JsonProperty( "rating_source" )
+    private String ratingSource;
+    /** Rating source description. */
+    @JsonProperty( "rating_source_description" )
+    private String ratingSourceDescription;
+    /** Stage unit. */
+    @JsonProperty( "stage_unit" )
+    private String stageUnit;
+    /** Flow unit. */
+    @JsonProperty( "flow_unit" )
+    private String flowUnit;
+    /** Rating. */
+    private Map<String, String> rating;
+
+    /**
+     * @return the location ID
+     */
+    public String getLocationId()
     {
-        return this.location_id;
+        return this.locationId;
     }
 
-    public String getId_type()
+    /**
+     * @return the type of ID
+     */
+    public String getIdType()
     {
-        return id_type;
+        return idType;
     }
 
-    public String getThreshold_source()
+    /**
+     * @return the threshold source
+     */
+    public String getThresholdSource()
     {
-        if ( Objects.isNull( this.threshold_source ) || this.threshold_source.equals( "None" ) )
+        if ( Objects.isNull( this.thresholdSource ) || this.thresholdSource.equals( "None" ) )
         {
             return null;
         }
-        return this.threshold_source;
+        return this.thresholdSource;
     }
 
-    public String getNws_lid() {
-        if (this.nws_lid == null || this.nws_lid.equals("None")) {
-            return null;
-        }
-        return nws_lid;
-    }
-
-    public void setNws_lid(String nws_lid) {
-        this.nws_lid = nws_lid;
-    }
-
-    public String getUsgs_site_code() {
-        if (this.usgs_site_code == null || this.usgs_site_code.equals("None")) {
-            return null;
-        }
-        return usgs_site_code;
-    }
-
-    public void setUsgs_site_code(String usgs_site_code) {
-        this.usgs_site_code = usgs_site_code;
-    }
-
-    public String getNwm_feature_id() {
-        if (this.nwm_feature_id == null || this.nwm_feature_id.equals("None")) {
-            return null;
-        }
-        return nwm_feature_id;
-    }
-
-    public void setNwm_feature_id(String nwm_feature_id) {
-        this.nwm_feature_id = nwm_feature_id;
-    }
-
-    public String getThreshold_source_description()
+    /**
+     * @return the NWS LID
+     */
+    public String getNwsLid()
     {
-        return this.threshold_source_description;
-    }
-
-    public void setLocation_id(String location_id)
-    {
-        this.location_id = location_id;
-    }
-
-    public void setId_type(String id_type)
-    {
-        this.id_type = id_type;
-    }
-
-    public void setThreshold_source(String threshold_source)
-    {
-        this.threshold_source = threshold_source;
-    }
-
-    public void setThreshold_source_description(String threshold_source_description)
-    {
-        this.threshold_source_description = threshold_source_description;
-    }
-
-    public String getRating_source()
-    {
-        if ( Objects.isNull( this.rating_source ) || this.rating_source.equals( "None" ) )
+        if ( this.nwsLid == null || this.nwsLid.equals( "None" ) )
         {
             return null;
         }
-        return rating_source;
+        return nwsLid;
     }
 
-    public void setRating_source(String rating_source)
+    /**
+     * Sets the NWS LID
+     * @param nwsLid the NWS LID
+     */
+    public void setNwsLid( String nwsLid )
     {
-        this.rating_source = rating_source;
+        this.nwsLid = nwsLid;
     }
 
-    public String getRating_source_description()
+    /**
+     * @return the USGS site code
+     */
+    public String getUsgsSiteCode()
     {
-        return rating_source_description;
+        if ( this.usgsSiteCode == null || this.usgsSiteCode.equals( "None" ) )
+        {
+            return null;
+        }
+        return usgsSiteCode;
     }
 
-    public void setRating_source_description(String rating_source_description)
+    /**
+     * Sets the USGS site code
+     * @param usgsSiteCode the USGS site code
+     */
+    public void setUsgsSiteCode( String usgsSiteCode )
     {
-        this.rating_source_description = rating_source_description;
+        this.usgsSiteCode = usgsSiteCode;
     }
 
-    public String getStage_unit()
+    /**
+     * @return the NWM feature ID
+     */
+    public String getNwmFeatureId()
     {
-        return stage_unit;
+        if ( this.nwmFeatureId == null || this.nwmFeatureId.equals( "None" ) )
+        {
+            return null;
+        }
+        return nwmFeatureId;
     }
 
-    public void setStage_unit(String stage_unit)
+    /**
+     * Sets the NWM feature ID
+     * @param nwmFeatureId the NWM feature ID
+     */
+    public void setNwmFeatureId( String nwmFeatureId )
     {
-        this.stage_unit = stage_unit;
+        this.nwmFeatureId = nwmFeatureId;
     }
 
-    public String getFlow_unit()
+    /**
+     * @return the threshold source description
+     */
+    public String getThresholdSourceDescription()
     {
-        return flow_unit;
+        return this.thresholdSourceDescription;
     }
 
-    public void setFlow_unit(String flow_unit)
+    /**
+     * Sets the location ID
+     * @param locationId the location ID
+     */
+    public void setLocationId( String locationId )
     {
-        this.flow_unit = flow_unit;
+        this.locationId = locationId;
     }
 
+    /**
+     * Sets the ID type.
+     * @param idType the ID type
+     */
+    public void setIdType( String idType )
+    {
+        this.idType = idType;
+    }
+
+    /**
+     * Sets the threshold source.
+     * @param thresholdSource the threshold source
+     */
+    public void setThresholdSource( String thresholdSource )
+    {
+        this.thresholdSource = thresholdSource;
+    }
+
+    /**
+     * Sets the threshold source description.
+     * @param thresholdSourceDescription the threshold source description
+     */
+    public void setThresholdSourceDescription( String thresholdSourceDescription )
+    {
+        this.thresholdSourceDescription = thresholdSourceDescription;
+    }
+
+    /**
+     * @return the ratings source
+     */
+    public String getRatingSource()
+    {
+        if ( Objects.isNull( this.ratingSource ) || this.ratingSource.equals( "None" ) )
+        {
+            return null;
+        }
+        return ratingSource;
+    }
+
+    /**
+     * Sets the ratings source.
+     * @param ratingSource the ratings source
+     */
+    public void setRatingSource( String ratingSource )
+    {
+        this.ratingSource = ratingSource;
+    }
+
+    /**
+     * @return the ratings source description
+     */
+    public String getRatingSourceDescription()
+    {
+        return ratingSourceDescription;
+    }
+
+    /**
+     * Sets the ratings source description
+     * @param ratingSourceDescription the ratings source description
+     */
+    public void setRatingSourceDescription( String ratingSourceDescription )
+    {
+        this.ratingSourceDescription = ratingSourceDescription;
+    }
+
+    /**
+     * @return the stage unit
+     */
+    public String getStageUnit()
+    {
+        return stageUnit;
+    }
+
+    /**
+     * Sets the stage unit.
+     * @param stageUnit the stage unit
+     */
+    public void setStageUnit( String stageUnit )
+    {
+        this.stageUnit = stageUnit;
+    }
+
+    /**
+     * @return the flow unit
+     */
+    public String getFlowUnit()
+    {
+        return flowUnit;
+    }
+
+    /**
+     * Sets the flow unit.
+     * @param flowUnit the flow unit
+     */
+    public void setFlowUnit( String flowUnit )
+    {
+        this.flowUnit = flowUnit;
+    }
+
+    /**
+     * @return the rating
+     */
     public Map<String, String> getRating()
     {
         return rating;
     }
 
-    public void setRating(Map<String, String> rating)
+    /**
+     * Sets the rating.
+     * @param rating the rating
+     */
+    public void setRating( Map<String, String> rating )
     {
         this.rating = rating;
     }

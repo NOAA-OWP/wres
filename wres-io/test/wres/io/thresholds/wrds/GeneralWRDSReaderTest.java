@@ -1207,7 +1207,7 @@ public class GeneralWRDSReaderTest
     public void testGroupLocations()
     {
         Set<String> desiredFeatures =
-                DESIRED_FEATURES.stream().map( WrdsLocation::getNwsLid ).collect( Collectors.toSet() );
+                DESIRED_FEATURES.stream().map( WrdsLocation::nwsLid ).collect( Collectors.toSet() );
         Set<String> groupedLocations = GeneralWRDSReader.groupLocations( desiredFeatures );
         Assert.assertEquals( groupedLocations.size(), 3 );
 
@@ -1271,20 +1271,20 @@ public class GeneralWRDSReaderTest
 
             //==== PTSA1 is first.  This is a mostly empty set of thresholds.
             //Check the PTSA1: NWS-CMS metadata
-            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThreshold_source() );
+            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThresholdSource() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getMetadata().getThreshold_source_description() );
-            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStage_units() );
-            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlow_units() );
+                                 activeCheckedThresholds.getMetadata().getThresholdSourceDescription() );
+            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStageUnits() );
+            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlowUnits() );
             Assert.assertEquals( "NRLDB", activeCheckedThresholds.getRatingProvider() );
             Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getThresholdProvider() );
             Assert.assertEquals( "PTSA1",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getLocation_id() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getLocationId() );
             Assert.assertEquals( "NWS Station",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getId_type() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getIdType() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getDescription() );
-            Assert.assertEquals( "NRLDB", activeCheckedThresholds.getCalc_flow_values().getRating_curve().getSource() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getDescription() );
+            Assert.assertEquals( "NRLDB", activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getSource() );
 
             //Check the values with calculated flow included.
             Map<WrdsLocation, Set<ThresholdOuter>> results =
@@ -1316,21 +1316,21 @@ public class GeneralWRDSReaderTest
 
             //==== PTSA1 is second.  On difference: rating info.
             //Check the PTSA1: NWS-CMS metadata
-            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThreshold_source() );
+            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThresholdSource() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getMetadata().getThreshold_source_description() );
-            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStage_units() );
-            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlow_units() );
+                                 activeCheckedThresholds.getMetadata().getThresholdSourceDescription() );
+            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStageUnits() );
+            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlowUnits() );
             Assert.assertEquals( "USGS Rating Depot", activeCheckedThresholds.getRatingProvider() );
             Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getThresholdProvider() );
             Assert.assertEquals( "02372250",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getLocation_id() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getLocationId() );
             Assert.assertEquals( "USGS Gage",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getId_type() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getIdType() );
             Assert.assertEquals( "The EXSA rating curves provided by USGS",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getDescription() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getDescription() );
             Assert.assertEquals( "USGS Rating Depot",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getSource() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getSource() );
 
             //Check the values with calculated flow included.
             results = activeCheckedThresholds.getThresholds(
@@ -1362,11 +1362,11 @@ public class GeneralWRDSReaderTest
 
             //==== MTNG1 is third.  On difference: rating info.
             //Check the PTSA1: NWS-CMS metadata
-            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThreshold_source() );
+            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThresholdSource() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getMetadata().getThreshold_source_description() );
-            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStage_units() );
-            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlow_units() );
+                                 activeCheckedThresholds.getMetadata().getThresholdSourceDescription() );
+            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStageUnits() );
+            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlowUnits() );
             Assert.assertEquals( "NRLDB", activeCheckedThresholds.getRatingProvider() );
 
             //Check the values with calculated flow included.
@@ -1412,22 +1412,22 @@ public class GeneralWRDSReaderTest
 
             //==== BLOF1 is fifth.  On difference: rating info.
             //Check the PTSA1: NWS-CMS metadata
-            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThreshold_source() );
+            Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getMetadata().getThresholdSource() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getMetadata().getThreshold_source_description() );
-            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStage_units() );
-            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlow_units() );
+                                 activeCheckedThresholds.getMetadata().getThresholdSourceDescription() );
+            Assert.assertEquals( "FT", activeCheckedThresholds.getMetadata().getStageUnits() );
+            Assert.assertEquals( "CFS", activeCheckedThresholds.getMetadata().getFlowUnits() );
             Assert.assertEquals( "NRLDB", activeCheckedThresholds.getRatingProvider() );
             Assert.assertEquals( "NWS-NRLDB", activeCheckedThresholds.getThresholdProvider() );
-            Assert.assertEquals( "BLOF1", activeCheckedThresholds.getMetadata().getNws_lid() );
-            Assert.assertEquals( "all (stage,flow)", activeCheckedThresholds.getMetadata().getThreshold_type() );
+            Assert.assertEquals( "BLOF1", activeCheckedThresholds.getMetadata().getNwsLid() );
+            Assert.assertEquals( "all (stage,flow)", activeCheckedThresholds.getMetadata().getThresholdType() );
             Assert.assertEquals( "BLOF1",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getLocation_id() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getLocationId() );
             Assert.assertEquals( "NWS Station",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getId_type() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getIdType() );
             Assert.assertEquals( "National Weather Service - National River Location Database",
-                                 activeCheckedThresholds.getCalc_flow_values().getRating_curve().getDescription() );
-            Assert.assertEquals( "NRLDB", activeCheckedThresholds.getCalc_flow_values().getRating_curve().getSource() );
+                                 activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getDescription() );
+            Assert.assertEquals( "NRLDB", activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getSource() );
 
             //Stage
             results = activeCheckedThresholds.getThresholds(
@@ -1566,7 +1566,7 @@ public class GeneralWRDSReaderTest
                                                                                                       this.unitMapper,
                                                                                                       FeatureDimension.NWS_LID,
                                                                                                       DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::getNwsLid )
+                                                                                                                      .map( WrdsLocation::nwsLid )
                                                                                                                       .collect( Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( PTSA1 ) );
@@ -1709,7 +1709,7 @@ public class GeneralWRDSReaderTest
                                                                                                       this.unitMapper,
                                                                                                       FeatureDimension.NWS_LID,
                                                                                                       DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::getNwsLid )
+                                                                                                                      .map( WrdsLocation::nwsLid )
                                                                                                                       .collect( Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( PTSA1 ) );
@@ -1839,7 +1839,7 @@ public class GeneralWRDSReaderTest
                                                                                                       this.unitMapper,
                                                                                                       FeatureDimension.NWS_LID,
                                                                                                       DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::getNwsLid )
+                                                                                                                      .map( WrdsLocation::nwsLid )
                                                                                                                       .collect( Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( MNTG1 ) );

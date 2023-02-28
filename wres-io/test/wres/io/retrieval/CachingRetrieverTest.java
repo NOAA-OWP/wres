@@ -12,7 +12,7 @@ import org.mockito.Mockito;
 /**
  * Tests the {@link CachingRetriever}.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 public class CachingRetrieverTest

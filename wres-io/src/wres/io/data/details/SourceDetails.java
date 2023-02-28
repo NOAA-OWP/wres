@@ -3,6 +3,7 @@ package wres.io.data.details;
 import java.net.URI;
 import java.sql.SQLException;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,141 +17,187 @@ import wres.io.database.Database;
  */
 public class SourceDetails extends CachedDetail<SourceDetails, String>
 {
-	/**
-	 * Prevents asynchronous saving of the same source information
-	 */
-	private static final Object SOURCE_SAVE_LOCK = new Object();
+    /** Prevents asynchronous saving of the same source information. */
+    private static final Object SOURCE_SAVE_LOCK = new Object();
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
 
-	private URI sourcePath = null;
-	private Integer lead = null;
+    private URI sourcePath = null;
+    private Integer lead = null;
     private Long sourceId = null;
-	private String hash = null;
-	private boolean isPointData = true;
+    private String hash = null;
+    private boolean isPointData = true;
     private Long featureId = null;
     private Long timeScaleId = null;
     private Long measurementUnitId = null;
     private String variableName = null;
+    private boolean performedInsert;
 
-	private boolean performedInsert;
+    /**
+     * Creates an instance.
+     */
+    public SourceDetails()
+    {
+    }
 
-	public SourceDetails() {
-	}
-
+    /**
+     * Creates an instance with a hash.
+     * @param hash the hash
+     */
     public SourceDetails( String hash )
     {
         this.setHash( hash );
-	}
-
-	public SourceDetails(final DataProvider data)
-    {
-        this.setSourcePath( data.getURI("path" ) );
-        this.setLead( data.getInt( "lead" ));
-        this.setHash( data.getString("hash") );
-        this.setIsPointData( data.getBoolean( "is_point_data" ) );
-        this.setFeatureId( data.getLong( "feature_id" ) );
-        this.setTimeScaleId( data.getLong( "timescale_id" ) );
-        this.setMeasurementUnitId( data.getLong( "measurementunit_id" ) );
-        this.setVariableName( data.getString( "variable_name" ) );
-        this.setID( data.getLong( this.getIDName() ) );
     }
 
-	/**
-	 * Sets the path to the source file
-	 * @param path The path to the source file on the file system
-	 */
-	public void setSourcePath( URI path ) {
-		this.sourcePath = path;
-	}
+    /**
+     * Sets the path to the source file
+     * @param path The path to the source file on the file system
+     */
+    public void setSourcePath( URI path )
+    {
+        this.sourcePath = path;
+    }
 
+    /**
+     * @return the lead duration
+     */
     public Integer getLead()
     {
         return this.lead;
     }
 
-	public void setLead(Integer lead)
-	{
-		this.lead = lead;
-	}
+    /**
+     * Sets the lead duration.
+     * @param lead the lead duration
+     */
+    public void setLead( Integer lead )
+    {
+        this.lead = lead;
+    }
 
-	public void setHash(String hash)
+    /**
+     * Sets the hash.
+     * @param hash the hash
+     */
+    public void setHash( String hash )
     {
         this.hash = hash;
     }
 
-    public void setIsPointData(boolean isPointData)
+    /**
+     * Sets the point data status.
+     * @param isPointData whether the data is point data
+     */
+    public void setIsPointData( boolean isPointData )
     {
         this.isPointData = isPointData;
     }
 
+    /**
+     * @return the hash
+     */
     public String getHash()
-	{
-		return this.hash;
-	}
+    {
+        return this.hash;
+    }
 
-	public boolean getIsPointData()
+    /**
+     * @return whether the data is point data
+     */
+    public boolean getIsPointData()
     {
         return this.isPointData;
     }
 
+    /**
+     * @return the source path
+     */
     public URI getSourcePath()
     {
         return this.sourcePath;
     }
 
+    /**
+     * @return the feature ID
+     */
     public Long getFeatureId()
     {
         return featureId;
     }
 
+    /**
+     * Sets the feature ID.
+     * @param featureId the feature ID
+     */
     public void setFeatureId( Long featureId )
     {
         this.featureId = featureId;
     }
 
+    /**
+     * @return the time scale ID
+     */
     public Long getTimeScaleId()
     {
         return timeScaleId;
     }
 
+    /**
+     * Sets the time scale ID.
+     * @param timeScaleId the time scale ID
+     */
     public void setTimeScaleId( Long timeScaleId )
     {
         this.timeScaleId = timeScaleId;
     }
 
+    /**
+     * @return the measurement unit ID
+     */
     public Long getMeasurementUnitId()
     {
         return measurementUnitId;
     }
 
+    /**
+     * Sets the measruement unit ID.
+     * @param measurementUnitId the measruement unit ID
+     */
     public void setMeasurementUnitId( Long measurementUnitId )
     {
         this.measurementUnitId = measurementUnitId;
     }
 
+    /**
+     * @return trhe variable name
+     */
     public String getVariableName()
     {
         return variableName;
     }
 
+    /**
+     * Sets the variable name.
+     * @param variableName the variable name
+     */
     public void setVariableName( String variableName )
     {
         this.variableName = variableName;
     }
 
-	@Override
-	public int compareTo(SourceDetails other)
-	{
+    @Override
+    public int compareTo( @NotNull SourceDetails other )
+    {
         Long id = this.sourceId;
 
-		if (id == null) {
-			id = -1l;
-		}
+        if ( id == null )
+        {
+            id = -1L;
+        }
 
-		return id.compareTo(other.getId());
-	}
+        return id.compareTo( other.getId() );
+    }
 
-	@Override
+    @Override
     public String getKey()
     {
         if ( this.getHash() == null )
@@ -159,36 +206,40 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
         }
 
         return this.hash;
-	}
+    }
 
-	@Override
-	public Long getId() {
+    @Override
+    public Long getId()
+    {
         return this.sourceId;
-	}
+    }
 
-	@Override
-	protected String getIDName() {
-		return "source_id";
-	}
+    @Override
+    protected String getIDName()
+    {
+        return "source_id";
+    }
 
-	@Override
-	public void setID( long id ) {
+    @Override
+    public void setID( long id )
+    {
         this.sourceId = id;
-	}
+    }
 
-	@Override
-	protected DataScripter getInsertSelect( Database database )
-	{
+    @Override
+    protected DataScripter getInsertSelect( Database database )
+    {
         DataScripter script = new DataScripter( database );
 
         script.setUseTransaction( true );
 
-		script.retryOnSerializationFailure();
-		script.retryOnUniqueViolation();
+        script.retryOnSerializationFailure();
+        script.retryOnUniqueViolation();
 
         script.setHighPriority( true );
 
-        script.addLine( "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )" );
+        script.addLine(
+                "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )" );
         script.addTab().addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
 
         if ( this.getSourcePath() != null )
@@ -219,16 +270,16 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.addTab().addLine( ");" );
 
-	    return script;
-	}
+        return script;
+    }
 
-	@Override
-	protected Object getSaveLock()
-	{
-		return SourceDetails.SOURCE_SAVE_LOCK;
-	}
+    @Override
+    protected Object getSaveLock()
+    {
+        return SourceDetails.SOURCE_SAVE_LOCK;
+    }
 
-	@Override
+    @Override
     public void save( Database database ) throws SQLException
     {
         DataScripter script = this.getInsertSelect( database );
@@ -268,14 +319,17 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
     }
 
     @Override
-	public String toString()
-	{
-		return "Source: { path: " + this.sourcePath +
-			   ", Lead: " + this.lead +
-			   ", Hash: " + this.hash + " }";
-	}
+    public String toString()
+    {
+        return "Source: { path: " + this.sourcePath +
+               ", Lead: " + this.lead +
+               ", Hash: " + this.hash + " }";
+    }
 
-	public boolean performedInsert()
+    /**
+     * @return whether the insert has been performed
+     */
+    public boolean performedInsert()
     {
         return this.performedInsert;
     }

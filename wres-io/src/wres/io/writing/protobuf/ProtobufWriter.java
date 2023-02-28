@@ -29,7 +29,7 @@ import wres.statistics.generated.EvaluationStatus;
  * 
  * <p>The expected pattern for writing is one writer per evaluation, which encapsulates one path to write.
  *
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @Immutable
@@ -176,7 +176,7 @@ public class ProtobufWriter implements Function<Statistics,Set<Path>>
     /**
      * A runtime exception associated with writing metric outputs of Comma Separated Values (CSV).
      * 
-     * @author james.brown@hydrosolved.com
+     * @author James Brown
      */
 
     private static class ProtobufWriteException extends WriteException

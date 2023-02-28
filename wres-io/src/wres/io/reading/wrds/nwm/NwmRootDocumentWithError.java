@@ -18,15 +18,22 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class NwmRootDocumentWithError
 {
-    private final Map<String,String> messages;
+    private final Map<String, String> messages;
 
+    /**
+     * Creates an instance.
+     * @param messages the messages
+     */
     @JsonCreator()
-    public NwmRootDocumentWithError( Map<String,String> messages )
+    public NwmRootDocumentWithError( Map<String, String> messages )
     {
         this.messages = messages;
     }
 
-    public Map<String,String> getMessages()
+    /**
+     * @return the messages
+     */
+    public Map<String, String> getMessages()
     {
         return this.messages;
     }

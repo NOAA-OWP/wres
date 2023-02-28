@@ -111,6 +111,11 @@ public class GeneralThresholdExtractor
         return this;
     }
 
+    /**
+     * Creates an instance.
+     * @param mapper the unit mapper
+     * @return an instance
+     */
     public GeneralThresholdExtractor convertTo( UnitMapper mapper )
     {
         this.desiredUnitMapper = mapper;

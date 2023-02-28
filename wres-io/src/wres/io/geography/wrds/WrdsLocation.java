@@ -16,38 +16,25 @@ import java.util.Objects;
  *
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class WrdsLocation
+public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nwsLid )
 {
-    private final String nwmFeatureId;
-    private final String usgsSiteCode;
-    private final String nwsLid;
-
+    /**
+     * Creates an instance.
+     * @param nwmFeatureId the NWM feature ID
+     * @param usgsSiteCode the USGS site code
+     * @param nwsLid the NWS LID
+     */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
     public WrdsLocation( @JsonProperty( "nwm_feature_id" )
                          String nwmFeatureId,
                          @JsonProperty( "usgs_site_code" )
                          String usgsSiteCode,
                          @JsonProperty( "nws_lid" )
-                         String nwsLid)
+                         String nwsLid )
     {
         this.nwmFeatureId = nwmFeatureId;
         this.usgsSiteCode = usgsSiteCode;
         this.nwsLid = nwsLid;
-    }
-
-    public String getNwmFeatureId()
-    {
-        return this.nwmFeatureId;
-    }
-
-    public String getUsgsSiteCode()
-    {
-        return this.usgsSiteCode;
-    }
-
-    public String getNwsLid()
-    {
-        return this.nwsLid;
     }
 
     @Override
@@ -61,17 +48,19 @@ public class WrdsLocation
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        WrdsLocation that = (WrdsLocation) o;
-        return Objects.equals(nwmFeatureId, that.nwmFeatureId) &&
-                Objects.equals(usgsSiteCode, that.usgsSiteCode) &&
-                Objects.equals(nwsLid, that.nwsLid);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(nwmFeatureId, usgsSiteCode, nwsLid);
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        WrdsLocation that = ( WrdsLocation ) o;
+        return Objects.equals( nwmFeatureId, that.nwmFeatureId ) &&
+               Objects.equals( usgsSiteCode, that.usgsSiteCode ) &&
+               Objects.equals( nwsLid, that.nwsLid );
     }
 }

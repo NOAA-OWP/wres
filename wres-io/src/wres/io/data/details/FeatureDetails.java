@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,26 +21,25 @@ import wres.statistics.generated.Geometry;
  */
 public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureDetails.class );
     private static final long PLACEHOLDER_ID = Long.MIN_VALUE;
 
     private long id = PLACEHOLDER_ID;
-	private Feature key = null;
+    private Feature key = null;
 
-	public FeatureDetails()
-    {
-        super();
-    }
-
-    public FeatureDetails( Feature key)
+    /**
+     * Creates an instance.
+     * @param key the key
+     */
+    public FeatureDetails( Feature key )
     {
         this.key = key;
     }
 
-    public FeatureDetails( DataProvider row )
-    {
-        this.update( row );
-    }
+    /**
+     * Updates this cache.
+     * @param row Information retrieved from the database
+     */
 
     @Override
     protected void update( DataProvider row )
@@ -52,14 +52,14 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         Geometry geometry = MessageFactory.getGeometry( name, description, srid, wkt );
         this.key = Feature.of( geometry );
 
-        if (row.hasColumn(this.getIDName() ))
+        if ( row.hasColumn( this.getIDName() ) )
         {
             this.setID( row.getLong( this.getIDName() ) );
         }
     }
 
-	@Override
-	public int compareTo( FeatureDetails other )
+    @Override
+    public int compareTo( @NotNull FeatureDetails other )
     {
         if ( this.equals( other ) )
         {
@@ -80,31 +80,31 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         }
 
         return this.getKey().compareTo( other.getKey() );
-	}
+    }
 
-	@Override
-	public Feature getKey()
+    @Override
+    public Feature getKey()
     {
-		return this.key;
-	}
+        return this.key;
+    }
 
-	@Override
-	public Long getId()
-	{
-		return this.id;
-	}
+    @Override
+    public Long getId()
+    {
+        return this.id;
+    }
 
-	@Override
-	protected String getIDName()
-	{
-		return "feature_id";
-	}
+    @Override
+    protected String getIDName()
+    {
+        return "feature_id";
+    }
 
-	@Override
-	public void setID( long id )
-	{
-		this.id = id;
-	}
+    @Override
+    public void setID( long id )
+    {
+        this.id = id;
+    }
 
     @Override
     protected Logger getLogger()
@@ -126,7 +126,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         return script;
     }
 
-    private void addInsert(final DataScripter script)
+    private void addInsert( final DataScripter script )
     {
         String name = this.getKey()
                           .getName();
@@ -137,7 +137,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         String wkt = this.getKey()
                          .getWkt();
 
-        script.addLine( "INSERT INTO wres.Feature ( name, description, srid, wkt ) ");
+        script.addLine( "INSERT INTO wres.Feature ( name, description, srid, wkt ) " );
         script.addTab().addLine( "SELECT ?, ?, ?, ?" );
 
         script.addArgument( name );
@@ -149,43 +149,43 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         script.addTab().addLine( "(" );
         script.addTab( 2 ).addLine( "SELECT 1" );
         script.addTab( 2 ).addLine( "FROM wres.Feature" );
-        script.addTab( 2 ).addLine( "WHERE name = ?");
+        script.addTab( 2 ).addLine( "WHERE name = ?" );
         script.addArgument( name );
 
         if ( Objects.isNull( description ) )
         {
-            script.addTab(  3  ).addLine( "AND description IS NULL" );
+            script.addTab( 3 ).addLine( "AND description IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND description = ?");
+            script.addTab( 3 ).addLine( "AND description = ?" );
             script.addArgument( description );
         }
 
         if ( Objects.isNull( srid ) )
         {
-            script.addTab(  3  ).addLine( "AND srid IS NULL" );
+            script.addTab( 3 ).addLine( "AND srid IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND srid = ? ");
+            script.addTab( 3 ).addLine( "AND srid = ? " );
             script.addArgument( srid );
         }
 
         if ( Objects.isNull( wkt ) )
         {
-            script.addTab(  3  ).addLine( "AND wkt IS NULL" );
+            script.addTab( 3 ).addLine( "AND wkt IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND wkt = ? ");
+            script.addTab( 3 ).addLine( "AND wkt = ? " );
             script.addArgument( wkt );
         }
 
-        script.addTab().addLine(")");
+        script.addTab().addLine( ")" );
     }
 
-    private void addSelect(final DataScripter script)
+    private void addSelect( final DataScripter script )
     {
         String name = this.getKey()
                           .getName();
@@ -196,38 +196,38 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
         String wkt = this.getKey()
                          .getWkt();
 
-        script.addLine("SELECT feature_id, name, description, srid, wkt");
-        script.addLine("FROM wres.Feature");
-        script.addTab( 2 ).addLine( "WHERE name = ? ");
+        script.addLine( "SELECT feature_id, name, description, srid, wkt" );
+        script.addLine( "FROM wres.Feature" );
+        script.addTab( 2 ).addLine( "WHERE name = ? " );
         script.addArgument( name );
 
         if ( Objects.isNull( description ) )
         {
-            script.addTab(  3  ).addLine( "AND description IS NULL" );
+            script.addTab( 3 ).addLine( "AND description IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND description = ?");
+            script.addTab( 3 ).addLine( "AND description = ?" );
             script.addArgument( description );
         }
 
         if ( Objects.isNull( srid ) )
         {
-            script.addTab(  3  ).addLine( "AND srid IS NULL" );
+            script.addTab( 3 ).addLine( "AND srid IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND srid = ? ");
+            script.addTab( 3 ).addLine( "AND srid = ? " );
             script.addArgument( srid );
         }
 
         if ( Objects.isNull( wkt ) )
         {
-            script.addTab(  3  ).addLine( "AND wkt IS NULL" );
+            script.addTab( 3 ).addLine( "AND wkt IS NULL" );
         }
         else
         {
-            script.addTab(  3  ).addLine( "AND wkt = ? ");
+            script.addTab( 3 ).addLine( "AND wkt = ? " );
             script.addArgument( wkt );
         }
 

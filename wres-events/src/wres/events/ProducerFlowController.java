@@ -22,7 +22,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * TODO: this implementation should be replaced with broker-managed flow control, rather than application-managed flow
  * control.
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 @ThreadSafe
 class ProducerFlowController

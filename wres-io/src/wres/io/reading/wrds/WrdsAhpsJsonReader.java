@@ -54,20 +54,21 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * <p>Reads time-series data from the U.S. National Weather Service (NWS) Advanced Hydrologic Prediction Service (AHPS) 
  * supplied in a JSON time-series format defined by the NWS Water Resources Data Service (WRDS).
- * 
+ *
  * <p>Implementation notes:
- * 
+ *
  * <p>This reader currently performs eager reading of time-series data. It relies on the Jackson framework, 
  * specifically an {@link ObjectMapper}, which maps a JSON byte array into time-series objects. An improved 
  * implementation would stream the underlying bytes into {@link TimeSeries} on demand. Thus, particularly when the 
  * underlying data source is a large file or a large stream that is not chunked at a higher level, this implementation
  * is not very memory efficient, contrary to the recommended implementation in {@link TimeSeriesReader}.
- * 
- * TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example: 
- * https://www.baeldung.com/jackson-streaming-api. As of v6.7, this is not a tremendous problem because the main
- * application of this class is reading directly from WRDS whereby the responses are chunked at a higher level. However, 
- * this limitation would become more acute were there a need to read a large WRDS-formatted JSON file from a local disk.
- * 
+ *
+ * <p>TODO: consider a more memory efficient implementation by using the Jackson streaming API. For example:
+ * <a href="https://www.baeldung.com/jackson-streaming-api">Jackson</a>. As of v6.7, this is not a tremendous problem
+ * because the main application of this class is reading directly from WRDS whereby the responses are chunked at a
+ * higher level. However, this limitation would become more acute were there a need to read a large WRDS-formatted
+ * JSON file from a local disk.
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -158,10 +159,10 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     }
 
     /**
-     * Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
-     * 
-     * TODO: implement incremental reading using the Jackson Streaming API or similar.
-     * 
+     * <p>Returns a time-series supplier from the inputs. Currently, this method performs eager reading.
+     *
+     * <p> TODO: implement incremental reading using the Jackson Streaming API or similar.
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -205,7 +206,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
     /**
      * Returns the time-series from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -255,9 +256,9 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
             // The response should include the missing values, but, in case we reuse
             // this code later to read other forecasts, I allow for null.  If not null
-            // the output the list of missing values to debug.
+            // output the list of missing values to debug.
             double[] missingValues = response.getHeader()
-                                             .getMissing_values();
+                                             .getMissingValues();
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -265,7 +266,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                 {
                     LOGGER.debug( "The time series specified the following missing values: {}.",
                                   Arrays.toString( response.getHeader()
-                                                           .getMissing_values() ) );
+                                                           .getMissingValues() ) );
                 }
                 else
                 {
@@ -296,7 +297,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     }
 
     /**
-     * 
+     *
      * @param forecast the forecast
      * @param missingValues the missing values, optional
      * @param dataSource the data source
@@ -404,8 +405,8 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             }
 
             Event<Double> event = DoubleEvent.of( dataPoint.getTime()
-                                                     .toInstant(),
-                                            usedValue );
+                                                           .toInstant(),
+                                                  usedValue );
 
             timeSeriesBuilder.addEvent( event );
         }

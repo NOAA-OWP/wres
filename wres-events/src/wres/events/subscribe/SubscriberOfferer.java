@@ -19,7 +19,7 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
  * one (or N) evaluations at one time, thereby allowing a more predictable resource footprint for the client that wraps
  * it. 
  * 
- * @author james.brown@hydrosolved.com
+ * @author James Brown
  */
 
 @ThreadSafe

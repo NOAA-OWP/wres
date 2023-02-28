@@ -32,6 +32,11 @@ public class Features
                                                                .maximumSize( MAX_DETAILS )
                                                                .build();
 
+    /**
+     * Creates an instance.
+     * @param database the database
+     */
+
     public Features( Database database )
     {
         this.database = database;
@@ -52,6 +57,12 @@ public class Features
         return this.database;
     }
 
+    /**
+     * Returns a feature identifier for the input, creating one as needed.
+     * @param key the key
+     * @return the feature identifier
+     * @throws SQLException if the identifier could not be created
+     */
 
     public Long getOrCreateFeatureId( Feature key ) throws SQLException
     {

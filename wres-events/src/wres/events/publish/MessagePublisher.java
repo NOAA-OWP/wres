@@ -38,47 +38,38 @@ import wres.events.broker.BrokerConnectionFactory;
 
 public class MessagePublisher implements Closeable
 {
-    /**
-     * String used repeatedly.
-     */
-
+    /** String used repeatedly. */
     private static final String TO_DESTINATION = " to destination ";
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MessagePublisher.class );
 
-    /**
-     * An enumeration of message properties.
-     */
-
+    /** An enumeration of message properties. */
     public enum MessageProperty
     {
-
+        /** JMS message group ID. */
         JMSX_GROUP_ID,
-
+        /** Message correlation ID. */
         JMS_CORRELATION_ID,
-
+        /** Message ID. */
         JMS_MESSAGE_ID,
-
+        /** Consumer ID. */
         CONSUMER_ID,
-
+        /** Evaluation job ID. */
         EVALUATION_JOB_ID,
-
+        /** PNG format. */
         PNG,
-
+        /** SVG format. */
         SVG,
-
+        /** Protobuf format. */
         PROTOBUF,
-
+        /** NetCDF format. */
         NETCDF,
-
+        /** CSV format. */
         CSV,
-
+        /** CSV2 format. */
         CSV2,
-
+        /** Pairs format. */
         PAIRS;
 
         @Override

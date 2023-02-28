@@ -14,16 +14,21 @@ import wres.io.reading.DataSource;
 /**
  * An IngestResult exclusively for data needing retry of ingest.
  */
-
 public class IngestResultNeedingRetry implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultNeedingRetry.class );
+    private static final String TOO_MANY_RE_USES_OF = "Too many re-uses of ";
     private final LeftOrRightOrBaseline leftOrRightOrBaseline;
     private final DataSource dataSource;
     private final long surrogateKey;
 
+    /**
+     * Creates an instance.
+     * @param dataSource the data source
+     * @param surrogateKey the surrogate key
+     */
     public IngestResultNeedingRetry( DataSource dataSource,
-                              long surrogateKey )
+                                     long surrogateKey )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
@@ -43,7 +48,6 @@ public class IngestResultNeedingRetry implements IngestResult
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
     }
-
 
     @Override
     public DataSource getDataSource()
@@ -93,7 +97,7 @@ public class IngestResultNeedingRetry implements IngestResult
             {
                 if ( leftCount == MAX_VALUE )
                 {
-                    throw new IllegalStateException( "Too many re-uses of "
+                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
                                                      + this.getDataSource()
                                                      + " in left, more than "
                                                      + MAX_VALUE );
@@ -124,7 +128,7 @@ public class IngestResultNeedingRetry implements IngestResult
             {
                 if ( rightCount == MAX_VALUE )
                 {
-                    throw new IllegalStateException( "Too many re-uses of "
+                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
                                                      + this.getDataSource()
                                                      + " in right, more than "
                                                      + MAX_VALUE );
@@ -155,7 +159,7 @@ public class IngestResultNeedingRetry implements IngestResult
             {
                 if ( baselineCount == MAX_VALUE )
                 {
-                    throw new IllegalStateException( "Too many re-uses of "
+                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
                                                      + this.getDataSource()
                                                      + " in baseline, more than "
                                                      + MAX_VALUE );

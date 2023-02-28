@@ -4,55 +4,87 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * A forecast response.
+ */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class ForecastResponse
 {
+    @JsonAlias( { "timeseriesDataset" } )
+    private Forecast[] forecasts;
+    @JsonProperty( "status_code" )
+    private short statusCode;
+    private String message;
+    private Header header;
+
+    /**
+     * @return the status code
+     */
     public short getStatusCode()
     {
-        return status_code;
+        return statusCode;
     }
 
-    public String getMesssage()
+    /**
+     * @return the message
+     */
+    public String getMessage()
     {
-        return messsage;
+        return message;
     }
 
+    /**
+     * @return the header
+     */
     public Header getHeader()
     {
         return header;
     }
 
+    /**
+     * Sets the header.
+     * @param header the header
+     */
     public void setHeader( Header header )
     {
         this.header = header;
     }
 
-    public void setMesssage( String messsage )
+    /**
+     * Sets the message.
+     * @param message the message
+     */
+    public void setMessage( String message )
     {
-        this.messsage = messsage;
+        this.message = message;
     }
 
-    public void setStatus_code( short status_code )
+    /**
+     * Sets the status code.
+     * @param statusCode tje status code
+     */
+    public void setStatusCode( short statusCode )
     {
-        this.status_code = status_code;
+        this.statusCode = statusCode;
     }
 
+    /**
+     * @return the forecasts
+     */
     public Forecast[] getForecasts()
     {
         return forecasts;
     }
 
+    /**
+     * Sets the forecasts.
+     * @param forecasts the forecasts
+     */
     public void setForecasts( Forecast[] forecasts )
     {
         this.forecasts = forecasts;
     }
-
-    short status_code;
-    String messsage;
-    Header header;
-    
-    @JsonAlias({"timeseriesDataset"})
-    Forecast[] forecasts;
 }

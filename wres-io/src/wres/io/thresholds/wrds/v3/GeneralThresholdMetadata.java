@@ -1,110 +1,236 @@
 package wres.io.thresholds.wrds.v3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class GeneralThresholdMetadata implements Serializable 
+/**
+ * Threshold metadata.
+ */
+
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class GeneralThresholdMetadata implements Serializable
 {
+    @Serial
     private static final long serialVersionUID = -4195161592990949335L;
-    
-    String data_type;
-    String nws_lid;
-    String usgs_site_code;
-    String nwm_feature_id;
-    String threshold_type;
-    String threshold_source;
-    String threshold_source_description;
-    String stage_units;
-    String flow_units;
-    String calc_flow_units;
-    String units;
-    
-    public String getData_type()
+    /** Data type. */
+    @JsonProperty( "data_type" )
+    private String dataType;
+    /** NWS LID. */
+    @JsonProperty( "nws_lid" )
+    private String nwsLid;
+    /** USGS site code. */
+    @JsonProperty( "usgs_site_code" )
+    private String usgsSiteCode;
+    /** NWM feature ID. */
+    @JsonProperty( "nwm_feature_id" )
+    private String nwmFeatureId;
+    /** Threshold type. */
+    @JsonProperty( "threshold_type" )
+    private String thresholdType;
+    /** Threshold source. */
+    @JsonProperty( "threshold_source" )
+    private String thresholdSource;
+    /** Threshold source description. */
+    @JsonProperty( "threshold_source_description" )
+    private String thresholdSourceDescription;
+    /** Stage units. */
+    @JsonProperty( "stage_units" )
+    private String stageUnits;
+    /** Flow units. */
+    @JsonProperty( "flow_units" )
+    private String flowUnits;
+    /** Calculated flow units. */
+    @JsonProperty( "calc_flow_units" )
+    private String calcFlowUnits;
+    /** Units. */
+    private String units;
+
+    /**
+     * @return the data type
+     */
+    public String getDataType()
     {
-        return data_type;
+        return dataType;
     }
-    public void setData_type( String data_type )
+
+    /**
+     * Sets the data type.
+     * @param dataType the data type
+     */
+    public void setDataType( String dataType )
     {
-        this.data_type = data_type;
+        this.dataType = dataType;
     }
-    public String getNws_lid()
+
+    /**
+     * @return the NWS LID
+     */
+    public String getNwsLid()
     {
-        return nws_lid;
+        return nwsLid;
     }
-    public void setNws_lid( String nws_lid )
+
+    /**
+     * Sets the NWS LID.
+     * @param nwsLid the NWS LID
+     */
+    public void setNwsLid( String nwsLid )
     {
-        this.nws_lid = nws_lid;
+        this.nwsLid = nwsLid;
     }
-    public String getUsgs_site_code()
+
+    /**
+     * @return the USGS site code
+     */
+    public String getUsgsSideCode()
     {
-        return usgs_site_code;
+        return usgsSiteCode;
     }
-    public void setUsgs_site_code( String usgs_site_code )
+
+    /**
+     * Sets the USGS site code.
+     * @param usgsSiteCode the USGS site code
+     */
+    public void setUsgsSideCode( String usgsSiteCode )
     {
-        this.usgs_site_code = usgs_site_code;
+        this.usgsSiteCode = usgsSiteCode;
     }
-    public String getNwm_feature_id()
+
+    /**
+     * @return the NWM feature ID
+     */
+    public String getNwmFeatureId()
     {
-        return nwm_feature_id;
+        return nwmFeatureId;
     }
-    public void setNwm_feature_id( String nwm_feature_id )
+
+    /**
+     * Sets the NWM feature ID.
+     * @param nwmFeatureId the NWM feature ID
+     */
+    public void setNwmFeatureId( String nwmFeatureId )
     {
-        this.nwm_feature_id = nwm_feature_id;
+        this.nwmFeatureId = nwmFeatureId;
     }
-    public String getThreshold_type()
+
+    /**
+     * @return the threshold type
+     */
+    public String getThresholdType()
     {
-        return threshold_type;
+        return thresholdType;
     }
-    public void setThreshold_type( String threshold_type )
+
+    /**
+     * Sets the threshold type.
+     * @param thresholdType the threshold type
+     */
+    public void setThresholdType( String thresholdType )
     {
-        this.threshold_type = threshold_type;
+        this.thresholdType = thresholdType;
     }
-    public String getThreshold_source()
+
+    /**
+     * @return the threshold store
+     */
+    public String getThresholdSource()
     {
-        return threshold_source;
+        return thresholdSource;
     }
-    public void setThreshold_source( String threshold_source )
+
+    /**
+     * Sets the threshold source.
+     * @param thresholdSource the threshold source
+     */
+    public void setThresholdSource( String thresholdSource )
     {
-        this.threshold_source = threshold_source;
+        this.thresholdSource = thresholdSource;
     }
-    public String getThreshold_source_description()
+
+    /**
+     * @return the threshold source description.
+     */
+    public String getThresholdSourceDescription()
     {
-        return threshold_source_description;
+        return thresholdSourceDescription;
     }
-    public void setThreshold_source_description( String threshold_source_description )
+
+    /**
+     * Sets the threshold source description.
+     * @param thresholdSourceDescription the threshold source description.
+     */
+
+    public void setThresholdSourceDescription( String thresholdSourceDescription )
     {
-        this.threshold_source_description = threshold_source_description;
+        this.thresholdSourceDescription = thresholdSourceDescription;
     }
-    public String getStage_units()
+
+    /**
+     * @return the stage units.
+     */
+    public String getStageUnits()
     {
-        return stage_units;
+        return stageUnits;
     }
-    public void setStage_units( String stage_units )
+
+    /**
+     * Sets the stage units.
+     * @param stageUnits the stage units
+     */
+    public void setStageUnits( String stageUnits )
     {
-        this.stage_units = stage_units;
+        this.stageUnits = stageUnits;
     }
-    public String getFlow_units()
+
+    /**
+     * @return the flow units.
+     */
+    public String getFlowUnits()
     {
-        return flow_units;
+        return flowUnits;
     }
-    public void setFlow_units( String flow_units )
+
+    /**
+     * Sets the flow units.
+     * @param flowUnits the flow units
+     */
+    public void setFlowUnits( String flowUnits )
     {
-        this.flow_units = flow_units;
+        this.flowUnits = flowUnits;
     }
-    public String getCalc_flow_units()
+
+    /**
+     * @return the calculated flow units
+     */
+    public String getCalcFlowUnits()
     {
-        return calc_flow_units;
+        return calcFlowUnits;
     }
-    public void setCalc_flow_units( String calc_flow_units )
+
+    /**
+     * Sets the calculated flow units.
+     * @param calcFlowUnits the calculated flow units
+     */
+    public void setCalcFlowUnits( String calcFlowUnits )
     {
-        this.calc_flow_units = calc_flow_units;
+        this.calcFlowUnits = calcFlowUnits;
     }
+
+    /**
+     * @return the units
+     */
     public String getUnits()
     {
         return units;
     }
+
+    /**
+     * Sets the units.
+     * @param units the units
+     */
     public void setUnits( String units )
     {
         this.units = units;

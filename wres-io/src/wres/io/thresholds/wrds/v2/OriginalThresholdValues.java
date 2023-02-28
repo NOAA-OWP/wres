@@ -1,94 +1,90 @@
 package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class OriginalThresholdValues implements Serializable {
+/**
+ * Original threshold values.
+ */
 
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class OriginalThresholdValues implements Serializable
+{
+
+    @Serial
     private static final long serialVersionUID = 8939490245697113977L;
 
-    /**
-     * The measurement for low flow rate
-     */
-    String low_flow;
+    /** The measurement for low flow rate. */
+    @JsonProperty( "low_flow" )
+    private String lowFlow;
 
-    /**
-     * The measurement for bankfull flow rate
-     */
-    String bankfull_flow;
+    /** The measurement for bankfull flow rate. */
+    @JsonProperty( "bankfull_flow" )
+    private String bankfullFlow;
 
-    /**
-     * The measurement for action flow rate
-     */
-    String action_flow;
+    /** The measurement for action flow rate. */
+    @JsonProperty( "action_flow" )
+    private String actionFlow;
 
-    /**
-     * The measurement for minor flow rate
-     */
-    String minor_flow;
+    /** The measurement for minor flow rate. */
+    @JsonProperty( "minor_flow" )
+    private String minorFlow;
 
-    /**
-     * The measurement for moderate flow rate
-     */
-    String moderate_flow;
+    /** The measurement for moderate flow rate. */
+    @JsonProperty( "moderate_flow" )
+    private String moderateFlow;
 
-    /**
-     * The measurement for major flow rate
-     */
-    String major_flow;
+    /** The measurement for major flow rate. */
+    @JsonProperty( "major_flow" )
+    private String majorFlow;
 
-    /**
-     * The measurement for record flow rate
-     */
-    String record_flow;
+    /** The measurement for record flow rate. */
+    @JsonProperty( "record_flow" )
+    private String recordFlow;
 
-    /**
-     * The measurement for low stage height
-     */
-    String low_stage;
+    /** The measurement for low stage height. */
+    @JsonProperty( "low_stage" )
+    private String lowStage;
 
-    /**
-     * The measurement for bankfull stage height
-     */
-    String bankfull_stage;
+    /** The measurement for bankfull stage height. */
+    @JsonProperty( "bankfull_stage" )
+    private String bankfullStage;
 
-    /**
-     * The measurement for action stage height
-     */
-    String action_stage;
+    /** The measurement for action stage height. */
+    @JsonProperty( "action_stage" )
+    private String actionStage;
 
-    /**
-     * The measurement for the height of the minor stage
-     */
-    String minor_stage;
+    /** The measurement for the height of the minor stage. */
+    @JsonProperty( "minor_stage" )
+    private String minorStage;
 
-    /**
-     * The measurement for the height of the moderate stage
-     */
-    String moderate_stage;
+    /** The measurement for the height of the moderate stage. */
+    @JsonProperty( "moderate_stage" )
+    private String moderateStage;
 
-    /**
-     * The measurement for the height of the major stage
-     */
-    String major_stage;
+    /** The measurement for the height of the major stage. */
+    @JsonProperty( "major_stage" )
+    private String majorStage;
 
-    /**
-     * The measurement for the height of the record stage
-     */
-    String record_stage;
+    /** The measurement for the height of the record stage. */
+    @JsonProperty( "record_stage" )
+    private String recordStage;
 
     /**
      * Gets the actual low flow rate value
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getLow_flow() {
-        if (this.low_flow == null || this.low_flow.toLowerCase().equals("none")) {
+    public Double getLowFlow()
+    {
+        if ( this.lowFlow == null || this.lowFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(low_flow);
+        return Double.parseDouble( lowFlow );
     }
 
     /**
@@ -96,10 +92,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param low_flow The rate for low flow conditions
+     * @param lowFlow The rate for low flow conditions
      */
-    public void setLow_flow(String low_flow) {
-        this.low_flow = low_flow;
+    public void setLowFlow( String lowFlow )
+    {
+        this.lowFlow = lowFlow;
     }
 
     /**
@@ -107,11 +104,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getBankfull_flow() {
-        if (this.bankfull_flow == null || this.bankfull_flow.toLowerCase().equals("none")) {
+    public Double getBankfullFlow()
+    {
+        if ( this.bankfullFlow == null || this.bankfullFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.bankfull_flow);
+        return Double.parseDouble( this.bankfullFlow );
     }
 
     /**
@@ -119,10 +118,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param bankfull_flow The rate for bankfull flow conditions
+     * @param bankfullFlow The rate for bankfull flow conditions
      */
-    public void setBankfull_flow(String bankfull_flow) {
-        this.bankfull_flow = bankfull_flow;
+    public void setBankfullFlow( String bankfullFlow )
+    {
+        this.bankfullFlow = bankfullFlow;
     }
 
     /**
@@ -130,11 +130,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getAction_flow() {
-        if (this.action_flow == null || this.action_flow.toLowerCase().equals("none")) {
+    public Double getActionFlow()
+    {
+        if ( this.actionFlow == null || this.actionFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.action_flow);
+        return Double.parseDouble( this.actionFlow );
     }
 
     /**
@@ -142,10 +144,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param action_flow The rate for action flow conditions
+     * @param actionFlow The rate for action flow conditions
      */
-    public void setAction_flow(String action_flow) {
-        this.action_flow = action_flow;
+    public void setActionFlow( String actionFlow )
+    {
+        this.actionFlow = actionFlow;
     }
 
     /**
@@ -153,11 +156,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getMinor_flow() {
-        if (this.minor_flow == null || this.minor_flow.toLowerCase().equals("none")) {
+    public Double getMinorFlow()
+    {
+        if ( this.minorFlow == null || this.minorFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.minor_flow);
+        return Double.parseDouble( this.minorFlow );
     }
 
     /**
@@ -165,10 +170,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param minor_flow The rate for minor flow conditions
+     * @param minorFlow The rate for minor flow conditions
      */
-    public void setMinor_flow(String minor_flow) {
-        this.minor_flow = minor_flow;
+    public void setMinorFlow( String minorFlow )
+    {
+        this.minorFlow = minorFlow;
     }
 
     /**
@@ -176,11 +182,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getModerate_flow() {
-        if (this.moderate_flow == null || this.moderate_flow.toLowerCase().equals("none")) {
+    public Double getModerateFlow()
+    {
+        if ( this.moderateFlow == null || this.moderateFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.moderate_flow);
+        return Double.parseDouble( this.moderateFlow );
     }
 
     /**
@@ -188,10 +196,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param moderate_flow The rate for moderate flow conditions
+     * @param moderateFlow The rate for moderate flow conditions
      */
-    public void setModerate_flow(String moderate_flow) {
-        this.moderate_flow = moderate_flow;
+    public void setModerateFlow( String moderateFlow )
+    {
+        this.moderateFlow = moderateFlow;
     }
 
     /**
@@ -199,11 +208,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getMajor_flow() {
-        if (this.major_flow == null || this.major_flow.toLowerCase().equals("none")) {
+    public Double getMajorFlow()
+    {
+        if ( this.majorFlow == null || this.majorFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.major_flow);
+        return Double.parseDouble( this.majorFlow );
     }
 
     /**
@@ -211,10 +222,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param major_flow The rate for major flow conditions
+     * @param majorFlow The rate for major flow conditions
      */
-    public void setMajor_flow(String major_flow) {
-        this.major_flow = major_flow;
+    public void setMajorFlow( String majorFlow )
+    {
+        this.majorFlow = majorFlow;
     }
 
     /**
@@ -222,11 +234,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getRecord_flow() {
-        if (this.record_flow == null || this.record_flow.toLowerCase().equals("none")) {
+    public Double getRecordFlow()
+    {
+        if ( this.recordFlow == null || this.recordFlow.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.record_flow);
+        return Double.parseDouble( this.recordFlow );
     }
 
     /**
@@ -234,10 +248,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      * <b>NOTE:</b> Used for deserialization
      *
-     * @param record_flow The rate for record flow conditions
+     * @param recordFlow The rate for record flow conditions
      */
-    public void setRecord_flow(String record_flow) {
-        this.record_flow = record_flow;
+    public void setRecordFlow( String recordFlow )
+    {
+        this.recordFlow = recordFlow;
     }
 
     /**
@@ -245,11 +260,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getLow_stage() {
-        if (this.low_stage == null || this.low_stage.toLowerCase().equals("none")) {
+    public Double getLowStage()
+    {
+        if ( this.lowStage == null || this.lowStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.low_stage);
+        return Double.parseDouble( this.lowStage );
     }
 
 
@@ -258,10 +275,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param low_stage The height for low stage conditions
+     * @param lowStage The height for low stage conditions
      */
-    public void setLow_stage(String low_stage) {
-        this.low_stage = low_stage;
+    public void setLowStage( String lowStage )
+    {
+        this.lowStage = lowStage;
     }
 
     /**
@@ -269,11 +287,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getBankfull_stage() {
-        if (this.bankfull_stage == null || this.bankfull_stage.toLowerCase().equals("none")) {
+    public Double getBankfullStage()
+    {
+        if ( this.bankfullStage == null || this.bankfullStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.bankfull_stage);
+        return Double.parseDouble( this.bankfullStage );
     }
 
     /**
@@ -281,10 +301,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param bankfull_stage The height for low stage conditions
+     * @param bankfullStage The height for low stage conditions
      */
-    public void setBankfull_stage(String bankfull_stage) {
-        this.bankfull_stage = bankfull_stage;
+    public void setBankfullStage( String bankfullStage )
+    {
+        this.bankfullStage = bankfullStage;
     }
 
     /**
@@ -292,11 +313,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getAction_stage() {
-        if (this.action_stage == null || this.action_stage.toLowerCase().equals("none")) {
+    public Double getActionStage()
+    {
+        if ( this.actionStage == null || this.actionStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.action_stage);
+        return Double.parseDouble( this.actionStage );
     }
 
     /**
@@ -304,10 +327,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param action_stage The height for action stage conditions
+     * @param actionStage The height for action stage conditions
      */
-    public void setAction_stage(String action_stage) {
-        this.action_stage = action_stage;
+    public void setActionStage( String actionStage )
+    {
+        this.actionStage = actionStage;
     }
 
     /**
@@ -315,11 +339,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getMinor_stage() {
-        if (this.minor_stage == null || this.minor_stage.toLowerCase().equals("none")) {
+    public Double getMinorStage()
+    {
+        if ( this.minorStage == null || this.minorStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.minor_stage);
+        return Double.parseDouble( this.minorStage );
     }
 
     /**
@@ -327,10 +353,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param minor_stage The height for minor stage conditions
+     * @param minorStage The height for minor stage conditions
      */
-    public void setMinor_stage(String minor_stage) {
-        this.minor_stage = minor_stage;
+    public void setMinorStage( String minorStage )
+    {
+        this.minorStage = minorStage;
     }
 
     /**
@@ -338,11 +365,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getModerate_stage() {
-        if (this.moderate_stage == null || this.moderate_stage.toLowerCase().equals("none")) {
+    public Double getModerateStage()
+    {
+        if ( this.moderateStage == null || this.moderateStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.moderate_stage);
+        return Double.parseDouble( this.moderateStage );
     }
 
     /**
@@ -350,10 +379,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param moderate_stage The height for moderate stage conditions
+     * @param moderateStage The height for moderate stage conditions
      */
-    public void setModerate_stage(String moderate_stage) {
-        this.moderate_stage = moderate_stage;
+    public void setModerateStage( String moderateStage )
+    {
+        this.moderateStage = moderateStage;
     }
 
     /**
@@ -361,11 +391,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getMajor_stage() {
-        if (this.major_stage == null || this.major_stage.toLowerCase().equals("none")) {
+    public Double getMajorStage()
+    {
+        if ( this.majorStage == null || this.majorStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.major_stage);
+        return Double.parseDouble( this.majorStage );
     }
 
     /**
@@ -373,10 +405,11 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param major_stage The height for minor stage conditions
+     * @param majorStage The height for minor stage conditions
      */
-    public void setMajor_stage(String major_stage) {
-        this.major_stage = major_stage;
+    public void setMajorStage( String majorStage )
+    {
+        this.majorStage = majorStage;
     }
 
     /**
@@ -384,11 +417,13 @@ public class OriginalThresholdValues implements Serializable {
      *
      * @return null if a real value wasn't retrieved, the parsed value otherwise
      */
-    public Double getRecord_stage() {
-        if (this.record_stage == null || this.record_stage.toLowerCase().equals("none")) {
+    public Double getRecordStage()
+    {
+        if ( this.recordStage == null || this.recordStage.equalsIgnoreCase( "none" ) )
+        {
             return null;
         }
-        return Double.parseDouble(this.record_stage);
+        return Double.parseDouble( this.recordStage );
     }
 
     /**
@@ -396,9 +431,10 @@ public class OriginalThresholdValues implements Serializable {
      * <br>
      *     <b>NOTE:</b> Used for deserialization
      *
-     * @param record_stage The height for record stage conditions
+     * @param recordStage The height for record stage conditions
      */
-    public void setRecord_stage(String record_stage) {
-        this.record_stage = record_stage;
+    public void setRecordStage( String recordStage )
+    {
+        this.recordStage = recordStage;
     }
 }

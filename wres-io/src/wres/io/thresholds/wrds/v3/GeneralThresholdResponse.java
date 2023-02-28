@@ -1,42 +1,59 @@
 package wres.io.thresholds.wrds.v3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collection;
 import javax.xml.bind.annotation.XmlRootElement;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * A threshold response.
+ */
+@JsonIgnoreProperties( ignoreUnknown = true )
 @XmlRootElement
-public class GeneralThresholdResponse implements Serializable {
-    
+public class GeneralThresholdResponse implements Serializable
+{
+    @Serial
     private static final long serialVersionUID = 6355701807768699282L;
-    
-    Collection<GeneralThresholdDefinition> value_set;
+
+    /** Value set. */
+    @JsonProperty( "value_set" )
+    private Collection<GeneralThresholdDefinition> valueSet;
 
     /**
      * Convenience wrapper with more intuitive name.
-     * @return Calls {@link #getValue_set()} and returns results.
+     * @return Calls {@link #getValueSet()} and returns results.
      */
-    public Collection<GeneralThresholdDefinition> getThresholds() {
-        return getValue_set();
+    public Collection<GeneralThresholdDefinition> getThresholds()
+    {
+        return getValueSet();
     }
 
     /**
-     * Convenience wrapper with more intuitive name.  Calls {@link #setValue_set(Collection)}.
-     * @param value_set the value set
+     * Convenience wrapper with more intuitive name.  Calls {@link #setValueSet(Collection)}.
+     * @param valueSet the value set
      */
-    public void setThresholds(Collection<GeneralThresholdDefinition> value_set) {
-        setValue_set(value_set);
+    public void setThresholds( Collection<GeneralThresholdDefinition> valueSet )
+    {
+        setValueSet( valueSet );
     }
 
-    public Collection<GeneralThresholdDefinition> getValue_set()
+    /**
+     * @return the value set
+     */
+    public Collection<GeneralThresholdDefinition> getValueSet()
     {
-        return value_set;
+        return valueSet;
     }
 
-    public void setValue_set( Collection<GeneralThresholdDefinition> value_set )
+    /**
+     * Sets the value set.
+     * @param valueSet the value set
+     */
+    public void setValueSet( Collection<GeneralThresholdDefinition> valueSet )
     {
-        this.value_set = value_set;
-    } 
+        this.valueSet = valueSet;
+    }
 }
