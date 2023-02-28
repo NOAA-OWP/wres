@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

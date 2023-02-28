@@ -1,6 +1,4 @@
-package wres.io.pooling;
-
-import static org.junit.Assert.assertEquals;
+package wres.pipeline.pooling;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,9 +7,9 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
@@ -32,9 +30,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.units.UnitMapper;
-import wres.io.data.caching.DatabaseCaches;
-import wres.io.database.Database;
 import wres.io.project.Project;
 import wres.io.retrieval.RetrieverFactory;
 import wres.io.retrieval.database.EnsembleRetrieverFactory;
@@ -46,20 +41,16 @@ import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link PoolsGenerator}.
- * 
+ *
  * @author James Brown
  */
-public class PoolsGeneratorTest
+class PoolsGeneratorTest
 {
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
 
-    private @Mock Database wresDatabase;
-    private @Mock DatabaseCaches caches;
-    private @Mock UnitMapper unitMapper;
-
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         MockitoAnnotations.openMocks( this );
     }
@@ -71,7 +62,7 @@ public class PoolsGeneratorTest
      */
 
     @Test
-    public void testGetProducesEighteenPoolSuppliersForSingleValuedCase() throws Exception
+    void testGetProducesEighteenPoolSuppliersForSingleValuedCase() throws Exception
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
@@ -157,9 +148,9 @@ public class PoolsGeneratorTest
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
-               .thenReturn( () -> Stream.of() );
+               .thenReturn( Stream::of );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
-               .thenReturn( () -> Stream.of() );
+               .thenReturn( Stream::of );
 
         PoolFactory poolFactory = PoolFactory.of( project );
 
@@ -173,7 +164,7 @@ public class PoolsGeneratorTest
                                                   poolParameters );
 
         // Assert expected number of suppliers
-        assertEquals( 18, actual.size() );
+        Assertions.assertEquals( 18, actual.size() );
     }
 
     /**
@@ -185,7 +176,7 @@ public class PoolsGeneratorTest
      */
 
     @Test
-    public void testGetProducesEighteenPoolSuppliersForEnsembleCase() throws Exception
+    void testGetProducesEighteenPoolSuppliersForEnsembleCase() throws Exception
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
@@ -271,9 +262,9 @@ public class PoolsGeneratorTest
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
-               .thenReturn( () -> Stream.of() );
+               .thenReturn( Stream::of );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
-               .thenReturn( () -> Stream.of() );
+               .thenReturn( Stream::of );
 
         PoolFactory poolFactory = PoolFactory.of( project );
 
@@ -287,7 +278,7 @@ public class PoolsGeneratorTest
                                               poolParameters );
 
         // Assert expected number of suppliers
-        assertEquals( 18, actual.size() );
+        Assertions.assertEquals( 18, actual.size() );
     }
 
 

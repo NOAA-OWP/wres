@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -57,7 +57,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 @RunWith( MockitoJUnitRunner.class )
 public class PoolSupplierTest
 {
-    // Times used    
+    // Times used
     private static final Instant T2551_03_20T12_00_00Z = Instant.parse( "2551-03-20T12:00:00Z" );
     private static final Instant T2551_03_20T11_00_00Z = Instant.parse( "2551-03-20T11:00:00Z" );
     private static final Instant T2551_03_20T10_00_00Z = Instant.parse( "2551-03-20T10:00:00Z" );

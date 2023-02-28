@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 import java.util.Objects;
 
@@ -16,7 +16,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
  * @author James Brown
  */
 
-@Name( "wres.io.pooling.RescalingEvent" )
+@Name( "wres.pipeline.pooling.RescalingEvent" )
 @Label( "Rescaling Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Rescaling" } )
 class RescalingEvent extends Event

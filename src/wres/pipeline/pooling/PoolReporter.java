@@ -213,7 +213,9 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
     /**
      * Get a comma separated description of a set of items with extra spacing
      *
+     * @param <T> the type of item
      * @param items the items, not null
+     * @param stringifier the function that translates the item to a string
      * @return a summary description of the items
      */
     public static <T> String getPoolItemDescription( Set<T> items, Function<T, String> stringifier )

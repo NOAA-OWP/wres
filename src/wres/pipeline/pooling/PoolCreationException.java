@@ -1,4 +1,4 @@
-package wres.io.pooling;
+package wres.pipeline.pooling;
 
 /**
  * Runtime exception associated with pool creation.

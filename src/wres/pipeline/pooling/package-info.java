@@ -3,4 +3,4 @@
  * 
  * @author James Brown
  */
-package wres.io.pooling;
+package wres.pipeline.pooling;

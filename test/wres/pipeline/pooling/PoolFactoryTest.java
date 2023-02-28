@@ -1,6 +1,4 @@
-package wres.io.pooling;
-
-import static org.junit.Assert.assertEquals;
+package wres.pipeline.pooling;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -38,16 +37,15 @@ import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link PoolFactory}.
- * 
+ *
  * @author James Brown
  */
 class PoolFactoryTest
 {
     private static final String CFS = "CFS";
 
-
     @Test
-    public void testGetPoolRequestsForEighteenTimeWindowsAndOneFeatureGroupProducesEighteenPoolRequests()
+    void testGetPoolRequestsForEighteenTimeWindowsAndOneFeatureGroupProducesEighteenPoolRequests()
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
@@ -132,7 +130,7 @@ class PoolFactoryTest
         PoolFactory poolFactory = PoolFactory.of( project );
         List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
 
-        assertEquals( 18, actual.size() );
+        Assertions.assertEquals( 18, actual.size() );
     }
 
     /**
@@ -140,7 +138,7 @@ class PoolFactoryTest
      */
 
     @Test
-    public void testGetSingleValuedPoolsProducesFourtyEightPoolSuppliers()
+    void testGetSingleValuedPoolsProducesFourtyEightPoolSuppliers()
     {
         // Mock the sufficient elements of the ProjectConfig
         IntBoundsType leadBoundsConfig = new IntBoundsType( 1, 24 );
@@ -223,7 +221,7 @@ class PoolFactoryTest
 
         List<PoolRequest> actual = poolFactory.getPoolRequests( evaluationDescription );
 
-        assertEquals( 48, actual.size() );
+        Assertions.assertEquals( 48, actual.size() );
 
         PoolParameters poolParameters = new PoolParameters.Builder().build();
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
@@ -241,7 +239,7 @@ class PoolFactoryTest
                                                          .collect( Collectors.toSet() );
 
         Set<FeatureGroup> expectedFeatureGroups = Set.of( groupOne, groupTwo );
-        assertEquals( expectedFeatureGroups, actualFeatureGroups );
+        Assertions.assertEquals( expectedFeatureGroups, actualFeatureGroups );
 
         // Assert the expected number of unique pool identifiers. The actual identifiers will vary since there is one 
         // sequence per class loader and other tests share the class loader
@@ -249,6 +247,6 @@ class PoolFactoryTest
                                            .map( next -> next.getLeft().getMetadata().getPool().getPoolId() )
                                            .collect( Collectors.toSet() );
 
-        assertEquals( 48, actualPoolIds.size() );
+        Assertions.assertEquals( 48, actualPoolIds.size() );
     }
 }
