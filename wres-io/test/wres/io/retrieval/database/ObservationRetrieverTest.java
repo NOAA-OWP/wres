@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.NamedFeature;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -77,8 +75,6 @@ public class ObservationRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
@@ -167,7 +163,7 @@ public class ObservationRetrieverTest
         Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = observedSeries.toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
@@ -223,7 +219,7 @@ public class ObservationRetrieverTest
         Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = observedSeries.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = observedSeries.toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );

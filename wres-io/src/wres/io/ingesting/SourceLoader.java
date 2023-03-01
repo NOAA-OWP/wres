@@ -1,7 +1,6 @@
 package wres.io.ingesting;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystems;
@@ -42,20 +41,19 @@ import wres.io.reading.ReadException;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesReaderFactory;
 import wres.io.reading.TimeSeriesTuple;
-import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
 
 /**
- * This is where reading of time-series formats meets ingesting of time-series (e.g., into a persistent store). Creates 
+ * <p>This is where reading of time-series formats meets ingesting of time-series (e.g., into a persistent store). Creates
  * one or more {@link DataSource} for reading and ingesting and then reads and ingests them. Reading in this context 
  * means instantiating a {@link TimeSeriesReader} and supplying the reader with a {@link DataSource} to read, while 
  * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a 
  * {@link TimeSeriesIngester}, which is supplied on construction. Also handles other tasks between reading and ingest, 
  * such as the application of a consistent missing value identifier (for missing values that are declared, rather than 
  * integral to readers).
- * 
- * TODO: Remove the gridded features cache once #51232 is addressed.
- * 
+ *
+ * <p>TODO: Remove the gridded features cache once #51232 is addressed.
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -68,7 +66,7 @@ public class SourceLoader
     /** Pre-ingest operations. */
     private static final MissingValueOperator MISSING_VALUE_OPERATOR = MissingValueOperator.of();
 
-    /** Executor for reading time-series formats. */
+    /** Thread pool executor for reading time-series formats. */
     private final ExecutorService readingExecutor;
 
     /** Gridded feature cache. See #51232. */
@@ -119,7 +117,7 @@ public class SourceLoader
 
     /**
      * Loads the time-series data.
-     * 
+     *
      * @return List of future ingest results
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
@@ -156,10 +154,9 @@ public class SourceLoader
 
     /**
      * Attempts to load the input source.
-     * 
+     *
      * @param source The data source
      * @return A listing of asynchronous tasks dispatched to ingest data
-     * @throws FileNotFoundException when a source file is not found
      */
 
     private List<CompletableFuture<List<IngestResult>>> loadSource( DataSource source )
@@ -186,8 +183,6 @@ public class SourceLoader
         Objects.requireNonNull( source );
 
         LOGGER.debug( "Attempting to load a file-like source: {}", source );
-
-        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>();
 
         // Ingest gridded metadata/features when required. For an in-memory evaluation, it is required by the gridded
         // reader. For a database evaluation, it is required by the DatabaseProject. This is a special snowflake until 
@@ -216,21 +211,21 @@ public class SourceLoader
         }
 
         List<CompletableFuture<List<IngestResult>>> futureList = this.readAndIngestData( source );
-        tasks.addAll( futureList );
+        List<CompletableFuture<List<IngestResult>>> tasks = new ArrayList<>( futureList );
 
         return Collections.unmodifiableList( tasks );
     }
 
     /**
-     * Loads a web-like source.
-     * 
-     * TODO: create links for a non-file source when it appears in more than 
-     * one context, i.e. {@link LeftOrRightOrBaseline}. 
-     * See {@link #loadFileSource(DataSource, ProjectConfig, DatabaseLockManager)}
-     * for how this is done with a file source.
-     * 
-     * See #67774.
-     * 
+     * <p>Loads a web-like source.
+     *
+     * <p>TODO: create links for a non-file source when it appears in more than one context, i.e.
+     * {@link LeftOrRightOrBaseline}.
+     *
+     * <p>See {@link #loadFileSource(DataSource)} for how this is done with a file source.
+     *
+     * <p>See #67774.
+     *
      * @param source the data source
      * @return a single future list of results
      */
@@ -314,11 +309,11 @@ public class SourceLoader
      * be loaded, together with any additional links required. A link is required for each additional context, i.e. 
      * {@link LeftOrRightOrBaseline}, in which the source appears. The links are returned by 
      * {@link DataSource#getLinks()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
-     * 
-     * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link DataSourceConfig.Source} 
+     *
+     * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link DataSourceConfig.Source}
      * points to a directory of files, the tree is walked and a {@link DataSource} is returned for each one within the 
      * tree that meets any prescribed filters.
-     * 
+     *
      * @param systemSettings the system settings
      * @param projectConfig the project declaration
      * @return the set of distinct sources to load and any additional links to create
@@ -414,7 +409,7 @@ public class SourceLoader
 
     /**
      * Returns the disposition of a non-file like source, which includes all web sources.
-     * 
+     *
      * @param dataSource the existing data source whose disposition is unknown
      * @return the disposition
      */
@@ -470,7 +465,7 @@ public class SourceLoader
      * Helper that decomposes a file-like source into other sources. In particular, 
      * if the declared source represents a directory, walk the tree and find sources 
      * that match any prescribed pattern. Return a {@link DataSource}
-     * 
+     *
      * @param dataSource the source to decompose
      * @return the set of decomposed sources
      */
@@ -520,7 +515,7 @@ public class SourceLoader
      * Helper that decomposes a file-like source into other sources. In particular, 
      * if the declared source represents a directory, walk the tree and find sources 
      * that match any prescribed pattern. Return a {@link DataSource}
-     * 
+     *
      * @param dataSource the source to decompose
      * @return the set of decomposed sources
      */
@@ -540,7 +535,7 @@ public class SourceLoader
 
         String pattern = source.getPattern();
 
-        if ( ! ( pattern == null || pattern.isEmpty() ) )
+        if ( !( pattern == null || pattern.isEmpty() ) )
         {
             matcher = FileSystems.getDefault().getPathMatcher( "glob:" + pattern );
         }
@@ -660,7 +655,7 @@ public class SourceLoader
     /**
      * Mutates the input map of sources, adding additional sources to load or link
      * from the input {@link DataSourceConfig}.
-     * 
+     *
      * @param sources the map of sources to mutate
      * @param projectConfig the project configuration
      * @param dataSourceConfig the data source configuration for which sources to load or link are required
@@ -668,9 +663,9 @@ public class SourceLoader
      */
 
     private static void
-            mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources,
-                                        ProjectConfig projectConfig,
-                                        DataSourceConfig dataSourceConfig )
+    mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources,
+                                ProjectConfig projectConfig,
+                                DataSourceConfig dataSourceConfig )
     {
         Objects.requireNonNull( sources );
 

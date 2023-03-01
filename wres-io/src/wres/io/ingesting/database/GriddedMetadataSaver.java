@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +24,7 @@ import ucar.nc2.Variable;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.io.concurrency.Downloader;
+import wres.io.Downloader;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.details.SourceCompletedDetails;
 import wres.io.data.details.SourceDetails;
@@ -40,7 +39,8 @@ import wres.util.NetCDF;
 
 /**
  * Ingests times-series metadata for gridded sources to a database. Does not copy any time-series values. TODO: remove 
- * this class when we have a unified approach to ingest. See #51232.
+ * this class when we have a unified approach to ingest, abstracting the file download functionality elsewhere.
+ * See #51232.
  * @author Christopher Tubbs
  * @author James Brown
  */
@@ -49,17 +49,17 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
     private static final Logger LOGGER = LoggerFactory.getLogger( GriddedMetadataSaver.class );
     private static final Feature GRIDDED_FEATURES_PLACEHOLDER =
             Feature.of( Geometry.newBuilder()
-                                   .setName( "PLACEHOLDER" )
-                                   .setDescription( "A placeholder for gridded/raster netCDF data." )
-                                   .build() );
+                                .setName( "PLACEHOLDER" )
+                                .setDescription( "A placeholder for gridded/raster netCDF data." )
+                                .build() );
 
-    private SystemSettings systemSettings;
-    private DatabaseCaches caches;
-    private Database database;
-    private DataSource dataSource;
+    private final SystemSettings systemSettings;
+    private final DatabaseCaches caches;
+    private final Database database;
+    private final DataSource dataSource;
+    private final String hash;
     private URI fileName;
     private NetcdfFile source;
-    private final String hash;
 
     public GriddedMetadataSaver( SystemSettings systemSettings,
                                  Database database,
@@ -116,7 +116,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
                                                  .getVariables()
                                                  .stream()
                                                  .map( Variable::getFullName )
-                                                 .collect( Collectors.toList() );
+                                                 .toList();
                 throw new PreIngestException( "Could not find variable '"
                                               + variable
                                               + "' in gridded netCDF resource '"
@@ -147,8 +147,8 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
             griddedSource.setVariableName( variable );
             griddedSource.setFeatureId( featureId );
 
-            Database database = this.getDatabase();
-            griddedSource.save( database );
+            Database db = this.getDatabase();
+            griddedSource.save( db );
 
             if ( griddedSource.getId() == null )
             {
@@ -170,10 +170,10 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
                                             "reference_time_type" );
             boolean[] quotedColumns = { false, true, true };
 
-            database.copy( "wres.TimeSeriesReferenceTime",
-                           columns,
-                           referenceDatetimeRows,
-                           quotedColumns );
+            db.copy( "wres.TimeSeriesReferenceTime",
+                     columns,
+                     referenceDatetimeRows,
+                     quotedColumns );
 
             SourceCompletedDetails completedDetails =
                     new SourceCompletedDetails( this.getDatabase(),
@@ -217,7 +217,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
              this.fileName.getScheme().startsWith( "http" ) )
         {
             URL url = this.fileName.toURL();
-            HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+            HttpURLConnection huc = ( HttpURLConnection ) url.openConnection();
             huc.setRequestMethod( "HEAD" );
             huc.setInstanceFollowRedirects( false );
 
@@ -239,8 +239,8 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
 
     private void retrieveFile( final Path path ) throws IOException
     {
-        Integer nameCount = path.getNameCount();
-        Integer firstNameIndex = 0;
+        int nameCount = path.getNameCount();
+        int firstNameIndex = 0;
 
         if ( nameCount > 4 )
         {
@@ -249,9 +249,8 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
 
         final URI originalPath = this.fileName;
 
-        SystemSettings systemSettings = this.getSystemSettings();
-        this.fileName = Paths.get(
-                                   systemSettings.getNetCDFStorePath(),
+        SystemSettings settings = this.getSystemSettings();
+        this.fileName = Paths.get( settings.getNetCDFStorePath(),
                                    path.subpath( firstNameIndex, nameCount ).toString() )
                              .toUri();
 

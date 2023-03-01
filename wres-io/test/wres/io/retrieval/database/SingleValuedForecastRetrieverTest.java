@@ -41,7 +41,6 @@ import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -77,8 +76,6 @@ public class SingleValuedForecastRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
@@ -149,14 +146,14 @@ public class SingleValuedForecastRetrieverTest
                                                            .setVariableName( VARIABLE_NAME )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setLeftOrRightOrBaseline(
-                                                                                      RIGHT )
+                                                                   RIGHT )
                                                            .build();
 
         // Get the time-series
         Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = forecastSeries.toList();
 
         // There are two time-series, so assert that
         assertEquals( 2, actualCollection.size() );
@@ -211,16 +208,14 @@ public class SingleValuedForecastRetrieverTest
     {
         // Set the time window filter, aka pool boundaries
         Instant referenceStart = Instant.parse( "2023-03-31T23:00:00Z" );
-        Instant referenceEnd = T2023_04_01T19_00_00Z;
         Instant validStart = Instant.parse( "2023-04-01T03:00:00Z" );
-        Instant validEnd = T2023_04_01T19_00_00Z;
         Duration leadStart = Duration.ofHours( 1 );
         Duration leadEnd = Duration.ofHours( 4 );
 
         TimeWindow inner = MessageFactory.getTimeWindow( referenceStart,
-                                                         referenceEnd,
+                                                         T2023_04_01T19_00_00Z,
                                                          validStart,
-                                                         validEnd,
+                                                         T2023_04_01T19_00_00Z,
                                                          leadStart,
                                                          leadEnd );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
@@ -241,7 +236,7 @@ public class SingleValuedForecastRetrieverTest
         Stream<TimeSeries<Double>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
+        List<TimeSeries<Double>> actualCollection = forecastSeries.toList();
 
         // There are two time-series, so assert that
         assertEquals( 2, actualCollection.size() );
@@ -298,7 +293,9 @@ public class SingleValuedForecastRetrieverTest
                                                            .build();
 
         // Get the time-series
-        List<Long> identifiers = forecastRetriever.getAllIdentifiers().boxed().collect( Collectors.toList() );
+        List<Long> identifiers = forecastRetriever.getAllIdentifiers()
+                                                  .boxed()
+                                                  .toList();
 
         // Actual number of time-series equals expected number
         assertEquals( 2, identifiers.size() );
@@ -364,7 +361,7 @@ public class SingleValuedForecastRetrieverTest
     /**
      * Performs the detailed set-up work to add two time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
-     * 
+     *
      * @throws SQLException if the detailed set-up fails
      */
 
@@ -381,7 +378,9 @@ public class SingleValuedForecastRetrieverTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new NamedFeature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                List.of( new NamedFeature( FEATURE.getName(),
+                                                                           FEATURE.getName(),
+                                                                           null ) ),
                                                 null,
                                                 null,
                                                 null,

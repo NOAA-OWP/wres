@@ -1,7 +1,6 @@
 package wres.io.data.caching;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -65,8 +64,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
     private GriddedFeatures( Builder builder )
     {
-        Set<Feature> innerFeatures = new HashSet<>();
-        innerFeatures.addAll( builder.features );
+        Set<Feature> innerFeatures = new HashSet<>( builder.features );
         this.features = Collections.unmodifiableSet( innerFeatures );
 
         if ( LOGGER.isDebugEnabled() )
@@ -78,10 +76,8 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
     /**
      * Builder.
      */
-
     public static class Builder
     {
-
         /**
          * The features.
          */
@@ -98,13 +94,13 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
          * Cache of metadatas to check, guarded by the {@link #metadataGuard}.
          */
         @GuardedBy( "metadataGuard" )
-        private Set<GridMetadata> metadata = new HashSet<>();
+        private final Set<GridMetadata> metadata = new HashSet<>();
 
         /**
-         * Guards the {@link metadata}.
+         * Guards the {@link #metadata}.
          */
 
-        private Object metadataGuard = new Object();
+        private final Object metadataGuard = new Object();
 
         /**
          * @return an instance of {@link GriddedFeatures}
@@ -167,7 +163,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                                                     + "a grid selection and try again." );
             }
 
-            this.filters = Collections.unmodifiableList( new ArrayList<>( filters ) );
+            this.filters = List.copyOf( filters );
         }
     }
 
@@ -241,8 +237,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
         GriddedFeatures.validateLonLat( x, y );
 
-        Geometry geometry = MessageFactory.getGeometry(
-                                                        GriddedFeatures.getGriddedNameFromLonLat( x, y ),
+        Geometry geometry = MessageFactory.getGeometry( GriddedFeatures.getGriddedNameFromLonLat( x, y ),
                                                         GriddedFeatures.getGriddedDescriptionFromLonLat( x, y ),
                                                         4326,
                                                         wkt );
@@ -345,7 +340,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
     /**
      * TODO: support concave polygons by making a library call
      * @param point the point
-     * @param polygon the convex polygon filter
+     * @param convexPolygon the convex polygon filter
      * @return true if the point is contained within the convex polygon, otherwise false
      */
     private static boolean isContained( LatLonPoint point, Polygon convexPolygon )
@@ -441,9 +436,9 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
             this.projectionMapping =
                     coordinateSystem.findAttributeString( "grid_mapping_name", "lambert_conformal_conic" );
 
-            Attribute xResolution = xCoordinates.findAttribute( "resolution" );
+            Attribute xRes = xCoordinates.findAttribute( "resolution" );
 
-            if ( Objects.isNull( xResolution ) )
+            if ( Objects.isNull( xRes ) )
             {
                 throw new IllegalStateException( "While reading a netcdf blob, failed to discover a required attribute "
                                                  + "for the X coordinate dimension, namely: 'resolution'. The blob "
@@ -451,9 +446,9 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                                                  + file );
             }
 
-            Attribute yResolution = yCoordinates.findAttribute( "resolution" );
+            Attribute yRes = yCoordinates.findAttribute( "resolution" );
 
-            if ( Objects.isNull( yResolution ) )
+            if ( Objects.isNull( yRes ) )
             {
                 throw new IllegalStateException( "While reading a netcdf file, failed to discover a required attribute "
                                                  + "for the Y coordinate dimension, namely: 'resolution'. The blob "
@@ -461,8 +456,8 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                                                  + file );
             }
 
-            this.xResolution = xResolution.getNumericValue();
-            this.yResolution = yResolution.getNumericValue();
+            this.xResolution = xRes.getNumericValue();
+            this.yResolution = yRes.getNumericValue();
             this.xSize = xCoordinates.getSize();
             this.ySize = yCoordinates.getSize();
             this.xUnit = xCoordinates.findAttributeString( "units", "" );
@@ -500,12 +495,10 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                 return true;
             }
 
-            if ( ! ( obj instanceof GridMetadata ) )
+            if ( ! ( obj instanceof GridMetadata in ) )
             {
                 return false;
             }
-
-            GridMetadata in = (GridMetadata) obj;
 
             return Objects.equals( this.srText, in.srText )
                    && Objects.equals( this.proj4, in.proj4 )

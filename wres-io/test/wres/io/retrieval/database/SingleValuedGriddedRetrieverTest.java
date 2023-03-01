@@ -33,7 +33,6 @@ import org.mockito.MockitoAnnotations;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
-import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindowOuter;
@@ -59,8 +58,6 @@ public class SingleValuedGriddedRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
     @Mock

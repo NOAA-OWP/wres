@@ -1,5 +1,6 @@
-package wres.io.concurrency;
+package wres.io;
 
+import java.io.Serial;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -15,50 +16,52 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PipelinesTest
+/**
+ * Tests {@link Operations}.
+ * @author Jesse Bickel
+ */
+class OperationsTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( PipelinesTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( OperationsTest.class );
     private static final String TASK_RESULT_STRING_PREFIX = "I took a little more than ";
 
     @Test
-    public void testDoAllOrExceptionResultHasException()
+    void testDoAllOrExceptionResultHasException()
     {
-        DummyTask failingTask = new DummyTask( Duration.ofMillis( 1 ),
-                                                      true );
+        OperationsTest.DummyTask failingTask = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                             true );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( failingTask::call );
-        CompletableFuture<Object> result = Pipelines.doAllOrException( List.of( f ) );
+        CompletableFuture<Object> result = Operations.doAllOrException( List.of( f ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
-        assertTrue( cause instanceof DummyException );
+        assertTrue( cause instanceof OperationsTest.DummyException );
     }
 
-
     @Test
-    public void testDoAllOrExceptionResultHasNoException()
+    void testDoAllOrExceptionResultHasNoException()
             throws InterruptedException, ExecutionException
     {
-        DummyTask succeedingTask = new DummyTask( Duration.ofMillis( 1 ),
-                                                  false );
+        OperationsTest.DummyTask succeedingTask = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                                false );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( succeedingTask::call );
-        Pipelines.doAllOrException( List.of( f ) )
-                 .join();
+        Operations.doAllOrException( List.of( f ) )
+                  .join();
         assertTrue( f.isDone() );
         assertTrue( f.get()
                      .startsWith( TASK_RESULT_STRING_PREFIX ) );
     }
 
-
     @Test
-    public void testDoAllOrExceptionCompletesMultipleTasks()
+    void testDoAllOrExceptionCompletesMultipleTasks()
             throws InterruptedException, ExecutionException
     {
-        DummyTask taskOne = new DummyTask( Duration.ofMillis( 1 ),
-                                           false );
-        DummyTask taskTwo = new DummyTask( Duration.ofMillis( 1 ),
-                                           false );
+        OperationsTest.DummyTask taskOne = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                         false );
+        OperationsTest.DummyTask taskTwo = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                         false );
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( taskOne::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( taskTwo::call );
-        Pipelines.doAllOrException( List.of( f1, f2 ) )
-                 .join();
+        Operations.doAllOrException( List.of( f1, f2 ) )
+                  .join();
         assertTrue( f1.isDone() );
         assertTrue( f2.isDone() );
         assertTrue( f1.get()
@@ -67,7 +70,6 @@ public class PipelinesTest
                       .startsWith( TASK_RESULT_STRING_PREFIX ) );
     }
 
-
     /**
      * Verify that when the shorter task is after the first (longer) task, while
      * the longer task does not throw an exception, and the shorter task does
@@ -75,21 +77,21 @@ public class PipelinesTest
      * timeframe of "between duration of shorter task and longer task."
      */
     @Test
-    public void testDoAllOrExceptionThrowsShorterTaskException()
+    void testDoAllOrExceptionThrowsShorterTaskException()
     {
         Duration longerDuration = Duration.ofMillis( 10_000 );
         Duration shorterDuration = Duration.ofMillis( 10 );
-        DummyTask firstLongerSucceedingTask = new DummyTask( longerDuration,
-                                                             false );
-        DummyTask secondShorterFailingTask = new DummyTask( shorterDuration,
-                                                            true );
+        OperationsTest.DummyTask firstLongerSucceedingTask = new OperationsTest.DummyTask( longerDuration,
+                                                                                           false );
+        OperationsTest.DummyTask secondShorterFailingTask = new OperationsTest.DummyTask( shorterDuration,
+                                                                                          true );
         Instant start = Instant.now();
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( firstLongerSucceedingTask::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( secondShorterFailingTask::call );
-        CompletableFuture<Object> result = Pipelines.doAllOrException( List.of( f1, f2 ) );
+        CompletableFuture<Object> result = Operations.doAllOrException( List.of( f1, f2 ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
         Instant end = Instant.now();
-        assertTrue( cause instanceof DummyException );
+        assertTrue( cause instanceof OperationsTest.DummyException );
         Duration executionDuration = Duration.between( start, end );
         assertTrue( executionDuration.toMillis() >= shorterDuration.toMillis()
                     && executionDuration.toMillis() < longerDuration.toMillis(),
@@ -98,13 +100,13 @@ public class PipelinesTest
                     + " and longer than " + shorterDuration );
     }
 
-
     /**
      * A custom exception to ensure the correct exception propagates.
      */
 
     private static final class DummyException extends RuntimeException
     {
+        @Serial
         private static final long serialVersionUID = -7178033699130853053L;
 
         DummyException( String message )
@@ -117,18 +119,8 @@ public class PipelinesTest
      * A task that sleeps for given duration, throws when mustFail is true.
      */
 
-    private static final class DummyTask implements Callable<String>
+    private record DummyTask( Duration duration, boolean mustFail ) implements Callable<String>
     {
-        private final Duration duration;
-        private final boolean mustFail;
-
-        DummyTask( Duration duration,
-                   boolean mustFail )
-        {
-            this.duration = duration;
-            this.mustFail = mustFail;
-        }
-
         @Override
         public String call()
         {

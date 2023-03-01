@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -35,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -79,8 +77,6 @@ public class EnsembleRetrieverFactoryTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
@@ -154,7 +150,7 @@ public class EnsembleRetrieverFactoryTest
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ) )
                                                                       .get()
-                                                                      .collect( Collectors.toList() );
+                                                                      .toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
@@ -198,7 +194,7 @@ public class EnsembleRetrieverFactoryTest
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ),
                                                                                          timeWindow )
                                                                       .get()
-                                                                      .collect( Collectors.toList() );
+                                                                      .toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
@@ -240,7 +236,7 @@ public class EnsembleRetrieverFactoryTest
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getRightRetriever( Set.of( FEATURE ),
                                                                                             timeWindow )
                                                                         .get()
-                                                                        .collect( Collectors.toList() );
+                                                                        .toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );
@@ -287,7 +283,7 @@ public class EnsembleRetrieverFactoryTest
         List<TimeSeries<Ensemble>> actualCollection = this.factoryToTest.getBaselineRetriever( Set.of( FEATURE ),
                                                                                                timeWindow )
                                                                         .get()
-                                                                        .collect( Collectors.toList() );
+                                                                        .toList();
 
         // There is only one time-series, so assert that
         assertEquals( 1, actualCollection.size() );

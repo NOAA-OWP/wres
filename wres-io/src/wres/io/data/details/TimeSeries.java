@@ -7,7 +7,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Represents a row which in turn represents metadata for one timeseries trace
+ * Represents a row which in turn represents metadata for one timeseries trace.
  * @author Christopher Tubbs
  */
 public class TimeSeries

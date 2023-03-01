@@ -33,7 +33,6 @@ import wres.pipeline.Evaluator;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
-import wres.io.concurrency.Executor;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.system.SystemSettings;

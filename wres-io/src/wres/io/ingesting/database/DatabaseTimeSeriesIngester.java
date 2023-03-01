@@ -1718,6 +1718,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         Objects.requireNonNull( this.projectConfig );
         Objects.requireNonNull( this.lockManager );
 
+        // Create a thread pool for ingesting
         ThreadFactory threadFactoryWithNaming =
                 new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
                                                 .build();

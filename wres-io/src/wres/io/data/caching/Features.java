@@ -109,8 +109,8 @@ public class Features
         if ( value == null )
         {
             // Not found above, gotta find it.
-            Database database = this.getDatabase();
-            DataScripter dataScripter = new DataScripter( database );
+            Database db = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( db );
             dataScripter.addLine( "SELECT name, description, srid, wkt" );
             dataScripter.addLine( "FROM wres.Feature" );
             dataScripter.addLine( "WHERE feature_id = ?" );
@@ -153,8 +153,8 @@ public class Features
         if ( id == null )
         {
             // Not found above, gotta find it.
-            Database database = this.getDatabase();
-            DataScripter dataScripter = new DataScripter( database );
+            Database db = this.getDatabase();
+            DataScripter dataScripter = new DataScripter( db );
             dataScripter.addLine( "SELECT feature_id" );
             dataScripter.addLine( "FROM wres.Feature" );
             dataScripter.addLine( "WHERE name = ?" );
