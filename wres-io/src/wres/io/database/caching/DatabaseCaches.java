@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import java.util.Objects;
 

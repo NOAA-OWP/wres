@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.DataProvider;
-import wres.io.data.caching.DataSources;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
+import wres.io.database.caching.DataSources;
+import wres.io.database.details.SourceCompletedDetails;
+import wres.io.database.details.SourceDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 

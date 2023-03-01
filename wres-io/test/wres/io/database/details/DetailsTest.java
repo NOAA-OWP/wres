@@ -1,4 +1,4 @@
-package wres.io.data.details;
+package wres.io.database.details;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -19,9 +19,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.data.caching.DatabaseCaches;
-import wres.io.data.caching.Features;
+import wres.io.database.caching.DatabaseCaches;
+import wres.io.database.caching.Features;
 import wres.io.database.TestDatabase;
+import wres.io.database.details.SourceDetails;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
 import wres.system.DatabaseType;

@@ -33,7 +33,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.GriddedFeatures;
+import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.DataSource.DataDisposition;

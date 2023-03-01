@@ -25,8 +25,8 @@ import wres.io.reading.commaseparated.CsvDataProvider;
 
 /**
  * <p>Provides access and operations on tabular data.
- * 
- * <p>Column names used as input to getter methods are case insensitive, much like a {@link ResultSet}.
+ *
+ * <p>Column names used as input to getter methods are case-insensitive, much like a {@link ResultSet}.
  */
 public interface DataProvider extends AutoCloseable
 {
@@ -378,13 +378,8 @@ public interface DataProvider extends AutoCloseable
     {
         List<String> columnNames = this.getColumnNames();
         List<String[]> values = new ArrayList<>();
+        // TODO: Find the type of the data accurately instead of all false.
         boolean[] charColumns = new boolean[columnNames.size()];
-
-        for ( int i = 0; i < charColumns.length; i++ )
-        {
-            // TODO: Find the type of the data accurately instead of all false.
-            charColumns[i] = false;
-        }
 
         while ( this.next() )
         {

@@ -40,11 +40,11 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import static java.time.ZoneOffset.UTC;
 
+import wres.io.data.TabularDataset;
 import wres.io.ingesting.IngestException;
 import wres.io.retrieval.DataAccessException;
 import wres.io.Operations;
 import wres.io.data.DataProvider;
-import wres.io.data.DataSetProvider;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
@@ -759,7 +759,7 @@ public class Database
         try ( Connection connection = this.getConnection( isHighPriority );
               DataProvider rawProvider = this.buffer( connection, query ) )
         {
-            return DataSetProvider.from( rawProvider );
+            return TabularDataset.from( rawProvider );
         }
     }
 

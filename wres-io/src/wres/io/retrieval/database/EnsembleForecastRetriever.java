@@ -15,7 +15,7 @@ import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.io.data.DataProvider;
-import wres.io.data.caching.Ensembles;
+import wres.io.database.caching.Ensembles;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.database.ScriptBuilder;
