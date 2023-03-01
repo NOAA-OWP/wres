@@ -1905,6 +1905,7 @@ distributions
                 exclude 'lib/conf/eventbroker.properties'
                 exclude 'lib/conf/logback.xml'
                 exclude 'lib/conf/logging.properties'
+                exclude 'lib/conf/LiberationSans-Regular.ttf'
             }
 
             // Surely there is a more elegant way to get all the source jars

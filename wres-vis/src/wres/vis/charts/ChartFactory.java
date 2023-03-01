@@ -84,9 +84,9 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.vis.data.ChartDataFactory;
 
 /**
- * Factory to create a chart from a chart dataset.
+ * <p>Factory to create a chart from a chart dataset.
  *
- * TODO: eliminate all references to specific metrics from the charting process. There are 2-3 instances left with 
+ * <p>TODO: eliminate all references to specific metrics from the charting process. There are 2-3 instances left with
  * associated TODOs.
  *
  * @author James Brown
@@ -129,36 +129,15 @@ public class ChartFactory
     public enum ChartType
     {
         /** Not one of the other types, unique. */
-        UNIQUE( null ),
+        UNIQUE,
         /** Arranged by lead duration and then threshold. */
-        LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
+        LEAD_THRESHOLD,
         /** Arranged by threshold and then lead duration. */
-        THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
+        THRESHOLD_LEAD,
         /** Pooling windows. */
-        POOLING_WINDOW( null ), // Internal type only, not declared
+        POOLING_WINDOW, // Internal type only, not declared
         /** Timing error summary statistics. */
-        TIMING_ERROR_SUMMARY_STATISTICS( null ); // Internal type only, not declared
-
-        private final OutputTypeSelection basis;
-
-        /**
-         * @return The {@link OutputTypeSelection} corresponding to this. If null, then there is no specific matching 
-         * {@link OutputTypeSelection}.
-         */
-        public OutputTypeSelection getOutputTypeSelection()
-        {
-            return basis;
-        }
-
-        /**
-         * Hidden constructor.
-         * @param basis the output type selection
-         */
-        private ChartType( OutputTypeSelection basis )
-        {
-            this.basis = basis;
-        }
-
+        TIMING_ERROR_SUMMARY_STATISTICS; // Internal type only, not declared
     }
 
     /**
@@ -1515,17 +1494,13 @@ public class ChartFactory
             // Get the name that corresponds to the side of the component. Again, should probably use the triple.
             switch ( component )
             {
-                case LEFT:
-                    variableName = evaluation.getLeftVariableName();
-                    break;
-                case RIGHT:
-                    variableName = evaluation.getRightVariableName();
-                    break;
-                case BASELINE:
-                    variableName = evaluation.getBaselineVariableName();
-                    break;
-                default:
-                    break;
+                case LEFT -> variableName = evaluation.getLeftVariableName();
+                case RIGHT -> variableName = evaluation.getRightVariableName();
+                case BASELINE -> variableName = evaluation.getBaselineVariableName();
+                default ->
+                {
+                    // Do nothing
+                }
             }
         }
 
@@ -1684,7 +1659,7 @@ public class ChartFactory
                                     .getGeometryGroup()
                                     .getRegionName();
 
-        if ( Objects.isNull( regionName ) || regionName.isBlank() )
+        if ( regionName.isBlank() )
         {
             throw new IllegalArgumentException( "Failed to create parameters for graphics generation: the region "
                                                 + "name was missing from the pool metadata, which is not allowed." );
@@ -1949,18 +1924,11 @@ public class ChartFactory
     {
         Objects.requireNonNull( statisticType );
 
-        switch ( statisticType )
-        {
-            case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM:
-                return ChartType.UNIQUE;
-            case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE:
-                return ChartType.LEAD_THRESHOLD;
-            default:
-                throw new IllegalArgumentException( "Could not translate the statistic type "
-                                                    + statisticType
-                                                    + " into a chart type." );
-
-        }
+        return switch ( statisticType )
+                {
+                    case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM -> ChartType.UNIQUE;
+                    case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE -> ChartType.LEAD_THRESHOLD;
+                };
     }
 
     /**
