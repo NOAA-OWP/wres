@@ -34,12 +34,12 @@ public class DataSources
 
     private static final Logger LOGGER = LoggerFactory.getLogger( DataSources.class );
 
-    private Cache<String, Long> keyIndex = Caffeine.newBuilder()
-                                                   .maximumSize( MAX_DETAILS )
-                                                   .build();
-    private Cache<Long, SourceDetails> details = Caffeine.newBuilder()
+    private final Cache<String, Long> keyIndex = Caffeine.newBuilder()
                                                          .maximumSize( MAX_DETAILS )
                                                          .build();
+    private final Cache<Long, SourceDetails> details = Caffeine.newBuilder()
+                                                               .maximumSize( MAX_DETAILS )
+                                                               .build();
 
     private final Object detailLock = new Object();
     private final Object keyLock = new Object();
@@ -359,7 +359,6 @@ public class DataSources
     }
 
     /**
-     * @param <T> the type of detail
      * @param id the identifier key
      * @return the mapped value
      */

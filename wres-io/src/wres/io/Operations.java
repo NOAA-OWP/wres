@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -22,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.io.concurrency.Pipelines;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.GriddedFeatures;
 import wres.io.database.Database;
@@ -64,6 +62,7 @@ public final class Operations
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( timeSeriesIngester );
 
+        // Create a thread factory for reading. Inner readers may create additional thread factories (e.g., archives).
         ThreadFactory threadFactoryWithNaming =
                 new BasicThreadFactory.Builder().namingPattern( "Outer Reading Thread %d" )
                                                 .build();
@@ -103,8 +102,8 @@ public final class Operations
             }
 
             // Give exception on any of these ingests a chance to propagate fast
-            Pipelines.doAllOrException( ingestions )
-                     .join();
+            Operations.doAllOrException( ingestions )
+                      .join();
 
             // The loading happened above during join(), now read the results.
             for ( CompletableFuture<List<IngestResult>> task : ingestions )
@@ -147,15 +146,12 @@ public final class Operations
         List<IngestResult> composedResults = projectSources.stream()
                                                            .toList();
 
-        List<IngestResult> safeToShareResults =
-                Collections.unmodifiableList( composedResults );
-
-        if ( safeToShareResults.isEmpty() )
+        if ( composedResults.isEmpty() )
         {
             throw new IngestException( "No data were ingested." );
         }
 
-        return safeToShareResults;
+        return composedResults;
     }
 
     /**
@@ -244,6 +240,38 @@ public final class Operations
                          + "Abandoned around {} database tasks.",
                          databaseTasks.size() );
         }
+    }
+
+    /**
+     * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
+     * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
+     * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
+     * to completion).
+     *
+     * @param <T> the type of future
+     * @param futures the futures to compose
+     * @return the composed futures
+     * @throws CompletionException if completing exceptionally
+     */
+
+    static <T> CompletableFuture<Object> doAllOrException( final List<CompletableFuture<T>> futures )
+    {
+        //Complete when all futures are completed
+        final CompletableFuture<Void> allDone =
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) );
+        //Complete when any of the underlying futures completes exceptionally
+        final CompletableFuture<T> oneExceptional = new CompletableFuture<>();
+        //Link the two
+        for ( final CompletableFuture<T> completableFuture : futures )
+        {
+            //When one completes exceptionally, propagate
+            completableFuture.exceptionally( exception -> {
+                oneExceptional.completeExceptionally( exception );
+                return null;
+            } );
+        }
+        //Either all done OR one completes exceptionally
+        return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
     private Operations()

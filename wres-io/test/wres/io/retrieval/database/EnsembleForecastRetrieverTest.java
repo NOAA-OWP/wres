@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.NamedFeature;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -75,8 +73,6 @@ public class EnsembleForecastRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
     private DatabaseLockManager lockManager;
@@ -172,7 +168,7 @@ public class EnsembleForecastRetrieverTest
         Stream<TimeSeries<Ensemble>> forecastSeries = forecastRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.collect( Collectors.toList() );
+        List<TimeSeries<Ensemble>> actualCollection = forecastSeries.toList();
 
         // There is one time-series, so assert that
         assertEquals( 1, actualCollection.size() );

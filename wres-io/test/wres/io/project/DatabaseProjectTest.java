@@ -40,7 +40,6 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
-import wres.io.concurrency.Executor;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.data.details.EnsembleDetails;
@@ -74,8 +73,6 @@ class DatabaseProjectTest
 
     @Mock
     private SystemSettings mockSystemSettings;
-    @Mock
-    private Executor mockExecutor;
 
     private wres.io.database.Database wresDatabase;
     @Mock

@@ -19,7 +19,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.Executor;
 import wres.io.data.caching.DatabaseCaches;
 import wres.io.data.caching.Features;
 import wres.io.database.TestDatabase;
@@ -35,7 +34,6 @@ public class DetailsTest
     private HikariDataSource dataSource;
     private @Mock SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    private @Mock Executor mockExecutor;
     private @Mock DatabaseCaches mockCaches;
     private Connection rawConnection;
     private Database liquibaseDatabase;

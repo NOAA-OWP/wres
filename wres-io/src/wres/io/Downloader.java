@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Thread used to download the object at the indicated path to the indicated target
+ * Used to download the object at the indicated path to the indicated target
  */
 public final class Downloader implements Runnable
 {
@@ -58,7 +58,7 @@ public final class Downloader implements Runnable
             {
                 message += "Exists\t\t\t|\t";
 
-                message += copy( fileURL );
+                message += this.copy( fileURL );
             }
 
         }
@@ -100,7 +100,7 @@ public final class Downloader implements Runnable
                           System.lineSeparator(),
                           this.address,
                           System.lineSeparator(),
-                          this.targetPath.toString() );
+                          this.targetPath );
             LOGGER.error( Strings.getStackTrace( saveError ) );
             return "Not Downloaded";
         }

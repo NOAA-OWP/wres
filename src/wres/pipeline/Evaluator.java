@@ -28,7 +28,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.config.Validation;
-import wres.io.concurrency.Executor;
 import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -205,25 +204,30 @@ public class Evaluator
         EvaluationEvent monitor = EvaluationEvent.of();
         monitor.begin();
 
-        // Build a processing pipeline
-        // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
-        // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
-        // there is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing
-        // tasks within pools with the same number of threads in each.
-
+        // Build a processing pipeline whose work is performed by a collection of thread pools, one pool for each
+        // conceptual activity. There are two activities not represented here, namely reading of time-series data from
+        // source formats and ingest of time-series into a persistent data store, such as a database. The thread pools
+        // used for reading and ingesting are managed by wres-io. For example, see wres.io.Operations and
+        // wres.io.ingesting.database.DatabaseTimeSeriesIngester. In principle, those thread pools could be abstracted
+        // here too, but ingest is implementation specific (e.g., in-memory ingest is an ingest facade and does not
+        // require a thread pool) and some readers, notably archive readers, have their own thread pool
         ThreadFactory poolFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Pool Thread %d" )
                 .build();
-
+        // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO
+        // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool,
+        // there is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing
+        // tasks within pools with the same number of threads in each.
         ThreadFactory thresholdFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Threshold Dispatch Thread %d" )
+                .namingPattern( "Threshold Thread %d" )
                 .build();
         ThreadFactory metricFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Metric Thread %d" )
                 .build();
         ThreadFactory productFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Product Thread %d" )
+                .namingPattern( "Format Writing Thread %d" )
                 .build();
+
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
         // Create some unbounded work queues. For evaluations that produce faster than they consume, production is flow 
@@ -265,12 +269,9 @@ public class Evaluator
                                                                      productQueue,
                                                                      productFactory );
 
-        // IO executors
-        Executor ioExecutor = new Executor( innerSystemSettings );
-
         // Create database services if needed
         DatabaseServices databaseServices = null;
-        DatabaseLockManager lockManager = null;
+        DatabaseLockManager lockManager;
         if ( innerSystemSettings.isInDatabase() )
         {
             Database innerDatabase = this.getDatabase();
@@ -295,8 +296,7 @@ public class Evaluator
             lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
             // Reduce our set of executors to one object
-            Executors executors = new Executors( ioExecutor,
-                                                 poolExecutor,
+            Executors executors = new Executors( poolExecutor,
                                                  thresholdExecutor,
                                                  metricExecutor,
                                                  productExecutor );
@@ -307,7 +307,6 @@ public class Evaluator
 
                 monitoringService = new ScheduledThreadPoolExecutor( 1 );
                 QueueMonitor queueMonitor = new QueueMonitor( this.getDatabase(),
-                                                              ioExecutor,
                                                               poolQueue,
                                                               thresholdQueue,
                                                               metricQueue,
@@ -362,7 +361,6 @@ public class Evaluator
             Evaluator.shutDownGracefully( metricExecutor );
             Evaluator.shutDownGracefully( thresholdExecutor );
             Evaluator.shutDownGracefully( poolExecutor );
-            Evaluator.shutDownGracefully( ioExecutor );
             lockManager.shutdown();
         }
 
@@ -408,25 +406,6 @@ public class Evaluator
     }
 
     /**
-     * Kill off the executors passed in even if there are remaining tasks.
-     *
-     * @param executor the executor to shut down
-     */
-    private static void shutDownGracefully( final Executor executor )
-    {
-        Objects.requireNonNull( executor );
-
-        List<Runnable> abandoned = executor.awaitTermination( 5, TimeUnit.SECONDS );
-
-        if ( !abandoned.isEmpty() && LOGGER.isInfoEnabled() )
-        {
-            LOGGER.info( "Abandoned {} tasks from {}",
-                         abandoned.size(),
-                         executor );
-        }
-    }
-
-    /**
      * @return the system settings.
      */
     private SystemSettings getSystemSettings()
@@ -451,16 +430,14 @@ public class Evaluator
     }
 
     /** Queue monitor. */
-    private record QueueMonitor( Database database, Executor executor, Queue<?> poolQueue, Queue<?> thresholdQueue,
+    private record QueueMonitor( Database database, Queue<?> poolQueue, Queue<?> thresholdQueue,
                                  Queue<?> metricQueue, Queue<?> productQueue ) implements Runnable
     {
         @Override
         public void run()
         {
             int poolCount = 0;
-            int ioCount = executor.getIoExecutorQueueTaskCount();
             int databaseCount = 0;
-            int hiPriCount = executor.getHiPriIoExecutorQueueTaskCount();
             int thresholdCount = 0;
             int metricCount = 0;
             int productCount = 0;
@@ -490,9 +467,7 @@ public class Evaluator
                 databaseCount = database.getDatabaseQueueTaskCount();
             }
 
-            LOGGER.info( "IoQ={}, IoHiPriQ={}, PoolQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
-                         ioCount,
-                         hiPriCount,
+            LOGGER.info( "PoolQ={}, DatabaseQ={}, ThresholdQ={}, MetricQ={}, ProductQ={}",
                          poolCount,
                          databaseCount,
                          thresholdCount,
@@ -517,7 +492,7 @@ public class Evaluator
      * b) provides names for those objects.
      */
 
-    record Executors( Executor ioExecutor, ExecutorService poolExecutor, ExecutorService thresholdExecutor,
+    record Executors( ExecutorService poolExecutor, ExecutorService thresholdExecutor,
                       ExecutorService metricExecutor, ExecutorService productExecutor )
     {
     }

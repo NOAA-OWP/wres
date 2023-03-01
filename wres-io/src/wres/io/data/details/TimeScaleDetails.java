@@ -17,7 +17,6 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Represents a TimeScale row from the database.
- * Based on FeatureDetails.
  */
 
 public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOuter>

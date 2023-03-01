@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.NamedFeature;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.concurrency.Executor;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -79,8 +77,6 @@ public class AnalysisRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private Executor mockExecutor;
     @Mock
     private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
@@ -169,9 +165,8 @@ public class AnalysisRetrieverTest
         Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
-
-        actualCollection.sort( this.comparator );
+        List<TimeSeries<Double>> actualCollection = forecastSeries.sorted( this.comparator )
+                                                                  .toList();
 
         // There are three time-series, so assert that
         assertEquals( 3, actualCollection.size() );
@@ -257,9 +252,8 @@ public class AnalysisRetrieverTest
         Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
-
-        actualCollection.sort( this.comparator );
+        List<TimeSeries<Double>> actualCollection = forecastSeries.sorted( this.comparator )
+                                                                  .toList();
 
         // There are three time-series, so assert that
         assertEquals( 3, actualCollection.size() );
@@ -337,9 +331,8 @@ public class AnalysisRetrieverTest
         Stream<TimeSeries<Double>> forecastSeries = analysisRetriever.get();
 
         // Stream into a collection
-        List<TimeSeries<Double>> actualCollection = forecastSeries.collect( Collectors.toList() );
-
-        actualCollection.sort( this.comparator );
+        List<TimeSeries<Double>> actualCollection = forecastSeries.sorted( this.comparator )
+                                                                  .toList();
 
         // There are three time-series, so assert that
         assertEquals( 6, actualCollection.size() );
@@ -487,7 +480,7 @@ public class AnalysisRetrieverTest
     /**
      * Performs the detailed set-up work to add three time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
-     * 
+     *
      * @throws SQLException if the detailed set-up fails
      */
 
@@ -504,7 +497,9 @@ public class AnalysisRetrieverTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new NamedFeature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                List.of( new NamedFeature( FEATURE.getName(),
+                                                                           FEATURE.getName(),
+                                                                           null ) ),
                                                 null,
                                                 null,
                                                 null,

@@ -12,7 +12,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Details about a time series or raster source of observation or forecast data
+ * Details about a time series or raster source of observation or forecast data.
  * @author Christopher Tubbs
  */
 public class SourceDetails extends CachedDetail<SourceDetails, String>
