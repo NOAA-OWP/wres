@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import java.net.URI;
 import java.sql.SQLException;
@@ -11,7 +11,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Cache;
 
 import wres.io.data.DataProvider;
-import wres.io.data.details.SourceDetails;
+import wres.io.database.details.SourceDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 

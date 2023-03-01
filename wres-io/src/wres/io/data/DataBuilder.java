@@ -135,7 +135,7 @@ public class DataBuilder
      */
     public DataProvider build()
     {
-        DataProvider provider = DataSetProvider.from( this.columnNames, this.rows );
+        DataProvider provider = TabularDataset.from( this.columnNames, this.rows );
         this.reset();
         return provider;
     }

@@ -37,8 +37,8 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.data.DataProvider;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
+import wres.io.database.caching.Features;
+import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.retrieval.Retriever;
@@ -48,7 +48,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Abstract base class for retrieving {@link TimeSeries} from a database.
- * 
+ *
  * @author James Brown
  */
 
@@ -109,7 +109,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /** The time column name, including the table alias (e.g., O.observation_time). This may be a reference time or a
      * valid time, depending on context. See {@link #timeColumnIsReferenceTime()}. */
-    private String timeColumn;
+    private final String timeColumn;
 
     /** The lead duration column name, including the table alias (e.g., TSV.lead). */
     private final String leadDurationColumn;
@@ -121,7 +121,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns true if the retriever supplies forecast data.
-     * 
+     *
      * @return true if this instance supplies forecast data
      */
 
@@ -166,7 +166,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Creates one or more {@link TimeSeries} from a script that retrieves time-series data. Assumes that the script
      * returns time-series events that are ordered by time-series id.
-     * 
+     *
      * @param <S> the time-series data type
      * @param scripter the scripter
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
@@ -259,7 +259,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Adds a {@link TimeWindowOuter} constraint to the retrieval script, if available. All intervals are treated as
      * right-closed.
-     * 
+     *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the input is null
@@ -296,12 +296,12 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Adds a seasonal constraint to the retrieval script, if available.
-     * 
-     * TODO: reconsider how seasons are applied. Currently, they are applied to forecast reference times, 
+     * <p>Adds a seasonal constraint to the retrieval script, if available.
+     *
+     * <p>TODO: reconsider how seasons are applied. Currently, they are applied to forecast reference times,
      * which means they would need to be adjusted for observation valid times. Either way, this complexity 
      * should probably not be delegated to the caller without a much more explicit API. See #40405. 
-     * 
+     *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the input is null
@@ -381,7 +381,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
-     * {@link #getVariableName()}, {@link #getFeatureId()} and {@link #getLeftOrRightOrBaseline()}. 
+     * {@link #getVariableName()}, {@link #getFeatureIds()} and {@link #getLeftOrRightOrBaseline()}.
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
@@ -434,7 +434,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the time window constraint.
-     * 
+     *
      * @return the time window filter
      */
 
@@ -445,7 +445,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the desired time scale.
-     * 
+     *
      * @return the desired time scale
      */
 
@@ -456,7 +456,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the declared existing time scale, which may be null.
-     * 
+     *
      * @return the declared existing time scale or null
      */
 
@@ -467,7 +467,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the <code>wres.Project.project_id</code>.
-     * 
+     *
      * @return the <code>wres.Project.project_id</code>
      */
 
@@ -478,7 +478,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the data type.
-     * 
+     *
      * @return the data type
      */
 
@@ -498,7 +498,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns <code>true</code> if a seasonal constraint is defined, otherwise <code>false</code>.
-     * 
+     *
      * @return true if a seasonal constraint is defined, otherwise false
      */
 
@@ -509,7 +509,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns <code>true</code> if a time window is defined, otherwise <code>false</code>.
-     * 
+     *
      * @return true if a time window is defined, otherwise false
      */
 
@@ -520,7 +520,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the {@link ReferenceTimeType} of the retriever instance.
-     * 
+     *
      * @return the reference time type
      */
 
@@ -532,7 +532,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Adds a clause to a script according to the start of the last available clause. When the last available clause
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
-     * 
+     *
      * @param script the script
      * @param tabsIn the number of tabs in for the outermost clause
      * @param clause the clause
@@ -584,7 +584,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Validates the instance for multi-series retrieval and throws an exception if one or more expected constraints
      * are not set.
-     * 
+     *
      * @throws DataAccessException if the instance is not properly configured for multi-series retrieval
      */
 
@@ -639,9 +639,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
      * any declared time scale information attached to this instance on construction. In using an existing time scale 
      * from the project declaration, the principle is to augment, but not override, because the source is canonical
-     * on its own time scale. The only exception is the function {@link TimeScaleFunction.UNKNOWN}, which can be
+     * on its own time scale. The only exception is the function {@link TimeScaleFunction#UNKNOWN}, which can be
      * overridden.
-     * 
+     *
      * @param lastScale the last scale information retrieved
      * @param period the period of ther current time scale to be retrieved
      * @param functionString the function string for the current time scale to be retrieved
@@ -683,8 +683,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
 
             // Can override null or TimeScaleFunction.UNKNOWN
-            if ( Objects.nonNull( declared.getFunction() )
-                 && ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN ) )
+            if ( Objects.isNull( functionToUse ) || functionToUse == TimeScaleFunction.UNKNOWN )
             {
                 functionToUse = declared.getFunction();
             }
@@ -731,7 +730,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Returns <code>true</code> if the time column represents a reference time, <code>false</code> if it represents a 
      * valid time.
-     * 
+     *
      * @return true if the time column is a reference time, false for a valid time
      */
 
@@ -742,7 +741,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param <S> the time-series event value type
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
      * @param connection the connection
@@ -833,12 +832,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Increments an existing series by reading the current row or completes a series and returns it.
-     * 
+     *
      * @param <S> the time-series event value type
      * @param mapper a function that retrieves a time-series value from a prescribed column in a {@link DataProvider}
      * @param provider the data provider
      * @param lastBuilder the builder for the last time-series
-     * @param nextBuilder the builder for the next time-series
      * @param lastSeriesId the last time-series id
      * @param replicateCount the number of replicates of the last series
      * @param lastScale the last time scale to use in validation
@@ -996,7 +994,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds an event to a time-series and annotates any exception raised.
-     * 
+     *
      * @param event the event
      * @param builder the builder
      * @throws DataAccessException if the event could not be added
@@ -1021,7 +1019,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
-     * 
+     *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
      * @param filter the time window filter
@@ -1076,7 +1074,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds the lead time constraints to a script.
-     * 
+     *
      * @param script the script
      * @param lowerLead the lower lead time
      * @param upperLead the upper lead time
@@ -1110,7 +1108,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Adds the valid time bounds (if any) to the script by inspecting a reference time column and a lead duration 
      * column. The interval is right-closed.
-     * 
+     *
      * @param script the script to augment
      * @param filter the time window filter
      * @param tabsIn the number of tabs in for the outermost clause
@@ -1182,7 +1180,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds the valid time bounds (if any) to the script. The interval is right-closed.
-     * 
+     *
      * @param script the script to augment
      * @param filter the time window filter
      * @param tabsIn the number of tabs in for the outermost clause
@@ -1234,7 +1232,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Helper that returns the lower valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers 
      * the lower valid time from the forecast information present.
-     * 
+     *
      * @param timeWindow the time window
      * @return the lower valid time
      */
@@ -1281,7 +1279,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /**
      * Helper that returns the upper valid time from the {@link TimeWindowOuter}, preferentially, but otherwise infers the
      * upper valid time from the forecast information present.
-     * 
+     *
      * @param timeWindow the time window
      * @return the upper valid time
      */
@@ -1312,7 +1310,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Adds the reference time bounds (if any) to the script.
-     * 
+     *
      * @param script the script to augment
      * @param filter the time window filter
      * @param tabsIn the number of tabs in for the outermost clause
@@ -1363,7 +1361,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the time column name.
-     * 
+     *
      * @return the time column name
      */
 
@@ -1374,7 +1372,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Returns the lead duration column name.
-     * 
+     *
      * @return the lead duration column name
      */
 
@@ -1385,7 +1383,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Abstract builder.
-     * 
+     *
      * @author James Brown
      * @param <S> the type of time-series to build
      */
@@ -1431,7 +1429,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * Features.
          */
 
-        private Set<Feature> features = new HashSet<>();
+        private final Set<Feature> features = new HashSet<>();
 
         /**
          * The data type.
@@ -1507,7 +1505,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the <code>wres.Project.project_id</code>.
-         * 
+         *
          * @param projectId the <code>wres.Project.project_id</code>
          * @return the builder
          */
@@ -1520,7 +1518,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the variable name.
-         * 
+         *
          * @param variableName the variable name
          * @return the builder
          */
@@ -1533,7 +1531,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the features.
-         * 
+         *
          * @param features the features
          * @return the builder
          */
@@ -1550,7 +1548,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the data type.
-         * 
+         *
          * @param lrb the data type
          * @return the builder
          */
@@ -1563,7 +1561,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the time window filter.
-         * 
+         *
          * @param timeWindow the time window filter
          * @return the builder
          */
@@ -1577,7 +1575,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         /**
          * Sets the desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
          * the {@link #timeWindow} but starts outside it.
-         * 
+         *
          * @param desiredTimeScale the desired time scale
          * @return the builder
          */
@@ -1591,7 +1589,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         /**
          * Sets the existing time scale from the project declaration, which can be used to augment a source, but not
          * override it.
-         * 
+         *
          * @param declaredExistingTimeScale the declared existing time scale
          * @return the builder
          */
@@ -1604,7 +1602,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the start of a season in which values will be selected.
-         * 
+         *
          * @param seasonStart the start of the season
          * @return the builder
          */
@@ -1617,7 +1615,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the end of a season in which values will be selected.
-         * 
+         *
          * @param seasonEnd the end of the season
          * @return the builder
          */
@@ -1630,7 +1628,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         /**
          * Sets the {@link ReferenceTimeType}.
-         * 
+         *
          * @param referenceTimeType the reference time type
          * @return the builder
          */
@@ -1646,7 +1644,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Construct.
-     * 
+     *
      * @param builder the builder
      * @param timeColumn the name of the time column, which is an implementation detail
      * @param leadDurationColumn the name of the lead duration column, which is an implementation detail
@@ -1661,7 +1659,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.featuresCache = builder.featuresCache;
         this.projectId = builder.projectId;
         this.variableName = builder.variableName;
-        this.features = Collections.unmodifiableSet( new HashSet<>( builder.features ) );
+        this.features = Set.copyOf( builder.features );
         this.lrb = builder.lrb;
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
@@ -1720,7 +1718,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               this.projectId,
                               this.lrb,
                               "the desired time scale was null: the retrieval will not be adjusted to account "
-                                        + "for the desired time scale." );
+                              + "for the desired time scale." );
             }
 
             if ( Objects.nonNull( this.timeWindow ) || Objects.isNull( this.desiredTimeScale ) )

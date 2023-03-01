@@ -40,15 +40,16 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
-import wres.io.data.caching.DatabaseCaches;
-import wres.io.data.caching.Features;
-import wres.io.data.details.EnsembleDetails;
-import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.MeasurementDetails;
-import wres.io.data.details.SourceDetails;
-import wres.io.data.details.TimeScaleDetails;
+import wres.io.database.caching.DatabaseCaches;
+import wres.io.database.caching.Features;
+import wres.io.database.details.EnsembleDetails;
+import wres.io.database.details.FeatureDetails;
+import wres.io.database.details.MeasurementDetails;
+import wres.io.database.details.SourceDetails;
+import wres.io.database.details.TimeScaleDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.TestDatabase;
+import wres.io.database.details.TimeSeries;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -282,17 +283,17 @@ class DatabaseProjectTest
         Long ensembleId = ensemble.getId();
 
 
-        wres.io.data.details.TimeSeries firstTraceRow =
-                new wres.io.data.details.TimeSeries( this.wresDatabase,
-                                                     ensembleId,
-                                                     sourceId );
+        TimeSeries firstTraceRow =
+                new TimeSeries( this.wresDatabase,
+                                ensembleId,
+                                sourceId );
         // Do the save
         firstTraceRow.getTimeSeriesID();
 
-        wres.io.data.details.TimeSeries secondTraceRow =
-                new wres.io.data.details.TimeSeries( this.wresDatabase,
-                                                     ensembleId,
-                                                     sourceTwoId );
+        TimeSeries secondTraceRow =
+                new TimeSeries( this.wresDatabase,
+                                ensembleId,
+                                sourceTwoId );
         // Do the save
         secondTraceRow.getTimeSeriesID();
 

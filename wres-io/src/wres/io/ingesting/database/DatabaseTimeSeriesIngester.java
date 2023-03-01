@@ -45,19 +45,19 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.io.data.caching.DatabaseCaches;
-import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Features;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.details.SourceCompletedDetails;
-import wres.io.data.details.SourceDetails;
+import wres.io.database.caching.DatabaseCaches;
+import wres.io.database.caching.DataSources;
+import wres.io.database.caching.Ensembles;
+import wres.io.database.caching.Features;
+import wres.io.database.caching.MeasurementUnits;
+import wres.io.database.details.SourceCompletedDetails;
+import wres.io.database.details.SourceDetails;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.data.caching.TimeScales;
+import wres.io.database.caching.TimeScales;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.system.DatabaseLockManager;
@@ -1436,7 +1436,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                       TimeSeries<Double> timeSeries,
                                       long sourceId )
     {
-        wres.io.data.details.TimeSeries databaseTimeSeries;
+        wres.io.database.details.TimeSeries databaseTimeSeries;
 
         try
         {
@@ -1470,7 +1470,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                       long ensembleId,
                                                       long sourceId )
     {
-        wres.io.data.details.TimeSeries databaseTimeSeries;
+        wres.io.database.details.TimeSeries databaseTimeSeries;
 
         try
         {
@@ -1500,13 +1500,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return a time-series for an ensemble trace
      */
 
-    private wres.io.data.details.TimeSeries getDatabaseTimeSeriesForEnsembleTrace( Database database,
-                                                                                   long ensembleId,
-                                                                                   long sourceId )
+    private wres.io.database.details.TimeSeries getDatabaseTimeSeriesForEnsembleTrace( Database database,
+                                                                                       long ensembleId,
+                                                                                       long sourceId )
     {
-        return new wres.io.data.details.TimeSeries( database,
-                                                    ensembleId,
-                                                    sourceId );
+        return new wres.io.database.details.TimeSeries( database,
+                                                        ensembleId,
+                                                        sourceId );
     }
 
     /**
@@ -1517,15 +1517,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @throws SQLException if the time-series could not be created
      */
 
-    private wres.io.data.details.TimeSeries
+    private wres.io.database.details.TimeSeries
             getDatabaseTimeSeries( Database database,
                                    Ensembles ensemblesCache,
                                    long sourceId )
                     throws SQLException
     {
-        return new wres.io.data.details.TimeSeries( database,
-                                                    ensemblesCache.getDefaultEnsembleId(),
-                                                    sourceId );
+        return new wres.io.database.details.TimeSeries( database,
+                                                        ensemblesCache.getDefaultEnsembleId(),
+                                                        sourceId );
     }
 
     /**

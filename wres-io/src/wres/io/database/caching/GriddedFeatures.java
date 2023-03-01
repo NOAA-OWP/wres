@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import java.io.IOException;
 import java.util.Collections;

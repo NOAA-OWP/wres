@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.io.data.caching.DatabaseCaches;
-import wres.io.data.caching.GriddedFeatures;
+import wres.io.database.caching.DatabaseCaches;
+import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;

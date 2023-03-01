@@ -1,4 +1,4 @@
-package wres.io.data.details;
+package wres.io.database.details;
 
 import java.net.URI;
 import java.sql.SQLException;

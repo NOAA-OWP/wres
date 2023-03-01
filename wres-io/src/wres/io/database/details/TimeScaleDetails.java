@@ -1,4 +1,4 @@
-package wres.io.data.details;
+package wres.io.database.details;
 
 import java.sql.SQLException;
 import java.time.Duration;

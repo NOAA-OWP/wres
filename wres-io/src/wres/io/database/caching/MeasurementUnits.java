@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import java.sql.SQLException;
 
@@ -9,7 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.io.data.DataProvider;
-import wres.io.data.details.MeasurementDetails;
+import wres.io.database.details.MeasurementDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.retrieval.DataAccessException;

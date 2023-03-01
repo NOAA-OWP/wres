@@ -28,17 +28,18 @@ import wres.datamodel.time.TimeSeriesSlicer;
  * A fully in-memory tabular dataset that doesn't require an active connection to a database. Mimics the behavior of
  * the {@link ResultSet} data structure used for sql queries.
  */
-public class DataSetProvider implements DataProvider
+public class TabularDataset implements DataProvider
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( DataSetProvider.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TabularDataset.class );
     private Map<String, Integer> columnNames;
     private List<Object[]> rows;
     private int currentRow = -1;
     private boolean closed;
 
-    private DataSetProvider(){
+    private TabularDataset()
+    {
         columnNames = new TreeMap<>( String.CASE_INSENSITIVE_ORDER );
-        rows = new ArrayList<>(  );
+        rows = new ArrayList<>();
     }
 
     /**
@@ -46,32 +47,32 @@ public class DataSetProvider implements DataProvider
      * @param provider the provider
      * @return an instance
      */
-    public static DataSetProvider from(final DataProvider provider)
+    public static TabularDataset from( final DataProvider provider )
     {
-        if (provider == null || provider.isClosed())
+        if ( provider == null || provider.isClosed() )
         {
             throw new IllegalArgumentException(
-                    "An open DataProvider must be supplied to create a DataSetProvider."
+                    "An open DataProvider must be supplied to create a TabularDataset."
             );
         }
 
-        DataSetProvider dataSetProvider = new DataSetProvider(  );
+        TabularDataset dataSetProvider = new TabularDataset();
 
         List<String> columns = provider.getColumnNames();
-        LOGGER.debug( "Created DataSetProvider (1) with columns {}", columns );
+        LOGGER.debug( "Created TabularDataset (1) with columns {}", columns );
 
         int columnIndex = 0;
 
-        for (String columnName : columns)
+        for ( String columnName : columns )
         {
             dataSetProvider.columnNames.put( columnName, columnIndex );
             columnIndex++;
         }
 
-        LOGGER.debug( "DataSetProvider (1) now has columnNames {}",
+        LOGGER.debug( "TabularDataset (1) now has columnNames {}",
                       dataSetProvider.columnNames );
 
-        while (provider.next())
+        while ( provider.next() )
         {
             dataSetProvider.rows.add( provider.getRowValues() );
         }
@@ -79,15 +80,15 @@ public class DataSetProvider implements DataProvider
         return dataSetProvider;
     }
 
-    static DataSetProvider from(final Map<String, Integer> columnNames, final List<Object[]> rows )
+    static TabularDataset from( final Map<String, Integer> columnNames, final List<Object[]> rows )
     {
-        DataSetProvider provider = new DataSetProvider();
-        LOGGER.debug( "Created DataSetProvider (2) with columnNames {}",
+        TabularDataset provider = new TabularDataset();
+        LOGGER.debug( "Created TabularDataset (2) with columnNames {}",
                       columnNames );
         provider.columnNames.putAll( columnNames );
-        LOGGER.debug( "DataSetProvider (2) now has columnNames {}",
+        LOGGER.debug( "TabularDataset (2) now has columnNames {}",
                       provider.columnNames );
-        provider.rows.addAll(rows);
+        provider.rows.addAll( rows );
         return provider;
     }
 
@@ -100,12 +101,12 @@ public class DataSetProvider implements DataProvider
     @Override
     public boolean next()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the dataset "
                                              + "may not be incremented." );
         }
-        else if (this.currentRow == rows.size())
+        else if ( this.currentRow == rows.size() )
         {
             throw new IndexOutOfBoundsException( "The position in the dataset may"
                                                  + "not move beyond the size of its data." );
@@ -117,12 +118,12 @@ public class DataSetProvider implements DataProvider
     @Override
     public boolean back()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the data set "
-                                             + "may not be decremented.");
+                                             + "may not be decremented." );
         }
-        else if (this.currentRow == 0)
+        else if ( this.currentRow == 0 )
         {
             throw new IndexOutOfBoundsException( "Position in the dataset may"
                                                  + "not move before its beginning." );
@@ -135,10 +136,10 @@ public class DataSetProvider implements DataProvider
     @Override
     public void toEnd()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the data set may "
-                                             + "not be moved to the end.");
+                                             + "not be moved to the end." );
         }
 
         this.currentRow = this.rows.size() - 1;
@@ -147,13 +148,13 @@ public class DataSetProvider implements DataProvider
     @Override
     public void reset()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The position in the data set may not "
-                                             + "be moved back to its beginning.");
+                                             + "be moved back to its beginning." );
         }
 
-        if (this.rows.isEmpty())
+        if ( this.rows.isEmpty() )
         {
             this.currentRow = -1;
         }
@@ -166,7 +167,7 @@ public class DataSetProvider implements DataProvider
     @Override
     public boolean isNull( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -198,57 +199,57 @@ public class DataSetProvider implements DataProvider
      * @param index The index for the column containing the value
      * @return The value stored in the row and column
      */
-    private Object getObject(int rowNumber, int index)
+    private Object getObject( int rowNumber, int index )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         // If "next" hasn't been called, go ahead and move on to the next row
-        if (rowNumber < 0)
+        if ( rowNumber < 0 )
         {
             rowNumber++;
         }
 
-        if (this.rows == null)
+        if ( this.rows == null )
         {
             throw new IndexOutOfBoundsException( "There is no data contained within the data set." );
         }
-        else if (rowNumber >= this.rows.size())
+        else if ( rowNumber >= this.rows.size() )
         {
             throw new IndexOutOfBoundsException( "There are no more rows to retrieve data from. Index = " +
-                                                 String.valueOf(rowNumber) +
+                                                 rowNumber +
                                                  ", Row Count: " +
-                                                 String.valueOf(this.rows.size()) );
+                                                 this.rows.size() );
         }
-        else if (this.rows.get( rowNumber ).length <= index)
+        else if ( this.rows.get( rowNumber ).length <= index )
         {
             throw new IndexOutOfBoundsException( "The provided index exceeds the length of the row. Index = " +
-                                                 String.valueOf(index) +
+                                                 index +
                                                  " Row Length: " +
-                                                 String.valueOf(this.rows.get(rowNumber).length) );
+                                                 this.rows.get( rowNumber ).length );
         }
 
-        return this.rows.get(rowNumber)[index];
+        return this.rows.get( rowNumber )[index];
     }
 
     @Override
-    public int getColumnIndex(String columnName)
+    public int getColumnIndex( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.columnNames == null)
+        if ( this.columnNames == null )
         {
             throw new IndexOutOfBoundsException( "There is no data to retrieve from this data set" );
         }
 
         Integer index = this.columnNames.getOrDefault( columnName, -1 );
 
-        if (index < 0)
+        if ( index < 0 )
         {
             throw new IndexOutOfBoundsException( "There is no column in the data set named " + columnName );
         }
@@ -259,9 +260,9 @@ public class DataSetProvider implements DataProvider
     @Override
     public List<String> getColumnNames()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The dataset is not accessible.");
+            throw new IllegalStateException( "The dataset is not accessible." );
         }
         return new ArrayList<>( columnNames.keySet() );
     }
@@ -269,7 +270,7 @@ public class DataSetProvider implements DataProvider
     @Override
     public int getRowIndex()
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
@@ -278,55 +279,55 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Object getObject(String columnName)
+    public Object getObject( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        if (this.currentRow < 0)
+        if ( this.currentRow < 0 )
         {
             this.currentRow++;
         }
 
-        if (this.isNull( columnName ))
+        if ( this.isNull( columnName ) )
         {
             return null;
         }
 
-        return this.getObject(this.currentRow, this.getColumnIndex( columnName ));
+        return this.getObject( this.currentRow, this.getColumnIndex( columnName ) );
     }
 
     @Override
     public boolean getBoolean( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return false;
         }
-        else if (value instanceof Boolean)
+        else if ( value instanceof Boolean )
         {
-            return (Boolean)value;
+            return ( Boolean ) value;
         }
-        else if (value instanceof Integer)
+        else if ( value instanceof Integer )
         {
-            return (Integer)value == 1;
+            return ( Integer ) value == 1;
         }
-        else if (value instanceof Short)
+        else if ( value instanceof Short )
         {
-            return (Short)value == 1;
+            return ( Short ) value == 1;
         }
-        else if (value instanceof Long)
+        else if ( value instanceof Long )
         {
-            return (Long)value == 1;
+            return ( Long ) value == 1;
         }
 
         return value.toString().contains( "1" );
@@ -335,26 +336,26 @@ public class DataSetProvider implements DataProvider
     @Override
     public Byte getByte( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             // Return the default byte
             return null;
         }
-        else if (value instanceof Byte)
+        else if ( value instanceof Byte )
         {
-            return (byte)value;
+            return ( byte ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
             // Use Number to convert a numerical type to a byte
-            return ((Number)value).byteValue();
+            return ( ( Number ) value ).byteValue();
         }
 
         try
@@ -363,7 +364,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Byte.parseByte( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -374,26 +375,26 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Integer getInt(String columnName)
+    public Integer getInt( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Integer)
+        else if ( value instanceof Integer )
         {
-            return (int)value;
+            return ( int ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
-            return ((Number)value).intValue();
+            return ( ( Number ) value ).intValue();
         }
 
         try
@@ -402,7 +403,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Integer.parseInt( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -413,26 +414,26 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Short getShort(String columnName)
+    public Short getShort( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Short)
+        else if ( value instanceof Short )
         {
-            return (short)value;
+            return ( short ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
-            return ((Number)value).shortValue();
+            return ( ( Number ) value ).shortValue();
         }
 
         try
@@ -441,7 +442,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Short.parseShort( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -452,26 +453,26 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Long getLong(String columnName)
+    public Long getLong( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Long)
+        else if ( value instanceof Long )
         {
-            return (long)value;
+            return ( long ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
-            return ((Number)value).longValue();
+            return ( ( Number ) value ).longValue();
         }
 
         try
@@ -480,7 +481,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Long.parseLong( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -491,24 +492,24 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public Float getFloat(String columnName)
+    public Float getFloat( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Float)
+        else if ( value instanceof Float )
         {
-            return (float)value;
+            return ( float ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
             return ( ( Number ) value ).floatValue();
         }
@@ -519,7 +520,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
             return Float.parseFloat( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -530,26 +531,26 @@ public class DataSetProvider implements DataProvider
     }
 
     @Override
-    public double getDouble(String columnName)
+    public double getDouble( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return MissingValues.DOUBLE;
         }
-        else if (value instanceof Double)
+        else if ( value instanceof Double )
         {
-            return (double)this.getObject( columnName );
+            return ( double ) this.getObject( columnName );
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
-            return ((Number)value).doubleValue();
+            return ( ( Number ) value ).doubleValue();
         }
 
         try
@@ -558,7 +559,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1.0" or an object whose "toString()" returns a number.
             return Double.parseDouble( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -571,39 +572,39 @@ public class DataSetProvider implements DataProvider
     @Override
     public Double[] getDoubleArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
-        else if (array instanceof Double[])
+        else if ( array instanceof Double[] )
         {
-            return (Double[])this.getObject(columnName);
+            return ( Double[] ) this.getObject( columnName );
         }
-        else if (array instanceof Number[])
+        else if ( array instanceof Number[] )
         {
-            Number[] numbers = (Number[])array;
+            Number[] numbers = ( Number[] ) array;
             Double[] result = new Double[numbers.length];
 
-            for (int i = 0; i < numbers.length; ++i)
+            for ( int i = 0; i < numbers.length; ++i )
             {
                 result[i] = numbers[i].doubleValue();
             }
 
             return result;
         }
-        else if (array instanceof String[])
+        else if ( array instanceof String[] )
         {
-            String[] numbers = (String[])array;
+            String[] numbers = ( String[] ) array;
             Double[] result = new Double[numbers.length];
 
-            for (int i = 0; i < numbers.length; ++i)
+            for ( int i = 0; i < numbers.length; ++i )
             {
                 result[i] = Double.parseDouble( numbers[i] );
             }
@@ -620,39 +621,39 @@ public class DataSetProvider implements DataProvider
     @Override
     public Integer[] getIntegerArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
-        else if (array instanceof Integer[])
+        else if ( array instanceof Integer[] )
         {
-            return (Integer[])this.getObject(columnName);
+            return ( Integer[] ) this.getObject( columnName );
         }
-        else if (array instanceof Number[])
+        else if ( array instanceof Number[] )
         {
-            Number[] numbers = (Number[])array;
+            Number[] numbers = ( Number[] ) array;
             Integer[] result = new Integer[numbers.length];
 
-            for (int i = 0; i < numbers.length; ++i)
+            for ( int i = 0; i < numbers.length; ++i )
             {
                 result[i] = numbers[i].intValue();
             }
 
             return result;
         }
-        else if (array instanceof String[])
+        else if ( array instanceof String[] )
         {
-            String[] numbers = (String[])array;
+            String[] numbers = ( String[] ) array;
             Integer[] result = new Integer[numbers.length];
 
-            for (int i = 0; i < numbers.length; ++i)
+            for ( int i = 0; i < numbers.length; ++i )
             {
                 result[i] = Integer.parseInt( numbers[i] );
             }
@@ -665,69 +666,69 @@ public class DataSetProvider implements DataProvider
                                       "' in the column '" + columnName +
                                       "' cannot be casted as a integer array." );
     }
-    
+
     @Override
     public String[] getStringArray( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object array = this.getObject(columnName);
+        Object array = this.getObject( columnName );
 
-        if (array == null)
+        if ( array == null )
         {
             return null;
         }
-        else if (array instanceof String[])
+        else if ( array instanceof String[] )
         {
-            return (String[]) array;
+            return ( String[] ) array;
         }
 
         throw new ClassCastException( "The type '" +
                                       array.getClass().toString() +
                                       "' in the column '" + columnName +
                                       "' cannot be casted as a String array." );
-    }  
+    }
 
     @Override
     public BigDecimal getBigDecimal( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Double)
+        else if ( value instanceof Double )
         {
-            return new BigDecimal( (Double)value );
+            return new BigDecimal( ( Double ) value );
         }
-        else if (value instanceof Float)
+        else if ( value instanceof Float )
         {
-            return new BigDecimal( (Float)value );
+            return new BigDecimal( ( Float ) value );
         }
-        else if (value instanceof Integer)
+        else if ( value instanceof Integer )
         {
-            return new BigDecimal( (Integer)value );
+            return new BigDecimal( ( Integer ) value );
         }
-        else if (value instanceof Long)
+        else if ( value instanceof Long )
         {
-            return new BigDecimal( (Long)value );
+            return new BigDecimal( ( Long ) value );
         }
-        else if (value instanceof Short)
+        else if ( value instanceof Short )
         {
-            return new BigDecimal( (Short)value );
+            return new BigDecimal( ( Short ) value );
         }
-        else if (value instanceof Byte)
+        else if ( value instanceof Byte )
         {
-            return new BigDecimal( (Byte)value );
+            return new BigDecimal( ( Byte ) value );
         }
 
         try
@@ -736,7 +737,7 @@ public class DataSetProvider implements DataProvider
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return new BigDecimal( value.toString() );
         }
-        catch (NumberFormatException c)
+        catch ( NumberFormatException c )
         {
             throw new ClassCastException(
                     "The type '" + value.getClass().toString() +
@@ -749,24 +750,24 @@ public class DataSetProvider implements DataProvider
     @Override
     public LocalTime getTime( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value instanceof LocalTime)
+        if ( value instanceof LocalTime )
         {
-            return (LocalTime)this.getObject( columnName );
+            return ( LocalTime ) this.getObject( columnName );
         }
-        else if (value instanceof LocalDateTime)
+        else if ( value instanceof LocalDateTime )
         {
-            return ((LocalDateTime)value).toLocalTime();
+            return ( ( LocalDateTime ) value ).toLocalTime();
         }
-        else if (value instanceof OffsetDateTime)
+        else if ( value instanceof OffsetDateTime )
         {
-            return ((OffsetDateTime)value).toLocalTime();
+            return ( ( OffsetDateTime ) value ).toLocalTime();
         }
 
         Instant instant = this.getInstant( columnName );
@@ -776,43 +777,43 @@ public class DataSetProvider implements DataProvider
     @Override
     public LocalDate getDate( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value instanceof LocalDate)
+        if ( value instanceof LocalDate )
         {
-            return (LocalDate)this.getObject( columnName );
+            return ( LocalDate ) this.getObject( columnName );
         }
-        else if (value instanceof LocalDateTime)
+        else if ( value instanceof LocalDateTime )
         {
-            return ((LocalDateTime)value).toLocalDate();
+            return ( ( LocalDateTime ) value ).toLocalDate();
         }
-        else if (value instanceof OffsetDateTime)
+        else if ( value instanceof OffsetDateTime )
         {
-            return ((OffsetDateTime)value).toLocalDate();
+            return ( ( OffsetDateTime ) value ).toLocalDate();
         }
 
         Instant instant = this.getInstant( columnName );
-        return LocalDateTime.ofInstant( instant, ZoneId.of( "UTC" )).toLocalDate();
+        return LocalDateTime.ofInstant( instant, ZoneId.of( "UTC" ) ).toLocalDate();
     }
 
     @Override
     public OffsetDateTime getOffsetDateTime( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
         Object value = this.getObject( columnName );
 
-        if (value instanceof OffsetDateTime)
+        if ( value instanceof OffsetDateTime )
         {
-            return (OffsetDateTime)value;
+            return ( OffsetDateTime ) value;
         }
 
         // Since we know this isn't natively an offset date time, we try to
@@ -830,31 +831,31 @@ public class DataSetProvider implements DataProvider
     @Override
     public Instant getInstant( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject( columnName  );
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
 
         Instant result;
 
-        if (value instanceof Instant)
+        if ( value instanceof Instant )
         {
-            result = (Instant)value;
+            result = ( Instant ) value;
         }
-        else if (value instanceof OffsetDateTime)
+        else if ( value instanceof OffsetDateTime )
         {
-            result = ((OffsetDateTime)value).toInstant();
+            result = ( ( OffsetDateTime ) value ).toInstant();
         }
-        else if (value instanceof LocalDateTime)
+        else if ( value instanceof LocalDateTime )
         {
-            result = ((LocalDateTime)value).toInstant( ZoneOffset.UTC );
+            result = ( ( LocalDateTime ) value ).toInstant( ZoneOffset.UTC );
         }
         // Timestamps are interpretted as strings in order to avoid the 'help'
         // that JDBC provides by converting timestamps to local times and
@@ -864,55 +865,55 @@ public class DataSetProvider implements DataProvider
             String stringRepresentation = value.toString();
             stringRepresentation = stringRepresentation.replace( " ", "T" );
 
-            if (!stringRepresentation.endsWith( "Z" ))
+            if ( !stringRepresentation.endsWith( "Z" ) )
             {
                 stringRepresentation += "Z";
             }
 
             result = Instant.parse( stringRepresentation );
         }
-        else if (value instanceof Integer)
+        else if ( value instanceof Integer )
         {
-            result = Instant.ofEpochSecond( (Integer)value );
+            result = Instant.ofEpochSecond( ( Integer ) value );
         }
-        else if (value instanceof Long)
+        else if ( value instanceof Long )
         {
-            result = Instant.ofEpochSecond( (Long)value );
+            result = Instant.ofEpochSecond( ( Long ) value );
         }
-        else if (value instanceof Double)
+        else if ( value instanceof Double )
         {
-            Double epochSeconds = (Double)value;
+            Double epochSeconds = ( Double ) value;
             result = Instant.ofEpochSecond( epochSeconds.longValue() );
         }
         else
         {
             throw new IllegalArgumentException( "The type for the column named '" +
                                                 columnName +
-                                                " cannot be converted into an Instant.");
+                                                " cannot be converted into an Instant." );
         }
 
         return result;
     }
 
-    public Duration getDuration(String columnName)
+    public Duration getDuration( String columnName )
     {
         Duration result;
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Duration)
+        else if ( value instanceof Duration )
         {
-            result = (Duration)value;
+            result = ( Duration ) value;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
             result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
         }
-        else if (value instanceof String)
+        else if ( value instanceof String )
         {
             result = Duration.parse( value.toString() );
         }
@@ -930,55 +931,55 @@ public class DataSetProvider implements DataProvider
     @Override
     public <V> V getValue( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
-        return (V)this.getObject( columnName );
+        return ( V ) this.getObject( columnName );
     }
 
     @Override
-    public String getString(String columnName)
+    public String getString( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
 
-        return String.valueOf(value);
+        return String.valueOf( value );
     }
 
     @Override
-    public URI getURI( String columnName)
+    public URI getURI( String columnName )
     {
-        if (this.isClosed())
+        if ( this.isClosed() )
         {
             throw new IllegalStateException( "The data set is inaccessible." );
         }
 
-        Object value = this.getObject(columnName);
+        Object value = this.getObject( columnName );
         URI uri;
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof URI)
+        else if ( value instanceof URI )
         {
-            uri = (URI)value;
+            uri = ( URI ) value;
         }
-        else if (value instanceof URL )
+        else if ( value instanceof URL )
         {
             try
             {
-                uri = ((URL)value).toURI();
+                uri = ( ( URL ) value ).toURI();
             }
             catch ( URISyntaxException e )
             {

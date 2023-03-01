@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import java.sql.SQLException;
 
@@ -6,7 +6,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.datamodel.scale.TimeScaleOuter;
-import wres.io.data.details.TimeScaleDetails;
+import wres.io.database.details.TimeScaleDetails;
 import wres.io.database.Database;
 
 /**

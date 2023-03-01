@@ -1,4 +1,4 @@
-package wres.io.data.caching;
+package wres.io.database.caching;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.DataBuilder;
 import wres.io.data.DataProvider;
-import wres.io.data.details.SourceDetails;
+import wres.io.database.details.SourceDetails;
 import wres.io.database.TestDatabase;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
