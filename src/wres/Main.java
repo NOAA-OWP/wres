@@ -25,6 +25,7 @@ import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
+import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 import com.google.common.collect.Range;
@@ -174,12 +175,6 @@ public class Main
 
             result = Functions.call( function, sharedResources );
             Instant endedExecution = Instant.now();
-            String exception = null;
-
-            if ( Objects.nonNull( result.getException() ) )
-            {
-                exception = ExceptionUtils.getStackTrace( result.getException() );
-            }
 
             // Log the execution to the database if a database is used
             if ( SYSTEM_SETTINGS.isInDatabase() )
@@ -189,14 +184,19 @@ public class Main
                 argsToLog[0] = function;
                 System.arraycopy( args, 0, argsToLog, 1, args.length );
 
-                sharedResources.database()
-                               .logExecution( argsToLog,
-                                              result.getName(),
-                                              result.getHash(),
-                                              Range.open( beganExecution, endedExecution ),
-                                              result.failed(),
-                                              exception,
-                                              Main.getVersion() );
+                DatabaseOperations.LogParameters logParameters =
+                        new DatabaseOperations.LogParameters( Arrays.stream( argsToLog )
+                                                                    .toList(),
+                                                              result.getName(),
+                                                              result.getHash(),
+                                                              beganExecution,
+                                                              endedExecution,
+                                                              result.failed(),
+                                                              result.getException(),
+                                                              Main.getVersion() );
+
+                DatabaseOperations.logExecution( database,
+                                                 logParameters );
             }
 
             if ( result.failed() )
@@ -216,16 +216,20 @@ public class Main
         }
         finally
         {
-            if ( SYSTEM_SETTINGS.isInDatabase() )
+            LOGGER.info( "Closing the application..." );
+            ProgressMonitor.deactivate();
+            if ( SYSTEM_SETTINGS.isInDatabase() && Objects.nonNull( database ) )
             {
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
                 {
-                    Functions.shutdown( database );
+                    LOGGER.info( "Terminating database activities..." );
+                    database.shutdown();
                 }
                 else
                 {
-                    Functions.forceShutdown( database, 6, TimeUnit.SECONDS );
+                    LOGGER.info( "Forcefully terminating database activities (you may see some errors)..." );
+                    database.forceShutdown( 6, TimeUnit.SECONDS );
                 }
             }
 

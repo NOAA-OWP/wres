@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,12 +18,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +52,15 @@ import wres.io.reading.TimeSeriesTuple;
 import wres.system.SystemSettings;
 
 /**
- * <p>This is where reading of time-series formats meets ingesting of time-series (e.g., into a persistent store). Creates
- * one or more {@link DataSource} for reading and ingesting and then reads and ingests them. Reading in this context 
- * means instantiating a {@link TimeSeriesReader} and supplying the reader with a {@link DataSource} to read, while 
- * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a 
- * {@link TimeSeriesIngester}, which is supplied on construction. Also handles other tasks between reading and ingest, 
- * such as the application of a consistent missing value identifier (for missing values that are declared, rather than 
- * integral to readers).
+ * <p>This is where reading of time-series formats meets ingesting of time-series. In this context, ingesting could
+ * mean persisting the time-series data in a database or simply forwarding them to an in-memory store. The two
+ * pipeline activities of reading and ingesting are collectively referred to as "loading" sources. Creates one or
+ * more {@link DataSource} for reading and ingesting and then reads and ingests them. Reading in this context means
+ * instantiating a {@link TimeSeriesReader} and supplying the reader with a {@link DataSource} to read, while
+ * ingesting means passing the resulting time-series and its descriptive {@link DataSource} to a
+ * {@link TimeSeriesIngester}, which is supplied on construction. Also handles other tasks between reading and
+ * ingest, such as the application of a consistent missing value identifier (for missing values that are declared,
+ * rather than integral to readers).
  *
  * <p>TODO: Remove the gridded features cache once #51232 is addressed.
  *
@@ -85,45 +95,157 @@ public class SourceLoader
     private final ProjectConfig projectConfig;
 
     /**
-     * @param timeSeriesIngester the time-series ingester, required
-     * @param systemSettings the system settings, required
-     * @param readingExecutor the executor for reading, required
-     * @param projectConfig the project declaration, required along with the pair element
-     * @param griddedFeatures the gridded features cache to populate, only required for a gridded evaluation
+     * Reads and ingests time-series data and returns ingest results.
+     * @param timeSeriesIngester the time-series ingester
+     * @param systemSettings the system settings
+     * @param projectConfig the projectConfig for the evaluation
+     * @param griddedFeatures the gridded features cache to populate
+     * @return the ingest results
      * @throws NullPointerException if any required input is null
+     * @throws IngestException when anything else goes wrong
      */
 
-    public SourceLoader( TimeSeriesIngester timeSeriesIngester,
-                         SystemSettings systemSettings,
-                         ExecutorService readingExecutor,
-                         ProjectConfig projectConfig,
-                         GriddedFeatures.Builder griddedFeatures )
+    public static List<IngestResult> load( TimeSeriesIngester timeSeriesIngester,
+                                           SystemSettings systemSettings,
+                                           ProjectConfig projectConfig,
+                                           GriddedFeatures.Builder griddedFeatures )
     {
-        Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( readingExecutor );
         Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getPair() );
+        Objects.requireNonNull( timeSeriesIngester );
 
-        this.systemSettings = systemSettings;
-        this.readingExecutor = readingExecutor;
-        this.projectConfig = projectConfig;
-        this.timeSeriesIngester = timeSeriesIngester;
-        this.griddedFeatures = griddedFeatures;
-        this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( projectConfig.getPair(),
-                                                                   systemSettings,
-                                                                   griddedFeatures );
+        // Create a thread factory for reading. Inner readers may create additional thread factories (e.g., archives).
+        ThreadFactory threadFactoryWithNaming =
+                new BasicThreadFactory.Builder().namingPattern( "Outer Reading Thread %d" )
+                                                .build();
+        ThreadPoolExecutor readingExecutor =
+                new ThreadPoolExecutor( systemSettings.getMaximumReadThreads(),
+                                        systemSettings.getMaximumReadThreads(),
+                                        systemSettings.poolObjectLifespan(),
+                                        TimeUnit.MILLISECONDS,
+                                        // Queue should be large enough to allow
+                                        // join() call below to be reached with
+                                        // zero or few rejected submissions to
+                                        // the executor service.
+                                        new ArrayBlockingQueue<>( 100_000 ),
+                                        threadFactoryWithNaming );
+        readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        List<IngestResult> projectSources = new ArrayList<>();
+
+        SourceLoader loader = new SourceLoader( timeSeriesIngester,
+                                                systemSettings,
+                                                readingExecutor,
+                                                projectConfig,
+                                                griddedFeatures );
+
+        try
+        {
+            Instant start = Instant.now();
+
+            List<CompletableFuture<List<IngestResult>>> ingested = loader.load();
+
+            // If the count of the list above exceeds the queue in the
+            // ExecutorService above, then this Thread will be stuck helping
+            // start ingest tasks until the service can catch up. The downside
+            // is a delay in exception propagation in some circumstances.
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "{} direct ingest results.", ingested.size() );
+            }
+
+            // Give exception on any of these ingests a chance to propagate fast
+            SourceLoader.doAllOrException( ingested )
+                        .join();
+
+            // The loading happened above during join(), now read the results.
+            for ( CompletableFuture<List<IngestResult>> task : ingested )
+            {
+                List<IngestResult> ingestResults = task.get();
+                projectSources.addAll( ingestResults );
+            }
+
+            Instant stop = Instant.now();
+
+            LOGGER.info( "Finished loading the declared datasets in {}.", Duration.between( start, stop ) );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted during ingest.", ie );
+            Thread.currentThread().interrupt();
+        }
+        catch ( CompletionException | ExecutionException e )
+        {
+            String message = "An ingest task could not be completed.";
+            throw new IngestException( message, e );
+        }
+        finally
+        {
+            // Close the ingest executor
+            readingExecutor.shutdownNow();
+        }
+
+        LOGGER.debug( "Here are the files ingested: {}", projectSources );
+
+        // Are there any sources that need to be retried? If so, that is exceptional, because retries happen in-band to
+        // ingest. In practice, this scenario is unlikely because ingest should throw an exception once all retries are
+        // exhausted: #89229
+        if ( projectSources.stream().anyMatch( IngestResult::requiresRetry ) )
+        {
+            throw new IngestException( "Discovered one or more time-series that had not been ingested after all "
+                                       + "retries were exhausted." );
+        }
+
+        List<IngestResult> composedResults = projectSources.stream()
+                                                           .toList();
+
+        if ( composedResults.isEmpty() )
+        {
+            throw new IngestException( "No data were ingested." );
+        }
+
+        return composedResults;
+    }
+
+    /**
+     * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
+     * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
+     * should already handle exceptions otherwise the exceptions will not be caught here (i.e. all futures will process
+     * to completion).
+     *
+     * @param <T> the type of future
+     * @param futures the futures to compose
+     * @return the composed futures
+     * @throws CompletionException if completing exceptionally
+     */
+
+    static <T> CompletableFuture<Object> doAllOrException( final List<CompletableFuture<T>> futures )
+    {
+        //Complete when all futures are completed
+        final CompletableFuture<Void> allDone =
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) );
+        //Complete when any of the underlying futures completes exceptionally
+        final CompletableFuture<T> oneExceptional = new CompletableFuture<>();
+        //Link the two
+        for ( final CompletableFuture<T> completableFuture : futures )
+        {
+            //When one completes exceptionally, propagate
+            completableFuture.exceptionally( exception -> {
+                oneExceptional.completeExceptionally( exception );
+                return null;
+            } );
+        }
+        //Either all done OR one completes exceptionally
+        return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
     /**
      * Loads the time-series data.
      *
      * @return List of future ingest results
-     * @throws IOException when no data is found
-     * @throws IngestException when getting project details fails
+     * @throws IngestException when loading fails
      */
 
-    public List<CompletableFuture<List<IngestResult>>> load() throws IOException
+    private List<CompletableFuture<List<IngestResult>>> load()
     {
         LOGGER.info( "Loading the declared datasets. {}{}{}{}{}{}",
                      "Depending on many factors (including dataset size, ",
@@ -752,6 +874,37 @@ public class SourceLoader
     private TimeSeriesReaderFactory getTimeSeriesReaderFactory()
     {
         return this.timeSeriesReaderFactory;
+    }
+
+    /**
+     * @param timeSeriesIngester the time-series ingester, required
+     * @param systemSettings the system settings, required
+     * @param readingExecutor the executor for reading, required
+     * @param projectConfig the project declaration, required along with the pair element
+     * @param griddedFeatures the gridded features cache to populate, only required for a gridded evaluation
+     * @throws NullPointerException if any required input is null
+     */
+
+    private SourceLoader( TimeSeriesIngester timeSeriesIngester,
+                          SystemSettings systemSettings,
+                          ExecutorService readingExecutor,
+                          ProjectConfig projectConfig,
+                          GriddedFeatures.Builder griddedFeatures )
+    {
+        Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( readingExecutor );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getPair() );
+
+        this.systemSettings = systemSettings;
+        this.readingExecutor = readingExecutor;
+        this.projectConfig = projectConfig;
+        this.timeSeriesIngester = timeSeriesIngester;
+        this.griddedFeatures = griddedFeatures;
+        this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( projectConfig.getPair(),
+                                                                   systemSettings,
+                                                                   griddedFeatures );
     }
 
 }

@@ -43,7 +43,6 @@ import static java.time.ZoneOffset.UTC;
 import wres.io.data.TabularDataset;
 import wres.io.ingesting.IngestException;
 import wres.io.retrieval.DataAccessException;
-import wres.io.Operations;
 import wres.io.data.DataProvider;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
@@ -52,8 +51,6 @@ import wres.system.SystemSettings;
 /**
  * An Interface structure used for organizing database operations and providing
  * common database operations.
- * 
- * TODO: consider moving the database-related helpers from {@link Operations} to here.
  */
 public class Database
 {
@@ -134,10 +131,11 @@ public class Database
     }
 
     /**
-     * Waits until all passed in jobs have executed.
+     * Waits until all passed in jobs have executed and then shuts down the database.
      */
     public void shutdown()
     {
+        LOGGER.info( "Shutting down the database..." );
         if ( !sqlTasks.isShutdown() )
         {
             sqlTasks.shutdown();
@@ -161,16 +159,18 @@ public class Database
     public List<Runnable> forceShutdown( long timeOut,
                                          TimeUnit timeUnit )
     {
+        LOGGER.info( "Forcefully shutting down the database..." );
         List<Runnable> abandoned = new ArrayList<>();
 
         sqlTasks.shutdown();
         try
         {
-            sqlTasks.awaitTermination( timeOut, timeUnit );
+            boolean result = sqlTasks.awaitTermination( timeOut, timeUnit );
+            LOGGER.debug( "Database executor terminated: {}.", result );
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Database forceShutdown interrupted.", ie );
+            LOGGER.warn( "Forced shutdown of the database interrupted.", ie );
             List<Runnable> abandonedDbTasks = sqlTasks.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
             Thread.currentThread().interrupt();
@@ -178,6 +178,11 @@ public class Database
 
         List<Runnable> abandonedMore = sqlTasks.shutdownNow();
         abandoned.addAll( abandonedMore );
+
+        LOGGER.info( "Database was forcefully shut down. "
+                     + "Abandoned around {} database tasks.",
+                     abandoned.size() );
+
         this.closePools();
         return abandoned;
     }
@@ -224,7 +229,7 @@ public class Database
             throw new IllegalStateException( "Could not get a raw database connection.", e );
         }
     }
-    
+
     /**
      * @return the database settings
      */
@@ -247,7 +252,7 @@ public class Database
         return DriverManager.getConnection( connectionString,
                                             properties );
     }
-    
+
     /**
      * Creates a new thread executor
      * @return A new thread executor that may run the maximum number of configured threads
@@ -272,7 +277,7 @@ public class Database
         executor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         return executor;
     }
-    
+
     /**
      * Get a connection from either the normal or high priority pool
      * @param highPriority Whether to get from the high priority pool.
@@ -926,137 +931,6 @@ public class Database
     SystemSettings getSystemSettings()
     {
         return this.systemSettings;
-    }
-
-
-    /**
-     * Logs information about the execution of the WRES into the database for
-     * aid in remote debugging.
-     * Moved from {@link wres.io.Operations} 2021-03-15, see history there.
-     * @param arguments The arguments used to run the WRES, at least two
-     * @param projectName the project name
-     * @param hash the hash of the project datasets
-     * @param executionInterval The instants at which the WRES began and ended execution, not null
-     * @param failed Whether or not the execution failed
-     * @param error Any error that caused the WRES to crash
-     * @param version The top-level version of WRES (module versions vary), not null
-     * @throws NullPointerException if any required input is null
-     * @throws IllegalArgumentException if there are zero arguments
-     */
-    public void logExecution( String[] arguments,
-                              String projectName,
-                              String hash,
-                              Range<Instant> executionInterval,
-                              boolean failed,
-                              String error,
-                              String version )
-    {
-        Objects.requireNonNull( arguments );
-        Objects.requireNonNull( version );
-        Objects.requireNonNull( executionInterval );
-
-        if ( arguments.length < 1 )
-        {
-            throw new IllegalArgumentException( "Cannot log an execution with zero arguments." );
-        }
-
-        try
-        {
-            LocalDateTime startedAtZulu = LocalDateTime.ofInstant( executionInterval.lowerEndpoint(), UTC );
-            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( executionInterval.upperEndpoint(), UTC );
-
-            // For any arguments that happen to be regular files, read the
-            // contents of the first file into the "project" field. Maybe there
-            // is an improvement that can be made, but this should cover the
-            // common case of a single file in the args.
-            String project = "";
-
-            // The two operations that might perform a project related operation are 'execute' and 'ingest';
-            // these are the only cases where we might be interested in a project configuration
-            String testArg = arguments[0].toLowerCase();
-            if ( "execute".equals( testArg ) || "ingest".equals( testArg ) )
-            {
-
-                // Go ahead and assign the second argument as the project;
-                // if this instance is in server mode,
-                // this will be the raw project text and a file path will not be involved
-                project = arguments[1];
-
-                // Look through the arguments to find the path to a file;
-                // this is more than likely our project configuration
-                for ( String arg : arguments )
-                {
-                    Path path = Paths.get( arg );
-
-                    if ( path.toFile().isFile() )
-                    {
-                        project = String.join( System.lineSeparator(),
-                                               Files.readAllLines( path ) );
-                        break;
-                    }
-                }
-            }
-
-            DataScripter script = new DataScripter( this );
-
-            script.addLine( "INSERT INTO wres.ExecutionLog (" );
-            script.addTab().addLine( "arguments," );
-            script.addTab().addLine( "system_version," );
-            script.addTab().addLine( "project," );
-            script.addTab().addLine( "project_name," );
-            script.addTab().addLine( "hash," );
-            script.addTab().addLine( "username," );
-            script.addTab().addLine( "address," );
-            script.addTab().addLine( "start_time," );
-            script.addTab().addLine( "end_time," );
-            script.addTab().addLine( "failed," );
-            script.addTab().addLine( "error" );
-            script.addLine( ")" );
-            script.addLine( "VALUES (" );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-
-            if ( this.getType() == DatabaseType.POSTGRESQL )
-            {
-                script.addTab().addLine( "inet_client_addr()," );
-            }
-            else if ( this.getType().hasUserFunction() )
-            {
-                script.addTab().addLine( "user()," );
-            }
-            else
-            {
-                script.addTab().addLine( "NULL," );
-            }
-
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?," );
-            script.addTab().addLine( "?" );
-            script.addLine( ");" );
-
-            script.execute(
-                            String.join( " ", arguments ),
-                            version,
-                            project,
-                            projectName,
-                            hash,
-                            System.getProperty( "user.name" ),
-                            // Let server find and report network address
-                            startedAtZulu,
-                            endedAtZulu,
-                            failed,
-                            error );
-        }
-        catch ( SQLException | IOException e )
-        {
-            LOGGER.warn( "Execution metadata could not be logged to the database.",
-                         e );
-        }
     }
 
     /**

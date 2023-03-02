@@ -365,7 +365,7 @@ public class ObservationRetrieverTest
     /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
-     * 
+     *
      * @throws SQLException if the detailed set-up fails
      */
 
@@ -382,7 +382,9 @@ public class ObservationRetrieverTest
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
-                                                List.of( new NamedFeature( FEATURE.getName(), FEATURE.getName(), null ) ),
+                                                List.of( new NamedFeature( FEATURE.getName(),
+                                                                           FEATURE.getName(),
+                                                                           null ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -444,11 +446,11 @@ public class ObservationRetrieverTest
 
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
-        Project project = Projects.getProjectFromIngest( this.wresDatabase,
-                                                         this.caches,
-                                                         null,
-                                                         fakeConfig,
-                                                         results );
+        Project project = Projects.getProject( this.wresDatabase,
+                                               fakeConfig,
+                                               this.caches,
+                                               null,
+                                               results );
         assertTrue( project.save() );
     }
 

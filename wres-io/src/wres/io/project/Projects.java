@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.time.TimeSeriesStore;
 import wres.io.NoDataException;
 import wres.io.config.ConfigHelper;
 import wres.io.data.DataProvider;
@@ -28,12 +29,66 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 
 /**
- * Create or find existing wres.project rows in the database, represented by
- * Project instances.
+ * Factory class for creating a {@link Project}.
  */
 public class Projects
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Projects.class );
+
+    /**
+     * Creates an {@link Project} backed by a database.
+     * @param database The database to use
+     * @param projectConfig the projectConfig to ingest
+     * @param caches the database caches/ORMs
+     * @param griddedFeatures the gridded features cache, if required
+     * @param ingestResults the ingest results
+     * @return the project
+     * @throws IllegalStateException when another process already holds lock
+     * @throws NullPointerException if any input is null
+     * @throws IngestException when anything else goes wrong
+     */
+    public static Project getProject( Database database,
+                                      ProjectConfig projectConfig,
+                                      DatabaseCaches caches,
+                                      GriddedFeatures griddedFeatures,
+                                      List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( caches );
+        Objects.requireNonNull( ingestResults );
+
+        try
+        {
+            return Projects.getProjectFromIngest( database,
+                                                  caches,
+                                                  griddedFeatures,
+                                                  projectConfig,
+                                                  ingestResults );
+        }
+        catch ( SQLException | IngestException | PreIngestException e )
+        {
+            throw new IngestException( "Failed to finalize ingest.", e );
+        }
+    }
+
+    /**
+     * Creates an {@link Project} backed by an in-memory {@link TimeSeriesStore}.
+     * @param projectConfig the projectConfig
+     * @param timeSeriesStore the store of time-series data
+     * @param ingestResults the ingest results
+     * @return the project
+     */
+    public static Project getProject( ProjectConfig projectConfig,
+                                      TimeSeriesStore timeSeriesStore,
+                                      List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( timeSeriesStore );
+        Objects.requireNonNull( ingestResults );
+
+        return new InMemoryProject( projectConfig, timeSeriesStore, ingestResults );
+    }
 
     /**
      * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
@@ -48,11 +103,11 @@ public class Projects
      * @throws PreIngestException if the hashes of the ingested sources cannot be determined
      * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
-    public static Project getProjectFromIngest( Database database,
-                                                DatabaseCaches caches,
-                                                GriddedFeatures griddedFeatures,
-                                                ProjectConfig projectConfig,
-                                                List<IngestResult> ingestResults )
+    private static Project getProjectFromIngest( Database database,
+                                                 DatabaseCaches caches,
+                                                 GriddedFeatures griddedFeatures,
+                                                 ProjectConfig projectConfig,
+                                                 List<IngestResult> ingestResults )
             throws SQLException
     {
         long[] leftIds = Projects.getLeftIds( ingestResults );
@@ -213,7 +268,7 @@ public class Projects
         DatabaseProject details = detailsResult.getLeft();
         long detailsId = details.getId();
 
-        if ( detailsResult.getRight() )
+        if ( Boolean.TRUE.equals( detailsResult.getRight() ) )
         {
             String projectId = Long.toString( detailsId );
             LOGGER.debug( "Found that this Thread is responsible for "
@@ -334,7 +389,6 @@ public class Projects
                                                               String[] leftHashes,
                                                               String[] rightHashes,
                                                               String[] baselineHashes )
-            throws SQLException
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( caches );
@@ -419,9 +473,9 @@ public class Projects
 
 
     /**
-     * Get the list of left surrogate keys from given ingest results.
+     * <p>Get the list of left surrogate keys from given ingest results.
      *
-     * Intended to save heap by doing one dataset at a time, using primitive[]
+     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
      *
      * @param ingestResults The ingest results.
      * @return The ids for the left dataset
@@ -456,9 +510,9 @@ public class Projects
 
 
     /**
-     * Get the list of right surrogate keys from given ingest results.
+     * <p>Get the list of right surrogate keys from given ingest results.
      *
-     * Intended to save heap by doing one dataset at a time, using primitive[]
+     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
      *
      * @param ingestResults The ingest results.
      * @return The ids for the right dataset
@@ -493,9 +547,9 @@ public class Projects
 
 
     /**
-     * Get the list of baseline surrogate keys from given ingest results.
+     * <p>Get the list of baseline surrogate keys from given ingest results.
      *
-     * Intended to save heap by doing one dataset at a time, using primitive[]
+     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
      *
      * @param ingestResults The ingest results.
      * @return The ids for the baseline dataset
@@ -526,5 +580,10 @@ public class Projects
         }
 
         return baselineIds;
+    }
+
+    private Projects()
+    {
+        // Do not construct
     }
 }

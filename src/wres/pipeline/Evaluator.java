@@ -207,7 +207,7 @@ public class Evaluator
         // Build a processing pipeline whose work is performed by a collection of thread pools, one pool for each
         // conceptual activity. There are two activities not represented here, namely reading of time-series data from
         // source formats and ingest of time-series into a persistent data store, such as a database. The thread pools
-        // used for reading and ingesting are managed by wres-io. For example, see wres.io.Operations and
+        // used for reading and ingesting are managed by wres-io. For example, see wres.io.ingesting.SourceLoader and
         // wres.io.ingesting.database.DatabaseTimeSeriesIngester. In principle, those thread pools could be abstracted
         // here too, but ingest is implementation specific (e.g., in-memory ingest is an ingest facade and does not
         // require a thread pool) and some readers, notably archive readers, have their own thread pool
