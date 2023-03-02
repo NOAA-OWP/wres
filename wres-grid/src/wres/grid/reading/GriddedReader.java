@@ -13,7 +13,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.grid.client.InvalidRequestException;
 import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
-import wres.util.NetCDF;
+import wres.util.Netcdf;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -49,7 +49,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * Reads gridded data.
  */
-
 public class GriddedReader
 {
     /**
@@ -138,16 +137,13 @@ public class GriddedReader
 
                     // We'll need to eventually iterate through time, but now is
                     // not the... time!
-                    griddedValue = reader.read(
-                            null,
-                            request.getVariableName(),
-                            feature.getSrid(),
-                            feature.getWkt() );
+                    griddedValue = reader.read( request.getVariableName(),
+                                                feature.getWkt() );
 
-                    Event<Double> event = DoubleEvent.of( griddedValue.getValidTime(), griddedValue.getValue() );
-                    Pair<Instant, Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.getIssueTime(), event );
+                    Event<Double> event = DoubleEvent.of( griddedValue.validTime(), griddedValue.value() );
+                    Pair<Instant, Event<Double>> eventPlusIssueTime = Pair.of( griddedValue.issueTime(), event );
                     events.add( eventPlusIssueTime );
-                    measurementUnit = griddedValue.getMeasurementUnit();
+                    measurementUnit = griddedValue.measurementUnit();
                 }
             }
         }
@@ -174,7 +170,6 @@ public class GriddedReader
 
     /**
      * Attempts to compose a list of {@link TimeSeries} from a list of events.
-     *
      * TODO: replace with retrieval based around uniquely identified time-series. In the presence of duplicate events
      * whose values are different, it is impossible, by definition, to know the time-series to which a duplicate 
      * belongs; rather time-series must be composed with reference to a time-series identifier.
@@ -280,44 +275,8 @@ public class GriddedReader
         return Collections.unmodifiableList( returnMe );
     }
 
-    private static class GridValue
+    private record GridValue( double value, String measurementUnit, Instant issueTime, Instant validTime )
     {
-        GridValue(
-                final double value,
-                final String measurementUnit,
-                final Instant issueTime,
-                final Instant validTime )
-        {
-            this.value = value;
-            this.measurementUnit = measurementUnit;
-            this.issueTime = issueTime;
-            this.validTime = validTime;
-        }
-
-        double getValue()
-        {
-            return value;
-        }
-
-        Instant getIssueTime()
-        {
-            return this.issueTime;
-        }
-
-        Instant getValidTime()
-        {
-            return this.validTime;
-        }
-
-        String getMeasurementUnit()
-        {
-            return this.measurementUnit;
-        }
-
-        private final String measurementUnit;
-        private final double value;
-        private final Instant issueTime;
-        private final Instant validTime;
     }
 
     private static class GridFileReader
@@ -329,20 +288,17 @@ public class GriddedReader
             this.readLock = new ReentrantLock();
         }
 
-        GridValue read( Integer time, String variableName, Integer srid, String wkt )
+        GridValue read( String variableName, String wkt )
                 throws IOException
         {
-            if ( time == null )
-            {
-                time = 0;
-            }
-
+            // Time always 0 for now
+            int time = 0;
             this.readLock.lock();
 
             Feature.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
-            DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
+            DatasetUrl url = DatasetUrl.create( ServiceType.File, this.path );
 
             try ( NetcdfDataset dataset = NetcdfDatasets.acquireDataset( url, null );
                   GridDataset gridDataset = new GridDataset( dataset ) )
@@ -384,7 +340,6 @@ public class GriddedReader
 
         /**
          * Parse a point from a point WKT, ignoring srid.
-         *
          * TODO: do an affine transform, not just parse a point.
          */
         private static Feature.GeoPoint getLatLonCoordFromSridWkt( String wkt )
@@ -396,10 +351,10 @@ public class GriddedReader
         {
             if ( this.validTime == null )
             {
-                DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
-                try ( NetcdfFile file = NetcdfDataset.acquireFile( url, null ) )
+                DatasetUrl url = DatasetUrl.create( ServiceType.File, this.path );
+                try ( NetcdfFile file = NetcdfDatasets.acquireFile( url, null ) )
                 {
-                    this.validTime = NetCDF.getTime( file );
+                    this.validTime = Netcdf.getTime( file );
                 }
             }
 
@@ -410,10 +365,10 @@ public class GriddedReader
         {
             if ( this.issueTime == null && this.isForecast )
             {
-                DatasetUrl url = new DatasetUrl( ServiceType.File, this.path );
+                DatasetUrl url = DatasetUrl.create( ServiceType.File, this.path );
                 try ( NetcdfFile file = NetcdfDatasets.acquireFile( url, null ) )
                 {
-                    this.issueTime = NetCDF.getReferenceTime( file );
+                    this.issueTime = Netcdf.getReferenceTime( file );
                 }
             }
             else if ( this.issueTime == null )

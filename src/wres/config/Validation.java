@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -111,18 +112,18 @@ public class Validation
     /** The warning message boilerplate for logger (includes 3 placeholders) */
     private static final String FILE_LINE_COLUMN_BOILERPLATE =
             "In the project declaration from {}, near line {} and column {}, "
-                                                               + "WRES found an issue.";
+            + "WRES found an issue.";
 
     private static final String API_SOURCE_MISSING_ISSUED_DATES_ERROR_MESSAGE =
             "One must specify issued dates with both earliest and latest (e.g. "
-                                                                                + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
-                                                                                + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-                                                                                + "source for forecasts (see source near line {} and column {}";
+            + "<issuedDates earliest=\"2018-12-28T15:42:00Z\" "
+            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+            + "source for forecasts (see source near line {} and column {}";
     private static final String API_SOURCE_MISSING_DATES_ERROR_MESSAGE =
             "One must specify dates with both earliest and latest (e.g. "
-                                                                         + "<dates earliest=\"2018-12-28T15:42:00Z\" "
-                                                                         + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
-                                                                         + "source for observations (see source near line {} and column {}";
+            + "<dates earliest=\"2018-12-28T15:42:00Z\" "
+            + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
+            + "source for observations (see source near line {} and column {}";
 
 
     private Validation()
@@ -230,7 +231,7 @@ public class Validation
     /**
      * Checks that there is no more than one <code>destination</code> of a given <code>type</code>, otherwise the
      * declaration is invalid. See #58737.
-     * 
+     *
      * @param projectConfigPlus the project to validate
      * @return true when valid, false otherwise
      */
@@ -320,7 +321,7 @@ public class Validation
 
     /**
      * Warns about the zone offset.
-     * 
+     *
      * @param projectConfigPlus the config
      * @param source the particular source element to check
      * @throws NullPointerException when any arg is null
@@ -744,7 +745,7 @@ public class Validation
 
     /**
      * Validates the metrics portion of the project config.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @return true if the output declaration is valid, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
@@ -768,7 +769,7 @@ public class Validation
 
     /**
      * Validates the output portion of the project config.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @return true if the output declaration is valid, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
@@ -896,31 +897,34 @@ public class Validation
         boolean isValid = true;
 
         // Look for a Netcdf Destination config that has a template that doesn't exist
-        DestinationConfig templateMissing = wres.util.Collections.find( destinations,
-                                                                        destinationConfig -> destinationConfig.getNetcdf() != null
-                                                                                             &&
-                                                                                             destinationConfig.getNetcdf()
-                                                                                                              .getTemplatePath() != null
-                                                                                             &&
-                                                                                             Files.notExists(
-                                                                                                              Paths.get( destinationConfig.getNetcdf()
-                                                                                                                                          .getTemplatePath() ) ) );
+        Predicate<DestinationConfig> predicate
+                = destinationConfig -> destinationConfig.getNetcdf() != null
+                                       && destinationConfig.getNetcdf()
+                                                           .getTemplatePath() != null
+                                       && Files.notExists( Paths.get( destinationConfig.getNetcdf()
+                                                                                       .getTemplatePath() ) );
 
-        if ( templateMissing != null && LOGGER.isErrorEnabled() )
+        // Look for a Netcdf Destination config that has a template that doesn't exist
+        Optional<DestinationConfig> templateMissing = destinations.stream()
+                                                                  .filter( predicate )
+                                                                  .findFirst();
+
+        if ( templateMissing.isPresent() && LOGGER.isErrorEnabled() )
         {
             isValid = false;
             LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
                           + " The indicated Netcdf Output template does not exist.",
                           path,
-                          templateMissing.sourceLocation().getLineNumber(),
-                          templateMissing.sourceLocation().getColumnNumber() );
+                          templateMissing.get().sourceLocation().getLineNumber(),
+                          templateMissing.get().sourceLocation().getColumnNumber() );
         }
 
         // Look for destinations that aren't for Netcdf but have netcdf specifications
-        Collection<DestinationConfig> incorrectDestinations = wres.util.Collections.where(
-                                                                                           destinations,
-                                                                                           config -> config.getType() != DestinationType.NETCDF
-                                                                                                     && config.getNetcdf() != null );
+        Collection<DestinationConfig> incorrectDestinations =
+                destinations.stream()
+                            .filter( config -> config.getType() != DestinationType.NETCDF
+                                               && config.getNetcdf() != null )
+                            .toList();
 
         if ( !incorrectDestinations.isEmpty() )
         {
@@ -944,7 +948,7 @@ public class Validation
 
     /**
      * Checks that the metric declaration is internally consistent.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @return true if the metric declaration is internally consistent, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
@@ -989,7 +993,7 @@ public class Validation
 
     /**
      * Checks that the metric declaration is internally consistent.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param metrics the metrics declaration
      * @return true if the metric declaration is internally consistent, false otherwise
@@ -1038,8 +1042,8 @@ public class Validation
                               metrics.sourceLocation()
                                      .getLineNumber(),
                               metrics
-                                     .sourceLocation()
-                                     .getColumnNumber() );
+                                      .sourceLocation()
+                                      .getColumnNumber() );
             }
             returnMe = false;
         }
@@ -1066,7 +1070,7 @@ public class Validation
 
     /**
      * Checks that the metric declaration is internally consistent.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @return true if the metric declaration is internally consistent, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
@@ -1125,8 +1129,8 @@ public class Validation
 
                        // Check that the named metric is consistent with any pooling window declaration
                        if ( checkMe != null && hasLegacyCsv
-                            && ! ( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
-                                   || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
+                            && !( checkMe.isInGroup( StatisticType.DOUBLE_SCORE )
+                                  || checkMe.isInGroup( StatisticType.DURATION_SCORE ) ) )
                        {
 
                            // Issued dates pooling window
@@ -1215,7 +1219,7 @@ public class Validation
      * validation remains applicable while the software ingests time-series for continuous variables. If this 
      * assumption changes to additionally support categorical variables, then this validation is no longer applicable.
      * Also relies on the {@link DataSourceConfig#getType()} for the right data, which is brittle. See #65422.
-     * 
+     *
      * @param projectConfigPlus the augmented declaration
      * @param metricsConfig the metrics declaration
      * @return true if the validation passes, false otherwise
@@ -1252,7 +1256,8 @@ public class Validation
         // Has decision thresholds?
         boolean decisionThresholds = metricsConfig.getThresholds()
                                                   .stream()
-                                                  .anyMatch( next -> next.getType() == ThresholdType.PROBABILITY_CLASSIFIER );
+                                                  .anyMatch( next -> next.getType()
+                                                                     == ThresholdType.PROBABILITY_CLASSIFIER );
 
         DatasourceType declaredRightDataType = projectConfig.getInputs()
                                                             .getRight()
@@ -1351,7 +1356,7 @@ public class Validation
      * Validates that each metric in the input group is consistent with the {@link DataSourceConfig#getType()} for 
      * the right data. For example, cannot declare metrics for ensemble data unless the data type reflects that. 
      * Assumes that all ingested time-series are continuous numerical variables. See #65422.
-     * 
+     *
      * @param projectConfigPlus the augmented declaration
      * @param metricsConfig the metrics declaration
      * @return true if the validation passes, false otherwise
@@ -1455,7 +1460,7 @@ public class Validation
                 // Locate a threshold with an external source
                 if ( nextSource instanceof ThresholdsConfig.Source )
                 {
-                    URI thresholdData = ( (ThresholdsConfig.Source) nextSource ).getValue();
+                    URI thresholdData = ( ( ThresholdsConfig.Source ) nextSource ).getValue();
 
                     final Path destinationPath;
                     try
@@ -1472,10 +1477,10 @@ public class Validation
                             // complete request. The best we can do is see if it can actually be used as a URL
                             URL possibleURL = thresholdData.toURL();
                             LOGGER.debug(
-                                          "The remote thresholds at {} can presumably be accessed since {} is a valid "
-                                          + "url.",
-                                          thresholdData,
-                                          possibleURL );
+                                    "The remote thresholds at {} can presumably be accessed since {} is a valid "
+                                    + "url.",
+                                    thresholdData,
+                                    possibleURL );
                             continue;
                         }
                         else
@@ -1631,11 +1636,11 @@ public class Validation
 
     /**
      * Validates features.
-     * 
+     *
      * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
      * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
      * is relaxed, define a single helper for validation of features to be re-used in all contexts.
-     * 
+     *
      * @param features the features to validate
      * @return true if the features are valid, false otherwise
      */
@@ -1656,12 +1661,12 @@ public class Validation
 
     /**
      * Validates features in a grouped context.
-     * 
+     *
      * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
      * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
      * is relaxed, define a single helper for validation of features to be re-used in all contexts instead of two 
      * separate helpers, namely {@link #areFeaturesValidInSingletonContext(List)} and this one.
-     * 
+     *
      * @param features the features to validate
      * @param context some optional context information to help understand the origin of the features (e.g., group name)
      * @param projectConfigPlus the project declaration
@@ -1741,7 +1746,7 @@ public class Validation
 
     /**
      * Validates any feature groups in the pair declaration.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @return true when the feature group declaration is valid, otherwise false
@@ -1824,7 +1829,8 @@ public class Validation
                                          // Remove groups without a declared name as the software will choose one
                                          .filter( next -> Objects.nonNull( next.getName() )
                                                           && next.getName()
-                                                                 .length() > wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH )
+                                                                 .length()
+                                                             > wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH )
                                          .map( FeaturePool::getName )
                                          .collect( Collectors.toSet() );
 
@@ -1852,12 +1858,12 @@ public class Validation
 
     /**
      * Validates individual features that are supplied in a grouped context.
-     * 
+     *
      * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
      * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
      * is relaxed, define a single helper for validation of features to be re-used in all contexts. The new helper will 
      * be called by this method, not {@link #areFeaturesValidInGroupedContext(List, String, ProjectConfigPlus, PairConfig)}.
-     * 
+     *
      * @param groups the groups to evaluate
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
@@ -2134,7 +2140,7 @@ public class Validation
 
     /**
      * Validates the lead times. The left bound must be less than or equal to the right bound.
-     * 
+     *
      * @param projectConfigPlus the project declaration to help with messaging
      * @param leadTimes the lead times to validate
      * @return true if the lead times are null or one-sided or the right is greater than 
@@ -2722,7 +2728,7 @@ public class Validation
 
     /**
      * Determines whether the settings for lenient rescaling are valid.
-     * 
+     *
      * @param projectConfigPlus the wrapped project declaration
      * @param pairConfig the pair declaration
      * @return true if the declaration is valid, otherwise false
@@ -2756,13 +2762,13 @@ public class Validation
     /**
      * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
      * aggregation functions associated with the existingTimeScale for each source.
-     * 
+     *
      * See Redmine issue 40389.
-     * 
+     *
      * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
      * notably whether the aggregation function is applicable, can be checked in advance. Having a valid time 
      * aggregation function does not imply that the system actually supports it.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @return true if the time aggregation function associated with the desiredTimeScaleis valid
@@ -2790,7 +2796,7 @@ public class Validation
     /**
      * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the input 
      * declaration, false otherwise.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param inputConfig the input declaration
      * @return true if the time aggregation function is valid, given the inputConfig
@@ -2829,7 +2835,7 @@ public class Validation
     /**
      * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the 
      * declaration for a specific input, false otherwise.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param inputConfig the input declaration
      * @param helper a helper string for context
@@ -2845,8 +2851,8 @@ public class Validation
         TimeScaleOuter timeScale = TimeScaleOuter.of( inputConfig );
 
         // If not instantaneous, the existing function must be a total or mean
-        if ( !timeScale.isInstantaneous() && ! ( inputConfig.getFunction() == TimeScaleFunction.MEAN
-                                                 || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
+        if ( !timeScale.isInstantaneous() && !( inputConfig.getFunction() == TimeScaleFunction.MEAN
+                                                || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
 
@@ -2868,13 +2874,13 @@ public class Validation
     /**
      * Returns true if the time aggregation period associated with the desiredTimeScale is valid given the time
      * aggregation periods associated with the existingTimeScale for each source.
-     * 
+     *
      * See Redmine issue 40389.
-     * 
+     *
      * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
      * can be checked in advance. Having a valid time aggregation period does not imply that the system actually 
      * supports aggregation to that period.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param pairConfig the pair declaration
      * @return true if the time aggregation period associated with the desiredTimeScale is valid
@@ -2978,7 +2984,7 @@ public class Validation
     /**
      * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
      * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param desired the desired period
      * @param existing the existing period
@@ -3023,7 +3029,7 @@ public class Validation
 
     /**
      * Validates the time windows. 
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param pairConfig the pair declaration
      * @return true if the time windows are valid, otherwise false
@@ -3042,7 +3048,7 @@ public class Validation
 
     /**
      * Checks the internal consistency of the issued and valid time intervals.
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param pairConfig the pair declaration
      * @return true if the issued and valid time intervals are valid, otherwise false
@@ -3105,7 +3111,7 @@ public class Validation
 
     /**
      * Checks the valid dates pooling windows for consistency with other declaration, as well as internal consistency.
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param pairConfig the pair declaration
      * @return true if the valid dates pooling windows are undefined or valid, otherwise false
@@ -3212,7 +3218,7 @@ public class Validation
     /**
      * Checks for issued dates pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param pairConfig the pair declaration
      * @return true if the issued dates pooling windows are undefined or valid, otherwise false
@@ -3319,7 +3325,7 @@ public class Validation
     /**
      * Checks for lead times pooling windows and validates for consistency with other
      * declaration, as well as internal consistency.
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param pairConfig the pair declaration
      * @return true if the lead time pooling windows are undefined or valid, otherwise false
@@ -3424,7 +3430,7 @@ public class Validation
 
     /**
      * Validates the specified time windows. 
-     * 
+     *
      * @param projectConfigPlus the project declaration, which helps with messaging
      * @param windowConfig the time window declaration
      * @param windowType a string that identifies the window type for messaging 
@@ -3495,11 +3501,11 @@ public class Validation
 
             result = false;
         }
-        
+
         result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, left ) && result;
-        
+
         result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, right ) && result;
-        
+
         result = Validation.areDataSourcesValid( projectConfigPlus, left ) && result;
 
         result = Validation.areDataSourcesValid( projectConfigPlus, right ) && result;
@@ -3515,7 +3521,7 @@ public class Validation
         if ( baseline != null )
         {
             result = Validation.isVariableSpecifiedIfRequired( projectConfigPlus, baseline ) && result;
-            
+
             result = Validation.areDataSourcesValid( projectConfigPlus, baseline ) && result;
 
             result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
@@ -3537,16 +3543,16 @@ public class Validation
      * @return true when valid, false otherwise.
      */
     protected static boolean isVariableSpecifiedIfRequired( ProjectConfigPlus projectConfigPlus,
-                                                          DataSourceConfig sideConfig )
+                                                            DataSourceConfig sideConfig )
     {
         boolean result = true;
 
         if ( sideConfig
-                       .getSource()
-                       .stream()
-                       .map( Source::getInterface )
-                       .anyMatch( next -> next == InterfaceShortHand.USGS_NWIS
-                                          || next == InterfaceShortHand.WRDS_NWM )
+                     .getSource()
+                     .stream()
+                     .map( Source::getInterface )
+                     .anyMatch( next -> next == InterfaceShortHand.USGS_NWIS
+                                        || next == InterfaceShortHand.WRDS_NWM )
              && sideConfig.getVariable() == null )
         {
             LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE +
@@ -3682,8 +3688,8 @@ public class Validation
     /**
      * Checks the consistency of the left and baseline declaration when the baseline is generated and uses the same
      * source of data as the left.
-     * 
-     * 
+     *
+     *
      * @param projectConfigPlus the evaluation project declaration
      * @param leftConfig the left data declaration
      * @param baselineConfig the baseline data declaration
@@ -3720,7 +3726,7 @@ public class Validation
 
     /**
      * Checks that the {@link DataSourceConfig#getType()} is consistent with the other declaration.
-     *  
+     *
      * @param projectConfigPlus the evaluation project declaration plus
      * @param dataSourceConfig the data source declaration to validate
      * @return true when valid, false otherwise.
@@ -3760,7 +3766,7 @@ public class Validation
      * <p>Returns <code>true</code> if the source has a URI when expected, otherwise
      * <code>false</code>. A URI is expected even when full path and parameters
      * are not included.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param source the source to inspect
      * @return true if the source has a URI when a URI is expected, otherwise false
@@ -3888,7 +3894,7 @@ public class Validation
     /**
      * Checks for consistency between the declared type of the data source and the type implied by each data source 
      * interface shorthand.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param dataSourceConfig the data source declaration, including the type
      * @return true if the information is consistent, false otherwise
@@ -3921,7 +3927,7 @@ public class Validation
     /**
      * Checks for consistency between the declared type of a data source and the type implied by the data source 
      * interface shorthand.
-     * 
+     *
      * @param projectConfigPlus the project declaration
      * @param dataSourceConfig the data source declaration, including the type
      * @param anInterface the interface

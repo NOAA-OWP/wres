@@ -36,7 +36,7 @@ import wres.grid.client.Request;
 import wres.grid.client.SingleValuedTimeSeriesResponse;
 
 /**
- * A reader of time-series data from a gridded NetCDF source of National Water Model (NWM) forecasts, simulations or 
+ * A reader of time-series data from a gridded Netcdf source of National Water Model (NWM) forecasts, simulations or
  * analyses.
  * 
  * <p>Implementation notes:
@@ -104,7 +104,7 @@ public class NwmGriddedReader implements TimeSeriesReader
                 if ( exception.getCause() instanceof SocketTimeoutException &&
                      tryCount < MAXIMUM_READ_ATTEMPTS )
                 {
-                    LOGGER.error( "Failed to obtain the NetCDF data source from {} after {} failed attempts.",
+                    LOGGER.error( "Failed to obtain the Netcdf data source from {} after {} failed attempts.",
                                   dataSource.getUri(),
                                   MAXIMUM_READ_ATTEMPTS );
                     tryCount++;
@@ -125,7 +125,7 @@ public class NwmGriddedReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( stream );
 
-        LOGGER.warn( "Streaming of NetCDF gridded time-series data is not currently supported. Attempting to read "
+        LOGGER.warn( "Streaming of Netcdf gridded time-series data is not currently supported. Attempting to read "
                      + "directly from the data source supplied, {}.",
                      dataSource );
 
@@ -141,9 +141,9 @@ public class NwmGriddedReader implements TimeSeriesReader
     }
 
     /**
-     * Reads from a NetCDF file source.
+     * Reads from a Netcdf file source.
      * @param dataSource the data source
-     * @param file the NetCDF source
+     * @param file the Netcdf source
      * @return the time-series
      * @throws IOException if reading fails due to an underlying error in the netcdf reading
      * @throws ReadException if the gridded features are not available at read time

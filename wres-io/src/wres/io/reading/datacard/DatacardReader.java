@@ -20,6 +20,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -42,17 +43,16 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.Geometry;
-import wres.util.Strings;
 
 /**
  * <p>A reader of observation-like, single-valued time-series from a source in Datacard format. This is a legacy format 
  * that is poorly documented, but still used by the U.S. National Weather Service. Further information can be found 
  * here:
- * 
+ *
  * <p><a href="https://www.weather.gov/media/owp/oh/hrl/docs/72datacard.pdf">Datacard</a> 
- * 
+ *
  * <p>The above link was last accessed: 20220801T18:00Z.
- * 
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -63,6 +63,7 @@ public class DatacardReader implements TimeSeriesReader
     private static final Logger LOGGER = LoggerFactory.getLogger( DatacardReader.class );
     private static final Set<Double> IGNORABLE_VALUES = Set.of( -998.0, -999.0, -9999.0 );
     private static final int FIRST_OBS_VALUE_START_POS = 20;
+    private static final Pattern TRIM_PATTERN = Pattern.compile( "\\s+$" );
 
     /**
      * @return an instance
@@ -299,17 +300,13 @@ public class DatacardReader implements TimeSeriesReader
 
     /**
      * Gets the feature name.
-     * 
+     *
      * @param line the line from which to acquire the feature name
      */
     private String getFeatureName( String line )
     {
         // Read up to character 45 or the EOL, whichever comes first: #91908
-        int stop = 45;
-        if ( line.length() < 45 )
-        {
-            stop = line.length();
-        }
+        int stop = Math.min( line.length(), 45 );
 
         // Location id. As of 5.0, use location name verbatim.
         return line.substring( 34, stop )
@@ -318,7 +315,7 @@ public class DatacardReader implements TimeSeriesReader
 
     /**
      * Gets the feature description.
-     * 
+     *
      * @param line the line from which to acquire the feature description
      * @return the feature description
      */
@@ -346,10 +343,9 @@ public class DatacardReader implements TimeSeriesReader
 
     /**
      * Iterates the reader until the first non-comment line is discovered, updating the metadata with the line number.
-     * 
+     *
      * @param reader the reader
      * @param lineNumber the line number to increment
-     * @param basicMetadata the basic metadata, including the line number
      * @return the first non-comment line
      * @throws IOException if data could not be read for any reason
      */
@@ -409,7 +405,7 @@ public class DatacardReader implements TimeSeriesReader
         while ( ( line = reader.readLine() ) != null )
         {
             lineNumber.incrementAndGet();
-            line = Strings.rightTrim( line );
+            line = DatacardReader.rightTrim( line );
 
             // loop through all values in one line
             for ( valIdxInRecord = 0; valIdxInRecord < basicMetadata.valuesPerRecord; valIdxInRecord++ )
@@ -467,7 +463,7 @@ public class DatacardReader implements TimeSeriesReader
                                                              basicMetadata.variableName,
                                                              location,
                                                              basicMetadata.unit );
-        
+
         TimeSeries<Double> timeSeries = this.transform( metadata,
                                                         values,
                                                         lineNumber.get() );
@@ -525,7 +521,7 @@ public class DatacardReader implements TimeSeriesReader
                                             String line,
                                             int lineNumber )
     {
-        Double actualValue;
+        double actualValue;
 
         try
         {
@@ -585,7 +581,7 @@ public class DatacardReader implements TimeSeriesReader
      * @param value the value to check
      * @return whether the value should be substituted with a missing value
      */
-    
+
     private boolean valueIsIgnorable( final double value )
     {
         return DatacardReader.IGNORABLE_VALUES.contains( value );
@@ -626,6 +622,20 @@ public class DatacardReader implements TimeSeriesReader
     }
 
     /**
+     * @param string the string to trim
+     * @return the right-trimmed string
+     */
+    private static String rightTrim( String string )
+    {
+        if ( Objects.nonNull( string ) && !string.isBlank() )
+        {
+            return TRIM_PATTERN.matcher( string ).replaceAll( "" );
+        }
+
+        return string;
+    }
+
+    /**
      * Hidden constructor.
      */
     private DatacardReader()
@@ -633,8 +643,7 @@ public class DatacardReader implements TimeSeriesReader
     }
 
     /**
-     * An immutable value class that stores metadata for sharing internally. TODO: candidate for a "Record" in JDK 17+.
-     * 
+     * An immutable value class that stores metadata for sharing internally.
      * @author James Brown
      */
 
@@ -670,24 +679,12 @@ public class DatacardReader implements TimeSeriesReader
     }
 
     /**
-     * An immutable value class to hold variable and feature names. TODO: candidate for a "Record" in JDK 17+.
-     * @author James Brown
-     */
+         * An immutable value class to hold variable and feature names.
+         * @author James Brown
+         */
 
-    private static class Names
-    {
-        private final String variableName;
-        private final String unit;
-        private final String featureName;
-        private final String featureDescription;
-
-        private Names( String variableName, String unit, String featureName, String featureDescription )
+        private record Names( String variableName, String unit, String featureName, String featureDescription )
         {
-            this.variableName = variableName;
-            this.unit = unit;
-            this.featureName = featureName;
-            this.featureDescription = featureDescription;
         }
-    }
 
 }

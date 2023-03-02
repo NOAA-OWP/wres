@@ -3,7 +3,7 @@ package wres.io.writing.netcdf;
 import wres.io.writing.WriteException;
 
 /**
- * A runtime exception encountered when writing statistics to NetCDF format.
+ * A runtime exception encountered when writing statistics to Netcdf format.
  * 
  * @author James Brown
  */

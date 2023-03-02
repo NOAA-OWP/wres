@@ -32,7 +32,7 @@ import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.statistics.generated.Geometry;
-import wres.util.NetCDF;
+import wres.util.Netcdf;
 
 /**
  * Finds and caches gridded features associated with an evaluation.
@@ -188,8 +188,8 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
         {
             GridCoordSystem coordinateSystem = grid.getGrids().get( 0 ).getCoordinateSystem();
 
-            Variable xCoordinates = NetCDF.getVariable( source, "x" );
-            Variable yCoordinates = NetCDF.getVariable( source, "y" );
+            Variable xCoordinates = Netcdf.getVariable( source, "x" );
+            Variable yCoordinates = Netcdf.getVariable( source, "y" );
 
             for ( int xIndex = 0; xIndex < xCoordinates.getSize(); ++xIndex )
             {
@@ -414,13 +414,13 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
         private GridMetadata( NetcdfFile file )
         {
-            Variable xCoordinates = NetCDF.getVariable( file, "x" );
-            Variable yCoordinates = NetCDF.getVariable( file, "y" );
-            Variable coordinateSystem = NetCDF.getVariable( file, "ProjectionCoordinateSystem" );
+            Variable xCoordinates = Netcdf.getVariable( file, "x" );
+            Variable yCoordinates = Netcdf.getVariable( file, "y" );
+            Variable coordinateSystem = Netcdf.getVariable( file, "ProjectionCoordinateSystem" );
 
             if ( Objects.isNull( coordinateSystem ) )
             {
-                coordinateSystem = NetCDF.getVariable( file, "crs" );
+                coordinateSystem = Netcdf.getVariable( file, "crs" );
 
                 if ( Objects.isNull( coordinateSystem ) )
                 {

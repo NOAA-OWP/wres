@@ -9,9 +9,9 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * A response that wraps a stream of time-series per feature with other metadata.
+ * <p>A response that wraps a stream of time-series per feature with other metadata.
  * 
- * TODO: eliminate this wrapper and directly return the time-series per feature with inline metadata from the 
+ * <p>TODO: eliminate this wrapper and directly return the time-series per feature with inline metadata from the
  * {@link Fetcher}.
  * 
  * @author James Brown

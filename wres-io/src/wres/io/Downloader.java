@@ -2,8 +2,8 @@ package wres.io;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import wres.util.Strings;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -48,7 +48,7 @@ public final class Downloader implements Runnable
         try
         {
             final URL fileURL = address.toURL();
-            HttpURLConnection connection = (HttpURLConnection) fileURL.openConnection();
+            HttpURLConnection connection = ( HttpURLConnection ) fileURL.openConnection();
 
             if ( connection.getResponseCode() >= 400 )
             {
@@ -57,18 +57,16 @@ public final class Downloader implements Runnable
             else
             {
                 message += "Exists\t\t\t|\t";
-
                 message += this.copy( fileURL );
             }
 
         }
-        catch ( java.io.IOException e )
+        catch ( IOException e )
         {
-            LOGGER.error( "The address: '{}' is not a valid url.{}",
-                          this.address,
-                          System.lineSeparator() );
-
-            LOGGER.error( Strings.getStackTrace( e ) );
+            String errorMessage = "While attempting to download a file at "
+                                  + this.address
+                                  + ", encountered an error.";
+            LOGGER.error( errorMessage, e );
         }
 
         if ( displayOutput )
@@ -94,15 +92,15 @@ public final class Downloader implements Runnable
 
             return "Downloaded";
         }
-        catch ( java.io.IOException saveError )
+        catch ( IOException saveError )
         {
-            LOGGER.error( "{}The file at '{}' could not be saved to:{} '{}'.",
-                          System.lineSeparator(),
-                          this.address,
-                          System.lineSeparator(),
-                          this.targetPath );
-            LOGGER.error( Strings.getStackTrace( saveError ) );
-            return "Not Downloaded";
+            String errorMessage = "While attempting to download a file at "
+                                  + this.address
+                                  + " to "
+                                  + this.targetPath
+                                  + ", encountered an error.";
+            LOGGER.error( errorMessage, saveError );
+            return "Not downloaded";
         }
     }
 

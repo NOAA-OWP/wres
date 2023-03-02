@@ -1,11 +1,10 @@
 package wres.io.reading.wrds;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonAlias;
-
-import wres.util.Strings;
 
 /**
  * A forecast.
@@ -28,7 +27,7 @@ public class Forecast
      */
     public void setBasisTime( String basisTime )
     {
-        if ( Strings.hasValue( basisTime ) )
+        if ( Objects.nonNull( basisTime ) && ! basisTime.isBlank() )
         {
             this.basisTime = OffsetDateTime.parse( basisTime );
         }
@@ -49,7 +48,7 @@ public class Forecast
      */
     public void setIssuedTime( String issuedTime )
     {
-        if ( Strings.hasValue( issuedTime ) )
+        if ( Objects.nonNull( issuedTime ) && !issuedTime.isBlank() )
         {
             this.issuedTime = OffsetDateTime.parse( issuedTime );
         }

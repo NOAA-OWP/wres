@@ -134,7 +134,7 @@ final class Functions
                        Functions::ingest );
         functions.put( new WresFunction( "-cn",
                                          "createnetcdftemplate",
-                                         "Creates a NetCDF template with the supplied NetCDF source (e.g., "
+                                         "Creates a Netcdf template with the supplied Netcdf source (e.g., "
                                          + "createnetcdftemplate /foo/bar/source.nc)." ),
                        Functions::createNetCDFTemplate );
         functions.put( new WresFunction( "-v",
@@ -473,7 +473,7 @@ final class Functions
                                                                 + "template is invalid; "
                                                                 + "it must end with "
                                                                 + "'*.nc' to indicate "
-                                                                + "that it is a NetCDF "
+                                                                + "that it is a Netcdf "
                                                                 + "file." );
                     return ExecutionResult.failure( e );
                 }

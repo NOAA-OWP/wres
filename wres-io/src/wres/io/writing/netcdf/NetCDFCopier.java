@@ -23,11 +23,10 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.util.Collections;
-import wres.util.NetCDF;
+import wres.util.Netcdf;
 
 /**
- * Copies NetCDF data.
+ * Copies Netcdf data.
  */
 public class NetCDFCopier implements Closeable
 {
@@ -37,8 +36,8 @@ public class NetCDFCopier implements Closeable
     private static final NetcdfFileWriter.Version NETCDF_VERSION = NetcdfFileWriter.Version.netcdf3;
 
     /**
-     * NetCDF Attributes that are acceptable to use. They are currently
-     * restricted to NetCDF-3, since NetCDF-4 cannot be written in Java
+     * Netcdf Attributes that are acceptable to use. They are currently
+     * restricted to Netcdf-3, since Netcdf-4 cannot be written in Java
      */
     private static final DataType[] ACCEPTABLE_ATTRIBUTE_DATATYPES = new DataType[] {
             DataType.BYTE,
@@ -170,7 +169,9 @@ public class NetCDFCopier implements Closeable
     {
         for ( Attribute globalAttribute : this.getSource().getGlobalAttributes() )
         {
-            if ( !Collections.in( globalAttribute.getDataType(), ACCEPTABLE_ATTRIBUTE_DATATYPES ) )
+            boolean matched = Arrays.stream( ACCEPTABLE_ATTRIBUTE_DATATYPES )
+                                    .anyMatch( next -> next.equals( globalAttribute.getDataType() ) );
+            if ( !matched )
             {
                 LOGGER.debug( "The global attribute '{}' will not be copied "
                               + "because the '{}' data type is not supported.",
@@ -179,7 +180,9 @@ public class NetCDFCopier implements Closeable
                 continue;
             }
 
-            if ( Collections.in( globalAttribute.getDataType(), NUMERIC_ATTRIBUTE_TYPES ) )
+            boolean matchedNumeric = Arrays.stream( NUMERIC_ATTRIBUTE_TYPES )
+                                           .anyMatch( next -> next.equals( globalAttribute.getDataType() ) );
+            if ( matchedNumeric )
             {
                 this.getWriter().addGlobalAttribute( globalAttribute.getShortName(),
                                                      globalAttribute.getNumericValue() );
@@ -213,7 +216,10 @@ public class NetCDFCopier implements Closeable
 
             for ( Attribute originalAttribute : originalVariable.getAttributes() )
             {
-                if ( !Collections.in( originalAttribute.getDataType(), ACCEPTABLE_ATTRIBUTE_DATATYPES ) )
+                boolean matched = Arrays.stream( ACCEPTABLE_ATTRIBUTE_DATATYPES )
+                                        .anyMatch( next -> next.equals( originalAttribute.getDataType() ) );
+
+                if ( !matched )
                 {
                     LOGGER.debug( "The attribute '{}' will not be copied to '{}' "
                                   + "because the '{}' data type is not supported.",
@@ -228,7 +234,7 @@ public class NetCDFCopier implements Closeable
                 {
                     newVariable.addAttribute(
                             new Attribute( "time",
-                                           "minutes from " + NetCDF.getStandardDateFormat().format( this.analysisTime )
+                                           "minutes from " + Netcdf.getStandardDateFormat().format( this.analysisTime )
                             )
                     );
                 }
@@ -263,7 +269,9 @@ public class NetCDFCopier implements Closeable
 
     private void addGlobalAttribute( Attribute attribute ) throws IOException
     {
-        if ( Collections.in( attribute.getDataType(), ACCEPTABLE_ATTRIBUTE_DATATYPES ) )
+        boolean matched = Arrays.stream( ACCEPTABLE_ATTRIBUTE_DATATYPES )
+                                .anyMatch( next -> next.equals( attribute.getDataType() ) );
+        if ( matched )
         {
             if ( this.getWriter().findGlobalAttribute( attribute.getShortName() ) != null )
             {
@@ -367,16 +375,19 @@ public class NetCDFCopier implements Closeable
      */
     public boolean isGridded() throws IOException
     {
-        boolean hasX = Collections.exists(
-                this.getSource().getDimensions(),
-                dimension -> dimension.getShortName().equalsIgnoreCase( "x" )
-        );
+        boolean hasX = this.getSource()
+                           .getDimensions()
+                           .stream()
+                           .anyMatch( dimension -> dimension.getShortName()
+                                                            .equalsIgnoreCase( "x" ) );
+
         hasX = hasX || this.getWriter().findVariable( "x" ) != null;
 
-        boolean hasY = Collections.exists(
-                this.getSource().getDimensions(),
-                dimension -> dimension.getShortName().equalsIgnoreCase( "y" )
-        );
+        boolean hasY = this.getSource()
+                           .getDimensions()
+                           .stream()
+                           .anyMatch( dimension -> dimension.getShortName()
+                                                            .equalsIgnoreCase( "y" ) );
         hasY = hasY || this.getWriter().findVariable( "y" ) != null;
 
         return hasX && hasY;

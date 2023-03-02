@@ -541,7 +541,7 @@ class EvaluationUtilities
             if ( !netcdfWriters.isEmpty() )
             {
                 // TODO: eliminate these log messages when legacy netcdf is removed
-                LOGGER.info( "Creating NetCDF blobs for statistics. This may take some time..." );
+                LOGGER.info( "Creating Netcdf blobs for statistics. This may take some time..." );
 
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
@@ -549,7 +549,7 @@ class EvaluationUtilities
                                                   thresholdsByMetricAndFeature );
                 }
 
-                LOGGER.info( "Finished creating NetCDF blobs, which are now ready to accept statistics." );
+                LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
             }
 
             evaluationDetails.setThresholdsByMetricAndFeature( thresholdsByMetricAndFeature );
