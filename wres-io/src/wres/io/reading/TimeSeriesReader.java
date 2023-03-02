@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 /**
  * <p>An API for reading different types of time-series data from a {@link DataSource}. When reading from a stream 
  * supplied by a {@link TimeSeriesReader}, use a try-with-resources block to ensure that the underlying resources are 
- * closed. 
+ * closed once the stream has been read.
  * 
  * <p>Implementation notes:
  * 
