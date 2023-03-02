@@ -445,7 +445,7 @@ public class EnsembleRetrieverFactoryTest
     /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
-     * 
+     *
      * @throws SQLException if the detailed set-up fails
      */
 
@@ -461,13 +461,13 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "baselineData: {}", rightData );
         ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(),
                                                                     rightData.getContext(),
-                                                                    (DataSourceBaselineConfig) baselineData.getContext() );
+                                                                    ( DataSourceBaselineConfig ) baselineData.getContext() );
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
                                                 List.of( new NamedFeature( FEATURE.getName(),
-                                                                      FEATURE.getName(),
-                                                                      FEATURE.getName() ) ),
+                                                                           FEATURE.getName(),
+                                                                           FEATURE.getName() ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -541,11 +541,11 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProjectFromIngest( this.wresDatabase,
-                                                         this.caches,
-                                                         null,
-                                                         fakeConfig,
-                                                         results );
+        Project project = Projects.getProject( this.wresDatabase,
+                                               fakeConfig,
+                                               this.caches,
+                                               null,
+                                               results );
         assertTrue( project.save() );
     }
 

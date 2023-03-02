@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,13 +30,13 @@ import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.events.broker.BrokerConnectionFactory;
-import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.PreIngestException;
+import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.writing.netcdf.NetCDFCopier;
@@ -46,7 +45,6 @@ import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseType;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
@@ -61,24 +59,6 @@ final class Functions
     // Mapping of String names to corresponding methods
     private static final Map<WresFunction, Function<SharedResources, ExecutionResult>>
             FUNCTIONS_MAP = Functions.createMap();
-
-    static void shutdown( Database database )
-    {
-        ProgressMonitor.deactivate();
-        LOGGER.info( "Shutting down the application..." );
-        Operations.shutdown( database );
-    }
-
-    static void forceShutdown( Database database,
-                               long timeOut,
-                               TimeUnit timeUnit )
-    {
-        ProgressMonitor.deactivate();
-        LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
-        Operations.forceShutdown( database,
-                                  timeOut,
-                                  timeUnit );
-    }
 
     /**
      * Determines if there is a method for the requested operation
@@ -378,7 +358,7 @@ final class Functions
                     griddedFeatures = new GriddedFeatures.Builder( gridSelection );
                 }
 
-                Operations.ingest( timeSeriesIngester,
+                SourceLoader.load( timeSeriesIngester,
                                    sharedResources.systemSettings(),
                                    projectConfig,
                                    griddedFeatures );

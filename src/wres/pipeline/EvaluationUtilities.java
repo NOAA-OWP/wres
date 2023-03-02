@@ -50,16 +50,17 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
-import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.geography.FeatureFinder;
 import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
+import wres.io.project.Projects;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
 import wres.datamodel.units.UnitMapper;
@@ -435,7 +436,7 @@ class EvaluationUtilities
                                                                       .setLockManager( databaseServices.databaseLockManager() )
                                                                       .build(); )
                 {
-                    List<IngestResult> ingestResults = Operations.ingest( databaseIngester,
+                    List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.getSystemSettings(),
                                                                           featurefulProjectConfig,
                                                                           griddedFeaturesBuilder );
@@ -448,11 +449,11 @@ class EvaluationUtilities
                     }
 
                     // Get the project, which provides an interface to the underlying store of time-series data
-                    project = Operations.getProject( databaseServices.database(),
-                                                     featurefulProjectConfig,
-                                                     caches,
-                                                     griddedFeatures,
-                                                     ingestResults );
+                    project = Projects.getProject( databaseServices.database(),
+                                                   featurefulProjectConfig,
+                                                   caches,
+                                                   griddedFeatures,
+                                                   ingestResults );
                 }
             }
             // In memory evaluation
@@ -463,16 +464,16 @@ class EvaluationUtilities
                 // Ingest the time-series into the timeSeriesStoreBuilder
                 TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
 
-                List<IngestResult> ingestResults = Operations.ingest( timeSeriesIngester,
+                List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
                                                                       featurefulProjectConfig,
                                                                       griddedFeaturesBuilder );
 
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
                 evaluationDetails.setTimeSeriesStore( timeSeriesStore );
-                project = Operations.getProject( featurefulProjectConfig,
-                                                 timeSeriesStore,
-                                                 ingestResults );
+                project = Projects.getProject( featurefulProjectConfig,
+                                               timeSeriesStore,
+                                               ingestResults );
             }
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );

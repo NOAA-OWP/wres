@@ -457,11 +457,11 @@ public class SingleValuedForecastRetrieverTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProjectFromIngest( this.wresDatabase,
-                                                         this.caches,
-                                                         null,
-                                                         fakeConfig,
-                                                         results );
+        Project project = Projects.getProject( this.wresDatabase,
+                                               fakeConfig,
+                                               this.caches,
+                                               null,
+                                               results );
         assertTrue( project.save() );
     }
 

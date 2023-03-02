@@ -1,4 +1,4 @@
-package wres.io;
+package wres.io.ingesting;
 
 import java.io.Serial;
 import java.time.Duration;
@@ -17,34 +17,34 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Operations}.
+ * Tests {@link SourceLoader}.
  * @author Jesse Bickel
  */
-class OperationsTest
+class SourceLoaderTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( OperationsTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SourceLoaderTest.class );
     private static final String TASK_RESULT_STRING_PREFIX = "I took a little more than ";
 
     @Test
     void testDoAllOrExceptionResultHasException()
     {
-        OperationsTest.DummyTask failingTask = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
-                                                                             true );
+        SourceLoaderTest.DummyTask failingTask = new SourceLoaderTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                                 true );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( failingTask::call );
-        CompletableFuture<Object> result = Operations.doAllOrException( List.of( f ) );
+        CompletableFuture<Object> result = SourceLoader.doAllOrException( List.of( f ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
-        assertTrue( cause instanceof OperationsTest.DummyException );
+        assertTrue( cause instanceof SourceLoaderTest.DummyException );
     }
 
     @Test
     void testDoAllOrExceptionResultHasNoException()
             throws InterruptedException, ExecutionException
     {
-        OperationsTest.DummyTask succeedingTask = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
-                                                                                false );
+        SourceLoaderTest.DummyTask succeedingTask = new SourceLoaderTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                                    false );
         CompletableFuture<String> f = CompletableFuture.supplyAsync( succeedingTask::call );
-        Operations.doAllOrException( List.of( f ) )
-                  .join();
+        SourceLoader.doAllOrException( List.of( f ) )
+                    .join();
         assertTrue( f.isDone() );
         assertTrue( f.get()
                      .startsWith( TASK_RESULT_STRING_PREFIX ) );
@@ -54,14 +54,14 @@ class OperationsTest
     void testDoAllOrExceptionCompletesMultipleTasks()
             throws InterruptedException, ExecutionException
     {
-        OperationsTest.DummyTask taskOne = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
-                                                                         false );
-        OperationsTest.DummyTask taskTwo = new OperationsTest.DummyTask( Duration.ofMillis( 1 ),
-                                                                         false );
+        SourceLoaderTest.DummyTask taskOne = new SourceLoaderTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                             false );
+        SourceLoaderTest.DummyTask taskTwo = new SourceLoaderTest.DummyTask( Duration.ofMillis( 1 ),
+                                                                             false );
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( taskOne::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( taskTwo::call );
-        Operations.doAllOrException( List.of( f1, f2 ) )
-                  .join();
+        SourceLoader.doAllOrException( List.of( f1, f2 ) )
+                    .join();
         assertTrue( f1.isDone() );
         assertTrue( f2.isDone() );
         assertTrue( f1.get()
@@ -81,17 +81,19 @@ class OperationsTest
     {
         Duration longerDuration = Duration.ofMillis( 10_000 );
         Duration shorterDuration = Duration.ofMillis( 10 );
-        OperationsTest.DummyTask firstLongerSucceedingTask = new OperationsTest.DummyTask( longerDuration,
-                                                                                           false );
-        OperationsTest.DummyTask secondShorterFailingTask = new OperationsTest.DummyTask( shorterDuration,
-                                                                                          true );
+        SourceLoaderTest.DummyTask firstLongerSucceedingTask =
+                new SourceLoaderTest.DummyTask( longerDuration,
+                                                false );
+        SourceLoaderTest.DummyTask secondShorterFailingTask =
+                new SourceLoaderTest.DummyTask( shorterDuration,
+                                                true );
         Instant start = Instant.now();
         CompletableFuture<String> f1 = CompletableFuture.supplyAsync( firstLongerSucceedingTask::call );
         CompletableFuture<String> f2 = CompletableFuture.supplyAsync( secondShorterFailingTask::call );
-        CompletableFuture<Object> result = Operations.doAllOrException( List.of( f1, f2 ) );
+        CompletableFuture<Object> result = SourceLoader.doAllOrException( List.of( f1, f2 ) );
         Throwable cause = assertThrows( CompletionException.class, result::join ).getCause();
         Instant end = Instant.now();
-        assertTrue( cause instanceof OperationsTest.DummyException );
+        assertTrue( cause instanceof SourceLoaderTest.DummyException );
         Duration executionDuration = Duration.between( start, end );
         assertTrue( executionDuration.toMillis() >= shorterDuration.toMillis()
                     && executionDuration.toMillis() < longerDuration.toMillis(),
