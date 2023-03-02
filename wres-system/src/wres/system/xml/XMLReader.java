@@ -3,31 +3,20 @@ package wres.system.xml;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.URI;
 import java.util.Objects;
 
-import javax.xml.XMLConstants;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stax.StAXSource;
-import javax.xml.transform.stream.StreamResult;
-
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.util.Strings;
-
 /**
- * @author Tubbs
- *
+ * @author Christopher Tubbs
  */
 public abstract class XMLReader
 {
@@ -38,29 +27,6 @@ public abstract class XMLReader
     private final InputStream inputStream;
     private final XMLInputFactory factory;
     private final boolean fastInfoset;
-
-    /**
-     * Convenience constructor - finds in either the classpath or filesystem.
-     * @param filename the file name to look for on the classpath or filesystem.
-     * @throws IOException when the file cannot be found.
-     */
-    protected XMLReader( URI filename )
-            throws IOException
-    {
-        this( filename, null );
-    }
-
-    /**
-     * Convenience constructor - finds in either the classpath or filesystem
-     * @param filename the file name to look for on the classpath or filesystem
-     * @param fastInfoset is true if the file is fast-infoset encoded
-     * @throws IOException when the file cannot be found.
-     */
-    protected XMLReader( URI filename, boolean fastInfoset )
-            throws IOException
-    {
-        this( filename, null, fastInfoset );
-    }
 
     /**
      * Create an XMLReader.
@@ -250,37 +216,30 @@ public abstract class XMLReader
     {
         switch ( reader.getEventType() )
         {
-            case XMLStreamConstants.START_DOCUMENT:
-                LOGGER.trace( "Start of the document" );
-                break;
-            case XMLStreamConstants.START_ELEMENT:
-                LOGGER.trace( "Start element = '{}'", reader.getLocalName() );
-                break;
-            case XMLStreamConstants.CHARACTERS:
+            case XMLStreamConstants.START_DOCUMENT -> LOGGER.trace( "Start of the document" );
+            case XMLStreamConstants.START_ELEMENT -> LOGGER.trace( "Start element = '{}'", reader.getLocalName() );
+            case XMLStreamConstants.CHARACTERS ->
+            {
                 int beginIndex = reader.getTextStart();
                 int endIndex = reader.getTextLength();
                 String value = new String( reader.getTextCharacters(), beginIndex, endIndex ).trim();
-
-                if ( Strings.hasValue( value ) )
+                if ( LOGGER.isTraceEnabled() && !value.isBlank() )
                 {
                     LOGGER.trace( "Value = '{}'", value );
                 }
-
-                break;
-            case XMLStreamConstants.END_ELEMENT:
-                LOGGER.trace( "End element = '{}'", reader.getLocalName() );
-                break;
-            case XMLStreamConstants.COMMENT:
+            }
+            case XMLStreamConstants.END_ELEMENT -> LOGGER.trace( "End element = '{}'", reader.getLocalName() );
+            case XMLStreamConstants.COMMENT ->
+            {
                 if ( reader.hasText() )
                 {
                     LOGGER.trace( reader.getText() );
                 }
-                break;
-            default:
-                throw new IOException( "The event: '" +
-                                       reader.getEventType()
-                                       +
-                                       "' is not parsed by default." );
+            }
+            default -> throw new IOException( "The event: '" +
+                                              reader.getEventType()
+                                              +
+                                              "' is not parsed by default." );
         }
     }
 }

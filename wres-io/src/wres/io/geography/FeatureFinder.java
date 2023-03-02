@@ -470,7 +470,7 @@ public class FeatureFinder
         }
 
 
-        // Map of from/to dimensions to set of Strings to look up using from/to.
+        // Map of from/to dimensions to set of strings to look up using from/to.
         // A means to consolidate "from NWS LID to USGS site code" regardless of
         // whether left or right or baseline duplicates dimensions. For example,
         // if left is nws_lid, right is usgs_site_code, and baseline is nws_lid,

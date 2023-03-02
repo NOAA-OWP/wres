@@ -38,7 +38,7 @@ class NwmGriddedReaderTest
      * until this is done. For now, this test is ignored.
      */
 
-    @Disabled( "Until we can write a small grid to an in-memory file system, probably using the UCAR NetCDF API." )
+    @Disabled( "Until we can write a small grid to an in-memory file system, probably using the UCAR Netcdf API." )
     @Test
     void readOneNwmGridProducesEighteenTimeSeries()
     {

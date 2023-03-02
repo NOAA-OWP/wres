@@ -2,6 +2,7 @@ package wres.system;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -21,7 +22,6 @@ import com.github.marschall.jfr.jdbc.JfrDataSource;
 
 import wres.system.xml.XMLHelper;
 import wres.system.xml.XMLReader;
-import wres.util.Strings;
 
 /**
  * The cache for all configured system settings
@@ -116,7 +116,7 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return The path where the system should store NetCDF files internally
+     * @return The path where the system should store Netcdf files internally
      */
     public String getNetCDFStorePath()
     {
@@ -138,7 +138,7 @@ public class SystemSettings extends XMLReader
     {
         if ( this.maximumArchiveThreads == null )
         {
-            int threadCount = ( (Double) Math.ceil( this.maximumThreadCount() / 10F ) ).intValue();
+            int threadCount = ( ( Double ) Math.ceil( this.maximumThreadCount() / 10F ) ).intValue();
             return Math.max( threadCount, 2 );
         }
 
@@ -299,7 +299,7 @@ public class SystemSettings extends XMLReader
     /**
      * @return the maximum number of pool threads
      */
-    
+
     public int getMaximumPoolThreads()
     {
         return maximumPoolThreads;
@@ -324,7 +324,7 @@ public class SystemSettings extends XMLReader
     /**
      * @return the maximum number of threshold threads
      */
-    
+
     public int getMaximumThresholdThreads()
     {
         return maximumThresholdThreads;
@@ -333,62 +333,62 @@ public class SystemSettings extends XMLReader
     /**
      * @return the database settings
      */
-    
+
     public DatabaseSettings getDatabaseSettings()
     {
         return this.databaseConfiguration;
     }
-    
+
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "databaseConfiguration",
-                                                                                     this.databaseConfiguration )
-                                                                            .append( "maximumThreadCount",
-                                                                                     this.maximumThreadCount )
-                                                                            .append( "poolObjectLifespan",
-                                                                                     this.poolObjectLifespan )
-                                                                            .append( "fetchSize", this.fetchSize )
-                                                                            .append( "maximumCopies",
-                                                                                     this.maximumCopies )
-                                                                            .append( "netcdfCachePeriod",
-                                                                                     this.netcdfCachePeriod )
-                                                                            .append( "minimumCachedNetcdf",
-                                                                                     this.minimumCachedNetcdf )
-                                                                            .append( "maximumCachedNetcdf",
-                                                                                     this.maximumCachedNetcdf )
-                                                                            .append( "hardNetcdfCacheLimit",
-                                                                                     this.hardNetcdfCacheLimit )
-                                                                            .append( "netcdfStorePath",
-                                                                                     this.netcdfStorePath )
-                                                                            .append( "maximumReadThreads",
-                                                                                     this.maximumReadThreads )
-                                                                            .append( "maximumIngestThreads",
-                                                                                     this.maximumIngestThreads )
-                                                                            .append( "maximumArchiveThreads",
-                                                                                     this.maximumArchiveThreads )
-                                                                            .append( "maximumWebClientThreads",
-                                                                                     this.maximumWebClientThreads )
-                                                                            .append( "maximumNwmIngestThreads",
-                                                                                     this.maximumNwmIngestThreads )
-                                                                            .append( "dataDirectory",
-                                                                                     this.dataDirectory )
-                                                                            .append( "updateProgressMonitor",
-                                                                                     this.updateProgressMonitor )
-                                                                            .append( "maximumPoolThreads",
-                                                                                     this.maximumPoolThreads )
-                                                                            .append( "maximumThresholdThreads",
-                                                                                     this.maximumThresholdThreads )
-                                                                            .append( "maximumMetricThreads",
-                                                                                     this.maximumMetricThreads )
-                                                                            .append( "maximumProductThreads",
-                                                                                     this.maximumProductThreads )
-                                                                            .append( "featureBatchThreshold",
-                                                                                     this.featureBatchThreshold )
-                                                                            .append( "featureBatchSize",
-                                                                                     this.featureBatchSize )
-                                                                            .toString();
+                .append( "databaseConfiguration",
+                         this.databaseConfiguration )
+                .append( "maximumThreadCount",
+                         this.maximumThreadCount )
+                .append( "poolObjectLifespan",
+                         this.poolObjectLifespan )
+                .append( "fetchSize", this.fetchSize )
+                .append( "maximumCopies",
+                         this.maximumCopies )
+                .append( "netcdfCachePeriod",
+                         this.netcdfCachePeriod )
+                .append( "minimumCachedNetcdf",
+                         this.minimumCachedNetcdf )
+                .append( "maximumCachedNetcdf",
+                         this.maximumCachedNetcdf )
+                .append( "hardNetcdfCacheLimit",
+                         this.hardNetcdfCacheLimit )
+                .append( "netcdfStorePath",
+                         this.netcdfStorePath )
+                .append( "maximumReadThreads",
+                         this.maximumReadThreads )
+                .append( "maximumIngestThreads",
+                         this.maximumIngestThreads )
+                .append( "maximumArchiveThreads",
+                         this.maximumArchiveThreads )
+                .append( "maximumWebClientThreads",
+                         this.maximumWebClientThreads )
+                .append( "maximumNwmIngestThreads",
+                         this.maximumNwmIngestThreads )
+                .append( "dataDirectory",
+                         this.dataDirectory )
+                .append( "updateProgressMonitor",
+                         this.updateProgressMonitor )
+                .append( "maximumPoolThreads",
+                         this.maximumPoolThreads )
+                .append( "maximumThresholdThreads",
+                         this.maximumThresholdThreads )
+                .append( "maximumMetricThreads",
+                         this.maximumMetricThreads )
+                .append( "maximumProductThreads",
+                         this.maximumProductThreads )
+                .append( "featureBatchThreshold",
+                         this.featureBatchThreshold )
+                .append( "featureBatchSize",
+                         this.featureBatchSize )
+                .toString();
     }
 
     /**
@@ -399,7 +399,7 @@ public class SystemSettings extends XMLReader
     {
         return this.databaseConfiguration.getDatabaseType();
     }
-    
+
     /**
      * @return the maximum number of product threads
      */
@@ -408,16 +408,16 @@ public class SystemSettings extends XMLReader
     {
         return maximumProductThreads;
     }
-    
+
     /**
      * @return the maximum number of metric threads
      */
-    
+
     public int getMaximumMetricThreads()
     {
         return maximumMetricThreads;
     }
-    
+
     @Override
     protected void parseElement( XMLStreamReader reader )
             throws IOException
@@ -541,7 +541,7 @@ public class SystemSettings extends XMLReader
 
     /**
      * The Default constructor
-     * 
+     *
      * Creates a new XMLReader and parses the System Configuration document
      * Looks on the classpath for the default filename
      * <br/><br/>
@@ -560,7 +560,7 @@ public class SystemSettings extends XMLReader
         super();
         this.databaseConfiguration = new DatabaseSettings();
     }
-    
+
     /**
      * Creates the database settings if needed. They are only needed when {@link #isInMemory()} returns {@code false}.
      * @param reader the stream reader
@@ -749,7 +749,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String path = XMLHelper.getXMLText( reader );
-        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ) )
+        if ( SystemSettings.isValidPathFormat( path ) )
         {
             this.netcdfStorePath = path;
         }
@@ -760,7 +760,7 @@ public class SystemSettings extends XMLReader
     {
         String dir = XMLHelper.getXMLText( reader );
 
-        if ( dir != null && !dir.isEmpty() && Strings.isValidPathFormat( dir ) )
+        if ( SystemSettings.isValidPathFormat( dir ) )
         {
             this.dataDirectory = Paths.get( dir );
         }
@@ -768,7 +768,8 @@ public class SystemSettings extends XMLReader
 
     private void setUpdateProgressMonitor( XMLStreamReader reader ) throws XMLStreamException
     {
-        this.updateProgressMonitor = Strings.isTrue( XMLHelper.getXMLText( reader ) );
+        String updateMonitorString = XMLHelper.getXMLText( reader );
+        this.updateProgressMonitor = "true".equalsIgnoreCase( updateMonitorString );
         ProgressMonitor.setShouldUpdate( this.getUpdateProgressMonitor() );
     }
 
@@ -825,7 +826,7 @@ public class SystemSettings extends XMLReader
                          size );
         }
     }
-    
+
     private void setMaximumPoolThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
@@ -876,7 +877,7 @@ public class SystemSettings extends XMLReader
                          this.maximumMetricThreads );
         }
     }
-    
+
     private void setMaximumProductThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
@@ -892,6 +893,34 @@ public class SystemSettings extends XMLReader
                          value,
                          this.maximumProductThreads );
         }
+    }
+
+    /**
+     * @param path the path to check
+     * @return true if the path format is valid, otherwise false
+     */
+
+    private static boolean isValidPathFormat( final String path )
+    {
+        boolean isValid = false;
+
+        if ( Objects.isNull( path ) || path.isBlank() )
+        {
+            return false;
+        }
+
+        try
+        {
+            Paths.get( path );
+            isValid = true;
+        }
+        catch ( InvalidPathException invalid )
+        {
+            // If it isn't valid, we want to catch this, but not break
+            LOGGER.trace( "The path '{}' doesn't exist.", path );
+        }
+
+        return isValid;
     }
 
     private void applySystemPropertyOverrides()
@@ -1027,18 +1056,15 @@ public class SystemSettings extends XMLReader
 
         String directory = System.getProperty( "wres.dataDirectory" );
 
-        if ( directory != null && !directory.isEmpty() )
+        if ( SystemSettings.isValidPathFormat( directory ) )
         {
-            if ( Strings.isValidPathFormat( directory ) )
-            {
-                this.dataDirectory = Paths.get( directory );
-            }
-            else
-            {
-                LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
-                             directory,
-                             this.dataDirectory );
-            }
+            this.dataDirectory = Paths.get( directory );
+        }
+        else
+        {
+            LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
+                         directory,
+                         this.dataDirectory );
         }
 
         String maxPoolThreads = System.getProperty( "wres.maximumPoolThreads" );

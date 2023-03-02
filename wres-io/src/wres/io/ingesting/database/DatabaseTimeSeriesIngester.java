@@ -62,7 +62,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.NetCDF;
+import wres.util.Netcdf;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -694,7 +694,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     {
         try
         {
-            String hash = NetCDF.getGriddedUniqueIdentifier( dataSource.getUri(),
+            String hash = Netcdf.getGriddedUniqueIdentifier( dataSource.getUri(),
                                                              dataSource.getVariable()
                                                                        .getValue() );
             DataSources dataSources = this.getCaches()

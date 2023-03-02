@@ -30,7 +30,7 @@ public class Fetcher
         }
         catch ( IOException e )
         {
-            throw new IOException( "Data could not be retrieved from one or more NetCDF files", e );
+            throw new IOException( "Data could not be retrieved from one or more Netcdf files", e );
         }
     }
     

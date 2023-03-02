@@ -40,14 +40,13 @@ import wres.io.retrieval.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
-import wres.util.Strings;
 
 /**
- * A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed and begin with a # 
- * character.
- * 
- * TODO: consider using OpenCSV or similar for the parsing, rather than the {@link CsvDataProvider}.
- * 
+ * <p>A reader of time-series from a source of comma separated values (CSV). Comment lines are allowed and begin with
+ * a # character.
+ *
+ * <p>TODO: consider using OpenCSV or similar for the parsing, rather than the {@link CsvDataProvider}.
+ *
  * @author James Brown
  */
 
@@ -146,7 +145,7 @@ public class CsvReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param provider the data provider
      * @return a time-series supplier
@@ -219,10 +218,10 @@ public class CsvReader implements TimeSeriesReader
     /**
      * Increments an existing series by reading the current row or completes a series and returns it, cleaning the 
      * temporary map of values for the next series.
-     * 
+     *
      * @param provider the data provider
      * @param dataSource the data source
-     * @param the values to increment
+     * @param traceValues the values to increment
      * @param lastTraceMetadata the last time-series trace metadata, if any
      * @param lastTraceName the last trace name, if any
      * @return a completed series or null when incrementing a series
@@ -297,9 +296,9 @@ public class CsvReader implements TimeSeriesReader
     }
 
     /**
-     * Build a timeseries out of temporary data structures.
+     * <p>Build a timeseries out of temporary data structures.
      *
-     * When there is a placeholder reference datetime, replace it with the
+     * <p>When there is a placeholder reference datetime, replace it with the
      * latest valid datetime found as "latest observation." This means there was
      * no reference datetime found in the CSV, but until the WRES db schema is
      * ready to store any kind of timeseries with 0, 1, or N reference datetimes
@@ -358,7 +357,6 @@ public class CsvReader implements TimeSeriesReader
     /**
      * Reads the time-series metadata.
      * @param dataSource the data source
-     * @param dataProvider the provider
      * @param unconfiguredVariableNames any variable names that were not declared
      * @return the metadata
      */
@@ -503,7 +501,7 @@ public class CsvReader implements TimeSeriesReader
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'variable_name' column." );
         }
-        else if ( !Strings.hasValue( dataProvider.getString( VARIABLE_NAME ) ) )
+        else if ( this.hasNoValue( dataProvider.getString( VARIABLE_NAME ) ) )
         {
             errorJoiner.add( "The provided CSV is missing valid 'variable_name' data." );
             valid = false;
@@ -523,7 +521,7 @@ public class CsvReader implements TimeSeriesReader
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'location' column." );
         }
-        else if ( !Strings.hasValue( dataProvider.getString( LOCATION ) ) )
+        else if ( this.hasNoValue( dataProvider.getString( LOCATION ) ) )
         {
             errorJoiner.add( "The provided CSV is missing valid 'location' data." );
             valid = false;
@@ -534,7 +532,8 @@ public class CsvReader implements TimeSeriesReader
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'measurement_unit' column." );
         }
-        else if ( !Strings.hasValue( dataProvider.getString( MEASUREMENT_UNIT ) ) )
+        else if ( Objects.isNull( dataProvider.getString( MEASUREMENT_UNIT ) ) ||
+                  dataProvider.getString( MEASUREMENT_UNIT ).isBlank() )
         {
             errorJoiner.add( "The provided CSV is missing valid 'measurement_unit' data." );
             valid = false;
@@ -575,7 +574,7 @@ public class CsvReader implements TimeSeriesReader
 
         if ( dataProvider.hasColumn( REFERENCE_DATETIME_COLUMN ) )
         {
-            if ( !Strings.hasValue( dataProvider.getString( REFERENCE_DATETIME_COLUMN ) ) )
+            if ( this.hasNoValue( dataProvider.getString( REFERENCE_DATETIME_COLUMN ) ) )
             {
                 errorJoiner.add( "The provided csv is missing valid '"
                                  + REFERENCE_DATETIME_COLUMN
@@ -615,7 +614,7 @@ public class CsvReader implements TimeSeriesReader
             valid = false;
             errorJoiner.add( "The provided csv is missing a 'value_date' column." );
         }
-        else if ( !Strings.hasValue( dataProvider.getString( VALUE_DATE ) ) )
+        else if ( this.hasNoValue( dataProvider.getString( VALUE_DATE ) ) )
         {
             errorJoiner.add( "The provided csv is missing valid 'value_date' data." );
             valid = false;
@@ -633,6 +632,15 @@ public class CsvReader implements TimeSeriesReader
         }
 
         return valid;
+    }
+
+    /**
+     * @param word the word to check
+     * @return whether the word is null or blank
+     */
+    private boolean hasNoValue( String word )
+    {
+        return Objects.isNull( word ) || word.isBlank();
     }
 
     /**

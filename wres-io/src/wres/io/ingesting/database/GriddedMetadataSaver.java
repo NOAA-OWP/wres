@@ -35,7 +35,7 @@ import wres.io.reading.DataSource;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
-import wres.util.NetCDF;
+import wres.util.Netcdf;
 
 /**
  * Ingests times-series metadata for gridded sources to a database. Does not copy any time-series values. TODO: remove 
@@ -102,8 +102,8 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
 
         try
         {
-            Instant referenceTime = NetCDF.getReferenceTime( this.getFile() );
-            Duration lead = NetCDF.getLeadTime( this.getFile() );
+            Instant referenceTime = Netcdf.getReferenceTime( this.getFile() );
+            Duration lead = Netcdf.getLeadTime( this.getFile() );
             String variable = this.dataSource.getContext()
                                              .getVariable()
                                              .getValue();

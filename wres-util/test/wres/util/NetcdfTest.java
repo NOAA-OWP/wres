@@ -11,7 +11,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
-public class NetCDFTest
+public class NetcdfTest
 {
     /**
      * Test to ensure that the VectorVariableIterator can properly buffer and iterate through a netcdf file
@@ -40,7 +40,7 @@ public class NetCDFTest
         // We only need to be within 0.01 of the actual values for this test since every value is a whole number
         final double epsilon = 0.01;
 
-        NetcdfFile testFile = NetcdfFiles.open( "testinput/NetCDFTest/IteratorTestData.nc" );
+        NetcdfFile testFile = NetcdfFiles.open( "testinput/NetcdfTest/IteratorTestData.nc" );
 
         // Get the variable from the test data
         Variable testVariable = testFile.findVariable( "test_variable" );
@@ -62,7 +62,7 @@ public class NetCDFTest
 
         // Make sure that the proper index for a read value can be retrieved and that the iterator can
         // iterate through all values in the variable, in a single buffer
-        NetCDF.VectorVariableIterator variableIterator = NetCDF.VectorVariableIterator.from( testVariable );
+        Netcdf.VectorVariableIterator variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
 
         for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
         {
@@ -80,7 +80,7 @@ public class NetCDFTest
 
         // Make sure that the proper index for a read value can be retrieved and that the iterator can
         // iterate through all values in the variable, across multiple buffers
-        variableIterator = NetCDF.VectorVariableIterator.from( testVariable, 7 );
+        variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 7 );
 
         for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
         {
@@ -106,7 +106,7 @@ public class NetCDFTest
 
         // Basic, buffer-less test
         //    The default buffer is 1000 values, but this file only has 20; no actual buffering will occur
-        variableIterator = NetCDF.VectorVariableIterator.from( testVariable );
+        variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
 
         // Iterate through each value in the iterator and compare each value with the matching control value
         while ( variableIterator.hasNext() )
@@ -119,7 +119,7 @@ public class NetCDFTest
 
         // Test with a buffer with a size of a prime number
         //     The iterator will be forced to create a smaller buffer to avoid an InvalidRangeException
-        variableIterator = NetCDF.VectorVariableIterator.from( testVariable, 13 );
+        variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 13 );
 
         while ( variableIterator.hasNext() )
         {

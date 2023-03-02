@@ -1,8 +1,8 @@
 package wres.io.reading.wrds;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
 
-import wres.util.Strings;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * The forecast units.
@@ -20,11 +20,11 @@ public class ForecastUnits
      */
     public String getUnitName()
     {
-        if ( Strings.hasValue( this.flow ) )
+        if ( this.hasValue( this.flow ) )
         {
             return this.flow;
         }
-        else if ( Strings.hasValue( this.streamflow ) )
+        else if ( this.hasValue( this.streamflow ) )
         {
             return this.streamflow;
         }
@@ -81,5 +81,14 @@ public class ForecastUnits
     public String getStage()
     {
         return stage;
+    }
+
+    /**
+     * @param word the word to check
+     * @return whether the word has some non whitespace characters
+     */
+    private boolean hasValue( String word )
+    {
+        return Objects.nonNull( word ) && !word.isBlank();
     }
 }

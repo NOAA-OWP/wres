@@ -10,8 +10,6 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.util.Strings;
-
 /**
  * TODO: remove this class.
  * @author Christopher Tubbs
@@ -26,6 +24,7 @@ public class ProgressMonitor
     private static final Object MONITOR_LOCK = new Object();
     private static final Logger LOGGER = LoggerFactory.getLogger( ProgressMonitor.class );
     private static boolean updateMonitor = true;
+    private static final int LINE_LENGTH = 120;
     private final AtomicBoolean reachedCompletion = new AtomicBoolean( false );
     private final DecimalFormat percentFormat;
     private final DecimalFormat mainFormat;
@@ -226,7 +225,7 @@ public class ProgressMonitor
 
             builder += ">";
 
-            builder = Strings.formatForLine( builder );
+            builder = ProgressMonitor.formatForLine( builder );
 
             if ( completion == 100.0 )
             {
@@ -307,4 +306,24 @@ public class ProgressMonitor
         this.outputFunction = outputFunction;
     }
 
+    /**
+     * @param line the line to format
+     * @return the formatted line
+     */
+    private static String formatForLine( final String line )
+    {
+        StringBuilder formattedLine = new StringBuilder( line );
+        while ( formattedLine.length() < LINE_LENGTH )
+        {
+            formattedLine.append( " " );
+        }
+
+        if ( formattedLine.length() > LINE_LENGTH )
+        {
+            String formatted = formattedLine.substring( 0, LINE_LENGTH );
+            formattedLine.append( formatted );
+        }
+
+        return "\r" + formattedLine;
+    }
 }

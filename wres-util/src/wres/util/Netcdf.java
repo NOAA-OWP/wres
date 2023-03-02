@@ -14,20 +14,23 @@ import wres.datamodel.DataException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 /**
  * @author Chris Tubbs.
  */
-public final class NetCDF
+public final class Netcdf
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( NetCDF.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( Netcdf.class );
     private static final DateTimeFormatter STANDARD_DATE_FORMAT =
             DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss z" );
 
@@ -120,7 +123,6 @@ public final class NetCDF
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
         public Object next()
         {
             if ( this.hasNext() )
@@ -206,7 +208,7 @@ public final class NetCDF
         }
     }
 
-    private NetCDF()
+    private Netcdf()
     {
     }
 
@@ -219,7 +221,7 @@ public final class NetCDF
     }
 
     /**
-     * Attempts to retrieve the variable with the given short name from within the passed in NetCDF file
+     * Attempts to retrieve the variable with the given short name from within the passed in Netcdf file
      * @param file The file to search through
      * @param variableName The short name of the variable to retrieve
      * @return If the variable exists, the variable is retrieved. Otherwise, it is null.
@@ -237,8 +239,8 @@ public final class NetCDF
     public static Duration getLeadTime( NetcdfFile file ) throws IOException
     {
         Duration lead = Duration.ZERO;
-        Instant initializedTime = NetCDF.getReferenceTime( file );
-        Instant validTime = NetCDF.getTime( file );
+        Instant initializedTime = Netcdf.getReferenceTime( file );
+        Instant validTime = Netcdf.getTime( file );
 
         if ( initializedTime != null && validTime != null )
         {
@@ -262,7 +264,7 @@ public final class NetCDF
     public static Instant getTime( NetcdfFile file )
             throws IOException
     {
-        Variable time = NetCDF.getVariable( file, "time" );
+        Variable time = Netcdf.getVariable( file, "time" );
         Array timeValues;
 
         try
@@ -288,16 +290,16 @@ public final class NetCDF
     public static Instant getReferenceTime( NetcdfFile file )
             throws IOException
     {
-        Variable time = NetCDF.getVariable( file, "reference_time" );
+        Variable time = Netcdf.getVariable( file, "reference_time" );
 
         if ( time == null )
         {
-            time = NetCDF.getVariable( file, "analysis_time" );
+            time = Netcdf.getVariable( file, "analysis_time" );
         }
 
         if ( time == null )
         {
-            return NetCDF.getTime( file );
+            return Netcdf.getTime( file );
         }
 
         Array timeValues;
@@ -326,7 +328,7 @@ public final class NetCDF
     {
         try ( NetcdfFile file = NetcdfFiles.open( filepath.toURL().getFile() ) )
         {
-            return NetCDF.getGriddedUniqueIdentifier( file, filepath, variableName );
+            return Netcdf.getGriddedUniqueIdentifier( file, filepath, variableName );
         }
     }
 
@@ -348,12 +350,12 @@ public final class NetCDF
         identityJoiner.add( InetAddress.getLocalHost().getHostAddress() );
         identityJoiner.add( target.toURL().toString() );
 
-        NetCDF.addNetcdfIdentifiers( file, identityJoiner );
+        Netcdf.addNetcdfIdentifiers( file, identityJoiner );
 
         identityJoiner.add( variableName );
 
         uniqueIdentifier = identityJoiner.toString();
-        uniqueIdentifier = Strings.getMD5Checksum( uniqueIdentifier.getBytes() );
+        uniqueIdentifier = Netcdf.getMD5Checksum( uniqueIdentifier.getBytes() );
 
         return uniqueIdentifier;
     }
@@ -373,6 +375,51 @@ public final class NetCDF
         {
             joiner.add( attr.toString() );
         }
+    }
+
+
+    /**
+     * @param checksum the checksum bytes
+     * @return a hex string representation
+     */
+    private static String getMD5Checksum( byte[] checksum )
+    {
+        Objects.requireNonNull( checksum, "A hash cannot be generated for a non-existent byte array" );
+
+        if ( checksum.length > 16 )
+        {
+            MessageDigest complete = getMD5Algorithm();
+            complete.update( checksum );
+            checksum = complete.digest();
+        }
+
+        final String hexes = "0123456789ABCDEF";
+
+        final StringBuilder hex = new StringBuilder( 2 * checksum.length );
+
+        for ( byte b : checksum )
+        {
+            hex.append( hexes.charAt( ( b & 0xF0 ) >> 4 ) )
+               .append( hexes.charAt( b & 0x0F ) );
+        }
+
+        return hex.toString();
+    }
+
+    private static MessageDigest getMD5Algorithm()
+    {
+        MessageDigest algorithm;
+
+        try
+        {
+            algorithm = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new IllegalStateException( "Something went wrong when trying to generate the MD5 algorithm", e );
+        }
+
+        return algorithm;
     }
 
 }

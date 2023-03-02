@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.collections4.ListUtils;
@@ -38,7 +37,7 @@ import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Reads forecasts and simulations/analyses from the National Water Model (NWM) in a NetCDF vector format.
+ * Reads forecasts and simulations/analyses from the National Water Model (NWM) in a Netcdf vector format.
  * 
  * @author James Brown
  * @author Christopher Tubbs
@@ -118,7 +117,7 @@ public class NwmVectorReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( stream );
 
-        LOGGER.warn( "Streaming of NetCDF vector time-series data is not currently supported. Attempting to read "
+        LOGGER.warn( "Streaming of Netcdf vector time-series data is not currently supported. Attempting to read "
                      + "directly from the data source supplied, {}.",
                      dataSource );
 
@@ -233,7 +232,6 @@ public class NwmVectorReader implements TimeSeriesReader
      * @param dataSource the data source
      * @param referenceTimes the reference times to read
      * @param featureBlocks the feature blocks to read
-     * @param an empty list to populate with resources opened by this method that must be closed on stream close
      * @return a time-series supplier
      */
 
@@ -347,7 +345,7 @@ public class NwmVectorReader implements TimeSeriesReader
      * 
      * @param nwmProfile the NWM profile or data shape
      * @param dataSource the data source
-     * @param referenceTimes the reference times to read
+     * @param referenceTime the reference time to read
      * @param referenceTimeType the type of reference time
      * @param featureBlocks the feature blocks to read
      * @return a time-series supplier
@@ -444,7 +442,7 @@ public class NwmVectorReader implements TimeSeriesReader
     }
 
     /**
-     * @param the cache to inspect
+     * @param cachedSeries the cache to inspect
      * @param featureBlocks the feature blocks
      * @param nwmTimeSeries the time-series to close if the cache is empty and there are no feature blocks remaining
      */
@@ -465,11 +463,11 @@ public class NwmVectorReader implements TimeSeriesReader
     }
 
     /**
-     * Reads a NWM time-series for one reference time and multiple geospatial chunks from one or more underlying NetCDF 
+     * Reads a NWM time-series for one reference time and multiple geospatial chunks from one or more underlying Netcdf
      * blobs.
      * 
      * @param dataSource the data source
-     * @param featureBlocks the feature blocks
+     * @param featureBlock the feature block
      * @param nwmTimeSeries the NWM time-series
      * @param nwmProfile the NWM profile
      * @return the time-series
@@ -511,7 +509,7 @@ public class NwmVectorReader implements TimeSeriesReader
                              .stream()
                              .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
                              .map( next -> TimeSeriesTuple.ofSingleValued( next, dataSource ) )
-                             .collect( Collectors.toUnmodifiableList() );
+                             .toList();
             }
             // Ensemble series
             else if ( nwmProfile.getMemberCount() > 1 )
@@ -524,7 +522,7 @@ public class NwmVectorReader implements TimeSeriesReader
                              .stream()
                              .map( next -> ReaderUtilities.validateAgainstEmptyTimeSeries( next, dataSource.getUri() ) )
                              .map( next -> TimeSeriesTuple.ofEnsemble( next, dataSource ) )
-                             .collect( Collectors.toUnmodifiableList() );
+                             .toList();
             }
             else
             {
@@ -650,9 +648,8 @@ public class NwmVectorReader implements TimeSeriesReader
 
     /**
      * Creates the values needed to call getReferenceDatetimes when wanting to ingest all the possible data with valid 
-     * times within given bounds.
-     *
-     * Useful for reading analysis data based on the valid times rather than on reference time ranges.
+     * times within given bounds. Useful for reading analysis data based on the valid times rather than on reference
+     * time ranges.
      *
      * @param nwmProfile A profile to use to calculate the new ranges.
      * @param earliestValidTime The earliest valid time to include.
@@ -698,10 +695,8 @@ public class NwmVectorReader implements TimeSeriesReader
     }
 
     /**
-     * Get the reference datetimes for the given boundaries and {@link NWMProfile}.
-     *
-     * As of 2020-08-04, there are datasets that have reference datetimes one
-     * duration after T00Z but another duration between reference datetimes.
+     * Get the reference datetimes for the given boundaries and {@link NWMProfile}. As of 2020-08-04, there are
+     * datasets that have reference datetimes one duration after T00Z but another duration between reference datetimes.
      * The profile now distinguishes between these two.
      *
      * @param earliest The earliest reference datetime.

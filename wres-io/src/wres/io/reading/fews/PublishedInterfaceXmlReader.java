@@ -58,16 +58,15 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.xml.XMLHelper;
-import wres.util.Strings;
 
 /**
  * Reads time-series data from a Published Interface XML source. Further information about the format can be found 
  * here:
- * 
+ *
  * <p><a href="https://publicwiki.deltares.nl/display/FEWSDOC/The+Delft-Fews+Published+Interface">PI-XML</a> 
- * 
+ *
  * <p>The above link was last accessed: 20220802T12:00Z.
- * 
+ *
  * @author James Brown
  * @author Christopher Tubbs
  */
@@ -171,7 +170,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param xmlStreamReader the xml stream reader
      * @return a time-series supplier
@@ -376,14 +375,14 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         String offsetValueText = reader.getText();
         double offsetHours = Double.parseDouble( offsetValueText );
         // There are timezones such as +8:45
-        int offsetSeconds = (int) ( offsetHours * 3600.0 );
+        int offsetSeconds = ( int ) ( offsetHours * 3600.0 );
         return ZoneOffset.ofTotalSeconds( offsetSeconds );
     }
 
 
     /**
      * Interprets information within PIXML "series" tags and returns a series if complete.
-     * 
+     *
      * @param reader the XML reader, positioned at a "series" tag
      * @param dataSource the data source
      * @param zoneOffset the time zone offset
@@ -629,10 +628,11 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         {
             if ( !metadataEqual && LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Saving a trace as a standalone time-series because the metadata has changed. The current "
-                              + "metadata is {}. The new metadata is: {}.",
-                              justParsed,
-                              currentTimeSeriesMetadata );
+                LOGGER.debug(
+                        "Saving a trace as a standalone time-series because the metadata has changed. The current "
+                        + "metadata is {}. The new metadata is: {}.",
+                        justParsed,
+                        currentTimeSeriesMetadata );
             }
             else if ( LOGGER.isDebugEnabled() )
             {
@@ -1107,7 +1107,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         value = value.strip();
         double val = MissingValues.DOUBLE;
 
-        if ( Strings.hasValue( value ) && !value.equalsIgnoreCase( "null" ) )
+        if ( Objects.nonNull( value )
+             && !value.isBlank()
+             && !value.equalsIgnoreCase( "null" ) )
         {
             val = Double.parseDouble( value );
 
@@ -1199,7 +1201,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * an immutable class, built incrementally, even though it is not exposed beyond this class, but this is a massive 
      * faff for limited benefit until we have automated builder creation. The reason for this class is to allow for 
      * header creation to be broken up into a smaller number of manageable methods, rather than one enormous method.
-     * 
+     *
      * @author James Brown
      */
 

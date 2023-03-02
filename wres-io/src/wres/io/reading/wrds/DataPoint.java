@@ -1,10 +1,9 @@
 package wres.io.reading.wrds;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import wres.util.Strings;
 
 /**
  * Data point that contains a value and an associated time.
@@ -62,7 +61,7 @@ public class DataPoint
      */
     public void setTime( String time )
     {
-        if ( Strings.hasValue( time ) )
+        if ( Objects.nonNull( time ) && !time.isBlank() )
         {
             this.time = OffsetDateTime.parse( time );
         }

@@ -125,7 +125,7 @@ class NetcdfOutputFileCreator2
 
 
     /**
-     * Create and set up dimensions of the NetCDF files for a given project.
+     * Create and set up dimensions of the Netcdf files for a given project.
      * @param targetPath The path into which to write.
      * @param featureGroups The feature groups to write (netCDF lib needs it)
      * @param window The outermost time window (TODO: support N windows)
@@ -216,7 +216,7 @@ class NetcdfOutputFileCreator2
         Dimension timeDimension = writer.addDimension( null,
                                                        "time",
                                                        1 );
-        // NetCDF 3 uses a second dimension for string variables (char[])
+        // Netcdf 3 uses a second dimension for string variables (char[])
         Dimension unknownDimension = writer.addDimension( null,
                                                           "analysis_time",
                                                           1 );
@@ -723,7 +723,7 @@ class NetcdfOutputFileCreator2
      * http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#missing-data
      * Expected to be called exactly once per variable (not idempotent)
      * @param variable the variable to set the nodata value on, to mutate the
-     *                 underlying NetCDF file
+     *                 underlying Netcdf file
      * @param noDataValue the "fill value" or "no data value" to use
      * @throws NullPointerException when any non-primitive arg is null
      * @throws IllegalArgumentException when noDataValue is set to 0.0
@@ -768,7 +768,7 @@ class NetcdfOutputFileCreator2
      * http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#missing-data
      * Expected to be called exactly once per variable (not idempotent)
      * @param variable the variable to set the nodata value on, to mutate the
-     *                 underlying NetCDF file
+     *                 underlying Netcdf file
      * @param noDataValue the "fill value" or "no data value" to use
      * @throws NullPointerException when any non-primitive arg is null
      * @throws IllegalStateException when writer not in define mode

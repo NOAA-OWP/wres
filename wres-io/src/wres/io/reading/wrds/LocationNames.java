@@ -1,10 +1,10 @@
 package wres.io.reading.wrds;
 
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import wres.util.Strings;
 
 /**
  * The location names.
@@ -91,21 +91,21 @@ public class LocationNames
     public String toString()
     {
         // If we have a fully qualified name, go ahead and use that since it is the most human friendly
-        if ( Strings.hasValue( this.getNwsName() ) )
+        if ( this.hasValue( this.getNwsName() ) )
         {
             return this.getNwsName();
         }
-        else if ( Strings.hasValue( this.getNwsLid() ) )
+        else if ( this.hasValue( this.getNwsLid() ) )
         {
             // Otherwise use the location's lid if it has one
             return this.getNwsLid();
         }
-        else if ( Strings.hasValue( this.getUsgsSiteCode() ) )
+        else if ( this.hasValue( this.getUsgsSiteCode() ) )
         {
             // Otherwise, try to use the gage id if there is one
             return "Gage ID: " + this.getUsgsSiteCode();
         }
-        else if ( Strings.hasValue( this.getNwmFeatureId() ) )
+        else if ( this.hasValue( this.getNwmFeatureId() ) )
         {
             // If all else fails, if there's a comid, use that one
             return "NWM Feature ID: " + this.getNwmFeatureId();
@@ -113,5 +113,14 @@ public class LocationNames
 
         // If the previous calls failed, just return a statement saying that you don't know where this is
         return "Unknown Location";
+    }
+
+    /**
+     * @param word the word to check
+     * @return whether the word has some non whitespace characters
+     */
+    private boolean hasValue( String word )
+    {
+        return Objects.nonNull( word ) && !word.isBlank();
     }
 }
