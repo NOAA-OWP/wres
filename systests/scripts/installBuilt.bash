@@ -6,384 +6,382 @@
 #
 # Arguments: First argument is a config file (any name), add a line with
 #	user = firstName.lastName:passwd
-#	Where the login ID and passwd are for Jenkins
+#	Where the login ID and passwd are from https://vlab.***REMOVED***
 #		Second argument is whether install the recent built, with value yes or no(default).
 #
-# Required Files: searchBuildNumber.py, searchRevisionNumber.py and searchBuiltRecent.py
-# Output Files: build_history.html, build_revision.html, build_recent.html and revisionFile.txt
+# Required Files: read_build.py, read_revision.py
+# Output Files: build_history.json, build_revision.json
 #		screenCapture.txt under your ~/wres_testing/wres/systests directory
-# Download File: wres-yyyymmdd-subRevision.zip
-
-# Set these when calling:
-# $JOB_URL is also required, could become a command-line argument
-# $SMTP_HOST is required only for email, could become a command-line argument
-# $EMAIL_ADDRESSES is required only for email, could become command-line arg
+# Downloaded Files: core WRES .zip, systests .zip, wres-vis .zip, all identified from Jenkins revision.
 
 if [ $# -lt 1 ]
 then
-	echo "Usage: $0 config_file [yes|no]"
-	echo "config_file with a line 'user = FirstName.LastName:passwd'"
-	exit 2
+    echo "Usage: $0 config_file [yes|no]"
+    echo "config_file with a line 'user = FirstName.LastName:passwd'"
+    exit 2
 fi
 
+# Important constants
+CURL=/usr/bin/curl
 TODAY=`/usr/bin/date +"%Y-%m-%d"`
-LOGFILE=/wres_share/releases/install_scripts/installBuiltLog_$TODAY.txt
-LOGFILE700=/wres_share/releases/install_scripts/installBuiltLog_700_$TODAY.txt
+LOGFILE=/wres_share/releases/logs/install/installBuiltLog_$TODAY.txt
 HOUR=$(date "+%_H")
 MINUTE=$(date "+%_M")
+NUMBER_RE='^[0-9]+$' # Regular expression to confirm something has only digits.
 
+# Important URLs.
+LATEST_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/build/distributions
+SYSTESTS_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/systests/build/distributions
+WRESVIS_URLSITE=https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/ws/wres-vis/build/distributions
+
+# Other important stuff
+INSTALLING_LOCK_FILE=/wres_share/releases/systests/installing.lock
+
+# What is this for?
 if [ $HOUR -le 0 -a $MINUTE -lt 5 ]
 then
-        echo "HERE1"
-        cat /dev/null > $LOGFILE
-        cat /dev/null > $LOGFILE700
-fi
-echo -n "-------------------- " >> $LOGFILE
-echo -n "-------------------- " >> $LOGFILE700
-/usr/bin/date >> $LOGFILE
-/usr/bin/date >> $LOGFILE700
-echo " -----------------------" >> $LOGFILE
-echo " -----------------------" >> $LOGFILE700
-
-doSystests=no
-if [ -f /wres_share/releases/systests/installing ]
-then
-	echo "Previous cron job is still installing" >> $LOGFILE 2>&1
-	echo "Previous cron job is still installing" >> $LOGFILE700 2>&1
-	doSystests=no
-	exit
+    echo "HERE1"
+    cat /dev/null > $LOGFILE
 fi
 
-if [ -f /wres_share/releases/install_scripts/testingJ.txt -o -f /wres_share/releases/install_scripts/testing700.txt ]
+# Log the date.
+echo "------------------------------------------- " >> $LOGFILE
+echo "RUNNING INSTALL SCRIPT - $(/usr/bin/date)" >> $LOGFILE
+echo "-------------------------------------------" >> $LOGFILE
+
+# Check for another install run on-going by looking at the lock file.
+if [ -f $INSTALLING_LOCK_FILE ]
 then
-	ls -l /wres_share/releases/install_scripts/testingJ.txt >> $LOGFILE 2>&1
-	ls -l /wres_share/releases/install_scripts/testing700.txt >> $LOGFILE700 2>&1
-        echo "There is a system test running, now" >> $LOGFILE 2>&1
-        echo "There is a system test running, now" >> $LOGFILE700 2>&1
+    ls -l $INSTALLING_LOCK_FILE  2>&1 >> $LOGFILE 2>&1
+    
+    # Check the age of the lock file.  
+    fileStatus=`/bin/stat $INSTALLING_LOCK_FILE | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
+    lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
+    echo "A release is currently being installed." 2>&1 >> $LOGFILE 2>&1
+    if [ $lastHours -gt 12 ]
+    then 
+        # The lock file had lasted for more than 12 hours. The process likely died without removing it.
+        # Forcibly remove the lock file.
+        echo "The install has been on-going for $lastHours hours. Assuming its a dead process and removing the lock file." >> $LOGFILE 2>&1
+#        /usr/bin/mailx -F -A WRES_Setting -s "The install has been last for $lastHours hours, still unfinished yet" -v WRES_GROUP <<< `cat $INSTALLING_LOCK_FILE`
+        rm -v $INSTALLING_LOCK_FILE 2>&1 | /usr/bin/tee --append $LOGFILE
         exit
-fi
-if [ ! -f /wres_share/releases/systests/installing ]
-then
-	touch /wres_share/releases/systests/installing
-	ls -l /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-	ls -l /wres_share/releases/systests/installing >> $LOGFILE700 2>&1
+    else
+        echo "Exiting install script." 2>&1 >> $LOGFILE 2>&1
+        exit
+    fi
 fi
 
+# Lock the install to let others know this is running.
+echo "Establishing lock file, $INSTALLING_LOCK_FILE." >> $LOGFILE 2>&1
+touch $INSTALLING_LOCK_FILE
+ls -l $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
+trap "rm -f $INSTALLING_LOCK_FILE; echo ${date} - Install lock file removed via trap." EXIT TERM INT KILL
+
+# Purge log files older than 5 days.
+/usr/bin/find -P $RELEASES_DIR/logs/install -maxdepth 1 -name "installBuiltLog_*" -mtime +7 -exec rm -v {} \; >> $LOGFILE 2>&1
+
+# Initialize some tracking variables.
+doSystests=no
 CONFIGFILE=$1
-
 if [ $# -gt 1 ]
 then
-	INSTALL_Latest=$2
-	INSTALL_Systests=$2
+    INSTALL_Latest=$2
+    INSTALL_Systests=$2
+    INSTALL_WresVis=$2
 else
-	INSTALL_Latest=no
-	INSTALL_Systests=no
+    INSTALL_Latest=no
+    INSTALL_Systests=no
+    INSTALL_WresVis=no
 fi
 
-echo "Install built = $INSTALL_Latest"
-/usr/bin/date >> $LOGFILE 2>&1
-/usr/bin/date >> $LOGFILE700 2>&1
+echo "Install built release?: $INSTALL_Latest"  >> $LOGFILE 2>&1
 CURL=/usr/bin/curl
-# for now python is in ., it will change later
+
+# Important directories that are assumed to exist already.
 PYTHON_SCRIPT_DIR=/wres_share/releases/install_scripts
-WORKDIR=~
-# the working directory is at your home directory
-cd $WORKDIR 
-pwd >> $LOGFILE
-pwd >> $LOGFILE700
-# remvoe the old file
-if [ -f build_history.html ]
-then
-       rm -v build_history.html >> $LOGFILE 2>&1
-fi
+WORKDIR=~ #The wres-cron home directory is the working directory.
+RELEASES_DIR=/wres_share/releases
+SYSTESTS_DIR=/wres_share/releases/systests
 
-# Step 1, get the built number from built history
-$CURL --config $CONFIGFILE --silent  $JOB_URL --output "build_history.html"
-
-if [ ! -s build_history.html ] # if download unsuccessful
-then
-       ls -l build_history.html >> $LOGFILE 2>&1
-       if [ -f /wres_share/releases/systests/installing ]
-	then
-		rm -v /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-	fi
-       exit 2
-fi
-#builtNumber=`$PYTHON_SCRIPT_DIR/searchBuildNumber.py | tail -1 | cut -d'#' -f2 | cut -d')' -f1`
-builtNumber=`$PYTHON_SCRIPT_DIR/searchInstallBuild.py build_history.html | tail -1 | cut -d'#' -f2 | cut -d')' -f1`
-
-echo "Recent built number = $builtNumber" >> $LOGFILE 2>&1
-
-# remvoe the old file
-if [ -f build_revision.html ]
-then
-       rm -v build_revision.html >> $LOGFILE 2>&1
-fi
-
-# Step 2, get the revision number
-$CURL --config $CONFIGFILE --silent  $JOB_URL/$builtNumber/ --output "build_revision.html"
-
-if [ ! -s build_revision.html ] # if this file is unsuccessed downlowd.
-then
-       ls -l build_revision.html >> $LOGFILE 2>&1
-	if [ -f /wres_share/releases/systests/installing ]
-        then
-                rm -v /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-        fi
-       exit 2
-fi
-
-# Step 2a, Get the sub-revision (first 6) number from revision number
-#revisionNumber=`$PYTHON_SCRIPT_DIR/searchRevisionNumber.py | tail -1 | cut -d':' -f3 | tr -d " " | tr -d "')"`
-revisionNumber=`$PYTHON_SCRIPT_DIR/searchInstallBuild.py build_revision.html | tail -1 | cut -d':' -f3 | tr -d " " | tr -d "')"`
-echo "Revision number = $revisionNumber" | tee revisionFile.txt
-sub_revision=`gawk -v revisoin=$revisionNumber '{print substr(revisoin, 0, 7)}' revisionFile.txt` 
-echo "sub-revisoin number = $sub_revision" >> $LOGFILE 2>&1
-
-# Step 3, get the built zip file
-# remvoe the old file
-if [ -f build_recent.html ]
-then
-	rm -v build_recent.html >> $LOGFILE 2>&1
-fi 
-
-LATEST_URLSITE=$JOB_URL/ws/build/distributions/
-
-# Get this page and output to build_recent.html
-#$CURL --config $CONFIGFILE --verbos  $URLSITE --output "build_recent.html" 
-$CURL --config $CONFIGFILE --silent  $LATEST_URLSITE --output "build_recent.html" 
-if [ ! -s build_recent.html ] # if this file is unsuccessed downlowd.
-then
-	ls -l build_recent.html >> $LOGFILE 2>&1
-	if [ -f /wres_share/releases/systests/installing ]
-        then
-                rm -v /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-        fi
-	exit 2
-fi
-if [ -f systests_recent.html ]
-then
-	rm -v systests_recent.html >> $LOGFILE 2>&1
-fi
-SYSTESTS_URLSITE=$JOB_URL/ws/systests/build/distributions/
-$CURL --config $CONFIGFILE --silent  $SYSTESTS_URLSITE --output "systests_recent.html" 
-if [ ! -s systests_recent.html ] # if download unsuccessful
-then
-	ls -l systests_recent.html >> $LOGFILE 2>&1
-	if [ -f /wres_share/releases/systests/installing ]
-        then
-                rm -v /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-        fi
-	exit 2
-fi
-# search he recent built file name
-LATEST_ZIPFILE=`$PYTHON_SCRIPT_DIR/searchInstallBuild.py build_recent.html | grep Data | grep $sub_revision | gawk '{print ($2)}' | tr -d "')"`
-SYSTESTS_ZIPFILE=`$PYTHON_SCRIPT_DIR/searchInstallBuild.py systests_recent.html | grep Data | grep $sub_revision | gawk '{print ($2)}' | tr -d "')"`
-
-echo "Recent built zip file = $LATEST_ZIPFILE" >> $LOGFILE 2>&1
-echo "Recent systests zip file = $SYSTESTS_ZIPFILE" >> $LOGFILE 2>&1
-# Note there is a bug here, sometimes when the sub_revision number not match between latest zip file and systest zip file, then sys tests will broken.
-# Fixed this bug at August 7th, 2018 by RHC
-
-if [ -z "$SYSTESTS_ZIPFILE" ]
-then
-	echo "The systest zip file doesn't match the latest zip file." >> $LOGFILE 2>&1
-	cp -pv systests_recent.html systests_recentAll.html >> $LOGFILE 2>&1
-	$PYTHON_SCRIPT_DIR/searchInstallBuild.py systests_recentAll.html | grep Data | gawk -F "'" '{print($4,$8)}' | tr -d "," | gawk '{print($4,$2,$3,$5,$6,$1)}' > unsortrecentsystest.txt
-	SYSTESTS_ZIPFILE=`$PYTHON_SCRIPT_DIR/formatLine.py unsortrecentsystest.txt | grep -v Invalid | sort | tail -1 | cut -d' ' -f2`
-fi
-
-#Get the name of the zip file without the .zip extension.
-# see whether the built has installed?
-if [ -n "$LATEST_ZIPFILE" ]
-then
-	unZip_Latest=`echo $LATEST_ZIPFILE | tr -d ".zip"`
-	if [ -d /wres_share/releases/$unZip_Latest ]
-	then
-        	ls -d /wres_share/releases/$unZip_Latest >> $LOGFILE 2>&1
-        	echo " already installed" >> $LOGFILE 2>&1
-		INSTALL_Latest=no
-	fi
-elif [ -z "$LATEST_ZIPFILE" ]
-then
-	INSTALL_Latest=no
-fi
-
-if [ -n "$SYSTESTS_ZIPFILE" ]
-then
-	unZip_SysTests=`echo $SYSTESTS_ZIPFILE | tr -d ".zip"`
-	if [ -d /wres_share/releases/$unZip_SysTests ]
-	then 
-		ls -d /wres_share/releases/$unZip_SysTests >> $LOGFILE 2>&1
-		echo " already installed" >> $LOGFILE 2>&1
-		INSTALL_Systests=no
-	fi
-elif [ -z "$SYSTESTS_ZIPFILE" ]
-then
-	INSTALL_Systests=no	
-fi
-
+# Ensure these directories exist.  
 ARCHIVE_DIR=/wres_share/releases/archive
-if [ ! -d $ARCHIVE_DIR ]
-then
-	mkdir -pv $ARCHIVE_DIR >> $LOGFILE 2>&1
+if [ ! -d $ARCHIVE_DIR ] 
+then 
+    mkdir -pv $ARCHIVE_DIR >> $LOGFILE 2>&1
 fi
-
-# Step 4, ready to download
-# Get the recent built zip file and recent systests zip file
-#$CURL --config $CONFIGFILE --verbos --remote-name $URLSITE$ZIPFILE 
-if [ "$INSTALL_Latest" = "yes" ]
-then
-	echo "Please wait .... currently is downloading the $LATEST_ZIPFILE file" >> $LOGFILE 2>&1
-	$CURL --config $CONFIGFILE --silent --remote-name $LATEST_URLSITE$LATEST_ZIPFILE 
-fi
-if [ "$INSTALL_Systests" = "yes" ]
-then
-	echo "Please wait .... currently is downloading the $SYSTESTS_ZIPFILE file" >> $LOGFILE 2>&1
-	$CURL --config $CONFIGFILE --silent --remote-name $SYSTESTS_URLSITE$SYSTESTS_ZIPFILE 
-fi
-# Step 4a, ready to install the latest built
-if [ -n "$LATEST_ZIPFILE" -a -f $LATEST_ZIPFILE ] # if the recent built zip file has downloaded
-then
-	ls -l $LATEST_ZIPFILE >> $LOGFILE 2>&1
-	latest_noZip=`ls $LATEST_ZIPFILE | tr -d ".zip"`
-	echo "install built file is $noZip" >> $LOGFILE 2>&1
-	if [ "$INSTALL_Latest" = "yes" ]
-	then
-		/wres_share/releases/install_scripts/installrls.fromzip.sh $latest_noZip >> $LOGFILE 2>&1
-		mv -v $LATEST_ZIPFILE $ARCHIVE_DIR >> $LOGFILE 2>&1
-		/usr/bin/chgrp -v wres $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
-		chmod 775 $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
-		echo "$builtNumber # $latest_noZip" >> $ARCHIVE_DIR/recordDownloadedNBuilt.txt
-		doSystests=yes
-		# TODO
-		# Check wres-vis graphics zip file
-		#/wres_share/releases/install_scripts/checkGraphicsZip.bash ~/mytoken $LATEST_ZIPFILE $LOGFILE
-		/wres_share/releases/install_scripts/checkGraphicsZip.bash -c ~/mytoken -l $LOGFILE
-	fi
-fi
-
 SYSTESTS_ARCHIVE_DIR=/wres_share/releases/systests_archive
 if [ ! -d $SYSTESTS_ARCHIVE_DIR ]
 then
-        mkdir -pv $SYSTESTS_ARCHIVE >> $LOGFILE 2>&1
+    mkdir -pv $SYSTESTS_ARCHIVE >> $LOGFILE 2>&1
+fi 
+WRES_VIS_ARCHIVE_DIR=/wres_share/releases/archive/graphics
+if [ ! -d $WRES_VIS_ARCHIVE_DIR ]
+then
+    mkdir -pv $WRES_VIS_ARCHIVE_DIR >> $LOGFILE 2>&1
 fi
 
-# Step 4b, ready to intall the systests
+# the working directory is at your home directory
+cd $WORKDIR 
+pwd >> $LOGFILE
+
+# ========================================
+# STEP 1: Get the Jenkins build number from build history.
+
+# Remove the old file Jenkins build history JSON file.
+if [ -f build_history.json ]
+then
+   rm -v build_history.json >> $LOGFILE 2>&1
+fi 
+ 
+# Curl to get the new JSON. Check for success and then parse using the Python script.
+$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/api/json?pretty=true --output "build_history.json" 
+if [ ! -s build_history.json ] # if download unsuccessful...
+then
+    # Log what ls sees. Remove the installing signal file. Exit 2.
+    ls -l build_history.json >> $LOGFILE 2>&1
+    rm -v $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
+    exit 2
+fi
+
+# Python script extracts the build number and returns it.
+builtNumber=$( $PYTHON_SCRIPT_DIR/read_build.py build_history.json )
+if ! [[ $builtNumber =~ $NUMBER_RE ]] # Make sure its a valid build number before using.
+then
+    echo "Build number from Jenkins is not a number: \"$builtNumber\". NOT GOOD. Exiting."  >> $LOGFILE 2>&1
+    exit 2
+fi
+
+echo "Recent build number = $builtNumber" >> $LOGFILE 2>&1
+
+# =======================================
+# STEP 2: Get the revision number and .zip file names.
+
+# Remove the old revision file
+if [ -f build_revision.json ]
+then
+    rm -v build_revision.json >> $LOGFILE 2>&1
+fi
+
+# Get the revision information JSON from Jenkins and confirm.
+$CURL --config $CONFIGFILE --silent  https://vlab.***REMOVED***/jenkins/job/Verify_OWP_WRES/$builtNumber/api/json?pretty=true --output "build_revision.json" 
+if [ ! -s build_revision.json ] # if this file is unsuccessed downlowd.
+then
+    # Log what ls sees.  Remove the installing signal file. Exit 2.
+    ls -l build_revision.json >> $LOGFILE 2>&1
+    rm -v $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
+    exit 2
+fi
+
+# Obtain the revision number and zip file names through the Python script.
+revisionInfo=$( $PYTHON_SCRIPT_DIR/read_revision.py build_revision.json )
+read -r var1 var2 var3 var4 <<< $revisionInfo
+
+# Check every variable before using.
+# var1, the revision number, cannot be empty; that's the only requirement.
+if [ -z "$var1" ]
+then
+    echo "The revision number was empty. NOT GOOD."  >> $LOGFILE 2>&1
+    echo "Here is the response of read_revision.py build_revision.json:" >> $LOGFILE 2>&1
+    echo "$revisionInfo" >> $LOGFILE 2>&1
+    echo "Exiting..." >> $LOGFILE 2>&1
+    exit 2
+fi
+revisionNumber=$var1
+echo "Revision number = $revisionNumber"  >> $LOGFILE 2>&1 
+
+# Obtain the sub-revision number which is the first 7 characters of the revision.
+sub_revision=$(echo $revisionNumber | cut -c1-7)
+echo "Sub-revision number = $sub_revision" >> $LOGFILE 2>&1
+
+# var2, var3, and var4 need to end with ".zip". I assume they are good if they do.
+if [[ $var2 != *.zip ]]
+then
+   echo "The revision WRES core zip file does not end in \".zip\". NOT GOOD." >> $LOGFILE 2>&1
+   echo "Here is the response of read_revision.py build_revision.json:" >> $LOGFILE 2>&1
+   echo "$revisionInfo" >> $LOGFILE 2>&1
+   echo "Exiting..." >> $LOGFILE 2>&1
+   exit 2
+fi
+LATEST_ZIPFILE=$var2
+echo "WRES Core Zip File = $LATEST_ZIPFILE" >> $LOGFILE 2>&1
+if [[ $var3 != *.zip ]]
+then 
+   echo "The revision systests zip file does not end in \".zip\". NOT GOOD." >> $LOGFILE 2>&1
+   echo "Here is the response of read_revision.py build_revision.json:" >> $LOGFILE 2>&1
+   echo "$revisionInfo" >> $LOGFILE 2>&1
+   echo "Exiting..." >> $LOGFILE 2>&1
+   exit 2 
+fi
+SYSTESTS_ZIPFILE=$var3
+echo "Systest Zip File = $SYSTESTS_ZIPFILE" >> $LOGFILE 2>&1
+if [[ $var4 != *.zip ]]
+then
+   echo "The revision wres-vis zip file does not end in \".zip\". NOT GOOD." >> $LOGFILE 2>&1
+   echo "Here is the response of read_revision.py build_revision.json:" >> $LOGFILE 2>&1
+   echo "$revisionInfo" >> $LOGFILE 2>&1
+   echo "Exiting..." >> $LOGFILE 2>&1
+   exit 2
+fi
+WRES_VIS_ZIPFILE=$var4
+echo "Wres-vis Zip File = $WRES_VIS_ZIPFILE" >> $LOGFILE 2>&1
+
+# Identify the revisions, which are the same as the zip files without the .zip extensions.
+latest_noZip=`echo $LATEST_ZIPFILE | tr -d ".zip"`
+wresvis_noZip=`echo $WRES_VIS_ZIPFILE | sed -e s/\.zip//`
+systests_noZip=`echo $SYSTESTS_ZIPFILE | tr -d ".zip"`
+
+echo "Here the three revisions: $latest_noZip, $wresvis_noZip, $systest_noZip" >> $LOGFILE 2>&1
+
+# ==============================================
+# STEP 3: Download and install each of the zip files appropriately. 
+
+# Get the name of the zip file without the .zip extension.
+# Check if the build has already been installed.
+if [ -n "$LATEST_ZIPFILE" ]
+then
+    unZip_Latest=`echo $LATEST_ZIPFILE | tr -d ".zip"`
+    if [ -d $RELEASES_DIR/$unZip_Latest ]
+    then
+        echo "Already installed $RELEASES_DIR/$unZip_Latest:" >> $LOGFILE 2>&1
+        ls -ld $RELEASES_DIR/$unZip_Latest >> $LOGFILE 2>&1
+	INSTALL_Latest=no
+    fi
+elif [ -z "$LATEST_ZIPFILE" ]
+then
+    INSTALL_Latest=no
+fi
+
+# Do the same thing with the systest zip file.  Has it been installed?
 if [ -n "$SYSTESTS_ZIPFILE" ]
 then
-	if [ -f $SYSTESTS_ZIPFILE ] # if the recent systests zip file has downloaded
-	then
-		ls -l $SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
-		systests_noZip=`ls $SYSTESTS_ZIPFILE | tr -d ".zip"`
-		echo "INSTALL_Systests = $INSTALL_Systests " >> $LOGFILE 2>&1
-		if [ "$INSTALL_Systests" = "yes" ]
-        	then
-			/wres_share/releases/install_scripts/installsystests.fromzip.sh $systests_noZip >> $LOGFILE 2>&1
-			mv -v $SYSTESTS_ZIPFILE $SYSTESTS_ARCHIVE_DIR >> $LOGFILE 2>&1
-			/usr/bin/chgrp -v wres $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1	
-			chmod 775 $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
-			echo "$builtNumber # $systests_noZip" >> $SYSTESTS_ARCHIVE_DIR/recordDownloadedNBuilt.txt
-			doSystests=yes
-		elif [ "$INSTALL_Systests" = "no" ]
-		then
-			echo "The previous systeests perhaps still installing" >> $LOGFILE 2>&1
-			rm -v $SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
-			#doSystests=no
-		fi
-	fi
+    unZip_SysTests=`echo $SYSTESTS_ZIPFILE | tr -d ".zip"`
+    if [ -d $RELEASES_DIR/$unZip_SysTests ]
+    then 
+        echo "Already installed $RELEASES_DIR/$unZip_SysTests:" >> $LOGFILE 2>&1
+        ls -ld $RELEASES_DIR/$unZip_SysTests >> $LOGFILE 2>&1
+        INSTALL_Systests=no
+    fi
+elif [ -z "$SYSTESTS_ZIPFILE" ]
+then
+    INSTALL_Systests=no	
 fi
 
-# Now do the systests if the recent built has installed
-#INSTALL_Latest=no
-#INSTALL_Systests=no
+# Do the same thing with the wres-vis zip file.  Has it been installed?
+# In this case, we are looking for an archived .zip; its not unzipped to a directory.
+if [ -n "$WRES_VIS_ZIPFILE" ]
+then
+    if [ -f $WRES_VIS_ARCHIVE_DIR/$WRES_VIS_ZIPFILE ]
+    then
+        echo "Already installed $WRES_VIS_ARCHIVE_DIR/$WRES_VIS_ZIPFILE:" >> $LOGFILE 2>&1
+        ls -ld $WRES_VIS_ARCHIVE_DIR/$WRES_VIS_ZIPFILE >> $LOGFILE 2>&1
+        INSTALL_WresVis=no
+    fi
+elif [ -z "$WRES_VIS_ZIPFILE" ]
+then
+    INSTALL_WresVis=no
+fi
+
+# =============================================
+# STEP 4: Download the zip files if the install flag is 'yes'.
+if [ "$INSTALL_Latest" = "yes" ]
+then
+    echo "Please wait .... currently is downloading the $LATEST_ZIPFILE file" >> $LOGFILE 2>&1
+    $CURL --config $CONFIGFILE --silent --remote-name $LATEST_URLSITE/$LATEST_ZIPFILE 
+fi
+if [ "$INSTALL_Systests" = "yes" ]
+then
+    echo "Please wait .... currently is downloading the $SYSTESTS_ZIPFILE file" >> $LOGFILE 2>&1
+    $CURL --config $CONFIGFILE --silent --remote-name $SYSTESTS_URLSITE/$SYSTESTS_ZIPFILE 
+fi
+if [ "$INSTALL_WresVis" = "yes" ]
+then
+    echo "Please wait .... currently is downloading the $WRES_VIS_ZIPFILE file" >> $LOGFILE 2>&1
+    $CURL --config $CONFIGFILE --silent --remote-name $WRESVIS_URLSITE/$WRES_VIS_ZIPFILE
+fi
+
+# =====================================
+# STEP 5: Install the .zip files. 
+# The core and systests are unzipped with the .zip archived.  The wres-vis is just archived.
+
+# Core zip.  This is installed using the script and then the .zip is archived.
+if [ -n "$LATEST_ZIPFILE" -a -f $LATEST_ZIPFILE ] # if the recent built zip file has downloaded
+then
+    ls -l $LATEST_ZIPFILE >> $LOGFILE 2>&1
+    echo "install built file is $noZip" >> $LOGFILE 2>&1
+    if [ "$INSTALL_Latest" = "yes" ]
+    then
+        $RELEASES_DIR/install_scripts/installrls.fromzip.sh $latest_noZip >> $LOGFILE 2>&1
+        mv -v $LATEST_ZIPFILE $ARCHIVE_DIR >> $LOGFILE 2>&1
+        /usr/bin/chgrp -v wres $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
+        chmod 775 $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
+        echo "$builtNumber # $latest_noZip" >> $ARCHIVE_DIR/recordDownloadedNBuilt.txt
+        doSystests=yes
+    fi
+fi
+
+# Systests zip. This is installed using the script and then the .zip is archived.  
+if [ -n "$SYSTESTS_ZIPFILE" ] # if the variable is defined
+then
+    if [ -f $SYSTESTS_ZIPFILE ] # if the recent systests zip file has downloaded
+    then
+        ls -l $SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
+        echo "INSTALL_Systests = $INSTALL_Systests " >> $LOGFILE 2>&1
+        if [ "$INSTALL_Systests" = "yes" ]
+        then
+            $RELEASES_DIR/install_scripts/installsystests.fromzip.sh $systests_noZip >> $LOGFILE 2>&1
+            mv -v $SYSTESTS_ZIPFILE $SYSTESTS_ARCHIVE_DIR >> $LOGFILE 2>&1
+            /usr/bin/chgrp -v wres $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1	
+            chmod 775 $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
+            echo "$builtNumber # $systests_noZip" >> $SYSTESTS_ARCHIVE_DIR/recordDownloadedNBuilt.txt
+            doSystests=yes
+        elif [ "$INSTALL_Systests" = "no" ]
+        then
+            echo "The previous systeests perhaps still installing" >> $LOGFILE 2>&1
+            rm -v $SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
+            #doSystests=no
+        fi
+    fi
+fi
+
+# Wres-vis zip. This one is not unzipped, but copied into place.
+if [ -n "$WRES_VIS_ZIPFILE" ] # if the variable is defined
+then
+    if [ -f "$WRES_VIS_ZIPFILE" ] # if the wres-vis file was downloaded
+    then
+        ls -l $WRES_VIS_ZIPFILE >> $LOGFILE 2>&1
+        echo "Wres Viz file witout .zip = $wresvis_noZip" >> $LOGFILE 2>&1
+        echo "INSTALL_WresVis = $INSTALL_WresVis" >> $LOGFILE 2>&1
+        if [ "$INSTALL_WresVis" = "yes" ]
+        then
+            echo "Moving $WRES_VIS_ZIPFILE to $WRES_VIS_ARCHIVE_DIR; it will not be unzipped." >> $LOGFILE 2>&1
+            mv $WRES_VIS_ZIPFILE $WRES_VIS_ARCHIVE_DIR/.
+            /usr/bin/chgrp -v wres $WRES_VIS_ARCHIVE_DIR/$WRES_VIS_ZIPFILE >> $LOGFILE 2>&1
+            chmod 775 $WRES_VIS_ARCHIVE_DIR/$WRES_VIS_ZIPFILE >> $LOGFILE 2>&1
+        else
+            rm $WRES_VIS_ZIPFILE # Just remove the file; its already been installed.
+        fi
+    fi
+fi
+
+# =========================================
+# STEP 5: Queue the revision for testing if the flag is a yes.
+# This conists of adding the core revision and wres-vis revision in queues.
 echo "INSTALL_Latest = $INSTALL_Latest, INSTALL_Systests = $INSTALL_Systests" >> $LOGFILE 2>&1
 if [ "$INSTALL_Latest" = "yes" -o "$INSTALL_Systests" = "yes" ]
 then
-	doSystests=yes
+    doSystests=yes
 fi
 echo "doSystests =  $doSystests" >> $LOGFILE 2>&1
-#exit
+
 if [ "$doSystests" = "yes" ]
 then
-	# append the latest revision number into the queue
-#	echo $latest_noZip >> /wres_share/releases/pendingQueue.txt
-	echo $latest_noZip >> /wres_share/releases/pendingQueueJ.txt
-# -------------- Started at 03/06/2019, the system tests and emailing results will in differenct process in cron. ------------------
-#	if [ -L /wres_share/releases/systests ] # if it is a symbolic link
-#	then
-#		cd /wres_share/releases/systests
-#		pwd >> $LOGFILE 2>&1
-#		#if [ -x rundevtests.sh ] # if this file is exists and is executable
-#		if [ -x runsystests.sh ] # if this file is exists and is executable
-#		then
-#			export WRES_DB_NAME=wres4
-#			export WRES_LOG_LEVEL=info
-#			echo "WRES DB = $WRES_DB_NAME" >> $LOGFILE 2>&1
-#			echo "WRES Log level = $WRES_LOG_LEVEL" >> $LOGFILE 2>&1
-#			# test 900 only in nohup background
-#			/usr/bin/nohup ./runtest_db900.sh -l -d wres5 -t $PWD -r $latest_noZip scenario9* | tee systests_900screenCatch_$latest_noZip.txt &
-#			# test all except 700 and 900
-#			./runsystests.sh -l 2>&1 | tee systests_screenCatch_$latest_noZip.txt
-#			 egrep -C 3 '(diff|FAIL)' systests_screenCatch_$latest_noZip.txt > systests_Results_$latest_noZip.txt
-#			grep "Aborting all tests" /wres_share/releases/install_scripts/installBuiltLog.txt >> systests_Results_$latest_noZip.txt
-#			# test 700 only
-#			./runsystests_700.sh -l 2>&1 | tee systests_screenCatch_700_$latest_noZip.txt
-#			 egrep -C 3 '(diff|FAIL)' systests_screenCatch_700_$latest_noZip.txt > systests_Results_700_$latest_noZip.txt
-#			#cleandatabase=`grep "Aborting all tests" /wres_share/releases/install_scripts/installBuiltLog.txt`
-#			#grep "Aborting all tests" /wres_share/releases/install_scripts/installBuiltLog.txt >> systests_Results_700_$latest_noZip.txt
-#			
-#
-#			# Now, let's email them out
-#			if [ -s systests_Results_$latest_noZip.txt ] # there are diff and/or FAIL found in this test
-#			then # file exists and size greater than 0
-#				# zip the latest wresSysTestResults_*.txt file
-#				today=$(date +%Y%m%d)
-#				wresSysTestResults=`ls -t wresSysTestResults_"$today"*.txt | head -1`
-#				/usr/bin/zip "$wresSysTestResults".zip $wresSysTestResults >> $LOGFILE 2>&1
-#
-#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip FAILED" -a "$wresSysTestResults".zip $EMAIL_ADDRESSES < systests_screenCatch_$latest_noZip.txt
-#				echo "Email out $wresSysTestResults.zip and systests_screenCatch_$latest_noZip.txt" >> $LOGFILE 2>&1
-#			elif [ ! -s systests_Results_$latest_noZip.txt ] # there are no diff nor FAIL found in this test
-#			then # file is not exist or empty size
-#				echo "No diff, FAILS, FATAL, ERROR, Abort  found in this test." >> $LOGFILE 2>&1
-#				grep -A2 PROCESSING systests_screenCatch_$latest_noZip.txt > systests_Results_$latest_noZip.txt
-#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip PASSED" $EMAIL_ADDRESSES < systests_Results_$latest_noZip.txt
-#				rm -v systests_Results_$latest_noZip.txt >> $LOGFILE 2>&1
-#			fi
-#
-#			if [ -s systests_Results_700_$latest_noZip.txt ] # there are diff and/or FAIL found in this test
-#                        then # file exists and size greater than 0
-#                                # zip the latest wresSysTestResults_*.txt file
-#                                today=$(date +%Y%m%d)
-#                                wresSysTestResults_700=`ls -t wresSysTestResults_700_"$today"*.txt | head -1`
-#                                /usr/bin/zip "$wresSysTestResults_700".zip $wresSysTestResults_700 >> $LOGFILE700 2>&1
-#
-#                                /usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip for 700 FAILED" -a "$wresSysTestResults_700".zip $EMAIL_ADDRESSES < systests_screenCatch_700_$latest_noZip.txt
-#                                echo "Email out $wresSysTestResults_700.zip and systests_screenCatch_700_$latest_noZip.txt" >> $LOGFILE700 2>&1
-#                        elif [ ! -s systests_Results_700_$latest_noZip.txt ] # there are no diff nor FAIL found in this test
-#                        then # file is not exist or empty size
-#                                echo "No diff, FAILS, FATAL, ERROR, Abort  found in this test." >> $LOGFILE700 2>&1
-#				grep -A2 PROCESSING systests_screenCatch_700_$latest_noZip.txt > systests_Results_700_$latest_noZip.txt
-#				/usr/bin/mailx -F -S smtp=$SMTP_HOST -s "systests results from $latest_noZip for 700 PASSED" $EMAIL_ADDRESSES < systests_Results_700_$latest_noZip.txt
-#                                rm -v systests_Results_700_$latest_noZip.txt >> $LOGFILE700 2>&1
-#                        fi
-#
-#			./archiveResults.sh $latest_noZip
-#
-#			#curl smtp://mail.example.com --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file email.txt
-#			# $CURL --config $CONFIGFILE smtp://smtp.gmail.com  --mail-from Raymond.Chui@***REMOVED*** --mail-rcpt Raymond.Chui@***REMOVED*** --upload-file systests_screenCatch_$latest_noZip.txt
-#			touch /wres_share/releases/$latest_noZip/tested.txt
-#		fi
-#	fi
+    # append the latest revision number into the queue
+    flock $RELEASES_DIR/pendingQueueJ.txt echo "$latest_noZip $wresvis_noZip $systests_noZip" >> $RELEASES_DIR/pendingQueueJ.txt
+    echo "System testing to be done of core revision $latest_noZip and wres-vis revision $wresvis_noZip using systests revision $systests_noZip." >> $LOGFILE 2>&1
 fi
 
-if [ -f /wres_share/releases/systests/installing ]
-then
-	rm -v /wres_share/releases/systests/installing >> $LOGFILE 2>&1
-fi
-echo "====================================================================================================================" >> $LOGFILE 2>&1
+rm -v $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
+
+echo "=============================================================" >> $LOGFILE 2>&1
 echo "" >> $LOGFILE 2>&1
-#cat /wres_share/releases/install_scripts/installBuiltLog.txt >> /wres_share/releases/install_scripts/installBuiltLog_$TODAY.txt
-#/usr/bin/find -P /wres_share/releases/install_scripts -maxdepth 1 -name "installBuiltLog_*" -mtime +1 -exec rm -v {}\; >> $LOGFILE 2>&1 
-/usr/bin/find -P /wres_share/releases/install_scripts -maxdepth 1 -name "installBuiltLog_*" -mtime +1 -exec rm -v {} \; >> $LOGFILE 2>&1 
