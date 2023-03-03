@@ -129,7 +129,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         private Project project;
 
         /** The pool requests. */
-        private List<PoolRequest> poolRequests = new ArrayList<>();
+        private final List<PoolRequest> poolRequests = new ArrayList<>();
 
         /** A factory to create project-relevant retrievers. */
         private RetrieverFactory<L, R> retrieverFactory;
@@ -391,7 +391,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         // Set then validate
         this.project = builder.project;
         this.retrieverFactory = builder.retrieverFactory;
-        this.poolRequests = Collections.unmodifiableList( new ArrayList<>( builder.poolRequests ) );
+        this.poolRequests = List.copyOf( builder.poolRequests );
         this.baselineGenerator = builder.baselineGenerator;
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
@@ -605,7 +605,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * windows. De-duplication only happens for datasets that are {@link DatasourceType#OBSERVATIONS} or 
      * {@link DatasourceType#SIMULATIONS}.
      * 
-     * @param poolRequest the pool requests
+     * @param poolRequests the pool requests
      * @param type the type of data
      * @return a left-ish retriever for each time-window
      */
@@ -838,7 +838,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * @param metadata
+     * @param metadata the metadata
      * @param featureGetter the feature-getter
      * @return the features from the metadata using the prescribed feature-getter
      * @throws NullPointerException if the metadata is null
@@ -920,7 +920,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         // Defer rescaling until retrieval time
         return () -> {
             List<TimeSeries<L>> climData = climatologySupplier.get()
-                                                              .collect( Collectors.toList() );
+                                                              .toList();
 
             TimeSeriesMetadata existingMetadata = null;
 
@@ -1076,7 +1076,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                            .map( next -> TimeSeriesSlicer.transform( next,
                                                                                                      mapper,
                                                                                                      null ) )
-                                                           .collect( Collectors.toList() );
+                                                           .toList();
 
             if ( LOGGER.isDebugEnabled() )
             {

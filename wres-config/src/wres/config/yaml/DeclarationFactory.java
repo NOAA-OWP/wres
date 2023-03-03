@@ -182,6 +182,10 @@ public class DeclarationFactory
     @RecordBuilder
     record FeatureService( @JsonProperty( "uri" ) URI uri ) {}
 
+    /** A time scale. */
+    @RecordBuilder
+    record TimeScale( wres.statistics.generated.TimeScale timeScale, TimeScaleLenience lenient ) {}
+
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema.
      *

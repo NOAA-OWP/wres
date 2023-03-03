@@ -954,11 +954,9 @@ definitions:
       - left
       - right
       - baseline
-      - rightAndBaseline
-      - leftAndBaseline
-      - leftAndRight
-      - true
-      - false
+      - right and baseline
+      - left and baseline
+      - left and right
     title: TimeScaleLenienceEnum
 
   CrossPairEnum:
