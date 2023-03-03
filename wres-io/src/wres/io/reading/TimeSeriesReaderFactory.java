@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.PairConfig;
 import wres.io.database.caching.GriddedFeatures;
-import wres.io.reading.commaseparated.CsvReader;
+import wres.io.reading.csv.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
 import wres.io.reading.netcdf.nwm.NwmGridReader;
@@ -21,9 +21,9 @@ import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
 import wres.system.SystemSettings;
 
 /**
- * Factory class that creates time-series readers for a {@link DataSource}.
+ * <p>Factory class that creates time-series readers for a {@link DataSource}.
  * 
- * TODO: When gridded reading is par with vectors, remove the features cache from this class: #51232.
+ * <p>TODO: When gridded reading is par with vectors, remove the features cache from this class: #51232.
  * 
  * @author James Brown
  */
@@ -89,14 +89,20 @@ public class TimeSeriesReaderFactory
 
         switch ( dataSource.getDisposition() )
         {
-            case CSV_WRES:
+            case CSV_WRES ->
+            {
                 return CSV_READER;
-            case DATACARD:
+            }
+            case DATACARD ->
+            {
                 return DATACARD_READER;
-            case XML_FI_TIMESERIES:
-            case XML_PI_TIMESERIES:
+            }
+            case XML_FI_TIMESERIES, XML_PI_TIMESERIES ->
+            {
                 return PIXML_READER;
-            case JSON_WATERML:
+            }
+            case JSON_WATERML ->
+            {
                 // A WaterML source from USGS NWIS?
                 if ( ReaderUtilities.isUsgsSource( dataSource ) )
                 {
@@ -109,7 +115,9 @@ public class TimeSeriesReaderFactory
                               + "source other than NWIS.",
                               dataSource );
                 return WATERML_READER;
-            case JSON_WRDS_AHPS:
+            }
+            case JSON_WRDS_AHPS ->
+            {
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
@@ -122,7 +130,9 @@ public class TimeSeriesReaderFactory
                               + "AHPS time-series from a source other than WRDS.",
                               dataSource );
                 return WRDS_AHPS_JSON_READER;
-            case JSON_WRDS_NWM:
+            }
+            case JSON_WRDS_NWM ->
+            {
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
@@ -133,26 +143,35 @@ public class TimeSeriesReaderFactory
                               + "NWM time-series from a source other than WRDS.",
                               dataSource );
                 return WRDS_NWM_JSON_READER;
-            case TARBALL:
+            }
+            case TARBALL ->
+            {
                 return TarredReader.of( this, this.systemSettings );
-            case GZIP:
+            }
+            case GZIP ->
+            {
                 return ZippedReader.of( this );
-            case NETCDF_GRIDDED:
+            }
+            case NETCDF_GRIDDED ->
+            {
                 return NwmGridReader.of( this.pairConfig, this.features );
-            case NETCDF_VECTOR:
+            }
+            case NETCDF_VECTOR ->
+            {
                 return NwmVectorReader.of( this.pairConfig );
-            case UNKNOWN:
-                throw new IllegalArgumentException( "The data source could not be read because the format of the "
-                                                    + "content is UNKNOWN. This may have occurred because the source "
-                                                    + "is corrupt or because the content type is unrecognized or "
-                                                    + "unsupported: "
-                                                    + dataSource
-                                                    + "." );
-            default:
-                throw new IllegalArgumentException( "There is no reader implementation available for the prescribed "
-                                                    + "data source: "
-                                                    + dataSource
-                                                    + "." );
+            }
+            case UNKNOWN ->
+                    throw new IllegalArgumentException( "The data source could not be read because the format of the "
+                                                        + "content is UNKNOWN. This may have occurred because the source "
+                                                        + "is corrupt or because the content type is unrecognized or "
+                                                        + "unsupported: "
+                                                        + dataSource
+                                                        + "." );
+            default -> throw new IllegalArgumentException(
+                    "There is no reader implementation available for the prescribed "
+                    + "data source: "
+                    + dataSource
+                    + "." );
         }
     }
 

@@ -439,7 +439,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      * <p>Issued dates must be specified when using an API source to avoid ambiguities and to avoid infinite data 
      * requests.
      *
-     * TODO: promote this to {@link ReaderUtilities} when required by more readers.
+     * <p>TODO: promote this to {@link ReaderUtilities} when required by more readers.
      *
      * @param pairConfig the evaluation project pair declaration, required
      * @param dataSource the data source, required

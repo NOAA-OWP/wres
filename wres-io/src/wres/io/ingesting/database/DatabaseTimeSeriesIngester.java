@@ -67,26 +67,22 @@ import wres.io.reading.netcdf.Netcdf;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Ingests given {@link TimeSeries} data if not already ingested.
+ * <p>Ingests given {@link TimeSeries} data if not already ingested.
  *
- * As of 2019-10-29, only supports data with one or more reference datetime.
- * As of 2019-10-29, uses {@link TimeSeries#toString()} to identify data.
+ * <p>As of 2019-10-29, only supports data with one or more reference datetime.
+ * <p>As of 2019-10-29, uses {@link TimeSeries#toString()} to identify data.
  *
- * Identifies data for convenience (and parallelism).
+ * <p>Identifies data for convenience (and parallelism).
  *
- * Different source types have different optimization strategies for identifying
- * data and avoiding ingest, therefore those can avoid ingest at a higher level
- * using different strategies than this code. This class always checks if an
- * individual timeseries has been ingested prior to ingesting it, regardless of
- * higher level checks.
+ * <p>Different source types have different optimization strategies for identifying data and avoiding ingest,
+ * therefore those can avoid ingest at a higher level using different strategies than this code. This class always
+ * checks if an individual timeseries has been ingested prior to ingesting it, regardless of higher level checks.
  *
- * Does not link data, leaves that to higher level code to do later. In this
- * context, link means to associate a dataset with all of the sides/orientations
- * in which it appears. For example, a left-ish dataset may be used to generate
- * a baseline time-series and, therefore, appear in two contexts, left and 
- * baseline.
+ * <p>Does not link data, leaves that to higher level code to do later. In this context, link means to associate a
+ * dataset with all of the sides/orientations in which it appears. For example, a left-ish dataset may be used to
+ * generate a baseline time-series and, therefore, appear in two contexts, left and baseline.
  *
- * Does not preclude the skipping of ingest at a higher level.
+ * <p>Does not preclude the skipping of ingest at a higher level.
  * 
  * @author James Brown
  * @author Jesse Bickel
@@ -260,9 +256,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 // Start to get ingest results?
                 if ( startGettingResults.getCount() <= 0 )
                 {
-                    List<IngestResult> result = ingestQueue.poll()
-                                                           .get();
-                    finalResults.addAll( result );
+                    Future<List<IngestResult>> futureResult = ingestQueue.poll();
+                    if( Objects.nonNull( futureResult ) )
+                    {
+                        finalResults.addAll( futureResult.get() );
+                    }
                 }
             }
 
@@ -346,7 +344,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * Ingests a time-series whose events are {@link Double}. Retries, as necessary, using exponential back-off, up to
-     * the {@link MAXIMUM_RETRIES}.
+     * the {@link #MAXIMUM_RETRIES}.
      *  
      * @param timeSeries the time-series to ingest, not null
      * @param dataSource the data source
@@ -510,7 +508,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * Ingests a time-series whose events are {@link Ensemble}. Retries, as necessary, using exponential back-off, up to
-     * the {@link MAXIMUM_RETRIES}.
+     * the {@link #MAXIMUM_RETRIES}.
      *  
      * @param timeSeries the time-series to ingest, not null
      * @param dataSource the data source
@@ -686,8 +684,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * Ingests a gridded data source, which involves inserting the source reference only, not the time-series data. See
      * ticket #51232.
      * 
-     * @param dataSource
-     * @return
+     * @param dataSource the data source
+     * @return the ingest results
      */
 
     private List<IngestResult> ingestGriddedData( DataSource dataSource )
@@ -741,7 +739,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     {
         if ( LOGGER.isDebugEnabled() && Objects.nonNull( timeSeries ) )
         {
-            byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
+            byte[] rawHash = this.identifyTimeSeries( timeSeries );
             String hash = Hex.encodeHexString( rawHash, false );
             LOGGER.debug( "{} is responsible for source {}", this, hash );
         }
@@ -805,14 +803,14 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /**
      * Attempts to save the source information associated with the time-series.
      * @param <T> the type of time-series event value
-     * @param time-series whose source information should be saved
+     * @param timeSeries the time-series whose source information should be saved
      * @param uri the data source uri
      * @return the source details
      */
 
     private <T> SourceDetails saveTimeSeriesSource( TimeSeries<T> timeSeries, URI uri )
     {
-        byte[] rawHash = this.identifyTimeSeries( timeSeries, "" );
+        byte[] rawHash = this.identifyTimeSeries( timeSeries );
         String hash = Hex.encodeHexString( rawHash, false );
 
         Database innerDatabase = this.getDatabase();
@@ -1180,8 +1178,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             throw new IllegalArgumentException( "TimeSeries must not be empty." );
         }
 
-        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>();
-
         TimeSeriesMetadata metadata = timeSeries.getMetadata();
         this.insertReferenceTimeRows( database, sourceId, metadata.getReferenceTimes() );
 
@@ -1194,7 +1190,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                                                                   timeSeriesId,
                                                                                                   timeSeries );
 
-        latches.addAll( innerLatches );
+        Set<Pair<CountDownLatch, CountDownLatch>> latches = new HashSet<>( innerLatches );
 
         return Collections.unmodifiableSet( latches );
     }
@@ -1272,8 +1268,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         {
             throw new PreIngestException( "Exactly one reference datetime is required until we allow callers to "
                                           + "declare which one to use at evaluation time." );
-            // TODO: add post-ingest pre-retrieval validation and/or
-            // optional declaration to disambiguate, then remove this block.
         }
 
         List<String[]> rows = new ArrayList<>( rowCount );
@@ -1395,7 +1389,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @param systemSettings the system settings
      * @param database the database
      * @param timeSeriesId the trace identifier
-     * @param referenceDateTime the reference time
+     * @param referenceDatetime the reference time
      * @param valueAndValidDateTime the event
      * @return a pair of latches, the left of which indicates "waiting" and the right indicates "completed"
      */
@@ -1596,12 +1590,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * @param timeSeries the time-series
-     * @param additionalIdentifiers additional identifiers
      * @return the time-series MD5 checksum
      */
 
-    private byte[] identifyTimeSeries( TimeSeries<?> timeSeries,
-                                       String additionalIdentifiers )
+    private byte[] identifyTimeSeries( TimeSeries<?> timeSeries )
     {
         MessageDigest md5Name;
 
@@ -1618,8 +1610,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         DigestUtils digestUtils = new DigestUtils( md5Name );
 
         // Here assuming that the toString represents all state of a timeseries.
-        byte[] hash = digestUtils.digest( timeSeries.toString()
-                                          + additionalIdentifiers );
+        byte[] hash = digestUtils.digest( timeSeries.toString() );
 
         if ( hash.length < 16 )
         {
@@ -1632,7 +1623,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * <a href="https://github.com/mockito/mockito/wiki/Mocking-Object-Creation">Mocking</a>
      * @param sourceKey the first arg to SourceDetails
      * @return a SourceDetails
      */
@@ -1644,7 +1635,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * This method facilitates testing, Pattern 1 at
-     * https://github.com/mockito/mockito/wiki/Mocking-Object-Creation
+     * <a href="https://github.com/mockito/mockito/wiki/Mocking-Object-Creation">Mocking</a>
      * @param sourceDetails the first arg to SourceCompletedDetails
      * @return a SourceCompleter
      */

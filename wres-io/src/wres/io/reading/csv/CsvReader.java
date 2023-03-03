@@ -1,4 +1,4 @@
-package wres.io.reading.commaseparated;
+package wres.io.reading.csv;
 
 import java.io.IOException;
 import java.io.InputStream;
