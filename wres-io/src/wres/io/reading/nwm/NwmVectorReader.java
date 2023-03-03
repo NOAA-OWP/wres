@@ -166,10 +166,10 @@ public class NwmVectorReader implements TimeSeriesReader
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
 
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
         if ( nwmProfile.getTimeLabel()
-                       .equals( NWMProfile.TimeLabel.f ) )
+                       .equals( NwmProfile.TimeLabel.F ) )
         {
             Objects.requireNonNull( this.getPairConfig()
                                         .getIssuedDates(),
@@ -184,7 +184,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                     DATES_ERROR_MESSAGE );
         }
         else if ( nwmProfile.getTimeLabel()
-                            .equals( NWMProfile.TimeLabel.tm ) )
+                            .equals( NwmProfile.TimeLabel.TM ) )
         {
             Objects.requireNonNull( this.getPairConfig()
                                         .getDates(),
@@ -242,7 +242,7 @@ public class NwmVectorReader implements TimeSeriesReader
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
 
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
         ReferenceTimeType referenceTimeType = ConfigHelper.getReferenceTimeType( dataSource.getContext()
                                                                                            .getType() );
@@ -316,7 +316,7 @@ public class NwmVectorReader implements TimeSeriesReader
      * @return the time-series suppliers
      */
 
-    private List<Supplier<TimeSeriesTuple>> getTimeSeriesSuppliers( NWMProfile nwmProfile,
+    private List<Supplier<TimeSeriesTuple>> getTimeSeriesSuppliers( NwmProfile nwmProfile,
                                                                     DataSource dataSource,
                                                                     Set<Instant> referenceTimes,
                                                                     ReferenceTimeType referenceTimeType,
@@ -351,7 +351,7 @@ public class NwmVectorReader implements TimeSeriesReader
      * @return a time-series supplier
      */
 
-    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( NWMProfile nwmProfile,
+    private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( NwmProfile nwmProfile,
                                                              DataSource dataSource,
                                                              Instant referenceTime,
                                                              ReferenceTimeType referenceTimeType,
@@ -359,7 +359,7 @@ public class NwmVectorReader implements TimeSeriesReader
     {
         List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
         List<List<Integer>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
-        AtomicReference<NWMTimeSeries> nwmTimeSeries = new AtomicReference<>();
+        AtomicReference<NwmTimeSeries> nwmTimeSeries = new AtomicReference<>();
 
         // Create a supplier that returns a time-series once complete
         // Since many time-series are read at once, they are cached for return, preferentially
@@ -383,13 +383,13 @@ public class NwmVectorReader implements TimeSeriesReader
 
             while ( !mutableFeatureBlocks.isEmpty() )
             {
-                NWMTimeSeries currentTimeSeries = nwmTimeSeries.get();
+                NwmTimeSeries currentTimeSeries = nwmTimeSeries.get();
                 List<Integer> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
 
                 // No blobs open? Create a new opener and expose it for future iterations.
                 if ( Objects.isNull( currentTimeSeries ) )
                 {
-                    currentTimeSeries = new NWMTimeSeries( nwmProfile,
+                    currentTimeSeries = new NwmTimeSeries( nwmProfile,
                                                            referenceTime,
                                                            referenceTimeType,
                                                            dataSource.getUri() );
@@ -449,7 +449,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
     private void closeNwmTimeSeriesIfCacheIsEmpty( List<TimeSeriesTuple> cachedSeries,
                                                    List<List<Integer>> featureBlocks,
-                                                   AtomicReference<NWMTimeSeries> nwmTimeSeries )
+                                                   AtomicReference<NwmTimeSeries> nwmTimeSeries )
     {
         if ( cachedSeries.isEmpty() && featureBlocks.isEmpty() && Objects.nonNull( nwmTimeSeries.get() ) )
         {
@@ -475,8 +475,8 @@ public class NwmVectorReader implements TimeSeriesReader
 
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
                                                  List<Integer> featureBlock,
-                                                 NWMTimeSeries nwmTimeSeries,
-                                                 NWMProfile nwmProfile )
+                                                 NwmTimeSeries nwmTimeSeries,
+                                                 NwmProfile nwmProfile )
     {
         if ( nwmTimeSeries.countOfNetcdfFiles() <= 0 )
         {
@@ -606,14 +606,14 @@ public class NwmVectorReader implements TimeSeriesReader
         InterfaceShortHand interfaceShortHand = dataSource.getSource()
                                                           .getInterface();
 
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( interfaceShortHand );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
         // When we have analysis data, extend out the reference datetimes in
         // order to include data by valid datetime, kind of like observations.
         Instant earliest;
         Instant latest;
         if ( nwmProfile.getTimeLabel()
-                       .equals( NWMProfile.TimeLabel.f ) )
+                       .equals( NwmProfile.TimeLabel.F ) )
         {
             earliest = Instant.parse( pairConfig.getIssuedDates()
                                                 .getEarliest() );
@@ -621,7 +621,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                               .getLatest() );
         }
         else if ( nwmProfile.getTimeLabel()
-                            .equals( NWMProfile.TimeLabel.tm ) )
+                            .equals( NwmProfile.TimeLabel.TM ) )
         {
             Instant earliestValidDatetime =
                     Instant.parse( pairConfig.getDates()
@@ -656,7 +656,7 @@ public class NwmVectorReader implements TimeSeriesReader
      * @param latestValidTime The latest valid time to include.
      * @return The boundaries to be used to filter by reference times.
      */
-    private Pair<Instant, Instant> getReferenceBoundsByValidBounds( NWMProfile nwmProfile,
+    private Pair<Instant, Instant> getReferenceBoundsByValidBounds( NwmProfile nwmProfile,
                                                                     Instant earliestValidTime,
                                                                     Instant latestValidTime )
     {
@@ -671,11 +671,11 @@ public class NwmVectorReader implements TimeSeriesReader
         // When the time label is "f", assume the blobs extend into future,
         // therefore we need to include earlier reference datetimes to get
         // all the valid datetimes.
-        if ( nwmProfile.getTimeLabel().equals( NWMProfile.TimeLabel.f ) )
+        if ( nwmProfile.getTimeLabel().equals( NwmProfile.TimeLabel.F ) )
         {
             earliestReferenceDatetime = earliestValidTime.minus( toExtend );
         }
-        else if ( nwmProfile.getTimeLabel().equals( NWMProfile.TimeLabel.tm ) )
+        else if ( nwmProfile.getTimeLabel().equals( NwmProfile.TimeLabel.TM ) )
         {
             // When the time label is "tm", assume the blobs extend into past,
             // therefore we need to include later reference datetimes to get
@@ -695,19 +695,19 @@ public class NwmVectorReader implements TimeSeriesReader
     }
 
     /**
-     * Get the reference datetimes for the given boundaries and {@link NWMProfile}. As of 2020-08-04, there are
+     * Get the reference datetimes for the given boundaries and {@link NwmProfile}. As of 2020-08-04, there are
      * datasets that have reference datetimes one duration after T00Z but another duration between reference datetimes.
      * The profile now distinguishes between these two.
      *
      * @param earliest The earliest reference datetime.
      * @param latest The latest reference datetime.
-     * @param nwmProfile The NWMProfile to use.
+     * @param nwmProfile The NwmProfile to use.
      * @return The Set of reference datetimes.
      */
 
     private Set<Instant> getReferenceTimes( Instant earliest,
                                             Instant latest,
-                                            NWMProfile nwmProfile )
+                                            NwmProfile nwmProfile )
     {
         // Earliest and latest are the same? #99039
         if ( earliest.equals( latest ) )

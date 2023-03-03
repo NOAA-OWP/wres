@@ -25,11 +25,11 @@ import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
 
 /**
- * Tests the {@link NwmGriddedReader}.
+ * Tests the {@link NwmGridReader}.
  * @author James Brown
  */
 
-class NwmGriddedReaderTest
+class NwmGridReaderTest
 {
     /**
      * TODO: implement this test fully, writing a small gridded source to an in-memory file system and then reading it.
@@ -96,7 +96,7 @@ class NwmGriddedReaderTest
                                                 null );
 
         // TODO: create the gridded features cache here, rather than supplying null
-        NwmGriddedReader reader = NwmGriddedReader.of( pairConfig, null );
+        NwmGridReader reader = NwmGridReader.of( pairConfig, null );
 
         List<TimeSeries<Double>> actual = reader.read( fakeSource )
                                                 .map( next -> next.getSingleValuedTimeSeries() )

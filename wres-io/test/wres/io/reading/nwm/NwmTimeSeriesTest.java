@@ -24,7 +24,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.system.SystemSettings;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
-public class NWMTimeSeriesTest
+public class NwmTimeSeriesTest
 {
     private static final String FINISHED_OPENING_FORECAST_FILES_NOW_READING = "Finished opening forecast files, now reading...";
 
@@ -50,26 +50,26 @@ public class NWMTimeSeriesTest
 
     private static final String STREAMFLOW = "streamflow";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeriesTest.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NwmTimeSeriesTest.class );
 
     @Mock SystemSettings mockSystemSettings;
 
     @Test
     public void generateFakeNwmForecastNames()
     {
-        NWMProfile nwmProfile = new NWMProfile( 5,
+        NwmProfile nwmProfile = new NwmProfile( 5,
                                                 1,
                                                 Duration.ofHours( 3 ),
                                                 true,
                                                 "fake_range",
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 "fake_dir_prefix",
                                                 "fake_location_label",
                                                 Duration.ofHours( 9001 ),
                                                 false,
                                                 Duration.ZERO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
 
@@ -88,19 +88,19 @@ public class NWMTimeSeriesTest
     @Test
     public void generateFakeNwmForecastNamesWhenBaseUriIsMissingLastSlash()
     {
-        NWMProfile nwmProfile = new NWMProfile( 5,
+        NwmProfile nwmProfile = new NwmProfile( 5,
                                                 1,
                                                 Duration.ofHours( 3 ),
                                                 true,
                                                 "fake_range",
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 "fake_dir_prefix",
                                                 "fake_location_label",
                                                 Duration.ofHours( 9001 ),
                                                 false,
                                                 Duration.ZERO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/2.0" ) );
 
@@ -115,19 +115,19 @@ public class NWMTimeSeriesTest
     @Test
     public void generateShortRangeForecastNames()
     {
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false,
                                                 Duration.ZERO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T08:00:00Z" ),
                                                        URI.create( "https://test/" ) );
 
@@ -155,19 +155,19 @@ public class NWMTimeSeriesTest
     @Test
     public void generateFakeMediumRangeLandEnsembleForecastNames()
     {
-        NWMProfile nwmProfile = new NWMProfile( 7,
+        NwmProfile nwmProfile = new NwmProfile( 7,
                                                 3,
                                                 Duration.ofHours( 3 ),
                                                 false,
                                                 MEDIUM_RANGE,
                                                 LAND,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
                                                 true,
                                                 Duration.ZERO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T18:00:00Z" ),
                                                        URI.create( "file:///test/" ) );
 
@@ -202,9 +202,9 @@ public class NWMTimeSeriesTest
     @Test
     public void generateFakeMediumRangeDeterministicForecastNamesForLegacyNwm1_2()
     {
-        NWMProfile nwmProfile =
-                NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        NwmProfile nwmProfile =
+                NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS );
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T18:00:00Z" ),
                                                        URI.create( "file:///test/1.2/" ) );
 
@@ -224,19 +224,19 @@ public class NWMTimeSeriesTest
     @Test
     public void generateAnalysisAssimNames()
     {
-        NWMProfile nwmProfile = new NWMProfile( 3,
+        NwmProfile nwmProfile = new NwmProfile( 3,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 false,
                                                 ANALYSIS_ASSIM,
                                                 "reservoir",
-                                                NWMProfile.TimeLabel.tm,
+                                                NwmProfile.TimeLabel.TM,
                                                 "analysis_assim_hawaii",
                                                 "hawaii",
                                                 Duration.ofHours( 1 ),
                                                 false,
                                                 Duration.ZERO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse(
                                                              T2019_10_06T02_00_00Z ),
                                                        URI.create( "file:///test/" ) );
@@ -254,8 +254,8 @@ public class NWMTimeSeriesTest
     @Test
     public void generateAnalysisAssimHawaiiNames()
     {
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII );
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-05T04:00:00Z"),
                                                        URI.create( "file:///test/" ) );
 
@@ -280,8 +280,8 @@ public class NWMTimeSeriesTest
     @Test
     public void generateAnalysisAssimNoDaPuertoRicoNames()
     {
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO );
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-05T05:00:00Z"),
                                                        URI.create( "file:///test/" ) );
 
@@ -295,8 +295,8 @@ public class NWMTimeSeriesTest
     @Test
     public void generateAnalysisAssimExtendNoDaConusNames()
     {
-        NWMProfile nwmProfile = NWMProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS );
-        Set<URI> actual = NWMTimeSeries.getNetcdfUris( nwmProfile,
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS );
+        Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-04T16:00:00Z"),
                                                        URI.create( "file:///test/" ) );
 
@@ -340,20 +340,20 @@ public class NWMTimeSeriesTest
     public void openForecastsFromNomads()
     {
         // To see it fail to find a file, change blobCount to 4
-        NWMProfile nwmProfile = new NWMProfile( 3,
+        NwmProfile nwmProfile = new NwmProfile( 3,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 false,
                                                 ANALYSIS_ASSIM,
                                                 "reservoir",
-                                                NWMProfile.TimeLabel.tm,
+                                                NwmProfile.TimeLabel.TM,
                                                 ANALYSIS_ASSIM,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
                                                 false,
                                                 Duration.ZERO );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
                                                                ReferenceTimeType.ANALYSIS_START_TIME,
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
@@ -371,13 +371,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 2,
+        NwmProfile nwmProfile = new NwmProfile( 2,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -386,7 +386,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
@@ -409,13 +409,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -424,7 +424,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
@@ -446,13 +446,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -461,7 +461,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2018-05-06T04:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.2/" ) ) )
@@ -484,13 +484,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -498,7 +498,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2017-10-06T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.1/" ) ) )
@@ -520,13 +520,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -534,7 +534,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2016-10-18T17:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/1.0/" ) ) )
@@ -555,13 +555,13 @@ public class NWMTimeSeriesTest
             throws InterruptedException, ExecutionException
     {
         // To see it fail to find a file, change blobCount to 25
-        NWMProfile nwmProfile = new NWMProfile( 18,
+        NwmProfile nwmProfile = new NwmProfile( 18,
                                                 1,
                                                 Duration.ofHours( 1 ),
                                                 true,
                                                 SHORT_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 SHORT_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 1 ),
@@ -569,7 +569,7 @@ public class NWMTimeSeriesTest
                                                 Duration.ZERO );
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( T2019_10_06T02_00_00Z ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "H:/netcdf_data/" ) ) )
@@ -593,13 +593,13 @@ public class NWMTimeSeriesTest
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
-        NWMProfile nwmProfile = new NWMProfile( 68,
+        NwmProfile nwmProfile = new NwmProfile( 68,
                                                 7,
                                                 Duration.ofHours( 3 ),
                                                 true,
                                                 MEDIUM_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
@@ -608,7 +608,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
@@ -642,13 +642,13 @@ public class NWMTimeSeriesTest
     {
         // To see it fail to find a file, change blobCount to 70
         // To see it run OutOfMemoryError, change blobCount to full 68
-        NWMProfile nwmProfile = new NWMProfile( 68,
+        NwmProfile nwmProfile = new NwmProfile( 68,
                                                 7,
                                                 Duration.ofHours( 3 ),
                                                 true,
                                                 MEDIUM_RANGE,
                                                 CHANNEL_RT,
-                                                NWMProfile.TimeLabel.f,
+                                                NwmProfile.TimeLabel.F,
                                                 MEDIUM_RANGE,
                                                 CONUS,
                                                 Duration.ofHours( 6 ),
@@ -657,7 +657,7 @@ public class NWMTimeSeriesTest
 
         LOGGER.info( OPENING_A_FORECAST_BASED_ON, nwmProfile );
 
-        try ( NWMTimeSeries nwmTimeSeries = new NWMTimeSeries( nwmProfile,
+        try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-21T06:00:00Z" ),
                                                                ReferenceTimeType.T0,
                                                                URI.create( "C:/nwm_data/" ) ) )
