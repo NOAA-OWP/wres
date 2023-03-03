@@ -1,4 +1,4 @@
-package wres.io.reading.commaseparated;
+package wres.io.reading.csv;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

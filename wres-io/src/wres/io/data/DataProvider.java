@@ -21,7 +21,7 @@ import javax.json.JsonValue;
 
 import wres.datamodel.MissingValues;
 import wres.io.database.Database;
-import wres.io.reading.commaseparated.CsvDataProvider;
+import wres.io.reading.csv.CsvDataProvider;
 
 /**
  * <p>Provides access and operations on tabular data.

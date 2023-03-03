@@ -78,7 +78,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     /** Default ensemble name. */
     private static final String DEFAULT_ENSEMBLE_NAME = "default";
 
-    /** See "missVal" documentation at http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd. */
+    /** See "missVal" documentation at
+     * <a href="http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd">pi-xml</a>. */
     private static final double PIXML_DEFAULT_MISSING_VALUE = Double.NaN;
 
     /** Header string re-used several times. */
@@ -682,8 +683,6 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @param header the header that requires a trace name
      * @param reader the reader
      * @param dataSource the data source
-     * @param traceValues the trace values
-     * @param currentTraceName the current trace name
      * @throws ReadException if the trace name could not be set due to an invalid header
      */
 
@@ -919,7 +918,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         try
         {
             ChronoUnit chronoUnit = ChronoUnit.valueOf( unitString );
-            Integer amount = Integer.valueOf( multiplier );
+            int amount = Integer.parseInt( multiplier );
             return Duration.of( amount, chronoUnit );
         }
         catch ( NumberFormatException e )
@@ -1092,7 +1091,6 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      *     If the passed in value is found to be equal to the specified missing
      *     value, it is set to WRES' Missing Value
      * </p>
-     * @param dataSource the data source
      * @param value the original value
      * @param missingValue the missing value identifier in the stream
      * @return The conditioned value that is safe to save to the database.
@@ -1208,7 +1206,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
     private static class TimeSeriesHeader
     {
         private Duration scalePeriod = null;
-        private TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
+        private final TimeScaleFunction scaleFunction = TimeScaleFunction.UNKNOWN;
         private Duration timeStep = null;
         private LocalDateTime forecastDate = null;
         private String locationName = null;
