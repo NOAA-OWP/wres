@@ -1,4 +1,4 @@
-package wres.util;
+package wres.io.reading.netcdf;
 
 import java.io.IOException;
 import java.util.ArrayList;

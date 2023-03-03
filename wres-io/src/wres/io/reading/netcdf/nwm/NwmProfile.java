@@ -1,4 +1,4 @@
-package wres.io.reading.nwm;
+package wres.io.reading.netcdf.nwm;
 
 import java.time.Duration;
 import java.util.Objects;

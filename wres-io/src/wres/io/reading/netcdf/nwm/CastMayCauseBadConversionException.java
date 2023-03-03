@@ -1,4 +1,4 @@
-package wres.io.reading.nwm;
+package wres.io.reading.netcdf.nwm;
 
 /**
  * Thrown when cast may cause bad conversion due to NWM netCDF data structures.

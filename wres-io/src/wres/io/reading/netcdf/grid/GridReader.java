@@ -1,4 +1,4 @@
-package wres.grid.client;
+package wres.io.reading.netcdf.grid;
 
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
@@ -10,7 +10,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.util.Netcdf;
+import wres.io.reading.netcdf.Netcdf;
 
 import java.io.IOException;
 import java.time.Instant;

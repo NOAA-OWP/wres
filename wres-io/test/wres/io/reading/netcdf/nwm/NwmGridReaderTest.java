@@ -1,4 +1,4 @@
-package wres.io.reading.nwm;
+package wres.io.reading.netcdf.nwm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -23,6 +23,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.netcdf.nwm.NwmGridReader;
 
 /**
  * Tests the {@link NwmGridReader}.

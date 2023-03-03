@@ -247,58 +247,10 @@ subprojects
     }
 }
 
-project(':wres-util')
-{
-    dependencies
-    {
-        implementation project(':wres-datamodel')
-
-        implementation 'org.slf4j:slf4j-api:2.0.6'
-
-        implementation( 'com.google.guava:guava:31.1-jre' )
-        {
-            // Not used at runtime, bloat
-            exclude group: 'org.checkerframework', module: 'checker-qual'
-        }
-
-        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-
-        implementation( 'edu.ucar:cdm-core:5.4.2' )
-        {
-            // Because we use slf4j, not jcl:
-            exclude group: 'commons-logging', module: 'commons-logging'
-            // CVE-2021-33813
-            exclude group: 'org.jdom', module: 'jdom2'
-            // Not used at runtime, bloat
-            exclude group: 'org.checkerframework', module: 'checker-qual'
-        }
-
-        // Update the org.apache.httpcomponents modules depended upon by cdm
-        implementation 'org.apache.httpcomponents:httpclient:4.5.14'
-        implementation 'org.apache.httpcomponents:httpcore:4.4.16'
-        implementation 'org.apache.httpcomponents:httpmime:4.5.14'
-
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
-        {
-            // Not used at runtime, bloat
-            exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
-        }
-
-        // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.6'
-
-        testImplementation 'junit:junit:4.13.2'
-
-        // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.1.1'
-    }
-}
-
 project(':wres-system')
 {
     dependencies
     {
-        implementation project(':wres-util')
         implementation 'org.slf4j:slf4j-api:2.0.6'
 
         implementation( 'com.google.guava:guava:31.1-jre' )
@@ -407,12 +359,10 @@ project(':wres-io')
 {
     dependencies
     {
-        implementation project(':wres-util')
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
         implementation project(':wres-statistics')
         implementation project(':wres-config')
-        implementation project(':wres-grid')
 
         implementation 'org.slf4j:slf4j-api:2.0.6'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
@@ -1012,39 +962,6 @@ project(':wres-config')
     }
 }
 
-project(':wres-grid')
-{
-    dependencies
-    {
-        implementation project(':wres-config')
-        implementation project(':wres-util')
-        implementation project(':wres-system')
-        implementation project(':wres-datamodel')
-
-        implementation 'org.slf4j:slf4j-api:2.0.6'
-        implementation 'org.apache.commons:commons-lang3:3.12.0'
-
-        implementation( 'edu.ucar:cdm-core:5.4.2' )
-        {
-            // Because we use slf4j, not jcl:
-            exclude group: 'commons-logging', module: 'commons-logging'
-            // CVE-2021-33813
-            exclude group: 'org.jdom', module: 'jdom2'
-        }
-
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.5' )
-        {
-            // Not used at runtime, bloat
-            exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
-        }
-
-        // Because cdm uses apache commons logging, bridge to slf4j
-        runtimeOnly 'org.slf4j:jcl-over-slf4j:2.0.6'
-
-        testImplementation 'junit:junit:4.13.2'
-    }
-}
-
 project(':wres-messages')
 {
     apply plugin: 'com.google.protobuf'
@@ -1575,15 +1492,11 @@ project( ':wres-external-services-tests' )
     distZip.dependsOn project( ':wres-config' ).tasks.jar
     distZip.dependsOn project( ':wres-datamodel' ).tasks.jar
     distZip.dependsOn project( ':wres-statistics' ).tasks.jar
-    distZip.dependsOn project( ':wres-grid' ).tasks.jar
     distZip.dependsOn project( ':wres-system' ).tasks.jar
-    distZip.dependsOn project( ':wres-util' ).tasks.jar
     distTar.dependsOn project( ':wres-config' ).tasks.jar
     distTar.dependsOn project( ':wres-datamodel' ).tasks.jar
     distTar.dependsOn project( ':wres-statistics' ).tasks.jar
-    distTar.dependsOn project( ':wres-grid' ).tasks.jar
     distTar.dependsOn project( ':wres-system' ).tasks.jar
-    distTar.dependsOn project( ':wres-util' ).tasks.jar
 
     distributions
     {
@@ -1770,7 +1683,6 @@ dependencies
     implementation project(':wres-vis')
     implementation project(':wres-events')
     implementation project(':wres-eventsbroker')
-    implementation project(':wres-util')
 
     implementation 'org.slf4j:slf4j-api:2.0.6'
 
@@ -1912,11 +1824,6 @@ distributions
             // from projects in the runtime or implementation configuration of
             // this project. Something less brittle than handles transitive deps
             // and so forth. Admitting defeat for now.
-            from( project(':wres-util').sourcesJar )
-            {
-                into 'src'
-            }
-
             from( project(':wres-system').sourcesJar )
             {
                 into 'src'

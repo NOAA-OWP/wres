@@ -1,4 +1,4 @@
-package wres.util;
+package wres.io.reading.netcdf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
