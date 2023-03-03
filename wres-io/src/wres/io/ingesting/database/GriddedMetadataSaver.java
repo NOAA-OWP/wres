@@ -35,7 +35,7 @@ import wres.io.reading.DataSource;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
-import wres.util.Netcdf;
+import wres.io.reading.netcdf.Netcdf;
 
 /**
  * Ingests times-series metadata for gridded sources to a database. Does not copy any time-series values. TODO: remove 

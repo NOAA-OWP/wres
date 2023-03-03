@@ -32,7 +32,7 @@ import wres.config.generated.UnnamedFeature;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.statistics.generated.Geometry;
-import wres.util.Netcdf;
+import wres.io.reading.netcdf.Netcdf;
 
 /**
  * Finds and caches gridded features associated with an evaluation.

@@ -1,4 +1,4 @@
-package wres.grid.client;
+package wres.io.reading.netcdf.grid;
 
 import java.util.Collections;
 import java.util.List;

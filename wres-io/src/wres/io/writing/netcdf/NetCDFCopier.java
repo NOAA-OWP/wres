@@ -23,7 +23,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.util.Netcdf;
+import wres.io.reading.netcdf.Netcdf;
 
 /**
  * Copies Netcdf data.

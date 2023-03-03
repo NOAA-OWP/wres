@@ -62,7 +62,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.system.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.util.Netcdf;
+import wres.io.reading.netcdf.Netcdf;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

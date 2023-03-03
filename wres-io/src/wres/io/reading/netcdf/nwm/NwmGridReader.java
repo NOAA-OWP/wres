@@ -1,4 +1,4 @@
-package wres.io.reading.nwm;
+package wres.io.reading.netcdf.nwm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +24,8 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
-import wres.grid.client.GridRequest;
-import wres.grid.client.GridReader;
+import wres.io.reading.netcdf.grid.GridRequest;
+import wres.io.reading.netcdf.grid.GridReader;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
