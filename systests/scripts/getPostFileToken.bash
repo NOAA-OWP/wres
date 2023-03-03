@@ -56,6 +56,7 @@ echo "<uploads type=\"array\">" >> $outputFile
 if [ -f ${JUnitLog_FILENAME_BaseZip} ]
 then
 	curl -H 'X-Redmine***REMOVED***: ***REMOVED***' --data-binary "@${JUnitLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" -X POST https://vlab.***REMOVED***/redmine/uploads.xml?filename=${JUnitLog_FILENAME_BaseZip} -o ${JUnitLog_FILENAME_BaseZip}.xml -v
+	#curl --header @~/mykey --data-binary "@${JUnitLog_FILENAME_BaseZip}" -H "Content-Type: application/octet-stream" --request POST https://vlab.***REMOVED***/redmine/uploads.xml?filename=${JUnitLog_FILENAME_BaseZip} --output ${JUnitLog_FILENAME_BaseZip}.xml --verbose
 
 	if [ -s ${JUnitLog_FILENAME_BaseZip}.xml ]
 	then
