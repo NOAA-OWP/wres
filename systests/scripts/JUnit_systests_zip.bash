@@ -52,7 +52,7 @@ echo "Purging old evaluation output directories across all system test revisions
 
 # Establish the lock file.
 touch $TESTINGJ_LOCK_FILE 
-trap "rm -f $TESTINGJ_LOCK_FILE; echo ${date} - Lock file removed via trap. Queue file content: ; cat $PENDINGQUEUEJ" EXIT TERM INT KILL 
+trap "rm -fv $TESTINGJ_LOCK_FILEi | /usr/bin/tee --append $LOGFILE; echo 'Lock file removed with script exit. Queue file content now:'| /usr/bin/tee --append $LOGFILE ; cat $PENDINGQUEUEJ | /usr/bin/tee --append $LOGFILE" EXIT TERM INT KILL 
 
 # Look at the queue for revisions to test.
 if [ ! -s $PENDINGQUEUEJ ]
@@ -348,19 +348,7 @@ fi
 ls -l passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 rm -v passes.txt failures.txt passed_failed.txt summary.txt 2>&1 | /usr/bin/tee --append $LOGFILE
 
-# remove JUnit test lock file
-rm -v $TESTINGJ_LOCK_FILE 2>&1 | /usr/bin/tee --append $LOGFILE 
-
 # delete the top (1st) line of JUnit pending queue
-echo "Remove $REVISION from $PENDINGQUEUEJ" 2>&1 | /usr/bin/tee --append $LOGFILE
+echo "Removing \"$revisionInfo\" from $PENDINGQUEUEJ." 2>&1 | /usr/bin/tee --append $LOGFILE
 /usr/bin/sed  -i '1d' $PENDINGQUEUEJ 2>&1 | /usr/bin/tee --append $LOGFILE
 
-if [ -d outputs ]
-then
-    cd outputs
-    /usr/bin/pwd 2>&1 | /usr/bin/tee --append $LOGFILE	
-    # remove outout archive older than 1 days.
-    find -P . -maxdepth 1 -name "wres_evaluation_*" -mtime +1 -exec rm -rf {} \; 2>&1 | /usr/bin/tee --append $LOGFILE
-else
-    ls -d outputs 2>&1 | /usr/bin/tee --append $LOGFILE
-fi

@@ -45,6 +45,7 @@ then
 fi
 
 # Log the date.
+echo "" >> $LOGFILE
 echo "------------------------------------------- " >> $LOGFILE
 echo "RUNNING INSTALL SCRIPT - $(/usr/bin/date)" >> $LOGFILE
 echo "-------------------------------------------" >> $LOGFILE
@@ -76,7 +77,7 @@ fi
 echo "Establishing lock file, $INSTALLING_LOCK_FILE." >> $LOGFILE 2>&1
 touch $INSTALLING_LOCK_FILE
 ls -l $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
-trap "rm -f $INSTALLING_LOCK_FILE; echo ${date} - Install lock file removed via trap." EXIT TERM INT KILL
+trap "rm -fv $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1; echo 'Install lock file removed with script exit.' >> $LOGFILE 2>&1 " EXIT TERM INT KILL
 
 # Purge log files older than 5 days.
 /usr/bin/find -P $RELEASES_DIR/logs/install -maxdepth 1 -name "installBuiltLog_*" -mtime +7 -exec rm -v {} \; >> $LOGFILE 2>&1
@@ -380,8 +381,6 @@ then
     flock $RELEASES_DIR/pendingQueueJ.txt echo "$latest_noZip $wresvis_noZip $systests_noZip" >> $RELEASES_DIR/pendingQueueJ.txt
     echo "System testing to be done of core revision $latest_noZip and wres-vis revision $wresvis_noZip using systests revision $systests_noZip." >> $LOGFILE 2>&1
 fi
-
-rm -v $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
 
 echo "=============================================================" >> $LOGFILE 2>&1
 echo "" >> $LOGFILE 2>&1
