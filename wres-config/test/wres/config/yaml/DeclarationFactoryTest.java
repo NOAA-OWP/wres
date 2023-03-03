@@ -117,10 +117,12 @@ class DeclarationFactoryTest
                                        .setPeriod( Duration.newBuilder().setSeconds( 3600 ) )
                                        .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                        .build();
+        DeclarationFactory.TimeScale outerTimeScale = new DeclarationFactory.TimeScale( timeScale,
+                                                                                        TimeScaleLenience.NONE );
         DeclarationFactory.Source yetAnotherLeftSource = DeclarationFactorySourceBuilder.builder()
                                                                                         .uri( yetAnotherLeftUri )
                                                                                         .api( "usgs_nwis" )
-                                                                                        .timeScale( timeScale )
+                                                                                        .timeScale( outerTimeScale )
                                                                                         .build();
 
         List<DeclarationFactory.Source> leftSources = List.of( leftSource, anotherLeftSource, yetAnotherLeftSource );
@@ -145,12 +147,13 @@ class DeclarationFactoryTest
                                             .setPeriod( Duration.newBuilder().setSeconds( 7200 ) )
                                             .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                             .build();
+        DeclarationFactory.TimeScale outerTimeScaleRight = new DeclarationFactory.TimeScale( timeScaleRight,
+                                                                                             TimeScaleLenience.NONE );
         DeclarationFactory.Source yetAnotherRightSource = DeclarationFactorySourceBuilder.builder()
                                                                                          .uri( yetAnotherRightUri )
                                                                                          .api( "wrds_ahps" )
-                                                                                         .timeScale( timeScaleRight )
+                                                                                         .timeScale( outerTimeScaleRight )
                                                                                          .build();
-
 
         List<DeclarationFactory.Source> rightSources =
                 List.of( rightSource, anotherRightSource, yetAnotherRightSource );

@@ -19,10 +19,10 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  * 
  * @author James Brown
  */
-class TimeScaleDeserializer extends JsonDeserializer<TimeScale>
+class TimeScaleDeserializer extends JsonDeserializer<DeclarationFactory.TimeScale>
 {
     @Override
-    public TimeScale deserialize( JsonParser jp, DeserializationContext context )
+    public DeclarationFactory.TimeScale deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
         Objects.requireNonNull( jp );
@@ -84,7 +84,16 @@ class TimeScaleDeserializer extends JsonDeserializer<TimeScale>
             builder.setEndMonth( maximumMonthInt );
         }
 
-        return builder.build();
+        TimeScaleLenience lenience = TimeScaleLenience.NONE;
+
+        if( node.has( "lenient" ) )
+        {
+            JsonNode lenienceNode = node.get( "lenient" );
+            lenience = mapper.readValue( lenienceNode, TimeScaleLenience.class );
+        }
+
+        TimeScale timeScale = builder.build();
+        return new DeclarationFactory.TimeScale( timeScale, lenience );
     }
 }
 

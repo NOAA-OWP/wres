@@ -9,7 +9,9 @@ import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 
 /**
- * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data.
+ * <p>Adds a wrapper to a {@link Supplier} that supplies a {@link Stream} of retrieved data. Similar to the
+ * {@link CachingSupplier} and uses this implementation to cache the result. However, unlike the
+ * {@link CachingSupplier}, this class creates a new stream on each call, allowing for re-use of the retriever.
  * 
  * @author James Brown
  * @param <T> the type of data to retrieve
@@ -53,7 +55,7 @@ public class CachingRetriever<T> implements Supplier<Stream<T>>
         Objects.requireNonNull( retriever );
 
         this.cachingSupplier = CachingSupplier.of( () -> retriever.get()
-                                                                  .collect( Collectors.toUnmodifiableList() ) );
+                                                                  .toList() );
     }
 
 }
