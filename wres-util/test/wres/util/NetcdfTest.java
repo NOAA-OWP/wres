@@ -32,7 +32,6 @@ public class NetcdfTest
      * <p>
      *     Since all of the values are whole numbers, low precision is reasonable for value testing
      * </p>
-     * @throws IOException 
      */
     @Test
     public void VectorVariableIteratorTest() throws IOException
@@ -40,93 +39,83 @@ public class NetcdfTest
         // We only need to be within 0.01 of the actual values for this test since every value is a whole number
         final double epsilon = 0.01;
 
-        NetcdfFile testFile = NetcdfFiles.open( "testinput/NetcdfTest/IteratorTestData.nc" );
-
-        // Get the variable from the test data
-        Variable testVariable = testFile.findVariable( "test_variable" );
-
-        Array testVariableData = null;
-
-        // Load the data from the test file as control data since this is the UCAR
-        // provide method of loading netcdf data
-        testVariableData = testVariable.read();
-
-        // Load the control data into a list for random access
-        List<Double> dataFromFile = new ArrayList<>();
-
-        while ( testVariableData.hasNext() )
+        try ( NetcdfFile testFile = NetcdfFiles.open( "testinput/NetcdfTest/IteratorTestData.nc" ) )
         {
-            Double next = testVariableData.nextDouble();
-            dataFromFile.add( next );
-        }
 
-        // Make sure that the proper index for a read value can be retrieved and that the iterator can
-        // iterate through all values in the variable, in a single buffer
-        Netcdf.VectorVariableIterator variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
+            // Get the variable from the test data
+            Variable testVariable = testFile.findVariable( "test_variable" );
+            assert testVariable != null;
 
-        for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
-        {
-            Assert.assertTrue(
-                               "The iterator doesn't think it can iterate through all of the data in the variable.",
-                               variableIterator.hasNext() );
-            variableIterator.next();
-            Assert.assertEquals( valueIndex, variableIterator.getIndexOfLastValue() );
-        }
+            Array testVariableData;
 
-        Assert.assertFalse(
-                            "The iterator somehow thinks it can read more data than what exists in the variable",
-                            variableIterator.hasNext() );
+            // Load the data from the test file as control data since this is the UCAR
+            // provide method of loading netcdf data
+            testVariableData = testVariable.read();
+
+            // Load the control data into a list for random access
+            List<Double> dataFromFile = new ArrayList<>();
+
+            while ( testVariableData.hasNext() )
+            {
+                Double next = testVariableData.nextDouble();
+                dataFromFile.add( next );
+            }
+
+            // Make sure that the proper index for a read value can be retrieved and that the iterator can
+            // iterate through all values in the variable, in a single buffer
+            Netcdf.VectorVariableIterator variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
+
+            for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
+            {
+                Assert.assertTrue( "The iterator doesn't think it can iterate through all of the data in the variable.",
+                                   variableIterator.hasNext() );
+                variableIterator.next();
+                Assert.assertEquals( valueIndex, variableIterator.getIndexOfLastValue() );
+            }
+
+            Assert.assertFalse( "The iterator somehow thinks it can read more data than what exists in the variable",
+                                variableIterator.hasNext() );
 
 
-        // Make sure that the proper index for a read value can be retrieved and that the iterator can
-        // iterate through all values in the variable, across multiple buffers
-        variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 7 );
+            // Make sure that the proper index for a read value can be retrieved and that the iterator can
+            // iterate through all values in the variable, across multiple buffers
+            variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 7 );
 
-        for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
-        {
-            Assert.assertTrue(
-                               "The iterator doesn't think it can iterate through all of the data in the variable.",
-                               variableIterator.hasNext() );
-            variableIterator.next();
-            Assert.assertEquals( valueIndex, variableIterator.getIndexOfLastValue() );
-        }
+            for ( int valueIndex = 0; valueIndex < testVariable.getSize(); ++valueIndex )
+            {
+                Assert.assertTrue( "The iterator doesn't think it can iterate through all of the data in the variable.",
+                                   variableIterator.hasNext() );
+                variableIterator.next();
+                Assert.assertEquals( valueIndex, variableIterator.getIndexOfLastValue() );
+            }
 
-        Assert.assertFalse(
-                            "The iterator somehow thinks it can read more data than what exists in the variable",
-                            variableIterator.hasNext() );
+            Assert.assertFalse( "The iterator somehow thinks it can read more data than what exists in the variable",
+                                variableIterator.hasNext() );
 
-        // Iterate through each value in the iterator and compare each value with the matching control value
-        while ( variableIterator.hasNext() )
-        {
-            Double next = variableIterator.nextDouble();
-            int lastIndex = variableIterator.getIndexOfLastValue();
-            Double nextFromFile = dataFromFile.get( lastIndex );
-            Assert.assertEquals( nextFromFile, next, epsilon );
-        }
+            // Basic, buffer-less test
+            //    The default buffer is 1000 values, but this file only has 20; no actual buffering will occur
+            variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
 
-        // Basic, buffer-less test
-        //    The default buffer is 1000 values, but this file only has 20; no actual buffering will occur
-        variableIterator = Netcdf.VectorVariableIterator.from( testVariable );
+            // Iterate through each value in the iterator and compare each value with the matching control value
+            while ( variableIterator.hasNext() )
+            {
+                double next = variableIterator.nextDouble();
+                int lastIndex = variableIterator.getIndexOfLastValue();
+                Double nextFromFile = dataFromFile.get( lastIndex );
+                Assert.assertEquals( nextFromFile, next, epsilon );
+            }
 
-        // Iterate through each value in the iterator and compare each value with the matching control value
-        while ( variableIterator.hasNext() )
-        {
-            Double next = variableIterator.nextDouble();
-            int lastIndex = variableIterator.getIndexOfLastValue();
-            Double nextFromFile = dataFromFile.get( lastIndex );
-            Assert.assertEquals( nextFromFile, next, epsilon );
-        }
+            // Test with a buffer with a size of a prime number
+            //     The iterator will be forced to create a smaller buffer to avoid an InvalidRangeException
+            variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 13 );
 
-        // Test with a buffer with a size of a prime number
-        //     The iterator will be forced to create a smaller buffer to avoid an InvalidRangeException
-        variableIterator = Netcdf.VectorVariableIterator.from( testVariable, 13 );
-
-        while ( variableIterator.hasNext() )
-        {
-            Double next = variableIterator.nextDouble();
-            int lastIndex = variableIterator.getIndexOfLastValue();
-            Double nextFromFile = dataFromFile.get( lastIndex );
-            Assert.assertEquals( nextFromFile, next, epsilon );
+            while ( variableIterator.hasNext() )
+            {
+                double next = variableIterator.nextDouble();
+                int lastIndex = variableIterator.getIndexOfLastValue();
+                Double nextFromFile = dataFromFile.get( lastIndex );
+                Assert.assertEquals( nextFromFile, next, epsilon );
+            }
         }
     }
 }

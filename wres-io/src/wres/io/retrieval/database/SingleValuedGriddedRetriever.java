@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.LongStream;
@@ -14,10 +15,10 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
-import wres.grid.client.Fetcher;
-import wres.grid.client.Request;
-import wres.grid.client.SingleValuedTimeSeriesResponse;
+import wres.grid.client.GridRequest;
+import wres.grid.client.GridReader;
 import wres.io.data.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -26,50 +27,31 @@ import wres.io.retrieval.DataAccessException;
 
 /**
  * Retrieves {@link TimeSeries} of single-valued observations or forecasts from gridded sources.
- * 
+ *
  * @author James Brown
  */
 
 class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 {
-
-    /** 
-     * Logger. 
-     * */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedGriddedRetriever.class );
 
-    /**
-     * Exception message used several times on construction.
-     */
-
+    /** Exception message used several times on construction. */
     private static final String CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A =
             "Cannot build a time-series retriever without a ";
 
-    /**
-     * Error message when attempting to retrieve by identifier. See #68334 and #56214-56.
-     */
-
+    /** Error message when attempting to retrieve by identifier. See #68334 and #56214-56. */
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of gridded time-series by identifier is not "
                                                       + "currently possible.";
 
-    /**
-     * Start of script.
-     */
-
+    /** Start of script. */
     private static final String GET_START_OF_SCRIPT =
             SingleValuedGriddedRetriever.getStartOfScriptForGetAllTimeSeries();
 
-    /**
-     * Complete script.
-     */
-
+    /** Complete script. */
     private final DataScripter script;
 
-    /**
-     * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. 
-     */
-
+    /** Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type. */
     private final Boolean isForecast;
 
     @Override
@@ -93,7 +75,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
         /**
          * Is <code>true</code> to retrieve a forecast type, <code>false</code> for a non-forecast type.
-         * 
+         *
          * @param isForecast is true to retrieve forecast data, otherwise false
          * @return the builder
          */
@@ -106,19 +88,18 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
         /**
          * Builds an instance.
-         * 
+         *
          * @return the instance
          */
         SingleValuedGriddedRetriever build()
         {
             return new SingleValuedGriddedRetriever( this );
         }
-
     }
 
     /**
      * Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
-     * 
+     *
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
      */
@@ -131,7 +112,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
-     * 
+     *
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
      */
 
@@ -144,7 +125,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
     /**
      * Overrides the default implementation to get all specified time-series in one pull, rather than one pull for 
      * each series.
-     * 
+     *
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
      * @throws NullPointerException if the input is null
@@ -157,7 +138,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
-     * 
+     *
      * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
@@ -180,7 +161,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                 return Stream.of();
             }
 
-            Request request = this.getRequest( paths );
+            GridRequest request = this.getRequest( paths );
 
             // Obtain the response
             return this.getResponse( request );
@@ -190,10 +171,10 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             throw new DataAccessException( "Failed to access the time-series data.", e );
         }
     }
-    
+
     /**
      * Returns the path strings.
-     * 
+     *
      * @return the path strings
      * @throws SQLException if the request could not be formed
      */
@@ -220,39 +201,39 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the request.
-     * 
+     *
      * @param paths the paths
      * @return the request
      */
 
-    private Request getRequest( List<String> paths )
+    private GridRequest getRequest( List<String> paths )
     {
-        return Fetcher.prepareRequest( paths,
-                                       this.getFeatures(),
-                                       this.getVariableName(),
-                                       this.getTimeWindow(),
-                                       this.isForecast(),
-                                       this.getDeclaredExistingTimeScale() );
+        return new GridRequest( paths,
+                                this.getFeatures(),
+                                this.getVariableName(),
+                                this.getTimeWindow(),
+                                this.isForecast(),
+                                this.getDeclaredExistingTimeScale() );
     }
 
     /**
      * Returns the time-series response for a given request.
-     * 
+     *
      * @param request the request
      * @return the time-series
      * @throws IOException if the response could not be obtained
      */
 
-    private Stream<TimeSeries<Double>> getResponse( Request request ) throws IOException
+    private Stream<TimeSeries<Double>> getResponse( GridRequest request ) throws IOException
     {
         Objects.requireNonNull( request );
 
         // Obtain the response
-        SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
+        Map<Feature, Stream<TimeSeries<Double>>> response = GridReader.getSingleValuedTimeSeries( request );
 
         // Pooling all features, since this retriever does not provide a per-feature API
         Stream<TimeSeries<Double>> concatenated = Stream.of();
-        for ( Stream<TimeSeries<Double>> next : response.getTimeSeries().values() )
+        for ( Stream<TimeSeries<Double>> next : response.values() )
         {
             concatenated = Stream.concat( concatenated, next );
         }
@@ -262,7 +243,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
-     * 
+     *
      * @return the start of a script for the time-series
      */
 
@@ -296,12 +277,9 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         this.isForecast = builder.isForecast;
 
         // Validate
-        Objects.requireNonNull( this.getProjectId(),
-                                CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "project identifier." );
-
         Objects.requireNonNull( this.getLeftOrRightOrBaseline(),
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A
-                                                                 + "member type (left or right or baseline)." );
+                                + "member type (left or right or baseline)." );
 
         Objects.requireNonNull( this.isForecast,
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "forecast status." );
@@ -312,7 +290,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the script for acquiring source paths.
-     * 
+     *
      * @return the script for acquiring source paths
      */
 

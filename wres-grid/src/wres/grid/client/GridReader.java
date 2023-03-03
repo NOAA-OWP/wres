@@ -1,4 +1,4 @@
-package wres.grid.reading;
+package wres.grid.client;
 
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
@@ -10,9 +10,6 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.grid.client.InvalidRequestException;
-import wres.grid.client.Request;
-import wres.grid.client.SingleValuedTimeSeriesResponse;
 import wres.util.Netcdf;
 
 import java.io.IOException;
@@ -47,40 +44,13 @@ import ucar.nc2.dt.grid.GridDataset;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Reads gridded data.
+ * Reads gridded data in NetCDF format.
  */
-public class GriddedReader
+public class GridReader
 {
-    /**
-     * Stands-up resources per JVM.
-     */
-
     private static final Object READER_LOCK = new Object();
-
     private static final Map<String, GridFileReader> FILE_READERS = new ConcurrentHashMap<>();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( GriddedReader.class );
-
-    private static GridFileReader getReader( final String filePath, final boolean isForecast )
-    {
-        synchronized ( READER_LOCK )
-        {
-            GridFileReader reader;
-
-            // If the reader isn't in the collection, add it
-            if ( !GriddedReader.FILE_READERS.containsKey( filePath ) )
-            {
-                reader = new GridFileReader( filePath, isForecast );
-                GriddedReader.FILE_READERS.put( filePath, reader );
-            }
-            else
-            {
-                reader = GriddedReader.FILE_READERS.get( filePath );
-            }
-
-            return reader;
-        }
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger( GridReader.class );
 
     /**
      * Returns a single-valued time-series response for the input request.
@@ -88,17 +58,21 @@ public class GriddedReader
      * @param request the request
      * @return the time-series response
      * @throws IOException if the gridded values cannot be read for any reason
+     * @throws InvalidGridRequestException if the request is invalid
      */
 
-    public static SingleValuedTimeSeriesResponse getSingleValuedResponse( Request request ) throws IOException
+    public static Map<Feature, Stream<TimeSeries<Double>>> getSingleValuedTimeSeries( GridRequest request )
+            throws IOException
     {
         Objects.requireNonNull( request );
 
         // #90061-117
-        if ( request.getPaths().isEmpty() )
+        if ( request.paths()
+                    .isEmpty() )
         {
-            throw new InvalidRequestException( "A request for gridded data must contain at least one path to read. The "
-                                               + "request was: " + request );
+            throw new InvalidGridRequestException( "A request for gridded data must contain at least one path to read. "
+                                                   + "The request was: "
+                                                   + request );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -108,7 +82,7 @@ public class GriddedReader
 
         GridValue griddedValue;
 
-        Queue<String> paths = new LinkedList<>( request.getPaths() );
+        Queue<String> paths = new LinkedList<>( request.paths() );
 
         // Events per feature, where each event is indexed by reference time in a pair
         Map<Feature, List<Pair<Instant, Event<Double>>>> eventsPerFeature = new HashMap<>();
@@ -118,7 +92,7 @@ public class GriddedReader
         while ( !paths.isEmpty() )
         {
             String path = paths.remove();
-            GridFileReader reader = GriddedReader.getReader( path, request.isForecast() );
+            GridFileReader reader = GridReader.getReader( path, request.isForecast() );
 
             if ( reader.isLocked() )
             {
@@ -126,7 +100,7 @@ public class GriddedReader
             }
             else
             {
-                for ( Feature feature : request.getFeatures() )
+                for ( Feature feature : request.features() )
                 {
                     List<Pair<Instant, Event<Double>>> events = eventsPerFeature.get( feature );
                     if ( Objects.isNull( events ) )
@@ -137,7 +111,7 @@ public class GriddedReader
 
                     // We'll need to eventually iterate through time, but now is
                     // not the... time!
-                    griddedValue = reader.read( request.getVariableName(),
+                    griddedValue = reader.read( request.variableName(),
                                                 feature.getWkt() );
 
                     Event<Double> event = DoubleEvent.of( griddedValue.validTime(), griddedValue.value() );
@@ -153,19 +127,17 @@ public class GriddedReader
         for ( Map.Entry<Feature, List<Pair<Instant, Event<Double>>>> nextPair : eventsPerFeature.entrySet() )
         {
             Stream<TimeSeries<Double>> timeSeries =
-                    GriddedReader.getTimeSeriesFromListOfEvents( nextPair.getValue(),
-                                                                 request.getTimeScale(),
-                                                                 request.isForecast(),
-                                                                 request.getVariableName(),
-                                                                 nextPair.getKey(),
-                                                                 measurementUnit )
-                                 .stream();
+                    GridReader.getTimeSeriesFromListOfEvents( nextPair.getValue(),
+                                                              request.timeScale(),
+                                                              request.isForecast(),
+                                                              request.variableName(),
+                                                              nextPair.getKey(),
+                                                              measurementUnit )
+                              .stream();
             seriesPerFeature.put( nextPair.getKey(), timeSeries );
         }
 
-        seriesPerFeature = Collections.unmodifiableMap( seriesPerFeature );
-
-        return SingleValuedTimeSeriesResponse.of( seriesPerFeature, request.getVariableName(), measurementUnit );
+        return Collections.unmodifiableMap( seriesPerFeature );
     }
 
     /**
@@ -181,12 +153,12 @@ public class GriddedReader
      * @throws NullPointerException if the input is null
      */
 
-    static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
-                                                                  TimeScaleOuter timeScale,
-                                                                  boolean isForecast,
-                                                                  String variableName,
-                                                                  Feature feature,
-                                                                  String unit )
+    private static <T> List<TimeSeries<T>> getTimeSeriesFromListOfEvents( List<Pair<Instant, Event<T>>> events,
+                                                                          TimeScaleOuter timeScale,
+                                                                          boolean isForecast,
+                                                                          String variableName,
+                                                                          Feature feature,
+                                                                          String unit )
     {
         Objects.requireNonNull( events );
 
@@ -264,21 +236,58 @@ public class GriddedReader
         // until no duplicates are left
         if ( !duplicates.isEmpty() )
         {
-            returnMe.addAll( GriddedReader.getTimeSeriesFromListOfEvents( duplicates,
-                                                                          timeScale,
-                                                                          isForecast,
-                                                                          variableName,
-                                                                          feature,
-                                                                          unit ) );
+            returnMe.addAll( GridReader.getTimeSeriesFromListOfEvents( duplicates,
+                                                                       timeScale,
+                                                                       isForecast,
+                                                                       variableName,
+                                                                       feature,
+                                                                       unit ) );
         }
 
         return Collections.unmodifiableList( returnMe );
     }
 
+    /**
+     * Creates a reader.
+     * @param filePath the file path
+     * @param isForecast whether the data associated with the path is a forecast
+     * @return a reader
+     */
+    private static GridFileReader getReader( final String filePath, final boolean isForecast )
+    {
+        synchronized ( READER_LOCK )
+        {
+            GridFileReader reader;
+
+            // If the reader isn't in the collection, add it
+            if ( !GridReader.FILE_READERS.containsKey( filePath ) )
+            {
+                reader = new GridFileReader( filePath, isForecast );
+                GridReader.FILE_READERS.put( filePath, reader );
+            }
+            else
+            {
+                reader = GridReader.FILE_READERS.get( filePath );
+            }
+
+            return reader;
+        }
+    }
+
+    /**
+     * A gridded value.
+     * @param value the value
+     * @param measurementUnit the measurement unit
+     * @param issueTime the issue time
+     * @param validTime the valid time
+     */
     private record GridValue( double value, String measurementUnit, Instant issueTime, Instant validTime )
     {
     }
 
+    /**
+     * Reader.
+     */
     private static class GridFileReader
     {
         GridFileReader( final String path, final boolean isForecast )
@@ -297,7 +306,8 @@ public class GriddedReader
 
             Feature.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
 
-            // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're local, so we're using
+            // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're
+            // local, so we're using
             DatasetUrl url = DatasetUrl.create( ServiceType.File, this.path );
 
             try ( NetcdfDataset dataset = NetcdfDatasets.acquireDataset( url, null );
@@ -317,7 +327,8 @@ public class GriddedReader
                 }
 
                 // Returns XY from YX parameters
-                int[] xIndexYIndex = variable.getCoordinateSystem().findXYindexFromLatLon( point.y(), point.x(), null );
+                int[] xIndexYIndex = variable.getCoordinateSystem()
+                                             .findXYindexFromLatLon( point.y(), point.x(), null );
 
                 // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
                 // the two, yielding indexes 1 then 0
@@ -390,7 +401,7 @@ public class GriddedReader
      * Do not construct.
      */
 
-    private GriddedReader()
+    private GridReader()
     {
     }
 }

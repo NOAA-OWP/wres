@@ -9,8 +9,11 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 /**
  * Represents a profile of a NWM forecast
  */
-class NWMProfile
+class NwmProfile
 {
+    private static final String MUST_HAVE_POSITIVE_TIMESTEP_DURATION_NOT =
+            "Must have positive timestep duration, not ";
+
     @Override
     public String toString()
     {
@@ -34,15 +37,19 @@ class NWMProfile
 
     enum TimeLabel
     {
-        f,
-        tm
+        F,
+        TM;
+
+        @Override
+        public String toString()
+        {
+            return this.name()
+                       .toLowerCase();
+        }
     }
 
     /** Name of the global attribute containing a reference datetime */
     private static final String REFERENCE_DATETIME_VARIABLE = "reference_time";
-
-    /** Name of the dimension for stations/features/etc. */
-    private static final String FEATURE_DIMENSION = "feature_id";
 
     /** Name of the variable that contains feature ids */
     private static final String FEATURE_VARIABLE = "feature_id";
@@ -96,9 +103,9 @@ class NWMProfile
     private final String nwmLocationLabel;
 
     /**
-     * Whether the URLs for the forecast uses ensemble-like names.
+     * <p>Whether the URLs for the forecast uses ensemble-like names.
      *
-     * This is needed to extract member 1 of the medium range ensemble as if
+     * <p>This is needed to extract member 1 of the medium range ensemble as if
      * it were a single-valued forecast due to the API for medium range data.
      */
     private final boolean isEnsembleLike;
@@ -111,15 +118,14 @@ class NWMProfile
     private final Duration durationBetweenReferenceDatetimes;
 
     /**
-     * The duration past midnight Zulu when the first data appears.
+     * <p>The duration past midnight Zulu when the first data appears.
      *
-     * For example, Puerto Rico short-range forecasts are issued every 12 hours
+     * <p>For example, Puerto Rico short-range forecasts are issued every 12 hours
      * but the first forecast after midnight Zulu is at T06Z.
      */
     private final Duration durationPastMidnight;
 
-
-    NWMProfile( int blobCount,
+    NwmProfile( int blobCount,
                 int memberCount,
                 Duration durationBetweenValidDatetimes,
                 boolean isVector,
@@ -163,25 +169,25 @@ class NWMProfile
 
         if ( durationBetweenValidDatetimes.isNegative() )
         {
-            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+            throw new IllegalArgumentException( MUST_HAVE_POSITIVE_TIMESTEP_DURATION_NOT
                                                 + durationBetweenValidDatetimes );
         }
 
         if ( durationBetweenValidDatetimes.isZero() )
         {
-            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+            throw new IllegalArgumentException( MUST_HAVE_POSITIVE_TIMESTEP_DURATION_NOT
                                                 + durationBetweenValidDatetimes );
         }
 
         if ( durationBetweenReferenceDateTimes.isNegative() )
         {
-            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+            throw new IllegalArgumentException( MUST_HAVE_POSITIVE_TIMESTEP_DURATION_NOT
                                                 + durationBetweenReferenceDateTimes );
         }
 
         if ( durationBetweenReferenceDateTimes.isZero() )
         {
-            throw new IllegalArgumentException( "Must have positive timestep duration, not "
+            throw new IllegalArgumentException( MUST_HAVE_POSITIVE_TIMESTEP_DURATION_NOT
                                                 + durationBetweenReferenceDateTimes );
         }
 
@@ -221,11 +227,6 @@ class NWMProfile
         return this.durationBetweenValidDatetimes;
     }
 
-    boolean isVector()
-    {
-        return this.isVector;
-    }
-
     String getNwmConfiguration()
     {
         return this.nwmConfiguration;
@@ -241,29 +242,24 @@ class NWMProfile
         return this.timeLabel;
     }
 
-    String getFeatureDimension()
-    {
-        return NWMProfile.FEATURE_DIMENSION;
-    }
-
     String getReferenceDatetimeVariable()
     {
-        return NWMProfile.REFERENCE_DATETIME_VARIABLE;
+        return NwmProfile.REFERENCE_DATETIME_VARIABLE;
     }
 
     String getFeatureVariable()
     {
-        return NWMProfile.FEATURE_VARIABLE;
+        return NwmProfile.FEATURE_VARIABLE;
     }
 
     String getValidDatetimeVariable()
     {
-        return NWMProfile.VALID_DATETIME_VARIABLE;
+        return NwmProfile.VALID_DATETIME_VARIABLE;
     }
 
     String getMemberAttribute()
     {
-        return NWMProfile.MEMBER_ATTRIBUTE;
+        return NwmProfile.MEMBER_ATTRIBUTE;
     }
 
     String getNwmSubdirectoryPrefix()

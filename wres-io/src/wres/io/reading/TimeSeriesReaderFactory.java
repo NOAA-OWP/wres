@@ -10,7 +10,7 @@ import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.commaseparated.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
-import wres.io.reading.nwm.NwmGriddedReader;
+import wres.io.reading.nwm.NwmGridReader;
 import wres.io.reading.nwm.NwmVectorReader;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.NwisReader;
@@ -138,7 +138,7 @@ public class TimeSeriesReaderFactory
             case GZIP:
                 return ZippedReader.of( this );
             case NETCDF_GRIDDED:
-                return NwmGriddedReader.of( this.pairConfig, this.features );
+                return NwmGridReader.of( this.pairConfig, this.features );
             case NETCDF_VECTOR:
                 return NwmVectorReader.of( this.pairConfig );
             case UNKNOWN:

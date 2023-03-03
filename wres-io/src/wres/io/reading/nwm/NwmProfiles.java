@@ -81,107 +81,107 @@ import wres.config.generated.InterfaceShortHand;
  * usgs_timeslices/                   03-Aug-2020 20:40    -
  */
 
-class NWMProfiles
+class NwmProfiles
 {
-    private NWMProfiles()
+    private NwmProfiles()
     {
         // Static utility class, no construction allowed.
     }
 
-    static NWMProfile getProfileFromShortHand( InterfaceShortHand shortHand )
+    static NwmProfile getProfileFromShortHand( InterfaceShortHand shortHand )
     {
         if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getShortRangeChannelRtConus();
+            return NwmProfiles.getShortRangeChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getMediumRangeEnsembleChannelRtConus();
+            return NwmProfiles.getMediumRangeEnsembleChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getMediumRangeDeterministicChannelRtConus();
+            return NwmProfiles.getMediumRangeDeterministicChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY ) )
         {
-            return NWMProfiles.getMediumRangeEnsembleChannelRtConusHourly();
+            return NwmProfiles.getMediumRangeEnsembleChannelRtConusHourly();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS_HOURLY ) )
         {
-            return NWMProfiles.getMediumRangeDeterministicChannelRtConusHourly();
+            return NwmProfiles.getMediumRangeDeterministicChannelRtConusHourly();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getMediumRangeNoDaDeterministicChannelRtConus();
+            return NwmProfiles.getMediumRangeNoDaDeterministicChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getAnalysisAssimChannelRtConus();
+            return NwmProfiles.getAnalysisAssimChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getAnalysisAssimNoDaChannelRtConus();
+            return NwmProfiles.getAnalysisAssimNoDaChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getAnalysisAssimExtendChannelRtConus();
+            return NwmProfiles.getAnalysisAssimExtendChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getAnalysisAssimExtendNoDaChannelRtConus();
+            return NwmProfiles.getAnalysisAssimExtendNoDaChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII ) )
         {
-            return NWMProfiles.getAnalysisAssimChannelRtHawaii();
+            return NwmProfiles.getAnalysisAssimChannelRtHawaii();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_HAWAII ) )
         {
-            return NWMProfiles.getAnalysisAssimNoDaChannelRtHawaii();
+            return NwmProfiles.getAnalysisAssimNoDaChannelRtHawaii();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO ) )
         {
-            return NWMProfiles.getAnalysisAssimChannelRtPuertoRico();
+            return NwmProfiles.getAnalysisAssimChannelRtPuertoRico();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO ) )
         {
-            return NWMProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
+            return NwmProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_LONG_RANGE_CHANNEL_RT_CONUS ) )
         {
-            return NWMProfiles.getLongRangeChannelRtConus();
+            return NwmProfiles.getLongRangeChannelRtConus();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_HAWAII ) )
         {
-            return NWMProfiles.getShortRangeChannelRtHawaii();
+            return NwmProfiles.getShortRangeChannelRtHawaii();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII ) )
         {
-            return NWMProfiles.getShortRangeNoDaChannelRtHawaii();
+            return NwmProfiles.getShortRangeNoDaChannelRtHawaii();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO ) )
         {
-            return NWMProfiles.getShortRangeChannelRtPuertoRico();
+            return NwmProfiles.getShortRangeChannelRtPuertoRico();
         }
         else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO ) )
         {
-            return NWMProfiles.getShortRangeNoDaChannelRtPuertoRico();
+            return NwmProfiles.getShortRangeNoDaChannelRtPuertoRico();
         }
         else
         {
-            throw new UnsupportedOperationException( "No NWMProfile known to WRES for "
+            throw new UnsupportedOperationException( "No NwmProfile known to WRES for "
                                                      + shortHand.toString() );
         }
     }
 
-    private static NWMProfile getShortRangeChannelRtConus()
+    private static NwmProfile getShortRangeChannelRtConus()
     {
-        return new NWMProfile( 18,
+        return new NwmProfile( 18,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "short_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "short_range",
                                "conus",
                                Duration.ofHours( 1 ),
@@ -190,15 +190,15 @@ class NWMProfiles
     }
 
 
-    private static NWMProfile getMediumRangeEnsembleChannelRtConus()
+    private static NwmProfile getMediumRangeEnsembleChannelRtConus()
     {
-        return new NWMProfile( 68,
+        return new NwmProfile( 68,
                                7,
                                Duration.ofHours( 3 ),
                                true,
                                "medium_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -206,15 +206,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getMediumRangeDeterministicChannelRtConus()
+    private static NwmProfile getMediumRangeDeterministicChannelRtConus()
     {
-        return new NWMProfile( 80,
+        return new NwmProfile( 80,
                                1,
                                Duration.ofHours( 3 ),
                                true,
                                "medium_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -222,15 +222,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getMediumRangeEnsembleChannelRtConusHourly()
+    private static NwmProfile getMediumRangeEnsembleChannelRtConusHourly()
     {
-        return new NWMProfile( 68 * 3,
+        return new NwmProfile( 68 * 3,
                                7,
                                Duration.ofHours( 1 ),
                                true,
                                "medium_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -238,15 +238,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getMediumRangeDeterministicChannelRtConusHourly()
+    private static NwmProfile getMediumRangeDeterministicChannelRtConusHourly()
     {
-        return new NWMProfile( 80 * 3,
+        return new NwmProfile( 80 * 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "medium_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "medium_range",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -254,15 +254,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getMediumRangeNoDaDeterministicChannelRtConus()
+    private static NwmProfile getMediumRangeNoDaDeterministicChannelRtConus()
     {
-        return new NWMProfile( 80,
+        return new NwmProfile( 80,
                                1,
                                Duration.ofHours( 3 ),
                                true,
                                "medium_range_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "medium_range_no_da",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -270,15 +270,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimChannelRtConus()
+    private static NwmProfile getAnalysisAssimChannelRtConus()
     {
-        return new NWMProfile( 3,
+        return new NwmProfile( 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim",
                                "conus",
                                Duration.ofHours( 1 ),
@@ -286,15 +286,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getLongRangeChannelRtConus()
+    private static NwmProfile getLongRangeChannelRtConus()
     {
-        return new NWMProfile( 120,
+        return new NwmProfile( 120,
                                4,
                                Duration.ofHours( 6 ),
                                true,
                                "long_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "long_range",
                                "conus",
                                Duration.ofHours( 6 ),
@@ -303,15 +303,15 @@ class NWMProfiles
     }
 
 
-    private static NWMProfile getShortRangeChannelRtPuertoRico()
+    private static NwmProfile getShortRangeChannelRtPuertoRico()
     {
-        return new NWMProfile( 48,
+        return new NwmProfile( 48,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "short_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "short_range_puertorico",
                                "puertorico",
                                Duration.ofHours( 12 ),
@@ -320,15 +320,15 @@ class NWMProfiles
     }
 
 
-    private static NWMProfile getShortRangeNoDaChannelRtPuertoRico()
+    private static NwmProfile getShortRangeNoDaChannelRtPuertoRico()
     {
-        return new NWMProfile( 48,
+        return new NwmProfile( 48,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "short_range_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "short_range_puertorico_no_da",
                                "puertorico",
                                Duration.ofHours( 12 ),
@@ -337,15 +337,15 @@ class NWMProfiles
     }
 
 
-    private static NWMProfile getShortRangeChannelRtHawaii()
+    private static NwmProfile getShortRangeChannelRtHawaii()
     {
-        return new NWMProfile( 192,
+        return new NwmProfile( 192,
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
                                "short_range",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "short_range_hawaii",
                                "hawaii",
                                Duration.ofHours( 12 ),
@@ -353,15 +353,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getShortRangeNoDaChannelRtHawaii()
+    private static NwmProfile getShortRangeNoDaChannelRtHawaii()
     {
-        return new NWMProfile( 192,
+        return new NwmProfile( 192,
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
                                "short_range_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.f,
+                               NwmProfile.TimeLabel.F,
                                "short_range_hawaii_no_da",
                                "hawaii",
                                Duration.ofHours( 12 ),
@@ -369,15 +369,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimChannelRtHawaii()
+    private static NwmProfile getAnalysisAssimChannelRtHawaii()
     {
-        return new NWMProfile( 12,
+        return new NwmProfile( 12,
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
                                "analysis_assim",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_hawaii",
                                "hawaii",
                                Duration.ofHours( 1 ),
@@ -385,15 +385,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimNoDaChannelRtHawaii()
+    private static NwmProfile getAnalysisAssimNoDaChannelRtHawaii()
     {
-        return new NWMProfile( 12,
+        return new NwmProfile( 12,
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
                                "analysis_assim_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_hawaii_no_da",
                                "hawaii",
                                Duration.ofHours( 1 ),
@@ -401,15 +401,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimChannelRtPuertoRico()
+    private static NwmProfile getAnalysisAssimChannelRtPuertoRico()
     {
-        return new NWMProfile( 3,
+        return new NwmProfile( 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_puertorico",
                                "puertorico",
                                Duration.ofHours( 1 ),
@@ -417,15 +417,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimNoDaChannelRtPuertoRico()
+    private static NwmProfile getAnalysisAssimNoDaChannelRtPuertoRico()
     {
-        return new NWMProfile( 3,
+        return new NwmProfile( 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_puertorico_no_da",
                                "puertorico",
                                Duration.ofHours( 1 ),
@@ -433,15 +433,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimNoDaChannelRtConus()
+    private static NwmProfile getAnalysisAssimNoDaChannelRtConus()
     {
-        return new NWMProfile( 3,
+        return new NwmProfile( 3,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_no_da",
                                "conus",
                                Duration.ofHours( 1 ),
@@ -449,15 +449,15 @@ class NWMProfiles
                                Duration.ZERO );
     }
 
-    private static NWMProfile getAnalysisAssimExtendChannelRtConus()
+    private static NwmProfile getAnalysisAssimExtendChannelRtConus()
     {
-        return new NWMProfile( 28,
+        return new NwmProfile( 28,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_extend",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend",
                                "conus",
                                Duration.ofDays( 1 ),
@@ -465,15 +465,15 @@ class NWMProfiles
                                Duration.ofHours( 16 ) );
     }
 
-    private static NWMProfile getAnalysisAssimExtendNoDaChannelRtConus()
+    private static NwmProfile getAnalysisAssimExtendNoDaChannelRtConus()
     {
-        return new NWMProfile( 28,
+        return new NwmProfile( 28,
                                1,
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_extend_no_da",
                                "channel_rt",
-                               NWMProfile.TimeLabel.tm,
+                               NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend_no_da",
                                "conus",
                                Duration.ofDays( 1 ),

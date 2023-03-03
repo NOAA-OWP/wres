@@ -60,24 +60,26 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
+ * <p>Goal: a variable/feature/timeseries combination in a Vector NWM dataset is
  * considered a source.
  *
- * Only the variable and NWM feature selected for an evaluation will be ingested
+ * <p>Only the variable and NWM feature selected for an evaluation will be ingested
  * from a vector NWM dataset.
  *
- * All the NWM netCDF blobs for a given timeseries will first be found and
+ * <p>All the NWM netCDF blobs for a given timeseries will first be found and
  * opened prior to attempting to identify the timeseries, prior to attempting
  * to ingest any rows of timeseries data.
  *
- * This class opens a set of NWM netCDF blobs as a timeseries, based on a profile.
+ * <p>This class opens a set of NWM netCDF blobs as a timeseries, based on a profile.
  *
- * This class intentionally only deals with NWM feature ids (not WRES ids).
+ * <p>This class intentionally only deals with NWM feature ids (not WRES ids).
+ *
+ * @author Jesse Bickel
  */
 
-class NWMTimeSeries implements Closeable
+class NwmTimeSeries implements Closeable
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( NWMTimeSeries.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NwmTimeSeries.class );
     private static final DateTimeFormatter NWM_DATE_FORMATTER = DateTimeFormatter.ofPattern( "yyyyMMdd" );
     private static final DateTimeFormatter NWM_HOUR_FORMATTER = DateTimeFormatter.ofPattern( "HH" );
 
@@ -85,7 +87,7 @@ class NWMTimeSeries implements Closeable
 
     private static final int POOL_OBJECT_LIFESPAN = 30000;
 
-    private final NWMProfile profile;
+    private final NwmProfile profile;
 
     /** The reference datetime of this NWM Forecast */
     private final Instant referenceDatetime;
@@ -156,7 +158,8 @@ class NWMTimeSeries implements Closeable
 
         try
         {
-            this.readExecutor.awaitTermination( 100, TimeUnit.MILLISECONDS );
+            boolean result = this.readExecutor.awaitTermination( 100, TimeUnit.MILLISECONDS );
+            LOGGER.debug( "The result upon awaiting termination was: {}.", result );
         }
         catch ( InterruptedException ie )
         {
@@ -186,7 +189,7 @@ class NWMTimeSeries implements Closeable
      * @throws IllegalArgumentException When baseUri is not absolute.
      */
 
-    NWMTimeSeries( NWMProfile profile,
+    NwmTimeSeries( NwmProfile profile,
                    Instant referenceDatetime,
                    ReferenceTimeType referenceTimeType,
                    URI baseUri )
@@ -212,7 +215,7 @@ class NWMTimeSeries implements Closeable
         }
 
         // Build the set of URIs based on the profile given.
-        Set<URI> netcdfUris = NWMTimeSeries.getNetcdfUris( profile,
+        Set<URI> netcdfUris = NwmTimeSeries.getNetcdfUris( profile,
                                                            referenceDatetime,
                                                            this.baseUri );
 
@@ -227,8 +230,8 @@ class NWMTimeSeries implements Closeable
                       this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                                                                               .namingPattern( "NWMTimeSeries Reader %d" )
-                                                                               .build();
+                .namingPattern( "NwmTimeSeries Reader %d" )
+                .build();
 
         BlockingQueue<Runnable> nwmReaderQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
@@ -350,7 +353,7 @@ class NWMTimeSeries implements Closeable
      * @return The full Set of URIs for a single forecast
      */
 
-    static Set<URI> getNetcdfUris( NWMProfile profile,
+    static Set<URI> getNetcdfUris( NwmProfile profile,
                                    Instant referenceDatetime,
                                    URI baseUri )
     {
@@ -380,7 +383,7 @@ class NWMTimeSeries implements Closeable
         {
             String directoryName = profile.getNwmSubdirectoryPrefix();
 
-            if ( profile.isEnsembleLike() && !NWMTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
+            if ( profile.isEnsembleLike() && !NwmTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
             {
                 directoryName += "_mem" + i;
             }
@@ -397,7 +400,7 @@ class NWMTimeSeries implements Closeable
                                        + profile.getNwmOutputType();
 
                 // Ensemble number appended if greater than one member present.
-                if ( profile.isEnsembleLike() && !NWMTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
+                if ( profile.isEnsembleLike() && !NwmTimeSeries.isLegacyNwmVersion( baseUri ) ) // Yuck: #110992
                 {
                     ncFilePartOne += "_" + i;
                 }
@@ -411,7 +414,7 @@ class NWMTimeSeries implements Closeable
                 long hours = duration.toHours();
 
                 if ( profile.getTimeLabel()
-                            .equals( NWMProfile.TimeLabel.f ) )
+                            .equals( NwmProfile.TimeLabel.F ) )
                 {
                     if ( !subHourly )
                     {
@@ -431,7 +434,7 @@ class NWMTimeSeries implements Closeable
                     }
                 }
                 else if ( profile.getTimeLabel()
-                                 .equals( NWMProfile.TimeLabel.tm ) )
+                                 .equals( NwmProfile.TimeLabel.TM ) )
                 {
                     if ( !subHourly )
                     {
@@ -468,7 +471,7 @@ class NWMTimeSeries implements Closeable
         return Collections.unmodifiableSet( uris );
     }
 
-    NWMProfile getProfile()
+    NwmProfile getProfile()
     {
         return this.profile;
     }
@@ -519,7 +522,7 @@ class NWMTimeSeries implements Closeable
                                                     + "evaluate." );
             }
 
-            return NWMTimeSeries.readAttributeAsString( variableVariable, attributeName );
+            return NwmTimeSeries.readAttributeAsString( variableVariable, attributeName );
         }
         else
         {
@@ -577,8 +580,8 @@ class NWMTimeSeries implements Closeable
             {
                 NWMDoubleReadOutcome outcome = reads.take()
                                                     .get();
-                List<EventForNWMFeature<Double>> read = outcome.getData();
-                this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+                List<EventForNWMFeature<Double>> read = outcome.data();
+                this.featuresNotFound.addAll( outcome.featuresNotFound() );
 
                 for ( EventForNWMFeature<Double> event : read )
                 {
@@ -593,8 +596,8 @@ class NWMTimeSeries implements Closeable
         for ( Future<NWMDoubleReadOutcome> reading : reads )
         {
             NWMDoubleReadOutcome outcome = reading.get();
-            List<EventForNWMFeature<Double>> read = outcome.getData();
-            this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+            List<EventForNWMFeature<Double>> read = outcome.data();
+            this.featuresNotFound.addAll( outcome.featuresNotFound() );
 
             for ( EventForNWMFeature<Double> event : read )
             {
@@ -619,8 +622,8 @@ class NWMTimeSeries implements Closeable
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
             Geometry geometry = MessageFactory.getGeometry(
-                                                            series.getKey()
-                                                                  .toString() );
+                    series.getKey()
+                          .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -657,7 +660,7 @@ class NWMTimeSeries implements Closeable
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
-                                                                 CONCURRENT_READS );
+                CONCURRENT_READS );
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
@@ -678,8 +681,8 @@ class NWMTimeSeries implements Closeable
             {
                 NWMDoubleReadOutcome outcome = reads.take()
                                                     .get();
-                List<EventForNWMFeature<Double>> read = outcome.getData();
-                this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+                List<EventForNWMFeature<Double>> read = outcome.data();
+                this.featuresNotFound.addAll( outcome.featuresNotFound() );
                 this.putEnsembleDataInMap( read,
                                            ensembleValues,
                                            memberCount,
@@ -691,8 +694,8 @@ class NWMTimeSeries implements Closeable
         for ( Future<NWMDoubleReadOutcome> reading : reads )
         {
             NWMDoubleReadOutcome outcome = reading.get();
-            List<EventForNWMFeature<Double>> read = outcome.getData();
-            this.featuresNotFound.addAll( outcome.getFeaturesNotFound() );
+            List<EventForNWMFeature<Double>> read = outcome.data();
+            this.featuresNotFound.addAll( outcome.featuresNotFound() );
             this.putEnsembleDataInMap( read,
                                        ensembleValues,
                                        memberCount,
@@ -734,8 +737,8 @@ class NWMTimeSeries implements Closeable
             }
 
             Geometry geometry = MessageFactory.getGeometry(
-                                                            entriesForOne.getKey()
-                                                                         .toString() );
+                    entriesForOne.getKey()
+                                 .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -759,7 +762,7 @@ class NWMTimeSeries implements Closeable
      * Inspects a NWM URI and attempts to determine whether it is a "legacy" NWM version, defined as 1.1 or 1.2, since 
      * these are supported versions that have a different file structure. Yuck, but better than adding yet more 
      * interfaces for datasets that are (increasingly) rarely used. See #110992.
-     * 
+     *
      * @param baseUri the base URI to check
      * @return whether the path is consistent with a legacy 1.1 or 1.2 model version
      */
@@ -876,8 +879,7 @@ class NWMTimeSeries implements Closeable
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
             {
                 return attribute.getDataType();
             }
@@ -901,8 +903,7 @@ class NWMTimeSeries implements Closeable
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
             {
                 return attribute.getStringValue();
             }
@@ -929,8 +930,7 @@ class NWMTimeSeries implements Closeable
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
             {
                 DataType type = attribute.getDataType();
 
@@ -941,8 +941,7 @@ class NWMTimeSeries implements Closeable
                 }
                 else
                 {
-                    throw new CastMayCauseBadConversionException(
-                                                                  "Unable to convert attribute '"
+                    throw new CastMayCauseBadConversionException( "Unable to convert attribute '"
                                                                   + attributeName
                                                                   + "' to double because it is type "
                                                                   + type );
@@ -970,8 +969,7 @@ class NWMTimeSeries implements Closeable
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
             {
                 DataType type = attribute.getDataType();
 
@@ -983,10 +981,10 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                                                                  "Unable to convert attribute '"
-                                                                  + attributeName
-                                                                  + "' to float because it is type "
-                                                                  + type );
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to float because it is type "
+                            + type );
                 }
             }
         }
@@ -1012,8 +1010,7 @@ class NWMTimeSeries implements Closeable
         for ( Attribute attribute : ncVariable.attributes() )
         {
             if ( attribute.getName()
-                          .toLowerCase()
-                          .equals( attributeName.toLowerCase() ) )
+                          .equalsIgnoreCase( attributeName.toLowerCase() ) )
             {
                 DataType type = attribute.getDataType();
 
@@ -1031,10 +1028,10 @@ class NWMTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                                                                  "Unable to convert attribute '"
-                                                                  + attributeName
-                                                                  + "' to integer because it is type "
-                                                                  + type );
+                            "Unable to convert attribute '"
+                            + attributeName
+                            + "' to integer because it is type "
+                            + type );
                 }
             }
         }
@@ -1045,19 +1042,19 @@ class NWMTimeSeries implements Closeable
                                             + " in netCDF data." );
     }
 
-    private static Instant readValidDatetime( NWMProfile profile,
+    private static Instant readValidDatetime( NwmProfile profile,
                                               NetcdfFile netcdfFile )
     {
         String validDatetimeVariableName = profile.getValidDatetimeVariable();
-        return NWMTimeSeries.readMinutesFromEpoch( netcdfFile,
+        return NwmTimeSeries.readMinutesFromEpoch( netcdfFile,
                                                    validDatetimeVariableName );
     }
 
-    private static Instant readReferenceDatetime( NWMProfile profile,
+    private static Instant readReferenceDatetime( NwmProfile profile,
                                                   NetcdfFile netcdfFile )
     {
         String referenceDatetimeAttributeName = profile.getReferenceDatetimeVariable();
-        return NWMTimeSeries.readMinutesFromEpoch( netcdfFile,
+        return NwmTimeSeries.readMinutesFromEpoch( netcdfFile,
                                                    referenceDatetimeAttributeName );
     }
 
@@ -1185,7 +1182,7 @@ class NWMTimeSeries implements Closeable
         try
         {
             Array array = variable.read( origin, shape );
-            int[] unsafeValues = (int[]) array.get1DJavaArray( DataType.INT );
+            int[] unsafeValues = ( int[] ) array.get1DJavaArray( DataType.INT );
             rawValues = unsafeValues.clone();
         }
         catch ( IOException | InvalidRangeException e )
@@ -1202,12 +1199,12 @@ class NWMTimeSeries implements Closeable
         if ( rawValues.length != countOfRawValuesToRead )
         {
             throw new PreIngestException(
-                                          "Expected to read exactly " + countOfRawValuesToRead
-                                          + ""
-                                          + " values from variable "
-                                          + variableName
-                                          + " instead got "
-                                          + rawValues.length );
+                    "Expected to read exactly " + countOfRawValuesToRead
+                    + ""
+                    + " values from variable "
+                    + variableName
+                    + " instead got "
+                    + rawValues.length );
         }
 
         // Write the values to the result array. Skip past unrequested values.
@@ -1229,13 +1226,14 @@ class NWMTimeSeries implements Closeable
             }
         }
 
-        LOGGER.debug( "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
-                      variableName,
-                      minIndex,
-                      maxIndex,
-                      indices,
-                      rawValues.length,
-                      result );
+        LOGGER.debug(
+                "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
+                variableName,
+                minIndex,
+                maxIndex,
+                indices,
+                rawValues.length,
+                result );
         return result;
     }
 
@@ -1273,6 +1271,7 @@ class NWMTimeSeries implements Closeable
                                                  String variableName )
     {
         Variable ncVariable = netcdfFile.findVariable( variableName );
+        assert ncVariable != null;
 
         try
         {
@@ -1380,19 +1379,15 @@ class NWMTimeSeries implements Closeable
         }
     }
 
-
     /**
      * Task that performs NetcdfFile.open on given URI.
      */
 
-    private static final class NWMResourceOpener implements Callable<NetcdfFile>
+    private record NWMResourceOpener( URI uri ) implements Callable<NetcdfFile>
     {
-        private final URI uri;
-
-        NWMResourceOpener( URI uri )
+        private NWMResourceOpener
         {
             Objects.requireNonNull( uri );
-            this.uri = uri;
         }
 
         @Override
@@ -1443,28 +1438,13 @@ class NWMTimeSeries implements Closeable
         }
     }
 
-
-    private static final class NWMDoubleReadOutcome
+    /**
+     * @param data the data
+     * @param featuresNotFound the features not found
+     */
+    private record NWMDoubleReadOutcome( List<EventForNWMFeature<Double>> data,
+                                         Set<Integer> featuresNotFound )
     {
-        private final List<EventForNWMFeature<Double>> data;
-        private final Set<Integer> featuresNotFound;
-
-        NWMDoubleReadOutcome( List<EventForNWMFeature<Double>> data,
-                              Set<Integer> featuresNotFound )
-        {
-            this.data = data;
-            this.featuresNotFound = featuresNotFound;
-        }
-
-        List<EventForNWMFeature<Double>> getData()
-        {
-            return this.data;
-        }
-
-        Set<Integer> getFeaturesNotFound()
-        {
-            return this.featuresNotFound;
-        }
     }
 
     /**
@@ -1475,7 +1455,7 @@ class NWMTimeSeries implements Closeable
     {
 
         private static final int NOT_FOUND = Integer.MIN_VALUE;
-        private final NWMProfile profile;
+        private final NwmProfile profile;
         private final NetcdfFile netcdfFile;
         private final int[] featureIds;
         private final String variableName;
@@ -1484,7 +1464,7 @@ class NWMTimeSeries implements Closeable
         private final boolean isEnsemble;
         private final Set<Integer> featuresNotFound;
 
-        NWMDoubleReader( NWMProfile profile,
+        NWMDoubleReader( NwmProfile profile,
                          NetcdfFile netcdfFile,
                          int[] featureIds,
                          String variableName,
@@ -1519,7 +1499,7 @@ class NWMTimeSeries implements Closeable
                                      this.isEnsemble );
         }
 
-        private NWMDoubleReadOutcome readDoubles( NWMProfile profile,
+        private NWMDoubleReadOutcome readDoubles( NwmProfile profile,
                                                   NetcdfFile netcdfFile,
                                                   int[] featureIds,
                                                   String variableName,
@@ -1528,11 +1508,11 @@ class NWMTimeSeries implements Closeable
                                                   boolean isEnsemble )
         {
             // Get the valid datetime
-            Instant validDatetime = NWMTimeSeries.readValidDatetime( profile,
+            Instant validDatetime = NwmTimeSeries.readValidDatetime( profile,
                                                                      netcdfFile );
 
             // Get the reference datetime
-            Instant ncReferenceDatetime = NWMTimeSeries.readReferenceDatetime( profile,
+            Instant ncReferenceDatetime = NwmTimeSeries.readReferenceDatetime( profile,
                                                                                netcdfFile );
 
             // Validate: this referenceDatetime should match what was set originally,
@@ -1578,18 +1558,18 @@ class NWMTimeSeries implements Closeable
 
                 if ( !feature.found() )
                 {
-                    this.featuresNotFound.add( feature.getFeatureId() );
+                    this.featuresNotFound.add( feature.featureId() );
                     continue;
                 }
 
-                if ( feature.getIndex() < minIndex )
+                if ( feature.index() < minIndex )
                 {
-                    minIndex = feature.getIndex();
+                    minIndex = feature.index();
                 }
 
-                if ( feature.getIndex() > maxIndex )
+                if ( feature.index() > maxIndex )
                 {
-                    maxIndex = feature.getIndex();
+                    maxIndex = feature.index();
                 }
             }
 
@@ -1611,11 +1591,11 @@ class NWMTimeSeries implements Closeable
             // Filtered for non-existent feature ids:
             int[] indicesOfFeatures = features.stream()
                                               .filter( FeatureIdWithItsIndex::found )
-                                              .mapToInt( FeatureIdWithItsIndex::getIndex )
+                                              .mapToInt( FeatureIdWithItsIndex::index )
                                               .toArray();
             int[] companionFeatures = features.stream()
                                               .filter( FeatureIdWithItsIndex::found )
-                                              .mapToInt( FeatureIdWithItsIndex::getFeatureId )
+                                              .mapToInt( FeatureIdWithItsIndex::featureId )
                                               .toArray();
 
             Variable variableVariable = netcdfFile.findVariable( variableName );
@@ -1626,7 +1606,7 @@ class NWMTimeSeries implements Closeable
             // (The readRawInts method does not need the netCDF blob.)
             try
             {
-                rawVariableValues = NWMTimeSeries.readRawInts( variableVariable,
+                rawVariableValues = NwmTimeSeries.readRawInts( variableVariable,
                                                                indicesOfFeatures,
                                                                minIndex,
                                                                maxIndex );
@@ -1643,7 +1623,7 @@ class NWMTimeSeries implements Closeable
                                               pie );
             }
 
-            VariableAttributes attributes = NWMTimeSeries.readVariableAttributes( variableVariable );
+            VariableAttributes attributes = NwmTimeSeries.readVariableAttributes( variableVariable );
 
             List<EventForNWMFeature<Double>> list = new ArrayList<>( rawVariableValues.length );
 
@@ -1657,20 +1637,21 @@ class NWMTimeSeries implements Closeable
                 if ( rawVariableValues[i] == missingValue
                      || rawVariableValues[i] == fillValue )
                 {
-                    LOGGER.debug( "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                                  rawVariableValues[i],
-                                  missingValue,
-                                  fillValue,
-                                  i,
-                                  companionFeatures[i],
-                                  variableName,
-                                  netcdfFile.getLocation() );
+                    LOGGER.debug(
+                            "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
+                            rawVariableValues[i],
+                            missingValue,
+                            fillValue,
+                            i,
+                            companionFeatures[i],
+                            variableName,
+                            netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
                 {
                     // Unpack.
-                    variableValue = NWMTimeSeries.unpack( rawVariableValues[i],
+                    variableValue = NwmTimeSeries.unpack( rawVariableValues[i],
                                                           attributes );
                 }
 
@@ -1717,7 +1698,7 @@ class NWMTimeSeries implements Closeable
          * @throws PreIngestException When ensemble number exceeds count in profile.
          * @throws PreIngestException When ensemble number is less than 1.
          */
-        private int readEnsembleNumber( NWMProfile profile,
+        private int readEnsembleNumber( NwmProfile profile,
                                         NetcdfFile netcdfFile )
         {
 
@@ -1779,37 +1760,37 @@ class NWMTimeSeries implements Closeable
     private static final class NWMFeatureCache
     {
         /**
-         * The contents of the feature variable for a given netCDF resource.
+         * <p>The contents of the feature variable for a given netCDF resource.
          *
-         * This is a performance optimization (avoid re-reading the features).
+         * <p>This is a performance optimization (avoid re-reading the features).
          * GuardedBy featureCacheGuard
          *
-         * This is kept in int[] form in order to validate new netCDF resources.
+         * <p>This is kept in int[] form in order to validate new netCDF resources.
          */
         private int[] originalFeatures;
 
         /**
-         * Whether the features stored is sorted. Allows binary search if true.
+         * <p>Whether the features stored is sorted. Allows binary search if true.
          *
-         * Only one Thread should write this value after construction, the rest
+         * <p>Only one Thread should write this value after construction, the rest
          * read it.
          *
-         * This is a performance optimization (avoid linear search of features).
+         * <p>This is a performance optimization (avoid linear search of features).
          *
-         * Not certain that this needs to be volatile, but just in case...
+         * <p>Not certain that this needs to be volatile, but just in case...
          *
-         * GuardedBy featureCacheGuard
+         * <p>GuardedBy {@link #featureCacheGuard}
          */
         private volatile boolean isSorted = false;
 
         /**
-         * First Thread to set to true wins
+         * <p>First Thread to set to true wins
          * and gets to write to the featureCache. Everyone else reads.
          */
         private final AtomicBoolean featureCacheRaceResolver = new AtomicBoolean( false );
 
         /**
-         * Guards featureCache variable.
+         * <p>Guards featureCache variable.
          */
         private final CountDownLatch featureCacheGuard = new CountDownLatch( 1 );
 
@@ -1829,10 +1810,9 @@ class NWMTimeSeries implements Closeable
             }
         }
 
-
         /**
          * Find the given featureId index within the given netCDF blob using the
-         * given NWMProfile and this feature cache.
+         * given NwmProfile and this feature cache.
          * @param profile The profile to use (has name of feature variable).
          * @param netcdfFile The netCDF blob to search.
          * @param featureId The NWM feature id to search for.
@@ -1840,7 +1820,7 @@ class NWMTimeSeries implements Closeable
          * a negative integer when not found.
          */
 
-        private int findFeatureIndex( NWMProfile profile,
+        private int findFeatureIndex( NwmProfile profile,
                                       NetcdfFile netcdfFile,
                                       int featureId )
         {
@@ -1871,8 +1851,8 @@ class NWMTimeSeries implements Closeable
         /**
          * Read features and cache in instance or read from the cache. Allows us to
          * avoid multiple reads of same data.
-         * @param profile
-         * @param netcdfFile
+         * @param profile the profile
+         * @param netcdfFile the netCDF file
          * @return the raw 1D integer array of features, in original positions.
          * Performs safe publication of an internal map, assumes internal
          * caller, assumes that internal caller will not publish the map,
@@ -1880,7 +1860,7 @@ class NWMTimeSeries implements Closeable
          * @throws PreIngestException When timed out waiting on cache write.
          */
 
-        private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NWMProfile profile,
+        private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NwmProfile profile,
                                                                   NetcdfFile netcdfFile )
         {
             String netcdfFileName = netcdfFile.getLocation();
@@ -1900,11 +1880,11 @@ class NWMTimeSeries implements Closeable
                     if ( timedOut )
                     {
                         throw new PreIngestException(
-                                                      "While reading "
-                                                      + netcdfFileName,
-                                                      new TimeoutException(
-                                                                            "Timed out waiting for feature cache after "
-                                                                            + timeout ) );
+                                "While reading "
+                                + netcdfFileName,
+                                new TimeoutException(
+                                        "Timed out waiting for feature cache after "
+                                        + timeout ) );
                     }
                 }
                 catch ( InterruptedException ie )
@@ -1923,6 +1903,7 @@ class NWMTimeSeries implements Closeable
 
             String featureVariableName = profile.getFeatureVariable();
             Variable featureVariable = netcdfFile.findVariable( featureVariableName );
+            assert featureVariable != null;
             // Must find the location of the variable.
             // Might be nice to assume these are sorted to do a binary search,
             // but I think it is an unsafe assumption that the values are sorted
@@ -1932,7 +1913,7 @@ class NWMTimeSeries implements Closeable
             {
                 LOGGER.debug( "Reading features from {}", netcdfFileName );
                 Array allFeatures = featureVariable.read();
-                int[] unsafeFeatures = (int[]) allFeatures.get1DJavaArray( DataType.INT );
+                int[] unsafeFeatures = ( int[] ) allFeatures.get1DJavaArray( DataType.INT );
 
                 if ( unsafeFeatures == null )
                 {
@@ -1980,11 +1961,11 @@ class NWMTimeSeries implements Closeable
                         if ( timedOut )
                         {
                             throw new PreIngestException(
-                                                          "While reading "
-                                                          + netcdfFileName,
-                                                          new TimeoutException(
-                                                                                "Timed out waiting for feature cache after "
-                                                                                + timeout ) );
+                                    "While reading "
+                                    + netcdfFileName,
+                                    new TimeoutException(
+                                            "Timed out waiting for feature cache after "
+                                            + timeout ) );
                         }
                     }
                     catch ( InterruptedException ie )
@@ -2000,10 +1981,10 @@ class NWMTimeSeries implements Closeable
                     if ( !Arrays.equals( features, existingFeatures ) )
                     {
                         throw new PreIngestException(
-                                                      "Non-homogeneous NWM data found. The features from "
-                                                      + netcdfFile.getLocation()
-                                                      + " do not match those found in a previously read "
-                                                      + "netCDF resource in the same NWM timeseries." );
+                                "Non-homogeneous NWM data found. The features from "
+                                + netcdfFile.getLocation()
+                                + " do not match those found in a previously read "
+                                + "netCDF resource in the same NWM timeseries." );
                     }
                     LOGGER.debug( "Finished comparing {} to the features cache",
                                   netcdfFileName );
@@ -2023,35 +2004,16 @@ class NWMTimeSeries implements Closeable
         }
     }
 
-
     /**
-     * An NWM feature id with its index (position) in this NWMTimeSeries.
+     * @param featureId the feature identifier
+     * @param index the index
      */
-
-    private static final class FeatureIdWithItsIndex
+    private record FeatureIdWithItsIndex( int featureId, int index )
     {
-        private final int featureId;
-        private final int index;
-
-        FeatureIdWithItsIndex( int featureId, int index )
-        {
-            this.featureId = featureId;
-            this.index = index;
-        }
-
-        int getFeatureId()
-        {
-            return this.featureId;
-        }
-
-        int getIndex()
-        {
-            return this.index;
-        }
-
         boolean found()
         {
             return this.index >= 0;
         }
     }
+
 }

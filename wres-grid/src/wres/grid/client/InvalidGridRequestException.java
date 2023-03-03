@@ -1,21 +1,23 @@
 package wres.grid.client;
 
+import java.io.Serial;
+
 /**
  * Request must contain one or more paths.
  */
 
-public class InvalidRequestException extends RuntimeException
+public class InvalidGridRequestException extends RuntimeException
 {
-
+    @Serial
     private static final long serialVersionUID = 2892982359002079765L;
 
     /**
-     * Constructs an {@link InvalidRequestException} with the specified message.
+     * Constructs an {@link InvalidGridRequestException} with the specified message.
      * 
      * @param message the message.
      */
 
-    public InvalidRequestException( String message )
+    public InvalidGridRequestException( String message )
     {
         super(message );
     }

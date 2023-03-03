@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
+
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.PairConfig;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -23,6 +24,8 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
+import wres.grid.client.GridRequest;
+import wres.grid.client.GridReader;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
@@ -31,28 +34,25 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.grid.client.Fetcher;
-import wres.grid.client.Request;
-import wres.grid.client.SingleValuedTimeSeriesResponse;
 
 /**
- * A reader of time-series data from a gridded Netcdf source of National Water Model (NWM) forecasts, simulations or
+ * <p>A reader of time-series data from a gridded Netcdf source of National Water Model (NWM) forecasts, simulations or
  * analyses.
- * 
+ *
  * <p>Implementation notes:
- * 
- * This reader currently relies on the gridded reading API, notably {@link Fetcher}, which does not allow for a 
+ *
+ * <p>This reader currently relies on the gridded reading API, notably {@link GridReader}, which does not allow for a
  * streamed input. Thus, {@link #read(DataSource, InputStream)} is a facade on {@link #read(DataSource)}. 
- * 
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
  */
 
-public class NwmGriddedReader implements TimeSeriesReader
+public class NwmGridReader implements TimeSeriesReader
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( NwmGriddedReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NwmGridReader.class );
 
     /** The maximum number of attempts to open an netcdf source, which may be a remote source, but not served via a web 
      * service API. */
@@ -71,9 +71,9 @@ public class NwmGriddedReader implements TimeSeriesReader
      * @throws NullPointerException if either input is null
      */
 
-    public static NwmGriddedReader of( PairConfig pairConfig, GriddedFeatures.Builder features )
+    public static NwmGridReader of( PairConfig pairConfig, GriddedFeatures.Builder features )
     {
-        return new NwmGriddedReader( pairConfig, features );
+        return new NwmGridReader( pairConfig, features );
     }
 
     @Override
@@ -180,18 +180,16 @@ public class NwmGriddedReader implements TimeSeriesReader
         // Time window constrained only by the pair declaration
         TimeWindowOuter timeWindow = TimeWindowGenerator.getOneBigTimeWindow( this.getPairConfig() );
 
-        Request request = Fetcher.prepareRequest( List.of( pathString ),
-                                                  featureKeys,
-                                                  dataSource.getVariable()
-                                                            .getValue(),
-                                                  timeWindow,
-                                                  ConfigHelper.isForecast( dataSourceConfig ),
-                                                  timeScale );
+        GridRequest request = new GridRequest( List.of( pathString ),
+                                               featureKeys,
+                                               dataSource.getVariable()
+                                                         .getValue(),
+                                               timeWindow,
+                                               ConfigHelper.isForecast( dataSourceConfig ),
+                                               timeScale );
 
-        // Acquire the response and return the time-series
-        SingleValuedTimeSeriesResponse response = Fetcher.getSingleValuedTimeSeries( request );
-
-        Map<Feature, Stream<TimeSeries<Double>>> timeSeries = response.getTimeSeries();
+        // Acquire the time-series
+        Map<Feature, Stream<TimeSeries<Double>>> timeSeries = GridReader.getSingleValuedTimeSeries( request );
 
         // Concatenate the per-feature streams
         return timeSeries.values()
@@ -218,7 +216,7 @@ public class NwmGriddedReader implements TimeSeriesReader
      * @throws IllegalArgumentException if the features cache does not include any gridded features
      */
 
-    private NwmGriddedReader( PairConfig pairConfig, GriddedFeatures.Builder features )
+    private NwmGridReader( PairConfig pairConfig, GriddedFeatures.Builder features )
     {
         Objects.requireNonNull( pairConfig );
         Objects.requireNonNull( features );
@@ -226,5 +224,4 @@ public class NwmGriddedReader implements TimeSeriesReader
         this.pairConfig = pairConfig;
         this.features = features;
     }
-
 }
