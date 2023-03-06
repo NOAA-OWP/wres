@@ -1,10 +1,10 @@
+#!/bin/bash
 
-#
-# Untars the package implied by the argument, $1.tgz, It then removes outputs from the 
-# previous systests directory and points the symbolic link to this new directory.
-# Only argument must be the name of the .zip file without .zip extension. That file is 
-# assumed to be in the wres-cron home directory.  
-#
+# This installs a system testing .zip under /wres_share/releases and sets the systests
+# symbolic link to point to it.  That link always points to the most recently installed
+# version.  This used to do more, such as removing evaluation outputs from the previous
+# systests, but those tasks are now handled elsewhere.
+
 cd /wres_share/releases
 unzip ~/$1.zip
 
