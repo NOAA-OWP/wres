@@ -35,7 +35,6 @@ import com.networknt.schema.ValidationMessage;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
-import wres.statistics.generated.TimeScale;
 
 /**
  * <p>Factory class for generating POJOs from a YAML-formatted declaration string that is consistent with the WRES 
@@ -84,25 +83,51 @@ public class DeclarationFactory
     /** Schema file name on the classpath. */
     private static final String SCHEMA = "schema.yml";
 
-    /** Root class for an evaluation declaration. */
+    /**
+     * Root class for an evaluation declaration.
+     * @param left the left data sources, required
+     * @param right the right data sources, required
+     * @param baseline the baseline data sources, optional
+     * @param features the features, optional
+     * @param featureService the feature service, optional
+     * @param referenceDates the reference times, optional
+     * @param referenceDatePools the reference time pools, optional
+     * @param validDates the valid times, optional
+     * @param validDatePools the valid time pools, optional
+     * @param leadTimes the lead times, optional
+     * @param leadTimePools the lead time pools, optional
+     * @param timeScale the desired timescale, optional
+     * @param probabilityThresholds the probability thresholds, optional
+     * @param valueThresholds the value thresholds, optional
+     * @param classifierThresholds the probability classifier thresholds, optional
+     * @param metrics the metrics, optional
+     */
     @RecordBuilder
-    record EvaluationDeclaration(
-            @JsonDeserialize( using = DatasetDeserializer.class ) @JsonProperty( "left" ) Dataset left,
-            @JsonDeserialize( using = DatasetDeserializer.class ) @JsonProperty( "right" ) Dataset right,
-            @JsonDeserialize( using = BaselineDeserializer.class ) @JsonProperty( "baseline" ) BaselineDataset baseline,
-            @JsonDeserialize( using = FeaturesDeserializer.class ) @JsonProperty( "features" ) Set<GeometryTuple> features,
-            @JsonProperty( "feature_service" ) FeatureService featureService,
-            @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
-            @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
-            @JsonProperty( "valid_dates" ) TimeInterval validDates,
-            @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
-            @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
-            @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
-            @JsonDeserialize( using = TimeScaleDeserializer.class ) @JsonProperty( "time_scale" ) TimeScale timeScale,
-            @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
-            @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
-            @JsonDeserialize( using = ThresholdsDeserializer.class ) @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-            @JsonDeserialize( using = MetricsDeserializer.class ) @JsonProperty( "metrics" ) List<Metric> metrics )
+    record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializer.class )
+                                  @JsonProperty( "left" ) Dataset left,
+                                  @JsonDeserialize( using = DatasetDeserializer.class )
+                                  @JsonProperty( "right" ) Dataset right,
+                                  @JsonDeserialize( using = BaselineDeserializer.class )
+                                  @JsonProperty( "baseline" ) BaselineDataset baseline,
+                                  @JsonDeserialize( using = FeaturesDeserializer.class )
+                                  @JsonProperty( "features" ) Set<GeometryTuple> features,
+                                  @JsonProperty( "feature_service" ) FeatureService featureService,
+                                  @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
+                                  @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
+                                  @JsonProperty( "valid_dates" ) TimeInterval validDates,
+                                  @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
+                                  @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
+                                  @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
+                                  @JsonDeserialize( using = TimeScaleDeserializer.class )
+                                  @JsonProperty( "time_scale" ) TimeScale timeScale,
+                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
+                                  @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
+                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
+                                  @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
+                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
+                                  @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
+                                  @JsonDeserialize( using = MetricsDeserializer.class )
+                                  @JsonProperty( "metrics" ) List<Metric> metrics )
     {
         // Set default metrics
         EvaluationDeclaration
