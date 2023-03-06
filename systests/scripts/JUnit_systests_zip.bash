@@ -41,18 +41,18 @@ then
     fi
 fi
 
-# If it gets past the locks, then the first thing we'll do is purge log files older than 30 days.
+# If it gets past the locks, then the first thing we'll do is purge log files older than 7 days.
 echo "Purging old log files from $LOGDIR."                                                    2>&1 | /usr/bin/tee --append $LOGFILE
-/usr/bin/find -P $LOGDIR -maxdepth 1 -name "JUnit_systestsLog_*" -mtime +7 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+/usr/bin/find -P $LOGDIR -name "JUnit_systestsLog_*" -mtime +2 -exec rm -v {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 echo "Purging old evaluation output directories across all system test revisions."            2>&1 | /usr/bin/tee --append $LOGFILE
-/usr/bin/find -P /wres_share/releases -name "wres_evaluation_*" -mtime +7 -exec rm -rv {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
+/usr/bin/find -P /wres_share/releases -name "wres_evaluation_*" -mtime +2 -exec rm -rv {} \;  2>&1 | /usr/bin/tee --append $LOGFILE
 
 # =========================================================
 # Prepare for the system test execution.
 
 # Establish the lock file.
 touch $TESTINGJ_LOCK_FILE 
-trap "rm -fv $TESTINGJ_LOCK_FILEi | /usr/bin/tee --append $LOGFILE; echo 'Lock file removed with script exit. Queue file content now:'| /usr/bin/tee --append $LOGFILE ; cat $PENDINGQUEUEJ | /usr/bin/tee --append $LOGFILE" EXIT TERM INT KILL 
+trap "rm -fv $TESTINGJ_LOCK_FILE | /usr/bin/tee --append $LOGFILE; echo 'Lock file removed with script exit. Queue file content now:'| /usr/bin/tee --append $LOGFILE ; cat $PENDINGQUEUEJ | /usr/bin/tee --append $LOGFILE" EXIT TERM INT KILL 
 
 # Look at the queue for revisions to test.
 if [ ! -s $PENDINGQUEUEJ ]

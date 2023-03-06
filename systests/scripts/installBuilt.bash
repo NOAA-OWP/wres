@@ -80,7 +80,7 @@ ls -l $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1
 trap "rm -fv $INSTALLING_LOCK_FILE >> $LOGFILE 2>&1; echo 'Install lock file removed with script exit.' >> $LOGFILE 2>&1 " EXIT TERM INT KILL
 
 # Purge log files older than 5 days.
-/usr/bin/find -P $RELEASES_DIR/logs/install -maxdepth 1 -name "installBuiltLog_*" -mtime +7 -exec rm -v {} \; >> $LOGFILE 2>&1
+/usr/bin/find -P $RELEASES_DIR/logs/install -name "installBuiltLog_*" -mtime +2 -exec rm -v {} \; >> $LOGFILE 2>&1
 
 # Initialize some tracking variables.
 doSystests=no
@@ -312,7 +312,7 @@ then
     echo "install built file is $noZip" >> $LOGFILE 2>&1
     if [ "$INSTALL_Latest" = "yes" ]
     then
-        $RELEASES_DIR/install_scripts/installrls.fromzip.sh $latest_noZip >> $LOGFILE 2>&1
+        $RELEASES_DIR/install_scripts/installrls.fromzip.bash $latest_noZip >> $LOGFILE 2>&1
         mv -v $LATEST_ZIPFILE $ARCHIVE_DIR >> $LOGFILE 2>&1
         /usr/bin/chgrp -v wres $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
         chmod 775 $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
@@ -330,7 +330,7 @@ then
         echo "INSTALL_Systests = $INSTALL_Systests " >> $LOGFILE 2>&1
         if [ "$INSTALL_Systests" = "yes" ]
         then
-            $RELEASES_DIR/install_scripts/installsystests.fromzip.sh $systests_noZip >> $LOGFILE 2>&1
+            $RELEASES_DIR/install_scripts/installsystests.fromzip.bash $systests_noZip >> $LOGFILE 2>&1
             mv -v $SYSTESTS_ZIPFILE $SYSTESTS_ARCHIVE_DIR >> $LOGFILE 2>&1
             /usr/bin/chgrp -v wres $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1	
             chmod 775 $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1
