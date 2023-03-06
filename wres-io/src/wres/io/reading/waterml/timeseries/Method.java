@@ -2,51 +2,29 @@ package wres.io.reading.waterml.timeseries;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Objects;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A method.
+ * @param methodDescription the method description
+ * @param methodID the method ID
  */
-public class Method implements Serializable
+public record Method( String methodDescription,
+                      Integer methodID ) implements Serializable
 {
     @Serial
     private static final long serialVersionUID = 6026373155500052354L;
 
-    /** Method description. */
-    private String methodDescription;
-    /** Method ID. */
-    private Integer methodID;
-
-    /**
-     * @return the method description
-     */
-    public String getMethodDescription()
+    @Override
+    public String toString()
     {
-        return methodDescription;
-    }
-
-    /**
-     * Sets the method description.
-     * @param methodDescription the method description
-     */
-    public void setMethodDescription( String methodDescription )
-    {
-        this.methodDescription = methodDescription;
-    }
-
-    /**
-     * @return the method ID
-     */
-    public Integer getMethodID()
-    {
-        return methodID;
-    }
-
-    /**
-     * Sets the method ID.
-     * @param methodID the method ID
-     */
-    public void setMethodID( Integer methodID )
-    {
-        this.methodID = methodID;
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( "methodID", this.methodID() )
+                .append( "methodDescription",
+                         this.methodDescription )
+                .build();
     }
 }

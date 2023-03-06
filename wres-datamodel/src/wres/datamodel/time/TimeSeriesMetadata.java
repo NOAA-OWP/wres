@@ -17,10 +17,10 @@ import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Value object the stores the metadata associated with an {@link TimeSeries}. 
+ * <p>Value object the stores the metadata associated with an {@link TimeSeries}.
  *
- * TODO: currently the time-series metadata is inflexible in how it represents geospatial information that is common to
- * all events in the time-series. In practice, a time-series may have no common geospatial information (e.g., because
+ * <p>TODO: currently the time-series metadata is inflexible in how it represents geospatial information that is common
+ * to all events in the time-series. In practice, a time-series may have no common geospatial information (e.g., because
  * that information is modeled per-event, such as for an environmental tracer or a time-series of inundation extent) or
  * it may have more complex geospatial information than a {@link Feature}. See #96033 for some discussion. One 
  * option would be to add a nullable generic type. This would add flexibility at the expense of additional 

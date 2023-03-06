@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -339,7 +338,7 @@ public class NwisReader implements TimeSeriesReader
                            if ( Objects.nonNull( inputStream ) )
                            {
                                return WATERML_READER.read( dataSource, inputStream )
-                                                    .collect( Collectors.toList() ); // Terminal
+                                                    .toList(); // Terminal
                            }
 
                            return List.of();
@@ -351,8 +350,8 @@ public class NwisReader implements TimeSeriesReader
      * Get a URI for a given date range and feature.
      *
      * <p>Expecting a USGS URI like this:
-     * https://nwis.waterservices.usgs.gov/nwis/iv/</p>
-     * 
+     * <a href="https://nwis.waterservices.usgs.gov/nwis/iv/">https://nwis.waterservices.usgs.gov/nwis/iv/</a></p>
+     *
      * @param baseUri the base uri associated with this source
      * @param dataSource the data source for which to create a URI
      * @param range the range of dates (from left to right)
