@@ -7,7 +7,7 @@ set -e
 CON_HOSTNAME=`hostname`
 
 # Replace the environment variables with the shell variables of the same name
-MODIFIED_OPTS=$(echo $JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g' | sed 's/$JFR_FILENAME/'"$JFR_FILENAME"'/g')
+MODIFIED_OPTS=$(echo $JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g')
 
 # Export them
 export JAVA_OPTS=$MODIFIED_OPTS
