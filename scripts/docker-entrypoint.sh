@@ -12,11 +12,10 @@ set -e
 # For gradle >= v6.9.2, the application start script will not perform command substitution or resolve environment
 # variables at container runtime, so that must be done here.
 CON_HOSTNAME=`hostname`
-JFR_FILENAME=`date +%Y%m%dT%H%M%S.%NZ --utc`.jfr
 
 # Replace the environment variables with the shell variables of the same name
-MODIFIED_OPTS=$(echo $JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g' | sed 's/$JFR_FILENAME/'"$JFR_FILENAME"'/g')
-MODIFIED_INNER_OPTS=$(echo $INNER_JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g' | sed 's/$JFR_FILENAME/'"$JFR_FILENAME"'/g')
+MODIFIED_OPTS=$(echo $JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g')
+MODIFIED_INNER_OPTS=$(echo $INNER_JAVA_OPTS | sed 's/$CON_HOSTNAME/'"$CON_HOSTNAME"'/g')
 
 # Export them
 export JAVA_OPTS=$MODIFIED_OPTS
