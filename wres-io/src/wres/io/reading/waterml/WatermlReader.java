@@ -15,12 +15,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.utils.IOUtils;
@@ -48,6 +50,7 @@ import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.waterml.timeseries.GeographicLocation;
 import wres.io.reading.waterml.timeseries.Method;
+import wres.io.reading.waterml.timeseries.Qualifier;
 import wres.io.reading.waterml.timeseries.SiteCode;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
@@ -329,12 +332,12 @@ public class WatermlReader implements TimeSeriesReader
 
         if ( siteCodesFound.size() != 1 )
         {
-            if ( LOGGER.isDebugEnabled() )
+            if ( LOGGER.isWarnEnabled() )
             {
-                LOGGER.debug( "Expected exactly one site code, but found {} for timeseries {} in source {}.",
-                              siteCodesFound.size(),
-                              timeSeries,
-                              dataSource.getUri() );
+                LOGGER.warn( "Expected exactly one site code, but found {} for timeseries {} in source {}.",
+                             siteCodesFound.size(),
+                             timeSeries,
+                             dataSource.getUri() );
             }
 
             return Collections.emptyList();
@@ -348,24 +351,66 @@ public class WatermlReader implements TimeSeriesReader
         // Attempt to guess the time-scale from the URI
         TimeScaleOuter timeScale = ReaderUtilities.getTimeScaleFromUri( dataSource.getUri() );
 
-        // #104572
-        int countOfTracesFound = this.getCountOfTracesWithData( timeSeries.getValues() );
-
-        if ( countOfTracesFound > 1 )
+        // #104572, #113397: warn about duplicates, but admit them
+        int dupCount = this.getCountOfTracesWithData( timeSeries.getValues() );
+        if ( dupCount > 1 )
         {
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( "Skipping site {} because multiple timeseries were discovered for variable {} from URI "
-                             + "{}.",
-                             featureName,
-                             variableName,
-                             dataSource.getUri() );
-            }
-
-            return Collections.emptyList();
+            this.logDuplicates( dupCount, featureName, variableName, dataSource, timeSeries );
         }
 
         return this.transform( dataSource, timeSeries, featureKey, variableName, unitCode, timeScale );
+    }
+
+    /**
+     * Logs duplicate time-series.
+     * @param dupCount the number of duplicates
+     * @param featureName the feature name
+     * @param variableName the variable name
+     * @param dataSource the data source
+     * @param timeSeries the time-series
+     */
+    private void logDuplicates( int dupCount,
+                                String featureName,
+                                String variableName,
+                                DataSource dataSource,
+                                wres.io.reading.waterml.timeseries.TimeSeries timeSeries )
+    {
+        if ( LOGGER.isWarnEnabled() )
+        {
+            Set<Method> methods = Arrays.stream( timeSeries.getValues() )
+                                        .flatMap( next -> Arrays.stream( next.getMethod() ) )
+                                        .collect( Collectors.toSet() );
+            Set<Qualifier> qualifiers = Arrays.stream( timeSeries.getValues() )
+                                              .flatMap( next -> Arrays.stream( next.getQualifier() ) )
+                                              .collect( Collectors.toSet() );
+            Set<String> censorCodes = Arrays.stream( timeSeries.getValues() )
+                                            .flatMap( next -> Arrays.stream( next.getCensorCode() ) )
+                                            .collect( Collectors.toSet() );
+
+            Set<String> sources = Arrays.stream( timeSeries.getValues() )
+                                        .flatMap( next -> Arrays.stream( next.getSource() ) )
+                                        .collect( Collectors.toSet() );
+
+            Set<String> qcLevel = Arrays.stream( timeSeries.getValues() )
+                                        .flatMap( next -> Arrays.stream( next.getQualityControlLevel() ) )
+                                        .collect( Collectors.toSet() );
+
+            LOGGER.warn( "Discovered {} duplicate time-series for site {} and variable {} from URI {}. Duplication "
+                         + "means that several time-series were encountered that had overlapping valid times and "
+                         + "different metadata. Encountered the following metadata across the duplicate time-series: "
+                         + "the method qualifiers were {}; the general qualifiers were {}; the censor codes were {}; "
+                         + "the sources were {}; and the quality control levels were {}. All of the duplicate time-"
+                         + "series were admitted. If this behavior is undesired, filtering may be possible.",
+                         dupCount,
+                         featureName,
+                         variableName,
+                         dataSource.getUri(),
+                         methods,
+                         qualifiers,
+                         censorCodes,
+                         sources,
+                         qcLevel );
+        }
     }
 
     /**
@@ -389,18 +434,6 @@ public class WatermlReader implements TimeSeriesReader
             if ( valueSet.getValue().length == 0 )
             {
                 continue;
-            }
-
-            Method[] methods = valueSet.getMethod();
-
-            if ( Objects.nonNull( methods ) )
-            {
-                for ( Method method : methods )
-                {
-                    LOGGER.debug( "Found method id={} description='{}'.",
-                                  method.getMethodID(),
-                                  method.getMethodDescription() );
-                }
             }
 
             LOGGER.trace( "Jackson parsed these for site {} variable {}: {}.",
