@@ -57,7 +57,7 @@ then
     
     # Check the age of the lock file.  
     fileStatus=`/bin/stat $INSTALLING_LOCK_FILE | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
-    lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
+    lastHours=`/wres_share/releases/install_scripts/test_date_time.py "$fileStatus"`
     echo "A release is currently being installed." 2>&1 >> $LOGFILE 2>&1
     if [ $lastHours -gt 12 ]
     then 
@@ -312,7 +312,7 @@ then
     echo "install built file is $noZip" >> $LOGFILE 2>&1
     if [ "$INSTALL_Latest" = "yes" ]
     then
-        $RELEASES_DIR/install_scripts/installrls.fromzip.bash $latest_noZip >> $LOGFILE 2>&1
+        $RELEASES_DIR/install_scripts/install_rls_from_zip.bash $latest_noZip >> $LOGFILE 2>&1
         mv -v $LATEST_ZIPFILE $ARCHIVE_DIR >> $LOGFILE 2>&1
         /usr/bin/chgrp -v wres $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
         chmod 775 $ARCHIVE_DIR/$LATEST_ZIPFILE >> $LOGFILE 2>&1
@@ -330,7 +330,7 @@ then
         echo "INSTALL_Systests = $INSTALL_Systests " >> $LOGFILE 2>&1
         if [ "$INSTALL_Systests" = "yes" ]
         then
-            $RELEASES_DIR/install_scripts/installsystests.fromzip.bash $systests_noZip >> $LOGFILE 2>&1
+            $RELEASES_DIR/install_scripts/install_systests_from_zip.bash $systests_noZip >> $LOGFILE 2>&1
             mv -v $SYSTESTS_ZIPFILE $SYSTESTS_ARCHIVE_DIR >> $LOGFILE 2>&1
             /usr/bin/chgrp -v wres $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1	
             chmod 775 $SYSTESTS_ARCHIVE_DIR/$SYSTESTS_ZIPFILE >> $LOGFILE 2>&1

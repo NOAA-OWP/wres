@@ -61,7 +61,7 @@ then
 	if [ -s ${JUnitLog_FILENAME_BaseZip}.xml ]
 	then
 	# Parse the token to the XML file
-		/wres_share/releases/install_scripts/parseToken.py ${JUnitLog_FILENAME_BaseZip}.xml >> $outputFile
+		/wres_share/releases/install_scripts/parse_token.py ${JUnitLog_FILENAME_BaseZip}.xml >> $outputFile
 	fi
 fi
 # get graphicsLog token
@@ -72,7 +72,7 @@ then
 	if [ -s ${graphicsLog_FILENAME_BaseZip}.xml ]
 	then
 	# Parse the token to the XML file
-		/wres_share/releases/install_scripts/parseToken.py ${graphicsLog_FILENAME_BaseZip}.xml >> $outputFile
+		/wres_share/releases/install_scripts/parse_token.py ${graphicsLog_FILENAME_BaseZip}.xml >> $outputFile
 	fi
 fi
 echo "</uploads>" >> $outputFile
