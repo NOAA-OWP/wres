@@ -9,7 +9,7 @@ cd /wres_share/releases
 unzip ~/$1.zip
 
 # Note that we used to remove the evaluation outputs here.  Instead, that is now handled
-# through a find command using -mtime inside of the top level installBuilt.bash script.
+# through a find command using -mtime inside of the top level install_build.bash script.
 
 #Remove the existing link and point to the newly installed revision.
 rm systests

@@ -25,7 +25,7 @@ if [ -f $TESTINGJ_LOCK_FILE ]
 then
     ls -l $TESTINGJ_LOCK_FILE 2>&1 | /usr/bin/tee --append $LOGFILE
     fileStatus=`/bin/stat $TESTINGJ_LOCK_FILE | grep Change | cut -d'.' -f1 | gawk '{print($2,$3)}'`
-    lastHours=`/wres_share/releases/install_scripts/testDateTime.py "$fileStatus"`
+    lastHours=`/wres_share/releases/install_scripts/test_date_time.py "$fileStatus"`
     echo "The lock file, $TESTINGJ_LOCK_FILE, was created/changed $lastHours ago at $fileStatus." 2>&1 | /usr/bin/tee --append $LOGFILE
     if [ $lastHours -gt 2 ]
     then    # that testingJ.txt lock file had lasted for more than a hour, let's notice the developers by email 
@@ -333,7 +333,7 @@ then
     echo "</notes>" >> redmineTempFile.xml
     # pass the log files and output XML file to below script, it will zip the log files, get their tokens, append all
     # neccessary XML element tags, then upload the zip files and update the Redmine ticket #89538
-    $WRES_DIRJ/install_scripts/getPostFileToken.bash ${LOGFILE} ${LOGFILE_GRAPHICS} redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+    $WRES_DIRJ/install_scripts/get_and_post_file_tokens.bash ${LOGFILE} ${LOGFILE_GRAPHICS} redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
 
     rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 
