@@ -1,8 +1,13 @@
 package wres.tasker;
 
 import java.util.Set;
+
+import org.glassfish.jersey.message.DeflateEncoder;
+import org.glassfish.jersey.message.GZipEncoder;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.filter.EncodingFilter;
+
 import jakarta.ws.rs.ApplicationPath;
-import jakarta.ws.rs.core.Application;
 
 /**
  * This is where JAX-RS meets the servlet specification or something.
@@ -11,16 +16,19 @@ import jakarta.ws.rs.core.Application;
  */
 
 @ApplicationPath( "/" )
-public class JaxRSApplication extends Application
+public class JaxRSApplication extends ResourceConfig
 {
-    @Override
-    public Set<Class<?>> getClasses()
+    public JaxRSApplication()
     {
-        return Set.of( WresJob.class,
-                       WresJobResult.class,
-                       WresJobStdout.class,
-                       WresJobStderr.class,
-                       WresJobOutput.class,
-                       WresJobInput.class );
+        this.register( WresJob.class );
+        this.register( WresJobResult.class );
+        this.register( WresJobStdout.class );
+        this.register( WresJobStderr.class );
+        this.register( WresJobInput.class );
+        this.register( WresJobOutput.class );
+        this.register( GZipEncoder.class );
+        this.register( DeflateEncoder.class );
+        
+        EncodingFilter.enableFor(this, GZipEncoder.class);
     }
 }
