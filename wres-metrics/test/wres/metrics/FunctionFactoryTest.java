@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 
 /**
  * Tests the {@link FunctionFactory}.

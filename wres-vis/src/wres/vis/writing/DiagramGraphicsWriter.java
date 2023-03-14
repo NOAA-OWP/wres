@@ -22,7 +22,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;

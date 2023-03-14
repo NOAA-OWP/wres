@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;

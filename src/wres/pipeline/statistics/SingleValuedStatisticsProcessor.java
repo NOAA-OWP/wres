@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.SampleDataGroup;
+import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;

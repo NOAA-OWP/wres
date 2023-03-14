@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.metrics.MetricConstants.MetricDimension;
+import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;

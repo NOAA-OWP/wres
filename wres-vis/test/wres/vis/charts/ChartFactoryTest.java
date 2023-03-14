@@ -14,7 +14,7 @@ import org.jfree.data.xy.XYDataset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

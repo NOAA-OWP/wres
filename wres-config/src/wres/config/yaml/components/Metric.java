@@ -3,6 +3,7 @@ package wres.config.yaml.components;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
+import wres.config.MetricConstants;
 import wres.statistics.generated.MetricName;
 
 /**
@@ -11,4 +12,4 @@ import wres.statistics.generated.MetricName;
  * @param parameters the metric parameters
  */
 @RecordBuilder
-public record Metric( @JsonProperty( "name" ) MetricName name, MetricParameters parameters ) {}
+public record Metric( @JsonProperty( "name" ) MetricConstants name, MetricParameters parameters ) {}

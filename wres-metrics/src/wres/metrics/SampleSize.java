@@ -5,8 +5,8 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

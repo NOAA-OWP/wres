@@ -13,7 +13,7 @@ import com.google.protobuf.Timestamp;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;

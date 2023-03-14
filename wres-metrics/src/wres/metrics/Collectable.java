@@ -1,6 +1,6 @@
 package wres.metrics;
 
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;

@@ -18,8 +18,8 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricGroup;
 
 /**
  * A factory class for constructing elementary functions.

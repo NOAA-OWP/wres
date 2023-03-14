@@ -16,13 +16,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.config.MetricConstants.SampleDataGroup;
+import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;

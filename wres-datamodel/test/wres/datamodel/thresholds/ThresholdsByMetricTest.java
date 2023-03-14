@@ -13,7 +13,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;

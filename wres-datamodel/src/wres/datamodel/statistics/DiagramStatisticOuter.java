@@ -13,8 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricDimension;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricDimension;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic;

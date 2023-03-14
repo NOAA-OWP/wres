@@ -15,8 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.pools.Pool;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.MetricCalculationException;

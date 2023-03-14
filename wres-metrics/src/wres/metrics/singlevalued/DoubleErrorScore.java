@@ -12,7 +12,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.DoubleErrorFunction;
 import wres.metrics.FunctionFactory;

@@ -16,10 +16,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
-import wres.statistics.generated.MetricName;
 
 /**
  * Custom deserializer for metrics that are composed of a plain metric name or a name and other attributes.
@@ -85,7 +85,7 @@ public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
             else
             {
                 String nameString = DeclarationFactory.getEnumFriendlyName( nextNode );
-                MetricName metricName = MetricName.valueOf( nameString );
+                MetricConstants metricName = MetricConstants.valueOf( nameString );
                 nextMetric = new Metric( metricName, null );
                 LOGGER.debug( "Discovered a metric without parameters, {}. ", nextMetric.name() );
             }
@@ -108,7 +108,7 @@ public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
     {
         JsonNode nameNode = node.get( "name" );
         String enumName = DeclarationFactory.getEnumFriendlyName( nameNode );
-        MetricName metricName = MetricName.valueOf( enumName );
+        MetricConstants metricName = MetricConstants.valueOf( enumName );
         MetricParameters parameters = this.getMetricParameters( node, reader );
         return new Metric( metricName, parameters );
     }
@@ -125,7 +125,7 @@ public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
     {
         MetricParameters parameters = null;
 
-        if( node.size() > 1 )
+        if ( node.size() > 1 )
         {
             parameters = reader.readValue( node, MetricParameters.class );
         }

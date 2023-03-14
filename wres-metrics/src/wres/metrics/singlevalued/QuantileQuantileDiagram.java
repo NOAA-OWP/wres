@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.metrics.Diagram;

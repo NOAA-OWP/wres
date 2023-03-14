@@ -1,7 +1,5 @@
 package wres.tasker;
 
-import java.util.Set;
-
 import org.glassfish.jersey.message.DeflateEncoder;
 import org.glassfish.jersey.message.GZipEncoder;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -28,7 +26,7 @@ public class JaxRSApplication extends ResourceConfig
         this.register( WresJobOutput.class );
         this.register( GZipEncoder.class );
         this.register( DeflateEncoder.class );
-        
-        EncodingFilter.enableFor(this, GZipEncoder.class);
+
+        EncodingFilter.enableFor( this, GZipEncoder.class );
     }
 }

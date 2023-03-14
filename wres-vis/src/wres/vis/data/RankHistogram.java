@@ -7,7 +7,7 @@ import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.metrics.MetricConstants.MetricDimension;
+import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 
 /**

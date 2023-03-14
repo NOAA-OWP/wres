@@ -2,7 +2,7 @@ package wres.datamodel.statistics;
 
 import java.util.Set;
 
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 
 /**
