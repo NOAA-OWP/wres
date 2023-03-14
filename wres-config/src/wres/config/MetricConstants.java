@@ -1,9 +1,8 @@
-package wres.datamodel.metrics;
+package wres.config;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -11,7 +10,7 @@ import java.util.stream.Collectors;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DiagramStatistic;
-import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
 
 /**
@@ -23,7 +22,6 @@ import wres.statistics.generated.BoxplotStatistic;
 
 public enum MetricConstants
 {
-
     /** Fractional bias or relative mean error. */
     BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
@@ -321,27 +319,14 @@ public enum MetricConstants
     private final MetricConstants parent;
 
     /**
-     * Default constructor
-     */
-
-    private MetricConstants()
-    {
-        this.inGroups = new SampleDataGroup[0];
-        this.outGroup = null;
-        this.metricGroups = new MetricGroup[0];
-        this.isSkillMetric = false;
-        this.parent = null;
-    }
-
-    /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
      * 
-     * @param inputGroup the input group
-     * @param outputGroup the output group
+     * @param inGroup the input group
+     * @param outGroup the output group
      * @param isSkillMetric is true if the metric is a skill metric
      */
 
-    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
+    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
     {
         this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, null );
     }
@@ -349,12 +334,12 @@ public enum MetricConstants
     /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
      * 
-     * @param inputGroup the input group
-     * @param outputGroup the output group
+     * @param inGroup the input group
+     * @param outGroup the output group
      * @param parent the parent metric
      */
 
-    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricConstants parent )
+    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricConstants parent )
     {
         this( new SampleDataGroup[] { inGroup }, outGroup, false, parent );
     }
@@ -362,12 +347,12 @@ public enum MetricConstants
     /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
      * 
-     * @param inputGroup the input group
-     * @param outputGroup the output group
+     * @param inGroup the input group
+     * @param outGroup the output group
      * @param metricGroup the metric group
      */
 
-    private MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
+    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
         this( new SampleDataGroup[] { inGroup }, outGroup, false, null, metricGroup );
     }
@@ -381,7 +366,7 @@ public enum MetricConstants
      * @param metricGroup the metric group
      */
 
-    private MetricConstants( SampleDataGroup[] inGroups,
+    MetricConstants( SampleDataGroup[] inGroups,
                              StatisticType outGroup,
                              boolean isSkillMetric,
                              MetricConstants parent,
@@ -396,11 +381,11 @@ public enum MetricConstants
 
     /**
      * Construct with a varargs of {@link MetricGroup}.
-     * 
+     *
      * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
      */
 
-    private MetricConstants( MetricGroup... decGroup )
+    MetricConstants( MetricGroup... decGroup )
     {
         this.metricGroups = decGroup;
         this.inGroups = null;
@@ -421,7 +406,7 @@ public enum MetricConstants
     {
         Objects.requireNonNull( inGroup );
 
-        return Arrays.asList( this.inGroups ).contains( inGroup );
+        return Objects.nonNull( this.inGroups ) && Arrays.asList( this.inGroups ).contains( inGroup );
     }
 
     /**
@@ -690,7 +675,7 @@ public enum MetricConstants
 
         public static Set<SampleDataGroup> set()
         {
-            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( SampleDataGroup.values() ) ) );
+            return Set.of( SampleDataGroup.values() );
         }
 
     }
@@ -721,7 +706,7 @@ public enum MetricConstants
         BOXPLOT_PER_POOL,
 
         /**
-         * Metrics that produce a {@link DurationDiagramStatisticOuter}.
+         * Metrics that produce a {@link DurationDiagramStatistic}.
          */
 
         DURATION_DIAGRAM,
@@ -771,7 +756,7 @@ public enum MetricConstants
 
         public static Set<StatisticType> set()
         {
-            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( StatisticType.values() ) ) );
+            return Set.of( StatisticType.values() );
         }
 
     }

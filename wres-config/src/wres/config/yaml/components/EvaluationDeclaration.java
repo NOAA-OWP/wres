@@ -10,7 +10,10 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.deserializers.BaselineDeserializer;
 import wres.config.yaml.deserializers.DatasetDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
@@ -23,7 +26,6 @@ import wres.config.yaml.deserializers.SpatialMaskDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.config.yaml.deserializers.TimeScaleDeserializer;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 
 /**
@@ -93,13 +95,17 @@ public record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializ
                                      @JsonDeserialize( using = FormatsDeserializer.class )
                                      @JsonProperty( "output_formats" ) Formats formats )
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
+
     // Set default values
     public EvaluationDeclaration
     {
         if ( Objects.isNull( metrics ) )
         {
-            // Undefined is the sentinel for "all valid"
-            metrics = List.of( new Metric( MetricName.UNDEFINED, null ) );
+            LOGGER.debug( "No metrics were declared, assuming \"all valid\" metrics are required." );
+
+            metrics = List.of();
         }
 
         if ( Objects.isNull( rescaleLenience ) )

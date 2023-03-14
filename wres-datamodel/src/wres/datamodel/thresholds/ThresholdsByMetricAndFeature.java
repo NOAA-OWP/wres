@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.Immutable;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricsConfig;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 

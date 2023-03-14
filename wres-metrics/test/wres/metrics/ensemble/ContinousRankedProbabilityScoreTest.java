@@ -15,8 +15,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.Ensemble;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;

@@ -383,6 +383,7 @@ public class DeclarationFactory
                                         .filter( next -> Objects.nonNull( next.parameters() ) && !next.parameters()
                                                                                                       .graphics() )
                                         .map( Metric::name )
+                                        .map( next -> MetricName.valueOf( next.name() ) )
                                         .toList();
 
         LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",

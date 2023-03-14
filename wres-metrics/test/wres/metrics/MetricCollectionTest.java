@@ -22,7 +22,7 @@ import org.mockito.Mockito;
 
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.config.MetricConstants.StatisticType;
 
 /**
  * An immutable store of statistics.

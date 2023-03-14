@@ -30,7 +30,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;

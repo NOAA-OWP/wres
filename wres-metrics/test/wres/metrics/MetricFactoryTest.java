@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Objects;
 import org.junit.Test;
 
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.metrics.categorical.EquitableThreatScore;
 import wres.metrics.categorical.PeirceSkillScore;
 import wres.metrics.categorical.ProbabilityOfDetection;

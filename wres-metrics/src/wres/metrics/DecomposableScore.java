@@ -2,7 +2,7 @@ package wres.metrics;
 
 import java.util.Objects;
 
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 

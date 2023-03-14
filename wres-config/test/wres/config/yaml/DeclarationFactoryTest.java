@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Features;
@@ -26,7 +27,6 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 
@@ -318,7 +318,7 @@ class DeclarationFactoryTest
                                        .valueThresholds( valueThresholds )
                                        .build();
         Metric first = MetricBuilder.builder()
-                                    .name( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
                                     .parameters( firstParameters )
                                     .build();
 
@@ -336,7 +336,7 @@ class DeclarationFactoryTest
                                        .build();
 
         Metric second = MetricBuilder.builder()
-                                     .name( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                     .name( MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
                                      .parameters( secondParameters )
                                      .build();
 
@@ -348,7 +348,7 @@ class DeclarationFactoryTest
                                        .summaryStatistics( summaryStatistics )
                                        .build();
         Metric third = MetricBuilder.builder()
-                                    .name( MetricName.TIME_TO_PEAK_ERROR )
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
                                     .parameters( thirdParameters )
                                     .build();
 

@@ -16,7 +16,7 @@ import org.junit.Test;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;

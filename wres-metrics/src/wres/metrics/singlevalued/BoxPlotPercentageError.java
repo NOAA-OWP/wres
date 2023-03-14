@@ -11,7 +11,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.metrics.Diagram;
 import wres.metrics.FunctionFactory;
 import wres.datamodel.Slicer;
-import wres.datamodel.metrics.MetricConstants;
+import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.statistics.generated.BoxplotMetric;

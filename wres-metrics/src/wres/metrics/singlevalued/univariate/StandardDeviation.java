@@ -6,8 +6,8 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.metrics.MetricConstants;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
+import wres.config.MetricConstants;
+import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;

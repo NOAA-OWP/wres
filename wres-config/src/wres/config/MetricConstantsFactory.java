@@ -1,4 +1,4 @@
-package wres.datamodel.metrics;
+package wres.config;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -11,23 +11,20 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.MetricConfigException;
-import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.datamodel.metrics.MetricConstants.MetricGroup;
-import wres.datamodel.metrics.MetricConstants.SampleDataGroup;
-import wres.datamodel.metrics.MetricConstants.StatisticType;
+import wres.config.MetricConstants.MetricGroup;
+import wres.config.MetricConstants.SampleDataGroup;
+import wres.config.MetricConstants.StatisticType;
 
 /**
  * Factory class for creating {@link MetricConstants} from project declaration.
@@ -254,9 +251,9 @@ public class MetricConstantsFactory
     }
 
     /**
-     * Returns the metric data input type from the {@link DatasourceType}.
+     * <p>Returns the metric data input type from the {@link DatasourceType}.
      * 
-     * TODO: make these enumerations match on name to reduce brittleness.
+     * <p>TODO: make these enumerations match on name to reduce brittleness.
      * 
      * @param dataSourceConfig the data source configuration
      * @return the metric input group
@@ -269,18 +266,15 @@ public class MetricConstantsFactory
         Objects.requireNonNull( dataSourceConfig );
         Objects.requireNonNull( dataSourceConfig.getType() );
 
-        switch ( dataSourceConfig.getType() )
-        {
-            case ENSEMBLE_FORECASTS:
-                return SampleDataGroup.ENSEMBLE;
-            case SINGLE_VALUED_FORECASTS:
-            case SIMULATIONS:
-                return SampleDataGroup.SINGLE_VALUED;
-            default:
-                throw new MetricConfigException( dataSourceConfig,
-                                                 "Unable to interpret the input type '" + dataSourceConfig.getType()
-                                                                   + "'." );
-        }
+        return switch ( dataSourceConfig.getType() )
+                {
+                    case ENSEMBLE_FORECASTS -> SampleDataGroup.ENSEMBLE;
+                    case SINGLE_VALUED_FORECASTS, SIMULATIONS -> SampleDataGroup.SINGLE_VALUED;
+                    default -> throw new MetricConfigException( dataSourceConfig,
+                                                                "Unable to interpret the input type '"
+                                                                + dataSourceConfig.getType()
+                                                                + "'." );
+                };
     }
 
     /**
@@ -478,9 +472,8 @@ public class MetricConstantsFactory
 
 
     /**
-     * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}. Also see:
-     * {@link #getValidMetricsForSingleValuedInput(ProjectConfig, MetricsConfig)}
-     * 
+     * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}.
+     *
      * @param projectConfig the project configuration
      * @param metricsConfig the metrics configuration
      * @return the valid metrics for {@link SampleDataGroup#SINGLE_VALUED}
