@@ -137,4 +137,23 @@ message Outputs
 
     Csv2Format csv2 = 7;
     // Comma Separated Values.
+
+    message Netcdf2Format
+    {
+        // NetCDF Version 2 without any default options.
+    }
+
+    Netcdf2Format netcdf2 = 8;
+    // NetCDF Version 2.
+
+    message PairFormat
+    {
+        // Pairs in csv format.
+    
+        NumericFormat options = 1;
+        // General format options.
+    }
+
+    PairFormat pairs = 9;
+    // Pairs.
 }

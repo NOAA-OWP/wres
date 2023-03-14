@@ -224,52 +224,7 @@ public class WebClient
                 }
             }
 
-            Instant end = Instant.now();
-            Duration duration = Duration.between( start, end );
-
-            monitorEvent.end(); // End, not commit
-
-            if ( Objects.nonNull( httpResponse )
-                 && Objects.nonNull( httpResponse.body() ) )
-            {
-                int httpStatus = httpResponse.code();
-
-                monitorEvent.setHttpResponseCode( httpStatus );
-                monitorEvent.setRetryCount( retryCount );
-                monitorEvent.commit();
-
-                if ( httpStatus >= 200 && httpStatus < 300 )
-                {
-                    LOGGER.debug( "Successfully got InputStream from {} in {}",
-                                  uri,
-                                  duration );
-                    return new ClientResponse( httpResponse );
-                }
-                else if ( httpStatus >= 400 && httpStatus < 500 )
-                {
-                    LOGGER.debug( "Got client error from {} in {}",
-                                  uri,
-                                  duration );
-                    return new ClientResponse( httpResponse );
-                }
-                else
-                {
-                    throw new IngestException( "Failed to get data from "
-                                               + uri
-                                               + " due to status code "
-                                               + httpStatus
-                                               + " after "
-                                               + duration );
-                }
-            }
-            else
-            {
-                throw new IngestException( "Failed to get data from "
-                                           + uri
-                                           + " due to repeated failures (see "
-                                           + "WARN messages above) after "
-                                           + duration );
-            }
+            return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
         }
         catch ( InterruptedException ie )
         {
@@ -279,6 +234,69 @@ public class WebClient
         }
     }
 
+    /**
+     * Validates the HTTP response.
+     * @param httpResponse the response to validate
+     * @param uri the uri requested
+     * @param retryCount the number of retries
+     * @param monitorEvent the monitor event
+     * @param start the start time
+     * @return the client response
+     * @throws IOException if the client response could not be created
+     */
+
+    private ClientResponse validateResponse( Response httpResponse, URI uri,
+                                             int retryCount,
+                                             WebClientEvent monitorEvent,
+                                             Instant start ) throws IOException
+    {
+        Instant end = Instant.now();
+        Duration duration = Duration.between( start, end );
+
+        monitorEvent.end(); // End, not commit
+
+        if ( Objects.nonNull( httpResponse )
+             && Objects.nonNull( httpResponse.body() ) )
+        {
+            int httpStatus = httpResponse.code();
+
+            monitorEvent.setHttpResponseCode( httpStatus );
+            monitorEvent.setRetryCount( retryCount );
+            monitorEvent.commit();
+
+            if ( httpStatus >= 200 && httpStatus < 300 )
+            {
+                LOGGER.debug( "Successfully got InputStream from {} in {}.",
+                              uri,
+                              duration );
+            }
+            else if ( httpStatus >= 400 && httpStatus < 500 )
+            {
+                LOGGER.debug( "Got client error from {} in {}.",
+                              uri,
+                              duration );
+            }
+            else
+            {
+                throw new IngestException( "Failed to get data from "
+                                           + uri
+                                           + " due to status code "
+                                           + httpStatus
+                                           + " after "
+                                           + duration );
+            }
+        }
+        else
+        {
+            throw new IngestException( "Failed to get data from "
+                                       + uri
+                                       + " due to repeated failures (see "
+                                       + "WARN messages above) after "
+                                       + duration );
+        }
+
+        return new ClientResponse( httpResponse );
+    }
 
     /**
      *

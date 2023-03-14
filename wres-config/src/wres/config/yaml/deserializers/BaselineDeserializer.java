@@ -1,4 +1,4 @@
-package wres.config.yaml;
+package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -8,15 +8,15 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import wres.config.yaml.DeclarationFactory.BaselineDataset;
-import wres.config.yaml.DeclarationFactory.Dataset;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.Dataset;
 
 /**
  * Custom deserializer for a baseline dataset, which composes an ordinary dataset and adds some attributes.
  * 
  * @author James Brown
  */
-class BaselineDeserializer extends JsonDeserializer<BaselineDataset>
+public class BaselineDeserializer extends JsonDeserializer<BaselineDataset>
 {
     @Override
     public BaselineDataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException

@@ -1,5 +1,6 @@
 package wres.io.reading.waterml.timeseries;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -7,6 +8,7 @@ import java.io.Serializable;
  */
 public class TimeZone implements Serializable
 {
+    @Serial
     private static final long serialVersionUID = 6454995437183101190L;
 
     /** Time zone. */

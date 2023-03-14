@@ -1,6 +1,7 @@
-package wres.config.yaml;
+package wres.config.yaml.deserializers;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.Features;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 
@@ -24,17 +26,17 @@ import wres.statistics.generated.GeometryTuple;
  *
  * @author James Brown
  */
-class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
+public class FeaturesDeserializer extends JsonDeserializer<Features>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesDeserializer.class );
 
+    public static final String OBSERVED = "observed";
+    public static final String PREDICTED = "predicted";
     public static final String BASELINE = "baseline";
-    public static final String RIGHT = "right";
-    public static final String LEFT = "left";
 
     @Override
-    public Set<GeometryTuple> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Features deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
         Objects.requireNonNull( jp );
 
@@ -44,47 +46,22 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
         // Explicit/sided features
         if ( node instanceof ObjectNode )
         {
+            LOGGER.debug( "Discovered an object of features to parse." );
             TreeNode featureNode = node.get( "features" );
             return this.getFeaturesFromArray( reader, ( ArrayNode ) featureNode );
         }
         // Plain array of feature names
         else if ( node instanceof ArrayNode arrayNode )
         {
+            LOGGER.debug( "Discovered a plain array of features to parse." );
             return this.getFeaturesFromArray( reader, arrayNode );
         }
         else
         {
             throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'features', discovered an unrecognized data type. Please "
-                                   + "fix this declaration and try again." );
+                                   + "' declaration of 'features', discovered an unrecognized data type. Please fix "
+                                   + "this declaration and try again." );
         }
-    }
-
-    /**
-     * Generates a geometry node from a plain feature name.
-     * @param featureName the feature name
-     * @param addBaseline is true to add a baseline feature, false otherwise
-     * @return the geometry
-     */
-
-    static GeometryTuple getGeneratedFeature( String featureName, boolean addBaseline )
-    {
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
-                                                     .setLeft( Geometry.newBuilder()
-                                                                       .setName( featureName )
-                                                                       .build() )
-                                                     .setRight( Geometry.newBuilder()
-                                                                        .setName( featureName )
-                                                                        .build() );
-
-        if ( addBaseline )
-        {
-            builder.setBaseline( Geometry.newBuilder()
-                                         .setName( featureName )
-                                         .build() );
-        }
-
-        return builder.build();
     }
 
     /**
@@ -95,7 +72,9 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
      * @throws IOException if the features could not be mapped
      */
 
-    private Set<GeometryTuple> getFeaturesFromArray( ObjectReader reader, ArrayNode featuresNode ) throws IOException
+    private Features getFeaturesFromArray( ObjectReader reader,
+                                           ArrayNode featuresNode )
+            throws IOException
     {
         Set<GeometryTuple> features = new HashSet<>();
         int nodeCount = featuresNode.size();
@@ -104,21 +83,32 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
         {
             JsonNode nextNode = featuresNode.get( i );
 
-            if ( nextNode.has( LEFT )
-                 || nextNode.has( RIGHT )
+            if ( nextNode.has( OBSERVED )
+                 || nextNode.has( PREDICTED )
                  || nextNode.has( BASELINE ) )
             {
                 GeometryTuple nextFeature = this.getGeometryTuple( reader, nextNode );
                 features.add( nextFeature );
             }
-            else if ( LOGGER.isDebugEnabled() )
+            else
             {
-                LOGGER.debug( "Skipping feature {} because it must be generated when all declaration has been parsed.",
-                              nextNode.asText() );
+                // Apply to the left side only and fill out later because this depends on other declaration, such as
+                // whether a baseline is declared
+                Geometry leftGeometry = this.getGeometry( reader, nextNode );
+                GeometryTuple tuple = GeometryTuple.newBuilder()
+                                                   .setLeft( leftGeometry )
+                                                   .build();
+
+                features.add( tuple );
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Discovered implicit feature tuple declaration for feature {}.",
+                                  nextNode.asText() );
+                }
             }
         }
 
-        return features;
+        return new Features( Collections.unmodifiableSet( features ) );
     }
 
     /**
@@ -133,17 +123,17 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
     {
         GeometryTuple.Builder builder = GeometryTuple.newBuilder();
 
-        if ( node.has( LEFT ) )
+        if ( node.has( OBSERVED ) )
         {
             // Full feature description
-            JsonNode leftNode = node.get( LEFT );
+            JsonNode leftNode = node.get( OBSERVED );
             Geometry leftGeometry = this.getGeometry( reader, leftNode );
             builder.setLeft( leftGeometry );
         }
 
-        if ( node.has( RIGHT ) )
+        if ( node.has( PREDICTED ) )
         {
-            JsonNode rightNode = node.get( RIGHT );
+            JsonNode rightNode = node.get( PREDICTED );
             Geometry rightGeometry = this.getGeometry( reader, rightNode );
             builder.setRight( rightGeometry );
         }
@@ -180,5 +170,4 @@ class FeaturesDeserializer extends JsonDeserializer<Set<GeometryTuple>>
                            .build();
         }
     }
-
 }

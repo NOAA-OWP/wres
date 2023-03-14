@@ -8,18 +8,18 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      left:
+      observed:
         anyOf:
-          - "$ref": "#/definitions/LeftOrRight"
+          - "$ref": "#/definitions/ObservedOrPredicted"
           - type: array
             items: 
               type: string
               minLength: 1
               maxLength: 2083
             minItems: 1
-      right:
+      predicted:
         anyOf:
-          - "$ref": "#/definitions/LeftOrRight"
+          - "$ref": "#/definitions/ObservedOrPredicted"
           - type: array
             items: 
               type: string
@@ -63,6 +63,8 @@ definitions:
         "$ref": "#/definitions/TimePools"
       time_scale:
         "$ref": "#/definitions/TimeScale"
+      rescale_lenience:
+        "$ref": "#/definitions/TimeScaleLenienceEnum"
       unit:
         type: string
         minLength: 1
@@ -78,9 +80,9 @@ definitions:
         "$ref": "#/definitions/CrossPairEnum"
       ensemble_average:
         "$ref": "#/definitions/EnsembleAverageEnum"
-      season_filter:
+      season:
         "$ref": "#/definitions/SeasonFilter"
-      value_filter:
+      values:
         "$ref": "#/definitions/ValueFilter"
       analysis_durations:
         "$ref": "#/definitions/AnalysisDurations"
@@ -104,20 +106,24 @@ definitions:
             - "$ref": "#/definitions/Metric"
             - "$ref": "#/definitions/TimeSeriesMetric"
         minItems: 1
-      duration_unit:
+      duration_format:
         "$ref": "#/definitions/DurationEnum"
-      formats:
+      decimal_format:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      output_formats:
         type: array
         items:
           "$ref": "#/definitions/Format"
         minItems: 1
     required:
-      - left
-      - right
+      - observed
+      - predicted
     title: EvaluationDeclaration
 
-  # The left or right-ish datasets
-  LeftOrRight:
+  # The observed or predicted datasets
+  ObservedOrPredicted:
     type: object
     additionalProperties: false
     properties:
@@ -149,12 +155,12 @@ definitions:
         "$ref": "#/definitions/TimeShift"
     required:
       - sources
-    title: LeftOrRight
+    title: ObservedOrPredicted
 
-  # Should be possible to re-use LeftOrRight by adding an additional persistence
+  # Should be possible to re-use ObservedOrPredicted by adding an additional persistence
   # property within an allOf block, but this does not work in practice while
   # retaining additionalProperties: false to prevent unknown declaration, so
-  # go ahead and allow the repetition/overlap with LeftOrRight. Also does not
+  # go ahead and allow the repetition/overlap with ObservedOrPredicted. Also does not
   # work when using unevaluatedProperties instead of additionalProperties.
   
   # The baseline-ish datasets
@@ -262,8 +268,6 @@ definitions:
         minimum: 1
       unit:
         "$ref": "#/definitions/DurationEnum"
-      lenient:
-        "$ref": "#/definitions/TimeScaleLenienceEnum"
       minimum_month:
         type: integer
         minimum: 1
@@ -317,13 +321,13 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      left:
+      observed:
         anyOf:
           - "$ref": "#/definitions/FeatureTupleFull"
           - type: string
             minLength: 1
             maxLength: 2083
-      right:
+      predicted:
         anyOf:
           - "$ref": "#/definitions/FeatureTupleFull"
           - type: string
@@ -470,9 +474,7 @@ definitions:
       maximum_exclusive:
         type: integer
       unit:
-        type: string
-        minLength: 1
-        maxLength: 2083
+        "$ref": "#/definitions/DurationEnum"
     required:
       - unit
     title: AnalysisDurations
@@ -596,6 +598,7 @@ definitions:
     properties:
       period:
         type: integer
+        minimum: 1
       unit:
         "$ref": "#/definitions/DurationEnum"
     required:
@@ -609,9 +612,9 @@ definitions:
     additionalProperties: false
     properties:
       unit:
-        type: array
-        items:
-          type: string
+        type: string
+        minLength: 1
+        maxLength: 2083
       alias:
         type: string
         minLength: 1
@@ -780,7 +783,7 @@ definitions:
       parameter:
         type: string
       feature_name_from:
-        "$ref": "#/definitions/LeftOrRightOrBaselineEnum"
+        "$ref": "#/definitions/ObservedPredictedOrBaselineEnum"
     required:
       - feature_name_from
       - missing_value
@@ -794,8 +797,8 @@ definitions:
   # metric.
   Metric:
     anyOf:
-      - "$ref": "#/definitions/MetricWithParameters"
       - "$ref": "#/definitions/MetricEnum"
+      - "$ref": "#/definitions/MetricWithParameters"
     title: Metric
 
   # A parameterized metric.
@@ -813,6 +816,8 @@ definitions:
         "$ref": "#/definitions/ProbabilityThresholds"
       minimum_sample_size:
         type: integer
+      graphics:
+        type: boolean
     required:
       - name
     title: MetricWithParameters
@@ -851,37 +856,42 @@ definitions:
   # format.
   Format:
     anyOf:
-      - "$ref": "#/definitions/FormatWithParameters"
       - "$ref": "#/definitions/FormatEnum"
+      - "$ref": "#/definitions/PngFormat"
+      - "$ref": "#/definitions/SvgFormat"
     title: Format
 
-  # A parameterized format for writing statistics.
-  FormatWithParameters:
+  # Portable Network Graphics (PNG) with parameters.
+  PngFormat:
     type: object
     additionalProperties: false
     properties:
       format:
         "$ref": "#/definitions/FormatEnum"
-      precision:
-        type: string
       orientation:
         "$ref": "#/definitions/OrientationEnum"
-      duration_format:
-        "$ref": "#/definitions/DurationEnum"
       width:
         type: integer
         minimum: 400
       height:
         type: integer
         minimum: 300
-      suppress_metrics:
-        type: array
-        items:
-          "$ref": "#/definitions/MetricEnum"
-        minItems: 1
     required:
       - format
-    title: FormatWithParameters
+    title: PngFormat
+
+  # Scalable Vector Graphics (SVG) with parameters.
+  SvgFormat:
+    type: object
+    additionalProperties: false
+    properties:
+      format:
+        "$ref": "#/definitions/FormatEnum"
+      orientation:
+        "$ref": "#/definitions/OrientationEnum"
+    required:
+      - format
+    title: SvgFormat
 
   DurationEnum:
     type: string
@@ -929,13 +939,13 @@ definitions:
       - custom
     title: FeatureAuthorityEnum
 
-  LeftOrRightOrBaselineEnum:
+  ObservedPredictedOrBaselineEnum:
     type: string
     enum:
-      - left
-      - right
+      - observed
+      - predicted
       - baseline
-    title: LeftOrRightOrBaselineEnum
+    title: ObservedPredictedOrBaselineEnum
 
   TimeScaleFunctionEnum:
     type: string
@@ -951,19 +961,17 @@ definitions:
     enum:
       - all
       - none
-      - left
-      - right
+      - observed
+      - predicted
       - baseline
-      - right and baseline
-      - left and baseline
-      - left and right
+      - predicted and baseline
+      - observed and baseline
+      - observed and predicted
     title: TimeScaleLenienceEnum
 
   CrossPairEnum:
     type: string
     enum:
-      - true
-      - false
       - exact
       - fuzzy
     title: CrossPairEnum
@@ -1068,13 +1076,13 @@ definitions:
   ThresholdDataTypeEnum:
     type: string
     enum:
-      - left
-      - right
-      - left and right
-      - any right
-      - left and any right
-      - right mean
-      - left and right mean
+      - observed
+      - predicted
+      - observed and predicted
+      - any predicted
+      - observed and any predicted
+      - predicted mean
+      - observed and predicted mean
     title: ThresholdDataTypeEnum
 
   ThresholdOperatorEnum:
