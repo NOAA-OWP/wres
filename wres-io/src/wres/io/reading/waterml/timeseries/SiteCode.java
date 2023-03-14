@@ -4,7 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * A side code.
+ * A site code.
  */
 public class SiteCode implements Serializable
 {

@@ -2,28 +2,26 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
-import io.soabase.recordbuilder.core.RecordBuilder;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.util.JsonFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
@@ -31,10 +29,24 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.representer.Representer;
+import org.yaml.snakeyaml.resolver.Resolver;
 
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FormatsBuilder;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
 
 /**
  * <p>Factory class for generating POJOs from a YAML-formatted declaration string that is consistent with the WRES 
@@ -80,136 +92,28 @@ public class DeclarationFactory
                                                          .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
                                                                      true );
 
-    /** Schema file name on the classpath. */
-    private static final String SCHEMA = "schema.yml";
-
-    /**
-     * Root class for an evaluation declaration.
-     * @param left the left data sources, required
-     * @param right the right data sources, required
-     * @param baseline the baseline data sources, optional
-     * @param features the features, optional
-     * @param featureService the feature service, optional
-     * @param referenceDates the reference times, optional
-     * @param referenceDatePools the reference time pools, optional
-     * @param validDates the valid times, optional
-     * @param validDatePools the valid time pools, optional
-     * @param leadTimes the lead times, optional
-     * @param leadTimePools the lead time pools, optional
-     * @param timeScale the desired timescale, optional
-     * @param probabilityThresholds the probability thresholds, optional
-     * @param valueThresholds the value thresholds, optional
-     * @param classifierThresholds the probability classifier thresholds, optional
-     * @param metrics the metrics, optional
-     */
-    @RecordBuilder
-    record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializer.class )
-                                  @JsonProperty( "left" ) Dataset left,
-                                  @JsonDeserialize( using = DatasetDeserializer.class )
-                                  @JsonProperty( "right" ) Dataset right,
-                                  @JsonDeserialize( using = BaselineDeserializer.class )
-                                  @JsonProperty( "baseline" ) BaselineDataset baseline,
-                                  @JsonDeserialize( using = FeaturesDeserializer.class )
-                                  @JsonProperty( "features" ) Set<GeometryTuple> features,
-                                  @JsonProperty( "feature_service" ) FeatureService featureService,
-                                  @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
-                                  @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
-                                  @JsonProperty( "valid_dates" ) TimeInterval validDates,
-                                  @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
-                                  @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
-                                  @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
-                                  @JsonDeserialize( using = TimeScaleDeserializer.class )
-                                  @JsonProperty( "time_scale" ) TimeScale timeScale,
-                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                  @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
-                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                  @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
-                                  @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                  @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-                                  @JsonDeserialize( using = MetricsDeserializer.class )
-                                  @JsonProperty( "metrics" ) List<Metric> metrics )
+    /** To stringify protobufs into presentable JSON. */
+    public static final Function<MessageOrBuilder, String> PROTBUF_STRINGIFIER = message ->
     {
-        // Set default metrics
-        EvaluationDeclaration
+        if ( Objects.nonNull( message ) )
         {
-            if ( Objects.isNull( metrics ) )
+            try
             {
-                // Undefined is the sentinel for "all valid"
-                metrics = List.of( new Metric( MetricName.UNDEFINED, null ) );
+                return JsonFormat.printer()
+                                 .omittingInsignificantWhitespace()
+                                 .print( message );
+            }
+            catch ( InvalidProtocolBufferException e )
+            {
+                throw new IllegalStateException( "Failed to stringify a protobuf message." );
             }
         }
-    }
 
-    /** Left or right dataset. */
-    @RecordBuilder
-    record Dataset( @JsonProperty( "sources" ) List<Source> sources,
-                    @JsonProperty( "variable" ) Variable variable,
-                    @JsonProperty( "feature_authority" ) String featureAuthority,
-                    @JsonProperty( "type" ) String type,
-                    @JsonProperty( "label" ) String label,
-                    @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
-                    @JsonProperty( "time_shift" ) Duration timeShift ) {}
+        return "null";
+    };
 
-    /** Baseline dataset. */
-    @RecordBuilder
-    record BaselineDataset( Dataset dataset,
-                            @JsonProperty( "persistence" ) Integer persistence ) {}
-
-    /** Variable. */
-    @RecordBuilder
-    record Variable( @JsonProperty( "name" ) String name, @JsonProperty( "label" ) String label ) {}
-
-    /** Variable. */
-    @RecordBuilder
-    record EnsembleFilter( @JsonProperty( "members" ) List<String> members,
-                           @JsonProperty( "exclude" ) boolean exclude ) {}
-
-    /** A data source. */
-    @RecordBuilder
-    record Source( @JsonProperty( "uri" ) URI uri,
-                   @JsonProperty( "interface" ) String api,
-                   @JsonProperty( "pattern" ) String pattern,
-                   @JsonProperty( "time_zone" ) String timeZone,
-                   @JsonDeserialize( using = TimeScaleDeserializer.class ) @JsonProperty( "time_scale" ) TimeScale timeScale,
-                   @JsonProperty( "missing_value" ) Double missingValue ) {}
-
-    /** A metric. */
-    @RecordBuilder
-    record Metric( @JsonProperty( "name" ) MetricName name, MetricParameters parameters ) {}
-
-    /** Metric parameters. */
-    @RecordBuilder
-    record MetricParameters( @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
-                             @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
-                             @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
-                             @JsonProperty( "summary_statistics" ) Set<ComponentName> summaryStatistics,
-                             @JsonProperty( "minimum_sample_size" ) int minimumSampleSize ) {}
-
-    /** Time interval. */
-    @RecordBuilder
-    record TimeInterval( @JsonProperty( "minimum" ) Instant minimum, @JsonProperty( "maximum" ) Instant maximum ) {}
-
-    /** Lead time interval. */
-    @RecordBuilder
-    record LeadTimeInterval( @JsonProperty( "minimum" ) int minimum, @JsonProperty( "maximum" ) int maximum,
-                             @JsonProperty( "unit" ) ChronoUnit unit ) {}
-
-    /** Time pools. */
-    @RecordBuilder
-    record TimePools( @JsonProperty( "period" ) int period, @JsonProperty( "frequency" ) int frequency,
-                      @JsonProperty( "unit" ) ChronoUnit unit ) {}
-
-    /** A threshold, optionally attached to a named feature. */
-    @RecordBuilder
-    record Threshold( wres.statistics.generated.Threshold threshold, String featureName ) {}
-
-    /** A feature service. */
-    @RecordBuilder
-    record FeatureService( @JsonProperty( "uri" ) URI uri ) {}
-
-    /** A time scale. */
-    @RecordBuilder
-    record TimeScale( wres.statistics.generated.TimeScale timeScale, TimeScaleLenience lenient ) {}
+    /** Schema file name on the classpath. */
+    private static final String SCHEMA = "schema.yml";
 
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema.
@@ -244,10 +148,21 @@ public class DeclarationFactory
             // Map the schema to a json node
             JsonNode schemaNode = MAPPER.readTree( schemaString );
 
-            // Map the declaration to a json node
-            JsonNode declaration = MAPPER.readTree( yaml );
+            // Unfortunately, Jackson does not currently resolve anchors/aliases, despite using SnakeYAML under the
+            // hood, which does resolve them properly. Instead, use SnakeYAML to create a resolved string first
+            // TODO: use Jackson to read the raw YAML string once it can handle anchors/aliases properly
+            Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
+                                       new Representer( new DumperOptions() ),
+                                       new DumperOptions(),
+                                       new CustomResolver() );
+            Object resolvedYaml = snakeYaml.load( yaml );
+            String resolvedYamlString = MAPPER.writerWithDefaultPrettyPrinter()
+                                              .writeValueAsString( resolvedYaml );
 
-            LOGGER.debug( "Encountered a declaration string: {}.", yaml );
+            LOGGER.info( "Resolved a YAML declaration string: {}.", resolvedYaml );
+
+            // Use Jackson from here
+            JsonNode declaration = MAPPER.readTree( resolvedYamlString );
 
             JsonSchemaFactory factory =
                     JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
@@ -277,49 +192,246 @@ public class DeclarationFactory
                                                             .readValue( declaration, EvaluationDeclaration.class );
 
             // Handle any generation that requires the full declaration, such as generated features
-            return DeclarationFactory.finalizeDeclaration( declaration, mappedDeclaration );
+            return DeclarationFactory.finalizeDeclaration( mappedDeclaration );
         }
+    }
+
+    /**
+     * Returns an enum-friendly name from a node whose text value corresponds to an enum.
+     * @param node the enum node
+     * @return the enum-friendly name
+     */
+
+    public static String getEnumFriendlyName( JsonNode node )
+    {
+        return node.asText()
+                   .toUpperCase()
+                   .replace( " ", "_" );
     }
 
     /**
      * Performs any additional generation steps that require the full declaration.
      *
-     * @param declarationNode the parsed declaration
      * @param declaration the mapped declaration to adjust
      * @return the adjusted declaration
      */
-    private static EvaluationDeclaration finalizeDeclaration( JsonNode declarationNode,
-                                                              EvaluationDeclaration declaration )
+    private static EvaluationDeclaration finalizeDeclaration( EvaluationDeclaration declaration )
     {
-        EvaluationDeclaration adjustedDeclaration = declaration;
+        EvaluationDeclarationBuilder adjustedDeclarationBuilder
+                = EvaluationDeclarationBuilder.builder( declaration );
 
-        // Add autogenerated features
-        if ( declarationNode.has( "features" ) )
+        // Add autogenerated geospatial features, but only if there is no feature service to resolve them
+        if ( Objects.isNull( declaration.featureService() ) )
         {
-            JsonNode featuresNode = declarationNode.get( "features" );
-
-            Iterator<JsonNode> featureIterator = featuresNode.elements();
-
-            Set<GeometryTuple> features = new HashSet<>( declaration.features() );
-            boolean hasBaseline = Objects.nonNull( declaration.baseline() );
-            while ( featureIterator.hasNext() )
-            {
-                JsonNode next = featureIterator.next();
-
-                // Autogenerated feature
-                if ( next.isValueNode() )
-                {
-                    GeometryTuple feature = FeaturesDeserializer.getGeneratedFeature( next.asText(), hasBaseline );
-                    features.add( feature );
-                }
-            }
-
-            adjustedDeclaration = DeclarationFactoryEvaluationDeclarationBuilder.builder( adjustedDeclaration )
-                                                                                .features( features )
-                                                                                .build();
+            DeclarationFactory.addAutogeneratedFeatures( adjustedDeclarationBuilder );
         }
 
-        return adjustedDeclaration;
+        // Add the evaluation-wide decimal format string to each numeric format type
+        DeclarationFactory.addDecimalFormatStringToNumericFormats( adjustedDeclarationBuilder );
+
+        // Add metrics for which graphics should be ignored to the graphics format options
+        DeclarationFactory.addMetricsWithoutGraphicsToGraphicsFormats( adjustedDeclarationBuilder );
+
+        return adjustedDeclarationBuilder.build();
+    }
+
+    /**
+     * Adds autogenerated features to the declaration.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void addAutogeneratedFeatures( EvaluationDeclarationBuilder builder )
+    {
+        // Add autogenerated features
+        if ( Objects.isNull( builder.featureService() ) )
+        {
+            boolean hasBaseline = Objects.nonNull( builder.baseline() );
+
+            // Apply to feature context
+            if ( Objects.nonNull( builder.features() ) )
+            {
+                Set<GeometryTuple> geometries = builder.features()
+                                                       .geometries();
+
+                geometries = DeclarationFactory.getAutogeneratedGeometries( geometries, hasBaseline );
+                Features adjustedFeatures = new Features( geometries );
+                builder.features( adjustedFeatures );
+            }
+
+            // Apply to feature group context
+            if ( Objects.nonNull( builder.featureGroups() ) )
+            {
+                Set<GeometryGroup> geoGroups = builder.featureGroups()
+                                                      .geometryGroups();
+                Set<GeometryGroup> adjustedGeoGroups = new HashSet<>();
+
+                for ( GeometryGroup nextGroup : geoGroups )
+                {
+                    List<GeometryTuple> nextTuples = nextGroup.getGeometryTuplesList();
+                    Set<GeometryTuple> adjustedTuples = DeclarationFactory.getAutogeneratedGeometries( nextTuples,
+                                                                                                       hasBaseline );
+
+                    GeometryGroup nextAdjustedGroup = nextGroup.toBuilder()
+                                                               .clearGeometryTuples()
+                                                               .addAllGeometryTuples( adjustedTuples )
+                                                               .build();
+                    adjustedGeoGroups.add( nextAdjustedGroup );
+                }
+                FeatureGroups adjustedFeatureGroups = new FeatureGroups( adjustedGeoGroups );
+                builder.featureGroups( adjustedFeatureGroups );
+            }
+        }
+    }
+
+    /**
+     * Fills any geometries that are partially declared, providing there is no feature service declaration, which
+     * serves the same purpose.
+     * @param geometries the geometries to fill
+     * @param hasBaseline whether a baseline has been declared
+     * @return the geometries with any partially declared geometries filled, where applicable
+     */
+
+    private static Set<GeometryTuple> getAutogeneratedGeometries( Collection<GeometryTuple> geometries,
+                                                                  boolean hasBaseline )
+    {
+        Set<GeometryTuple> adjustedGeometries = new HashSet<>();
+        for ( GeometryTuple next : geometries )
+        {
+            GeometryTuple.Builder adjusted = next.toBuilder();
+            if ( !next.hasRight() )
+            {
+                adjusted.setRight( next.getLeft() );
+            }
+            if ( !next.hasBaseline() && hasBaseline )
+            {
+                adjusted.setBaseline( next.getLeft() );
+            }
+            adjustedGeometries.add( adjusted.build() );
+        }
+
+        return Collections.unmodifiableSet( adjustedGeometries );
+    }
+
+    /**
+     * Adds the decimal format string to each numeric format type.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void addDecimalFormatStringToNumericFormats( EvaluationDeclarationBuilder builder )
+    {
+        // Something to adjust?
+        if ( Objects.isNull( builder.formats() ) )
+        {
+            LOGGER.debug( "No numerical formats were discovered and, therefore, adjusted for decimal format." );
+            return;
+        }
+
+        FormatsBuilder formatsBuilder = FormatsBuilder.builder( builder.formats() );
+
+        if ( Objects.nonNull( formatsBuilder.csv2Format() ) )
+        {
+            Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.csv2Format()
+                                                                   .toBuilder();
+            Outputs.NumericFormat.Builder numericBuilder = csv2Builder.getOptionsBuilder();
+            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            csv2Builder.setOptions( numericBuilder );
+            formatsBuilder.csv2Format( csv2Builder.build() );
+        }
+
+        if ( Objects.nonNull( formatsBuilder.csvFormat() ) )
+        {
+            Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.csvFormat()
+                                                                 .toBuilder();
+            Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
+            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            csvBuilder.setOptions( numericBuilder );
+            formatsBuilder.csvFormat( csvBuilder.build() );
+        }
+
+        if ( Objects.nonNull( formatsBuilder.pairsFormat() ) )
+        {
+            Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.pairsFormat()
+                                                                    .toBuilder();
+            Outputs.NumericFormat.Builder numericBuilder = pairsBuilder.getOptionsBuilder();
+            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            pairsBuilder.setOptions( numericBuilder );
+            formatsBuilder.pairsFormat( pairsBuilder.build() );
+        }
+
+        // Set the new format info
+        builder.formats( formatsBuilder.build() );
+    }
+
+    /**
+     * Adds the metrics for which graphics are not required to each geaphics format.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void addMetricsWithoutGraphicsToGraphicsFormats( EvaluationDeclarationBuilder builder )
+    {
+        // Something to adjust?
+        if ( Objects.isNull( builder.formats() ) )
+        {
+            LOGGER.debug( "No graphical formats were discovered and, therefore, adjusted for metrics to ignore." );
+            return;
+        }
+
+        FormatsBuilder formatsBuilder = FormatsBuilder.builder( builder.formats() );
+
+        List<MetricName> avoid = builder.metrics()
+                                        .stream()
+                                        .filter( next -> Objects.nonNull( next.parameters() ) && !next.parameters()
+                                                                                                      .graphics() )
+                                        .map( Metric::name )
+                                        .toList();
+
+        LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",
+                      avoid );
+
+        if ( Objects.nonNull( formatsBuilder.pngFormat() ) )
+        {
+            Outputs.PngFormat.Builder pngBuilder = formatsBuilder.pngFormat()
+                                                                 .toBuilder();
+            Outputs.GraphicFormat.Builder graphicBuilder = pngBuilder.getOptionsBuilder();
+            graphicBuilder.clearIgnore()
+                          .addAllIgnore( avoid );
+            pngBuilder.setOptions( graphicBuilder );
+            formatsBuilder.pngFormat( pngBuilder.build() );
+        }
+
+        if ( Objects.nonNull( formatsBuilder.svgFormat() ) )
+        {
+            Outputs.SvgFormat.Builder svgBuilder = formatsBuilder.svgFormat()
+                                                                 .toBuilder();
+            Outputs.GraphicFormat.Builder graphicBuilder = svgBuilder.getOptionsBuilder();
+            graphicBuilder.clearIgnore()
+                          .addAllIgnore( avoid );
+            svgBuilder.setOptions( graphicBuilder );
+            formatsBuilder.svgFormat( svgBuilder.build() );
+        }
+
+        // Set the new format info
+        builder.formats( formatsBuilder.build() );
+    }
+
+    /**
+     * Custom resolver for YAML strings that ignores times.
+     */
+    private static class CustomResolver extends Resolver
+    {
+        /*
+         * Do not add a resolver for times.
+         */
+        @Override
+        protected void addImplicitResolvers()
+        {
+            addImplicitResolver( Tag.BOOL, BOOL, "yYnNtTfFoO" );
+            addImplicitResolver( Tag.FLOAT, FLOAT, "-+0123456789." );
+            addImplicitResolver( Tag.INT, INT, "-+0123456789" );
+            addImplicitResolver( Tag.MERGE, MERGE, "<" );
+            addImplicitResolver( Tag.NULL, NULL, "~nN\0" );
+            addImplicitResolver( Tag.NULL, EMPTY, null );
+        }
     }
 
     /**

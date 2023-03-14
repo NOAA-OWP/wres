@@ -21,7 +21,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value or, in other words,
- * the sum of right values divided by the sum of left values minus one. 
+ * the sum of right values divided by the sum of left values minus one.
  * 
  * @author James Brown
  */
@@ -82,16 +82,14 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         DoubleErrorFunction error = FunctionFactory.error();
         for ( Pair<Double, Double> pair : pairs.get() )
         {
-            leftSum = leftSum += pair.getLeft();
+            leftSum += pair.getLeft();
             errorSum += error.applyAsDouble( pair );
         }
 
-        double result = errorSum / leftSum;
-
-        //Set NaN if not finite
-        if ( !Double.isFinite( result ) )
+        double result = Double.NaN;
+        if( leftSum > 0 )
         {
-            result = Double.NaN;
+            result = errorSum / leftSum;
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

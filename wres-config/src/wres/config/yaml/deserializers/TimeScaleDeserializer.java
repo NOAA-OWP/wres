@@ -1,7 +1,6 @@
-package wres.config.yaml;
+package wres.config.yaml.deserializers;
 
 import java.io.IOException;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -15,19 +14,19 @@ import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * Custom deserializer for time scale information.
- * 
+ * Custom deserializer for timescale information.
+ *
  * @author James Brown
  */
-class TimeScaleDeserializer extends JsonDeserializer<DeclarationFactory.TimeScale>
+public class TimeScaleDeserializer extends JsonDeserializer<wres.config.yaml.components.TimeScale>
 {
     @Override
-    public DeclarationFactory.TimeScale deserialize( JsonParser jp, DeserializationContext context )
+    public wres.config.yaml.components.TimeScale deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader mapper = (ObjectReader) jp.getCodec();
+        ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 
         TimeScale.Builder builder = TimeScale.newBuilder();
@@ -43,12 +42,7 @@ class TimeScaleDeserializer extends JsonDeserializer<DeclarationFactory.TimeScal
 
         if ( node.has( "period" ) && node.has( "unit" ) )
         {
-            JsonNode periodNode = node.get( "period" );
-            JsonNode unitNode = node.get( "unit" );
-            String unitString = unitNode.asText();
-            ChronoUnit chronoUnit = mapper.readValue( unitString, ChronoUnit.class );
-            int period = periodNode.asInt();
-            java.time.Duration duration = java.time.Duration.of( period, chronoUnit );
+            java.time.Duration duration = DurationDeserializer.getDuration( mapper, node );
             Duration protoDuration = Duration.newBuilder()
                                              .setSeconds( duration.getSeconds() )
                                              .setNanos( duration.getNano() )
@@ -84,16 +78,8 @@ class TimeScaleDeserializer extends JsonDeserializer<DeclarationFactory.TimeScal
             builder.setEndMonth( maximumMonthInt );
         }
 
-        TimeScaleLenience lenience = TimeScaleLenience.NONE;
-
-        if( node.has( "lenient" ) )
-        {
-            JsonNode lenienceNode = node.get( "lenient" );
-            lenience = mapper.readValue( lenienceNode, TimeScaleLenience.class );
-        }
-
         TimeScale timeScale = builder.build();
-        return new DeclarationFactory.TimeScale( timeScale, lenience );
+        return new wres.config.yaml.components.TimeScale( timeScale );
     }
 }
 

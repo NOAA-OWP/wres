@@ -2,7 +2,6 @@ package wres.io.reading.waterml.timeseries;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;

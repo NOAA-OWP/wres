@@ -29,8 +29,8 @@ import wres.datamodel.messages.EvaluationStatusMessage;
 /**
  * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Double} 
  * values. An upscaled value is produced from a collection of values that fall within an interval that ends at a 
- * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScaleOuter}. If 
- * the events are not evenly spaced within the interval, that interval is skipped and logged. If any event value is 
+ * prescribed time. The interval has the same width as the period associated with the desired {@link TimeScaleOuter}.
+ * If the events are not evenly spaced within the interval, that interval is skipped and logged. If any event value is
  * non-finite, then the upscaled event value is {@link MissingValues#DOUBLE}. The interval is right-closed, 
  * i.e. <code>(end-period,end]</code>. Thus, for example, when upscaling a sequence of instantaneous values 
  * (0Z,6Z,12Z,18Z,0Z] to form an average that ends at 0Z and spans a period of PT24H, the four-point average is taken 
@@ -290,38 +290,29 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
                 return MissingValues.DOUBLE;
             }
 
-            switch ( function )
-            {
-                case MAXIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .max()
-                                          .getAsDouble();
-                    break;
-                case MEAN:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .average()
-                                          .getAsDouble();
-                    break;
-                case MINIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .min()
-                                          .getAsDouble();
-                    break;
-                case TOTAL:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Event::getValue )
-                                          .sum();
-                    break;
-                default:
-                    throw new UnsupportedOperationException( "Could not create an upscaling function for the "
-                                                             + "function identifier '"
-                                                             + function
-                                                             + "'." );
-
-            }
+            upscaled = switch ( function )
+                    {
+                        case MAXIMUM -> eventsToUse.stream()
+                                                   .mapToDouble( Event::getValue )
+                                                   .max()
+                                                   .getAsDouble();
+                        case MEAN -> eventsToUse.stream()
+                                                .mapToDouble( Event::getValue )
+                                                .average()
+                                                .orElseThrow();
+                        case MINIMUM -> eventsToUse.stream()
+                                                   .mapToDouble( Event::getValue )
+                                                   .min()
+                                                   .getAsDouble();
+                        case TOTAL -> eventsToUse.stream()
+                                                 .mapToDouble( Event::getValue )
+                                                 .sum();
+                        default -> throw new UnsupportedOperationException(
+                                "Could not create an upscaling function for the "
+                                + "function identifier '"
+                                + function
+                                + "'." );
+                    };
 
             return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
         };
@@ -331,7 +322,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
      * Hidden constructor.
      * 
      * @param isLenient is true if the lenient upscaling is required, false otherwise
-     * @param a map of declared unit aliases, possibly empty
+     * @param unitAliases a map of declared unit aliases, possibly empty
      * @throws NullPointerException if the unitAliases is null
      */
 

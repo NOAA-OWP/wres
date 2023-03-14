@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -52,19 +51,13 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  */
 public class DatabaseProject implements Project
 {
-    private static final String EXPECTED_LEFT_OR_RIGHT_OR_BASELINE = "': expected LEFT or RIGHT or BASELINE.";
-
-    private static final String UNEXPECTED_CONTEXT = "Unexpected context '";
-
     private static final String SELECT_1 = "SELECT 1";
-
     private static final String PROJECT_ID = "project_id";
 
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseProject.class );
 
-    /**
-     * Protects access and generation of the feature collection
-     */
+    /** Protects access and generation of the feature collection. */
     private final Object featureLock = new Object();
 
     private final ProjectConfig projectConfig;
@@ -77,7 +70,7 @@ public class DatabaseProject implements Project
     /**
      * The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the 
      * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
-     * {@link ProjectScriptGenerator#createUnitScript(Database, int)}.
+     * {@link ProjectScriptGenerator#createUnitScript(Database, long)}}.
      */
 
     private String measurementUnit = null;
@@ -94,8 +87,7 @@ public class DatabaseProject implements Project
     private Set<FeatureGroup> featureGroups;
 
     /**
-     * Indicates whether or not this project was inserted on upon this
-     * execution of the project
+     * Indicates whether this project was inserted on upon this execution of the project
      */
     private boolean performedInsert;
 
@@ -179,12 +171,6 @@ public class DatabaseProject implements Project
         // Still not available? Then analyze the unit.
         if ( Objects.isNull( this.measurementUnit ) )
         {
-            if ( Objects.isNull( this.getId() ) )
-            {
-                throw new IllegalArgumentException( "Cannot analyze the measurement unit for the project until the "
-                                                    + "project identity is known." );
-            }
-
             DataScripter scripter = ProjectScriptGenerator.createUnitScript( this.getDatabase(), this.getId() );
 
             try ( Connection connection = this.getDatabase()
@@ -222,17 +208,17 @@ public class DatabaseProject implements Project
 
     /**
      * Returns the desired time scale. In order of availability, this is:
-     * 
+     *
      * <ol>
      * <li>The desired time scale provided on construction;</li>
      * <li>The Least Common Scale (LCS) computed from the input data; or</li>
      * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
      * </ol>
-     * 
+     *
      * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given 
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
-     * 
+     *
      * @return the desired time scale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained from the database
      */
@@ -248,7 +234,7 @@ public class DatabaseProject implements Project
             return this.desiredTimeScale;
         }
 
-        // Use the declared time scale
+        // Use the declared timescale
         TimeScaleOuter declaredScale = ConfigHelper.getDesiredTimeScale( this.getProjectConfig()
                                                                              .getPair() );
         if ( Objects.nonNull( declaredScale ) )
@@ -400,18 +386,12 @@ public class DatabaseProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getLeft();
-            case RIGHT:
-                return this.getRight();
-            case BASELINE:
-                return this.getBaseline();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + EXPECTED_LEFT_OR_RIGHT_OR_BASELINE );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getLeft();
+                    case RIGHT -> this.getRight();
+                    case BASELINE -> this.getBaseline();
+                };
     }
 
     /**
@@ -426,19 +406,12 @@ public class DatabaseProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getLeftVariableName();
-            case RIGHT:
-                return this.getRightVariableName();
-            case BASELINE:
-                return this.getBaselineVariableName();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + "': expected LEFT or "
-                                                    + "RIGHT or BASELINE." );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getLeftVariableName();
+                    case RIGHT -> this.getRightVariableName();
+                    case BASELINE -> this.getBaselineVariableName();
+                };
     }
 
     /**
@@ -453,19 +426,12 @@ public class DatabaseProject implements Project
     {
         Objects.requireNonNull( lrb );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                return this.getDeclaredLeftVariableName();
-            case RIGHT:
-                return this.getDeclaredRightVariableName();
-            case BASELINE:
-                return this.getDeclaredBaselineVariableName();
-            default:
-                throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                    + "': expected LEFT or "
-                                                    + "RIGHT or BASELINE." );
-        }
+        return switch ( lrb )
+                {
+                    case LEFT -> this.getDeclaredLeftVariableName();
+                    case RIGHT -> this.getDeclaredRightVariableName();
+                    case BASELINE -> this.getDeclaredBaselineVariableName();
+                };
     }
 
     /**
@@ -513,22 +479,12 @@ public class DatabaseProject implements Project
 
         LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
 
-        switch ( lrb )
-        {
-            case LEFT:
-                usesGriddedData = this.leftUsesGriddedData;
-                break;
-            case RIGHT:
-                usesGriddedData = this.rightUsesGriddedData;
-                break;
-            case BASELINE:
-                usesGriddedData = this.baselineUsesGriddedData;
-                break;
-            default:
-                throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                    + lrb
-                                                    + "'." );
-        }
+        usesGriddedData = switch ( lrb )
+                {
+                    case LEFT -> this.leftUsesGriddedData;
+                    case RIGHT -> this.rightUsesGriddedData;
+                    case BASELINE -> this.baselineUsesGriddedData;
+                };
 
         if ( usesGriddedData == null )
         {
@@ -556,19 +512,9 @@ public class DatabaseProject implements Project
             }
             switch ( lrb )
             {
-                case LEFT:
-                    this.leftUsesGriddedData = usesGriddedData;
-                    break;
-                case RIGHT:
-                    this.rightUsesGriddedData = usesGriddedData;
-                    break;
-                case BASELINE:
-                    this.baselineUsesGriddedData = usesGriddedData;
-                    break;
-                default:
-                    throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                        + lrb
-                                                        + "'." );
+                case LEFT -> this.leftUsesGriddedData = usesGriddedData;
+                case RIGHT -> this.rightUsesGriddedData = usesGriddedData;
+                case BASELINE -> this.baselineUsesGriddedData = usesGriddedData;
             }
         }
 
@@ -615,7 +561,7 @@ public class DatabaseProject implements Project
 
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     * 
+     *
      * @return Whether or not the project uses probability thresholds
      */
     @Override
@@ -712,7 +658,7 @@ public class DatabaseProject implements Project
 
     /**
      * Performs operations that are needed for the project to run between ingest and evaluation.
-     * 
+     *
      * @throws DataAccessException if retrieval of data fails
      * @throws NoDataException if zero features have intersecting data
      */
@@ -786,7 +732,7 @@ public class DatabaseProject implements Project
 
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
-     * 
+     *
      * @throws NoDataException if the conditions select no data
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
@@ -834,8 +780,8 @@ public class DatabaseProject implements Project
 
         try
         {
-            isVector = ! ( this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ||
-                           this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) );
+            isVector = !( this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ||
+                          this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) );
 
             // Validate the variable declaration against the data, when the declaration is present
             if ( isVector )
@@ -920,11 +866,11 @@ public class DatabaseProject implements Project
             List<String> availableVariables = variables.getAvailableVariables( this.getId(),
                                                                                lrb.value() );
             StringBuilder message = new StringBuilder();
-            message.append( "There is no '"
-                            + this.getVariableName( lrb )
-                            + "' data available for the "
-                            + lrb
-                            + " evaluation dataset." );
+            message.append( "There is no '" )
+                   .append( this.getVariableName( lrb ) )
+                   .append( "' data available for the " )
+                   .append( lrb )
+                   .append( " evaluation dataset." );
 
             if ( !availableVariables.isEmpty() )
             {
@@ -961,7 +907,7 @@ public class DatabaseProject implements Project
      * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
      * thrown because declaration is require to disambiguate. Otherwise, it chooses the single variable name and warns 
      * about the assumption made when using the data to disambiguate.
-     * 
+     *
      * @throws DataAccessException if the variable information could not be determined from the data
      */
 
@@ -1051,7 +997,7 @@ public class DatabaseProject implements Project
 
     /**
      * Determines the possible variable names by inspecting the data.
-     * 
+     *
      * @param lrb the context
      * @return the possible variable names
      * @throws DataAccessException if the variable information could not be determined from the data
@@ -1099,7 +1045,7 @@ public class DatabaseProject implements Project
 
     /**
      * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
-     * 
+     *
      * @param lrb the orientation of the source
      * @param config the source configuration whose ensemble conditions should be validated
      * @return a string representation of the invalid conditions 
@@ -1220,7 +1166,7 @@ public class DatabaseProject implements Project
             // Now deal with feature groups that contain one or more
             List<NamedFeature> groupedFeatures = declaredGroups.stream()
                                                                .flatMap( next -> next.getFeature().stream() )
-                                                               .collect( Collectors.toList() );
+                                                               .toList();
 
             if ( !groupedFeatures.isEmpty() )
             {
@@ -1246,24 +1192,24 @@ public class DatabaseProject implements Project
                                                                           .getPair(),
                                                                       this.getId() );
 
-        return Pair.of( Collections.unmodifiableSet( singletons ), Collections.unmodifiableSet( groups ) );
+        return Pair.of( Collections.unmodifiableSet( singletons ), groups );
     }
 
     /**
      * Builds a set of gridded feature tuples. Assumes that all dimensions have the same tuple (i.e., cannot currently
      * pair grids with different features. Feature groupings are also not supported.
-     * 
+     *
      * @return a set of gridded feature tuples
      */
 
     private Set<FeatureTuple> getGriddedFeatureTuples()
     {
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
-        Set<Feature> griddedFeatures = this.getGriddedFeatures()
+        Set<Feature> innerGriddedFeatures = this.getGriddedFeatures()
                                            .get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        for ( Feature nextFeature : griddedFeatures )
+        for ( Feature nextFeature : innerGriddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
             GeometryTuple geoTuple = null;
@@ -1392,7 +1338,7 @@ public class DatabaseProject implements Project
 
     /**
      * @return the gridded features cache
-     * 
+     *
      */
     private GriddedFeatures getGriddedFeatures()
     {

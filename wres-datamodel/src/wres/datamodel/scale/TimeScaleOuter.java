@@ -28,19 +28,19 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 /**
  * <p>Metadata that describes the time scale associated with each value in a time-series. Wraps a canonical 
  * {@link TimeScale}.
- * 
+ *
  * <p>As of 20 August 2018, the convention adopted by the WRES is that time series values "end at" the specified valid 
  * time. In other words, the datetime represents the right bookened of the time scale to which the value refers. The 
  * treatment of the left and right bookends as including or excluding the datetime at which they begin and end, 
  * respectively, is undefined. Finally, the meaning of an "instantaneous" time scale is given by 
  * {@link #INSTANTANEOUS_DURATION}.</p>
- * 
+ *
  * <p>Further information can be found in #44539.</p>
  *
  * <p>This class is immutable and thread-safe.</p>
- * 
+ *
  * <p>The internal data is stored, and accessible, as a {@link TimeScale}.
- * 
+ *
  * @author James Brown
  */
 
@@ -52,14 +52,14 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeScaleOuter.class );
 
-    /** The canonical representation of a time scale. */
+    /** The canonical representation of a timescale. */
     private final TimeScale timeScale;
 
     /**
      * Constructs a {@link TimeScaleOuter} whose {@link TimeScaleOuter#isInstantaneous()} returns 
      * <code>true</code>.
-     * 
-     * @return an instantaneous time scale
+     *
+     * @return an instantaneous timescale
      */
 
     public static TimeScaleOuter of()
@@ -69,7 +69,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Constructs a {@link TimeScaleOuter} from a period and a function that is {@link TimeScaleFunction#UNKNOWN}.
-     * 
+     *
      * @param period the period
      * @return a time scale
      * @throws NullPointerException if the input is null
@@ -92,7 +92,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Constructs a {@link TimeScaleOuter} from a {@link TimeScale}.
-     * 
+     *
      * @param timeScale the time scale
      * @return a time scale
      * @throws NullPointerException if the input is null
@@ -105,7 +105,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Constructs a {@link TimeScaleOuter} with a period and a function.
-     * 
+     *
      * @param period the period
      * @param function the function
      * @return a time scale
@@ -131,7 +131,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /**
      * Constructs a {@link TimeScaleOuter} from a {@link TimeScaleConfig}. If the {@link TimeScaleConfig#getFunction()}
      * is null, the {@link TimeScaleFunction} is set to {@link TimeScaleFunction#UNKNOWN}.
-     * 
+     *
      * @param config the configuration
      * @return a time scale
      * @throws NullPointerException if either input is null or expected contents is null
@@ -163,10 +163,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             timeScaleInner.setFunction( innerFunction );
         }
 
-        if ( config instanceof DesiredTimeScaleConfig )
+        if ( config instanceof DesiredTimeScaleConfig desiredConfig )
         {
-            DesiredTimeScaleConfig desiredConfig = (DesiredTimeScaleConfig) config;
-
             if ( Objects.nonNull( desiredConfig.getEarliestDay() ) )
             {
                 timeScaleInner.setStartDay( desiredConfig.getEarliestDay() );
@@ -213,7 +211,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /**
      * Returns the explicit period associated with the time scale or null if an implicit period is defined. An implicit
      * period is a period separated by two month-days.
-     * 
+     *
      * @return the period
      */
 
@@ -232,7 +230,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Returns the function associated with the time scale.
-     * 
+     *
      * @return the function
      */
 
@@ -244,7 +242,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Returns the canonical representation of a time scale.
-     * 
+     *
      * @return the canonical representation
      */
 
@@ -261,11 +259,10 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             return true;
         }
 
-        if ( ! ( o instanceof TimeScaleOuter ) )
+        if ( !( o instanceof TimeScaleOuter in ) )
         {
             return false;
         }
-        TimeScaleOuter in = (TimeScaleOuter) o;
 
         return Objects.equals( in.getTimeScale(), this.getTimeScale() );
     }
@@ -273,14 +270,14 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /**
      * A lenient equals that considers {@link #isInstantaneous()} as sufficient for equality, otherwise 
      * {@link #equals(Object)}.
-     * 
+     *
      * @param o the object to test for equality against this instance
-     * @return true if the input and existing time scale are instantaneous or content equal, otherwise false
+     * @return true if the input and existing timescale are instantaneous or content equal, otherwise false
      */
 
     public boolean equalsOrInstantaneous( Object o )
     {
-        if ( o instanceof TimeScaleOuter && ( (TimeScaleOuter) o ).isInstantaneous() && this.isInstantaneous() )
+        if ( o instanceof TimeScaleOuter timeScaleOuter && timeScaleOuter.isInstantaneous() && this.isInstantaneous() )
         {
             return true;
         }
@@ -331,18 +328,16 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     @Override
     public int compareTo( TimeScaleOuter o )
     {
-        Objects.requireNonNull( o );
-
         return MessageUtilities.compare( this.timeScale, o.getTimeScale() );
     }
 
     /**
-     * Helper that returns <code>true</code> if this time scale is effectively "instantaneous", otherwise 
+     * <p>Helper that returns <code>true</code> if this timescale is effectively "instantaneous", otherwise
      * <code>false</code>.
-     * 
-     * A time scale is considered "instantaneous" if the period associated with the time scale is less than or 
+     *
+     * <p>A timescale is considered "instantaneous" if the period associated with the timescale is less than or
      * equal to sixty seconds.
-     * 
+     *
      * @return true if the period is less than or equal to 60 seconds, otherwise false.
      */
 
@@ -393,12 +388,12 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /**
      * <p>Computes the Least Common Multiple or Least Common Scale (LCS) of the inputs at a time resolution of 
      * milliseconds. The LCS is the integer number of milliseconds that is a common multiple of all of the inputs.
-     * 
+     *
      * <p>When the input contains an instantaneous time scale (see {@link TimeScaleOuter#isInstantaneous()}), then this
      * method either returns the other time scale present or throws an exception if more than one additional time 
      * scale is present. However, there is no other validation of the proposed rescaling, such as the proposed 
      * {@link TimeScaleOuter#getFunction()} associated with the rescaled quantity.
-     * 
+     *
      * @param timeScales the time scales from which to derive the LCS
      * @return the LCS for the input
      * @throws RescalingException if the input contains more than one scale function or one function plus a time scale
@@ -472,10 +467,9 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     /**
      * <p>Computes the Least Common Multiple of the inputs at a time resolution of milliseconds.
      * The LCM is the integer number of milliseconds that is a common multiple of all of the inputs.
-     * 
-     * TODO: consider moving this to a more general time-utility class, as it is independent
-     * of time scale.
-     * 
+     *
+     * <p>TODO: consider moving this to a more general time-utility class, as it is independent of time scale.
+     *
      * @param durations the time scales from which to derive the LCM
      * @return the LCM for the input
      * @throws NullPointerException if the inputs are null
@@ -534,7 +528,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
      * to infer it from the month-day bookends that must be present. For the latter, assumes a leap year to maximize 
      * the period. If {@link TimeScaleOuter#isInstantaneous()} returns {@code true}, returns 
      * {@link #INSTANTANEOUS_DURATION}.
-     * 
+     *
      * @param timeScale the time scale
      * @return the period
      * @throws NullPointerException if the timeScale is null
@@ -595,9 +589,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
     /**
      * Hidden constructor.
-     * 
-     * @param period the positive period
-     * @param function the function
+     *
+     * @param timeScale the timescale
      * @throws IllegalArgumentException if the period is zero or negative
      * @throws NullPointerException if either input is null
      */

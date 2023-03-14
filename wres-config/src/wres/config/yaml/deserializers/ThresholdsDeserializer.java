@@ -1,4 +1,4 @@
-package wres.config.yaml;
+package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -18,8 +18,7 @@ import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory.Threshold;
-
+import wres.config.yaml.components.Threshold;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 
@@ -28,7 +27,7 @@ import wres.statistics.generated.Threshold.ThresholdDataType;
  *
  * @author James Brown
  */
-class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
+public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsDeserializer.class );
@@ -46,7 +45,8 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     public static final String VALUE = "value";
 
     @Override
-    public Set<Threshold> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Set<Threshold> deserialize( JsonParser jp, DeserializationContext context )
+            throws IOException
     {
         Objects.requireNonNull( jp );
 
@@ -57,10 +57,7 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
         LOGGER.debug( "Attempting to deserialize thresholds from the node named {}.", currentName );
 
-        boolean probabilities = "probability_thresholds".equals( currentName )
-                                || "classifier_thresholds".equals( currentName );
-
-        return this.deserialize( reader, node, probabilities, currentName );
+        return this.deserialize( reader, node, currentName );
     }
 
     /**
@@ -68,8 +65,7 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      *
      * @param reader the reader, required
      * @param thresholdsNode the thresholds node, required
-     * @param probabilities is true if the threshold values are probabilities, false for regular values
-     * @param nodeName the name of the node to help with messaging
+     * @param nodeName the name of the node, required
      * @return the thresholds
      * @throws IOException if the thresholds could not be read
      * @throws NullPointerException if any required input is null
@@ -77,11 +73,14 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
     Set<Threshold> deserialize( ObjectReader reader,
                                 JsonNode thresholdsNode,
-                                boolean probabilities,
                                 String nodeName ) throws IOException
     {
         Objects.requireNonNull( reader );
         Objects.requireNonNull( thresholdsNode );
+        Objects.requireNonNull( nodeName );
+
+        boolean probabilities = "probability_thresholds".equals( nodeName )
+                                || "classifier_thresholds".equals( nodeName );
 
         // Thresholds with attributes
         if ( thresholdsNode instanceof ObjectNode )
@@ -187,7 +186,9 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             JsonNode dataTypeNode = thresholdNode.get( "apply_to" );
             String dataTypeString = dataTypeNode.asText()
                                                 .replace( " ", "_" )
-                                                .toUpperCase();
+                                                .toUpperCase()
+                                                .replace( "OBSERVED", "LEFT" )
+                                                .replace( "PREDICTED", "RIGHT" );
             ThresholdDataType dataType = ThresholdDataType.valueOf( dataTypeString );
             builder.setDataType( dataType );
         }
@@ -273,7 +274,8 @@ class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                 featureName = featureNode.asText();
             }
 
-            Threshold nextThreshold = new Threshold( builder.build(), featureName );
+            Threshold nextThreshold =
+                    new Threshold( builder.build(), featureName );
             thresholds.add( nextThreshold );
         }
 

@@ -1,5 +1,6 @@
 package wres.datamodel.statistics;
 
+import java.io.Serial;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,7 +94,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             new EnumMap<>( DestinationType.class );
 
     /**
-     * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
+     * Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link DestinationType} format.
      */
 
     private final Map<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
@@ -169,7 +170,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                 new EnumMap<>( DestinationType.class );
 
         /**
-         * Store of consumers for processing {@link DiagramDiagramStatisticOuter} by {@link DestinationType} format.
+         * Store of consumers for processing {@link DurationDiagramStatisticOuter} by {@link DestinationType} format.
          */
 
         private final Map<DestinationType, Function<List<DurationDiagramStatisticOuter>, Set<Path>>> durationDiagramConsumers =
@@ -343,7 +344,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         try
         {
             // Split the statistics into two groups as there may be separate statistics for a baseline
-            Function<? super Statistics, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
+            Function<? super Statistics, LeftOrRightOrBaseline> classifier = statistic -> {
                 if ( !statistic.hasPool() && statistic.hasBaselinePool() )
                 {
                     return LeftOrRightOrBaseline.BASELINE;
@@ -488,7 +489,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         List<W> wrapped = statistics.stream()
                                     .map( mapper )
                                     .flatMap( List::stream )
-                                    .collect( Collectors.toUnmodifiableList() );
+                                    .toList();
 
         return Slicer.sortByTimeWindowAndThreshold( wrapped );
     }
@@ -511,7 +512,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                 poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )
-                           .collect( Collectors.toUnmodifiableList() );
+                           .toList();
         };
     }
 
@@ -535,7 +536,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                 poolSupplier.apply( someStats ) ) );
             return boxes.stream()
                         .map( innerMapper )
-                        .collect( Collectors.toUnmodifiableList() );
+                        .toList();
         };
     }
 
@@ -557,7 +558,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                   poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
-                         .collect( Collectors.toUnmodifiableList() );
+                         .toList();
         };
     }
 
@@ -579,7 +580,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                     poolSupplier.apply( someStats ) ) );
             return scores.stream()
                          .map( innerMapper )
-                         .collect( Collectors.toUnmodifiableList() );
+                         .toList();
         };
     }
 
@@ -601,7 +602,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                         poolSupplier.apply( someStats ) ) );
             return diagrams.stream()
                            .map( innerMapper )
-                           .collect( Collectors.toUnmodifiableList() );
+                           .toList();
         };
     }
 
@@ -791,7 +792,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     }
 
     /**
-     * Processes {@link DiagramDiagramStatisticOuter}.
+     * Processes {@link DurationDiagramStatisticOuter}.
      * 
      * @param outputs the output to consume
      * @return the paths written
@@ -934,7 +935,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     /**
      * Returns the metrics that should be suppressed for the prescribed destination.
      * 
-     * @return the map of destination types to statistics for suppression
+     * @return the set of destination types to statistics for suppression
      */
 
     private Set<MetricConstants> getSuppressTheseMetricsForThisDestinationType( DestinationType destinationType )
@@ -953,7 +954,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
     /**
      * @param outputs the outputs description to check
-     * @return a set of metrics to suppress for each destination type.
+     * @return a map of metrics to suppress for each destination type.
      */
 
     private Map<DestinationType, Set<MetricConstants>> getMetricsToSuppressForEachDestination( Outputs outputs )
@@ -989,7 +990,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * Build a product processor that writes conditionally.
      * 
      * @param builder the builder
-     * @throws WresProcessingException if the project is invalid for writing
      * @throws NullPointerException if any required input is null
      */
 
@@ -1021,7 +1021,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
 
     private static class StatisticsToFormatsRoutingException extends RuntimeException
     {
-
+        @Serial
         private static final long serialVersionUID = -7654568836842809914L;
 
         /**

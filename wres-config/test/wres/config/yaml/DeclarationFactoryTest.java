@@ -11,6 +11,18 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.MetricBuilder;
+import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
@@ -30,39 +42,38 @@ class DeclarationFactoryTest
     void testDeserializeWithShortSources() throws IOException
     {
         String yaml = """
-                left:
+                observed:
                   - some_file.csv
-                right:
+                predicted:
                   - forecasts_with_NWS_feature_authority.csv
                   """;
 
-        DeclarationFactory.EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI leftUri = URI.create( "some_file.csv" );
-        DeclarationFactory.Source leftSource = DeclarationFactorySourceBuilder.builder()
-                                                                              .uri( leftUri )
-                                                                              .build();
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
 
-        URI rightUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        DeclarationFactory.Source rightSource = DeclarationFactorySourceBuilder.builder()
-                                                                               .uri( rightUri )
-                                                                               .build();
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
 
-        List<DeclarationFactory.Source> leftSources = List.of( leftSource );
-        DeclarationFactory.Dataset leftDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                 .sources( leftSources )
-                                                                                 .build();
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( observedSources )
+                                                .build();
 
-        List<DeclarationFactory.Source> rightSources = List.of( rightSource );
-        DeclarationFactory.Dataset rightDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                  .sources( rightSources )
-                                                                                  .build();
+        List<Source> predictedSources = List.of( predictedSource );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .sources( predictedSources )
+                                                 .build();
 
-        DeclarationFactory.EvaluationDeclaration expected =
-                DeclarationFactoryEvaluationDeclarationBuilder.builder()
-                                                              .left( leftDataset )
-                                                              .right( rightDataset )
-                                                              .build();
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedDataset )
+                                                                     .right( predictedDataset )
+                                                                     .build();
 
         assertEquals( expected, actual );
     }
@@ -71,7 +82,7 @@ class DeclarationFactoryTest
     void testDeserializeWithLongSources() throws IOException
     {
         String yaml = """
-                left:
+                observed:
                   sources:
                     - some_file.csv
                     - uri: file:/some/directory
@@ -84,7 +95,7 @@ class DeclarationFactoryTest
                         function: mean
                         period: 1
                         unit: hours
-                right:
+                predicted:
                   sources:
                     - forecasts_with_NWS_feature_authority.csv
                     - uri: file:/some/other/directory
@@ -98,74 +109,74 @@ class DeclarationFactoryTest
                         unit: hours
                         """;
 
-        DeclarationFactory.EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI leftUri = URI.create( "some_file.csv" );
-        DeclarationFactory.Source leftSource = DeclarationFactorySourceBuilder.builder()
-                                                                              .uri( leftUri )
-                                                                              .build();
-        URI anotherLeftUri = URI.create( "file:/some/directory" );
-        DeclarationFactory.Source anotherLeftSource = DeclarationFactorySourceBuilder.builder()
-                                                                                     .uri( anotherLeftUri )
-                                                                                     .pattern( "**/*.csv*" )
-                                                                                     .timeZone( "CST" )
-                                                                                     .missingValue( -999.0 )
-                                                                                     .build();
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+        URI anotherObservedUri = URI.create( "file:/some/directory" );
+        Source anotherObservedSource = SourceBuilder.builder()
+                                                    .uri( anotherObservedUri )
+                                                    .pattern( "**/*.csv*" )
+                                                    .timeZone( "CST" )
+                                                    .missingValue( -999.0 )
+                                                    .build();
 
-        URI yetAnotherLeftUri = URI.create( "https://foo.bar" );
+        URI yetAnotherObservedUri = URI.create( "https://foo.bar" );
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setPeriod( Duration.newBuilder().setSeconds( 3600 ) )
                                        .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                        .build();
-        DeclarationFactory.TimeScale outerTimeScale = new DeclarationFactory.TimeScale( timeScale,
-                                                                                        TimeScaleLenience.NONE );
-        DeclarationFactory.Source yetAnotherLeftSource = DeclarationFactorySourceBuilder.builder()
-                                                                                        .uri( yetAnotherLeftUri )
-                                                                                        .api( "usgs_nwis" )
-                                                                                        .timeScale( outerTimeScale )
-                                                                                        .build();
+        wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
+        Source yetAnotherObservedSource = SourceBuilder.builder()
+                                                       .uri( yetAnotherObservedUri )
+                                                       .api( "usgs_nwis" )
+                                                       .timeScale( outerTimeScale )
+                                                       .build();
 
-        List<DeclarationFactory.Source> leftSources = List.of( leftSource, anotherLeftSource, yetAnotherLeftSource );
-        DeclarationFactory.Dataset leftDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                 .sources( leftSources )
-                                                                                 .build();
+        List<Source> observedSources =
+                List.of( observedSource, anotherObservedSource, yetAnotherObservedSource );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( observedSources )
+                                                .build();
 
-        URI rightUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        DeclarationFactory.Source rightSource = DeclarationFactorySourceBuilder.builder()
-                                                                               .uri( rightUri )
-                                                                               .build();
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
 
-        URI anotherRightUri = URI.create( "file:/some/other/directory" );
-        DeclarationFactory.Source anotherRightSource = DeclarationFactorySourceBuilder.builder()
-                                                                                      .uri( anotherRightUri )
-                                                                                      .pattern( "**/*.xml*" )
-                                                                                      .timeZone( "CST" )
-                                                                                      .build();
+        URI anotherPredictedUri = URI.create( "file:/some/other/directory" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .pattern( "**/*.xml*" )
+                                                     .timeZone( "CST" )
+                                                     .build();
 
-        URI yetAnotherRightUri = URI.create( "https://qux.quux" );
-        TimeScale timeScaleRight = TimeScale.newBuilder()
-                                            .setPeriod( Duration.newBuilder().setSeconds( 7200 ) )
-                                            .setFunction( TimeScale.TimeScaleFunction.MEAN )
-                                            .build();
-        DeclarationFactory.TimeScale outerTimeScaleRight = new DeclarationFactory.TimeScale( timeScaleRight,
-                                                                                             TimeScaleLenience.NONE );
-        DeclarationFactory.Source yetAnotherRightSource = DeclarationFactorySourceBuilder.builder()
-                                                                                         .uri( yetAnotherRightUri )
-                                                                                         .api( "wrds_ahps" )
-                                                                                         .timeScale( outerTimeScaleRight )
-                                                                                         .build();
+        URI yetAnotherPredictedUri = URI.create( "https://qux.quux" );
+        TimeScale timeScalePredicted = TimeScale.newBuilder()
+                                                .setPeriod( Duration.newBuilder().setSeconds( 7200 ) )
+                                                .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                .build();
+        wres.config.yaml.components.TimeScale
+                outerTimeScalePredicted = new wres.config.yaml.components.TimeScale( timeScalePredicted );
+        Source yetAnotherPredictedSource = SourceBuilder.builder()
+                                                        .uri( yetAnotherPredictedUri )
+                                                        .api( "wrds_ahps" )
+                                                        .timeScale(
+                                                                outerTimeScalePredicted )
+                                                        .build();
 
-        List<DeclarationFactory.Source> rightSources =
-                List.of( rightSource, anotherRightSource, yetAnotherRightSource );
-        DeclarationFactory.Dataset rightDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                  .sources( rightSources )
-                                                                                  .build();
+        List<Source> predictedSources =
+                List.of( predictedSource, anotherPredictedSource, yetAnotherPredictedSource );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .sources( predictedSources )
+                                                 .build();
 
-        DeclarationFactory.EvaluationDeclaration expected =
-                DeclarationFactoryEvaluationDeclarationBuilder.builder()
-                                                              .left( leftDataset )
-                                                              .right( rightDataset )
-                                                              .build();
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedDataset )
+                                                                     .right( predictedDataset )
+                                                                     .build();
 
         assertEquals( expected, actual );
     }
@@ -174,43 +185,43 @@ class DeclarationFactoryTest
     void testDeserializeWithShortAndLongFeatures() throws IOException
     {
         String yaml = """
-                left:
+                observed:
                   - some_file.csv
-                right:
+                predicted:
                   - forecasts_with_NWS_feature_authority.csv
                 features:
-                  - left:
+                  - observed:
                       name: '09165000'
                       wkt: POINT (-67.945 46.8886111)
-                    right: DRRC2
-                  - left: '09166500'
-                    right:
+                    predicted: DRRC2
+                  - observed: '09166500'
+                    predicted:
                       name: DOLC2
                       wkt: POINT (-999 -998)
                   - CREC1
                   """;
 
-        DeclarationFactory.EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI leftUri = URI.create( "some_file.csv" );
-        DeclarationFactory.Source leftSource = DeclarationFactorySourceBuilder.builder()
-                                                                              .uri( leftUri )
-                                                                              .build();
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
 
-        URI rightUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        DeclarationFactory.Source rightSource = DeclarationFactorySourceBuilder.builder()
-                                                                               .uri( rightUri )
-                                                                               .build();
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
 
-        List<DeclarationFactory.Source> leftSources = List.of( leftSource );
-        DeclarationFactory.Dataset leftDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                 .sources( leftSources )
-                                                                                 .build();
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( observedSources )
+                                                .build();
 
-        List<DeclarationFactory.Source> rightSources = List.of( rightSource );
-        DeclarationFactory.Dataset rightDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                  .sources( rightSources )
-                                                                                  .build();
+        List<Source> predictedSources = List.of( predictedSource );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .sources( predictedSources )
+                                                 .build();
 
         GeometryTuple first = GeometryTuple.newBuilder()
                                            .setLeft( Geometry.newBuilder()
@@ -234,14 +245,15 @@ class DeclarationFactoryTest
                                                               .setName( "CREC1" ) )
                                            .build();
 
-        Set<GeometryTuple> features = Set.of( first, second, third );
+        Set<GeometryTuple> geometries = Set.of( first, second, third );
+        Features features = new Features( geometries );
 
-        DeclarationFactory.EvaluationDeclaration expected =
-                DeclarationFactoryEvaluationDeclarationBuilder.builder()
-                                                              .left( leftDataset )
-                                                              .right( rightDataset )
-                                                              .features( features )
-                                                              .build();
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( observedDataset )
+                                            .right( predictedDataset )
+                                            .features( features )
+                                            .build();
 
         assertEquals( expected, actual );
     }
@@ -250,9 +262,9 @@ class DeclarationFactoryTest
     void testDeserializeWithLongMetrics() throws IOException
     {
         String yaml = """
-                left:
+                observed:
                   - some_file.csv
-                right:
+                predicted:
                   - forecasts_with_NWS_feature_authority.csv
                 metrics:
                   - name: mean square error skill score
@@ -262,7 +274,7 @@ class DeclarationFactoryTest
                     probability_thresholds:
                       values: [ 0.1 ]
                       operator: greater than or equal to
-                      apply_to: left
+                      apply_to: observed
                   - name: time to peak error
                     summary_statistics:
                       - mean
@@ -270,84 +282,83 @@ class DeclarationFactoryTest
                       - minimum
                   """;
 
-        DeclarationFactory.EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI leftUri = URI.create( "some_file.csv" );
-        DeclarationFactory.Source leftSource = DeclarationFactorySourceBuilder.builder()
-                                                                              .uri( leftUri )
-                                                                              .build();
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
 
-        URI rightUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        DeclarationFactory.Source rightSource = DeclarationFactorySourceBuilder.builder()
-                                                                               .uri( rightUri )
-                                                                               .build();
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
 
-        List<DeclarationFactory.Source> leftSources = List.of( leftSource );
-        DeclarationFactory.Dataset leftDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                 .sources( leftSources )
-                                                                                 .build();
+        List<Source> observedSources = List.of( observedSource );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( observedSources )
+                                                .build();
 
-        List<DeclarationFactory.Source> rightSources = List.of( rightSource );
-        DeclarationFactory.Dataset rightDataset = DeclarationFactoryDatasetBuilder.builder()
-                                                                                  .sources( rightSources )
-                                                                                  .build();
+        List<Source> predictedSources = List.of( predictedSource );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .sources( predictedSources )
+                                                 .build();
 
         Threshold aValueThreshold = Threshold.newBuilder()
                                              .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .build();
-        DeclarationFactory.Threshold valueThreshold =
-                DeclarationFactoryThresholdBuilder.builder().threshold( aValueThreshold )
-                                                  .build();
-        Set<DeclarationFactory.Threshold> valueThresholds = Set.of( valueThreshold );
-        DeclarationFactory.MetricParameters firstParameters =
-                DeclarationFactoryMetricParametersBuilder.builder()
-                                                         .minimumSampleSize( 23 )
-                                                         .valueThresholds( valueThresholds )
-                                                         .build();
-        DeclarationFactory.Metric first = DeclarationFactoryMetricBuilder.builder()
-                                                                         .name( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
-                                                                         .parameters( firstParameters )
-                                                                         .build();
+        wres.config.yaml.components.Threshold valueThreshold =
+                ThresholdBuilder.builder().threshold( aValueThreshold )
+                                .build();
+        Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( valueThreshold );
+        MetricParameters firstParameters =
+                MetricParametersBuilder.builder()
+                                       .minimumSampleSize( 23 )
+                                       .valueThresholds( valueThresholds )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .parameters( firstParameters )
+                                    .build();
 
         Threshold aThreshold = Threshold.newBuilder()
                                         .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
                                         .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                         .build();
-        DeclarationFactory.Threshold probabilityThreshold =
-                DeclarationFactoryThresholdBuilder.builder().threshold( aThreshold )
-                                                  .build();
-        Set<DeclarationFactory.Threshold> probabilityThresholds = Set.of( probabilityThreshold );
-        DeclarationFactory.MetricParameters secondParameters =
-                DeclarationFactoryMetricParametersBuilder.builder()
-                                                         .probabilityThresholds( probabilityThresholds )
-                                                         .build();
+        wres.config.yaml.components.Threshold probabilityThreshold =
+                ThresholdBuilder.builder().threshold( aThreshold )
+                                .build();
+        Set<wres.config.yaml.components.Threshold> probabilityThresholds = Set.of( probabilityThreshold );
+        MetricParameters secondParameters =
+                MetricParametersBuilder.builder()
+                                       .probabilityThresholds( probabilityThresholds )
+                                       .build();
 
-        DeclarationFactory.Metric second = DeclarationFactoryMetricBuilder.builder()
-                                                                          .name( MetricName.PEARSON_CORRELATION_COEFFICIENT )
-                                                                          .parameters( secondParameters )
-                                                                          .build();
+        Metric second = MetricBuilder.builder()
+                                     .name( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                     .parameters( secondParameters )
+                                     .build();
 
         Set<ComponentName> summaryStatistics = Set.of( ComponentName.MEAN,
                                                        ComponentName.MEDIAN,
                                                        ComponentName.MINIMUM );
-        DeclarationFactory.MetricParameters thirdParameters =
-                DeclarationFactoryMetricParametersBuilder.builder()
-                                                         .summaryStatistics( summaryStatistics )
-                                                         .build();
-        DeclarationFactory.Metric third = DeclarationFactoryMetricBuilder.builder()
-                                                                         .name( MetricName.TIME_TO_PEAK_ERROR )
-                                                                         .parameters( thirdParameters )
-                                                                         .build();
+        MetricParameters thirdParameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( summaryStatistics )
+                                       .build();
+        Metric third = MetricBuilder.builder()
+                                    .name( MetricName.TIME_TO_PEAK_ERROR )
+                                    .parameters( thirdParameters )
+                                    .build();
 
-        List<DeclarationFactory.Metric> metrics = List.of( first, second, third );
+        List<Metric> metrics = List.of( first, second, third );
 
-        DeclarationFactory.EvaluationDeclaration expected =
-                DeclarationFactoryEvaluationDeclarationBuilder.builder()
-                                                              .left( leftDataset )
-                                                              .right( rightDataset )
-                                                              .metrics( metrics )
-                                                              .build();
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedDataset )
+                                                                     .right( predictedDataset )
+                                                                     .metrics( metrics )
+                                                                     .build();
 
         assertEquals( expected, actual );
     }

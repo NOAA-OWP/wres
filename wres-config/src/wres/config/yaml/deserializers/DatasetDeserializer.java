@@ -1,4 +1,4 @@
-package wres.config.yaml;
+package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,17 +19,17 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import wres.config.yaml.DeclarationFactory.Dataset;
-import wres.config.yaml.DeclarationFactory.EnsembleFilter;
-import wres.config.yaml.DeclarationFactory.Source;
-import wres.config.yaml.DeclarationFactory.Variable;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.Variable;
 
 /**
  * Custom deserializer for sources that are represented as an explicit or implicit list of sources.
  * 
  * @author James Brown
  */
-class DatasetDeserializer extends JsonDeserializer<Dataset>
+public class DatasetDeserializer extends JsonDeserializer<Dataset>
 {
     /** The last node read, which allows for compositions of this class. */
     private JsonNode lastNode = null;
