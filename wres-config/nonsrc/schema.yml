@@ -218,7 +218,6 @@ definitions:
     properties:
       uri:
         type: string
-        format: uri
         minLength: 1
         maxLength: 2083
       pattern:
@@ -398,6 +397,8 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+      pool:
+        type: boolean
     required:
       - uri
     title: SingletonFeatureService
@@ -1102,5 +1103,5 @@ definitions:
       - single valued forecasts
       - observations
       - simulations
-      - analyses 
+      - analyses
     title: DataTypeEnum

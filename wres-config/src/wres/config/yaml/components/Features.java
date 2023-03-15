@@ -4,9 +4,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.deserializers.FeaturesDeserializer;
 import wres.statistics.generated.GeometryTuple;
 
 /**
@@ -14,6 +16,7 @@ import wres.statistics.generated.GeometryTuple;
  * @param geometries the features
  */
 @RecordBuilder
+@JsonDeserialize( using = FeaturesDeserializer.class )
 public record Features( Set<GeometryTuple> geometries )
 {
     // Set default values
@@ -21,7 +24,6 @@ public record Features( Set<GeometryTuple> geometries )
     {
         if ( Objects.isNull( geometries ) )
         {
-            // Undefined is the sentinel for "all valid"
             geometries = Set.of();
         }
     }

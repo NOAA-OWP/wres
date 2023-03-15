@@ -2,7 +2,7 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -76,7 +76,8 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
                                            ArrayNode featuresNode )
             throws IOException
     {
-        Set<GeometryTuple> features = new HashSet<>();
+        // Preserve insertion order
+        Set<GeometryTuple> features = new LinkedHashSet<>();
         int nodeCount = featuresNode.size();
 
         for ( int i = 0; i < nodeCount; i++ )

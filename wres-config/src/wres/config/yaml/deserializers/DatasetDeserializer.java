@@ -18,7 +18,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.Source;
@@ -26,11 +29,14 @@ import wres.config.yaml.components.Variable;
 
 /**
  * Custom deserializer for sources that are represented as an explicit or implicit list of sources.
- * 
+ *
  * @author James Brown
  */
 public class DatasetDeserializer extends JsonDeserializer<Dataset>
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatasetDeserializer.class );
+
     /** The last node read, which allows for compositions of this class. */
     private JsonNode lastNode = null;
 
@@ -39,7 +45,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
     {
         Objects.requireNonNull( jp );
 
-        ObjectReader reader = (ObjectReader) jp.getCodec();
+        ObjectReader reader = ( ObjectReader ) jp.getCodec();
         JsonNode node = reader.readTree( jp );
 
         // Set the last node read
@@ -49,10 +55,10 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         if ( node instanceof ObjectNode )
         {
             TreeNode sourcesNode = node.get( "sources" );
-            List<Source> sources = this.getSourcesFromArray( reader, (ArrayNode) sourcesNode );
+            List<Source> sources = this.getSourcesFromArray( reader, ( ArrayNode ) sourcesNode );
             Variable variable = this.getVariable( reader, node );
             String featureAuthority = this.getStringValue( reader, node.get( "feature_authority" ) );
-            String dataType = this.getStringValue( reader, node.get( "type" ) );
+            DataType dataType = this.getDataType( reader, node, jp.currentName() );
             String label = this.getStringValue( reader, node.get( "label" ) );
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
             Duration timeShift = this.getTimeShift( node.get( "time_shift" ) );
@@ -97,7 +103,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         for ( int i = 0; i < nodeCount; i++ )
         {
             JsonNode nextNode = sourcesNode.get( i );
-            Source nextSource = null;
+            Source nextSource;
 
             // May or may not be addressable with a 'uri' key
             if ( nextNode.has( "uri" ) )
@@ -180,7 +186,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
         JsonNode filterNode = node.get( "ensemble_filter" );
 
-        List<String> members = null;
+        List<String> members;
         boolean exclude = false;
 
         // Plain member array
@@ -193,7 +199,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             JsonNode memberNode = filterNode.get( "members" );
             members = this.getMembers( reader, memberNode );
             exclude = filterNode.has( "exclude" ) && filterNode.get( "exclude" )
-                                                               .asBoolean( exclude );
+                                                               .asBoolean();
         }
 
         // Ordinary member declaration
@@ -239,4 +245,23 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         return Duration.of( amount, unit );
     }
 
+    /**
+     * Reads the data type.
+     * @param reader the reader
+     * @param node the node to read
+     * @param context the context to help with logging
+     * @return the data type or null
+     * @throws IOException if the type could not be read
+     */
+    private DataType getDataType( ObjectReader reader, JsonNode node, String context ) throws IOException
+    {
+        if ( node.has( "type" ) )
+        {
+            return reader.readValue( node.get( "type" ), DataType.class );
+        }
+
+        LOGGER.debug( "No data type discovered for {}. The data type will be inferred.", context );
+
+        return null;
+    }
 }

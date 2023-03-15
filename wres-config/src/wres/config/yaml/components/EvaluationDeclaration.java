@@ -13,19 +13,10 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.deserializers.BaselineDeserializer;
-import wres.config.yaml.deserializers.DatasetDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
-import wres.config.yaml.deserializers.FeatureGroupDeserializer;
-import wres.config.yaml.deserializers.FeaturesDeserializer;
-import wres.config.yaml.deserializers.FormatsDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
-import wres.config.yaml.deserializers.SeasonDeserializer;
-import wres.config.yaml.deserializers.SpatialMaskDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
-import wres.config.yaml.deserializers.TimeScaleDeserializer;
 import wres.statistics.generated.Pool;
 
 /**
@@ -48,18 +39,12 @@ import wres.statistics.generated.Pool;
  * @param metrics the metrics, optional
  */
 @RecordBuilder
-public record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializer.class )
-                                     @JsonProperty( "observed" ) Dataset left,
-                                     @JsonDeserialize( using = DatasetDeserializer.class )
+public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "predicted" ) Dataset right,
-                                     @JsonDeserialize( using = BaselineDeserializer.class )
                                      @JsonProperty( "baseline" ) BaselineDataset baseline,
-                                     @JsonDeserialize( using = FeaturesDeserializer.class )
                                      @JsonProperty( "features" ) Features features,
-                                     @JsonDeserialize( using = FeatureGroupDeserializer.class )
                                      @JsonProperty( "feature_groups" ) FeatureGroups featureGroups,
                                      @JsonProperty( "feature_service" ) FeatureService featureService,
-                                     @JsonDeserialize( using = SpatialMaskDeserializer.class )
                                      @JsonProperty( "spatial_mask" ) SpatialMask spatialMask,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
@@ -70,7 +55,6 @@ public record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializ
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
                                      @JsonProperty( "analysis_durations" ) AnalysisDurations analysisDurations,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
-                                     @JsonDeserialize( using = TimeScaleDeserializer.class )
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
                                      @JsonDeserialize( using = DurationDeserializer.class )
@@ -85,14 +69,12 @@ public record EvaluationDeclaration( @JsonDeserialize( using = DatasetDeserializ
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
-                                     @JsonDeserialize( using = SeasonDeserializer.class )
                                      @JsonProperty( "season" ) Season season,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) List<Metric> metrics,
                                      @JsonProperty( "duration_format" ) ChronoUnit durationFormat,
                                      @JsonProperty( "decimal_format" ) String decimalFormat,
-                                     @JsonDeserialize( using = FormatsDeserializer.class )
                                      @JsonProperty( "output_formats" ) Formats formats )
 {
     /** Logger. */

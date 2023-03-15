@@ -7,13 +7,24 @@ import java.util.Set;
 
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
+import wres.config.yaml.components.FeatureService;
+import wres.config.yaml.components.FeatureServiceBuilder;
+import wres.config.yaml.components.FeatureServiceGroup;
+import wres.config.yaml.components.FeatureServiceGroupBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
@@ -21,11 +32,13 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
@@ -38,6 +51,42 @@ import wres.statistics.generated.TimeScale;
 
 class DeclarationFactoryTest
 {
+    /** An observed dataset for re-use. */
+    private Dataset observedDataset;
+    /** A simulation dataset for re-use. */
+    private Dataset simulationDataset;
+    /** Re-used feature string. */
+    private static final String DRRC2 = "DRRC2";
+    /** Re-used feature string. */
+    private static final String DOLC2 = "DOLC2";
+
+    @BeforeEach
+    void runBeforeEach()
+    {
+
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+
+        URI predictedUri = URI.create( "another_file.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
+
+        List<Source> observedSources = List.of( observedSource );
+        this.observedDataset = DatasetBuilder.builder()
+                                             .sources( observedSources )
+                                             .type( DataType.OBSERVATIONS )
+                                             .build();
+
+        List<Source> predictedSources = List.of( predictedSource );
+        this.simulationDataset = DatasetBuilder.builder()
+                                               .sources( predictedSources )
+                                               .type( DataType.SIMULATIONS )
+                                               .build();
+    }
+
     @Test
     void testDeserializeWithShortSources() throws IOException
     {
@@ -45,34 +94,52 @@ class DeclarationFactoryTest
                 observed:
                   - some_file.csv
                 predicted:
-                  - forecasts_with_NWS_feature_authority.csv
+                  - another_file.csv
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI observedUri = URI.create( "some_file.csv" );
-        Source observedSource = SourceBuilder.builder()
-                                             .uri( observedUri )
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithShortSourcesAndBaseline() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                baseline:
+                  - yet_another_file.csv
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
                                              .build();
 
-        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        Source predictedSource = SourceBuilder.builder()
-                                              .uri( predictedUri )
-                                              .build();
-
-        List<Source> observedSources = List.of( observedSource );
-        Dataset observedDataset = DatasetBuilder.builder()
-                                                .sources( observedSources )
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .type( DataType.SIMULATIONS )
                                                 .build();
 
-        List<Source> predictedSources = List.of( predictedSource );
-        Dataset predictedDataset = DatasetBuilder.builder()
-                                                 .sources( predictedSources )
-                                                 .build();
+        BaselineDataset finalBaselineDataset = BaselineDatasetBuilder.builder()
+                                                                     .dataset( baselineDataset )
+                                                                     .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
-                                                                     .left( observedDataset )
-                                                                     .right( predictedDataset )
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
+                                                                     .baseline( finalBaselineDataset )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -139,6 +206,7 @@ class DeclarationFactoryTest
                 List.of( observedSource, anotherObservedSource, yetAnotherObservedSource );
         Dataset observedDataset = DatasetBuilder.builder()
                                                 .sources( observedSources )
+                                                .type( DataType.OBSERVATIONS )
                                                 .build();
 
         URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
@@ -171,6 +239,7 @@ class DeclarationFactoryTest
                 List.of( predictedSource, anotherPredictedSource, yetAnotherPredictedSource );
         Dataset predictedDataset = DatasetBuilder.builder()
                                                  .sources( predictedSources )
+                                                 .type( DataType.SIMULATIONS )
                                                  .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
@@ -188,7 +257,7 @@ class DeclarationFactoryTest
                 observed:
                   - some_file.csv
                 predicted:
-                  - forecasts_with_NWS_feature_authority.csv
+                  - another_file.csv
                 features:
                   - observed:
                       name: '09165000'
@@ -203,38 +272,18 @@ class DeclarationFactoryTest
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        URI observedUri = URI.create( "some_file.csv" );
-        Source observedSource = SourceBuilder.builder()
-                                             .uri( observedUri )
-                                             .build();
-
-        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        Source predictedSource = SourceBuilder.builder()
-                                              .uri( predictedUri )
-                                              .build();
-
-        List<Source> observedSources = List.of( observedSource );
-        Dataset observedDataset = DatasetBuilder.builder()
-                                                .sources( observedSources )
-                                                .build();
-
-        List<Source> predictedSources = List.of( predictedSource );
-        Dataset predictedDataset = DatasetBuilder.builder()
-                                                 .sources( predictedSources )
-                                                 .build();
-
         GeometryTuple first = GeometryTuple.newBuilder()
                                            .setLeft( Geometry.newBuilder()
                                                              .setName( "09165000" )
                                                              .setWkt( "POINT (-67.945 46.8886111)" ) )
-                                           .setRight( Geometry.newBuilder().setName( "DRRC2" ) )
+                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
                                            .build();
 
         GeometryTuple second = GeometryTuple.newBuilder()
                                             .setLeft( Geometry.newBuilder()
                                                               .setName( "09166500" ) )
                                             .setRight( Geometry.newBuilder()
-                                                               .setName( "DOLC2" )
+                                                               .setName( DOLC2 )
                                                                .setWkt( "POINT (-999 -998)" ) )
                                             .build();
 
@@ -250,8 +299,8 @@ class DeclarationFactoryTest
 
         EvaluationDeclaration expected =
                 EvaluationDeclarationBuilder.builder()
-                                            .left( observedDataset )
-                                            .right( predictedDataset )
+                                            .left( this.observedDataset )
+                                            .right( this.simulationDataset )
                                             .features( features )
                                             .build();
 
@@ -265,7 +314,7 @@ class DeclarationFactoryTest
                 observed:
                   - some_file.csv
                 predicted:
-                  - forecasts_with_NWS_feature_authority.csv
+                  - another_file.csv
                 metrics:
                   - name: mean square error skill score
                     value_thresholds: [0.3]
@@ -283,26 +332,6 @@ class DeclarationFactoryTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-
-        URI observedUri = URI.create( "some_file.csv" );
-        Source observedSource = SourceBuilder.builder()
-                                             .uri( observedUri )
-                                             .build();
-
-        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
-        Source predictedSource = SourceBuilder.builder()
-                                              .uri( predictedUri )
-                                              .build();
-
-        List<Source> observedSources = List.of( observedSource );
-        Dataset observedDataset = DatasetBuilder.builder()
-                                                .sources( observedSources )
-                                                .build();
-
-        List<Source> predictedSources = List.of( predictedSource );
-        Dataset predictedDataset = DatasetBuilder.builder()
-                                                 .sources( predictedSources )
-                                                 .build();
 
         Threshold aValueThreshold = Threshold.newBuilder()
                                              .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
@@ -355,11 +384,238 @@ class DeclarationFactoryTest
         List<Metric> metrics = List.of( first, second, third );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
-                                                                     .left( observedDataset )
-                                                                     .right( predictedDataset )
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
                                                                      .metrics( metrics )
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithFeatureGroup() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                feature_groups:
+                  - name: a group
+                    features:
+                      - DRRC2
+                      - DOLC2
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        GeometryTuple first = GeometryTuple.newBuilder()
+                                           .setLeft( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .build();
+
+        GeometryTuple second = GeometryTuple.newBuilder()
+                                            .setLeft( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .setRight( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .build();
+
+        List<GeometryTuple> geometries = List.of( first, second );
+
+        GeometryGroup geometryGroup = GeometryGroup.newBuilder()
+                                                   .setRegionName( "a group" )
+                                                   .addAllGeometryTuples( geometries )
+                                                   .build();
+
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( geometryGroup ) )
+                                                          .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
+                                                                     .featureGroups( featureGroups )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithFeatureServiceAndSingletonGroup() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  group: RFC
+                  value: CNRFC
+                  pool: true
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        FeatureServiceGroup featureServiceGroup = FeatureServiceGroupBuilder.builder()
+                                                                            .group( "RFC" )
+                                                                            .value( "CNRFC" )
+                                                                            .pool( true )
+                                                                            .build();
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .featureGroups( Set.of( featureServiceGroup ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
+                                                                     .featureService( featureService )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithFeatureServiceAndTwoGroups() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  groups:
+                    - group: RFC
+                      value: CNRFC
+                    - group: RFC
+                      value: NWRFC
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        FeatureServiceGroup groupOne = FeatureServiceGroupBuilder.builder()
+                                                                 .group( "RFC" )
+                                                                 .value( "CNRFC" )
+                                                                 .build();
+
+        FeatureServiceGroup groupTwo = FeatureServiceGroupBuilder.builder()
+                                                                 .group( "RFC" )
+                                                                 .value( "NWRFC" )
+                                                                 .build();
+
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .featureGroups( Set.of( groupOne, groupTwo ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.simulationDataset )
+                                                                     .featureService( featureService )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      sources:
+                        - uri: another_file.csv
+                          interface: nwm_medium_range_deterministic_channel_rt_conus
+                    """,
+            """
+                    observed:
+                        - some_file.csv
+                    predicted:
+                        - another_file.csv
+                    reference_dates:
+                      minimum: 2023-02-01T00:00:00Z
+                      maximum: 2062-02-01T00:00:00Z
+                        """,
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      - another_file.csv
+                    lead_time_pools:
+                      period: 23
+                      unit: days
+                        """
+    } )
+    void testInferPredictedDatasetAsSingleValuedForecastWhenNoEnsembleDeclaration( String declaration )
+            throws IOException
+    {
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+        DataType actualType = actual.right()
+                                    .type();
+        assertEquals( DataType.SINGLE_VALUED_FORECASTS, actualType );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      - another_file.csv
+                    metrics:
+                      - continuous ranked probability score
+                    """,
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      - another_file.csv
+                    ensemble_average: mean
+                    """,
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      sources:
+                        - uri: another_file.csv
+                      ensemble_filter: [ '2009' ]
+                    """,
+            """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      sources:
+                        - uri: another_file.csv
+                          interface: nwm_medium_range_ensemble_channel_rt_conus_hourly
+                    """
+    } )
+    void testInferPredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
+    {
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+        DataType actualType = actual.right()
+                                    .type();
+        assertEquals( DataType.ENSEMBLE_FORECASTS, actualType );
+    }
+
+    @Test
+    void testInferObservedDatasetAsAnalysesWhenAnalysisDurationsDeclared() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                analysis_durations:
+                  minimum: 0
+                  maximum_exclusive: 0
+                  unit: hours
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        DataType actualType = actual.left()
+                                    .type();
+        assertEquals( DataType.ANALYSES, actualType );
     }
 }

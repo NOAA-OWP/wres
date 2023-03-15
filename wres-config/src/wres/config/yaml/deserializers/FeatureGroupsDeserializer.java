@@ -2,7 +2,7 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -25,10 +25,10 @@ import wres.statistics.generated.GeometryTuple;
  *
  * @author James Brown
  */
-public class FeatureGroupDeserializer extends JsonDeserializer<FeatureGroups>
+public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroupDeserializer.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureGroupsDeserializer.class );
 
     /** Feature deserializer. */
     private static final FeaturesDeserializer FEATURES_DESERIALIZER = new FeaturesDeserializer();
@@ -69,7 +69,8 @@ public class FeatureGroupDeserializer extends JsonDeserializer<FeatureGroups>
                                                      ArrayNode featureGroupsNode )
             throws IOException
     {
-        Set<GeometryGroup> featureGroups = new HashSet<>();
+        // Preserve insertion order
+        Set<GeometryGroup> featureGroups = new LinkedHashSet<>();
         int nodeCount = featureGroupsNode.size();
 
         for ( int i = 0; i < nodeCount; i++ )

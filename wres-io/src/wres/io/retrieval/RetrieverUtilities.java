@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Map.Entry;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,7 +26,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.TimeWindow;
@@ -45,7 +43,7 @@ public class RetrieverUtilities
 
     /**
      * Creates a stream of time-series in an analysis shape.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param timeSeries the input series to transform, required
      * @param earliestAnalysisDuration the earliest analysis duration, required
@@ -90,7 +88,7 @@ public class RetrieverUtilities
     }
 
     /**
-     * 
+     *
      * @param timeWindow the time window, required
      * @param dataType the data type, required
      * @param earliestAnalysisDuration the earliest analysis duration, optional
@@ -116,8 +114,8 @@ public class RetrieverUtilities
                                                                                        earliestAnalysisDuration,
                                                                                        latestAnalysisDuration );
 
-            LOGGER.debug( "Adjusted the time window during retrieval for time-series data with a shape of {}. The "
-                          + "original time window was: {}. The adjusted time window is: {}.",
+            LOGGER.debug( "Adjusted the time window during retrieval for time-series data that were identified as "
+                          + "\"analyses\". The original time window was: {}. The adjusted time window is: {}.",
                           adjustedWindow,
                           analysisWindow );
 
@@ -153,25 +151,6 @@ public class RetrieverUtilities
         }
 
         return timeSeries;
-    }
-
-    /**
-     * Map the units of a time-series.
-     * @param <T> the type of time-series event value
-     * @param timeSeries the time-series
-     * @param mapper the mapper
-     * @param desiredUnits the desired measurement unit name
-     * @return a time-series with mapped units
-     */
-
-    public static <T> TimeSeries<T> mapUnits( TimeSeries<T> timeSeries, UnaryOperator<T> mapper, String desiredUnits )
-    {
-        UnaryOperator<TimeSeriesMetadata> metaMapper = metadata -> timeSeries.getMetadata()
-                                                                             .toBuilder()
-                                                                             .setUnit( desiredUnits )
-                                                                             .build();
-
-        return TimeSeriesSlicer.transform( timeSeries, mapper, metaMapper );
     }
 
     /**
@@ -238,7 +217,7 @@ public class RetrieverUtilities
 
     /**
      * Transforms the input series to create one series for each required analysis duration.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param timeSeries the input series to transform
      * @param earliestAnalysisDuration the earliest analysis duration
@@ -254,7 +233,7 @@ public class RetrieverUtilities
         // time-series whose duration falls within the constraints
         List<TimeSeries<T>> toStream = new ArrayList<>();
 
-        List<TimeSeries<T>> collection = timeSeries.collect( Collectors.toList() );
+        List<TimeSeries<T>> collection = timeSeries.toList();
         for ( TimeSeries<T> next : collection )
         {
             Map<Duration, Event<T>> eventsByDuration =
@@ -297,7 +276,7 @@ public class RetrieverUtilities
 
     /**
      * Applies a duplicate policy to analysis time-series. One of {@link DuplicatePolicy@}.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param timeSeries the input series whose duplicates, if any, should be treated
      * @param duplicatePolicy the duplicate policy
@@ -349,7 +328,7 @@ public class RetrieverUtilities
     /**
      * Filters the input time-series for duplicates using a prescribed comparator to order the time-series prior to
      * filtering. The first encountered duplicate, after ordering, will be retained. 
-     * 
+     *
      * @param <T> the time-series event value type
      * @param filterMe the time-series to filter
      * @param comparator the comparator for ordering the time-series
@@ -363,10 +342,8 @@ public class RetrieverUtilities
                                                                           DuplicatePolicy duplicatePolicy,
                                                                           TimeWindowOuter timeWindow )
     {
-        List<TimeSeries<T>> collection = filterMe.collect( Collectors.toList() );
-
-        // Sort the collection
-        collection.sort( comparator );
+        List<TimeSeries<T>> collection = filterMe.sorted( comparator )
+                                                 .toList();
 
         // Record the valid times consumed so far
         Set<Instant> validTimesConsumed = new HashSet<>();
@@ -425,9 +402,9 @@ public class RetrieverUtilities
 
     /**
      * Returns <code>true</code> if the retriever should return one time-series for each of the common analysis 
-     * durations across several reference times of the type {@link ReferenceTimeType.ANALYSIS_START_TIME}, 
-     * <code>false</code> if it should return a single time-series per {@link ReferenceTimeType.ANALYSIS_START_TIME}.
-     * 
+     * durations across several reference times of the type {@link ReferenceTimeType#ANALYSIS_START_TIME},
+     * <code>false</code> if it should return a single time-series per {@link ReferenceTimeType#ANALYSIS_START_TIME}.
+     *
      * @param earliestAnalysisDuration the earliest analysis duration
      * @param latestAnalysisDuration the latest analysis duration
      * @return true if the retriever should return a separate time-series for each analysis duration, otherwise false

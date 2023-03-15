@@ -4,7 +4,10 @@ import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
+
+import wres.config.yaml.deserializers.DatasetDeserializer;
 
 /**
  * Observed or predicted dataset.
@@ -17,10 +20,11 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param timeShift the time shift
  */
 @RecordBuilder
+@JsonDeserialize( using = DatasetDeserializer.class )
 public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonProperty( "variable" ) Variable variable,
                        @JsonProperty( "feature_authority" ) String featureAuthority,
-                       @JsonProperty( "type" ) String type,
+                       @JsonProperty( "type" ) DataType type,
                        @JsonProperty( "label" ) String label,
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
                        @JsonProperty( "time_shift" ) Duration timeShift ) {}
