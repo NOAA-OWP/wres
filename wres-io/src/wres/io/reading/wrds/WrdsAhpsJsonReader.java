@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import wres.config.generated.DatasourceType;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -342,16 +341,6 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             Instant issuedDateTime = forecast.getIssuedTime()
                                              .toInstant();
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
-        }
-
-        // Check for a reference time when expected. Should this be an exception?
-        if ( datetimes.isEmpty() && dataSource.getContext()
-                                              .getType() != DatasourceType.OBSERVATIONS )
-        {
-            LOGGER.warn( "Time-series at {} did not have a reference datetime. Skipping it.",
-                         uri );
-            return null;
-
         }
 
         // Get the time scale information, if available

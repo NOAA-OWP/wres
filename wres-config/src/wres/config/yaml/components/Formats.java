@@ -1,16 +1,19 @@
 package wres.config.yaml.components;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.deserializers.FormatsDeserializer;
 import wres.statistics.generated.Outputs;
 
 /**
  * @author James Brown
  */
 @RecordBuilder
+@JsonDeserialize( using = FormatsDeserializer.class )
 public record Formats( Outputs.PngFormat pngFormat,
                        Outputs.SvgFormat svgFormat,
                        Outputs.CsvFormat csvFormat,

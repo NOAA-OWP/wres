@@ -35,7 +35,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 
  * evaluation. This factory takes a "per-feature-view" of retrieval whereby a feature is supplied on construction. In 
  * future, other implementations may not take a per-feature view (e.g., a multiple-feature-view or a grid-view).
- * 
+ *
  * @author James Brown
  */
 
@@ -148,11 +148,10 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     /**
      * Returns a supplier of time-series.
-     * 
+     *
      * @param dataSourceConfig the data source configuration
      * @param features the features
      * @param timeWindow the time window
-     * @param featureName the feature name
      * @return the supplier
      */
 
@@ -254,7 +253,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     {
         return this.caches.getFeaturesCache();
     }
-    
+
     /**
      * @return the measurement units cache.
      */
@@ -266,7 +265,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     /**
      * Returns a builder for a retriever.
-     * 
+     *
      * @param dataType the retrieved data type
      * @return the retriever
      * @throws IllegalArgumentException if the data type is unrecognized in this context
@@ -280,30 +279,29 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         Duration latestAnalysisDuration = this.getProject()
                                               .getLatestAnalysisDuration();
 
-        switch ( dataType )
-        {
-            case SINGLE_VALUED_FORECASTS:
-                return new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
-            case OBSERVATIONS:
-                return new ObservationRetriever.Builder();
-            case SIMULATIONS:
-                return new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-            case ANALYSES:
-                return new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
-                                                      .setLatestAnalysisDuration( latestAnalysisDuration )
-                                                      .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
-                                                      .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-            default:
-                throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
-                                                    + "retriever: "
-                                                    + dataType
-                                                    + "'." );
-        }
+        return switch ( dataType )
+                {
+                    case SINGLE_VALUED_FORECASTS ->
+                            new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+                    case OBSERVATIONS -> new ObservationRetriever.Builder();
+                    case SIMULATIONS ->
+                            new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                    case ANALYSES ->
+                            new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
+                                                           .setLatestAnalysisDuration( latestAnalysisDuration )
+                                                           .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
+                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                    default -> throw new IllegalArgumentException(
+                            "Unrecognized data type from which to create the single-valued "
+                            + "retriever: "
+                            + dataType
+                            + "'." );
+                };
     }
 
     /**
      * Returns a builder for a gridded retriever.
-     * 
+     *
      * @param dataType the retrieved data type
      * @return the retriever
      * @throws IllegalArgumentException if the data type is unrecognized in this context
@@ -311,26 +309,28 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     private SingleValuedGriddedRetriever.Builder getGriddedRetrieverBuilder( DatasourceType dataType )
     {
-        switch ( dataType )
-        {
-            case SINGLE_VALUED_FORECASTS:
-                return (SingleValuedGriddedRetriever.Builder) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
-                                                                                                        .setReferenceTimeType( ReferenceTimeType.T0 );
-            case OBSERVATIONS:
-            case SIMULATIONS:
-                return (SingleValuedGriddedRetriever.Builder) new SingleValuedGriddedRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-            default:
-                throw new IllegalArgumentException( "Unrecognized data type from which to create the single-valued "
-                                                    + "retriever: "
-                                                    + dataType
-                                                    + "'." );
-        }
+        return switch ( dataType )
+                {
+                    case SINGLE_VALUED_FORECASTS ->
+                            ( SingleValuedGriddedRetriever.Builder ) new SingleValuedGriddedRetriever.Builder()
+                                    .setIsForecast( true )
+                                    .setReferenceTimeType(
+                                            ReferenceTimeType.T0 );
+                    case OBSERVATIONS, SIMULATIONS ->
+                            ( SingleValuedGriddedRetriever.Builder ) new SingleValuedGriddedRetriever.Builder()
+                                    .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                    default -> throw new IllegalArgumentException(
+                            "Unrecognized data type from which to create the single-valued "
+                            + "retriever: "
+                            + dataType
+                            + "'." );
+                };
     }
 
 
     /**
      * Returns the declared existing time scale associated with a data source, if any.
-     * 
+     *
      * @param dataSourceConfig the data source declaration
      * @return a declared existing time scale, or null
      */
@@ -350,7 +350,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     /**
      * Returns the project associated with this factory instance.
-     * 
+     *
      * @return the project
      */
 
@@ -361,7 +361,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param project the project
      * @param database the database,
      * @param caches the caches

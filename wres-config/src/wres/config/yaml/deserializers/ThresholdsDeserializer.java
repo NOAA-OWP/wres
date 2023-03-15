@@ -2,7 +2,7 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -122,7 +122,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                                    wres.statistics.generated.Threshold.Builder thresholdBuilder )
             throws IOException
     {
-        Set<Threshold> thresholds = new HashSet<>();
+        // Preserve insertion order
+        Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Threshold values are validated at schema validation time
         double[] values = reader.readValue( thresholdsNode, double[].class );
@@ -193,7 +194,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             builder.setDataType( dataType );
         }
 
-        Set<Threshold> thresholds = new HashSet<>();
+        // Preserve insertion order
+        Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Create the thresholds
         if ( thresholdNode.has( "values" ) )
@@ -236,7 +238,9 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                                      wres.statistics.generated.Threshold.Builder builder )
     {
         int thresholdCount = thresholdNode.size();
-        Set<Threshold> thresholds = new HashSet<>();
+
+        // Preserve insertion order
+        Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Iterate the thresholds
         for ( int i = 0; i < thresholdCount; i++ )

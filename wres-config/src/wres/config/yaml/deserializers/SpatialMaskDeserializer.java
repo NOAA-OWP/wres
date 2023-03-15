@@ -29,7 +29,25 @@ public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
 
         if ( node.has( "wkt" ) )
         {
-            return mapper.readValue( node, SpatialMask.class );
+            String wktString = node.get( "wkt" )
+                                   .asText();
+
+            String name = null;
+            Integer srid = null;
+
+            if ( node.has( "srid" ) )
+            {
+                srid = node.get( "srid" )
+                           .asInt();
+            }
+
+            if ( node.has( "name" ) )
+            {
+                name = node.get( "name" )
+                           .asText();
+            }
+
+            return new SpatialMask( name, wktString, srid );
         }
 
         String wktString = node.asText();

@@ -2,8 +2,8 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,7 +41,8 @@ public class ThresholdSetsDeserializer extends JsonDeserializer<Set<Threshold>>
         ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 
-        Set<Threshold> thresholds = new HashSet<>();
+        // Preserve insertion order
+        Set<Threshold> thresholds = new LinkedHashSet<>();
 
         int nodeCount = node.size();
 

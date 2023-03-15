@@ -1,6 +1,7 @@
 package wres.config.yaml.components;
 
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -12,5 +13,15 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param unit the time unit
  */
 @RecordBuilder
-public record TimePools( @JsonProperty( "period" ) int period, @JsonProperty( "frequency" ) int frequency,
-                         @JsonProperty( "unit" ) ChronoUnit unit ) {}
+public record TimePools( @JsonProperty( "period" ) Integer period, @JsonProperty( "frequency" ) Integer frequency,
+                         @JsonProperty( "unit" ) ChronoUnit unit )
+{
+    // Set defaults
+    public TimePools
+    {
+        if ( Objects.isNull( frequency ) )
+        {
+            frequency = period;
+        }
+    }
+}

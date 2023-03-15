@@ -25,7 +25,7 @@ import wres.statistics.generated.TimeWindow;
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
  * evaluation. Backed by an in-memory {@link TimeSeriesStore}.
- * 
+ *
  * @author James Brown
  */
 
@@ -68,12 +68,13 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.LEFT,
                                                                                   originalSeries,
-                                                                                  null,
-                                                                                  features );
+                                                                                  null );
         // Wrap in a caching retriever
-        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                                    LeftOrRightOrBaseline.LEFT,
-                                                                                                                    this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ) );
+        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries ->
+                                                                         RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                                              LeftOrRightOrBaseline.LEFT,
+                                                                                                              this.project.getDeclaredDataSource(
+                                                                                                                      LeftOrRightOrBaseline.LEFT ) ) ) );
     }
 
     @Override
@@ -115,13 +116,13 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.LEFT,
                                                                                   originalSeries,
-                                                                                  adjustedWindow,
-                                                                                  features );
+                                                                                  adjustedWindow );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
-        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                                    LeftOrRightOrBaseline.LEFT,
-                                                                                                                    data ) ) );
+        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale(
+                timeSeries,
+                LeftOrRightOrBaseline.LEFT,
+                data ) ) );
     }
 
     @Override
@@ -144,8 +145,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.RIGHT,
                                                                                     originalSeries,
-                                                                                    adjustedWindow,
-                                                                                    features );
+                                                                                    adjustedWindow );
 
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                LeftOrRightOrBaseline.RIGHT,
@@ -180,8 +180,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.BASELINE,
                                                                                     originalSeries,
-                                                                                    adjustedWindow,
-                                                                                    features );
+                                                                                    adjustedWindow );
 
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                LeftOrRightOrBaseline.BASELINE,
@@ -194,16 +193,15 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      * @param orientation the orientation
      * @param timeSeries the input time-series
      * @param timeWindow the time window, optional
-     * @param features the features
      * @return the adapted time-series
      */
 
     private <T> Stream<TimeSeries<T>> getAdaptedTimeSeries( LeftOrRightOrBaseline orientation,
                                                             Stream<TimeSeries<T>> timeSeries,
-                                                            TimeWindowOuter timeWindow,
-                                                            Set<Feature> features )
+                                                            TimeWindowOuter timeWindow )
     {
         Stream<TimeSeries<T>> allSeries = timeSeries;
+
         // Analysis shape of evaluation?
         if ( this.project.getDeclaredDataSource( orientation )
                          .getType() == DatasourceType.ANALYSES )
@@ -220,11 +218,9 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param project the project
      * @param timeSeriesStore the time-series store
-     * @param unitMapper the unit mapper
-     * @param timeSeriesStore the store of time-series
      * @throws NullPointerException if any input is null
      */
 

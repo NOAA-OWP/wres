@@ -4,9 +4,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.deserializers.FeatureGroupsDeserializer;
 import wres.statistics.generated.GeometryGroup;
 
 /**
@@ -14,6 +16,7 @@ import wres.statistics.generated.GeometryGroup;
  * @param geometryGroups the feature groups
  */
 @RecordBuilder
+@JsonDeserialize( using = FeatureGroupsDeserializer.class )
 public record FeatureGroups( Set<GeometryGroup> geometryGroups )
 {
     // Set default values

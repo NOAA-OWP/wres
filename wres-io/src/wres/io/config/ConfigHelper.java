@@ -19,7 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -30,7 +29,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.ingesting.PreIngestException;
@@ -85,7 +83,7 @@ public class ConfigHelper
      * <p>Creates a hash for the indicated project configuration based on its
      * data ingested.
      *
-     * TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
+     * <p>TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
      * baseline separately, treat each as a dataset. Link dataset to project.
      *
      * @param leftHashesIngested A collection of the hashes for the left sided
@@ -236,7 +234,7 @@ public class ConfigHelper
 
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     * 
+     *
      * @param projectConfig the project declaration
      * @return whether or not the project uses probability thresholds
      * @throws NullPointerException if the input is null or the metrics declaration is null
@@ -263,7 +261,7 @@ public class ConfigHelper
 
     /**
      * Return <code>true</code> if the project contains ensemble forecasts, otherwise <code>false</code>.
-     * 
+     *
      * @param projectConfig the project declaration
      * @return whether or not the project contains ensemble forecasts
      * @throws NullPointerException if the projectConfig is null or the inputs declaration is null
@@ -322,12 +320,12 @@ public class ConfigHelper
     }
 
     /**
-     * Given a config and a data source, return which kind the datasource is
+     * <p>Given a config and a data source, return which kind the datasource is
      *
-     * TODO: this method cannot work. Two or more source declarations can be equal and the LRB context
+     * <p>TODO: this method cannot work. Two or more source declarations can be equal and the LRB context
      * is not part of the declaration. See #67774.
      * The above comment is one opinion about whether to use a method like this.
-     * 
+     *
      * @param projectConfig the project config the source belongs to
      * @param config the config we wonder about
      * @return left or right or baseline
@@ -369,7 +367,7 @@ public class ConfigHelper
 
     /**
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
-     * 
+     *
      * @param destinationConfig the destination configuration
      * @return a decimal formatter or null.
      */
@@ -389,11 +387,11 @@ public class ConfigHelper
     /**
      * <p>Returns an {@link OutputTypeSelection} from the input configuration or {@link OutputTypeSelection#DEFAULT} if 
      * no selection is provided.</p> 
-     * 
+     *
      * <p>If an override exists for a metric with the identifier {@link MetricConfigName#ALL_VALID} and this has a 
      * designated {@link OutputTypeSelection}, the override is returned. If an override does not exist, the 
      * {@link OutputTypeSelection} associated with the destination configuration is returned instead.</p>
-     * 
+     *
      * @param projectConfig the project configuration to search for overrides
      * @param destinationConfig the destination configuration
      * @return the required output type
@@ -418,7 +416,7 @@ public class ConfigHelper
 
     /**
      * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
-     * 
+     *
      * @param baselineConfig the declaration to inspect
      * @return true if a generated baseline is required
      */
@@ -433,7 +431,7 @@ public class ConfigHelper
 
     /**
      * Returns <code>true</code> if a baseline is present, otherwise <code>false</code>.
-     * 
+     *
      * @param projectConfig the declaration to inspect
      * @return true if a baseline is present
      * @throws NullPointerException if the input is null
@@ -449,7 +447,7 @@ public class ConfigHelper
 
     /**
      * Gets the desired time scale associated with the pair declaration, if any.
-     * 
+     *
      * @param pairConfig the pair declaration
      * @return the desired time scale or null
      */
@@ -465,33 +463,6 @@ public class ConfigHelper
         }
 
         return returnMe;
-    }
-
-    /**
-     * Returns a list of output formats in the input configuration that can be mutated incrementally.
-     * 
-     * @param projectConfig the project configuration
-     * @return the output formats in the configuration that can be mutated incrementally or the empty set
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Set<DestinationType> getIncrementalFormats( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        Outputs output = projectConfig.getOutputs();
-
-        if ( Objects.nonNull( output ) )
-        {
-            return output.getDestination()
-                         .stream()
-                         .map( DestinationConfig::getType )
-                         .filter( next -> next == DestinationType.NETCDF || next == DestinationType.PROTOBUF )
-                         .collect( Collectors.toUnmodifiableSet() );
-        }
-
-        // Return empty set
-        return Collections.emptySet();
     }
 
     /**
@@ -537,9 +508,9 @@ public class ConfigHelper
         // Collect the features from the singleton groups and multi-feature groups
         List<NamedFeature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
         List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
-                                                  .stream()
-                                                  .flatMap( next -> next.getFeature().stream() )
-                                                  .collect( Collectors.toList() );
+                                                       .stream()
+                                                       .flatMap( next -> next.getFeature().stream() )
+                                                       .toList();
         featuresConfigured.addAll( groupedFeatures );
 
         if ( featuresConfigured.isEmpty() )
@@ -649,11 +620,11 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
-                                                         +
-                                                         foundDimension
-                                                         + AND
-                                                         + FeatureDimension.NWM_FEATURE_ID );
+                                EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
+                                +
+                                foundDimension
+                                + AND
+                                + FeatureDimension.NWM_FEATURE_ID );
                     }
                 }
                 else if ( sourceInterface.contains( "usgs" )
@@ -666,11 +637,11 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
-                                                         +
-                                                         foundDimension
-                                                         + AND
-                                                         + FeatureDimension.USGS_SITE_CODE );
+                                EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
+                                +
+                                foundDimension
+                                + AND
+                                + FeatureDimension.USGS_SITE_CODE );
                     }
                 }
                 else if ( sourceInterface.contains( "ahps" )
@@ -683,11 +654,11 @@ public class ConfigHelper
                     else
                     {
                         throw new IllegalStateException(
-                                                         EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
-                                                         +
-                                                         foundDimension
-                                                         + AND
-                                                         + FeatureDimension.NWS_LID );
+                                EXTERNAL_THRESHOLD_IDENTIFIERS_CANNOT_BE_INTERPRETTED_IF_THE_INPUT_DATA_IS_BOTH
+                                +
+                                foundDimension
+                                + AND
+                                + FeatureDimension.NWS_LID );
                     }
                 }
             }
@@ -706,25 +677,16 @@ public class ConfigHelper
 
     public static ReferenceTimeType getReferenceTimeType( DatasourceType dataSourceType )
     {
-        switch ( dataSourceType )
-        {
-            case ANALYSES:
-            case SIMULATIONS:
-                return ReferenceTimeType.ANALYSIS_START_TIME;
-            case ENSEMBLE_FORECASTS:
-                return ReferenceTimeType.T0;
-            case OBSERVATIONS:
-                return ReferenceTimeType.ANALYSIS_START_TIME;
-            case SINGLE_VALUED_FORECASTS:
-                return ReferenceTimeType.T0;
-            default:
-                throw new IllegalArgumentException( "Unrecognized data source type " + dataSourceType + "." );
-        }
+        return switch ( dataSourceType )
+                {
+                    case ANALYSES, SIMULATIONS, OBSERVATIONS -> ReferenceTimeType.ANALYSIS_START_TIME;
+                    case ENSEMBLE_FORECASTS, SINGLE_VALUED_FORECASTS -> ReferenceTimeType.T0;
+                };
     }
 
     /**
      * Returns the earliest analysis duration associated with the project.
-     * 
+     *
      * @param projectConfig the project declaration
      * @return the earliest analysis duration
      * @throws NullPointerException if the projectConfig is null
@@ -756,7 +718,7 @@ public class ConfigHelper
 
     /**
      * Returns the latest analysis duration associated with the project.
-     * 
+     *
      * @param projectConfig the project declaration
      * @return the latest analysis duration
      * @throws NullPointerException if the projectConfig is null
@@ -834,7 +796,7 @@ public class ConfigHelper
 
     /**
      * Returns a duration from an integer amount and a string unit, else <code>null</null>.
-     * 
+     *
      * @return a duration or null
      */
 
@@ -852,7 +814,7 @@ public class ConfigHelper
 
         return returnMe;
     }
-    
+
 
     private ConfigHelper()
     {
