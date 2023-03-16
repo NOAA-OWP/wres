@@ -19,7 +19,12 @@ public record FeatureServiceGroup( @JsonProperty( "group" ) String group,
                                    @JsonProperty( "value" ) String value,
                                    @JsonProperty( "pool" ) Boolean pool )
 {
-    // Set defaults
+    /**
+     * Sets the default values.
+     * @param group the group
+     * @param value the group value
+     * @param pool whether the features should be pooled
+     */
     public FeatureServiceGroup
     {
         if ( Objects.isNull( pool ) )

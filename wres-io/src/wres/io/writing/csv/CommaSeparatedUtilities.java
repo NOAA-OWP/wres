@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated;
+package wres.io.writing.csv;
 
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;

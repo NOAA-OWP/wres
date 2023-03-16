@@ -22,7 +22,7 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
 import wres.events.Evaluation;
-import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.io.writing.csv.pairs.PairsWriter;
 import wres.pipeline.EvaluationEvent;
 import wres.pipeline.WresProcessingException;
 import wres.pipeline.pooling.PoolProcessingResult.Status;

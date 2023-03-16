@@ -18,7 +18,13 @@ public record Values( @JsonProperty( "minimum" ) Double minimum,
                       @JsonProperty( "below_minimum" ) Double belowMinimum,
                       @JsonProperty( "above_maximum" ) Double aboveMaximum )
 {
-    // Set default values
+    /**
+     * Sets the default values.
+     * @param minimum the minimum
+     * @param maximum the maximum
+     * @param belowMinimum the value to assign when below the minimum
+     * @param aboveMaximum the value to assign when above the maximum
+     */
     public Values
     {
         if ( Objects.isNull( minimum ) )

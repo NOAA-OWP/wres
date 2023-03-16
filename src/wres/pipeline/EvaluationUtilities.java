@@ -72,7 +72,7 @@ import wres.io.retrieval.memory.EnsembleRetrieverFactoryInMemory;
 import wres.io.retrieval.memory.SingleValuedRetrieverFactoryInMemory;
 import wres.io.thresholds.ThresholdReader;
 import wres.io.writing.SharedSampleDataWriters;
-import wres.io.writing.commaseparated.pairs.PairsWriter;
+import wres.io.writing.csv.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.pipeline.Evaluator.DatabaseServices;
 import wres.pipeline.Evaluator.Executors;

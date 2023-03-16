@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.pairs;
+package wres.io.writing.csv.pairs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

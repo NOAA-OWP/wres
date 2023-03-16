@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.statistics;
+package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,7 +37,7 @@ import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.io.writing.csv.CommaSeparatedUtilities;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**

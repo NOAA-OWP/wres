@@ -13,9 +13,9 @@ import java.util.function.Supplier;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
-import wres.io.writing.commaseparated.pairs.EnsemblePairsWriter;
-import wres.io.writing.commaseparated.pairs.PairsWriter;
-import wres.io.writing.commaseparated.pairs.SingleValuedPairsWriter;
+import wres.io.writing.csv.pairs.EnsemblePairsWriter;
+import wres.io.writing.csv.pairs.PairsWriter;
+import wres.io.writing.csv.pairs.SingleValuedPairsWriter;
 
 /**
  * A temporary class intended to host pairs writers. Currently, wres-io creates 

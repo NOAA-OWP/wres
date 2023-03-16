@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.statistics;
+package wres.io.writing.csv.statistics;
 
 import wres.io.writing.WriteException;
 

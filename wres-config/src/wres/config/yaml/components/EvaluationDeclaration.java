@@ -3,7 +3,6 @@ package wres.config.yaml.components;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -23,21 +22,37 @@ import wres.statistics.generated.Pool;
  * Root class for an evaluation declaration.
  * @param left the left or observed data sources, required
  * @param right the right or predicted data sources, required
- * @param baseline the baseline data sources, optional
+ * @param baseline the baseline data sources
  * @param features the features, optional
- * @param featureService the feature service, optional
- * @param referenceDates the reference times, optional
- * @param referenceDatePools the reference time pools, optional
- * @param validDates the valid times, optional
- * @param validDatePools the valid time pools, optional
- * @param leadTimes the lead times, optional
- * @param leadTimePools the lead time pools, optional
- * @param timeScale the desired timescale, optional
- * @param probabilityThresholds the probability thresholds, optional
- * @param valueThresholds the value thresholds, optional
- * @param classifierThresholds the probability classifier thresholds, optional
- * @param metrics the metrics, optional
+ * @param featureGroups the feature groups
+ * @param featureService the feature service
+ * @param spatialMask a spatial mask
+ * @param unit the measurement unit
+ * @param unitAliases aliases for measurement units
+ * @param referenceDates reference dates
+ * @param referenceDatePools reference date pools
+ * @param validDates valid dates
+ * @param validDatePools valid date pools
+ * @param leadTimes lead times
+ * @param analysisDurations analysis durations
+ * @param leadTimePools lead time pools
+ * @param timeScale the evaluation timescale
+ * @param rescaleLenience whether rescaling should admit periods with missing values
+ * @param pairFrequency the frequency of the paired data
+ * @param crossPair whether to conduct cross-pairing of predicted and baseline datasets
+ * @param probabilityThresholds the probability thresholds
+ * @param valueThresholds the value thresholds
+ * @param classifierThresholds the probability classifier thresholds
+ * @param thresholdSets a collection of thresholds sets
+ * @param ensembleAverageType the type of ensemble average to use
+ * @param season the season
+ * @param values the valid values
+ * @param metrics the metrics
+ * @param durationFormat the duration format
+ * @param decimalFormat the decimal format
+ * @param formats the statistics formats to write
  */
+
 @RecordBuilder
 public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "predicted" ) Dataset right,
@@ -72,7 +87,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "season" ) Season season,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
-                                     @JsonProperty( "metrics" ) List<Metric> metrics,
+                                     @JsonProperty( "metrics" ) Set<Metric> metrics,
                                      @JsonProperty( "duration_format" ) ChronoUnit durationFormat,
                                      @JsonProperty( "decimal_format" ) String decimalFormat,
                                      @JsonProperty( "output_formats" ) Formats formats )
@@ -80,14 +95,47 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
 
-    // Set default values
+    /**
+     * Sets the default values.
+     * @param left the left or observed data sources, required
+     * @param right the right or predicted data sources, required
+     * @param baseline the baseline data sources
+     * @param features the features, optional
+     * @param featureGroups the feature groups
+     * @param featureService the feature service
+     * @param spatialMask a spatial mask
+     * @param unit the measurement unit
+     * @param unitAliases aliases for measurement units
+     * @param referenceDates reference dates
+     * @param referenceDatePools reference date pools
+     * @param validDates valid dates
+     * @param validDatePools valid date pools
+     * @param leadTimes lead times
+     * @param analysisDurations analysis durations
+     * @param leadTimePools lead time pools
+     * @param timeScale the evaluation timescale
+     * @param rescaleLenience whether rescaling should admit periods with missing values
+     * @param pairFrequency the frequency of the paired data
+     * @param crossPair whether to conduct cross-pairing of predicted and baseline datasets
+     * @param probabilityThresholds the probability thresholds
+     * @param valueThresholds the value thresholds
+     * @param classifierThresholds the probability classifier thresholds
+     * @param thresholdSets a collection of thresholds sets
+     * @param ensembleAverageType the type of ensemble average to use
+     * @param season the season
+     * @param values the valid values
+     * @param metrics the metrics
+     * @param durationFormat the duration format
+     * @param decimalFormat the decimal format
+     * @param formats the statistics formats to write
+     */
     public EvaluationDeclaration
     {
         if ( Objects.isNull( metrics ) )
         {
             LOGGER.debug( "No metrics were declared, assuming \"all valid\" metrics are required." );
 
-            metrics = List.of();
+            metrics = Set.of();
         }
 
         if ( Objects.isNull( rescaleLenience ) )

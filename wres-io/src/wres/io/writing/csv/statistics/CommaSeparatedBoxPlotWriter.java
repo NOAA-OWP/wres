@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.statistics;
+package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,7 +35,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.io.writing.csv.CommaSeparatedUtilities;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;

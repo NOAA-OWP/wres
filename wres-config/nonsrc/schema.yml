@@ -61,6 +61,8 @@ definitions:
         "$ref": "#/definitions/LeadTimes"
       lead_time_pools:
         "$ref": "#/definitions/TimePools"
+      analysis_durations:
+        "$ref": "#/definitions/AnalysisDurations"
       time_scale:
         "$ref": "#/definitions/TimeScale"
       rescale_lenience:
@@ -84,8 +86,6 @@ definitions:
         "$ref": "#/definitions/SeasonFilter"
       values:
         "$ref": "#/definitions/ValueFilter"
-      analysis_durations:
-        "$ref": "#/definitions/AnalysisDurations"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
       classifier_thresholds:

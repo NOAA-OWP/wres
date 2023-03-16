@@ -19,7 +19,11 @@ import wres.config.yaml.deserializers.FeatureServiceDeserializer;
 public record FeatureService( URI uri,
                               Set<FeatureServiceGroup> featureGroups )
 {
-    // Set the default values
+    /**
+     * Sets the default values.
+     * @param uri the uri
+     * @param featureGroups the feature groups
+     */
     public FeatureService
     {
         if ( Objects.isNull( featureGroups ) )

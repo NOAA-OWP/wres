@@ -1,9 +1,10 @@
 package wres.config.yaml.deserializers;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
@@ -26,13 +27,13 @@ import wres.config.yaml.components.MetricParameters;
  *
  * @author James Brown
  */
-public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
+public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricsDeserializer.class );
 
     @Override
-    public List<Metric> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
+    public Set<Metric> deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
         Objects.requireNonNull( jp );
 
@@ -66,10 +67,11 @@ public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
      * @throws IOException if a metric could not be parsed
      */
 
-    private List<Metric> getMetricsFromArray( ArrayNode metricsNode,
-                                              ObjectReader reader ) throws IOException
+    private Set<Metric> getMetricsFromArray( ArrayNode metricsNode,
+                                             ObjectReader reader ) throws IOException
     {
-        List<Metric> metrics = new ArrayList<>();
+        // Preserve insertion order
+        Set<Metric> metrics = new LinkedHashSet<>();
         int nodeCount = metricsNode.size();
 
         for ( int i = 0; i < nodeCount; i++ )
@@ -93,7 +95,7 @@ public class MetricsDeserializer extends JsonDeserializer<List<Metric>>
             metrics.add( nextMetric );
         }
 
-        return metrics;
+        return Collections.unmodifiableSet( metrics );
     }
 
     /**

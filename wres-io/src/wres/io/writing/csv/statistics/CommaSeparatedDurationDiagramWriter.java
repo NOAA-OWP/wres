@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.statistics;
+package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +34,7 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.io.writing.csv.CommaSeparatedUtilities;
 
 /**
  * Helps write paired output comprising {@link DurationDiagramStatisticOuter} to a file of Comma Separated Values (CSV).
