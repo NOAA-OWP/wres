@@ -19,7 +19,10 @@ import wres.statistics.generated.GeometryTuple;
 @JsonDeserialize( using = FeaturesDeserializer.class )
 public record Features( Set<GeometryTuple> geometries )
 {
-    // Set default values
+    /**
+     * Sets the default values.
+     * @param geometries the geometries
+     */
     public Features
     {
         if ( Objects.isNull( geometries ) )

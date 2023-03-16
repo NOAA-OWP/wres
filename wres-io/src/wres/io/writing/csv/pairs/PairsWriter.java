@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.pairs;
+package wres.io.writing.csv.pairs;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -37,7 +37,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.writing.WriteException;
-import wres.io.writing.commaseparated.CommaSeparatedUtilities;
+import wres.io.writing.csv.CommaSeparatedUtilities;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

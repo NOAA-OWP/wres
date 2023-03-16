@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.statistics;
+package wres.io.writing.csv.statistics;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;

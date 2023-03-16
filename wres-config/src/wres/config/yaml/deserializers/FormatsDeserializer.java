@@ -43,18 +43,21 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
                                                                .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD ) )
                              .build();
 
+    /** A value that is re-used several times. */
+    private static final String ZERO = "0.000000";
+
     /** Default CSV format. **/
     private static final Outputs.CsvFormat CSV_FORMAT =
             Outputs.CsvFormat.newBuilder()
                              .setOptions( Outputs.NumericFormat.newBuilder()
-                                                               .setDecimalFormat( "0.000000" ) )
+                                                               .setDecimalFormat( ZERO ) )
                              .build();
 
     /** Default CSV2 format. **/
     private static final Outputs.Csv2Format CSV2_FORMAT =
             Outputs.Csv2Format.newBuilder()
                               .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( "0.000000" ) )
+                                                                .setDecimalFormat( ZERO ) )
                               .build();
 
     /** Default NetCDF format. **/
@@ -73,7 +76,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
     private static final Outputs.PairFormat PAIR_FORMAT =
             Outputs.PairFormat.newBuilder()
                               .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( "0.000000" ) )
+                                                                .setDecimalFormat( ZERO ) )
                               .build();
 
     @Override

@@ -34,7 +34,15 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
                                 @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
                                 @JsonProperty( "graphics" ) Boolean graphics )
 {
-    // Set the default parameter values
+    /**
+     * Sets the default values.
+     * @param probabilityThresholds the probability thresholds
+     * @param valueThresholds the value thresholds
+     * @param classifierThresholds the probability classifier thresholds
+     * @param summaryStatistics the summary statistics
+     * @param minimumSampleSize the minimum sample size
+     * @param graphics whether graphics should be created for this metric
+     */
     public MetricParameters
     {
         if ( Objects.isNull( probabilityThresholds ) )

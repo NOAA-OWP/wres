@@ -31,9 +31,9 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesDeserializer.class );
 
-    public static final String OBSERVED = "observed";
-    public static final String PREDICTED = "predicted";
-    public static final String BASELINE = "baseline";
+    private static final String OBSERVED = "observed";
+    private static final String PREDICTED = "predicted";
+    private static final String BASELINE = "baseline";
 
     @Override
     public Features deserialize( JsonParser jp, DeserializationContext context ) throws IOException

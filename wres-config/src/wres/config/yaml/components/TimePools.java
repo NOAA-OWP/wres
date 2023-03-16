@@ -16,7 +16,12 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 public record TimePools( @JsonProperty( "period" ) Integer period, @JsonProperty( "frequency" ) Integer frequency,
                          @JsonProperty( "unit" ) ChronoUnit unit )
 {
-    // Set defaults
+    /**
+     * Sets the default values.
+     * @param period the period
+     * @param frequency the frequency
+     * @param unit the unit
+     */
     public TimePools
     {
         if ( Objects.isNull( frequency ) )

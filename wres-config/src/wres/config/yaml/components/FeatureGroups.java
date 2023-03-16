@@ -19,7 +19,10 @@ import wres.statistics.generated.GeometryGroup;
 @JsonDeserialize( using = FeatureGroupsDeserializer.class )
 public record FeatureGroups( Set<GeometryGroup> geometryGroups )
 {
-    // Set default values
+    /**
+     * Sets the default values.
+     * @param geometryGroups the geometry groups
+     */
     public FeatureGroups
     {
         if ( Objects.isNull( geometryGroups ) )

@@ -1,4 +1,4 @@
-package wres.io.writing.commaseparated.pairs;
+package wres.io.writing.csv.pairs;
 
 import java.nio.file.Path;
 import java.text.DecimalFormat;
