@@ -23,5 +23,5 @@ public enum TimeScaleLenience
     /** Apply lenience to the left and baseline data only. */
     @JsonProperty( "observed and baseline" ) LEFT_AND_BASELINE,
     /** Apply lenience to the left and right data only. */
-    @JsonProperty( "observed and predicted" ) LEFT_AND_RIGHT;
+    @JsonProperty( "observed and predicted" ) LEFT_AND_RIGHT
 }

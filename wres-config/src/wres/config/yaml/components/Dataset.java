@@ -2,6 +2,7 @@ package wres.config.yaml.components;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -27,4 +28,23 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonProperty( "type" ) DataType type,
                        @JsonProperty( "label" ) String label,
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
-                       @JsonProperty( "time_shift" ) Duration timeShift ) {}
+                       @JsonProperty( "time_shift" ) Duration timeShift )
+{
+    /**
+     * Set the defaults.
+     * @param sources the sources
+     * @param variable the variable
+     * @param featureAuthority the feature authority
+     * @param type the type of data
+     * @param label the label
+     * @param ensembleFilter the ensemble filter
+     * @param timeShift the time shift
+     */
+    public Dataset
+    {
+        if ( Objects.isNull( sources ) )
+        {
+            sources = List.of();
+        }
+    }
+}

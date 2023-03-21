@@ -23,5 +23,5 @@ public enum Format
     /** NETCDF Version 2.0. */
     @JsonProperty( "netcdf2" ) NETCDF2,
     /** Protocol Buffers. */
-    @JsonProperty( "protobuf" ) PROTOBUF;
+    @JsonProperty( "protobuf" ) PROTOBUF
 }
