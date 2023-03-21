@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
@@ -186,7 +187,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
         JsonNode filterNode = node.get( "ensemble_filter" );
 
-        List<String> members;
+        Set<String> members;
         boolean exclude = false;
 
         // Plain member array
@@ -209,17 +210,17 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
     /**
      * @param reader the reader
      * @param node the node
-     * @return a list of ensemble members to filter
+     * @return a set of ensemble members to filter
      * @throws IOException if the members could not be read
      */
 
-    private List<String> getMembers( ObjectReader reader, JsonNode node ) throws IOException
+    private Set<String> getMembers( ObjectReader reader, JsonNode node ) throws IOException
     {
         JavaType type = reader.getTypeFactory()
-                              .constructCollectionType( List.class, String.class );
+                              .constructCollectionType( Set.class, String.class );
         JsonParser parser = reader.treeAsTokens( node );
-        List<String> rawSources = reader.readValue( parser, type );
-        return Collections.unmodifiableList( rawSources );
+        Set<String> rawSources = reader.readValue( parser, type );
+        return Collections.unmodifiableSet( rawSources );
     }
 
     /**

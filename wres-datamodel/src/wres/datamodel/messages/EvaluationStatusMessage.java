@@ -11,7 +11,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 
 /**
  * <p>Wraps an {@link EvaluationStatusEvent}, which contains user-facing information about the status of an evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -23,10 +23,10 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
     private static final String MESSAGE = "MESSAGE";
     private static final String STAGE = "STAGE";
     private static final String LEVEL = "LEVEL";
-    
+
     /**
      * Constructs an event.
-     * 
+     *
      * @param statusEvent the evaluation status event, not null
      * @throws NullPointerException if the statusEvent is null
      * @return an evaluation status message
@@ -39,7 +39,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Constructs an event.
-     * 
+     *
      * @param statusLevel the status level
      * @param evaluationStage the evaluation stage
      * @param message the message
@@ -54,7 +54,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Constructs an event of type {@link StatusLevel#WARN}.
-     * 
+     *
      * @param evaluationStage the evaluation stage
      * @param message the message
      * @throws NullPointerException if any input is null
@@ -68,7 +68,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Constructs an event of type {@link StatusLevel#ERROR}.
-     * 
+     *
      * @param evaluationStage the evaluation stage
      * @param message the message
      * @throws NullPointerException if any input is null
@@ -82,7 +82,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Constructs an event of type {@link StatusLevel#ERROR}.
-     * 
+     *
      * @param evaluationStage the evaluation stage
      * @param message the message
      * @throws NullPointerException if any input is null
@@ -96,7 +96,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Constructs an event of type {@link StatusLevel#DEBUG}.
-     * 
+     *
      * @param evaluationStage the evaluation stage
      * @param message the message
      * @throws NullPointerException if any input is null
@@ -110,7 +110,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Returns the status level.
-     * 
+     *
      * @return the status level
      */
 
@@ -121,7 +121,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Returns the evaluation stage.
-     * 
+     *
      * @return the evaluation stage
      */
 
@@ -132,7 +132,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Returns the canonical status message.
-     * 
+     *
      * @return the event type
      */
 
@@ -143,7 +143,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Returns the message.
-     * 
+     *
      * @return the validation message
      */
 
@@ -154,37 +154,34 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Provides a string representation of the validation event.
-     * 
+     *
      * @return a string representation
      */
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE ).append( LEVEL, this.getStatusLevel() )
-                                                                            .append( STAGE,
-                                                                                     this.getEvaluationStage() )
-                                                                            .append( MESSAGE, this.getMessage() )
-                                                                            .toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( LEVEL, this.getStatusLevel() )
+                .append( STAGE,
+                         this.getEvaluationStage() )
+                .append( MESSAGE, this.getMessage() )
+                .toString();
     }
 
     @Override
     public int compareTo( EvaluationStatusMessage o )
     {
-        Objects.requireNonNull( o );
-
         return MessageUtilities.compare( this.getEvaluationStatusEvent(), o.getEvaluationStatusEvent() );
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        if ( ! ( obj instanceof EvaluationStatusMessage ) )
+        if ( !( obj instanceof EvaluationStatusMessage input ) )
         {
             return false;
         }
-
-        EvaluationStatusMessage input = (EvaluationStatusMessage) obj;
 
         return Objects.equals( input.getEvaluationStatusEvent(), this.getEvaluationStatusEvent() );
     }
@@ -222,7 +219,7 @@ public class EvaluationStatusMessage implements Comparable<EvaluationStatusMessa
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param statusMessage the canonical status message
      * @throws NullPointerException if the statusMessage is null
      */

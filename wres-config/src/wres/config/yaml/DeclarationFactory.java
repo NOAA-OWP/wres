@@ -12,7 +12,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -52,7 +51,6 @@ import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FormatsBuilder;
-import wres.config.yaml.components.Source;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
@@ -137,16 +135,51 @@ public class DeclarationFactory
     private static final String SCHEMA = "schema.yml";
 
     /**
-     * Deserializes a YAML string into a POJO and performs validation against the schema. Does not interpolate any
+     * Deserializes a YAML string into a POJO and performs validation against the schema. Optionally performs
+     * interpolation of missing declaration, followed by validation of the interpolated declaration. Interpolation is
+     * performed with {@link #interpolate(EvaluationDeclaration)} and validation is performed with
+     * {@link DeclarationValidator#validateAndNotify(EvaluationDeclaration)}.
+     *
+     * @see #from(String)
+     * @param yaml the yaml string
+     * @param interpolateAndValidate is true to interpolate any missing declaration and then validate the declaration
+     * @return an evaluation declaration
+     * @throws IllegalStateException if the project declaration schema could not be found on the classpath
+     * @throws IOException if the schema could not be read
+     * @throws SchemaValidationException if the project declaration could not be validated against the schema
+     * @throws DeclarationValidationException if the declaration is invalid
+     * @throws NullPointerException if the yaml string is null
+     */
+
+    public static EvaluationDeclaration from( String yaml, boolean interpolateAndValidate ) throws IOException
+    {
+        EvaluationDeclaration declaration = DeclarationFactory.from( yaml );
+
+        if ( interpolateAndValidate )
+        {
+            declaration = DeclarationFactory.interpolate( declaration );
+            DeclarationValidator.validateAndNotify( declaration );
+        }
+
+        return declaration;
+    }
+
+    /**
+     * Deserializes a YAML string into a POJO and performs validation against the schema only. Does not interpolate any
      * options that require external calls, such as calls to feature services or threshold services, or options that
      * may be informed by data ingest, such as interpolation of the "type" of time-series data to evaluate. To perform
-     * resolve implicit declaration via "interpolation", use {@link #interpolate(EvaluationDeclaration)}.
+     * resolve implicit declaration via "interpolation", use {@link #interpolate(EvaluationDeclaration)}. Also, does
+     * not perform any high-level validation of the declaration for mutual consistency and coherence. To perform
+     * high-level validation, see the {@link DeclarationValidator}.
      *
+     * @see DeclarationValidator#validateAndNotify(EvaluationDeclaration)
+     * @see DeclarationValidator#validate(EvaluationDeclaration)
      * @param yaml the yaml string
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
      * @throws SchemaValidationException if the project declaration could not be validated against the schema
+     * @throws NullPointerException if the yaml string is null
      */
 
     public static EvaluationDeclaration from( String yaml ) throws IOException
@@ -173,7 +206,8 @@ public class DeclarationFactory
             JsonNode schemaNode = MAPPER.readTree( schemaString );
 
             // Unfortunately, Jackson does not currently resolve anchors/aliases, despite using SnakeYAML under the
-            // hood, which does resolve them properly. Instead, use SnakeYAML to create a resolved string first
+            // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
+            // because it means  that the declaration string is being read twice
             // TODO: use Jackson to read the raw YAML string once it can handle anchors/aliases properly
             Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
                                        new Representer( new DumperOptions() ),
@@ -185,7 +219,7 @@ public class DeclarationFactory
 
             LOGGER.info( "Resolved a YAML declaration string: {}.", resolvedYaml );
 
-            // Use Jackson from here
+            // Use Jackson to (re-)read the declaration string once any aliases/anchors are resolved
             JsonNode declaration = MAPPER.readTree( resolvedYamlString );
 
             JsonSchemaFactory factory =
@@ -261,6 +295,156 @@ public class DeclarationFactory
     }
 
     /**
+     * Returns a string representation of each ensemble declaration item discovered.
+     * @param declaration the declaration
+     * @return the ensemble declaration was found
+     */
+
+    static Set<String> getEnsembleDeclaration( EvaluationDeclaration declaration )
+    {
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+        return DeclarationFactory.getEnsembleDeclaration( builder );
+    }
+
+    /**
+     * @param declaration the declaration
+     * @return whether analysis durations have been declared
+     */
+    static boolean hasAnalysisDurations( EvaluationDeclaration declaration )
+    {
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+        return DeclarationFactory.hasAnalysisDurations( builder );
+    }
+
+    /**
+     * Returns a string representation of each forecast declaration item discovered.
+     * @param declaration the declaration
+     * @return the forecast declaration strings, if any
+     */
+    static Set<String> getForecastDeclaration( EvaluationDeclaration declaration )
+    {
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+        return DeclarationFactory.getForecastDeclaration( builder );
+    }
+
+    /**
+     * Returns a string representation of each ensemble declaration item discovered.
+     * @param builder the builder
+     * @return the ensemble declaration was found
+     */
+
+    private static Set<String> getEnsembleDeclaration( EvaluationDeclarationBuilder builder )
+    {
+        Set<String> ensembleDeclaration = new TreeSet<>();
+
+        // Ensemble filter on predicted dataset?
+        if ( Objects.nonNull( builder.right()
+                                     .ensembleFilter() ) )
+        {
+            ensembleDeclaration.add( "An 'ensemble_filter' was declared on the predicted dataset." );
+        }
+
+        // Ensemble filter on baseline dataset?
+        if ( DeclarationFactory.hasBaseline( builder )
+             && Objects.nonNull( builder.baseline()
+                                        .dataset()
+                                        .ensembleFilter() ) )
+        {
+            ensembleDeclaration.add( "An 'ensemble_filter' was declared on the baseline dataset." );
+        }
+
+        // Any source that contains an interface with the word ensemble?
+        Set<String> ensembleInterfaces = DeclarationFactory.getSourcesWithEnsembleInterface( builder );
+        if ( !ensembleInterfaces.isEmpty() )
+        {
+            ensembleDeclaration.add( "Discovered one or more data sources whose interfaces are ensemble-like: "
+                                     + ensembleInterfaces
+                                     + "." );
+        }
+
+        // Ensemble average declared?
+        if ( Objects.nonNull( builder.ensembleAverageType() ) )
+        {
+            ensembleDeclaration.add( "An 'ensemble_average' was declared." );
+        }
+
+        // Ensemble metrics?
+        Set<String> ensembleMetrics = DeclarationFactory.getMetricType( builder,
+                                                                        MetricConstants.SampleDataGroup.ENSEMBLE );
+        if ( !ensembleMetrics.isEmpty() )
+        {
+            ensembleDeclaration.add( "Discovered metrics that require ensemble forecasts: " + ensembleMetrics + "." );
+        }
+
+        // Discrete probability metrics?
+        Set<String> discreteProbabilityMetrics =
+                DeclarationFactory.getMetricType( builder, MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY );
+        if ( !discreteProbabilityMetrics.isEmpty() )
+        {
+            ensembleDeclaration.add( "Discovered metrics that focus on discrete probability forecasts and these can "
+                                     + "only be obtained from ensemble forecasts, currently: "
+                                     + discreteProbabilityMetrics + "." );
+        }
+
+        return Collections.unmodifiableSet( ensembleDeclaration );
+    }
+
+    /**
+     * @param builder the builder
+     * @return whether analysis durations have been declared
+     */
+    private static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
+    {
+        return Objects.nonNull( builder.analysisDurations() )
+               && ( Objects.nonNull( builder.analysisDurations().minimum() )
+                    || Objects.nonNull( builder.analysisDurations().maximumExclusive() ) );
+    }
+
+    /**
+     * Returns a string representation of each forecast declaration item discovered.
+     * @param builder the builder
+     * @return the forecast declaration strings, if any
+     */
+    private static Set<String> getForecastDeclaration( EvaluationDeclarationBuilder builder )
+    {
+        Set<String> forecastDeclaration = new TreeSet<>();
+
+        // Reference times?
+        if ( Objects.nonNull( builder.referenceDates() ) )
+        {
+            forecastDeclaration.add( "Discovered a 'reference_dates' filter." );
+        }
+
+        // Reference time pools?
+        if ( Objects.nonNull( builder.referenceDatePools() ) )
+        {
+            forecastDeclaration.add( "Discovered 'reference_date_pools'." );
+        }
+
+        // Lead times?
+        if ( Objects.nonNull( builder.leadTimes() ) )
+        {
+            forecastDeclaration.add( "Discovered 'lead_times' filter." );
+        }
+
+        // Lead time pools?
+        if ( Objects.nonNull( builder.leadTimePools() ) )
+        {
+            forecastDeclaration.add( "Discovered 'lead_time_pool'." );
+        }
+
+        // One or more sources with a forecast-like interface
+        Set<String> forecastInterfaces = DeclarationFactory.getSourcesWithForecastInterface( builder );
+        if ( !forecastInterfaces.isEmpty() )
+        {
+            forecastDeclaration.add( "Discovered one or more data sources whose interfaces are forecast-like: "
+                                     + forecastInterfaces + "." );
+        }
+
+        return Collections.unmodifiableSet( forecastDeclaration );
+    }
+
+    /**
      * Performs any additional generation steps that require the full declaration.
      *
      * @param declaration the mapped declaration to adjust
@@ -292,7 +476,7 @@ public class DeclarationFactory
         {
             LOGGER.debug( "Interpolating geospatial features from the raw declaration." );
 
-            boolean hasBaseline = Objects.nonNull( builder.baseline() );
+            boolean hasBaseline = DeclarationFactory.hasBaseline( builder );
 
             // Apply to feature context
             if ( Objects.nonNull( builder.features() ) )
@@ -576,7 +760,7 @@ public class DeclarationFactory
         if ( Objects.isNull( observed.type() ) )
         {
             String defaultMessage = "While reading the project declaration, discovered that the observed dataset had "
-                                    + "no declared data \"type\". {} If this is incorrect, please declare the \"type\" "
+                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
                                     + "explicitly.";
 
             // Analysis durations present? If so, assume analyses
@@ -588,7 +772,7 @@ public class DeclarationFactory
                 builder.left( newLeft );
 
                 // Log the reason
-                LOGGER.warn( defaultMessage, "Assuming that the \"type\" is \"analyses\" because analysis durations "
+                LOGGER.warn( defaultMessage, "Assuming that the 'type' is 'analyses' because analysis durations "
                                              + "were discovered and analyses are typically used to verify other "
                                              + "datasets." );
             }
@@ -600,7 +784,7 @@ public class DeclarationFactory
                 builder.left( newLeft );
 
                 // Log the reason
-                LOGGER.warn( defaultMessage, "Assuming that the \"type\" is \"observations\"." );
+                LOGGER.warn( defaultMessage, "Assuming that the 'type' is 'observations'." );
             }
         }
     }
@@ -617,7 +801,7 @@ public class DeclarationFactory
         if ( Objects.isNull( predicted.type() ) )
         {
             String defaultMessage = "While reading the project declaration, discovered that the predicted dataset had "
-                                    + "no declared data \"type\". {} If this is incorrect, please declare the \"type\" "
+                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
                                     + "explicitly.";
 
             String reasonMessage;
@@ -631,23 +815,34 @@ public class DeclarationFactory
             // Ensemble declaration?
             if ( !ensembleDeclaration.isEmpty() )
             {
-                reasonMessage = "Setting the \"type\" to \"ensemble forecasts\" because the following ensemble "
+                reasonMessage = "Setting the 'type' to 'ensemble forecasts' because the following ensemble "
                                 + "declaration was discovered: " + ensembleDeclaration + ".";
                 dataType = DataType.ENSEMBLE_FORECASTS;
             }
             // Forecast declaration?
             else if ( !forecastDeclaration.isEmpty() )
             {
-                reasonMessage = "Setting the \"type\" to \"single valued forecasts\" because the following forecast "
+                reasonMessage = "Setting the 'type' to 'single valued forecasts' because the following forecast "
                                 + "declaration was discovered and no ensemble declaration was discovered to suggest "
-                                + "that the forecasts are \"ensemble forecasts\": " + forecastDeclaration + ".";
+                                + "that the forecasts are 'ensemble forecasts': " + forecastDeclaration + ".";
                 dataType = DataType.SINGLE_VALUED_FORECASTS;
+            }
+            // Source declaration that is a multi-type service? If so, cannot infer the type
+            else if ( predicted.sources()
+                               .stream()
+                               .anyMatch( next -> Objects.nonNull( next.api() ) && next.api()
+                                                                                       .getDataTypes()
+                                                                                       .size() > 1 ) )
+            {
+                reasonMessage = "Could not infer the predicted data type because sources were declared with interfaces "
+                                + "that support multiple data types.";
+                dataType = null;
             }
             else
             {
-                reasonMessage = "Setting the \"type\" to \"simulations\" because no declaration was discovered to "
-                                + "suggest that any dataset contains \"single valued forecasts\" or \"ensemble "
-                                + "forecast\".";
+                reasonMessage = "Setting the 'type' to 'simulations' because no declaration was discovered to "
+                                + "suggest that any dataset contains 'single valued forecasts' or 'ensemble "
+                                + "forecast'.";
 
                 dataType = DataType.SIMULATIONS;
             }
@@ -664,199 +859,95 @@ public class DeclarationFactory
     }
 
     /**
-     * Returns a string representation of each ensemble declaration item discovered.
-     * @param builder the builder
-     * @return the ensemble declaration was found
-     */
-
-    private static Set<String> getEnsembleDeclaration( EvaluationDeclarationBuilder builder )
-    {
-        Set<String> ensembleDeclaration = new TreeSet<>();
-
-        // Ensemble filter on predicted dataset?
-        if ( Objects.nonNull( builder.right()
-                                     .ensembleFilter() ) )
-        {
-            ensembleDeclaration.add( "An \"ensemble filter\" was declared on the predicted dataset." );
-        }
-
-        // Ensemble filter on baseline dataset?
-        if ( DeclarationFactory.hasBaseline( builder )
-             && Objects.nonNull( builder.baseline()
-                                        .dataset()
-                                        .ensembleFilter() ) )
-        {
-            ensembleDeclaration.add( "An \"ensemble filter\" was declared on the baseline dataset." );
-        }
-
-        // Any source that contains an interface with the word ensemble?
-        if ( DeclarationFactory.hasSourcesWithAnEnsembleInterface( builder ) )
-        {
-            ensembleDeclaration.add( "Discovered one or more data sources whose interfaces are ensemble-like." );
-        }
-
-        // Ensemble average declared?
-        if ( Objects.nonNull( builder.ensembleAverageType() ) )
-        {
-            ensembleDeclaration.add( "An \"ensemble_average\" was declared." );
-        }
-
-        // Ensemble metrics?
-        if ( DeclarationFactory.hasMetricType( builder, MetricConstants.SampleDataGroup.ENSEMBLE ) )
-        {
-            ensembleDeclaration.add( "Discovered metrics that focus on ensemble forecasts." );
-        }
-
-        // Discrete probability metrics?
-        if ( DeclarationFactory.hasMetricType( builder, MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY ) )
-        {
-            ensembleDeclaration.add( "Discovered metrics that focus on discrete probability forecasts and these can "
-                                     + "only be obtained from ensemble forecasts, currently." );
-        }
-
-        return Collections.unmodifiableSet( ensembleDeclaration );
-    }
-
-    /**
      * @param builder the builder
      * @param groupType the group type
      * @return whether there are any metrics with the designated type
      */
-    private static boolean hasMetricType( EvaluationDeclarationBuilder builder,
-                                          MetricConstants.SampleDataGroup groupType )
+    private static Set<String> getMetricType( EvaluationDeclarationBuilder builder,
+                                              MetricConstants.SampleDataGroup groupType )
     {
         return builder.metrics()
                       .stream()
-                      .anyMatch( next -> next.name()
-                                             .isInGroup( groupType ) );
+                      .filter( next -> next.name()
+                                           .isInGroup( groupType ) )
+                      .map( next -> next.name()
+                                        .toString() )
+                      .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
      * @param builder the builder
-     * @return whether any source has an interface/api with an ensemble designation
+     * @return the sources with an interface/api that are exclusively ensemble forecasts
      */
-    private static boolean hasSourcesWithAnEnsembleInterface( EvaluationDeclarationBuilder builder )
+    private static Set<String> getSourcesWithEnsembleInterface( EvaluationDeclarationBuilder builder )
     {
-        boolean predicted = builder.right()
-                                   .sources()
-                                   .stream()
-                                   .anyMatch( next -> Objects.nonNull( next.api() )
-                                                      && next.api()
-                                                             .contains( "ensemble" ) );
+        List<String> right = builder.right()
+                                    .sources()
+                                    .stream()
+                                    .filter( next -> Objects.nonNull( next.api() )
+                                                     && next.api()
+                                                            .getDataTypes()
+                                                            .equals( Set.of( DataType.ENSEMBLE_FORECASTS ) ) )
+                                    .map( next -> next.api().toString() )
+                                    .toList();
 
-        boolean baseline = false;
+        Set<String> ensembleInterfaces = new TreeSet<>( right );
 
         if ( DeclarationFactory.hasBaseline( builder ) )
         {
-            baseline = builder.baseline()
-                              .dataset()
-                              .sources()
-                              .stream()
-                              .anyMatch( next -> Objects.nonNull( next.api() )
-                                                 && next.api()
-                                                        .contains( "ensemble" ) );
+            List<String> baseline = builder.right()
+                                           .sources()
+                                           .stream()
+                                           .filter( next -> Objects.nonNull( next.api() )
+                                                            && next.api()
+                                                                   .getDataTypes()
+                                                                   .equals( Set.of( DataType.ENSEMBLE_FORECASTS ) ) )
+                                           .map( next -> next.api().toString() )
+                                           .toList();
+            ensembleInterfaces.addAll( baseline );
         }
 
-        return predicted || baseline;
+        return Collections.unmodifiableSet( ensembleInterfaces );
     }
 
     /**
      * @param builder the builder
-     * @return whether any source has an interface/api with a forecast-like designation
+     * @return return any sources whose interfaces are exclusively forecast-like
      */
-    private static boolean hasSourcesWithAForecastInterface( EvaluationDeclarationBuilder builder )
+    private static Set<String> getSourcesWithForecastInterface( EvaluationDeclarationBuilder builder )
     {
-        boolean ensemble = DeclarationFactory.hasSourcesWithAnEnsembleInterface( builder );
+        Set<String> interfaces = new TreeSet<>( DeclarationFactory.getSourcesWithEnsembleInterface( builder ) );
 
-        // All ensembles are forecasts, currently
-        if ( ensemble )
-        {
-            return true;
-        }
+        List<String> right = builder.right()
+                                    .sources()
+                                    .stream()
+                                    .filter( next -> Objects.nonNull( next.api() )
+                                                     && next.api()
+                                                            .getDataTypes()
+                                                            .stream()
+                                                            .allMatch( DataType::isForecastType ) )
+                                    .map( next -> next.api().toString() )
+                                    .toList();
 
-        Predicate<Source> forecastMatcher = name ->
-        {
-            String api = name.api();
-            if ( Objects.nonNull( api ) )
-            {
-                api = api.toLowerCase();
-                return api.contains( "deterministic" ) || api.contains( "short_range" )
-                       || api.contains( "medium_range" ) || api.contains( "long_range" );
-            }
-
-            return false;
-        };
-
-        boolean predicted = builder.right()
-                                   .sources()
-                                   .stream()
-                                   .anyMatch( forecastMatcher );
-
-        boolean baseline = false;
+        interfaces.addAll( right );
 
         if ( DeclarationFactory.hasBaseline( builder ) )
         {
-            baseline = builder.baseline()
-                              .dataset()
-                              .sources()
-                              .stream()
-                              .anyMatch( forecastMatcher );
+            List<String> baseline = builder.baseline()
+                                           .dataset()
+                                           .sources()
+                                           .stream()
+                                           .filter( next -> Objects.nonNull( next.api() )
+                                                            && next.api()
+                                                                   .getDataTypes()
+                                                                   .stream()
+                                                                   .allMatch( DataType::isForecastType ) )
+                                           .map( next -> next.api().toString() )
+                                           .toList();
+            interfaces.addAll( baseline );
         }
 
-        return predicted || baseline;
-    }
-
-    /**
-     * @param builder the builder
-     * @return whether analysis durations have been declared
-     */
-    private static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
-    {
-        return Objects.nonNull( builder.analysisDurations() )
-               && ( Objects.nonNull( builder.analysisDurations().minimum() )
-                    || Objects.nonNull( builder.analysisDurations().maximumExclusive() ) );
-    }
-
-    /**
-     * Returns a string representation of each forecast declaration item discovered.
-     * @param builder the builder
-     * @return the forecast declaration strings, if any
-     */
-    private static Set<String> getForecastDeclaration( EvaluationDeclarationBuilder builder )
-    {
-        Set<String> forecastDeclaration = new TreeSet<>();
-
-        // Reference times?
-        if ( Objects.nonNull( builder.referenceDates() ) )
-        {
-            forecastDeclaration.add( "Discovered a \"reference_dates\" filter." );
-        }
-
-        // Reference time pools?
-        if ( Objects.nonNull( builder.referenceDatePools() ) )
-        {
-            forecastDeclaration.add( "Discovered \"reference_date_pools\"." );
-        }
-
-        // Lead times?
-        if ( Objects.nonNull( builder.leadTimes() ) )
-        {
-            forecastDeclaration.add( "Discovered a \"lead_times\" filter." );
-        }
-
-        // Lead time pools?
-        if ( Objects.nonNull( builder.leadTimePools() ) )
-        {
-            forecastDeclaration.add( "Discovered \"lead_time_pools\"." );
-        }
-
-        // One or more sources with a forecast-like interface
-        if ( DeclarationFactory.hasSourcesWithAForecastInterface( builder ) )
-        {
-            forecastDeclaration.add( "Discovered one or more data sources whose interfaces are forecast-like." );
-        }
-
-        return Collections.unmodifiableSet( forecastDeclaration );
+        return Collections.unmodifiableSet( interfaces );
     }
 
     /**
@@ -893,8 +984,8 @@ public class DeclarationFactory
 
                 LOGGER.warn(
                         "While reading the project declaration, discovered that the baseline dataset had no declared "
-                        + "data \"type\". Assuming that the \"type\" is \"{}\" to match the type of the predicted "
-                        + "dataset. If this is incorrect, please declare the \"type\" explicitly.",
+                        + "data 'type'. Assuming that the 'type' is '{}' to match the type of the predicted "
+                        + "dataset. If this is incorrect, please declare the 'type' explicitly.",
                         newBaselineDataset.type() );
             }
         }

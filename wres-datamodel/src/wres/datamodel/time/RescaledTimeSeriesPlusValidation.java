@@ -83,9 +83,9 @@ public class RescaledTimeSeriesPlusValidation<T>
     }
 
     /**
-     * Logs the validation events associated with rescaling.
+     * <p>Logs the validation events associated with rescaling.
      * 
-     * TODO: these warnings could probably be consolidated and the context information improved. May need to add 
+     * <p>TODO: these warnings could probably be consolidated and the context information improved. May need to add
      * more complete metadata information to the times-series.
      * 
      * @param context the context for the warnings
@@ -107,7 +107,7 @@ public class RescaledTimeSeriesPlusValidation<T>
             {
                 StringJoiner message = new StringJoiner( System.lineSeparator() );
                 String spacer = "    ";
-                warnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
+                warnEvents.forEach( e -> message.add( spacer + e.toString() ) );
 
                 LOGGER.warn( "While rescaling time-series with metadata {}, encountered {} validation "
                              + "warnings, as follows: {}{}",
@@ -128,7 +128,7 @@ public class RescaledTimeSeriesPlusValidation<T>
             {
                 StringJoiner message = new StringJoiner( System.lineSeparator() );
                 String spacer = "    ";
-                debugWarnEvents.stream().forEach( e -> message.add( spacer + e.toString() ) );
+                debugWarnEvents.forEach( e -> message.add( spacer + e.toString() ) );
 
                 LOGGER.debug( "While rescaling time-series with metadata {}, encountered {} detailed validation "
                               + "warnings, as follows: {}{}",

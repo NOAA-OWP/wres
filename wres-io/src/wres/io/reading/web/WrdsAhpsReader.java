@@ -372,7 +372,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                        try ( InputStream inputStream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() );
                              Stream<TimeSeriesTuple> seriesStream = AHPS_READER.read( dataSource, inputStream ) )
                        {
-                           return seriesStream.collect( Collectors.toList() ); // Terminal
+                           return seriesStream.toList(); // Terminal
                        }
                    } );
     }
@@ -490,7 +490,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Gets a URI for given date range and feature.
      *
      * <p>Expecting a wrds URI like this:
-     * http://redacted/api/v1/forecasts/streamflow/ahps</p>
+     * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/api/v1/forecasts/streamflow/ahps</a></p>
      * @param range the range of dates (from left to right)
      * @param nwsLocationId the feature for which to get data
      * @param observed true for observations, false for AHPS forecasts

@@ -1,6 +1,7 @@
 package wres.config.yaml.components;
 
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -11,5 +12,5 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param exclude whether to exclude the named members, otherwise include them
  */
 @RecordBuilder
-public record EnsembleFilter( @JsonProperty( "members" ) List<String> members,
+public record EnsembleFilter( @JsonProperty( "members" ) Set<String> members,
                               @JsonProperty( "exclude" ) boolean exclude ) {}

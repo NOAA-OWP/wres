@@ -2329,7 +2329,7 @@ public class Validation
         // Check that the function is valid
         valid = Validation.isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
-        // Check that the period is valid 
+        // Check that the desired and existing scales are consistent
         valid = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the monthdays are valid

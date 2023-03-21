@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
@@ -47,12 +49,14 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Values;
+import wres.config.yaml.components.Variable;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -169,26 +173,35 @@ class DeclarationFactoryTest
                     - some_file.csv
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
-                      time_zone: CST
+                      time_zone_offset: CST
                       missing_value: -999.0
                     - uri: https://foo.bar
-                      interface: usgs_nwis
+                      interface: usgs nwis
                       time_scale:
                         function: mean
                         period: 1
                         unit: hours
+                  type: observations
+                  variable: foo
                 predicted:
                   sources:
                     - forecasts_with_NWS_feature_authority.csv
                     - uri: file:/some/other/directory
                       pattern: '**/*.xml*'
-                      time_zone: CST
+                      time_zone_offset: -06:00
                     - uri: https://qux.quux
-                      interface: wrds_ahps
+                      interface: wrds ahps
                       time_scale:
                         function: mean
                         period: 2
                         unit: hours
+                  type: ensemble forecasts
+                reference_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
+                valid_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
                         """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -201,7 +214,7 @@ class DeclarationFactoryTest
         Source anotherObservedSource = SourceBuilder.builder()
                                                     .uri( anotherObservedUri )
                                                     .pattern( "**/*.csv*" )
-                                                    .timeZone( "CST" )
+                                                    .timeZoneOffset( ZoneOffset.of( "-0600" ) )
                                                     .missingValue( -999.0 )
                                                     .build();
 
@@ -213,7 +226,7 @@ class DeclarationFactoryTest
         wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
         Source yetAnotherObservedSource = SourceBuilder.builder()
                                                        .uri( yetAnotherObservedUri )
-                                                       .api( "usgs_nwis" )
+                                                       .api( SourceInterface.USGS_NWIS )
                                                        .timeScale( outerTimeScale )
                                                        .build();
 
@@ -221,6 +234,8 @@ class DeclarationFactoryTest
                 List.of( observedSource, anotherObservedSource, yetAnotherObservedSource );
         Dataset observedDataset = DatasetBuilder.builder()
                                                 .sources( observedSources )
+                                                .type( DataType.OBSERVATIONS )
+                                                .variable( new Variable( "foo", null ) )
                                                 .build();
 
         URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
@@ -232,7 +247,7 @@ class DeclarationFactoryTest
         Source anotherPredictedSource = SourceBuilder.builder()
                                                      .uri( anotherPredictedUri )
                                                      .pattern( "**/*.xml*" )
-                                                     .timeZone( "CST" )
+                                                     .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
                                                      .build();
 
         URI yetAnotherPredictedUri = URI.create( "https://qux.quux" );
@@ -244,7 +259,7 @@ class DeclarationFactoryTest
                 outerTimeScalePredicted = new wres.config.yaml.components.TimeScale( timeScalePredicted );
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
-                                                        .api( "wrds_ahps" )
+                                                        .api( SourceInterface.WRDS_AHPS )
                                                         .timeScale(
                                                                 outerTimeScalePredicted )
                                                         .build();
@@ -253,14 +268,12 @@ class DeclarationFactoryTest
                 List.of( predictedSource, anotherPredictedSource, yetAnotherPredictedSource );
         Dataset predictedDataset = DatasetBuilder.builder()
                                                  .sources( predictedSources )
+                                                 .type( DataType.ENSEMBLE_FORECASTS )
                                                  .build();
 
-        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
-                                                                     .left( observedDataset )
-                                                                     .right( predictedDataset )
-                                                                     .build();
-
-        assertEquals( expected, actual );
+        assertAll( () -> assertEquals( observedDataset, actual.left() ),
+                   () -> assertEquals( predictedDataset, actual.right() )
+        );
     }
 
     @Test
@@ -1012,7 +1025,7 @@ class DeclarationFactoryTest
                     predicted:
                       sources:
                         - uri: another_file.csv
-                          interface: nwm_medium_range_deterministic_channel_rt_conus
+                          interface: nwm medium range deterministic channel rt conus
                     """,
             """
                     observed:
@@ -1074,7 +1087,7 @@ class DeclarationFactoryTest
                     predicted:
                       sources:
                         - uri: another_file.csv
-                          interface: nwm_medium_range_ensemble_channel_rt_conus_hourly
+                          interface: nwm medium range ensemble channel rt conus hourly
                     """
     } )
     void testInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException

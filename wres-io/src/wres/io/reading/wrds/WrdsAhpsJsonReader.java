@@ -177,7 +177,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
         // Create a supplier that returns a time-series once complete
         return () -> {
 
-            // Read all of the time-series eagerly on first use: this will still delay any read until a terminal stream
+            // Read all the time-series eagerly on first use: this will still delay any read until a terminal stream
             // operation pulls from the supplier (which is why we use a reference holder and do not request the 
             // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
             if ( Objects.isNull( timeSeriesTuples.get() ) )
@@ -329,6 +329,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
 
         Map<ReferenceTimeType, Instant> datetimes = new EnumMap<>( ReferenceTimeType.class );
 
+        // Set the reference times, if available (WRDS AHPS supports observations too)
         if ( Objects.nonNull( forecast.getBasisTime() ) )
         {
             Instant basisDateTime = forecast.getBasisTime()

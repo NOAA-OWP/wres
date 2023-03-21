@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.MetricConstants;
-import wres.statistics.generated.MetricName;
 
 /**
  * A metric.

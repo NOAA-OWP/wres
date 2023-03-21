@@ -220,11 +220,13 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+        # Avoid format: uri because local files would require file scheme.
+        pattern: ^(?!\s*$).+
       pattern:
         type: string
         minLength: 1
         maxLength: 2083
-      time_zone:
+      time_zone_offset:
         type: string
         minLength: 1
         maxLength: 2083
@@ -906,37 +908,37 @@ definitions:
   SourceInterfaceEnum:
     type: string
     enum:
-      - wrds_ahps
-      - wrds_obs
-      - wrds_nwm
-      - usgs_nwis
-      - nwm_short_range_channel_rt_conus
-      - nwm_short_range_channel_rt_hawaii
-      - nwm_short_range_no_da_channel_rt_hawaii
-      - nwm_short_range_channel_rt_puertorico
-      - nwm_short_range_no_da_channel_rt_puertorico
-      - nwm_medium_range_ensemble_channel_rt_conus
-      - nwm_medium_range_deterministic_channel_rt_conus
-      - nwm_medium_range_ensemble_channel_rt_conus_hourly
-      - nwm_medium_range_deterministic_channel_rt_conus_hourly
-      - nwm_medium_range_no_da_deterministic_channel_rt_conus
-      - nwm_analysis_assim_channel_rt_conus
-      - nwm_analysis_assim_no_da_channel_rt_conus
-      - nwm_analysis_assim_extend_channel_rt_conus
-      - nwm_analysis_assim_extend_no_da_channel_rt_conus
-      - nwm_analysis_assim_channel_rt_hawaii
-      - nwm_analysis_assim_no_da_channel_rt_hawaii
-      - nwm_analysis_assim_channel_rt_puertorico
-      - nwm_analysis_assim_no_da_channel_rt_puertorico
-      - nwm_long_range_channel_rt_conus
+      - wrds ahps
+      - wrds obs
+      - wrds nwm
+      - usgs nwis
+      - nwm short range channel rt conus
+      - nwm short range channel rt hawaii
+      - nwm short range no da channel rt hawaii
+      - nwm short range channel rt puertorico
+      - nwm short range no da channel rt puertorico
+      - nwm medium range ensemble channel rt conus
+      - nwm medium range deterministic channel rt conus
+      - nwm medium range ensemble channel rt conus hourly
+      - nwm medium range deterministic channel rt conus hourly
+      - nwm medium range no da deterministic channel rt conus
+      - nwm analysis assim channel rt conus
+      - nwm analysis assim no da channel rt conus
+      - nwm analysis assim extend channel rt conus
+      - nwm analysis assim extend no da channel rt conus
+      - nwm analysis assim channel rt hawaii
+      - nwm analysis assim no da channel rt hawaii
+      - nwm analysis assim channel rt puertorico
+      - nwm analysis assim no da channel rt puertorico
+      - nwm long range channel rt conus
     title: SourceInterfaceEnum
 
   FeatureAuthorityEnum:
     type: string
     enum:
-      - nws_lid
-      - usgs_site_code
-      - nwm_feature_id
+      - nws lid
+      - usgs site code
+      - nwm feature id
       - custom
     title: FeatureAuthorityEnum
 
