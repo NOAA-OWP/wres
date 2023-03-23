@@ -102,10 +102,16 @@ definitions:
       metrics:
         type: array
         items:
-          anyOf:
-            - "$ref": "#/definitions/Metric"
-            - "$ref": "#/definitions/TimeSeriesMetric"
+            # A simple name or a parameterized type
+            anyOf:
+              - "$ref": "#/definitions/MetricEnum"
+              - "$ref": "#/definitions/CategoricalMetricEnum"
+              - "$ref": "#/definitions/TimeSeriesMetricEnum"
+              - "$ref": "#/definitions/MetricWithParameters"
+              - "$ref": "#/definitions/CategoricalMetricWithParameters"
+              - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
         minItems: 1
+        uniqueItems: true
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
@@ -115,8 +121,14 @@ definitions:
       output_formats:
         type: array
         items:
-          "$ref": "#/definitions/Format"
+          # A simple name or a parameterized type
+          anyOf:   
+            - "$ref": "#/definitions/FormatEnum"
+            - "$ref": "#/definitions/GraphicFormatEnum"
+            - "$ref": "#/definitions/Format"
+            - "$ref": "#/definitions/GraphicFormat"
         minItems: 1
+        uniqueItems: true
     required:
       - observed
       - predicted
@@ -314,7 +326,7 @@ definitions:
       - "$ref": "#/definitions/FeatureTuple"
       - type: string
         minLength: 1
-        maxLength: 2083
+        maxLength: 32
     title: Feature
 
   # A feature tuple
@@ -327,19 +339,19 @@ definitions:
           - "$ref": "#/definitions/FeatureTupleFull"
           - type: string
             minLength: 1
-            maxLength: 2083
+            maxLength: 32
       predicted:
         anyOf:
           - "$ref": "#/definitions/FeatureTupleFull"
           - type: string
             minLength: 1
-            maxLength: 2083
+            maxLength: 32
       baseline:
         anyOf:
           - "$ref": "#/definitions/FeatureTupleFull"
           - type: string
             minLength: 1
-            maxLength: 2083
+            maxLength: 32
     title: FeatureTuple
   
   # A feature tuple with additional properties
@@ -350,11 +362,13 @@ definitions:
       name:
         type: string
         minLength: 1
-        maxLength: 2083
+        maxLength: 32
       wkt:
         type: string
         minLength: 1
         maxLength: 2083
+    required:
+      - name
     title: FeatureTupleFull
 
   # A group of feature tuples, such as all features within a geospatial region.
@@ -365,7 +379,7 @@ definitions:
       name:
         type: string
         minLength: 1
-        maxLength: 2083
+        maxLength: 98
       features:
         type: array
         items:
@@ -525,7 +539,7 @@ definitions:
         minimum: 0
       frequency:
         type: integer
-        minimum: 0
+        minimum: 1
       unit:
         "$ref": "#/definitions/DurationEnum"
     required:
@@ -796,14 +810,6 @@ definitions:
       - uri
     title: ThresholdService
 
-  # An evaluation metric, which may contain a simple name or a parameterized 
-  # metric.
-  Metric:
-    anyOf:
-      - "$ref": "#/definitions/MetricEnum"
-      - "$ref": "#/definitions/MetricWithParameters"
-    title: Metric
-
   # A parameterized metric.
   MetricWithParameters:
     type: object
@@ -815,23 +821,40 @@ definitions:
         "$ref": "#/definitions/ProbabilityThresholds"
       value_thresholds:
         "$ref": "#/definitions/ValueThresholds"
-      classifier_thresholds:
-        "$ref": "#/definitions/ProbabilityThresholds"
       minimum_sample_size:
         type: integer
-      graphics:
+        minimum: 1
+      svg:
+        type: boolean
+      png:
         type: boolean
     required:
       - name
     title: MetricWithParameters
 
-  # A time=series evaluation metric, which is a special type of metric. It may 
-  # contain a simple name or a parameterized metric.
-  TimeSeriesMetric:
-    anyOf:
-      - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
-      - "$ref": "#/definitions/TimeSeriesMetricEnum"
-    title: TimeSeriesMetric
+  # A parameterized categorical metric.
+  CategoricalMetricWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        "$ref": "#/definitions/CategoricalMetricEnum"
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/ValueThresholds"
+      classifier_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      minimum_sample_size:
+        type: integer
+        minimum: 1
+      svg:
+        type: boolean
+      png:
+        type: boolean
+    required:
+      - name
+    title: CategoricalMetricWithParameters
 
   # A parameterized time-series metric.
   TimeSeriesMetricWithParameters:
@@ -855,24 +878,28 @@ definitions:
       - name
     title: TimeSeriesMetricWithParameters
 
-  # The formats for writing statistics. May be a simple name or a parameterized
-  # format.
+  # Format. A facade to allow the same declaration across
+  # all types of format. For example, format: csv2
   Format:
-    anyOf:
-      - "$ref": "#/definitions/FormatEnum"
-      - "$ref": "#/definitions/PngFormat"
-      - "$ref": "#/definitions/SvgFormat"
-    title: Format
-
-  # Portable Network Graphics (PNG) with parameters.
-  PngFormat:
     type: object
     additionalProperties: false
     properties:
       format:
         "$ref": "#/definitions/FormatEnum"
+    required:
+      - format
+    title: Format
+
+  # Graphic format.
+  GraphicFormat:
+    type: object
+    additionalProperties: false
+    properties:
+      format:
+        "$ref": "#/definitions/GraphicFormatEnum"
       orientation:
         "$ref": "#/definitions/OrientationEnum"
+      # Both rasters and vectors can have width/height
       width:
         type: integer
         minimum: 400
@@ -881,20 +908,7 @@ definitions:
         minimum: 300
     required:
       - format
-    title: PngFormat
-
-  # Scalable Vector Graphics (SVG) with parameters.
-  SvgFormat:
-    type: object
-    additionalProperties: false
-    properties:
-      format:
-        "$ref": "#/definitions/FormatEnum"
-      orientation:
-        "$ref": "#/definitions/OrientationEnum"
-    required:
-      - format
-    title: SvgFormat
+    title: GraphicFormat
 
   DurationEnum:
     type: string
@@ -986,10 +1000,10 @@ definitions:
       - median
     title: EnsembleAverageEnum
 
+  # A big bucket of metrics that all accept the same parameters
   MetricEnum:
     type: string
     enum:
-      - all valid
       - bias fraction
       - box plot of errors
       - box plot of percentage errors
@@ -1035,13 +1049,26 @@ definitions:
       - mean absolute error skill score
     title: MetricEnum
 
+  # Time-series metrics
   TimeSeriesMetricEnum:
     type: string
     enum:
-      - all valid
       - time to peak relative error
       - time to peak error
     title: TimeSeriesMetricEnum
+
+  # Categorical metrics
+  CategoricalMetricEnum:
+    type: string
+    enum:
+      - contingency table
+      - threat score
+      - equitable threat score
+      - frequency bias
+      - probability of detection
+      - probability of false detection
+      - false alarm ratio
+    title: CategoricalMetricEnum
 
   FormatEnum:
     type: string
@@ -1052,11 +1079,16 @@ definitions:
       - svg
       - netcdf
       - netcdf2
-      - numeric
-      - graphic
       - pairs
       - protobuf
     title: FormatEnum
+
+  GraphicFormatEnum:
+    type: string
+    enum:
+      - png
+      - svg
+    title: GraphicFormatEnum
 
   OrientationEnum:
     type: string

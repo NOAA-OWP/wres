@@ -2,6 +2,7 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -36,7 +37,7 @@ public class SummaryStatisticsDeserializer
         return StreamSupport.stream( node.spliterator(), false )
                             .map( DeclarationFactory::getEnumFriendlyName )
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
-                            .collect( Collectors.toUnmodifiableSet() );
+                            .collect( Collectors.toCollection( TreeSet::new ) );
     }
 }
 

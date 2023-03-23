@@ -30,7 +30,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.events.subscribe.ConsumerException;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -92,6 +91,10 @@ abstract class GraphicsWriter
     {
         return this.outputs;
     }
+
+    /**
+     * @return the output directory
+     */
 
     Path getOutputDirectory()
     {
@@ -169,6 +172,7 @@ abstract class GraphicsWriter
                     // Need to set this to a fixed value as it will otherwise use the system time in nanos, preventing
                     // automated testing. #81628-21.
                     svg2d.setDefsKeyPrefix( "4744385419576815639" );
+
                     chart.draw( svg2d, new Rectangle2D.Double( 0, 0, width, height ) );
                     String svgElement = svg2d.getSVGElement();
 
@@ -200,11 +204,10 @@ abstract class GraphicsWriter
                                                                     List<T> statistics,
                                                                     GraphicsHelper helper )
     {
-        String append = "";
+        String append;
 
-        if ( appendObject instanceof TimeWindowOuter )
+        if ( appendObject instanceof TimeWindowOuter timeWindow )
         {
-            TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
             GraphicShape shape = helper.getGraphicShape();
             ChronoUnit leadUnits = helper.getDurationUnits();
 
@@ -228,9 +231,8 @@ abstract class GraphicsWriter
                 }
             }
         }
-        else if ( appendObject instanceof OneOrTwoThresholds )
+        else if ( appendObject instanceof OneOrTwoThresholds threshold )
         {
-            OneOrTwoThresholds threshold = (OneOrTwoThresholds) appendObject;
             append = DataUtilities.toStringSafe( threshold );
         }
         else

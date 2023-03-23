@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -592,7 +591,7 @@ public class DataSource
 
     /**
      * Get the charset for a JSON document.
-     * https://datatracker.ietf.org/doc/html/rfc4627#section-3
+     * <a href="https://datatracker.ietf.org/doc/html/rfc4627#section-3">https://datatracker.ietf.org/doc/html/rfc4627#section-3</a>
      *            00 00 00 xx  UTF-32BE
      *            00 xx 00 xx  UTF-16BE
      *            xx 00 00 00  UTF-32LE
@@ -647,8 +646,8 @@ public class DataSource
     /**
      * Get the UTF charset from the byte order mark (first two bytes). Here
      * assume that no byte order mark means UTF-8.
-     * https://www.w3.org/TR/xml/#charencoding
-     * https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16
+     * <a href="https://www.w3.org/TR/xml/#charencoding">https://www.w3.org/TR/xml/#charencoding</a>
+     * <a href="https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16">https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16</a>
      * @param bytes The leading bytes, at least 2 of them.
      * @return The detected charset, null if not detected or not supported.
      * @throws IllegalArgumentException when bytes length is under 2.
@@ -920,7 +919,7 @@ public class DataSource
         // Filter any lines that begin with a comment character, $
         List<String> filtered = Arrays.stream( lines )
                                       .filter( next -> !next.startsWith( "$" ) )
-                                      .collect( Collectors.toList() );
+                                      .toList();
 
         if ( filtered.size() < 2 )
         {

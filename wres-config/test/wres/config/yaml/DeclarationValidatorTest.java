@@ -1,12 +1,14 @@
 package wres.config.yaml;
 
 import java.time.Instant;
+import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 
 import com.google.protobuf.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -21,18 +23,28 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScaleLenience;
+import wres.config.yaml.components.UnitAlias;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link DeclarationValidator}.
@@ -40,17 +52,29 @@ import wres.statistics.generated.TimeScale;
  */
 class DeclarationValidatorTest
 {
-    @Test
-    void testTypesAreDefinedResultsInErrors()
+    /** A default dataset for re-use. */
+    private Dataset defaultDataset = null;
+
+    @BeforeEach
+    void runBeforeEach()
     {
-        Dataset dataset = DatasetBuilder.builder()
-                                        .build();
+        Source source = SourceBuilder.builder()
+                                     .build();
+
+        this.defaultDataset = DatasetBuilder.builder()
+                                            .sources( List.of( source ) )
+                                            .build();
+    }
+
+    @Test
+    void testTypesAreNotDefinedResultsInErrors()
+    {
         BaselineDataset baselineDataset = BaselineDatasetBuilder.builder()
-                                                                .dataset( dataset )
+                                                                .dataset( this.defaultDataset )
                                                                 .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( dataset )
-                                                                        .right( dataset )
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
                                                                         .baseline( baselineDataset )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -351,23 +375,13 @@ class DeclarationValidatorTest
     @Test
     void testEvaluationTimeScaleIsValidResultsinError()
     {
-        Source source = SourceBuilder.builder()
-                                     .build();
-
-        Dataset left = DatasetBuilder.builder()
-                                     .sources( List.of( source ) )
-                                     .build();
-        Dataset right = DatasetBuilder.builder()
-                                      .sources( List.of( source ) )
-                                      .build();
-
         TimeScale timeScaleInner = TimeScale.newBuilder()
                                             .build();
         wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
-                                              .left( left )
-                                              .right( right )
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
                                               .timeScale( timeScale )
                                               .build();
 
@@ -484,6 +498,417 @@ class DeclarationValidatorTest
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "is not exactly divisible",
                                                                         StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testDuplicateUnitAliasesResultsInErrors()
+    {
+        Set<UnitAlias> unitAliases = Set.of( new UnitAlias( "foo", "bar" ),
+                                             new UnitAlias( "foo", "baz" ) );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .unitAliases( unitAliases )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "discovered the same alias associated with "
+                                                               + "multiple units", StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testInvalidTimeIntervalsResultsInErrors()
+    {
+        TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
+        LeadTimeInterval leadInterval = new LeadTimeInterval( 3, 1, ChronoUnit.HOURS );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .referenceDates( interval )
+                                                                        .validDates( interval )
+                                                                        .leadTimes( leadInterval )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'reference_dates' "
+                                                                                + "interval is invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'valid_dates' interval is "
+                                                                                + "invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'lead_times' interval "
+                                                                                + "is invalid",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testInvalidSeasonResultsInError()
+    {
+        Season season = new Season( MonthDay.of( 1, 1 ), MonthDay.of( 1, 1 ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .season( season )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "A season must span a non-zero "
+                                                               + "time interval",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testInvalidSeasonResultsInWarning()
+    {
+        Season season = new Season( MonthDay.of( 1, 2 ), MonthDay.of( 1, 1 ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .season( season )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "Although it is valid to wrap "
+                                                               + "a season",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testMissingTimeIntervalsWithTimePoolsResultsInErrors()
+    {
+        TimePools timePool = new TimePools( 1, 1, ChronoUnit.HOURS );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .validDatePools( timePool )
+                                                                        .leadTimePools( timePool )
+                                                                        .referenceDatePools( timePool )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "Please remove the "
+                                                                                + "'lead_time_pools' or fully declare "
+                                                                                + "the 'lead_times'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "Please remove the "
+                                                                                + "'reference_date_pools' or fully "
+                                                                                + "declare the 'reference_dates'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "Please remove the "
+                                                                                + "'valid_date_pools' or fully declare "
+                                                                                + "the 'valid_dates'",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testInvalidTimePoolsResultsInErrors()
+    {
+        TimePools timePool = new TimePools( 1, null, ChronoUnit.HOURS );
+        TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
+                                                  Instant.parse( "2047-01-01T00:01:00Z" ) );
+        LeadTimeInterval leadInterval = new LeadTimeInterval( 1, 2, ChronoUnit.MINUTES );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .validDates( interval )
+                                                                        .referenceDates( interval )
+                                                                        .leadTimes( leadInterval )
+                                                                        .validDatePools( timePool )
+                                                                        .leadTimePools( timePool )
+                                                                        .referenceDatePools( timePool )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "The declaration requested "
+                                                                                + "'lead_time_pools', but none could "
+                                                                                + "be produced because the 'minimum'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The declaration requested "
+                                                                                + "'reference_date_pools', but none "
+                                                                                + "could be produced because the "
+                                                                                + "'minimum'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The declaration requested "
+                                                                                + "'valid_date_pools', but none could "
+                                                                                + "be produced because the 'minimum'",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testInvalidSpatialMaskResultsInError()
+    {
+        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask", 0 );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .spatialMask( mask )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "The 'wkt' string associated with the "
+                                                               + "'spatial_mask' could not be parsed into a geometry",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMissingFeaturesAndWebSourcesResultsInErrors()
+    {
+        Source source = SourceBuilder.builder()
+                                     .api( SourceInterface.USGS_NWIS )
+                                     .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+        BaselineDataset baseline = new BaselineDataset( dataset, null );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "No geospatial features were "
+                                                                                + "defined, but web sources were "
+                                                                                + "declared for the 'observed' dataset",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "No geospatial features were "
+                                                                                + "defined, but web sources were "
+                                                                                + "declared for the 'predicted' dataset",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "No geospatial features were "
+                                                                                + "defined, but web sources were "
+                                                                                + "declared for the 'baseline' dataset",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testMissingFeaturesAndNwmInterfaceResultsInErrors()
+    {
+        Source source = SourceBuilder.builder()
+                                     .api( SourceInterface.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS )
+                                     .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
+
+        BaselineDataset baseline = new BaselineDataset( dataset, null );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "source interfaces that "
+                                                                                + "require features were declared for "
+                                                                                + "the 'observed' dataset",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "source interfaces that "
+                                                                                + "require features were declared for "
+                                                                                + "the 'predicted' dataset",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "source interfaces that "
+                                                                                + "require features were declared for "
+                                                                                + "the 'baseline' dataset",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testFeaturesIncludeBaselineAndMissingBaselineDatasetResultsInErrors()
+    {
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setBaseline( Geometry.newBuilder()
+                                                                                   .setName( "foo" ) )
+                                                             .build() );
+
+        Features features = new Features( geometries );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .features( features )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "The declaration contains one or more geospatial "
+                                                               + "features for a baseline dataset but no baseline "
+                                                               + "dataset is defined",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testTimeSeriesMetricsWithoutSingleValuedForecastsResultsInError()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of() )
+                                        .type( DataType.ENSEMBLE_FORECASTS )
+                                        .build();
+
+        Metric metric = new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null );
+        Set<Metric> metrics = Set.of( metric );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( dataset )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, " the following metrics require single-valued "
+                                                               + "forecasts",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testScoreThatNeedsBaselineWithNoBaselineResultsInError()
+    {
+        Metric metric = new Metric( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE, null );
+        Set<Metric> metrics = Set.of( metric );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "The declaration includes metrics that require "
+                                                               + "an explicit 'baseline' dataset",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testLegacyCsvWithDiagramMetricAndDatePoolsResultsInWarnings()
+    {
+        Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
+        Set<Metric> metrics = Set.of( metric );
+        TimePools timePool = new TimePools( 3, 1, ChronoUnit.HOURS );
+        Formats formats = FormatsBuilder.builder()
+                                        .csvFormat( Outputs.CsvFormat.getDefaultInstance() )
+                                        .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .validDatePools( timePool )
+                                                                        .referenceDatePools( timePool )
+                                                                        .metrics( metrics )
+                                                                        .formats( formats )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "does not support these metrics in "
+                                                                        + "combination with 'reference_date_pools",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "does not support these metrics in "
+                                                                        + "combination with 'valid_date_pools",
+                                                                        StatusLevel.WARN ) )
+        );
+    }
+
+    @Test
+    void testCategoricalMetricsWithoutEventThresholdsResultsInWarningAndError()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of() )
+                                        .type( DataType.ENSEMBLE_FORECASTS )
+                                        .build();
+        Metric metric = new Metric( MetricConstants.PROBABILITY_OF_DETECTION, null );
+        Set<Metric> metrics = Set.of( metric );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( dataset )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The declaration includes metrics that "
+                                                                        + "require either 'probability_thresholds' or "
+                                                                        + "'value_thresholds' but none were found",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The declaration includes ensemble "
+                                                                        + "forecasts and metrics for categorical "
+                                                                        + "datasets, but does not include any "
+                                                                        + "'classifier_thresholds'",
+                                                                        StatusLevel.WARN ) )
+        );
+    }
+
+    @Test
+    void testOutputFormatsWithDeprecatedOptionsResultsInWarnings()
+    {
+        Formats formats = FormatsBuilder.builder()
+                                        .csvFormat( Outputs.CsvFormat.getDefaultInstance() )
+                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
+                                        .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .formats( formats )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The declaration requested 'csv' "
+                                                                        + "format, which has been marked deprecated",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The declaration requested 'netcdf' "
+                                                                        + "format, which has been marked deprecated",
+                                                                        StatusLevel.WARN ) )
+        );
+    }
+
+    @Test
+    void testInvalidNetcdfDeclarationResultsInErrorsAndWarnings()
+    {
+        Formats formats = FormatsBuilder.builder()
+                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
+                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
+                                        .build();
+        FeatureGroups featureGroups = new FeatureGroups( Set.of() );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .formats( formats )
+                                                                        .featureGroups( featureGroups )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The 'output_formats' includes both "
+                                                                        + "'netcdf' and 'netcdf2', which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The 'output_formats' includes "
+                                                                        + "'netcdf', which does not support "
+                                                                        + "'feature_groups'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The 'output_formats' includes "
+                                                                        + "'netcdf2', which supports 'feature_groups', "
+                                                                        + "but",
+                                                                        StatusLevel.WARN ) )
         );
     }
 

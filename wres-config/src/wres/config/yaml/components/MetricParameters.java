@@ -14,7 +14,9 @@ import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**
- * Metric parameters.
+ * Metric parameters. For simplicity, a single set of metric parameters is abstracted for all metrics. Restrictions on
+ * valid parameters for particular metrics are imposed at the schema level.
+ *
  * @param probabilityThresholds probability thresholds
  * @param valueThresholds value thresholds
  * @param classifierThresholds probability classifier thresholds
@@ -32,7 +34,8 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
                                 @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
                                 @JsonProperty( "summary_statistics" ) Set<DurationScoreMetric.DurationScoreMetricComponent.ComponentName> summaryStatistics,
                                 @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
-                                @JsonProperty( "graphics" ) Boolean graphics )
+                                @JsonProperty( "png" ) Boolean png,
+                                @JsonProperty( "svg" ) Boolean svg )
 {
     /**
      * Sets the default values.
@@ -41,7 +44,8 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
      * @param classifierThresholds the probability classifier thresholds
      * @param summaryStatistics the summary statistics
      * @param minimumSampleSize the minimum sample size
-     * @param graphics whether graphics should be created for this metric
+     * @param png whether PNG graphics should be created for this metric
+     * @param svg whether SVG graphics should be created for this metric
      */
     public MetricParameters
     {
@@ -70,9 +74,14 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
             summaryStatistics = Collections.emptySet();
         }
 
-        if ( Objects.isNull( graphics ) )
+        if ( Objects.isNull( png ) )
         {
-            graphics = true;
+            png = true;
+        }
+
+        if ( Objects.isNull( svg ) )
+        {
+            svg = true;
         }
     }
 }

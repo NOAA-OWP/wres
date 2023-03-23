@@ -688,41 +688,50 @@ public class DeclarationFactory
         // Something to adjust?
         if ( Objects.isNull( builder.formats() ) )
         {
-            LOGGER.debug( "No graphical formats were discovered and, therefore, adjusted for metrics to ignore." );
+            LOGGER.debug( "No graphical formats were adjusted for metrics to ignore because no graphics formats were "
+                          + "declared." );
             return;
         }
 
         FormatsBuilder formatsBuilder = FormatsBuilder.builder( builder.formats() );
 
-        List<MetricName> avoid = builder.metrics()
-                                        .stream()
-                                        .filter( next -> Objects.nonNull( next.parameters() ) && !next.parameters()
-                                                                                                      .graphics() )
-                                        .map( Metric::name )
-                                        .map( next -> MetricName.valueOf( next.name() ) )
-                                        .toList();
-
-        LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",
-                      avoid );
-
         if ( Objects.nonNull( formatsBuilder.pngFormat() ) )
         {
+            List<MetricName> pngAvoid = builder.metrics()
+                                               .stream()
+                                               .filter( next -> Objects.nonNull( next.parameters() )
+                                                                && !next.parameters()
+                                                                        .png() )
+                                               .map( Metric::name )
+                                               .map( next -> MetricName.valueOf( next.name() ) )
+                                               .toList();
+
+            LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",
+                          pngAvoid );
             Outputs.PngFormat.Builder pngBuilder = formatsBuilder.pngFormat()
                                                                  .toBuilder();
             Outputs.GraphicFormat.Builder graphicBuilder = pngBuilder.getOptionsBuilder();
             graphicBuilder.clearIgnore()
-                          .addAllIgnore( avoid );
+                          .addAllIgnore( pngAvoid );
             pngBuilder.setOptions( graphicBuilder );
             formatsBuilder.pngFormat( pngBuilder.build() );
         }
 
         if ( Objects.nonNull( formatsBuilder.svgFormat() ) )
         {
+            List<MetricName> svgAvoid = builder.metrics()
+                                               .stream()
+                                               .filter( next -> Objects.nonNull( next.parameters() )
+                                                                && !next.parameters()
+                                                                        .png() )
+                                               .map( Metric::name )
+                                               .map( next -> MetricName.valueOf( next.name() ) )
+                                               .toList();
             Outputs.SvgFormat.Builder svgBuilder = formatsBuilder.svgFormat()
                                                                  .toBuilder();
             Outputs.GraphicFormat.Builder graphicBuilder = svgBuilder.getOptionsBuilder();
             graphicBuilder.clearIgnore()
-                          .addAllIgnore( avoid );
+                          .addAllIgnore( svgAvoid );
             svgBuilder.setOptions( graphicBuilder );
             formatsBuilder.svgFormat( svgBuilder.build() );
         }
