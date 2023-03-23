@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 
@@ -79,14 +80,22 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         Objects.requireNonNull( thresholdsNode );
         Objects.requireNonNull( nodeName );
 
-        boolean probabilities = "probability_thresholds".equals( nodeName )
-                                || "classifier_thresholds".equals( nodeName );
+        // Determine the declaration context for the thresholds
+        ThresholdType type = ThresholdType.VALUE;
+        if ( "probability_thresholds" .equals( nodeName ) )
+        {
+            type = ThresholdType.PROBABILITY;
+        }
+        else if ( "classifier_thresholds" .equals( nodeName ) )
+        {
+            type = ThresholdType.PROBABILITY_CLASSIFIER;
+        }
 
         // Thresholds with attributes
         if ( thresholdsNode instanceof ObjectNode )
         {
             LOGGER.debug( "Encountered an embellished set of thresholds for node {}.", nodeName );
-            return this.getThresholds( reader, thresholdsNode, probabilities );
+            return this.getThresholds( reader, thresholdsNode, type );
         }
         // Plain array of thresholds
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
@@ -96,7 +105,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                     = wres.statistics.generated.Threshold.newBuilder()
                                                          .setOperator( ThresholdOperator.GREATER )
                                                          .setDataType( ThresholdDataType.LEFT );
-            return this.getThresholdsFromArray( reader, arrayNode, probabilities, builder );
+            return this.getThresholdsFromArray( reader, arrayNode, type, builder );
         }
         else
         {
@@ -110,7 +119,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * Creates a collection of thresholds from an array node.
      * @param reader the reader
      * @param thresholdsNode the thresholds node
-     * @param probabilities is true if the threshold values are probabilities, false for regular values
+     * @param type the threshold type
      * @param thresholdBuilder the threshold builder
      * @return the thresholds
      * @throws IOException if the thresholds could not be mapped
@@ -118,7 +127,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
     private Set<Threshold> getThresholdsFromArray( ObjectReader reader,
                                                    ArrayNode thresholdsNode,
-                                                   boolean probabilities,
+                                                   ThresholdType type,
                                                    wres.statistics.generated.Threshold.Builder thresholdBuilder )
             throws IOException
     {
@@ -132,7 +141,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         {
             DoubleValue doubleValue = DoubleValue.of( nextValue );
 
-            if ( probabilities )
+            if ( type.isProbability() )
             {
                 thresholdBuilder.setLeftThresholdProbability( doubleValue );
             }
@@ -142,7 +151,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
-            Threshold nextWrappedThreshold = new Threshold( nextThreshold, null );
+            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null );
             thresholds.add( nextWrappedThreshold );
         }
 
@@ -153,14 +162,14 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * Reads an embellished threshold from a node.
      * @param reader the reader
      * @param thresholdNode the threshold node
-     * @param probabilities is true if the threshold values are probabilities, false for regular values
+     * @param type the type of thresholds
      * @return the thresholds
      * @throws IOException if the thresholds could not be read
      */
 
     private Set<Threshold> getThresholds( ObjectReader reader,
                                           JsonNode thresholdNode,
-                                          boolean probabilities ) throws IOException
+                                          ThresholdType type ) throws IOException
     {
         wres.statistics.generated.Threshold.Builder builder
                 = wres.statistics.generated.Threshold.newBuilder();
@@ -207,7 +216,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                                     .has( VALUE ) )
             {
                 Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( valuesNode,
-                                                                                      probabilities,
+                                                                                      type,
                                                                                       builder );
                 thresholds.addAll( embellishedThresholds );
             }
@@ -216,7 +225,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             {
                 Set<Threshold> plainThresholds = this.getThresholdsFromArray( reader,
                                                                               arrayNode,
-                                                                              probabilities,
+                                                                              type,
                                                                               builder );
                 thresholds.addAll( plainThresholds );
             }
@@ -228,13 +237,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     /**
      * Creates a set of thresholds with attributes.
      * @param thresholdNode the threshold node
-     * @param probabilities is true if the threshold values are probabilities, false for regular values
+     * @param type the type of thresholds
      * @param builder the threshold builder
      * @return the thresholds
      */
 
     private Set<Threshold> getEmbellishedThresholds( JsonNode thresholdNode,
-                                                     boolean probabilities,
+                                                     ThresholdType type,
                                                      wres.statistics.generated.Threshold.Builder builder )
     {
         int thresholdCount = thresholdNode.size();
@@ -260,7 +269,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                 double value = valueNode.doubleValue();
                 DoubleValue wrappedDouble = DoubleValue.of( value );
 
-                if ( probabilities )
+                if ( type.isProbability() )
                 {
                     builder.setLeftThresholdProbability( wrappedDouble );
                 }
@@ -279,7 +288,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             Threshold nextThreshold =
-                    new Threshold( builder.build(), featureName );
+                    new Threshold( builder.build(), type, featureName );
             thresholds.add( nextThreshold );
         }
 

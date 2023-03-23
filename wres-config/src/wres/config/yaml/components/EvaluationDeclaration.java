@@ -158,6 +158,11 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
             classifierThresholds = Collections.emptySet();
         }
 
+        if ( Objects.isNull( thresholdSets ) )
+        {
+            thresholdSets = Collections.emptySet();
+        }
+
         if ( Objects.isNull( decimalFormat ) )
         {
             decimalFormat = "0.000000";

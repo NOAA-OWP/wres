@@ -9,10 +9,11 @@ import wres.config.yaml.DeclarationFactory;
 /**
  * A threshold, optionally attached to a named feature.
  * @param threshold a threshold
+ * @param type the threshold type to help identify the declaration context
  * @param featureName a named feature
  */
 @RecordBuilder
-public record Threshold( wres.statistics.generated.Threshold threshold, String featureName )
+public record Threshold( wres.statistics.generated.Threshold threshold, ThresholdType type, String featureName )
 {
     @Override
     public String toString()
@@ -22,6 +23,7 @@ public record Threshold( wres.statistics.generated.Threshold threshold, String f
 
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
                 .append( "threshold", thresholdString )
+                .append( "thresholdType", type )
                 .append( "featureName", featureName )
                 .build();
     }

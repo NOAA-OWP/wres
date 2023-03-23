@@ -3,7 +3,6 @@ package wres.metrics.singlevalued;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -27,7 +26,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * unit interval, namely <code>{1/N+1,...,N/N+1}</code>. If the samples originate from the same probability
  * distribution, the order statistics (and hence the quantiles) should be the same, notwithstanding any sampling error.
  * Uses as many quantiles as the smaller of the number of order statistics (pairs) and the prescribed count.
- * 
+ *
  * @author James Brown
  */
 
@@ -50,8 +49,10 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
      */
 
     public static final DiagramMetricComponent PREDICTED_QUANTILES = DiagramMetricComponent.newBuilder()
-                                                                                           .setName( DiagramComponentName.PREDICTED_QUANTILES )
-                                                                                           .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                                                           .setName(
+                                                                                                   DiagramComponentName.PREDICTED_QUANTILES )
+                                                                                           .setType(
+                                                                                                   DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                            .setMinimum( Double.NEGATIVE_INFINITY )
                                                                                            .setMaximum( Double.POSITIVE_INFINITY )
                                                                                            .build();
@@ -81,13 +82,13 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
      */
 
     private static final int DEFAULT_PROBABILITY_COUNT = 100;
-    
+
     /**
      * Logger.
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger( QuantileQuantileDiagram.class );
-    
+
     /**
      * The number of probabilities at which to compute the order statistics.
      */
@@ -96,7 +97,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -107,7 +108,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
 
     /**
      * Returns an instance.
-     * 
+     *
      * @param probCount the number of quantiles in the diagram
      * @return an instance
      * @throws IllegalArgumentException if the probCount is less than ot equal to zero
@@ -156,7 +157,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
         // Sort in place
         Arrays.sort( sortedLeft );
         Arrays.sort( sortedRight );
-        
+
         DoubleUnaryOperator qLeft = Slicer.getQuantileFunction( sortedLeft );
         DoubleUnaryOperator qRight = Slicer.getQuantileFunction( sortedRight );
 
@@ -171,14 +172,14 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
         // Add the units to the quantiles
         DiagramMetricComponent obsWithUnits = QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
                                                                                         .setUnits( pairs.getMetadata()
-                                                                                                    .getMeasurementUnit()
-                                                                                                    .toString() )
+                                                                                                        .getMeasurementUnit()
+                                                                                                        .toString() )
                                                                                         .build();
 
         DiagramMetricComponent predWithUnits = QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
                                                                                           .setUnits( pairs.getMetadata()
-                                                                                                      .getMeasurementUnit()
-                                                                                                      .toString() )
+                                                                                                          .getMeasurementUnit()
+                                                                                                          .toString() )
                                                                                           .build();
 
         DiagramStatisticComponent oqs =
@@ -186,7 +187,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                          .setMetric( obsWithUnits )
                                          .addAllValues( Arrays.stream( observedQ )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatisticComponent pqs =
@@ -194,7 +195,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                          .setMetric( predWithUnits )
                                          .addAllValues( Arrays.stream( predictedQ )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatistic qqDiagram = DiagramStatistic.newBuilder()

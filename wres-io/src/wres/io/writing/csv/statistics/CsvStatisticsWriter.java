@@ -358,7 +358,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Left
         List<Geometry> left = geometries.stream()
                                         .map( GeometryTuple::getLeft )
-                                        .collect( Collectors.toList() );
+                                        .toList();
 
         StringJoiner leftJoiner = this.getGeometryDescription( left, LeftOrRightOrBaseline.LEFT, featureGroupName );
 
@@ -367,7 +367,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         // Right
         List<Geometry> right = geometries.stream()
                                          .map( GeometryTuple::getRight )
-                                         .collect( Collectors.toList() );
+                                         .toList();
 
         StringJoiner rightJoiner = this.getGeometryDescription( right, LeftOrRightOrBaseline.RIGHT, featureGroupName );
 
@@ -381,7 +381,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             // Right
             List<Geometry> baseline = geometries.stream()
                                                 .map( GeometryTuple::getBaseline )
-                                                .collect( Collectors.toList() );
+                                                .toList();
 
             StringJoiner baselineJoiner =
                     this.getGeometryDescription( baseline, LeftOrRightOrBaseline.BASELINE, featureGroupName );
@@ -448,7 +448,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         List<String> wkts = geometries.stream()
                                       .map( Geometry::getWkt )
                                       .filter( next -> !"".equals( next ) )
-                                      .collect( Collectors.toList() );
+                                      .toList();
 
         // Compose the names with a delimiter
         StringJoiner names = new StringJoiner( LIST_DELIMITER );
@@ -953,7 +953,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param score the score
      * @param writer a shared writer, not to be closed
-     * @param formatter the formatter
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type, where applicable
      * @throws IOException if the score could not be written
@@ -996,13 +995,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.append( joiner, metricComponent.getUnits(), false );
 
             // Add the minimum value
-            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMinimum(), true ), false );
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMinimum() ), false );
 
             // Add the maximum value
-            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMaximum(), true ), false );
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getMaximum() ), false );
 
             // Add the optimum value
-            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getOptimum(), true ), false );
+            this.append( joiner, CsvStatisticsWriter.getDoubleString( metricComponent.getOptimum() ), false );
 
             // Add the statistic group number
             this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
@@ -1023,15 +1022,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a string representation of a double
-     * 
+     *
      * @param value the value
-     * @param nanAsEmpty is true to treat {@link Double#NaN} as empty.
      * @return a string representation of a double, else an empty value
      */
 
-    private static String getDoubleString( double value, boolean nanAsEmpty )
+    private static String getDoubleString( double value )
     {
-        if ( nanAsEmpty && Double.isNaN( value ) )
+        if ( Double.isNaN( value ) )
         {
             return "";
         }
@@ -1042,7 +1040,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     /**
      * Returns a metric component qualifier for single-valued metrics based on the type of ensemble average used.
      * 
-     * @param metric the metric name to test whether it is a single-valued metric
+     * @param metricName the metric name to test whether it is a single-valued metric
      * @param ensembleAverageType the ensemble average type
      * @return a qualifier
      */
@@ -1248,7 +1246,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                 // Name qualifier: use an explicit name qualifier first, else the ensemble average type for single-
                 // valued metrics. These two things do not overlap.
                 String qualifier = next.getName();
-                if ( Objects.isNull( qualifier ) || qualifier.isBlank() )
+                if ( qualifier.isBlank() )
                 {
                     qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
                 }
@@ -1299,7 +1297,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * @param poolDescription the pool description
      * @param diagram the diagram
      * @param writer a shared writer, not to be closed
-     * @param formatter the formatter
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
      * @throws IOException if the score could not be written
@@ -1618,10 +1615,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         Duration duration = durationUnits.getDuration();
         BigDecimal nanoAdd = BigDecimal.valueOf( duration.getNano(), 9 );
-        BigDecimal totalNanos = BigDecimal.valueOf( duration.getSeconds() )
-                                          .add( nanoAdd );
-
-        this.nanosPerDuration = totalNanos;
+        this.nanosPerDuration = BigDecimal.valueOf( duration.getSeconds() )
+                                          .add( nanoAdd );;
 
         // Create the evaluation description from the evaluation
         this.evaluationDescription = this.createEvaluationDescription( evaluation );
@@ -1714,7 +1709,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     /**
      * Adds a number of empty values inline.
      * 
-     * @param StringJoiner joiner
+     * @param joiner the string joiner
      * @param count the number of empty values required
      */
 

@@ -1,30 +1,48 @@
 package wres.config.yaml;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
+import wres.config.yaml.components.UnitAlias;
+import wres.config.yaml.components.Metric;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.statistics.generated.GeometryTuple;
+
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * <p>Performs high-level validation of an {@link EvaluationDeclaration}. This represents the highest of three levels
@@ -35,14 +53,13 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  * {@link DeclarationFactory#from(String)}.</li>
  * <li>2. Validation that the declaration is compatible with the declaration schema, which is performed by
  * {@link DeclarationFactory#from(String)}; and</li>
- * <li>3. Validation that the declaration is internally consistent and reasonable (here).</li>
+ * <li>3. Validation that the declaration is internally consistent and reasonable (i.e., "business logic", here).</li>
  * </ol>
  *
- * <p>Unlike lower levels of validation, which are invariant to the subject of the declaration (i.e., an evaluation),
- * this class validates that the evaluation instructions are coherent (e.g., that different pieces of declaration are
- * mutually consistent) and that the declaration as a whole appears to form a reasonable evaluation. Where possible,
- * the schema declares the validation constraints on each of the individual declaration blocks within it. However, in
- * some cases, that validation is sufficiently complex that it is delegated here.
+ * <p>Unlike lower levels of validation, which are concerned with "well-posed" declaration, this class validates
+ * the "business logic" of an evaluation, i.e., that the evaluation instructions are coherent (e.g., that different
+ * pieces of declaration are mutually consistent) and that the declaration as a whole appears to form a reasonable
+ * evaluation.
  *
  * <p>Two types of validation events are reported, namely warnings and errors. It is the responsibility of the caller
  * to iterate and act upon these events, but it is expected that warnings will be logged and, finally, an exception
@@ -189,6 +206,30 @@ public class DeclarationValidator
         // Check that the time scales are valid
         List<EvaluationStatusEvent> timeScales = DeclarationValidator.timeScalesAreValid( declaration );
         events.addAll( timeScales );
+        // Check that the unit aliases are valid
+        List<EvaluationStatusEvent> unitAliases = DeclarationValidator.unitAliasesAreValid( declaration );
+        events.addAll( unitAliases );
+        // Check that all date intervals are valid
+        List<EvaluationStatusEvent> dates = DeclarationValidator.timeIntervalsAreValid( declaration );
+        events.addAll( dates );
+        // Check that the season is valid
+        List<EvaluationStatusEvent> season = DeclarationValidator.seasonIsValid( declaration );
+        events.addAll( season );
+        // Check that the time pools are valid
+        List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
+        events.addAll( pools );
+        // Check that the spatial mask is valid
+        List<EvaluationStatusEvent> mask = DeclarationValidator.spatialMaskIsValid( declaration );
+        events.addAll( mask );
+        // Check that the feature declaration is valid
+        List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
+        events.addAll( features );
+        // Check that the metrics declaration is valid
+        List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
+        events.addAll( metrics );
+        // Check that the output formats declaration is valid
+        List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
+        events.addAll( outputs );
 
         return Collections.unmodifiableList( events );
     }
@@ -296,7 +337,7 @@ public class DeclarationValidator
             }
         }
 
-        // If there are no analyses datasets present, there cannot be declaration for these datasets
+        // If there are no analyses datasets present, there cannot be declaration for analyses
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ANALYSES, declaration )
              && DeclarationFactory.hasAnalysisDurations( declaration ) )
         {
@@ -315,7 +356,77 @@ public class DeclarationValidator
             events.add( event );
         }
 
+        // Cannot have probability classifier thresholds without ensemble forecasts
+        if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ENSEMBLE_FORECASTS, declaration )
+             && DeclarationValidator.hasThresholdsOfThisType( ThresholdType.PROBABILITY_CLASSIFIER, declaration ) )
+        {
+            EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
+                                                               .setStatusLevel( StatusLevel.ERROR )
+                                                               .setEventMessage(
+                                                                       "The declaration contains one or more "
+                                                                       + "'classifier_thresholds', but these "
+                                                                       + "thresholds are only allowed for "
+                                                                       + "ensemble forecasts. Please correct the "
+                                                                       + "data types or remove the "
+                                                                       + "'classifier_thresholds'." )
+                                                               .build();
+            events.add( event );
+        }
+
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param thresholdType the threshold type
+     * @param declaration the declaration
+     * @return whether the declaration contains any thresholds of this type
+     */
+
+    private static boolean hasThresholdsOfThisType( ThresholdType thresholdType, EvaluationDeclaration declaration )
+    {
+        if ( thresholdType == ThresholdType.PROBABILITY )
+        {
+            return !declaration.probabilityThresholds()
+                               .isEmpty()
+                   || declaration.thresholdSets()
+                                 .stream()
+                                 .anyMatch( next -> next.type() == ThresholdType.PROBABILITY )
+                   || declaration.metrics()
+                                 .stream()
+                                 .map( Metric::parameters )
+                                 .filter( Objects::nonNull )
+                                 .anyMatch( next -> Objects.nonNull( next.probabilityThresholds() ) );
+        }
+        else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
+        {
+            return !declaration.classifierThresholds()
+                               .isEmpty()
+                   || declaration.thresholdSets()
+                                 .stream()
+                                 .anyMatch( next -> next.type() == ThresholdType.PROBABILITY_CLASSIFIER )
+                   || declaration.metrics()
+                                 .stream()
+                                 .map( Metric::parameters )
+                                 .filter( Objects::nonNull )
+                                 .anyMatch( next -> Objects.nonNull( next.classifierThresholds() ) );
+        }
+        else if ( thresholdType == ThresholdType.VALUE )
+        {
+            return !declaration.valueThresholds()
+                               .isEmpty()
+                   || declaration.thresholdSets()
+                                 .stream()
+                                 .anyMatch( next -> next.type() == ThresholdType.VALUE )
+                   || declaration.metrics()
+                                 .stream()
+                                 .map( Metric::parameters )
+                                 .filter( Objects::nonNull )
+                                 .anyMatch( next -> Objects.nonNull( next.valueThresholds() ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unrecognized threshold type: " + thresholdType + "." );
+        }
     }
 
     /**
@@ -350,16 +461,16 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> variablesDeclaredIfRequired( EvaluationDeclaration declaration )
     {
-        String messageStart = "Discovered a data source for the '";
-        String messageMiddle = "' data with an interface shorthand of ";
-        String messageEnd =
-                ", which requires the 'variable' to be declared. Please declare the 'variable' and " + "try "
-                + AGAIN;
+        List<EvaluationStatusEvent> events = new ArrayList<>();
 
+        // Check for source interfaces that require a variable
         EvaluationStatusEvent.Builder eventBuilder =
                 EvaluationStatusEvent.newBuilder().setStatusLevel( StatusLevel.ERROR );
 
-        List<EvaluationStatusEvent> events = new ArrayList<>();
+        String messageStart = "Discovered a data source for the '";
+        String messageMiddle = "' data with an interface shorthand of ";
+        String messageEnd = ", which requires the 'variable' to be declared. Please declare the 'variable' and try "
+                            + AGAIN;
 
         // Check the observed data
         if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.LEFT ) )
@@ -581,6 +692,903 @@ public class DeclarationValidator
                                                              + "Care is especially needed when performing lenient "
                                                              + "rescaling of model predictions because the missing "
                                                              + "data is unlikely to be missing at random." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the unit aliases are valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> unitAliasesAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( declaration.unitAliases() ) )
+        {
+            Set<UnitAlias> unitAliases = declaration.unitAliases();
+
+            // Group by alias and filter groups without duplicates
+            Map<String, List<UnitAlias>> duplicates = unitAliases.stream()
+                                                                 .collect( Collectors.groupingBy( UnitAlias::alias ) )
+                                                                 .entrySet()
+                                                                 .stream()
+                                                                 .filter( next -> next.getValue().size() > 1 )
+                                                                 .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                                             Map.Entry::getValue ) );
+
+            // Duplicates are not allowed
+            if ( !duplicates.isEmpty() )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "When validating the declared unit aliases, "
+                                                                 + "discovered the same alias associated with multiple "
+                                                                 + "units, which is not allowed. Please remove the "
+                                                                 + "following duplicates and try again:  "
+                                                                 + duplicates
+                                                                 + "." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the date intervals are valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timeIntervalsAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events
+                = new ArrayList<>( DeclarationValidator.timeIntervalIsValid( declaration.referenceDates(),
+                                                                             REFERENCE_DATES ) );
+        List<EvaluationStatusEvent> validDates = DeclarationValidator.timeIntervalIsValid( declaration.referenceDates(),
+                                                                                           VALID_DATES );
+        events.addAll( validDates );
+
+        // Lead times
+        LeadTimeInterval leadTimes = declaration.leadTimes();
+        if ( Objects.nonNull( leadTimes )
+             && Objects.nonNull( leadTimes.minimum() )
+             && Objects.nonNull( leadTimes.maximum() )
+             && leadTimes.maximum() <= declaration.leadTimes()
+                                                  .minimum() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The 'lead_times' interval is invalid because the "
+                                                             + "'minimum' value is greater than or equal to the "
+                                                             + "'maximum' value. Please adjust the 'minimum' to occur "
+                                                             + "before the 'maximum' and try "
+                                                             + AGAIN )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the season declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> seasonIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        Season season = declaration.season();
+        if ( Objects.nonNull( season ) )
+        {
+            if ( season.minimum()
+                       .isAfter( season.maximum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The lower bound of the 'season' is later than the "
+                                                                 + "upper bound. Although it is valid to wrap a season "
+                                                                 + "around a calendar year end, it is unusual. Please "
+                                                                 + "check your declaration and, if needed, adjust it." )
+                                               .build();
+                events.add( event );
+            }
+            else if ( season.minimum()
+                            .equals( season.maximum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The lower and upper bounds of the season refer to "
+                                                                 + "the same day and month, which is not allowed. A "
+                                                                 + "season must span a non-zero time interval. Please "
+                                                                 + "correct the 'season' declaration and try "
+                                                                 + AGAIN )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time pools are valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timePoolsAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> validPools = DeclarationValidator.timePoolIsValid( declaration.validDatePools(),
+                                                                                       declaration.validDates(),
+                                                                                       "valid_date_pools",
+                                                                                       "valid_dates" );
+        List<EvaluationStatusEvent> events = new ArrayList<>( validPools );
+
+        List<EvaluationStatusEvent> referencePools = DeclarationValidator.timePoolIsValid( declaration.validDatePools(),
+                                                                                           declaration.validDates(),
+                                                                                           "reference_date_pools",
+                                                                                           "reference_dates" );
+        events.addAll( referencePools );
+
+        List<EvaluationStatusEvent> leadTimePools =
+                DeclarationValidator.leadTimePoolIsValid( declaration.leadTimePools(),
+                                                          declaration.leadTimes() );
+        events.addAll( leadTimePools );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the spatial mask is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> spatialMaskIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        SpatialMask mask = declaration.spatialMask();
+        if ( Objects.nonNull( mask ) && Objects.nonNull( mask.wkt() ) )
+        {
+            WKTReader reader = new WKTReader();
+            String wkt = mask.wkt();
+
+            try
+            {
+                Geometry geometry = reader.read( wkt );
+                LOGGER.debug( "Read the wkt string {} into a geometry, {}.", wkt, geometry );
+            }
+            catch ( ParseException e )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'wkt' string associated with the 'spatial_mask' "
+                                                                 + "could not be parsed into a geometry. Please fix "
+                                                                 + "the 'wkt' string and try again." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the feature declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> featuresAreValid( EvaluationDeclaration declaration )
+    {
+        // Features are declared when needed
+        List<EvaluationStatusEvent> featuresPresent =
+                DeclarationValidator.checkFeaturesPresentWhenSourcesNeed( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( featuresPresent );
+        // Check that a baseline data source is present when some features declare a baseline feature
+        List<EvaluationStatusEvent> baseline =
+                DeclarationValidator.checkBaselinePresentWhenFeaturesIncludeBaseline( declaration );
+        events.addAll( baseline );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the metrics declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> metricsAreValid( EvaluationDeclaration declaration )
+    {
+        // Time-series metrics require single-valued forecasts
+        List<EvaluationStatusEvent> singleValued =
+                DeclarationValidator.checkSingleValuedForecastsForTimeSeriesMetrics( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( singleValued );
+        // Baseline defined for metrics that require one
+        List<EvaluationStatusEvent> baselinePresent =
+                DeclarationValidator.checkBaselinePresentForMetricsThatNeedIt( declaration );
+        events.addAll( baselinePresent );
+        // When categorical metrics are declared, there must be event thresholds as a minimum
+        List<EvaluationStatusEvent> categoricalMetrics =
+                DeclarationValidator.checkEventThresholdsForCategoricalMetrics( declaration );
+        events.addAll( categoricalMetrics );
+        // Warning when non-score metrics are combined with date pools for legacy CSV
+        List<EvaluationStatusEvent> legacyCsv =
+                DeclarationValidator.checkMetricsForLegacyCsvAndDatePools( declaration );
+        events.addAll( legacyCsv );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the output formats declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> outputFormatsAreValid( EvaluationDeclaration declaration )
+    {
+        // Warn about deprecated types
+        List<EvaluationStatusEvent> deprecated =
+                DeclarationValidator.checkForDeprecatedOutputFormats( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( deprecated );
+        // Validate NetCDF, which has cumbersome requirements
+        List<EvaluationStatusEvent> netcdf = DeclarationValidator.validateNetcdfOutput( declaration );
+        events.addAll( netcdf );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Warns about deprecated output formats.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkForDeprecatedOutputFormats( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Formats formats = declaration.formats();
+        if ( Objects.nonNull( formats ) )
+        {
+            String start = "The declaration requested '";
+            String middle =
+                    "' format, which has been marked deprecated and will be removed from a future version of the "
+                    + "software without warning. It is recommended that you substitute this format with the '";
+            String end = "' format.";
+            if ( Objects.nonNull( formats.csvFormat() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( start + "csv" + middle + "csv2" + end )
+                                               .build();
+                events.add( event );
+            }
+
+            if ( Objects.nonNull( formats.netcdfFormat() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( start + "netcdf" + middle + "netcdf2" + end )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Validates the NetCDF output declaration.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> validateNetcdfOutput( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Do not allow both legacy netcdf and netcdf2 together
+        Formats formats = declaration.formats();
+        if ( Objects.nonNull( formats ) )
+        {
+            if ( Objects.nonNull( formats.netcdfFormat() ) && Objects.nonNull( formats.netcdf2Format() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'output_formats' includes both 'netcdf' and "
+                                                                 + "'netcdf2', which is not allowed. One of these format "
+                                                                 + "options must be removed and it is recommended "
+                                                                 + "that you remove the 'netcdf' option." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Do not allow legacy netcdf together with feature groups
+            if ( Objects.nonNull( formats.netcdfFormat() ) && Objects.nonNull( declaration.featureGroups() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage(
+                                                       "The 'output_formats' includes 'netcdf', which does not "
+                                                       + "support 'feature_groups'. Please replace the 'netcdf'"
+                                                       + "option with 'netcdf2', which does support "
+                                                       + "'feature_groups'." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Warn about netcdf2 when feature groups are declared
+            if ( Objects.nonNull( formats.netcdf2Format() ) && Objects.nonNull( declaration.featureGroups() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage(
+                                                       "The 'output_formats' includes 'netcdf2', which supports "
+                                                       + "'feature_groups', but the group statistics are "
+                                                       + "repeated across every member of the group." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that single-valued forecasts are present when declaring time-series metrics.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkSingleValuedForecastsForTimeSeriesMetrics( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<MetricConstants> metrics =
+                DeclarationValidator.getSingleValuedTimeSeriesMetrics( declaration );
+
+        if ( declaration.right()
+                        .type() != DataType.SINGLE_VALUED_FORECASTS
+             && !metrics.isEmpty() )
+
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The declared or inferred data 'type' for the 'predicted' "
+                                                             + "dataset is "
+                                                             + declaration.right()
+                                                                          .type()
+                                                             + ", but the following metrics require single-valued "
+                                                             + "forecasts: "
+                                                             + metrics
+                                                             + ". Please remove these metrics or correct the data "
+                                                             + "'type' to 'single valued forecasts'." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that a baseline is declared when metrics are included that require it.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkBaselinePresentForMetricsThatNeedIt( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<MetricConstants> metrics = declaration.metrics()
+                                                  .stream()
+                                                  .map( Metric::name )
+                                                  .filter( next -> next
+                                                                   == MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                  .collect( Collectors.toSet() );
+
+        if ( !DeclarationValidator.hasBaseline( declaration ) && !metrics.isEmpty() )
+
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The declaration includes metrics that require an "
+                                                             + "explicit 'baseline' dataset, but no baseline dataset "
+                                                             + "was found. Please remove the following metrics from "
+                                                             + "the declaration or add a baseline dataset and try "
+                                                             + "again: "
+                                                             + metrics
+                                                             + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that event thresholds are defined when categorical metrics are included.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> checkEventThresholdsForCategoricalMetrics( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Categorical metrics are present
+        Predicate<MetricConstants> filter = next -> next.isInGroup( MetricConstants.SampleDataGroup.DICHOTOMOUS )
+                                                    || next.isInGroup( MetricConstants.SampleDataGroup.MULTICATEGORY );
+        Set<MetricConstants> metrics = declaration.metrics()
+                                                  .stream()
+                                                  .map( Metric::name )
+                                                  .filter( filter )
+                                                  .collect( Collectors.toSet() );
+        LOGGER.debug( "Discovered the following categorical metrics to validate against other declaration: {}.",
+                      metrics );
+
+        if ( !metrics.isEmpty() )
+        {
+            // No event thresholds
+            if ( !DeclarationValidator.hasThresholdsOfThisType( ThresholdType.PROBABILITY, declaration )
+                 && !DeclarationValidator.hasThresholdsOfThisType( ThresholdType.VALUE, declaration ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The declaration includes metrics that require either "
+                                                                 + "'probability_thresholds' or 'value_thresholds' "
+                                                                 + "but none were found. Please remove the following "
+                                                                 + "metrics or add the required thresholds and try "
+                                                                 + "again: "
+                                                                 + metrics
+                                                                 + "." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Ensembles, but no decision/classifier thresholds: warn
+            if ( declaration.right().type() == DataType.ENSEMBLE_FORECASTS
+                 && !DeclarationValidator.hasThresholdsOfThisType( ThresholdType.PROBABILITY_CLASSIFIER, declaration ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The declaration includes ensemble forecasts and "
+                                                                 + "metrics for categorical datasets, but does not "
+                                                                 + "include any 'classifier_thresholds'. This is "
+                                                                 + "allowed, but the following metrics will be "
+                                                                 + "computed for the ensemble average only: "
+                                                                 + metrics
+                                                                 + ". If you want to calculate these metrics using the "
+                                                                 + "forecast probabilities, please add "
+                                                                 + "'classifier_thresholds' to help classify the "
+                                                                 + "forecast probabilities into categorical outcomes." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Warns if non-score metrics are required alongside the legacy CSV statistics format and pooling windows.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkMetricsForLegacyCsvAndDatePools( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Legacy CSV declared
+        if ( Objects.nonNull( declaration.formats() ) && Objects.nonNull( declaration.formats()
+                                                                                     .csvFormat() ) )
+        {
+            // Non-score metrics
+            Predicate<MetricConstants> filter =
+                    next -> !next.isInGroup( MetricConstants.StatisticType.DOUBLE_SCORE )
+                            && !next.isInGroup( MetricConstants.StatisticType.DURATION_SCORE );
+            Set<MetricConstants> metrics = declaration.metrics()
+                                                      .stream()
+                                                      .map( Metric::name )
+                                                      .filter( filter )
+                                                      .collect( Collectors.toSet() );
+
+            if ( Objects.nonNull( declaration.validDatePools() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "Some of the declared metrics cannot be written to "
+                                                                 + "the legacy CSV format because the format does not "
+                                                                 + "support these metrics in combination with "
+                                                                 + "'valid_date_pools'. Please consider using the CSV2 "
+                                                                 + "format instead: "
+                                                                 + metrics
+                                                                 + "." )
+                                               .build();
+                events.add( event );
+            }
+
+            if ( Objects.nonNull( declaration.referenceDatePools() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "Some of the declared metrics cannot be written to "
+                                                                 + "the legacy CSV format because the format does not "
+                                                                 + "support these metrics in combination with "
+                                                                 + "'reference_date_pools'. Please consider using the "
+                                                                 + "CSV2 format instead: "
+                                                                 + metrics
+                                                                 + "." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param declaration the declaration
+     * @return the declared metrics in the specified group, if any
+     */
+
+    private static Set<MetricConstants> getSingleValuedTimeSeriesMetrics( EvaluationDeclaration declaration )
+    {
+        return declaration.metrics()
+                          .stream()
+                          .map( Metric::name )
+                          .filter( next -> next.isInGroup( MetricConstants.SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
+                          .collect( Collectors.toSet() );
+    }
+
+    /**
+     * Checks that features are declared when the sources need them.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkFeaturesPresentWhenSourcesNeed( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // No features declared
+        if ( Objects.isNull( declaration.features() )
+             && Objects.isNull( declaration.featureGroups() )
+             && Objects.isNull( declaration.featureService() ) )
+        {
+            EvaluationStatusEvent.Builder eventBuilder
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR );
+
+            String start = "No geospatial features were defined, but web sources were declared for the '";
+            String middle = "' dataset, which requires features to be defined.";
+            String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' "
+                         + "or 'feature_service') and try again.";
+
+            // Web services require features
+            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.LEFT ) )
+            {
+                eventBuilder.setEventMessage( start + OBSERVED + middle + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
+            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.RIGHT ) )
+            {
+                eventBuilder.setEventMessage( start + PREDICTED + middle + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
+            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.BASELINE ) )
+            {
+                eventBuilder.setEventMessage( start + BASELINE + middle + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
+
+            // Other source interfaces that require features to be defined
+            List<EvaluationStatusEvent> nwmSources =
+                    DeclarationValidator.checkForNwmSourcesWhenNoFeatures( declaration );
+
+            events.addAll( nwmSources );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that no National Water Model sources are present when features are undefined.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkForNwmSourcesWhenNoFeatures( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        EvaluationStatusEvent.Builder eventBuilder
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( StatusLevel.ERROR );
+
+        // Features are required for some source interfaces
+        String start = "No geospatial features were defined, but source interfaces that require features were declared "
+                       + "for the '";
+        String middle = "' dataset: ";
+        String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
+                     + "'feature_service') and try again.";
+
+        Set<SourceInterface> leftRequireFeatures =
+                DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.left()
+                                                                                     .sources() );
+        if ( !leftRequireFeatures.isEmpty() )
+        {
+            eventBuilder.setEventMessage( start + OBSERVED + middle + leftRequireFeatures + end );
+            EvaluationStatusEvent event = eventBuilder.build();
+            events.add( event );
+        }
+        Set<SourceInterface> rightRequireFeatures =
+                DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.right()
+                                                                                     .sources() );
+        if ( !rightRequireFeatures.isEmpty() )
+        {
+            eventBuilder.setEventMessage( start + PREDICTED + middle + rightRequireFeatures + end );
+            EvaluationStatusEvent event = eventBuilder.build();
+            events.add( event );
+        }
+
+        if ( DeclarationValidator.hasBaseline( declaration ) )
+        {
+            Set<SourceInterface> baselineRequireFeatures =
+                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.baseline()
+                                                                                         .dataset()
+                                                                                         .sources() );
+            if ( !baselineRequireFeatures.isEmpty() )
+            {
+                eventBuilder.setEventMessage( start + BASELINE + middle + baselineRequireFeatures + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that a baseline source is present when features include a baseline.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkBaselinePresentWhenFeaturesIncludeBaseline( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // No baseline present, then cannot declare baseline features
+        if ( !DeclarationValidator.hasBaseline( declaration ) )
+        {
+            boolean singletonHasBaseline = Objects.nonNull( declaration.features() )
+                                           && declaration.features()
+                                                         .geometries()
+                                                         .stream()
+                                                         .anyMatch( GeometryTuple::hasBaseline );
+
+            boolean groupHasBaseline = Objects.nonNull( declaration.featureGroups() )
+                                       && declaration.featureGroups()
+                                                     .geometryGroups()
+                                                     .stream()
+                                                     .flatMap( next -> next.getGeometryTuplesList()
+                                                                           .stream() )
+                                                     .anyMatch( GeometryTuple::hasBaseline );
+            if ( singletonHasBaseline || groupHasBaseline )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The declaration contains one or more geospatial "
+                                                                 + "features for a baseline dataset but no baseline "
+                                                                 + "dataset is defined. Please add a baseline dataset "
+                                                                 + "or remove the baseline features and try again." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param sources the sources to search
+     * @return a set of source interfaces that begin with the specified characters
+     */
+
+    private static Set<SourceInterface> getSourceInterfacesThatBeginWithNwm( List<Source> sources )
+    {
+        return sources.stream()
+                      .map( Source::api )
+                      .filter( next -> Objects.nonNull( next ) && next.toString()
+                                                                      .toLowerCase()
+                                                                      .startsWith( "nwm" ) )
+                      .collect( Collectors.toSet() );
+    }
+
+    /**
+     * Checks that the time pools are valid.
+     * @param pools the time pools
+     * @param interval interval the interval
+     * @param poolName the pool name to help with messaging
+     * @param intervalName the interval name to help with messaging
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timePoolIsValid( TimePools pools,
+                                                                TimeInterval interval,
+                                                                String poolName,
+                                                                String intervalName )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( pools ) )
+        {
+            // Time interval must be fully declared
+            if ( Objects.isNull( interval )
+                 || Objects.isNull( interval.minimum() )
+                 || Objects.isNull( interval.maximum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The declaration included '"
+                                                                 + poolName
+                                                                 + "', which requires the '"
+                                                                 + intervalName
+                                                                 + "' to be fully declared. Please remove the '"
+                                                                 + poolName
+                                                                 + "' or fully declare the '"
+                                                                 + intervalName
+                                                                 + "' and try again." )
+                                               .build();
+                events.add( event );
+            }
+            // The time pools declaration must produce at least one pool
+            else
+            {
+                // Create the elements necessary to increment them
+                ChronoUnit periodUnits = pools.unit();
+                Duration period = Duration.of( pools.period(), periodUnits );
+                Instant start = interval.minimum();
+                Instant end = interval.maximum();
+
+                if ( start.plus( period )
+                          .isAfter( end ) )
+                {
+                    EvaluationStatusEvent event
+                            = EvaluationStatusEvent.newBuilder()
+                                                   .setStatusLevel( StatusLevel.ERROR )
+                                                   .setEventMessage( "The declaration requested '"
+                                                                     + poolName
+                                                                     + "', but none could be produced because the "
+                                                                     + "'minimum' time associated with the '"
+                                                                     + intervalName
+                                                                     + "' plus the 'period' associated with the '"
+                                                                     + poolName
+                                                                     + "' is later than the 'maximum' time associated "
+                                                                     + "with the '"
+                                                                     + intervalName
+                                                                     + "'. Please adjust the '"
+                                                                     + poolName
+                                                                     + "' and/or the '"
+                                                                     + intervalName
+                                                                     + "' and try again. " )
+                                                   .build();
+                    events.add( event );
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the lead time pools are valid.
+     * @param pools the time pools
+     * @param interval interval the interval
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> leadTimePoolIsValid( TimePools pools,
+                                                                    LeadTimeInterval interval )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( pools ) )
+        {
+            // Time interval must be fully declared
+            if ( Objects.isNull( interval )
+                 || Objects.isNull( interval.minimum() )
+                 || Objects.isNull( interval.maximum() ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The declaration included lead_time_pools', which "
+                                                                 + "requires the 'lead_times' to be fully declared. "
+                                                                 + "Please remove the 'lead_time_pools' or fully "
+                                                                 + "declare the 'lead_times' and try again." )
+                                               .build();
+                events.add( event );
+            }
+            // The time pools declaration must produce at least one pool
+            else
+            {
+                // Create the elements necessary to increment them
+                ChronoUnit periodUnits = pools.unit();
+                Duration period = Duration.of( pools.period(), periodUnits );
+                Duration start = Duration.of( interval.minimum(), interval.unit() );
+                Duration end = Duration.of( interval.maximum(), interval.unit() );
+
+                if ( start.plus( period )
+                          .compareTo( end ) > 0 )
+                {
+                    EvaluationStatusEvent event
+                            = EvaluationStatusEvent.newBuilder()
+                                                   .setStatusLevel( StatusLevel.ERROR )
+                                                   .setEventMessage( "The declaration requested 'lead_time_pools', but "
+                                                                     + "none could be produced because the "
+                                                                     + "'minimum' time associated with the "
+                                                                     + "'lead_times' plus the 'period' associated with "
+                                                                     + " the 'lead_time-pools' is later than the "
+                                                                     + "'maximum' time associated with the "
+                                                                     + "'lead_times'. Please adjust the "
+                                                                     + "'lead_time_pools' and/or the 'lead_times' and "
+                                                                     + "try again. " )
+                                                   .build();
+                    events.add( event );
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the date interval is valid.
+     * @param timeInterval the time interval
+     * @param orientation the orientation
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timeIntervalIsValid( TimeInterval timeInterval, String orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( timeInterval )
+             && Objects.nonNull( timeInterval.minimum() )
+             && Objects.nonNull( timeInterval.maximum() )
+             && ( timeInterval.maximum()
+                              .isBefore( timeInterval.minimum() )
+                  || timeInterval.minimum()
+                                 .equals( timeInterval.maximum() ) ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The "
+                                                             + orientation
+                                                             + " interval is invalid because the 'minimum' value is "
+                                                             + "greater than or equal to the 'maximum' value. Please "
+                                                             + "adjust the 'minimum' to occur before the 'maximum' and "
+                                                             + "try " + AGAIN )
                                            .build();
             events.add( event );
         }
@@ -975,7 +1983,7 @@ public class DeclarationValidator
                                                                                        String orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
-        if ( Objects.nonNull( sources ) )
+        if ( Objects.nonNull( sources ) && Objects.nonNull( type ) )
         {
             // Check whether the data type is contained in the data types supported by each source interface. If not,
             // then further check whether the data type is forecast-like and, in that case, add an error event

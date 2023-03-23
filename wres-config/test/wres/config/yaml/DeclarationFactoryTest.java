@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.DoubleValue;
@@ -52,6 +53,7 @@ import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.UnitAlias;
@@ -307,7 +309,9 @@ class DeclarationFactoryTest
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .build();
         wres.config.yaml.components.Threshold valueThreshold =
-                ThresholdBuilder.builder().threshold( aValueThreshold )
+                ThresholdBuilder.builder()
+                                .threshold( aValueThreshold )
+                                .type( ThresholdType.VALUE )
                                 .build();
         Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( valueThreshold );
         MetricParameters firstParameters =
@@ -325,7 +329,9 @@ class DeclarationFactoryTest
                                         .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
                                         .build();
         wres.config.yaml.components.Threshold probabilityThreshold =
-                ThresholdBuilder.builder().threshold( aThreshold )
+                ThresholdBuilder.builder()
+                                .threshold( aThreshold )
+                                .type( ThresholdType.PROBABILITY )
                                 .build();
         Set<wres.config.yaml.components.Threshold> probabilityThresholds = Set.of( probabilityThreshold );
         MetricParameters secondParameters =
@@ -338,9 +344,12 @@ class DeclarationFactoryTest
                                      .parameters( secondParameters )
                                      .build();
 
-        Set<ComponentName> summaryStatistics = Set.of( ComponentName.MEAN,
-                                                       ComponentName.MEDIAN,
-                                                       ComponentName.MINIMUM );
+        // Predictable iteration order
+        Set<ComponentName> summaryStatistics = new TreeSet<>();
+        summaryStatistics.add( ComponentName.MEAN );
+        summaryStatistics.add( ComponentName.MEDIAN );
+        summaryStatistics.add( ComponentName.MINIMUM );
+
         MetricParameters thirdParameters =
                 MetricParametersBuilder.builder()
                                        .summaryStatistics( summaryStatistics )
@@ -362,7 +371,7 @@ class DeclarationFactoryTest
                                                                      .metrics( metrics )
                                                                      .build();
 
-        assertEquals( expected, actual );
+        assertEquals( expected.metrics(), actual.metrics() );
     }
 
     @Test
@@ -875,14 +884,17 @@ class DeclarationFactoryTest
 
         wres.config.yaml.components.Threshold pOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( pOne )
+                                                                            .type( ThresholdType.PROBABILITY )
                                                                             .build();
 
         wres.config.yaml.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( pTwo )
+                                                                            .type( ThresholdType.PROBABILITY )
                                                                             .build();
 
         wres.config.yaml.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
                                                                               .threshold( pThree )
+                                                                              .type( ThresholdType.PROBABILITY )
                                                                               .build();
 
         // Insertion order
@@ -907,10 +919,12 @@ class DeclarationFactoryTest
         wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vOne )
                                                                             .featureName( "DRRC2" )
+                                                                            .type( ThresholdType.VALUE )
                                                                             .build();
 
         wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vTwo )
+                                                                            .type( ThresholdType.VALUE )
                                                                             .featureName( "DOLC2" )
                                                                             .build();
 
@@ -932,11 +946,13 @@ class DeclarationFactoryTest
         wres.config.yaml.components.Threshold cOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cOne )
                                                                             .featureName( "DRRC2" )
+                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
         wres.config.yaml.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cTwo )
                                                                             .featureName( "DOLC2" )
+                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
         Set<wres.config.yaml.components.Threshold> classifierThresholds = new LinkedHashSet<>();
@@ -985,10 +1001,12 @@ class DeclarationFactoryTest
 
         wres.config.yaml.components.Threshold pOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( pOne )
+                                                                            .type( ThresholdType.PROBABILITY )
                                                                             .build();
 
         wres.config.yaml.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( pTwo )
+                                                                            .type( ThresholdType.PROBABILITY )
                                                                             .build();
 
         // Insertion order

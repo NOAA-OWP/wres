@@ -12,5 +12,5 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param unit the time unit
  */
 @RecordBuilder
-public record LeadTimeInterval( @JsonProperty( "minimum" ) int minimum, @JsonProperty( "maximum" ) int maximum,
+public record LeadTimeInterval( @JsonProperty( "minimum" ) Integer minimum, @JsonProperty( "maximum" ) Integer maximum,
                                 @JsonProperty( "unit" ) ChronoUnit unit ) {}
