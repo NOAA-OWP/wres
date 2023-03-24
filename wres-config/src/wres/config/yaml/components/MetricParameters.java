@@ -7,10 +7,12 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
+import wres.config.yaml.serializers.MetricSerializer;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**

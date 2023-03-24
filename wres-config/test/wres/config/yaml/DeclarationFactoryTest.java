@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.net.URI;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
@@ -29,6 +30,7 @@ import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DecimalFormatPretty;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -808,7 +810,7 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
-                                                                   .setDecimalFormat( "0.000000" )
+                                                                   .setDecimalFormat( "#0.000000" )
                                                                    .build();
         Outputs.GraphicFormat graphicFormat = Outputs.GraphicFormat.newBuilder()
                                                                    .setWidth( 800 )
@@ -831,10 +833,11 @@ class DeclarationFactoryTest
                                                                      .build() )
                                         .build();
 
+        DecimalFormat formatter = new DecimalFormatPretty( "#0.000000" );
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
-                                                                     .decimalFormat( "0.000000" )
+                                                                     .decimalFormat( formatter )
                                                                      .durationFormat( ChronoUnit.HOURS )
                                                                      .formats( formats )
                                                                      .build();

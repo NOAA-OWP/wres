@@ -311,12 +311,12 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      amount:
+      period:
         type: integer
       unit:
         "$ref": "#/definitions/DurationEnum"
     required:
-      - amount
+      - period
       - unit
     title: TimeShift
 

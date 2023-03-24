@@ -16,7 +16,7 @@ import wres.statistics.generated.BoxplotStatistic;
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
  * {@link SampleDataGroup} and {@link StatisticType}, respectively.
- * 
+ *
  * @author James Brown
  */
 
@@ -54,13 +54,13 @@ public enum MetricConstants
 
     /** Contingency Table.*/
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
-                                               SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, false, null,
-            MetricGroup.CONTINGENCY_TABLE ),
+            SampleDataGroup.MULTICATEGORY },
+                       StatisticType.DOUBLE_SCORE, false, null,
+                       MetricGroup.CONTINGENCY_TABLE ),
 
     /** False alarm ratio.*/
     FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
-    
+
     /** Pearson's product-moment correlation coefficient.*/
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
@@ -84,7 +84,7 @@ public enum MetricConstants
 
     /** Mean Absolute Error Skill Score.*/
     MEAN_ABSOLUTE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
-    
+
     /** Mean Error. */
     MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
@@ -102,7 +102,7 @@ public enum MetricConstants
 
     /** Peirce Skill Score. */
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-            StatisticType.DOUBLE_SCORE, true, null ),
+                        StatisticType.DOUBLE_SCORE, true, null ),
 
     /** Probability Of Detection. */
     PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
@@ -136,8 +136,8 @@ public enum MetricConstants
 
     /** Sample size. */
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
-                                         SampleDataGroup.ENSEMBLE },
-            StatisticType.DOUBLE_SCORE, false, null, MetricGroup.UNIVARIATE_STATISTIC ),
+            SampleDataGroup.ENSEMBLE },
+                 StatisticType.DOUBLE_SCORE, false, null, MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Sum of Square Error. */
     SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
@@ -159,71 +159,71 @@ public enum MetricConstants
 
     /** Time to peak error, mean across all instances. */
     TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                             MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak error, median across all instances. */
     TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                               MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak error, minimum across all instances. */
     TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                                MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak error, maximum across all instances. */
     TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                                MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak error, standard deviation across all instances. */
     TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                                           MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak error, mean absolute value across all instances. */
     TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_ERROR ),
+                                      MetricConstants.TIME_TO_PEAK_ERROR ),
 
     /** Time to peak relative error, mean across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Time to peak relative error, median across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Time to peak relative error, minimum across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Time to peak relative error, maximum across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Time to peak relative error, standard deviation across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-            StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                                    StatisticType.DURATION_SCORE,
+                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Time to peak relative error, mean absolute value across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-            MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
 
     /** Mean statistic. */
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-            MetricGroup.LRB ),
+          MetricGroup.LRB ),
 
     /** Median statistic. */
     MEDIAN( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Standard deviation statistic. */
     STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-            MetricGroup.LRB ),
+                        MetricGroup.LRB ),
 
     /** Minimum statistic. */
     MINIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-            MetricGroup.LRB ),
+             MetricGroup.LRB ),
 
     /** Maximum statistic. */
     MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-            MetricGroup.LRB ),
+             MetricGroup.LRB ),
 
     /** Mean absolute statistic. */
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
@@ -320,7 +320,7 @@ public enum MetricConstants
 
     /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
-     * 
+     *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param isSkillMetric is true if the metric is a skill metric
@@ -333,7 +333,7 @@ public enum MetricConstants
 
     /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
-     * 
+     *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param parent the parent metric
@@ -346,7 +346,7 @@ public enum MetricConstants
 
     /**
      * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
-     * 
+     *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param metricGroup the metric group
@@ -359,7 +359,7 @@ public enum MetricConstants
 
     /**
      * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
-     * 
+     *
      * @param inGroups the input groups
      * @param outGroup the output group
      * @param isSkillMetric is true if the metric measures skill, otherwise false
@@ -367,10 +367,10 @@ public enum MetricConstants
      */
 
     MetricConstants( SampleDataGroup[] inGroups,
-                             StatisticType outGroup,
-                             boolean isSkillMetric,
-                             MetricConstants parent,
-                             MetricGroup... metricGroup )
+                     StatisticType outGroup,
+                     boolean isSkillMetric,
+                     MetricConstants parent,
+                     MetricGroup... metricGroup )
     {
         this.inGroups = inGroups;
         this.outGroup = outGroup;
@@ -396,7 +396,7 @@ public enum MetricConstants
 
     /**
      * Returns true if the input {@link SampleDataGroup} contains the current {@link MetricConstants}, false otherwise.
-     * 
+     *
      * @param inGroup the {@link SampleDataGroup}
      * @return true if the input {@link SampleDataGroup} contains the current {@link MetricConstants}, false otherwise
      * @throws NullPointerException if the input is null
@@ -412,7 +412,7 @@ public enum MetricConstants
     /**
      * Returns true if the input {@link StatisticType} contains the current {@link MetricConstants}, false
      * otherwise.
-     * 
+     *
      * @param outGroup the {@link StatisticType}
      * @return true if the input {@link StatisticType} contains the current {@link MetricConstants}, false otherwise
      * @throws NullPointerException if the input is null
@@ -427,7 +427,7 @@ public enum MetricConstants
 
     /**
      * Returns true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise.
-     * 
+     *
      * @param inGroup the {@link MetricGroup}
      * @return true if the input {@link MetricGroup} contains the current {@link MetricConstants}, false otherwise
      * @throws NullPointerException if the input is null
@@ -443,7 +443,7 @@ public enum MetricConstants
     /**
      * Returns true if the input {@link SampleDataGroup} and {@link StatisticType} both contain the current
      * {@link MetricConstants}, false otherwise.
-     * 
+     *
      * @param inGroup the {@link SampleDataGroup}
      * @param outGroup the {@link StatisticType}
      * @return true if the input {@link SampleDataGroup} and {@link StatisticType} and both contain the current
@@ -459,21 +459,21 @@ public enum MetricConstants
     /**
      * Returns true if this is a metric that supports filtering or classifying by threshold (i.e., not including the 
      * "all data" threshold, which all metrics support, by definition).
-     * 
+     *
      * @return true if the metric supports thresholds
      */
 
     public boolean isAThresholdMetric()
     {
-        return ! ( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
-                   || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
-                   || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM
-                   || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM );
+        return !( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
+                  || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
+                  || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM
+                  || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM );
     }
 
     /**
      * Returns the {@link StatisticType} associated with the {@link MetricConstants}.
-     * 
+     *
      * @return the {@link StatisticType}.
      */
 
@@ -501,11 +501,11 @@ public enum MetricConstants
                      .filter( next -> next.getParent() == this )
                      .collect( Collectors.toUnmodifiableSet() );
     }
-    
+
     /**
      * Returns all metric components for all {@link MetricGroup} with which this constant is associated or
      * an empty set if none is defined.
-     * 
+     *
      * @return the components in the {@link MetricGroup}
      */
 
@@ -524,7 +524,7 @@ public enum MetricConstants
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link SampleDataGroup} and
      * {@link StatisticType}.
-     * 
+     *
      * @param inGroup the {@link SampleDataGroup}
      * @param outGroup the {@link StatisticType}
      * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
@@ -544,7 +544,7 @@ public enum MetricConstants
 
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link SampleDataGroup}.
-     * 
+     *
      * @param inGroup the {@link SampleDataGroup}
      * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
      * @throws NullPointerException if the input is null
@@ -561,7 +561,7 @@ public enum MetricConstants
 
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link StatisticType}.
-     * 
+     *
      * @param outGroup the {@link StatisticType}
      * @return the {@link MetricConstants} associated with the current {@link StatisticType}
      * @throws NullPointerException if the input is null
@@ -578,7 +578,7 @@ public enum MetricConstants
 
     /**
      * Returns <code>true</code> if the metric measures skill, otherwise <code>false</code>.
-     * 
+     *
      * @return true if the metric measures skill, otherwise false
      */
 
@@ -589,14 +589,15 @@ public enum MetricConstants
 
     /**
      * Returns a string representation.
-     * 
+     *
      * @return a string representation
      */
 
     @Override
     public String toString()
     {
-        return name().replace( "_", " " );
+        return this.name()
+                   .replace( "_", " " );
     }
 
     /**
@@ -644,7 +645,7 @@ public enum MetricConstants
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link SampleDataGroup}.
-         * 
+         *
          * @return the {@link MetricConstants} associated with the current {@link SampleDataGroup}
          */
 
@@ -657,7 +658,7 @@ public enum MetricConstants
 
         /**
          * Returns true if this {@link SampleDataGroup} contains the input {@link MetricConstants}, false otherwise.
-         * 
+         *
          * @param input the {@link MetricConstants} to test
          * @return true if this {@link SampleDataGroup} contains the input {@link MetricConstants}, false otherwise
          */
@@ -669,7 +670,7 @@ public enum MetricConstants
 
         /**
          * Returns a set representation of the enumeration. Contains all elements in {@link SampleDataGroup#values()}.
-         * 
+         *
          * @return a set representation of the elements in this enumeration
          */
 
@@ -725,7 +726,7 @@ public enum MetricConstants
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link StatisticType}.
-         * 
+         *
          * @return the {@link MetricConstants} associated with the current {@link StatisticType}
          */
 
@@ -738,7 +739,7 @@ public enum MetricConstants
 
         /**
          * Returns true if this {@link StatisticType} contains the input {@link MetricConstants}, false otherwise.
-         * 
+         *
          * @param input the {@link MetricConstants} to test
          * @return true if this {@link StatisticType} contains the input {@link MetricConstants}, false otherwise
          */
@@ -750,7 +751,7 @@ public enum MetricConstants
 
         /**
          * Returns a set representation of the enumeration. Contains all elements in {@link StatisticType#values()}.
-         * 
+         *
          * @return a set representation of the elements in this enumeration
          */
 
@@ -822,7 +823,7 @@ public enum MetricConstants
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricGroup}.
-         * 
+         *
          * @return the {@link MetricConstants} associated with the current {@link MetricGroup}
          */
 
@@ -840,7 +841,7 @@ public enum MetricConstants
         /**
          * Returns true if this {@link MetricGroup} contains the input {@link MetricConstants}, false
          * otherwise.
-         * 
+         *
          * @param input the {@link MetricConstants} to test
          * @return true if this {@link MetricGroup} contains the input {@link MetricConstants}, false
          *         otherwise
@@ -973,7 +974,7 @@ public enum MetricConstants
 
         /**
          * Returns a string representation.
-         * 
+         *
          * @return a string representation
          */
 

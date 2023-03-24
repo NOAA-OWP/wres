@@ -35,7 +35,7 @@ public class SummaryStatisticsDeserializer
         JsonNode node = mapper.readTree( jp );
 
         return StreamSupport.stream( node.spliterator(), false )
-                            .map( DeclarationFactory::getEnumFriendlyName )
+                            .map( DeclarationFactory::getFriendlyName )
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
                             .collect( Collectors.toCollection( TreeSet::new ) );
     }

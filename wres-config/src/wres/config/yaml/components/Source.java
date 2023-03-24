@@ -5,10 +5,12 @@ import java.time.ZoneOffset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.TimeScaleDeserializer;
 import wres.config.yaml.deserializers.TimeZoneDeserializer;
+import wres.config.yaml.serializers.TimeScaleSerializer;
 
 /**
  * A data source.
@@ -25,6 +27,7 @@ public record Source( @JsonProperty( "uri" ) URI uri,
                       @JsonProperty( "pattern" ) String pattern,
                       @JsonDeserialize( using = TimeZoneDeserializer.class )
                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
+                      @JsonSerialize( using = TimeScaleSerializer.class )
                       @JsonDeserialize( using = TimeScaleDeserializer.class )
                       @JsonProperty( "time_scale" ) TimeScale timeScale,
                       @JsonProperty( "missing_value" ) Double missingValue ) {}
