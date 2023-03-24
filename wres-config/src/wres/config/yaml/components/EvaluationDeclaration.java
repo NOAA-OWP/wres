@@ -1,5 +1,6 @@
 package wres.config.yaml.components;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -8,14 +9,20 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.deserializers.DecimalFormatDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
+import wres.config.yaml.serializers.DecimalFormatSerializer;
+import wres.config.yaml.serializers.DurationSerializer;
+import wres.config.yaml.serializers.ThresholdSetsSerializer;
+import wres.config.yaml.serializers.ThresholdsSerializer;
 import wres.statistics.generated.Pool;
 
 /**
@@ -72,16 +79,21 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
+                                     @JsonSerialize( using = DurationSerializer.class )
                                      @JsonDeserialize( using = DurationDeserializer.class )
                                      @JsonProperty( "pair_frequency" ) Duration pairFrequency,
                                      @JsonProperty( "cross_pair" ) CrossPair crossPair,
+                                     @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
+                                     @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
+                                     @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
+                                     @JsonSerialize( using = ThresholdSetsSerializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonProperty( "season" ) Season season,
@@ -89,7 +101,9 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) Set<Metric> metrics,
                                      @JsonProperty( "duration_format" ) ChronoUnit durationFormat,
-                                     @JsonProperty( "decimal_format" ) String decimalFormat,
+                                     @JsonSerialize( using = DecimalFormatSerializer.class )
+                                     @JsonDeserialize( using = DecimalFormatDeserializer.class )
+                                     @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
                                      @JsonProperty( "output_formats" ) Formats formats )
 {
     /** Logger. */
@@ -165,7 +179,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
 
         if ( Objects.isNull( decimalFormat ) )
         {
-            decimalFormat = "0.000000";
+            decimalFormat = new DecimalFormatPretty( "0.000000" );
         }
 
         if ( Objects.isNull( durationFormat ) )

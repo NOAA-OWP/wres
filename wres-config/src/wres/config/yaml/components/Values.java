@@ -3,7 +3,10 @@ package wres.config.yaml.components;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
+
+import wres.config.yaml.serializers.ValuesSerializer;
 
 /**
  * A values filter.
@@ -13,6 +16,7 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param aboveMaximum the value to assign when values are above the maximum
  */
 @RecordBuilder
+@JsonSerialize( using = ValuesSerializer.class )
 public record Values( @JsonProperty( "minimum" ) Double minimum,
                       @JsonProperty( "maximum" ) Double maximum,
                       @JsonProperty( "below_minimum" ) Double belowMinimum,

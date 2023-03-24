@@ -14,6 +14,11 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
@@ -102,14 +107,26 @@ public class DeclarationFactory
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationFactory.class );
 
-    /** Mapper to map a YAML string to POJOs. */
-    private static final ObjectMapper MAPPER = YAMLMapper.builder()
-                                                         .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
-                                                         .build()
-                                                         .registerModule( new ProtobufModule() )
-                                                         .registerModule( new JavaTimeModule() )
-                                                         .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
-                                                                     true );
+    /** Mapper for deserialization. */
+    private static final ObjectMapper DESERIALIZER
+            = YAMLMapper.builder()
+                        .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
+                        .build()
+                        .registerModule( new ProtobufModule() )
+                        .registerModule( new JavaTimeModule() )
+                        .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
+                                    true );
+
+    /** Mapper for serialization. */
+    private static final ObjectMapper SERIALIZER =
+            new ObjectMapper( new YAMLFactory().enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
+                                               .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR, true ) )
+                    .registerModule( new JavaTimeModule() )
+                    .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
+                    .configure( SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true )
+                    .configure( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false )
+                    .setSerializationInclusion( JsonInclude.Include.NON_NULL )
+                    .setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
 
     /** To stringify protobufs into presentable JSON. */
     public static final Function<MessageOrBuilder, String> PROTBUF_STRINGIFIER = message ->
@@ -203,7 +220,7 @@ public class DeclarationFactory
             String schemaString = new String( stream.readAllBytes(), StandardCharsets.UTF_8 );
 
             // Map the schema to a json node
-            JsonNode schemaNode = MAPPER.readTree( schemaString );
+            JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
 
             // Unfortunately, Jackson does not currently resolve anchors/aliases, despite using SnakeYAML under the
             // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
@@ -214,17 +231,17 @@ public class DeclarationFactory
                                        new DumperOptions(),
                                        new CustomResolver() );
             Object resolvedYaml = snakeYaml.load( yaml );
-            String resolvedYamlString = MAPPER.writerWithDefaultPrettyPrinter()
-                                              .writeValueAsString( resolvedYaml );
+            String resolvedYamlString = DESERIALIZER.writerWithDefaultPrettyPrinter()
+                                                    .writeValueAsString( resolvedYaml );
 
             LOGGER.info( "Resolved a YAML declaration string: {}.", resolvedYaml );
 
             // Use Jackson to (re-)read the declaration string once any aliases/anchors are resolved
-            JsonNode declaration = MAPPER.readTree( resolvedYamlString );
+            JsonNode declaration = DESERIALIZER.readTree( resolvedYamlString );
 
             JsonSchemaFactory factory =
                     JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .objectMapper( MAPPER )
+                                     .objectMapper( DESERIALIZER )
                                      .build();
 
             // Validate the declaration against the schema
@@ -246,12 +263,37 @@ public class DeclarationFactory
             LOGGER.debug( "Deserializing a declaration string into POJOs." );
 
             // Deserialize
-            EvaluationDeclaration mappedDeclaration = MAPPER.reader()
-                                                            .readValue( declaration, EvaluationDeclaration.class );
+            EvaluationDeclaration mappedDeclaration = DESERIALIZER.reader()
+                                                                  .readValue( declaration,
+                                                                              EvaluationDeclaration.class );
 
             // Handle any generation that requires the full declaration, but without performing interpolation of
             // options that are declared implicitly
             return DeclarationFactory.finalizeDeclaration( mappedDeclaration );
+        }
+    }
+
+    /**
+     * Serializes an evaluation to a YAML declaration string.
+     *
+     * @param evaluation the evaluation declaration
+     * @return the YAML string
+     * @throws IOException if the string could not be written
+     * @throws NullPointerException if the evaluation is null
+     */
+
+    public static String from( EvaluationDeclaration evaluation ) throws IOException
+    {
+        Objects.requireNonNull( evaluation );
+
+        try
+        {
+            return SERIALIZER.writerWithDefaultPrettyPrinter()
+                             .writeValueAsString( evaluation );
+        }
+        catch ( JsonProcessingException e )
+        {
+            throw new IOException( "While serializing an evaluation to a YAML string.", e );
         }
     }
 
@@ -282,16 +324,34 @@ public class DeclarationFactory
     }
 
     /**
-     * Returns an enum-friendly name from a node whose text value corresponds to an enum.
+     * Returns an friendly name from a node whose text value corresponds to an enum.
      * @param node the enum node
      * @return the enum-friendly name
+     * @throws NullPointerException if the input is null
      */
 
-    public static String getEnumFriendlyName( JsonNode node )
+    public static String getFriendlyName( JsonNode node )
     {
+        Objects.requireNonNull( node );
+
         return node.asText()
                    .toUpperCase()
                    .replace( " ", "_" );
+    }
+
+    /**
+     * Gets a human-friendly enum name from an enum string.
+     * @param enumString the enum string
+     * @return a human-friendly name with spaces instead of underscores and all lower case
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String getFriendlyName( String enumString )
+    {
+        Objects.requireNonNull( enumString );
+
+        return enumString.replace( "_", " " )
+                         .toLowerCase();
     }
 
     /**
@@ -649,7 +709,8 @@ public class DeclarationFactory
             Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.csv2Format()
                                                                    .toBuilder();
             Outputs.NumericFormat.Builder numericBuilder = csv2Builder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                    .toPattern() );
             csv2Builder.setOptions( numericBuilder );
             formatsBuilder.csv2Format( csv2Builder.build() );
         }
@@ -659,7 +720,8 @@ public class DeclarationFactory
             Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.csvFormat()
                                                                  .toBuilder();
             Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                    .toPattern() );
             csvBuilder.setOptions( numericBuilder );
             formatsBuilder.csvFormat( csvBuilder.build() );
         }
@@ -669,7 +731,8 @@ public class DeclarationFactory
             Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.pairsFormat()
                                                                     .toBuilder();
             Outputs.NumericFormat.Builder numericBuilder = pairsBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat() );
+            numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                    .toPattern() );
             pairsBuilder.setOptions( numericBuilder );
             formatsBuilder.pairsFormat( pairsBuilder.build() );
         }

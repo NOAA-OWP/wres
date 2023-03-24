@@ -3,7 +3,6 @@ package wres.config.yaml.deserializers;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +40,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
     /** The last node read, which allows for compositions of this class. */
     private JsonNode lastNode = null;
 
+    /** Duration deserializer. **/
+    private static final DurationDeserializer DURATION_DESERIALIZER = new DurationDeserializer();
+
     @Override
     public Dataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
@@ -62,7 +64,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             DataType dataType = this.getDataType( reader, node, jp.currentName() );
             String label = this.getStringValue( reader, node.get( "label" ) );
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
-            Duration timeShift = this.getTimeShift( node.get( "time_shift" ) );
+            Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
             return new Dataset( sources, variable, featureAuthority, dataType, label, ensembleFilter, timeShift );
         }
         // Plain array of sources
@@ -225,25 +227,19 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
     /**
      * @param node the node
+     * @param reader the reader
+     * @param context the context
      * @return the time shift or null
      */
 
-    private Duration getTimeShift( JsonNode node )
+    private Duration getTimeShift( JsonNode node, ObjectReader reader, DeserializationContext context ) throws IOException
     {
         if ( Objects.isNull( node ) )
         {
             return null;
         }
 
-        String unitString = node.get( "unit" )
-                                .asText()
-                                .toUpperCase();
-
-        ChronoUnit unit = ChronoUnit.valueOf( unitString );
-        int amount = node.get( "amount" )
-                         .asInt();
-
-        return Duration.of( amount, unit );
+        return DURATION_DESERIALIZER.deserialize( node.traverse( reader ), context );
     }
 
     /**

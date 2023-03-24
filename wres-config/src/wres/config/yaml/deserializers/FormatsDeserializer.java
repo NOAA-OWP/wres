@@ -214,7 +214,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         if ( node.has( "orientation" ) )
         {
             JsonNode orientationNode = node.get( "orientation" );
-            String friendlyText = DeclarationFactory.getEnumFriendlyName( orientationNode );
+            String friendlyText = DeclarationFactory.getFriendlyName( orientationNode );
             Outputs.GraphicFormat.GraphicShape shape = Outputs.GraphicFormat.GraphicShape.valueOf( friendlyText );
             graphicFormatBuilder.setShape( shape );
         }

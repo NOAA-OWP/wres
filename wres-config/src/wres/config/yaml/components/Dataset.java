@@ -6,9 +6,11 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.DatasetDeserializer;
+import wres.config.yaml.serializers.DurationSerializer;
 
 /**
  * Observed or predicted dataset.
@@ -28,6 +30,7 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonProperty( "type" ) DataType type,
                        @JsonProperty( "label" ) String label,
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
+                       @JsonSerialize( using = DurationSerializer.class )
                        @JsonProperty( "time_shift" ) Duration timeShift )
 {
     /**

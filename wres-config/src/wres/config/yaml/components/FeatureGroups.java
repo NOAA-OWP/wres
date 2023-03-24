@@ -5,10 +5,12 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.deserializers.FeatureGroupsDeserializer;
+import wres.config.yaml.serializers.FeatureGroupsSerializer;
 import wres.statistics.generated.GeometryGroup;
 
 /**
@@ -16,6 +18,7 @@ import wres.statistics.generated.GeometryGroup;
  * @param geometryGroups the feature groups
  */
 @RecordBuilder
+@JsonSerialize( using = FeatureGroupsSerializer.class )
 @JsonDeserialize( using = FeatureGroupsDeserializer.class )
 public record FeatureGroups( Set<GeometryGroup> geometryGroups )
 {

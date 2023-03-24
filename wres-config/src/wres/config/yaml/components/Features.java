@@ -5,10 +5,12 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.deserializers.FeaturesDeserializer;
+import wres.config.yaml.serializers.FeaturesSerializer;
 import wres.statistics.generated.GeometryTuple;
 
 /**
@@ -16,6 +18,7 @@ import wres.statistics.generated.GeometryTuple;
  * @param geometries the features
  */
 @RecordBuilder
+@JsonSerialize( using = FeaturesSerializer.class )
 @JsonDeserialize( using = FeaturesDeserializer.class )
 public record Features( Set<GeometryTuple> geometries )
 {

@@ -1,9 +1,11 @@
 package wres.config.yaml.components;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.serializers.MetricSerializer;
 
 /**
  * A metric.
@@ -11,4 +13,5 @@ import wres.config.MetricConstants;
  * @param parameters the metric parameters
  */
 @RecordBuilder
+@JsonSerialize( using = MetricSerializer.class )
 public record Metric( @JsonProperty( "name" ) MetricConstants name, MetricParameters parameters ) {}
