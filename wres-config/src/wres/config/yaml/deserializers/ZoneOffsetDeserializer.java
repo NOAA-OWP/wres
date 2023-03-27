@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
  *
  * @author James Brown
  */
-public class TimeZoneDeserializer extends JsonDeserializer<ZoneOffset>
+public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
 {
     /** Time zone shorthands, which are currently CONUS-centric. */
     private static final Map<String, ZoneOffset> SHORTHANDS =
@@ -47,6 +47,7 @@ public class TimeZoneDeserializer extends JsonDeserializer<ZoneOffset>
         JsonNode node = mapper.readTree( jp );
 
         String zoneText = node.asText();
+
         // Shorthand? If so, allow
         if ( SHORTHANDS.containsKey( zoneText ) )
         {

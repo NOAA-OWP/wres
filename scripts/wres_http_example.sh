@@ -206,7 +206,7 @@ EOF
 # At this point, we think the response code was successful, so we continue
 # by looking for the Location of the uri that was created, it is in an http
 # header called Location.
-    job_location=$( echo -n "$post_result" | grep Location | cut -d' ' -f2 )
+    job_location=$( echo -n "$post_result" | grep -i Location | cut -d' ' -f2 )
     echo "The location of the resource created by server was $job_location"
     echo ""
 

@@ -158,10 +158,12 @@ definitions:
         anyOf:
           - "$ref": "#/definitions/EnsembleFilter"
           - type: array
-            items: 
-              type: string
-              minLength: 1
-              maxLength: 2083
+            items:
+              oneOf:
+                - type: integer
+                - type: string
+                  minLength: 1
+                  maxLength: 72
             minItems: 1
       time_shift:
         "$ref": "#/definitions/TimeShift"
@@ -199,8 +201,12 @@ definitions:
         anyOf:
           - "$ref": "#/definitions/EnsembleFilter"
           - type: array
-            items: 
-              type: string
+            items:
+              oneOf:
+                - type: integer
+                - type: string
+                  minLength: 1
+                  maxLength: 72
             minItems: 1
       time_shift:
         "$ref": "#/definitions/TimeShift"
@@ -238,10 +244,14 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+      # Workaround because the networknt validator sometimes sees these 
+      # strings as integers, but both are interpreted properly post-validation
       time_zone_offset:
-        type: string
-        minLength: 1
-        maxLength: 2083
+        anyOf:        
+          - type: string
+            minLength: 1
+            maxLength: 6
+          - type: integer
       interface:
         "$ref": "#/definitions/SourceInterfaceEnum"
       time_scale:
@@ -597,9 +607,11 @@ definitions:
       members:
         type: array
         items:
-          type: string
-          minLength: 1
-          maxLength: 2083
+          anyOf:
+            - type: string
+              minLength: 1
+              maxLength: 72
+            - type: integer
         minItems: 1
       exclude:
         type: boolean

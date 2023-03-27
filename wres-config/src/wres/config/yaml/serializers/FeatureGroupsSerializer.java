@@ -1,6 +1,7 @@
 package wres.config.yaml.serializers;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -58,7 +59,8 @@ public class FeatureGroupsSerializer extends JsonSerializer<FeatureGroups>
             writer.writeStartObject();
             writer.writeStringField( "name", group.getRegionName() );
 
-            Set<GeometryTuple> geometries = Set.copyOf( group.getGeometryTuplesList() );
+            // Preserve insertion order
+            Set<GeometryTuple> geometries = new LinkedHashSet<>( group.getGeometryTuplesList() );
             writer.writeFieldName( "features" );
             FEATURES_SERIALIZER.serialize( geometries,
                                            writer );

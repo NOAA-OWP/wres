@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.TimeScaleFunction;
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.TimeScale;
 
 /**
@@ -29,17 +31,22 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
 
         if ( timeScale.getPeriod().getSeconds() > 0 || timeScale.getPeriod().getNanos() > 0 )
         {
-            gen.writeFieldName( "period" );
-            gen.writeString( String.valueOf( timeScale.getPeriod()
-                                                  .getSeconds() ) );
+            // Function
+            wres.statistics.generated.TimeScale.TimeScaleFunction function = timeScale.getFunction();
+            String functionName = DeclarationFactory.getFriendlyName( function.name() );
+            gen.writeStringField( "function", functionName );
 
-            if( timeScale.getPeriod().getNanos() > 0 )
+            // Period
+            gen.writeStringField( "period", String.valueOf( timeScale.getPeriod()
+                                                                     .getSeconds() ) );
+
+            if ( timeScale.getPeriod().getNanos() > 0 )
             {
                 LOGGER.warn( "Could not write the nanosecond component of the timescale." );
             }
 
-            gen.writeFieldName( "units" );
-            gen.writeString( "seconds" );
+            // Units
+            gen.writeStringField( "unit", "seconds" );
         }
 
         // End

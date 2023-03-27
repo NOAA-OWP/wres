@@ -7,6 +7,9 @@ import java.text.DecimalFormat;
  */
 public class DecimalFormatPretty extends DecimalFormat
 {
+    /** Default format string. */
+    public static final String DEFAULT_FORMAT = "#0.000000";
+
     /**
      * Create an instance
      * @param format the format

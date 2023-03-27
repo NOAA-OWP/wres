@@ -787,7 +787,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithFormats() throws IOException
+    void testDeserializeWithOutputFormats() throws IOException
     {
         String yaml = """
                 observed:
@@ -1306,4 +1306,974 @@ class DeclarationFactoryTest
         assertEquals( expectedMetrics, actualMetrics );
     }
 
+
+    @Test
+    void testSerializeWithShortSources() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                  """;
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithShortSourcesAndBaseline() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                baseline:
+                  sources:
+                    - uri: yet_another_file.csv
+                  """;
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
+                                             .build();
+
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+
+        BaselineDataset finalBaselineDataset = BaselineDatasetBuilder.builder()
+                                                                     .dataset( baselineDataset )
+                                                                     .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .baseline( finalBaselineDataset )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithLongSources() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                    - uri: file:/some/directory
+                      pattern: '**/*.csv*'
+                      time_zone_offset: -0600
+                      missing_value: -999.0
+                    - uri: https://foo.bar
+                      interface: usgs nwis
+                      time_scale:
+                        function: mean
+                        period: 3600
+                        unit: seconds
+                  variable: foo
+                  type: observations
+                predicted:
+                  sources:
+                    - uri: forecasts_with_NWS_feature_authority.csv
+                    - uri: file:/some/other/directory
+                      pattern: '**/*.xml*'
+                      time_zone_offset: -0600
+                    - uri: https://qux.quux
+                      interface: wrds ahps
+                      time_scale:
+                        function: mean
+                        period: 7200
+                        unit: seconds
+                  type: ensemble forecasts
+                reference_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
+                valid_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
+                        """;
+
+        URI observedUri = URI.create( "some_file.csv" );
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
+        URI anotherObservedUri = URI.create( "file:/some/directory" );
+        Source anotherObservedSource = SourceBuilder.builder()
+                                                    .uri( anotherObservedUri )
+                                                    .pattern( "**/*.csv*" )
+                                                    .timeZoneOffset( ZoneOffset.of( "-0600" ) )
+                                                    .missingValue( -999.0 )
+                                                    .build();
+
+        URI yetAnotherObservedUri = URI.create( "https://foo.bar" );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( Duration.newBuilder().setSeconds( 3600 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+        wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
+        Source yetAnotherObservedSource = SourceBuilder.builder()
+                                                       .uri( yetAnotherObservedUri )
+                                                       .api( SourceInterface.USGS_NWIS )
+                                                       .timeScale( outerTimeScale )
+                                                       .build();
+
+        List<Source> observedSources =
+                List.of( observedSource, anotherObservedSource, yetAnotherObservedSource );
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .sources( observedSources )
+                                                .type( DataType.OBSERVATIONS )
+                                                .variable( new Variable( "foo", null ) )
+                                                .build();
+
+        URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
+
+        URI anotherPredictedUri = URI.create( "file:/some/other/directory" );
+        Source anotherPredictedSource = SourceBuilder.builder()
+                                                     .uri( anotherPredictedUri )
+                                                     .pattern( "**/*.xml*" )
+                                                     .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
+                                                     .build();
+
+        URI yetAnotherPredictedUri = URI.create( "https://qux.quux" );
+        TimeScale timeScalePredicted = TimeScale.newBuilder()
+                                                .setPeriod( Duration.newBuilder().setSeconds( 7200 ) )
+                                                .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                .build();
+        wres.config.yaml.components.TimeScale
+                outerTimeScalePredicted = new wres.config.yaml.components.TimeScale( timeScalePredicted );
+        Source yetAnotherPredictedSource = SourceBuilder.builder()
+                                                        .uri( yetAnotherPredictedUri )
+                                                        .api( SourceInterface.WRDS_AHPS )
+                                                        .timeScale(
+                                                                outerTimeScalePredicted )
+                                                        .build();
+
+        List<Source> predictedSources =
+                List.of( predictedSource, anotherPredictedSource, yetAnotherPredictedSource );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .sources( predictedSources )
+                                                 .type( DataType.ENSEMBLE_FORECASTS )
+                                                 .build();
+
+        TimeInterval timeInterval = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                      Instant.parse( "2551-03-20T00:00:00Z" ) );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( observedDataset )
+                                                                       .right( predictedDataset )
+                                                                       .referenceDates( timeInterval )
+                                                                       .validDates( timeInterval )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithLongMetrics() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                metrics:
+                  - name: mean square error skill score
+                    value_thresholds: [0.3]
+                    minimum_sample_size: 23
+                  - name: pearson correlation coefficient
+                    probability_thresholds:
+                      values: [0.1]
+                      operator: greater than or equal to
+                      apply_to: observed
+                  - name: time to peak error
+                    summary_statistics:
+                      - mean
+                      - median
+                      - minimum
+                  """;
+
+        Threshold aValueThreshold = Threshold.newBuilder()
+                                             .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                             .setOperator( Threshold.ThresholdOperator.GREATER )
+                                             .build();
+        wres.config.yaml.components.Threshold valueThreshold =
+                ThresholdBuilder.builder()
+                                .threshold( aValueThreshold )
+                                .type( ThresholdType.VALUE )
+                                .build();
+        Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( valueThreshold );
+        MetricParameters firstParameters =
+                MetricParametersBuilder.builder()
+                                       .minimumSampleSize( 23 )
+                                       .valueThresholds( valueThresholds )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .parameters( firstParameters )
+                                    .build();
+
+        Threshold aThreshold = Threshold.newBuilder()
+                                        .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                        .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
+                                        .build();
+        wres.config.yaml.components.Threshold probabilityThreshold =
+                ThresholdBuilder.builder()
+                                .threshold( aThreshold )
+                                .type( ThresholdType.PROBABILITY )
+                                .build();
+        Set<wres.config.yaml.components.Threshold> probabilityThresholds = Set.of( probabilityThreshold );
+        MetricParameters secondParameters =
+                MetricParametersBuilder.builder()
+                                       .probabilityThresholds( probabilityThresholds )
+                                       .build();
+
+        Metric second = MetricBuilder.builder()
+                                     .name( MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                                     .parameters( secondParameters )
+                                     .build();
+
+        // Predictable iteration order
+        Set<ComponentName> summaryStatistics = new TreeSet<>();
+        summaryStatistics.add( ComponentName.MEAN );
+        summaryStatistics.add( ComponentName.MEDIAN );
+        summaryStatistics.add( ComponentName.MINIMUM );
+
+        MetricParameters thirdParameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( summaryStatistics )
+                                       .build();
+        Metric third = MetricBuilder.builder()
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                    .parameters( thirdParameters )
+                                    .build();
+
+        // Insertion order
+        Set<Metric> metrics = new LinkedHashSet<>();
+        metrics.add( first );
+        metrics.add( second );
+        metrics.add( third );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .metrics( metrics )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithFeatureGroup() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                feature_groups:
+                  - name: a group
+                    features:
+                      - observed: DRRC2
+                        predicted: DRRC2
+                      - observed: DOLC2
+                        predicted: DOLC2
+                  """;
+
+        GeometryTuple first = GeometryTuple.newBuilder()
+                                           .setLeft( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .build();
+
+        GeometryTuple second = GeometryTuple.newBuilder()
+                                            .setLeft( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .setRight( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .build();
+
+        List<GeometryTuple> geometries = List.of( first, second );
+
+        GeometryGroup geometryGroup = GeometryGroup.newBuilder()
+                                                   .setRegionName( "a group" )
+                                                   .addAllGeometryTuples( geometries )
+                                                   .build();
+
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( geometryGroup ) )
+                                                          .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .featureGroups( featureGroups )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithFeatureServiceAndSingletonGroup() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  group: RFC
+                  value: CNRFC
+                  pool: true
+                  """;
+
+        FeatureServiceGroup featureServiceGroup = FeatureServiceGroupBuilder.builder()
+                                                                            .group( "RFC" )
+                                                                            .value( "CNRFC" )
+                                                                            .pool( true )
+                                                                            .build();
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .featureGroups( Set.of( featureServiceGroup ) )
+                                                             .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .featureService( featureService )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithFeatureServiceAndTwoGroups() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  groups:
+                    - group: RFC
+                      value: CNRFC
+                    - group: RFC
+                      value: NWRFC
+                  """;
+
+        FeatureServiceGroup groupOne = FeatureServiceGroupBuilder.builder()
+                                                                 .group( "RFC" )
+                                                                 .value( "CNRFC" )
+                                                                 .build();
+
+        FeatureServiceGroup groupTwo = FeatureServiceGroupBuilder.builder()
+                                                                 .group( "RFC" )
+                                                                 .value( "NWRFC" )
+                                                                 .build();
+
+        // Preserve insertion order
+        Set<FeatureServiceGroup> groups = new LinkedHashSet<>();
+        groups.add( groupOne );
+        groups.add( groupTwo );
+
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .featureGroups( groups )
+                                                             .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .featureService( featureService )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSpatialMask() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                spatial_mask:
+                  name: a spatial mask!
+                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))"
+                  """;
+
+        SpatialMask expectedMask
+                = new SpatialMask( "a spatial mask!",
+                                   "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))",
+                                   null );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .spatialMask( expectedMask )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithTimePools() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                reference_dates:
+                  minimum: 2551-03-17T00:00:00Z
+                  maximum: 2551-03-20T00:00:00Z
+                reference_date_pools:
+                  period: 13
+                  frequency: 7
+                  unit: hours
+                valid_dates:
+                  minimum: 2552-03-17T00:00:00Z
+                  maximum: 2552-03-20T00:00:00Z
+                valid_date_pools:
+                  period: 11
+                  frequency: 2
+                  unit: hours
+                lead_times:
+                  minimum: 0
+                  maximum: 40
+                  unit: hours
+                lead_time_pools:
+                  period: 23
+                  frequency: 17
+                  unit: hours
+                analysis_durations:
+                  minimum: 0
+                  maximum_exclusive: 1
+                  unit: hours
+                  """;
+
+        TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
+                                                        Instant.parse( "2551-03-20T00:00:00Z" ) );
+
+        TimePools referenceDatePools = new TimePools( 13, 7, ChronoUnit.HOURS );
+
+        TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
+                                                    Instant.parse( "2552-03-20T00:00:00Z" ) );
+
+        TimePools validDatePools = new TimePools( 11, 2, ChronoUnit.HOURS );
+
+        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( 0, 40, ChronoUnit.HOURS );
+        TimePools leadTimePools = new TimePools( 23, 17, ChronoUnit.HOURS );
+
+        AnalysisDurations analysisDurations = new AnalysisDurations( 0, 1, ChronoUnit.HOURS );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .referenceDates( referenceDates )
+                                                                       .referenceDatePools( referenceDatePools )
+                                                                       .validDates( validDates )
+                                                                       .validDatePools( validDatePools )
+                                                                       .leadTimes( leadTimeInterval )
+                                                                       .leadTimePools( leadTimePools )
+                                                                       .analysisDurations( analysisDurations )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithTimeScale() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                time_scale:
+                  function: mean
+                  period: 3600
+                  unit: seconds
+                  """;
+
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( Duration.newBuilder().setSeconds( 3600 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+        wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .timeScale( outerTimeScale )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithUnitAndUnitAliases() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                unit: m3/s
+                unit_aliases:
+                  - alias: °F
+                    unit: "[degF]"
+                  - alias: °C
+                    unit: "[cel]"
+                  """;
+
+        UnitAlias one = new UnitAlias( "°F", "[degF]" );
+        UnitAlias two = new UnitAlias( "°C", "[cel]" );
+
+        // Preserve insertion order
+        Set<UnitAlias> unitAliases = new LinkedHashSet<>();
+        unitAliases.add( one );
+        unitAliases.add( two );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .unit( "m3/s" )
+                                                                       .unitAliases( unitAliases )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithPairFrequency() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                pair_frequency:
+                  period: 43200
+                  unit: seconds
+                  """;
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .pairFrequency( java.time.Duration.ofHours( 12 ) )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithCrossPairExact() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                cross_pair: exact
+                  """;
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .crossPair( CrossPair.EXACT )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithEnsembleAverage() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                ensemble_average: median
+                  """;
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithSeasonFilter() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                season:
+                  minimum_day: 1
+                  minimum_month: 4
+                  maximum_day: 31
+                  maximum_month: 7
+                  """;
+
+        Season season = new Season( MonthDay.of( 4, 1 ), MonthDay.of( 7, 31 ) );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .season( season )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithValuesFilter() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                values:
+                  minimum: 12.1
+                  maximum: 23.2
+                  below_minimum: 0.0
+                  above_maximum: 27.0
+                  """;
+
+        Values values = new Values( 12.1, 23.2, 0.0, 27.0 );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .values( values )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithOutputFormats() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                duration_format: hours
+                decimal_format: '#0.000'
+                output_formats:
+                  - netcdf2
+                  - csv2
+                  - csv
+                  - pairs
+                  - format: png
+                    width: 1200
+                    height: 800
+                    orientation: threshold lead
+                """;
+
+        Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
+                                                                   .setDecimalFormat( "#0.000000" )
+                                                                   .build();
+        Outputs.GraphicFormat graphicFormat = Outputs.GraphicFormat.newBuilder()
+                                                                   .setWidth( 1200 )
+                                                                   .setHeight( 800 )
+                                                                   .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
+                                                                   .build();
+        Formats formats = FormatsBuilder.builder()
+                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
+                                        .pairsFormat( Outputs.PairFormat.newBuilder()
+                                                                        .setOptions( numericFormat )
+                                                                        .build() )
+                                        .csv2Format( Outputs.Csv2Format.newBuilder()
+                                                                       .setOptions( numericFormat )
+                                                                       .build() )
+                                        .csvFormat( Outputs.CsvFormat.newBuilder()
+                                                                     .setOptions( numericFormat )
+                                                                     .build() )
+                                        .pngFormat( Outputs.PngFormat.newBuilder()
+                                                                     .setOptions( graphicFormat )
+                                                                     .build() )
+                                        .build();
+
+        DecimalFormat formatter = new DecimalFormatPretty( "#0.000" );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .decimalFormat( formatter )
+                                                                       .durationFormat( ChronoUnit.HOURS )
+                                                                       .formats( formats )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithThresholds() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                probability_thresholds: [0.1, 0.2, 0.9]
+                value_thresholds:
+                  name: MAJOR FLOOD
+                  values:
+                    - value: 27.0
+                      feature: DOLC2
+                    - value: 23.0
+                      feature: DRRC2
+                  operator: greater than
+                  apply_to: predicted
+                classifier_thresholds:
+                  name: COLONEL DROUGHT
+                  values:
+                    - value: 0.3
+                      feature: DOLC2
+                    - value: 0.2
+                      feature: DRRC2
+                  operator: greater than
+                  apply_to: observed
+                """;
+
+        Threshold pOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .build();
+        Threshold pTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .build();
+        Threshold pThree = Threshold.newBuilder()
+                                    .setLeftThresholdProbability( DoubleValue.of( 0.9 ) )
+                                    .setOperator( Threshold.ThresholdOperator.GREATER )
+                                    .build();
+
+        wres.config.yaml.components.Threshold pOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pTwo )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold pThreeWrapped = ThresholdBuilder.builder()
+                                                                              .threshold( pThree )
+                                                                              .type( ThresholdType.PROBABILITY )
+                                                                              .build();
+
+        // Insertion order
+        Set<wres.config.yaml.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
+        probabilityThresholds.add( pOneWrapped );
+        probabilityThresholds.add( pTwoWrapped );
+        probabilityThresholds.add( pThreeWrapped );
+
+        Threshold vOne = Threshold.newBuilder()
+                                  .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+        Threshold vTwo = Threshold.newBuilder()
+                                  .setLeftThresholdValue( DoubleValue.of( 27.0 ) )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .featureName( "DRRC2" )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vTwo )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureName( "DOLC2" )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
+        valueThresholds.add( vOneWrapped );
+        valueThresholds.add( vTwoWrapped );
+
+        Threshold cOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .setName( "COLONEL DROUGHT" )
+                                  .build();
+        Threshold cTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .setName( "COLONEL DROUGHT" )
+                                  .build();
+
+        wres.config.yaml.components.Threshold cOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( cOne )
+                                                                            .featureName( "DRRC2" )
+                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( cTwo )
+                                                                            .featureName( "DOLC2" )
+                                                                            .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> classifierThresholds = new LinkedHashSet<>();
+        classifierThresholds.add( cOneWrapped );
+        classifierThresholds.add( cTwoWrapped );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .probabilityThresholds( probabilityThresholds )
+                                                                       .valueThresholds( valueThresholds )
+                                                                       .classifierThresholds( classifierThresholds )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithThresholdSets() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - uri: some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                threshold_sets:
+                  - probability_thresholds:
+                      values: [0.1, 0.2]
+                      operator: greater than or equal to
+                      apply_to: observed
+                """;
+
+        Threshold pOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
+                                  .build();
+        Threshold pTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pTwo )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        // Insertion order
+        Set<wres.config.yaml.components.Threshold> probabilityThresholds = new LinkedHashSet<>();
+        probabilityThresholds.add( pOneWrapped );
+        probabilityThresholds.add( pTwoWrapped );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .thresholdSets( probabilityThresholds )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
 }
