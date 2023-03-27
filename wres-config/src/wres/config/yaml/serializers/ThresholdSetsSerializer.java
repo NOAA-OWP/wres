@@ -39,9 +39,14 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
 
         if( !grouped.isEmpty() )
         {
-            writer.writeStartObject();
+            // Start the threshold sets
+            writer.writeStartArray();
+
             for ( Map.Entry<Threshold, Set<Threshold>> nextThresholds : grouped.entrySet() )
             {
+                // Start the threshold set
+                writer.writeStartObject();
+
                 ThresholdType type = nextThresholds.getKey()
                                                    .type();
                 Set<Threshold> thresholdSet = nextThresholds.getValue();
@@ -60,8 +65,13 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
                     writer.writeFieldName( "classifier_thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
+
+                // End the threshold set
+                writer.writeEndObject();
             }
-            writer.writeEndObject();
+
+            // End the threshold sets
+            writer.writeEndArray();
         }
     }
 

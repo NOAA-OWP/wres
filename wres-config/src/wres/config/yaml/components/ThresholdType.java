@@ -1,5 +1,7 @@
 package wres.config.yaml.components;
 
+import wres.config.yaml.DeclarationFactory;
+
 /**
  * The type of threshold.
  * @author James Brown
@@ -19,6 +21,12 @@ public enum ThresholdType
     public boolean isProbability()
     {
         return this.name()
-            .startsWith( "PROBABILITY" );
+                   .startsWith( "PR" );
+    }
+
+    @Override
+    public String toString()
+    {
+        return DeclarationFactory.getFriendlyName( this.name() );
     }
 }

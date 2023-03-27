@@ -12,7 +12,6 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
-import wres.config.yaml.serializers.MetricSerializer;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**

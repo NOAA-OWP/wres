@@ -11,6 +11,8 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.DatasetDeserializer;
 import wres.config.yaml.serializers.DurationSerializer;
+import wres.config.yaml.serializers.EnsembleFilterSerializer;
+import wres.config.yaml.serializers.VariableSerializer;
 
 /**
  * Observed or predicted dataset.
@@ -25,10 +27,12 @@ import wres.config.yaml.serializers.DurationSerializer;
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
 public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
+                       @JsonSerialize( using = VariableSerializer.class )
                        @JsonProperty( "variable" ) Variable variable,
                        @JsonProperty( "feature_authority" ) String featureAuthority,
                        @JsonProperty( "type" ) DataType type,
                        @JsonProperty( "label" ) String label,
+                       @JsonSerialize( using = EnsembleFilterSerializer.class )
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
                        @JsonSerialize( using = DurationSerializer.class )
                        @JsonProperty( "time_shift" ) Duration timeShift )

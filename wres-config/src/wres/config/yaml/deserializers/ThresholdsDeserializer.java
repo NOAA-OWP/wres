@@ -3,7 +3,6 @@ package wres.config.yaml.deserializers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,15 +31,6 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsDeserializer.class );
-
-    /** Mapping of threshold operator strings to operator enums. Somewhat brittle, but allows for more user-friendly
-     * naming and the protobuf enums cannot be annotated directly. */
-    private static final Map<String, ThresholdOperator> THRESHOLD_OPERATORS =
-            Map.of( "GREATER_THAN", ThresholdOperator.GREATER,
-                    "GREATER_THAN_OR_EQUAL_TO", ThresholdOperator.GREATER_EQUAL,
-                    "LESS_THAN", ThresholdOperator.LESS,
-                    "LESS_THAN_OR_EQUAL_TO", ThresholdOperator.LESS_EQUAL,
-                    "EQUAL_TO", ThresholdOperator.EQUAL );
 
     /** String re-used several times. */
     public static final String VALUE = "value";
@@ -184,10 +174,11 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "operator" ) )
         {
             JsonNode operatorNode = thresholdNode.get( "operator" );
-            String operatorString = operatorNode.asText()
-                                                .replace( " ", "_" )
-                                                .toUpperCase();
-            ThresholdOperator operator = THRESHOLD_OPERATORS.get( operatorString );
+
+            // Map between user-friendly and canonical operators
+            wres.config.yaml.components.ThresholdOperator friendlyOperator =
+                    reader.readValue( operatorNode, wres.config.yaml.components.ThresholdOperator.class );
+            ThresholdOperator operator = friendlyOperator.canonical();
             builder.setOperator( operator );
         }
 

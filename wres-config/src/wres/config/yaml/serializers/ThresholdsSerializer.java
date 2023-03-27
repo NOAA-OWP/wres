@@ -131,10 +131,12 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             writer.writeObjectField( "values", values );
         }
 
-        // Write the operator name
-        String operatorName = DeclarationFactory.getFriendlyName( first.threshold()
-                                                                       .getOperator()
-                                                                       .toString() );
+        // Write the user-friendly threshold operator name
+        ThresholdOperator operator = first.threshold()
+                                          .getOperator();
+        wres.config.yaml.components.ThresholdOperator friendlyOperator =
+                wres.config.yaml.components.ThresholdOperator.from( operator );
+        String operatorName = friendlyOperator.toString();
         writer.writeStringField( "operator", operatorName );
 
         // Write the data orientation

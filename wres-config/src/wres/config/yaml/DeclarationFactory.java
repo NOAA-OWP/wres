@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
@@ -119,8 +118,10 @@ public class DeclarationFactory
 
     /** Mapper for serialization. */
     private static final ObjectMapper SERIALIZER =
-            new ObjectMapper( new YAMLFactory().enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
-                                               .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR, true ) )
+            new ObjectMapper( new YAMLFactoryWithCustomGenerator().disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
+                                                                  .enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
+                                                                  .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR,
+                                                                              true ) )
                     .registerModule( new JavaTimeModule() )
                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
                     .configure( SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true )

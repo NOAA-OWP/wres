@@ -73,6 +73,7 @@ public class FeaturesSerializer extends JsonSerializer<Features>
         }
         else
         {
+            writer.writeStartObject();
             if ( geometryTuple.hasLeft() )
             {
                 this.writeGeometry( geometryTuple.getLeft(), writer, "observed" );
@@ -85,6 +86,7 @@ public class FeaturesSerializer extends JsonSerializer<Features>
             {
                 this.writeGeometry( geometryTuple.getBaseline(), writer, "baseline" );
             }
+            writer.writeEndObject();
         }
     }
 
@@ -99,14 +101,11 @@ public class FeaturesSerializer extends JsonSerializer<Features>
     {
         if ( this.isSimpleGeometry( geometry ) )
         {
-            writer.writeStartObject();
             writer.writeFieldName( context );
             writer.writeString( geometry.getName() );
-            writer.writeEndObject();
         }
         else
         {
-            writer.writeStartObject();
             writer.writeFieldName( context );
             writer.writeStartObject();
             writer.writeFieldName( "name" );
@@ -129,7 +128,6 @@ public class FeaturesSerializer extends JsonSerializer<Features>
                 writer.writeFieldName( "srid" );
                 writer.writeNumber( geometry.getSrid() );
             }
-            writer.writeEndObject();
             writer.writeEndObject();
         }
     }

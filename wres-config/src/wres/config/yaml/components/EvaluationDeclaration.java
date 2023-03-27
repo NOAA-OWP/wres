@@ -19,8 +19,10 @@ import wres.config.yaml.deserializers.DurationDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
+import wres.config.yaml.serializers.ChronoUnitSerializer;
 import wres.config.yaml.serializers.DecimalFormatSerializer;
 import wres.config.yaml.serializers.DurationSerializer;
+import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
 import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
 import wres.statistics.generated.Pool;
@@ -75,8 +77,8 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
                                      @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
-                                     @JsonProperty( "analysis_durations" ) AnalysisDurations analysisDurations,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
+                                     @JsonProperty( "analysis_durations" ) AnalysisDurations analysisDurations,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
                                      @JsonSerialize( using = DurationSerializer.class )
@@ -95,11 +97,13 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
+                                     @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonProperty( "season" ) Season season,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) Set<Metric> metrics,
+                                     @JsonSerialize( using = ChronoUnitSerializer.class )
                                      @JsonProperty( "duration_format" ) ChronoUnit durationFormat,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
                                      @JsonDeserialize( using = DecimalFormatDeserializer.class )

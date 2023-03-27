@@ -1,6 +1,7 @@
 package wres.config.yaml.serializers;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -13,6 +14,7 @@ import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
+import wres.statistics.generated.DurationScoreMetric;
 
 /**
  * Serializes a {@link Metric}.
@@ -89,7 +91,11 @@ public class MetricSerializer extends JsonSerializer<Metric>
         if ( !parameters.summaryStatistics()
                         .isEmpty() )
         {
-            writer.writeObjectField( "summary_statistics", parameters.summaryStatistics() );
+            List<String> mapped = parameters.summaryStatistics().stream()
+                                            .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::name )
+                                            .map( DeclarationFactory::getFriendlyName )
+                                            .toList();
+            writer.writeObjectField( "summary_statistics", mapped );
         }
         // Minimum sample size, if not default
         if ( parameters.minimumSampleSize() > 0 )
@@ -110,6 +116,5 @@ public class MetricSerializer extends JsonSerializer<Metric>
 
         writer.writeEndObject();
     }
-
 
 }

@@ -27,58 +27,6 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FormatsDeserializer.class );
 
-    /** Default PNG format. **/
-    private static final Outputs.PngFormat PNG_FORMAT =
-            Outputs.PngFormat.newBuilder()
-                             .setOptions( Outputs.GraphicFormat.newBuilder()
-                                                               .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
-                                                               .setHeight( 600 )
-                                                               .setWidth( 800 ) )
-                             .build();
-
-    /** Default SVG format. **/
-    private static final Outputs.SvgFormat SVG_FORMAT =
-            Outputs.SvgFormat.newBuilder()
-                             .setOptions( Outputs.GraphicFormat.newBuilder()
-                                                               .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD ) )
-                             .build();
-
-    /** A value that is re-used several times. */
-    private static final String ZERO = "0.000000";
-
-    /** Default CSV format. **/
-    private static final Outputs.CsvFormat CSV_FORMAT =
-            Outputs.CsvFormat.newBuilder()
-                             .setOptions( Outputs.NumericFormat.newBuilder()
-                                                               .setDecimalFormat( ZERO ) )
-                             .build();
-
-    /** Default CSV2 format. **/
-    private static final Outputs.Csv2Format CSV2_FORMAT =
-            Outputs.Csv2Format.newBuilder()
-                              .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( ZERO ) )
-                              .build();
-
-    /** Default NetCDF format. **/
-    private static final Outputs.NetcdfFormat NETCDF_FORMAT =
-            Outputs.NetcdfFormat.getDefaultInstance();
-
-    /** Default NetCDF2 format. **/
-    private static final Outputs.Netcdf2Format NETCDF2_FORMAT =
-            Outputs.Netcdf2Format.getDefaultInstance();
-
-    /** Default Protobuf format. **/
-    private static final Outputs.ProtobufFormat PROTOBUF_FORMAT =
-            Outputs.ProtobufFormat.getDefaultInstance();
-
-    /** Default pair format. **/
-    private static final Outputs.PairFormat PAIR_FORMAT =
-            Outputs.PairFormat.newBuilder()
-                              .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( ZERO ) )
-                              .build();
-
     @Override
     public Formats deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
@@ -135,14 +83,14 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         Format format = Format.valueOf( formatName.toUpperCase() );
         switch ( format )
         {
-            case PNG -> builder.pngFormat( PNG_FORMAT );
-            case SVG -> builder.svgFormat( SVG_FORMAT );
-            case NETCDF -> builder.netcdfFormat( NETCDF_FORMAT );
-            case NETCDF2 -> builder.netcdf2Format( NETCDF2_FORMAT );
-            case CSV -> builder.csvFormat( CSV_FORMAT );
-            case CSV2 -> builder.csv2Format( CSV2_FORMAT );
-            case PROTOBUF -> builder.protobufFormat( PROTOBUF_FORMAT );
-            case PAIRS -> builder.pairsFormat( PAIR_FORMAT );
+            case PNG -> builder.pngFormat( Formats.PNG_FORMAT );
+            case SVG -> builder.svgFormat( Formats.SVG_FORMAT );
+            case NETCDF -> builder.netcdfFormat( Formats.NETCDF_FORMAT );
+            case NETCDF2 -> builder.netcdf2Format( Formats.NETCDF2_FORMAT );
+            case CSV -> builder.csvFormat( Formats.CSV_FORMAT );
+            case CSV2 -> builder.csv2Format( Formats.CSV2_FORMAT );
+            case PROTOBUF -> builder.protobufFormat( Formats.PROTOBUF_FORMAT );
+            case PAIRS -> builder.pairsFormat( Formats.PAIR_FORMAT );
             default -> throw new IllegalArgumentException( "Unrecognized format '" + format + "'." );
         }
     }
@@ -166,28 +114,28 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         {
             case PNG ->
             {
-                Outputs.GraphicFormat.Builder graphicFormatBuilder = PNG_FORMAT.getOptions()
+                Outputs.GraphicFormat.Builder graphicFormatBuilder = Formats.PNG_FORMAT.getOptions()
                                                                                .toBuilder();
                 this.addGraphicOptions( graphicFormatBuilder, node );
-                Outputs.PngFormat pngFormat = PNG_FORMAT.toBuilder()
+                Outputs.PngFormat pngFormat = Formats.PNG_FORMAT.toBuilder()
                                                         .setOptions( graphicFormatBuilder )
                                                         .build();
                 builder.pngFormat( pngFormat );
             }
             case SVG ->
             {
-                Outputs.GraphicFormat.Builder graphicFormatBuilder = SVG_FORMAT.getOptions()
+                Outputs.GraphicFormat.Builder graphicFormatBuilder = Formats.SVG_FORMAT.getOptions()
                                                                                .toBuilder();
                 this.addGraphicOptions( graphicFormatBuilder, node );
-                Outputs.SvgFormat svgFormat = SVG_FORMAT.toBuilder()
+                Outputs.SvgFormat svgFormat = Formats.SVG_FORMAT.toBuilder()
                                                         .setOptions( graphicFormatBuilder )
                                                         .build();
                 builder.svgFormat( svgFormat );
             }
-            case NETCDF -> builder.netcdfFormat( NETCDF_FORMAT );
-            case CSV -> builder.csvFormat( CSV_FORMAT );
-            case CSV2 -> builder.csv2Format( CSV2_FORMAT );
-            case PROTOBUF -> builder.protobufFormat( PROTOBUF_FORMAT );
+            case NETCDF -> builder.netcdfFormat( Formats.NETCDF_FORMAT );
+            case CSV -> builder.csvFormat( Formats.CSV_FORMAT );
+            case CSV2 -> builder.csv2Format( Formats.CSV2_FORMAT );
+            case PROTOBUF -> builder.protobufFormat( Formats.PROTOBUF_FORMAT );
             default -> throw new IllegalArgumentException( "Unrecognized format '" + format + "'." );
         }
     }

@@ -4,6 +4,8 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import wres.config.yaml.DeclarationFactory;
+
 /**
  * An interface to use when reading source data.
  * @author James Brown
@@ -95,9 +97,7 @@ public enum SourceInterface
     @Override
     public String toString()
     {
-        return this.name()
-                   .toLowerCase()
-                   .replace( "_", " " );
+        return DeclarationFactory.getFriendlyName( this.name() );
     }
 
     /**

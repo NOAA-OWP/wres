@@ -2,6 +2,8 @@ package wres.config.yaml.components;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import wres.config.yaml.DeclarationFactory;
+
 /**
  * An enumeration of statistics formats.
  * @author James Brown
@@ -23,5 +25,11 @@ public enum Format
     /** NETCDF Version 2.0. */
     @JsonProperty( "netcdf2" ) NETCDF2,
     /** Protocol Buffers. */
-    @JsonProperty( "protobuf" ) PROTOBUF
+    @JsonProperty( "protobuf" ) PROTOBUF;
+
+    @Override
+    public String toString()
+    {
+        return DeclarationFactory.getFriendlyName( this.name() );
+    }
 }
