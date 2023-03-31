@@ -1,4 +1,4 @@
-package wres.config;
+package wres.config.xml;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -11,6 +11,7 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;

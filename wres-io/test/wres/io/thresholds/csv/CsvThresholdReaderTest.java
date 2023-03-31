@@ -18,7 +18,6 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.units.UnitMapper;
 import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.system.SystemSettings;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -45,15 +44,13 @@ class CsvThresholdReaderTest
     private static final String TEST_CSV = "test.csv";
     private static final String TEST = "test";
     private UnitMapper unitMapper;
-    private MeasurementUnit units = MeasurementUnit.of( "CMS" );
-    private SystemSettings systemSettings;
+    private final MeasurementUnit units = MeasurementUnit.of( "CMS" );
 
     @BeforeEach
     void runBeforeEachTest()
     {
         this.unitMapper = Mockito.mock( UnitMapper.class );
         System.setProperty( "user.timezone", "UTC" );
-        this.systemSettings = SystemSettings.withDefaults();
         Mockito.when( this.unitMapper.getUnitMapper( "CMS" ) ).thenReturn( in -> in );
         Mockito.when( this.unitMapper.getDesiredMeasurementUnitName() ).thenReturn( this.units.toString() );
     }
@@ -92,8 +89,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
 
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 
@@ -185,8 +181,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
 
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 
@@ -276,8 +271,7 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 
@@ -362,8 +356,7 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 
@@ -448,8 +441,7 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 
@@ -534,8 +526,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
 
             ThresholdException actualException = assertThrows( ThresholdException.class,
-                                                               () -> CsvThresholdReader.readThresholds( this.systemSettings,
-                                                                                                        thresholdConfig,
+                                                               () -> CsvThresholdReader.readThresholds( thresholdConfig,
                                                                                                         this.units,
                                                                                                         this.unitMapper ) );
 
@@ -596,8 +587,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
 
             Map<String, Set<ThresholdOuter>> actual =
-                    CsvThresholdReader.readThresholds( this.systemSettings,
-                                                       thresholdConfig,
+                    CsvThresholdReader.readThresholds( thresholdConfig,
                                                        this.units,
                                                        this.unitMapper );
 

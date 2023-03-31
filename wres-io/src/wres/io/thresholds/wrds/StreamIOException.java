@@ -1,4 +1,4 @@
-package wres.io.thresholds.exceptions;
+package wres.io.thresholds.wrds;
 
 import java.io.Serial;
 

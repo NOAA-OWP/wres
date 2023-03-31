@@ -20,7 +20,7 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;

@@ -60,8 +60,8 @@ import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
 import wres.config.MetricConstants;
-import wres.config.MetricConstantsFactory;
-import wres.config.ProjectConfigs;
+import wres.config.xml.MetricConstantsFactory;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.Circle;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
@@ -270,8 +270,8 @@ public class DeclarationFactory
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
-     * @throws SchemaValidationException if the project declaration could not be validated against the schema
-     * @throws DeclarationValidationException if the declaration is invalid
+     * @throws DeclarationSchemaException if the project declaration could not be validated against the schema
+     * @throws DeclarationException if the declaration is invalid
      * @throws NullPointerException if the yaml string is null
      */
 
@@ -301,7 +301,7 @@ public class DeclarationFactory
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
-     * @throws SchemaValidationException if the project declaration could not be validated against the schema
+     * @throws DeclarationSchemaException if the project declaration could not be validated against the schema
      * @throws NullPointerException if the yaml string is null
      */
 
@@ -359,10 +359,10 @@ public class DeclarationFactory
 
             if ( !errors.isEmpty() )
             {
-                throw new SchemaValidationException( "Encountered an error while attempting to validate a project "
-                                                     + "declaration string against the schema. Please check your "
-                                                     + "declaration and fix any errors. The errors encountered were: "
-                                                     + errors );
+                throw new DeclarationSchemaException( "Encountered an error while attempting to validate a project "
+                                                      + "declaration string against the schema. Please check your "
+                                                      + "declaration and fix any errors. The errors encountered were: "
+                                                      + errors );
             }
 
             LOGGER.debug( "Deserializing a declaration string into POJOs." );

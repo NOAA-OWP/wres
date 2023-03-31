@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdDataType;
@@ -20,7 +20,7 @@ import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.xml.sax.Locator;
-import org.xml.sax.helpers.LocatorImpl;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
@@ -29,6 +28,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.xml.ProjectConfigPlus;
 import wres.system.SystemSettings;
 
 public class ValidationTest

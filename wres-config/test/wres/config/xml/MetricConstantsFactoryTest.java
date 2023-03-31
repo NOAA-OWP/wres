@@ -1,4 +1,4 @@
-package wres.config;
+package wres.config.xml;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -15,9 +15,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.MetricConfigException;
 import wres.config.MetricConstants;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConfigException;
+import wres.config.xml.MetricConstantsFactory;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;

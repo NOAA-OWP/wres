@@ -14,7 +14,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DestinationType;
 import wres.config.generated.NamedFeature;
 import wres.config.generated.ProjectConfig;

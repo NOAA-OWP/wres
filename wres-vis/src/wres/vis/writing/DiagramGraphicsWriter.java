@@ -18,7 +18,7 @@ import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;

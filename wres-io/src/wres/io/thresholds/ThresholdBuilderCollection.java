@@ -3,7 +3,7 @@ package wres.io.thresholds;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.MetricConstants;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;

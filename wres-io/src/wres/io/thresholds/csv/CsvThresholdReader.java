@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdType;
@@ -20,18 +20,23 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.units.UnitMapper;
-import wres.io.thresholds.exceptions.AllThresholdsMissingException;
-import wres.io.thresholds.exceptions.LabelInconsistencyException;
-import wres.system.SystemSettings;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Serial;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
 
@@ -46,11 +51,13 @@ public class CsvThresholdReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvThresholdReader.class );
 
+    /** Directory to use when building relative paths. */
+    private static final Path DATA_DIRECTORY = Paths.get( System.getProperty( "user.dir" ) );
+
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
      * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
      *
-     * @param systemSettings the system settings used to help resolve a path to thresholds
      * @param threshold the threshold configuration
      * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to
      *            the evaluation units
@@ -63,8 +70,7 @@ public class CsvThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    public static Map<String, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
-                                                                   ThresholdsConfig threshold,
+    public static Map<String, Set<ThresholdOuter>> readThresholds( ThresholdsConfig threshold,
                                                                    MeasurementUnit units,
                                                                    UnitMapper unitMapper )
             throws IOException
@@ -97,7 +103,7 @@ public class CsvThresholdReader
             missingValue = Double.parseDouble( nextSource.getMissingValue() );
         }
 
-        //Path TODO: permit web thresholds.
+        // Path
         // See #59422
         // Construct a path using the SystemSetting wres.dataDirectory when
         // the specified source is not absolute.
@@ -106,8 +112,7 @@ public class CsvThresholdReader
 
         if ( !uri.isAbsolute() )
         {
-            commaSeparated = systemSettings.getDataDirectory()
-                                           .resolve( uri.getPath() );
+            commaSeparated = DATA_DIRECTORY.resolve( uri.getPath() );
             LOGGER.debug( "Transformed relative URI {} to Path {}.",
                           uri,
                           commaSeparated );
@@ -650,6 +655,45 @@ public class CsvThresholdReader
             {
                 this.specificUnitMapper = null;
             }
+        }
+    }
+
+    /**
+     * Used to identify an exception that originates from all thresholds matching the missing
+     * value.
+     */
+
+    private static class AllThresholdsMissingException extends IllegalArgumentException
+    {
+        @Serial
+        private static final long serialVersionUID = -7265565803593007243L;
+
+        /**
+         * Creates an instance.
+         * @param message the message
+         */
+        public AllThresholdsMissingException( String message )
+        {
+            super( message );
+        }
+    }
+
+    /**
+     * Used to identify an exception that originates from an inconsistency between the number
+     * of labels and the number of thresholds.
+     */
+    private static class LabelInconsistencyException extends IllegalArgumentException
+    {
+        @Serial
+        private static final long serialVersionUID = 4507239538788881616L;
+
+        /**
+         * Creates an instance.
+         * @param message the message
+         */
+        public LabelInconsistencyException( String message )
+        {
+            super( message );
         }
     }
 

@@ -19,7 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.EnsembleAverageType;

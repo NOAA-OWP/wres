@@ -23,9 +23,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
-import wres.config.ProjectConfigs;
+import wres.config.xml.ProjectConfigException;
+import wres.config.xml.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;

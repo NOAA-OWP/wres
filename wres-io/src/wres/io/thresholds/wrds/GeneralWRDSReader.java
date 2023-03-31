@@ -22,7 +22,6 @@ import wres.datamodel.units.UnitMapper;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 import wres.io.thresholds.ThresholdReadingException;
-import wres.io.thresholds.exceptions.StreamIOException;
 import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;

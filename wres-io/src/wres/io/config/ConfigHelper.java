@@ -25,8 +25,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigException;
+import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;

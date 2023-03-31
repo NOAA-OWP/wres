@@ -17,7 +17,7 @@ import org.apache.commons.math3.util.ArithmeticUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigs;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.messages.MessageFactory;

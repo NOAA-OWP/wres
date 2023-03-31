@@ -97,7 +97,7 @@ public class DeclarationValidator
      *
      * @see #validate(EvaluationDeclaration)
      * @param declaration the declaration to validate
-     * @throws DeclarationValidationException if validation errors were encountered
+     * @throws DeclarationException if validation errors were encountered
      * @return the valid declaration
      */
     public static EvaluationDeclaration validateAndNotify( EvaluationDeclaration declaration )
@@ -137,11 +137,11 @@ public class DeclarationValidator
             String spacer = "    - ";
             errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
 
-            throw new DeclarationValidationException( "Encountered "
-                                                      + errorEvents.size()
-                                                      + " errors in the declared evaluation, which must be fixed:"
-                                                      + System.lineSeparator() +
-                                                      message );
+            throw new DeclarationException( "Encountered "
+                                            + errorEvents.size()
+                                            + " errors in the declared evaluation, which must be fixed:"
+                                            + System.lineSeparator() +
+                                            message );
         }
 
         return declaration;

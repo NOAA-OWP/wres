@@ -1,4 +1,4 @@
-package wres.config;
+package wres.config.xml;
 
 import java.util.Objects;
 

@@ -1,10 +1,10 @@
 package wres.io.thresholds;
 
-import wres.config.MetricConfigException;
-import wres.config.ProjectConfigs;
+import wres.config.xml.MetricConfigException;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.MetricConstants;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -415,11 +415,9 @@ public class ExternalThresholdReader
             // function for the equivalency checks in the coming loop rather than a strict String::equals
             BiPredicate<String, String> equalityCheck = String::equals;
 
-            readThresholds = CsvThresholdReader.readThresholds(
-                    this.systemSettings,
-                    thresholdsConfig,
-                    this.getSourceMeasurementUnit( thresholdsConfig ),
-                    this.desiredMeasurementUnitConverter );
+            readThresholds = CsvThresholdReader.readThresholds( thresholdsConfig,
+                                                                this.getSourceMeasurementUnit( thresholdsConfig ),
+                                                                this.desiredMeasurementUnitConverter );
 
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features

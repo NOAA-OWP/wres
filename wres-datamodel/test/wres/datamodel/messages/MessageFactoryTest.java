@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.OneOrTwoDoubles;

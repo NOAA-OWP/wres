@@ -25,7 +25,7 @@ import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
