@@ -27,7 +27,7 @@ public record Formats( Outputs.PngFormat pngFormat,
                        Outputs.PairFormat pairsFormat )
 {
     /** A value that is re-used several times. */
-    private static final String ZERO = "0.000000";
+    private static final String ZERO = "#0.000000";
 
     /** Default PNG format. **/
     public static final Outputs.PngFormat PNG_FORMAT =

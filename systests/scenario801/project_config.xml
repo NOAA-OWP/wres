@@ -60,7 +60,7 @@
     <!-- Metrics and options associated with the metrics are specified in the metrics tag. -->
     <metrics>
         
-        <!-- The stage thresholds are spedcified in a CSV file at the location specified. -->
+        <!-- The stage thresholds are specified in a CSV file at the location specified. -->
         <thresholds>
             <type>value</type>
             <source missingValue = "-999" format = "csv">thresholds/scenario801/thresholds.csv</source>

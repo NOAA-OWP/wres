@@ -21,10 +21,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.Variable;
 
 /**
@@ -60,7 +64,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             TreeNode sourcesNode = node.get( "sources" );
             List<Source> sources = this.getSourcesFromArray( reader, ( ArrayNode ) sourcesNode );
             Variable variable = this.getVariable( reader, node );
-            String featureAuthority = this.getStringValue( reader, node.get( "feature_authority" ) );
+            FeatureAuthority featureAuthority = this.getFeatureAuthority( node );
             DataType dataType = this.getDataType( reader, node, jp.currentName() );
             String label = this.getStringValue( reader, node.get( "label" ) );
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
@@ -71,7 +75,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         else if ( node instanceof ArrayNode arrayNode )
         {
             List<Source> sources = this.getSourcesFromArray( reader, arrayNode );
-            return new Dataset( sources, null, null, null, null, null, null );
+            return DatasetBuilder.builder()
+                                 .sources( sources )
+                                 .build();
         }
         else
         {
@@ -117,7 +123,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             {
                 String nextUriString = nextNode.asText();
                 URI uri = URI.create( nextUriString );
-                nextSource = new Source( uri, null, null, null, null, null );
+                nextSource = SourceBuilder.builder()
+                                          .uri( uri )
+                                          .build();
             }
 
             sources.add( nextSource );
@@ -152,6 +160,24 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
         // Ordinary variable declaration
         return reader.readValue( variableNode, Variable.class );
+    }
+
+    /**
+     * Reads the {@link FeatureAuthority} from a node.
+     * @param node the node
+     * @return the feature authority or null
+     */
+    private FeatureAuthority getFeatureAuthority( JsonNode node )
+    {
+        FeatureAuthority featureAuthority = null;
+
+        if ( Objects.nonNull( node.get( "feature_authority" ) ) )
+        {
+            String featureAuthorityName = DeclarationFactory.getEnumName( node.get( "feature_authority" ) );
+            featureAuthority = FeatureAuthority.valueOf( featureAuthorityName );
+        }
+
+        return featureAuthority;
     }
 
     /**
@@ -232,7 +258,8 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * @return the time shift or null
      */
 
-    private Duration getTimeShift( JsonNode node, ObjectReader reader, DeserializationContext context ) throws IOException
+    private Duration getTimeShift( JsonNode node, ObjectReader reader, DeserializationContext context )
+            throws IOException
     {
         if ( Objects.isNull( node ) )
         {

@@ -17,6 +17,7 @@ import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
@@ -70,6 +71,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         Objects.requireNonNull( thresholdsNode );
         Objects.requireNonNull( nodeName );
 
+        Set<Threshold> thresholds = new LinkedHashSet<>();
+
         // Determine the declaration context for the thresholds
         ThresholdType type = ThresholdType.VALUE;
         if ( "probability_thresholds" .equals( nodeName ) )
@@ -85,7 +88,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdsNode instanceof ObjectNode )
         {
             LOGGER.debug( "Encountered an embellished set of thresholds for node {}.", nodeName );
-            return this.getThresholds( reader, thresholdsNode, type );
+            Set<Threshold> innerThresholds = this.getThresholds( reader, thresholdsNode, type );
+            thresholds.addAll( innerThresholds );
         }
         // Plain array of thresholds
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
@@ -95,14 +99,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                     = wres.statistics.generated.Threshold.newBuilder()
                                                          .setOperator( ThresholdOperator.GREATER )
                                                          .setDataType( ThresholdDataType.LEFT );
-            return this.getThresholdsFromArray( reader, arrayNode, type, builder );
+            Set<Threshold> innerThresholds = this.getThresholdsFromArray( reader, arrayNode, type, builder );
+            thresholds.addAll( innerThresholds );
         }
-        else
-        {
-            throw new IOException( "When reading the '" + nodeName
-                                   + "' declaration of 'thresholds', discovered an unrecognized data type. Please "
-                                   + "fix this declaration and try again." );
-        }
+
+        LOGGER.debug( "Deserialized the following thresholds: {}.", thresholds );
+
+        return Collections.unmodifiableSet( thresholds );
     }
 
     /**
@@ -185,13 +188,15 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "apply_to" ) )
         {
             JsonNode dataTypeNode = thresholdNode.get( "apply_to" );
-            String dataTypeString = dataTypeNode.asText()
-                                                .replace( " ", "_" )
-                                                .toUpperCase()
-                                                .replace( "OBSERVED", "LEFT" )
-                                                .replace( "PREDICTED", "RIGHT" );
-            ThresholdDataType dataType = ThresholdDataType.valueOf( dataTypeString );
+            ThresholdDataType dataType = DeclarationFactory.getThresholdDataType( dataTypeNode.asText() );
             builder.setDataType( dataType );
+        }
+
+        if( thresholdNode.has( "unit" ) )
+        {
+            JsonNode unitNode = thresholdNode.get( "unit" );
+            String unitString = unitNode.asText();
+            builder.setThresholdValueUnits( unitString );
         }
 
         // Preserve insertion order

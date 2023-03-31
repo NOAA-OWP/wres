@@ -3,6 +3,7 @@ package wres.config.yaml.deserializers;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.DateTimeException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -48,15 +49,28 @@ public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
 
         String zoneText = node.asText();
 
+        return ZoneOffsetDeserializer.getZoneOffset( zoneText );
+    }
+
+    /**
+     * Creates a zone offset from a string.
+     * @param zoneOffset the zone offset string
+     * @return the zone offset
+     * @throws DateTimeException if the offset could not be created
+     */
+    public static ZoneOffset getZoneOffset( String zoneOffset )
+    {
+        Objects.requireNonNull( zoneOffset );
+
         // Shorthand? If so, allow
-        if ( SHORTHANDS.containsKey( zoneText ) )
+        if ( SHORTHANDS.containsKey( zoneOffset ) )
         {
-            return SHORTHANDS.get( zoneText );
+            return SHORTHANDS.get( zoneOffset );
         }
         // Otherwise, pass through directly
         else
         {
-            return ZoneOffset.of( zoneText );
+            return ZoneOffset.of( zoneOffset );
         }
     }
 }

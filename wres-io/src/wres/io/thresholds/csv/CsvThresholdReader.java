@@ -9,6 +9,7 @@ import com.opencsv.exceptions.CsvValidationException;
 import wres.config.MetricConfigException;
 
 import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
@@ -36,13 +37,13 @@ import java.util.stream.Collectors;
 
 /**
  * Helps read files of Comma Separated Values (CSV).
- * 
+ *
  * @author James Brown
  */
 
 public class CsvThresholdReader
 {
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvThresholdReader.class );
 
     /**
@@ -70,22 +71,22 @@ public class CsvThresholdReader
     {
         Objects.requireNonNull( threshold, "Specify a non-null source of thresholds to read." );
 
-        ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
+        ThresholdsConfig.Source nextSource = ( ThresholdsConfig.Source ) threshold.getCommaSeparatedValuesOrSource();
 
         // Pre-validate path
         if ( Objects.isNull( nextSource.getValue() ) )
         {
             throw new MetricConfigException( threshold,
                                              "Specify a non-null path to read for the external "
-                                                        + "source of thresholds." );
+                                             + "source of thresholds." );
         }
         // Validate format
         if ( nextSource.getFormat() != ThresholdFormat.CSV )
         {
             throw new MetricConfigException( threshold,
                                              "Unsupported source format for thresholds '"
-                                                        + nextSource.getFormat()
-                                                        + "'" );
+                                             + nextSource.getFormat()
+                                             + "'" );
         }
 
         // Missing value?
@@ -173,7 +174,10 @@ public class CsvThresholdReader
         // Internal unit mapper
         InnerUnitMapper innerUnitMapper = InnerUnitMapper.of( units, unitMapper );
 
-        ThresholdExceptions ex = new ThresholdExceptions();
+        ThresholdExceptions ex = new ThresholdExceptions( new TreeSet<>(),
+                                                          new TreeSet<>(),
+                                                          new TreeSet<>(),
+                                                          new TreeSet<>() );
 
         // Read the input
         try ( Reader reader = Files.newBufferedReader( commaSeparated, StandardCharsets.UTF_8 );
@@ -204,13 +208,12 @@ public class CsvThresholdReader
                 }
                 else
                 {
-                    String[] featureThresholds = line;
-                    String nextFeature = featureThresholds[0].stripLeading();
+                    String nextFeature = line[0].stripLeading();
 
                     Set<ThresholdOuter> thresholds =
                             CsvThresholdReader.getAllThresholdsForOneFeatureAndSaveExceptions( dataTypes,
                                                                                                labels,
-                                                                                               featureThresholds,
+                                                                                               line,
                                                                                                missingValue,
                                                                                                innerUnitMapper,
                                                                                                ex );
@@ -298,7 +301,7 @@ public class CsvThresholdReader
     /**
      * Mutates the input map, reading all thresholds for one feature and increments any exceptions encountered.
      *
-     * @param dataType the threshold data types
+     * @param dataTypes the threshold data types
      * @param labels the optional labels (may be null)
      * @param featureThresholds the next set of thresholds to process for a given feature, including the feature label
      * @param missingValue an optional missing value identifier to ignore (may be null)
@@ -377,9 +380,9 @@ public class CsvThresholdReader
 
         // Threshold type: default to probability
         ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
-        if ( Objects.nonNull( dataType.getThresholdType() ) )
+        if ( Objects.nonNull( dataType.thresholdType() ) )
         {
-            thresholdType = ThresholdsGenerator.getThresholdGroup( dataType.getThresholdType() );
+            thresholdType = ThresholdsGenerator.getThresholdGroup( dataType.thresholdType() );
         }
 
         // Default to probability
@@ -390,8 +393,8 @@ public class CsvThresholdReader
                                                                      featureThresholds.length ),
                                                  labels,
                                                  isProbability,
-                                                 dataType.getOperator(),
-                                                 dataType.getThresholdDataType(),
+                                                 dataType.operator(),
+                                                 dataType.thresholdDataType(),
                                                  missingValue,
                                                  unitMapper );
     }
@@ -506,8 +509,7 @@ public class CsvThresholdReader
     {
         StringJoiner exceptionMessage = new StringJoiner( " " );
 
-        int failCount =
-                ex.featuresThatFailedWithLabelInconsistency.size()
+        int failCount = ex.featuresThatFailedWithLabelInconsistency.size()
                         + ex.featuresThatFailedWithAllThresholdsMissing.size()
                         + ex.featuresThatFailedWithNonNumericInput.size()
                         + ex.featuresThatFailedWithOtherWrongInput.size();
@@ -652,40 +654,36 @@ public class CsvThresholdReader
     }
 
     /**
+     * Rather than drip-feeding failures, collect all expected failure types, which
+     * are IllegalArgumentException and NumberFormatException and propagate at the end. Propagate all unexpected
+     * failure types immediately.
+     *
+     * @param featuresThatFailedWithLabelInconsistency features that failed with an inconsistency between labels
+     * @param featuresThatFailedWithAllThresholdsMissing features that failed with all missing values
+     * @param featuresThatFailedWithNonNumericInput features that failed with non-numeric input
+     * @param featuresThatFailedWithOtherWrongInput features that failed with other wrong input identified by
+     *                                              an IllegalArgumentException
+     */
+    private record ThresholdExceptions( Set<String> featuresThatFailedWithLabelInconsistency,
+                                        Set<String> featuresThatFailedWithAllThresholdsMissing,
+                                        Set<String> featuresThatFailedWithNonNumericInput,
+                                        Set<String> featuresThatFailedWithOtherWrongInput ) {}
+
+    /**
+     * Collection of threshold enumerations.
+     * @param thresholdDataType the threshold data type
+     * @param thresholdType the threshold type
+     * @param operator the threshold operator
+     */
+    private record ThresholdDataTypes( ThresholdConstants.ThresholdDataType thresholdDataType,
+                                       ThresholdType thresholdType,
+                                       ThresholdConstants.Operator operator ) {}
+
+    /**
      * Do not construct.
      */
 
     private CsvThresholdReader()
     {
-    }
-
-    /**
-     * Small value class of threshold exceptions. TODO: replace with a record for JDK 14 or later.
-     */
-    private static class ThresholdExceptions
-    {
-        // Rather than drip-feeding failures, collect all expected failure types, which
-        // are IllegalArgumentException and NumberFormatException and propagate at the end.
-        // Propagate all unexpected failure types immediately
-
-        // Set of identifiers for features that failed with an inconsistency between labels
-        private final Set<String> featuresThatFailedWithLabelInconsistency = new TreeSet<>();
-
-        // Set of identifiers for features that failed with all missing values
-        private final Set<String> featuresThatFailedWithAllThresholdsMissing = new TreeSet<>();
-
-        // Set of identifiers for features that failed with non-numeric input
-        private final Set<String> featuresThatFailedWithNonNumericInput = new TreeSet<>();
-
-        // Set of identifiers for features that failed with other wrong input
-        // identified by IllegalArgumentException
-        private final Set<String> featuresThatFailedWithOtherWrongInput = new TreeSet<>();
-
-        /**
-         * Hidden constructor.
-         */
-        private ThresholdExceptions()
-        {
-        }
     }
 }

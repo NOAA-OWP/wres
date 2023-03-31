@@ -1,5 +1,7 @@
 package wres.io.thresholds.exceptions;
 
+import java.io.Serial;
+
 /**
  * Runtime exception indicating no thresholds were found, possibly after filtering by user declaration.
  * 
@@ -8,7 +10,7 @@ package wres.io.thresholds.exceptions;
 
 public class NoThresholdsFoundException extends RuntimeException
 {
-
+    @Serial
     private static final long serialVersionUID = 7814760186227946523L;
 
     /**

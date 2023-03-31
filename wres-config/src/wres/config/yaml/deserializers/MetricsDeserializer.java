@@ -82,14 +82,14 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
             if ( nextNode.has( "name" ) )
             {
                 nextMetric = this.getMetric( nextNode, reader );
-                LOGGER.debug( "Discovered a metric with parameters, {}. ", nextMetric.name() );
+                LOGGER.debug( "Discovered a metric with parameters: {}. ", nextMetric.name() );
             }
             else
             {
-                String nameString = DeclarationFactory.getFriendlyName( nextNode );
+                String nameString = DeclarationFactory.getEnumName( nextNode );
                 MetricConstants metricName = MetricConstants.valueOf( nameString );
                 nextMetric = new Metric( metricName, null );
-                LOGGER.debug( "Discovered a metric without parameters, {}. ", nextMetric.name() );
+                LOGGER.debug( "Discovered a metric without parameters: {}. ", nextMetric.name() );
             }
 
             metrics.add( nextMetric );
@@ -109,7 +109,7 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
     private Metric getMetric( JsonNode node, ObjectReader reader ) throws IOException
     {
         JsonNode nameNode = node.get( "name" );
-        String enumName = DeclarationFactory.getFriendlyName( nameNode );
+        String enumName = DeclarationFactory.getEnumName( nameNode );
         MetricConstants metricName = MetricConstants.valueOf( enumName );
         MetricParameters parameters = this.getMetricParameters( node, reader );
         return new Metric( metricName, parameters );

@@ -472,6 +472,19 @@ public enum MetricConstants
     }
 
     /**
+     * Returns true if this is a continuous metric, false otherwise.
+     *
+     * @return whether the metric is continuous
+     */
+
+    public boolean isContinuous()
+    {
+        return !this.isInGroup( SampleDataGroup.DICHOTOMOUS )
+               && !this.isInGroup( SampleDataGroup.MULTICATEGORY )
+               && !this.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY );
+    }
+
+    /**
      * Returns the {@link StatisticType} associated with the {@link MetricConstants}.
      *
      * @return the {@link StatisticType}.

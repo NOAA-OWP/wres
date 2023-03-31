@@ -2,7 +2,7 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.TreeSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -35,9 +35,10 @@ public class SummaryStatisticsDeserializer
         JsonNode node = mapper.readTree( jp );
 
         return StreamSupport.stream( node.spliterator(), false )
-                            .map( DeclarationFactory::getFriendlyName )
+                            .map( DeclarationFactory::getEnumName )
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
-                            .collect( Collectors.toCollection( TreeSet::new ) );
+                            // Preserve insertion order
+                            .collect( Collectors.toCollection( LinkedHashSet::new ) );
     }
 }
 

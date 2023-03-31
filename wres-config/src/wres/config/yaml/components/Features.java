@@ -1,5 +1,7 @@
 package wres.config.yaml.components;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -30,7 +32,12 @@ public record Features( Set<GeometryTuple> geometries )
     {
         if ( Objects.isNull( geometries ) )
         {
-            geometries = Set.of();
+            geometries = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            geometries = Collections.unmodifiableSet( new LinkedHashSet<>( geometries ) );
         }
     }
 

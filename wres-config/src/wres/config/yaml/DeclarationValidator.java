@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -754,6 +755,9 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> validDates = DeclarationValidator.timeIntervalIsValid( declaration.referenceDates(),
                                                                                            VALID_DATES );
         events.addAll( validDates );
+        List<EvaluationStatusEvent> analysisDurations
+                = DeclarationValidator.analysisDurationsAreValid( declaration.analysisDurations() );
+        events.addAll( analysisDurations );
 
         // Lead times
         LeadTimeInterval leadTimes = declaration.leadTimes();
@@ -1418,7 +1422,7 @@ public class DeclarationValidator
     private static Set<SourceInterface> getSourceInterfacesThatBeginWithNwm( List<Source> sources )
     {
         return sources.stream()
-                      .map( Source::api )
+                      .map( Source::sourceInterface )
                       .filter( next -> Objects.nonNull( next ) && next.toString()
                                                                       .toLowerCase()
                                                                       .startsWith( "nwm" ) )
@@ -1589,6 +1593,36 @@ public class DeclarationValidator
                                                              + "greater than or equal to the 'maximum' value. Please "
                                                              + "adjust the 'minimum' to occur before the 'maximum' and "
                                                              + "try " + AGAIN )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the analysis durations are valid.
+     * @param analysisDurations the analysis durations
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> analysisDurationsAreValid( AnalysisDurations analysisDurations )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( analysisDurations )
+             && Objects.nonNull( analysisDurations.minimumExclusive() )
+             && Objects.nonNull( analysisDurations.maximum() )
+             && ( analysisDurations.maximum() < analysisDurations.minimumExclusive() ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The 'analysis_durations' interval is invalid because the "
+                                                             + "'maximum' value is less than the 'minimum_exclusive' "
+                                                             + "value. Please adjust the analysis durations to form a "
+                                                             + "valid time interval and try "
+                                                             + AGAIN )
                                            .build();
             events.add( event );
         }
@@ -1992,7 +2026,7 @@ public class DeclarationValidator
             // error because non-forecasts are unlike forecasts, otherwise add a warning because non-forecasts are
             // broadly similar, even if the exact type differs
             List<SourceInterface> interfaces = sources.stream()
-                                                      .map( Source::api )
+                                                      .map( Source::sourceInterface )
                                                       .filter( Objects::nonNull )
                                                       .toList();
 
@@ -2132,7 +2166,10 @@ public class DeclarationValidator
     private static boolean hasSourceInterface( List<Source> sources, SourceInterface... api )
     {
         Set<SourceInterface> apis = Arrays.stream( api ).collect( Collectors.toSet() );
-        return Objects.nonNull( sources ) && sources.stream().map( Source::api ).anyMatch( apis::contains );
+        return Objects.nonNull( sources )
+               && sources.stream()
+                         .map( Source::sourceInterface )
+                         .anyMatch( apis::contains );
     }
 
     /**

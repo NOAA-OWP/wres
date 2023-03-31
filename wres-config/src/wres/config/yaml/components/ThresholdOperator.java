@@ -1,9 +1,12 @@
 package wres.config.yaml.components;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -34,6 +37,25 @@ public enum ThresholdOperator
     {
         Objects.requireNonNull( canonical );
         return ThresholdOperator.valueOf( canonical.name() );
+    }
+
+    /**
+     * Creates an instance from a user-friendly name, either represented as an enum name or a user-facing string.
+     * @param stringName the user-friendly name or equivalent enum
+     * @return the current representation
+     */
+    public static ThresholdOperator from( String stringName )
+    {
+        Objects.requireNonNull( stringName );
+
+        String friendlyName = DeclarationFactory.getFriendlyName( stringName );
+        Optional<ThresholdOperator> optional = Arrays.stream( ThresholdOperator.values() )
+                                                     .filter( next -> next.toString()
+                                                                          .equals( friendlyName ) )
+                                                     .findFirst();
+        return optional.orElseThrow( () -> new IllegalArgumentException( "Could not find an operator for name '"
+                                                                         + stringName
+                                                                         + "'" ) );
     }
 
     /**

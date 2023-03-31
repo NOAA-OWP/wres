@@ -1,5 +1,7 @@
 package wres.config.yaml.components;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -31,7 +33,12 @@ public record FeatureGroups( Set<GeometryGroup> geometryGroups )
         if ( Objects.isNull( geometryGroups ) )
         {
             // Undefined is the sentinel for "all valid"
-            geometryGroups = Set.of();
+            geometryGroups = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            geometryGroups = Collections.unmodifiableSet( new LinkedHashSet<>( geometryGroups ) );
         }
     }
 

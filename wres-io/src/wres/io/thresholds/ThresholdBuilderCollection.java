@@ -151,8 +151,7 @@ public class ThresholdBuilderCollection
     {
         for ( MetricConstants metricName : MetricConstantsFactory.getMetricsFromConfig( metricsConfig, projectConfig ) )
         {
-            if ( !( metricName.isInGroup( MetricConstants.SampleDataGroup.DICHOTOMOUS )
-                    || metricName.isInGroup( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY ) ) )
+            if ( metricName.isContinuous() )
             {
                 this.addThresholdToAll(
                         ThresholdConstants.ThresholdGroup.VALUE,

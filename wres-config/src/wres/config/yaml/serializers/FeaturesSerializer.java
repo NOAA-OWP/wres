@@ -1,6 +1,7 @@
 package wres.config.yaml.serializers;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Geometry;
@@ -23,10 +25,17 @@ public class FeaturesSerializer extends JsonSerializer<Features>
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesSerializer.class );
 
     @Override
-    public void serialize( Features value, JsonGenerator gen, SerializerProvider serializers ) throws IOException
+    public void serialize( Features features, JsonGenerator gen, SerializerProvider serializers ) throws IOException
     {
-        Set<GeometryTuple> geometries = value.geometries();
+        Set<GeometryTuple> geometries = features.geometries();
         this.serialize( geometries, gen );
+    }
+
+    @Override
+    public boolean isEmpty( SerializerProvider serializers, Features features )
+    {
+        return Objects.isNull( features ) || features.geometries()
+                                                     .isEmpty();
     }
 
     /**
@@ -63,8 +72,7 @@ public class FeaturesSerializer extends JsonSerializer<Features>
     private void writeGeometryTuple( GeometryTuple geometryTuple, JsonGenerator writer ) throws IOException
     {
         // Simple geometry tuple, i.e., one geometry and no fields other than name?
-        if ( !geometryTuple.hasRight() && !geometryTuple.hasBaseline()
-             && this.isSimpleGeometry( geometryTuple.getLeft() ) )
+        if ( this.isSimpleGeometryTuple( geometryTuple ) )
         {
             LOGGER.debug( "Discovered a simple geometry tuple with name {}.", geometryTuple.getLeft()
                                                                                            .getName() );
@@ -130,6 +138,40 @@ public class FeaturesSerializer extends JsonSerializer<Features>
             }
             writer.writeEndObject();
         }
+    }
+
+    /**
+     * @param geometryTuple  the geometry tuple to test
+     * @return whether the geometry tuple can be represented as a single feature name
+     */
+
+    private boolean isSimpleGeometryTuple( GeometryTuple geometryTuple )
+    {
+        // Left geometry only
+        if ( !geometryTuple.hasRight() && !geometryTuple.hasBaseline() )
+        {
+            // Is the geometry simple?
+            return this.isSimpleGeometry( geometryTuple.getLeft() );
+        }
+
+        // Left and right, but no baseline
+        if ( geometryTuple.hasRight() && !geometryTuple.hasBaseline() )
+        {
+            // Are both geometries simple and both equal on name?
+            return this.isSimpleGeometry( geometryTuple.getLeft() )
+                   && this.isSimpleGeometry( geometryTuple.getRight() )
+                   && geometryTuple.getLeft()
+                                   .equals( geometryTuple.getRight() );
+        }
+
+        // Left, right and baseline present. Are all simple and all equal?
+        return this.isSimpleGeometry( geometryTuple.getLeft() )
+               && this.isSimpleGeometry( geometryTuple.getRight() )
+               && this.isSimpleGeometry( geometryTuple.getBaseline() )
+               && geometryTuple.getLeft()
+                               .equals( geometryTuple.getRight() )
+               && geometryTuple.getLeft()
+                               .equals( geometryTuple.getBaseline() );
     }
 
     /**

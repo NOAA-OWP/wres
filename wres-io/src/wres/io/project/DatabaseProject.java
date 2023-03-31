@@ -532,7 +532,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return Whether or not baseline data is involved in the project
+     * @return whether baseline data is involved in the project
      */
     @Override
     public boolean hasBaseline()
@@ -541,7 +541,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return Whether or not there is a generated baseline
+     * @return whether there is a generated baseline
      */
     @Override
     public boolean hasGeneratedBaseline()
@@ -562,7 +562,7 @@ public class DatabaseProject implements Project
     /**
      * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
      *
-     * @return Whether or not the project uses probability thresholds
+     * @return whether the project uses probability thresholds
      */
     @Override
     public boolean hasProbabilityThresholds()

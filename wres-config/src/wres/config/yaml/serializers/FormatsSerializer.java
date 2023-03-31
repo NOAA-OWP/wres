@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.FormatsBuilder;
 import wres.statistics.generated.Outputs;
 
 /**
@@ -92,6 +93,13 @@ public class FormatsSerializer extends JsonSerializer<Formats>
         }
 
         writer.writeEndArray();
+    }
+
+    @Override
+    public boolean isEmpty( SerializerProvider serializers, Formats formats )
+    {
+        return Objects.isNull( formats ) || formats.equals( FormatsBuilder.builder()
+                                                                          .build() );
     }
 
     /**

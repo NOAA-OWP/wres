@@ -11,7 +11,6 @@ import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdConstants;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Reads thresholds from the project declaration.
@@ -251,7 +250,7 @@ public class InBandThresholdReader
         //Parse the double values
         List<Double> valuesToAdd = Arrays.stream( inputString.split( "," ) )
                                          .map( Double::parseDouble )
-                                         .collect( Collectors.toList() );
+                                         .toList();
 
         Set<ThresholdOuter> commaSeparatedThresholds = new TreeSet<>();
 

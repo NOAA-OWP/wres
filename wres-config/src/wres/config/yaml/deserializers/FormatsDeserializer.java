@@ -40,6 +40,12 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
 
         int nodeCount = node.size();
 
+        if( nodeCount == 0 )
+        {
+            LOGGER.debug( "No formats were declared, nothing to deserialize." );
+            return null;
+        }
+
         for ( int i = 0; i < nodeCount; i++ )
         {
             JsonNode nextNode = node.get( i );
@@ -57,7 +63,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
 
     private void addFormat( JsonNode node, FormatsBuilder builder )
     {
-        // Paramaterized format
+        // Parameterized format
         if ( node.has( "format" ) )
         {
             this.addParameterizedFormat( node, builder );
@@ -162,7 +168,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         if ( node.has( "orientation" ) )
         {
             JsonNode orientationNode = node.get( "orientation" );
-            String friendlyText = DeclarationFactory.getFriendlyName( orientationNode );
+            String friendlyText = DeclarationFactory.getEnumName( orientationNode );
             Outputs.GraphicFormat.GraphicShape shape = Outputs.GraphicFormat.GraphicShape.valueOf( friendlyText );
             graphicFormatBuilder.setShape( shape );
         }

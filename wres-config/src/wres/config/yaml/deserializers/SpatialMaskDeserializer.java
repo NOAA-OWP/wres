@@ -53,5 +53,7 @@ public class SpatialMaskDeserializer extends JsonDeserializer<SpatialMask>
         String wktString = node.asText();
         return new SpatialMask( null, wktString, null );
     }
+
+
 }
 
