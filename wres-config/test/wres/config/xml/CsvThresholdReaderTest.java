@@ -1,10 +1,8 @@
-package wres.io.thresholds.csv;
+package wres.config.xml;
 
 import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -13,7 +11,6 @@ import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Threshold;
 
 import java.io.BufferedWriter;
@@ -27,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import static org.junit.Assert.*;
-
 /**
  * Tests the {@link CsvThresholdReader}.
  *
@@ -39,17 +34,7 @@ class CsvThresholdReaderTest
 {
     private static final String TEST_CSV = "test.csv";
     private static final String TEST = "test";
-    private UnitMapper unitMapper;
     private static final String UNIT_STRING = "CMS";
-
-    @BeforeEach
-    void runBeforeEachTest()
-    {
-        unitMapper = Mockito.mock( UnitMapper.class );
-        System.setProperty( "user.timezone", "UTC" );
-        Mockito.when( unitMapper.getUnitMapper( "CMS" ) ).thenReturn( in -> in );
-        Mockito.when( unitMapper.getDesiredMeasurementUnitName() ).thenReturn( UNIT_STRING );
-    }
 
     @Test
     void testProbabilityThresholdsWithLabels() throws IOException
@@ -85,8 +70,7 @@ class CsvThresholdReaderTest
 
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();
@@ -195,8 +179,7 @@ class CsvThresholdReaderTest
 
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();
@@ -303,8 +286,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();
@@ -406,8 +388,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();
@@ -509,8 +490,7 @@ class CsvThresholdReaderTest
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();
@@ -604,11 +584,10 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
-            IllegalArgumentException actualException = assertThrows( IllegalArgumentException.class,
-                                                                     () -> CsvThresholdReader.readThresholds(
-                                                                             thresholdConfig,
-                                                                             UNIT_STRING,
-                                                                             unitMapper ) );
+            IllegalArgumentException actualException = Assertions.assertThrows( IllegalArgumentException.class,
+                                                                                () -> CsvThresholdReader.readThresholds(
+                                                                                        thresholdConfig,
+                                                                                        UNIT_STRING ) );
 
             String nL = System.lineSeparator();
 
@@ -668,8 +647,7 @@ class CsvThresholdReaderTest
 
             Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       UNIT_STRING,
-                                                       unitMapper );
+                                                       UNIT_STRING );
 
             // Compare to expected
             Map<String, Set<Threshold>> expected = new TreeMap<>();

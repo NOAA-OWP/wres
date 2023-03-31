@@ -13,17 +13,19 @@ import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
-import wres.io.thresholds.csv.CsvThresholdReader;
+import wres.config.xml.CsvThresholdReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.statistics.generated.Threshold;
 import wres.system.SystemSettings;
 
+import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -419,10 +421,9 @@ public class ExternalThresholdReader
             MeasurementUnit unit = this.getSourceMeasurementUnit( thresholdsConfig );
             Map<String, Set<Threshold>> canonicalThresholds
                     = CsvThresholdReader.readThresholds( thresholdsConfig,
-                                                         unit.getUnit(),
-                                                         this.desiredMeasurementUnitConverter );
+                                                         unit.getUnit() );
 
-            readThresholds = this.getWrappedThresholds( canonicalThresholds );
+            readThresholds = this.getWrappedThresholds( canonicalThresholds, unit.getUnit() );
 
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features
@@ -506,23 +507,60 @@ public class ExternalThresholdReader
     }
 
     /**
-     * Wraps the input thresholds.
+     * Wraps the input thresholds and converts the units as needed.
      *
      * @param thresholds the thresholds to wrap
+     * @param unit the threshold value unit
      * @return the wrapped thresholds
      */
 
-    private Map<String, Set<ThresholdOuter>> getWrappedThresholds( Map<String, Set<Threshold>> thresholds )
+    private Map<String, Set<ThresholdOuter>> getWrappedThresholds( Map<String, Set<Threshold>> thresholds,
+                                                                   String unit )
     {
         Map<String, Set<ThresholdOuter>> mapped = new TreeMap<>();
+
+        // Get the unit mapper
+        DoubleUnaryOperator unitMapper = in -> in;
+        String mappedUnitName = this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName();
+        if ( Objects.nonNull( unit ) )
+        {
+            unitMapper = this.desiredMeasurementUnitConverter.getUnitMapper( unit );
+        }
+
         for ( Map.Entry<String, Set<Threshold>> nextEntry : thresholds.entrySet() )
         {
             String nextName = nextEntry.getKey();
             Set<Threshold> nextThresholds = nextEntry.getValue();
-            Set<ThresholdOuter> wrapped = nextThresholds.stream()
-                                                        .map( next -> new ThresholdOuter.Builder( next )
-                                                                .build() )
-                                                        .collect( Collectors.toCollection( TreeSet::new ) );
+
+            // Wrap and convert units
+            Set<ThresholdOuter> wrapped = new TreeSet<>();
+            for ( Threshold threshold : nextThresholds )
+            {
+                Threshold.Builder builder = threshold.toBuilder();
+                // Set the left value
+                if ( builder.hasLeftThresholdValue() )
+                {
+                    double existingThreshold = builder.getLeftThresholdValue()
+                                                      .getValue();
+                    double mappedThreshold = unitMapper.applyAsDouble( existingThreshold );
+                    builder.setLeftThresholdValue( DoubleValue.of( mappedThreshold ) );
+                    builder.setThresholdValueUnits( mappedUnitName );
+                }
+
+                // Set the right value. No need to set units because there is always a left when there is a right
+                if ( builder.hasRightThresholdValue() )
+                {
+                    double existingThreshold = builder.getRightThresholdValue()
+                                                      .getValue();
+                    double mappedThreshold = unitMapper.applyAsDouble( existingThreshold );
+                    builder.setRightThresholdValue( DoubleValue.of( mappedThreshold ) );
+                }
+
+                ThresholdOuter wrappedThreshold = new ThresholdOuter.Builder( builder.build() )
+                        .build();
+                wrapped.add( wrappedThreshold );
+            }
+
             mapped.put( nextName, wrapped );
         }
 
