@@ -98,6 +98,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
+                                     @JsonProperty( "threshold_service") ThresholdService thresholdService,
                                      @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonProperty( "season" ) Season season,

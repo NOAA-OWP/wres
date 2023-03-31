@@ -1,21 +1,31 @@
 package wres.config.yaml;
 
 /**
- * An exception encountered on validating a project declaration.
- * 
+ * An exception encountered on reading, migrating or validating a project declaration.
+ *
  * @author James Brown
  */
 
 class DeclarationException extends RuntimeException
 {
     /**
-     * Constructs a {@link DeclarationException} with the specified message.
+     * Creates an instance.
      *
      * @param message the message.
      */
 
-    DeclarationException( final String message )
+    DeclarationException( String message )
     {
         super( message );
+    }
+
+    /**
+     * Creates an instance with the specified message and cause.
+     * @param message the message
+     * @param cause the cause
+     */
+    DeclarationException( String message, Throwable cause )
+    {
+        super( message, cause );
     }
 }

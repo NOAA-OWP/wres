@@ -1,5 +1,7 @@
 package wres.config.yaml.components;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * The orientation of a dataset within an evaluation.
  * @author James Brown
@@ -7,11 +9,11 @@ package wres.config.yaml.components;
 public enum DatasetOrientation
 {
     /** A left or observed dataset. */
-    LEFT( "observed" ),
+    @JsonProperty( "observed" ) LEFT( "observed" ),
     /** A right or predicted dataset. */
-    RIGHT( "predicted" ),
+    @JsonProperty( "predicted" ) RIGHT( "predicted" ),
     /** A baseline dataset. */
-    BASELINE( "baseline" );
+    @JsonProperty( "baseline" ) BASELINE( "baseline" );
 
     private final String stringName;
 

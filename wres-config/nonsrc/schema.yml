@@ -826,22 +826,27 @@ definitions:
         format: uri
         minLength: 1
         maxLength: 2083
-      missing_value:
-        type: number
       provider:
         type: string
+        minLength: 1
+        maxLength: 2083
       rating_provider:
         type: string
+        minLength: 1
+        maxLength: 2083
       parameter:
         type: string
+        minLength: 1
+        maxLength: 2083
+      missing_value:
+        type: number
+      unit:
+        type: string
+        minLength: 1
+        maxLength: 2083
       feature_name_from:
         "$ref": "#/definitions/ObservedPredictedOrBaselineEnum"
     required:
-      - feature_name_from
-      - missing_value
-      - parameter
-      - provider
-      - rating_provider
       - uri
     title: ThresholdService
 
