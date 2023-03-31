@@ -310,7 +310,7 @@ class DeclarationFactoryTest
                   - name: pearson correlation coefficient
                     probability_thresholds:
                       values: [ 0.1 ]
-                      operator: greater than or equal to
+                      operator: greater equal
                       apply_to: observed
                   - name: time to peak error
                     summary_statistics:
@@ -874,14 +874,14 @@ class DeclarationFactoryTest
                   values:
                     - { value: 23.0, feature: DRRC2 }
                     - { value: 27.0, feature: DOLC2 }
-                  operator: greater than
+                  operator: greater
                   apply_to: predicted
                 classifier_thresholds:
                   name: COLONEL DROUGHT
                   values:
                     - { value: 0.2, feature: DRRC2 }
                     - { value: 0.3, feature: DOLC2 }
-                  operator: greater than
+                  operator: greater
                   apply_to: observed
                 """;
 
@@ -999,7 +999,7 @@ class DeclarationFactoryTest
                 threshold_sets:
                   - probability_thresholds: &id1
                       values: [ 0.1,0.2 ]
-                      operator: greater than or equal to
+                      operator: greater equal
                       apply_to: observed
                 metrics:
                   - name: mean absolute error
@@ -1716,7 +1716,7 @@ class DeclarationFactoryTest
                   - name: pearson correlation coefficient
                     probability_thresholds:
                       values: [0.1]
-                      operator: greater than or equal to
+                      operator: greater equal
                   - name: time to peak error
                     summary_statistics:
                       - mean
@@ -2442,7 +2442,7 @@ class DeclarationFactoryTest
                 threshold_sets:
                   - probability_thresholds:
                       values: [0.1, 0.2]
-                      operator: greater than or equal to
+                      operator: greater equal
                 """;
 
         Threshold pOne = Threshold.newBuilder()

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -28,10 +27,8 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdOperator;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 
@@ -44,23 +41,6 @@ public class ProjectConfigs
 
     private static final String SPECIFY_NON_NULL_PROJECT_DECLARATION = "Specify non-null project declaration.";
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigs.class );
-
-    /**
-     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
-     * 
-     * @param projectConfig the project configuration
-     * @return true if the input configuration has time-series metrics, otherwise false
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig, SPECIFY_NON_NULL_PROJECT_DECLARATION );
-
-        return projectConfig.getMetrics()
-                            .stream()
-                            .anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
-    }
 
     /**
      * Returns <code>true</code> if the input configuration has legacy CSV declared, otherwise <code>false</code>.
@@ -149,68 +129,6 @@ public class ProjectConfigs
     }
 
     /**
-     * <p>Returns the variable identifier from the inputs configuration. The identifier is one of the following in
-     * order of precedent:</p>
-     *
-     * <p>If the variable identifier is required for the left and right:</p>
-     * <ol>
-     * <li>The label associated with the variable in the left source.</li>
-     * <li>The label associated with the variable in the right source.</li>
-     * <li>The value associated with the left variable.</li>
-     * </ol>
-     *
-     * <p>If the variable identifier is required for the baseline:</p>
-     * <ol>
-     * <li>The label associated with the variable in the baseline source.</li>
-     * <li>The value associated with the baseline variable.</li>
-     * </ol>
-     *
-     * <p>In both cases, the last declaration is always present.</p>
-     *
-     * @param inputs the inputs configuration
-     * @param isBaseline is true if the variable name is required for the baseline
-     * @return the variable identifier
-     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain
-     *            a baseline source
-     * @throws NullPointerException if the input is null
-     */
-
-    public static String getVariableIdFromProjectConfig( Inputs inputs, boolean isBaseline )
-    {
-        Objects.requireNonNull( inputs );
-
-        // Baseline required?
-        if ( isBaseline )
-        {
-            // Has a baseline source
-            if ( Objects.nonNull( inputs.getBaseline() ) )
-            {
-                // Has a baseline source with a label
-                if ( Objects.nonNull( inputs.getBaseline().getVariable().getLabel() ) )
-                {
-                    return inputs.getBaseline().getVariable().getLabel();
-                }
-                // Only has a baseline source with a variable value
-                return inputs.getBaseline().getVariable().getValue();
-            }
-            throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
-                                                + "does not contain a baseline source." );
-        }
-        // Has a left source with a label
-        if ( Objects.nonNull( inputs.getLeft().getVariable().getLabel() ) )
-        {
-            return inputs.getLeft().getVariable().getLabel();
-        }
-        // Has a right source with a label
-        else if ( Objects.nonNull( inputs.getRight().getVariable().getLabel() ) )
-        {
-            return inputs.getRight().getVariable().getLabel();
-        }
-        // Has a left source with a variable value
-        return inputs.getLeft().getVariable().getValue();
-    }
-
-    /**
      * <p>Returns the variable name from an {@link DataSourceConfig}. The identifier is one of the following in
      * order of precedent:</p>
     
@@ -275,22 +193,6 @@ public class ProjectConfigs
     }
 
     /**
-     * Get all the graphical destinations from a configuration.
-     *
-     * @param config the config to search through
-     * @return a list of graphical destinations
-     * @throws NullPointerException when config is null
-     */
-
-    public static List<DestinationConfig> getGraphicalDestinations( ProjectConfig config )
-    {
-        return ProjectConfigs.getDestinationsOfType( config,
-                                                     DestinationType.GRAPHIC,
-                                                     DestinationType.PNG,
-                                                     DestinationType.SVG );
-    }
-
-    /**
      * @param destinationType the destination type
      * @return Returns <code>true</code> if the input type is a graphical type, otherwise <code>false</code>
      */
@@ -300,34 +202,6 @@ public class ProjectConfigs
         return destinationType == DestinationType.GRAPHIC || destinationType == DestinationType.PNG
                || destinationType == DestinationType.SVG;
     }
-
-    /**
-     * Returns the first instance of the named metric configuration or null if no such configuration exists.
-     * 
-     * @param projectConfig the project configuration
-     * @param metricName the metric name
-     * @return the named metric configuration or null
-     * @throws NullPointerException if one or both of the inputs are null
-     */
-
-    public static MetricConfig getMetricConfigByName( ProjectConfig projectConfig, MetricConfigName metricName )
-    {
-        Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
-        Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-
-        for ( MetricsConfig next : projectConfig.getMetrics() )
-        {
-            Optional<MetricConfig> nextConfig =
-                    next.getMetric().stream().filter( metric -> metric.getName().equals( metricName ) ).findFirst();
-            if ( nextConfig.isPresent() )
-            {
-                return nextConfig.get();
-            }
-        }
-
-        return null;
-    }
-
 
     /**
      * Get the declaration for a given dataset side, left or right or baseline.
@@ -361,15 +235,38 @@ public class ProjectConfigs
         }
     }
 
+    /**
+     * <p>Maps between a {@link ThresholdOperator} and a canonical
+     * {@link wres.statistics.generated.Threshold.ThresholdOperator}.
+     *
+     * @param operator the declared threshold operator
+     * @return the canonical threshold operator
+     * @throws MetricConfigException if the operator is not mapped
+     */
+
+    public static wres.statistics.generated.Threshold.ThresholdOperator getThresholdOperator( ThresholdOperator operator )
+    {
+        Objects.requireNonNull( operator );
+
+        return switch ( operator )
+                {
+                    case EQUAL_TO -> wres.statistics.generated.Threshold.ThresholdOperator.EQUAL;
+                    case LESS_THAN -> wres.statistics.generated.Threshold.ThresholdOperator.LESS;
+                    case GREATER_THAN -> wres.statistics.generated.Threshold.ThresholdOperator.GREATER;
+                    case LESS_THAN_OR_EQUAL_TO -> wres.statistics.generated.Threshold.ThresholdOperator.LESS_EQUAL;
+                    case GREATER_THAN_OR_EQUAL_TO ->
+                            wres.statistics.generated.Threshold.ThresholdOperator.GREATER_EQUAL;
+                };
+    }
 
     /**
-     * Given a declaration, add another source to it, returning the result.
+     * <p>Given a declaration, add another source to it, returning the result.
      * The resulting String will be a WRES declaration. The original formatting
      * may be lost and comments may be stripped. Otherwise it should function
      * the same way as without calling this method, with the only difference
      * being additional data in the dataset.
      *
-     * This method does parsing and writing of Strings. If you have an
+     * <p>This method does parsing and writing of Strings. If you have an
      * already parsed declaration in a ProjectConfig, use the other addSource.
      *
      * @param rawDeclaration The original declaration String.

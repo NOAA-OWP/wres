@@ -19,7 +19,7 @@ public class EnsembleAverageTypeSerializer extends JsonSerializer<Pool.EnsembleA
     public void serialize( Pool.EnsembleAverageType type, JsonGenerator writer, SerializerProvider serializers )
             throws IOException
     {
-        String friendlyName = DeclarationFactory.getFriendlyName( type.name() );
+        String friendlyName = DeclarationFactory.fromEnumName( type.name() );
         writer.writeString( friendlyName );
     }
 }

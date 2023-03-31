@@ -1,5 +1,6 @@
 package wres.io.thresholds.csv;
 
+import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,15 +12,9 @@ import wres.config.xml.MetricConfigException;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdException;
+import wres.config.xml.ProjectConfigs;
 import wres.datamodel.units.UnitMapper;
+import wres.statistics.generated.Threshold;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -31,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -56,23 +52,21 @@ public class CsvThresholdReader
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
+     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link Threshold}.
      *
      * @param threshold the threshold configuration
-     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to
+     * @param unit the (optional) existing measurement unit associated with the threshold values; if null, equal to
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
      * @return a map of thresholds by feature identifier
-     * @throws IOException if the source cannot be read or contains unexpected input
+     * @throws IOException if the source cannot be read
      * @throws NullPointerException if the source is null or the condition is null
-     * @throws ThresholdException if one or more features failed with expected problems, such as
-     *            all thresholds missing, thresholds that contain non-numeric input and thresholds that
-     *            are invalid (e.g. probability thresholds that are out-of-bounds).
+     * @throws IllegalArgumentException if any of the thresholds are invalid
      */
 
-    public static Map<String, Set<ThresholdOuter>> readThresholds( ThresholdsConfig threshold,
-                                                                   MeasurementUnit units,
-                                                                   UnitMapper unitMapper )
+    public static Map<String, Set<Threshold>> readThresholds( ThresholdsConfig threshold,
+                                                              String unit,
+                                                              UnitMapper unitMapper )
             throws IOException
     {
         Objects.requireNonNull( threshold, "Specify a non-null source of thresholds to read." );
@@ -123,17 +117,18 @@ public class CsvThresholdReader
         }
 
         // Condition: default to greater
-        Operator operator = Operator.GREATER;
+        Threshold.ThresholdOperator operator = Threshold.ThresholdOperator.GREATER;
         if ( Objects.nonNull( threshold.getOperator() ) )
         {
-            operator = ThresholdsGenerator.getThresholdOperator( threshold );
+            operator = ProjectConfigs.getThresholdOperator( threshold.getOperator() );
         }
 
         // Data type: default to left
-        ThresholdDataType dataType = ThresholdDataType.LEFT;
+        Threshold.ThresholdDataType dataType = Threshold.ThresholdDataType.LEFT;
         if ( Objects.nonNull( threshold.getApplyTo() ) )
         {
-            dataType = ThresholdsGenerator.getThresholdDataType( threshold.getApplyTo() );
+            dataType = Threshold.ThresholdDataType.valueOf( threshold.getApplyTo()
+                                                                     .name() );
         }
 
         ThresholdDataTypes dataTypes = new ThresholdDataTypes( dataType, threshold.getType(), operator );
@@ -141,18 +136,18 @@ public class CsvThresholdReader
         return CsvThresholdReader.readThresholds( commaSeparated,
                                                   dataTypes,
                                                   missingValue,
-                                                  units,
+                                                  unit,
                                                   unitMapper );
     }
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into
-     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link ThresholdOuter}.
+     * a {@link Map} whose keys are {@link String} and whose values comprise a {@link Set} of {@link Threshold}.
      *
      * @param commaSeparated the path to the comma separated values
      * @param dataTypes the threshold data types
      * @param missingValue an optional missing value identifier to ignore (may be null)
-     * @param units the (optional) existing measurement units associated with the threshold values; if null, equal to
+     * @param unit the (optional) existing measurement units associated with the threshold values; if null, equal to
      *            the evaluation units
      * @param unitMapper a measurement unit mapper
      * @return a map of thresholds by feature
@@ -163,21 +158,21 @@ public class CsvThresholdReader
      *            are invalid (e.g. probability thresholds that are out-of-bounds).
      */
 
-    private static Map<String, Set<ThresholdOuter>> readThresholds( Path commaSeparated,
-                                                                    ThresholdDataTypes dataTypes,
-                                                                    Double missingValue,
-                                                                    MeasurementUnit units,
-                                                                    UnitMapper unitMapper )
+    private static Map<String, Set<Threshold>> readThresholds( Path commaSeparated,
+                                                               ThresholdDataTypes dataTypes,
+                                                               Double missingValue,
+                                                               String unit,
+                                                               UnitMapper unitMapper )
             throws IOException
     {
-        Map<String, Set<ThresholdOuter>> returnMe = new TreeMap<>();
+        Map<String, Set<Threshold>> returnMe = new TreeMap<>();
         Set<String> duplicates = new TreeSet<>();
 
         // Feature count
         int totalFeatures = 0;
 
         // Internal unit mapper
-        InnerUnitMapper innerUnitMapper = InnerUnitMapper.of( units, unitMapper );
+        InnerUnitMapper innerUnitMapper = InnerUnitMapper.of( unit, unitMapper );
 
         ThresholdExceptions ex = new ThresholdExceptions( new TreeSet<>(),
                                                           new TreeSet<>(),
@@ -189,7 +184,7 @@ public class CsvThresholdReader
               CSVReader csvReader = new CSVReader( reader ) )
         {
             String[] line;
-            String[] header = null;
+            String[] header;
             String[] labels = null;
             while ( Objects.nonNull( line = csvReader.readNext() ) )
             {
@@ -215,7 +210,7 @@ public class CsvThresholdReader
                 {
                     String nextFeature = line[0].stripLeading();
 
-                    Set<ThresholdOuter> thresholds =
+                    Set<Threshold> thresholds =
                             CsvThresholdReader.getAllThresholdsForOneFeatureAndSaveExceptions( dataTypes,
                                                                                                labels,
                                                                                                line,
@@ -261,9 +256,9 @@ public class CsvThresholdReader
      * @param thresholdPath the path to the thresholds to help with error messaging
      */
 
-    private static void addThresholds( Map<String, Set<ThresholdOuter>> thresholdStore,
+    private static void addThresholds( Map<String, Set<Threshold>> thresholdStore,
                                        String nextFeature,
-                                       Set<ThresholdOuter> thresholds,
+                                       Set<Threshold> thresholds,
                                        Set<String> duplicates,
                                        Path thresholdPath )
     {
@@ -275,20 +270,20 @@ public class CsvThresholdReader
                 // Threshold names are not allowed in this context
                 Set<String> labels = thresholdStore.get( nextFeature )
                                                    .stream()
-                                                   .map( ThresholdOuter::getLabel )
+                                                   .map( Threshold::getName )
                                                    .filter( next -> !next.isBlank() )
                                                    .collect( Collectors.toSet() );
 
                 if ( !labels.isEmpty() )
                 {
-                    throw new ThresholdException( "While reading thresholds from "
-                                                  + thresholdPath
-                                                  + ", encountered duplicate thresholds for feature "
-                                                  + nextFeature
-                                                  + " with duplicate threshold labels, namely: "
-                                                  + labels
-                                                  + ". This is not allowed. Please remove the duplicate features by "
-                                                  + "declaring all thresholds once for each feature." );
+                    throw new IllegalArgumentException( "While reading thresholds from "
+                                                        + thresholdPath
+                                                        + ", encountered duplicate thresholds for feature "
+                                                        + nextFeature
+                                                        + " with duplicate threshold labels, namely: "
+                                                        + labels
+                                                        + ". This is not allowed. Please remove the duplicate features "
+                                                        + "by declaring all thresholds once for each feature." );
                 }
 
                 thresholdStore.get( nextFeature )
@@ -315,12 +310,12 @@ public class CsvThresholdReader
      * @return the thresholds for one feature
      */
 
-    private static Set<ThresholdOuter> getAllThresholdsForOneFeatureAndSaveExceptions( ThresholdDataTypes dataTypes,
-                                                                                       String[] labels,
-                                                                                       String[] featureThresholds,
-                                                                                       Double missingValue,
-                                                                                       InnerUnitMapper unitMapper,
-                                                                                       ThresholdExceptions ex )
+    private static Set<Threshold> getAllThresholdsForOneFeatureAndSaveExceptions( ThresholdDataTypes dataTypes,
+                                                                                  String[] labels,
+                                                                                  String[] featureThresholds,
+                                                                                  Double missingValue,
+                                                                                  InnerUnitMapper unitMapper,
+                                                                                  ThresholdExceptions ex )
     {
         String nextFeature = featureThresholds[0].stripLeading();
 
@@ -345,7 +340,7 @@ public class CsvThresholdReader
         {
             ex.featuresThatFailedWithNonNumericInput.add( nextFeature );
         }
-        catch ( ThresholdException | IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             ex.featuresThatFailedWithOtherWrongInput.add( nextFeature );
         }
@@ -368,11 +363,11 @@ public class CsvThresholdReader
      * @return the thresholds for one feature
      */
 
-    private static Set<ThresholdOuter> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
-                                                                      String[] labels,
-                                                                      String[] featureThresholds,
-                                                                      Double missingValue,
-                                                                      InnerUnitMapper unitMapper )
+    private static Set<Threshold> getAllThresholdsForOneFeature( ThresholdDataTypes dataType,
+                                                                 String[] labels,
+                                                                 String[] featureThresholds,
+                                                                 Double missingValue,
+                                                                 InnerUnitMapper unitMapper )
     {
 
         Objects.requireNonNull( featureThresholds );
@@ -384,14 +379,14 @@ public class CsvThresholdReader
         }
 
         // Threshold type: default to probability
-        ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
+        boolean isProbability = true;
         if ( Objects.nonNull( dataType.thresholdType() ) )
         {
-            thresholdType = ThresholdsGenerator.getThresholdGroup( dataType.thresholdType() );
+            isProbability = dataType.thresholdType()
+                                    .name()
+                                    .toLowerCase()
+                                    .contains( "probability" );
         }
-
-        // Default to probability
-        boolean isProbability = thresholdType == ThresholdConstants.ThresholdGroup.PROBABILITY;
 
         return CsvThresholdReader.getThresholds( Arrays.copyOfRange( featureThresholds,
                                                                      1,
@@ -405,7 +400,7 @@ public class CsvThresholdReader
     }
 
     /**
-     * Generates a {@link Set} of {@link ThresholdOuter} from the input string.
+     * Generates a {@link Set} of {@link Threshold} from the input string.
      *
      * @param input the comma separated input string
      * @param labels a set of labels (as many as thresholds) or null
@@ -421,17 +416,17 @@ public class CsvThresholdReader
      * @throws AllThresholdsMissingException if all thresholds are missing values
      */
 
-    private static Set<ThresholdOuter> getThresholds( String[] input,
-                                                      String[] labels,
-                                                      boolean isProbability,
-                                                      Operator condition,
-                                                      ThresholdDataType dataType,
-                                                      Double missingValue,
-                                                      InnerUnitMapper unitMapper )
+    private static Set<Threshold> getThresholds( String[] input,
+                                                 String[] labels,
+                                                 boolean isProbability,
+                                                 Threshold.ThresholdOperator condition,
+                                                 Threshold.ThresholdDataType dataType,
+                                                 Double missingValue,
+                                                 InnerUnitMapper unitMapper )
     {
         Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
-        Set<ThresholdOuter> returnMe = new TreeSet<>();
+        Set<Threshold> returnMe = new LinkedHashSet<>();
 
         // Define possibly null labels for iteration
         String[] iterateLabels = labels;
@@ -459,27 +454,15 @@ public class CsvThresholdReader
             // Non-missing value?
             if ( Objects.isNull( missingValue ) || Math.abs( missingValue - threshold ) > .00000001 )
             {
+                Threshold canonical = CsvThresholdReader.getThreshold( threshold,
+                                                                       isProbability,
+                                                                       unitMapper,
+                                                                       condition,
+                                                                       dataType,
+                                                                       nextLabel,
+                                                                       unitMapper.getDesiredMeasurementUnit() );
 
-                // Probability thresholds
-                if ( isProbability )
-                {
-                    returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
-                                                                         condition,
-                                                                         dataType,
-                                                                         nextLabel,
-                                                                         unitMapper.getDesiredMeasurementUnit() ) );
-                }
-                // Ordinary thresholds
-                else
-                {
-                    double thresholdInDesiredUnits = unitMapper.getValueInDesiredUnits( threshold );
-
-                    returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( thresholdInDesiredUnits ),
-                                                     condition,
-                                                     dataType,
-                                                     nextLabel,
-                                                     unitMapper.getDesiredMeasurementUnit() ) );
-                }
+                returnMe.add( canonical );
             }
             else
             {
@@ -505,7 +488,7 @@ public class CsvThresholdReader
      * @param totalFeatures the total number of features processed
      * @param pathToThresholds the path to the CSV thresholds-by-feature
      * @param ex the threshold exceptions
-     * @throws ThresholdException if one or more features failed
+     * @throws IllegalArgumentException if one or more features failed
      */
 
     private static void throwExceptionIfOneOrMoreFailed( int totalFeatures,
@@ -569,8 +552,77 @@ public class CsvThresholdReader
         // Throw exception if required
         if ( exceptionMessage.length() > 0 )
         {
-            throw new ThresholdException( exceptionMessage.toString() );
+            throw new IllegalArgumentException( exceptionMessage.toString() );
         }
+    }
+
+    /**
+     * Creates a canonical threshold from the input.
+     * @param threshold the threshold
+     * @param isProbability whether the threshold is a probability
+     * @param unitMapper the unit mapper
+     * @param condition the condition
+     * @param dataType the data type
+     * @param name the threshold name
+     * @param unit the value unit
+     * @return the threshold
+     */
+
+    private static Threshold getThreshold( double threshold,
+                                           boolean isProbability,
+                                           InnerUnitMapper unitMapper,
+                                           Threshold.ThresholdOperator condition,
+                                           Threshold.ThresholdDataType dataType,
+                                           String name,
+                                           String unit )
+    {
+        Threshold.Builder canonical = Threshold.newBuilder()
+                                               .setOperator( condition )
+                                               .setDataType( dataType );
+
+        // Probability threshold?
+        if ( isProbability )
+        {
+            if ( Double.NEGATIVE_INFINITY != threshold
+                 && ( threshold < 0.0 || threshold > 1.0 ) )
+            {
+                throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
+                                                    + threshold );
+            }
+
+            // Cannot have LESS_THAN on the lower bound
+            if ( Math.abs( threshold - 0.0 ) < .00000001 && condition == Threshold.ThresholdOperator.LESS )
+            {
+                throw new IllegalArgumentException( "Cannot apply a threshold operator of '<' to the lower bound "
+                                                    + "probability of 0.0." );
+            }
+            // Cannot have GREATER_THAN on the upper bound
+            if ( Math.abs( threshold - 1.0 ) < .00000001
+                 && condition == Threshold.ThresholdOperator.GREATER )
+            {
+                throw new IllegalArgumentException( "Cannot apply a threshold operator of '>' to the upper bound "
+                                                    + "probability of 1.0." );
+            }
+
+            canonical.setLeftThresholdProbability( DoubleValue.of( threshold ) );
+        }
+        else
+        {
+            double mappedThreshold = unitMapper.getValueInDesiredUnits( threshold );
+            canonical.setLeftThresholdValue( DoubleValue.of( mappedThreshold ) );
+        }
+
+        if ( Objects.nonNull( name ) )
+        {
+            canonical.setName( name );
+        }
+
+        if ( Objects.nonNull( unit ) )
+        {
+            canonical.setThresholdValueUnits( unit );
+        }
+
+        return canonical.build();
     }
 
     /**
@@ -582,7 +634,7 @@ public class CsvThresholdReader
         /**
          * Existing measurement units.
          */
-        private final MeasurementUnit existingUnit;
+        private final String existingUnit;
 
         /**
          * A general unit mapper.
@@ -602,7 +654,7 @@ public class CsvThresholdReader
          * @return an inner mapper
          */
 
-        private static InnerUnitMapper of( MeasurementUnit existingUnits, UnitMapper desiredUnitMapper )
+        private static InnerUnitMapper of( String existingUnits, UnitMapper desiredUnitMapper )
         {
             return new InnerUnitMapper( existingUnits, desiredUnitMapper );
         }
@@ -612,9 +664,9 @@ public class CsvThresholdReader
          * @return the desired measurement unit
          */
 
-        private MeasurementUnit getDesiredMeasurementUnit()
+        private String getDesiredMeasurementUnit()
         {
-            return MeasurementUnit.of( this.generalUnitMapper.getDesiredMeasurementUnitName() );
+            return this.generalUnitMapper.getDesiredMeasurementUnitName();
         }
 
         /**
@@ -642,14 +694,14 @@ public class CsvThresholdReader
          * @param generalUnitMapper a mapper to create desired measurement units
          */
 
-        private InnerUnitMapper( MeasurementUnit existingUnit, UnitMapper generalUnitMapper )
+        private InnerUnitMapper( String existingUnit, UnitMapper generalUnitMapper )
         {
             this.existingUnit = existingUnit;
             this.generalUnitMapper = generalUnitMapper;
 
             if ( Objects.nonNull( this.existingUnit ) )
             {
-                this.specificUnitMapper = generalUnitMapper.getUnitMapper( existingUnit.toString() );
+                this.specificUnitMapper = generalUnitMapper.getUnitMapper( existingUnit );
             }
             else
             {
@@ -719,9 +771,9 @@ public class CsvThresholdReader
      * @param thresholdType the threshold type
      * @param operator the threshold operator
      */
-    private record ThresholdDataTypes( ThresholdConstants.ThresholdDataType thresholdDataType,
+    private record ThresholdDataTypes( Threshold.ThresholdDataType thresholdDataType,
                                        ThresholdType thresholdType,
-                                       ThresholdConstants.Operator operator ) {}
+                                       Threshold.ThresholdOperator operator ) {}
 
     /**
      * Do not construct.

@@ -44,6 +44,6 @@ public enum DataType
     @Override
     public String toString()
     {
-        return DeclarationFactory.getFriendlyName( this.name() );
+        return DeclarationFactory.fromEnumName( this.name() );
     }
 }

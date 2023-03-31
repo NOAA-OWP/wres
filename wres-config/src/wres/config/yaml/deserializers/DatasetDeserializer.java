@@ -173,7 +173,8 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
         if ( Objects.nonNull( node.get( "feature_authority" ) ) )
         {
-            String featureAuthorityName = DeclarationFactory.getEnumName( node.get( "feature_authority" ) );
+            JsonNode featureAuthorityNode = node.get( "feature_authority" );
+            String featureAuthorityName = DeclarationFactory.toEnumName( featureAuthorityNode.asText() );
             featureAuthority = FeatureAuthority.valueOf( featureAuthorityName );
         }
 

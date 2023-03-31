@@ -1,5 +1,7 @@
 package wres.io.thresholds.csv;
 
+import com.google.protobuf.DoubleValue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -11,31 +13,25 @@ import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.units.UnitMapper;
-import wres.datamodel.thresholds.ThresholdException;
-import wres.datamodel.thresholds.ThresholdOuter;
+import wres.statistics.generated.Threshold;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
 /**
  * Tests the {@link CsvThresholdReader}.
- * 
+ *
  * @author James Brown
  */
 
@@ -44,19 +40,19 @@ class CsvThresholdReaderTest
     private static final String TEST_CSV = "test.csv";
     private static final String TEST = "test";
     private UnitMapper unitMapper;
-    private final MeasurementUnit units = MeasurementUnit.of( "CMS" );
+    private static final String UNIT_STRING = "CMS";
 
     @BeforeEach
     void runBeforeEachTest()
     {
-        this.unitMapper = Mockito.mock( UnitMapper.class );
+        unitMapper = Mockito.mock( UnitMapper.class );
         System.setProperty( "user.timezone", "UTC" );
-        Mockito.when( this.unitMapper.getUnitMapper( "CMS" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getDesiredMeasurementUnitName() ).thenReturn( this.units.toString() );
+        Mockito.when( unitMapper.getUnitMapper( "CMS" ) ).thenReturn( in -> in );
+        Mockito.when( unitMapper.getDesiredMeasurementUnitName() ).thenReturn( UNIT_STRING );
     }
 
     @Test
-    void testProbabilityThresholdsWithLabels() throws IOException, URISyntaxException
+    void testProbabilityThresholdsWithLabels() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -74,8 +70,7 @@ class CsvThresholdReaderTest
             }
 
             URI uri = csvPath.toUri();
-            ThresholdsConfig.Source source = new ThresholdsConfig.Source(
-                                                                          uri,
+            ThresholdsConfig.Source source = new ThresholdsConfig.Source( uri,
                                                                           ThresholdFormat.CSV,
                                                                           "CMS",
                                                                           "-999",
@@ -88,56 +83,74 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "A",
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "B",
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "C",
-                                                              this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "A" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "B" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setName( "C" )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
+            first.add( three );
 
-            Set<ThresholdOuter> second = new TreeSet<>();
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               "A",
-                                                               this.units ) );
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               "B",
-                                                               this.units ) );
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               "C",
-                                                               this.units ) );
+            expected.put( "DRRC2", first );
 
-            String secondFeature = "DOLC2";
-            expected.put( secondFeature, second );
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setName( "A" )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold five = Threshold.newBuilder()
+                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setName( "B" )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold six = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "C" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+
+            Set<Threshold> second = new HashSet<>();
+            second.add( four );
+            second.add( five );
+            second.add( six );
+
+            expected.put( "DOLC2", second );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -148,7 +161,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testValueThresholdsWithLabels() throws IOException, URISyntaxException
+    void testValueThresholdsWithLabels() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -167,69 +180,87 @@ class CsvThresholdReaderTest
 
             URI uri = csvPath.toUri();
             ThresholdsConfig.Source source = new ThresholdsConfig.Source(
-                                                                          uri,
-                                                                          ThresholdFormat.CSV,
-                                                                          "CMS",
-                                                                          "-999",
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
+                    uri,
+                    ThresholdFormat.CSV,
+                    "CMS",
+                    "-999",
+                    null,
+                    null,
+                    null,
+                    null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                      wres.config.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          "E",
-                                          this.units ) );
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          "F",
-                                          this.units ) );
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 15.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          "G",
-                                          this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "E" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "F" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setName( "G" )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
+            first.add( three );
 
-            Set<ThresholdOuter> second = new TreeSet<>();
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           "E",
-                                           this.units ) );
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           "F",
-                                           this.units ) );
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           "G",
-                                           this.units ) );
+            expected.put( "DRRC2", first );
 
-            String secondFeature = "DOLC2";
-            expected.put( secondFeature, second );
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setName( "E" )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold five = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setName( "F" )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold six = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "G" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+
+            Set<Threshold> second = new HashSet<>();
+            second.add( four );
+            second.add( five );
+            second.add( six );
+
+            expected.put( "DOLC2", second );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -240,7 +271,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testProbabilityThresholdsWithoutLabels() throws IOException, URISyntaxException
+    void testProbabilityThresholdsWithoutLabels() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -258,62 +289,80 @@ class CsvThresholdReaderTest
 
             URI uri = csvPath.toUri();
             ThresholdsConfig.Source source = new ThresholdsConfig.Source(
-                                                                          uri,
-                                                                          ThresholdFormat.CSV,
-                                                                          "CMS",
-                                                                          "-999",
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
+                    uri,
+                    ThresholdFormat.CSV,
+                    "CMS",
+                    "-999",
+                    null,
+                    null,
+                    null,
+                    null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
                                                                      wres.config.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
+            first.add( three );
 
-            Set<ThresholdOuter> second = new TreeSet<>();
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               this.units ) );
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               this.units ) );
-            second.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
-                                                               Operator.GREATER,
-                                                               ThresholdDataType.LEFT,
-                                                               this.units ) );
+            expected.put( "DRRC2", first );
 
-            String secondFeature = "DOLC2";
-            expected.put( secondFeature, second );
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold five = Threshold.newBuilder()
+                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold six = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+
+            Set<Threshold> second = new HashSet<>();
+            second.add( four );
+            second.add( five );
+            second.add( six );
+
+            expected.put( "DOLC2", second );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -324,7 +373,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testValueThresholdsWithoutLabels() throws IOException, URISyntaxException
+    void testValueThresholdsWithoutLabels() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -343,62 +392,80 @@ class CsvThresholdReaderTest
             URI uri = csvPath.toUri();
 
             ThresholdsConfig.Source source = new ThresholdsConfig.Source(
-                                                                          uri,
-                                                                          ThresholdFormat.CSV,
-                                                                          "CMS",
-                                                                          "-999",
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
+                    uri,
+                    ThresholdFormat.CSV,
+                    "CMS",
+                    "-999",
+                    null,
+                    null,
+                    null,
+                    null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                      wres.config.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          this.units ) );
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          this.units ) );
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 15.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
+            first.add( three );
 
-            Set<ThresholdOuter> second = new TreeSet<>();
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           this.units ) );
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 12.0 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           this.units ) );
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           this.units ) );
+            expected.put( "DRRC2", first );
 
-            String secondFeature = "DOLC2";
-            expected.put( secondFeature, second );
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold five = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+            Threshold six = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+
+            Set<Threshold> second = new HashSet<>();
+            second.add( four );
+            second.add( five );
+            second.add( six );
+
+            expected.put( "DOLC2", second );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -409,7 +476,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testValueThresholdsWithoutLabelsWithMissings() throws IOException, URISyntaxException
+    void testValueThresholdsWithoutLabelsWithMissings() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -428,54 +495,66 @@ class CsvThresholdReaderTest
             URI uri = csvPath.toUri();
 
             ThresholdsConfig.Source source = new ThresholdsConfig.Source(
-                                                                          uri,
-                                                                          ThresholdFormat.CSV,
-                                                                          "CMS",
-                                                                          "-999",
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
+                    uri,
+                    ThresholdFormat.CSV,
+                    "CMS",
+                    "-999",
+                    null,
+                    null,
+                    null,
+                    null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
                                                                      wres.config.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          this.units ) );
-            first.add( ThresholdOuter.of( OneOrTwoDoubles.of( 7.0 ),
-                                          Operator.GREATER,
-                                          ThresholdDataType.LEFT,
-                                          this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
 
-            Set<ThresholdOuter> second = new TreeSet<>();
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           this.units ) );
-            second.add( ThresholdOuter.of( OneOrTwoDoubles.of( 99.7 ),
-                                           Operator.GREATER,
-                                           ThresholdDataType.LEFT,
-                                           this.units ) );
+            expected.put( "DRRC2", first );
 
-            String secondFeature = "DOLC2";
-            expected.put( secondFeature, second );
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
+            Threshold four = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setDataType( Threshold.ThresholdDataType.LEFT )
+                                      .setThresholdValueUnits( UNIT_STRING )
+                                      .build();
+
+            Set<Threshold> second = new HashSet<>();
+            second.add( three );
+            second.add( four );
+
+            expected.put( "DOLC2", second );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -487,7 +566,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testProbabilityThresholdsWithLabelsThrowsExpectedExceptions() throws IOException, URISyntaxException
+    void testProbabilityThresholdsWithLabelsThrowsExpectedExceptions() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -525,10 +604,11 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
-            ThresholdException actualException = assertThrows( ThresholdException.class,
-                                                               () -> CsvThresholdReader.readThresholds( thresholdConfig,
-                                                                                                        this.units,
-                                                                                                        this.unitMapper ) );
+            IllegalArgumentException actualException = assertThrows( IllegalArgumentException.class,
+                                                                     () -> CsvThresholdReader.readThresholds(
+                                                                             thresholdConfig,
+                                                                             UNIT_STRING,
+                                                                             unitMapper ) );
 
             String nL = System.lineSeparator();
 
@@ -545,7 +625,7 @@ class CsvThresholdReaderTest
                                      + nL
                                      + "     These features failed with invalid input for the threshold type: [LOCWITHWRONGPROBS_A].";
 
-            assertEquals( expectedMessage, actualException.getMessage() );
+            Assertions.assertEquals( expectedMessage, actualException.getMessage() );
 
             // Clean up
             if ( Files.exists( csvPath ) )
@@ -556,7 +636,7 @@ class CsvThresholdReaderTest
     }
 
     @Test
-    void testProbabilityThresholdsWithLabelsForIssue75812() throws IOException, URISyntaxException
+    void testProbabilityThresholdsWithLabelsForIssue75812() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -586,36 +666,45 @@ class CsvThresholdReaderTest
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
-            Map<String, Set<ThresholdOuter>> actual =
+            Map<String, Set<Threshold>> actual =
                     CsvThresholdReader.readThresholds( thresholdConfig,
-                                                       this.units,
-                                                       this.unitMapper );
+                                                       UNIT_STRING,
+                                                       unitMapper );
 
             // Compare to expected
-            Map<String, Set<ThresholdOuter>> expected = new TreeMap<>();
+            Map<String, Set<Threshold>> expected = new TreeMap<>();
 
-            Set<ThresholdOuter> first = new TreeSet<>();
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "A",
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.6 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "B",
-                                                              this.units ) );
-            first.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.8 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT,
-                                                              "C",
-                                                              this.units ) );
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "A" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold two = Threshold.newBuilder()
+                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setName( "B" )
+                                     .setThresholdValueUnits( UNIT_STRING )
+                                     .build();
+            Threshold three = Threshold.newBuilder()
+                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setDataType( Threshold.ThresholdDataType.LEFT )
+                                       .setName( "C" )
+                                       .setThresholdValueUnits( UNIT_STRING )
+                                       .build();
 
-            String firstFeature = "DRRC2";
-            expected.put( firstFeature, first );
+            Set<Threshold> first = new HashSet<>();
+            first.add( one );
+            first.add( two );
+            first.add( three );
+
+            expected.put( "DRRC2", first );
 
             // Compare
-            assertEquals( expected, actual );
+            Assertions.assertEquals( expected, actual );
 
             // Clean up
             if ( Files.exists( csvPath ) )

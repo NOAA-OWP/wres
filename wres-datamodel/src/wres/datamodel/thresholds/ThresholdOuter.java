@@ -921,7 +921,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             this.validateTwoSidedThreshold();
         }
-
         // Check a one-sided threshold
         else
         {

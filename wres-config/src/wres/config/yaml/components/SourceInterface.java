@@ -97,7 +97,7 @@ public enum SourceInterface
     @Override
     public String toString()
     {
-        return DeclarationFactory.getFriendlyName( this.name() );
+        return DeclarationFactory.fromEnumName( this.name() );
     }
 
     /**

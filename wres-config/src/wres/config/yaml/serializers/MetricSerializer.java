@@ -32,7 +32,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
     public void serialize( Metric metric, JsonGenerator writer, SerializerProvider serializers ) throws IOException
     {
         MetricConstants name = metric.name();
-        String friendlyName = DeclarationFactory.getFriendlyName( name.name() );
+        String friendlyName = DeclarationFactory.fromEnumName( name.name() );
 
         // Simple metric
         if ( this.isSimpleMetric( metric.parameters() ) )
@@ -94,7 +94,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
         {
             List<String> mapped = parameters.summaryStatistics().stream()
                                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::name )
-                                            .map( DeclarationFactory::getFriendlyName )
+                                            .map( DeclarationFactory::fromEnumName )
                                             .toList();
             writer.writeObjectField( "summary_statistics", mapped );
         }

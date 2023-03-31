@@ -15,6 +15,7 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.csv.CsvThresholdReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
+import wres.statistics.generated.Threshold;
 import wres.system.SystemSettings;
 
 import org.slf4j.Logger;
@@ -415,9 +416,13 @@ public class ExternalThresholdReader
             // function for the equivalency checks in the coming loop rather than a strict String::equals
             BiPredicate<String, String> equalityCheck = String::equals;
 
-            readThresholds = CsvThresholdReader.readThresholds( thresholdsConfig,
-                                                                this.getSourceMeasurementUnit( thresholdsConfig ),
-                                                                this.desiredMeasurementUnitConverter );
+            MeasurementUnit unit = this.getSourceMeasurementUnit( thresholdsConfig );
+            Map<String, Set<Threshold>> canonicalThresholds
+                    = CsvThresholdReader.readThresholds( thresholdsConfig,
+                                                         unit.getUnit(),
+                                                         this.desiredMeasurementUnitConverter );
+
+            readThresholds = this.getWrappedThresholds( canonicalThresholds );
 
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features
@@ -498,6 +503,30 @@ public class ExternalThresholdReader
         }
 
         return measurementUnit;
+    }
+
+    /**
+     * Wraps the input thresholds.
+     *
+     * @param thresholds the thresholds to wrap
+     * @return the wrapped thresholds
+     */
+
+    private Map<String, Set<ThresholdOuter>> getWrappedThresholds( Map<String, Set<Threshold>> thresholds )
+    {
+        Map<String, Set<ThresholdOuter>> mapped = new TreeMap<>();
+        for ( Map.Entry<String, Set<Threshold>> nextEntry : thresholds.entrySet() )
+        {
+            String nextName = nextEntry.getKey();
+            Set<Threshold> nextThresholds = nextEntry.getValue();
+            Set<ThresholdOuter> wrapped = nextThresholds.stream()
+                                                        .map( next -> new ThresholdOuter.Builder( next )
+                                                                .build() )
+                                                        .collect( Collectors.toCollection( TreeSet::new ) );
+            mapped.put( nextName, wrapped );
+        }
+
+        return mapped;
     }
 
     /**
