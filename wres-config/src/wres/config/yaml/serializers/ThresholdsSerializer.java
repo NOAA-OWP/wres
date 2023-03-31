@@ -126,9 +126,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         if ( innerThreshold.getOperator() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getOperator() )
         {
             ThresholdOperator operator = innerThreshold.getOperator();
-            wres.config.yaml.components.ThresholdOperator friendlyOperator =
-                    wres.config.yaml.components.ThresholdOperator.from( operator );
-            String operatorName = friendlyOperator.toString();
+            String operatorName = DeclarationFactory.fromEnumName( operator.name() );
             writer.writeStringField( "operator", operatorName );
         }
         // Write the data orientation

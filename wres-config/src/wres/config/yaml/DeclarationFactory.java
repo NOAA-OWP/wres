@@ -127,7 +127,6 @@ import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.SpatialMaskBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -491,34 +490,33 @@ public class DeclarationFactory
     }
 
     /**
-     * Returns an enumeration name from a node whose text value corresponds to an enum.
-     * @param node the enum node
-     * @return the enum-friendly name
-     * @throws NullPointerException if the input is null
-     */
-
-    public static String getEnumName( JsonNode node )
-    {
-        Objects.requireNonNull( node );
-
-        return node.asText()
-                   .toUpperCase()
-                   .replace( " ", "_" );
-    }
-
-    /**
-     * Gets a human-friendly enum name from an enum string.
+     * Gets a human-friendly enum name from an enum string. The reverse of {@link #toEnumName(String)}.
      * @param enumString the enum string
      * @return a human-friendly name with spaces instead of underscores and all lower case
      * @throws NullPointerException if the input is null
      */
 
-    public static String getFriendlyName( String enumString )
+    public static String fromEnumName( String enumString )
     {
         Objects.requireNonNull( enumString );
 
         return enumString.replace( "_", " " )
                          .toLowerCase();
+    }
+
+    /**
+     * Returns an enumeration name from an informal string. The reverse of {@link #fromEnumName(String)}.
+     * @param name the name
+     * @return the enum-friendly name
+     * @throws NullPointerException if the input is null
+     */
+
+    public static String toEnumName( String name )
+    {
+        Objects.requireNonNull( name );
+
+        return name.toUpperCase()
+                   .replace( " ", "_" );
     }
 
     /**
@@ -2871,12 +2869,11 @@ public class DeclarationFactory
             wres.config.generated.ThresholdType type = DeclarationFactory.getThresholdType( thresholds );
             ThresholdType newType = ThresholdType.valueOf( type.name() );
 
-            // The old/new operator enums do not match on name, so use a shim that contains the mapping
             if ( Objects.nonNull( thresholds.getOperator() ) )
             {
                 wres.config.generated.ThresholdOperator operator = thresholds.getOperator();
-                ThresholdOperator operatorShim = ThresholdOperator.from( operator.toString() );
-                wres.statistics.generated.Threshold.ThresholdOperator canonicalOperator = operatorShim.canonical();
+                wres.statistics.generated.Threshold.ThresholdOperator canonicalOperator =
+                        ProjectConfigs.getThresholdOperator( operator );
                 builder.setOperator( canonicalOperator );
             }
 

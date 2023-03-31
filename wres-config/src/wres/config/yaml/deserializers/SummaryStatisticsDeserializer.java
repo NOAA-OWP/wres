@@ -35,7 +35,8 @@ public class SummaryStatisticsDeserializer
         JsonNode node = mapper.readTree( jp );
 
         return StreamSupport.stream( node.spliterator(), false )
-                            .map( DeclarationFactory::getEnumName )
+                            .map( JsonNode::asText )
+                            .map( DeclarationFactory::toEnumName )
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
                             // Preserve insertion order
                             .collect( Collectors.toCollection( LinkedHashSet::new ) );

@@ -134,7 +134,7 @@ public class FormatsSerializer extends JsonSerializer<Formats>
         if ( parameters.getShape() != defaults.getShape() )
         {
             Outputs.GraphicFormat.GraphicShape shape = parameters.getShape();
-            String friendlyShape = DeclarationFactory.getFriendlyName( shape.name() );
+            String friendlyShape = DeclarationFactory.fromEnumName( shape.name() );
             writer.writeStringField( "orientation", friendlyShape );
         }
 

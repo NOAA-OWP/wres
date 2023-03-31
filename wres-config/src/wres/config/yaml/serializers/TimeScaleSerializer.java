@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.TimeScale;
 
 /**
@@ -32,7 +31,7 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
 
         // Function
         wres.statistics.generated.TimeScale.TimeScaleFunction function = timeScale.getFunction();
-        String functionName = DeclarationFactory.getFriendlyName( function.name() );
+        String functionName = DeclarationFactory.fromEnumName( function.name() );
         gen.writeStringField( "function", functionName );
 
         // Period, if available

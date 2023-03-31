@@ -18,7 +18,7 @@ public class ChronoUnitSerializer extends JsonSerializer<ChronoUnit>
     @Override
     public void serialize( ChronoUnit unit, JsonGenerator writer, SerializerProvider serializers ) throws IOException
     {
-        String friendlyName = DeclarationFactory.getFriendlyName( unit.name() );
+        String friendlyName = DeclarationFactory.fromEnumName( unit.name() );
         writer.writeString( friendlyName );
     }
 
