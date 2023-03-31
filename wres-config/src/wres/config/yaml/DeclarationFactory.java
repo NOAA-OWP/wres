@@ -3039,6 +3039,11 @@ public class DeclarationFactory
                     migrated.addAll( innerMigrated );
                 }
 
+                if( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "Read these thresholds from {}: {}.", thresholdSource.getValue(), migrated );
+                }
+
                 return Collections.unmodifiableSet( migrated );
             }
             catch ( IOException e )

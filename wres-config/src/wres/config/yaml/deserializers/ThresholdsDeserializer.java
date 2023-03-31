@@ -34,7 +34,9 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsDeserializer.class );
 
     /** String re-used several times. */
-    public static final String VALUE = "value";
+    private static final String VALUE = "value";
+    /** String re-used several times. */
+    private static final String VALUES = "values";
 
     @Override
     public Set<Threshold> deserialize( JsonParser jp, DeserializationContext context )
@@ -91,16 +93,38 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             Set<Threshold> innerThresholds = this.getThresholds( reader, thresholdsNode, type );
             thresholds.addAll( innerThresholds );
         }
-        // Plain array of thresholds
+        // Array node, which is either a plain array of thresholds or an array of thresholds with attributes
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
         {
-            LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
-            wres.statistics.generated.Threshold.Builder builder
-                    = wres.statistics.generated.Threshold.newBuilder()
-                                                         .setOperator( ThresholdOperator.GREATER )
-                                                         .setDataType( ThresholdDataType.LEFT );
-            Set<Threshold> innerThresholds = this.getThresholdsFromArray( reader, arrayNode, type, builder );
-            thresholds.addAll( innerThresholds );
+            // An array of embellished thresholds
+            if( arrayNode.get( 0 )
+                         .has( VALUES ) )
+            {
+                int setCount = arrayNode.size();
+
+                LOGGER.debug( "Encountered an array containing {} sets of embellished thresholds for node {}",
+                              setCount,
+                              nodeName );
+
+                // Deserialize all sets of thresholds
+                for( int i = 0; i < setCount; i++ )
+                {
+                    JsonNode innerThresholdsNode = arrayNode.get( i );
+                    Set<Threshold> innerThresholds = this.getThresholds( reader, innerThresholdsNode, type );
+                    thresholds.addAll( innerThresholds );
+                }
+            }
+            // A plain array of thresholds
+            else
+            {
+                LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
+                wres.statistics.generated.Threshold.Builder builder
+                        = wres.statistics.generated.Threshold.newBuilder()
+                                                             .setOperator( ThresholdOperator.GREATER )
+                                                             .setDataType( ThresholdDataType.LEFT );
+                Set<Threshold> innerThresholds = this.getThresholdsFromArray( reader, arrayNode, type, builder );
+                thresholds.addAll( innerThresholds );
+            }
         }
 
         LOGGER.debug( "Deserialized the following thresholds: {}.", thresholds );
@@ -203,9 +227,9 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Create the thresholds
-        if ( thresholdNode.has( "values" ) )
+        if ( thresholdNode.has( VALUES ) )
         {
-            JsonNode valuesNode = thresholdNode.get( "values" );
+            JsonNode valuesNode = thresholdNode.get( VALUES );
 
             // Embellished thresholds
             if ( valuesNode.size() > 0 && valuesNode.get( 0 )

@@ -681,6 +681,11 @@ definitions:
     anyOf:
       # Thresholds with attributes
       - "$ref": "#/definitions/ElaboratedValueThresholds"
+      # A list of thresholds with attributes
+      - type: array
+        items:
+          "$ref": "#/definitions/ElaboratedValueThresholds"
+        minItems: 1
       # Plain thresholds
       - type: array
         items:
@@ -742,6 +747,11 @@ definitions:
     anyOf:
       # Thresholds with attributes
       - "$ref": "#/definitions/ElaboratedProbabilityThresholds"
+      # A list of thresholds with attributes
+      - type: array
+        items:
+          "$ref": "#/definitions/ElaboratedProbabilityThresholds"
+        minItems: 1
       # Plain thresholds
       - type: array
         items:
@@ -802,8 +812,12 @@ definitions:
       - value
     title: FeaturedProbabilityThreshold
 
-  # A list of threshold sets to be used when multiple thresholds of the same 
-  # type are required in a single evaluation.
+  # A list of threshold sets to be used for the most complex thresholding 
+  # problems whereby multiple thresholds of the same type are required in 
+  # a single evaluation and different sets of thresholds are required for
+  # different metrics. In this situation, threshold sets provide a hook 
+  # for anchors and aliases so that thresholds don't need to be repeated
+  # for every metric that requires a common subset of thresholds.
   ThresholdSet:
     type: object
     additionalProperties: false
