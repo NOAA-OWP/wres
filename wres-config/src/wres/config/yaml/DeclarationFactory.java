@@ -60,6 +60,8 @@ import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
 import wres.config.MetricConstants;
+import wres.config.generated.ThresholdFormat;
+import wres.config.xml.CsvThresholdReader;
 import wres.config.xml.MetricConstantsFactory;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.Circle;
@@ -100,6 +102,7 @@ import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.DecimalFormatPretty;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EnsembleFilterBuilder;
@@ -127,6 +130,8 @@ import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.SpatialMaskBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -1583,8 +1588,8 @@ public class DeclarationFactory
 
             // Old style declaration
             if ( Objects.nonNull( baselineConfig.getTransformation() )
-                 && "persistence" .equals( baselineConfig.getTransformation()
-                                                         .value() ) )
+                 && "persistence".equals( baselineConfig.getTransformation()
+                                                        .value() ) )
 
             {
                 LOGGER.debug( "Discovered an old-style persistence declaration. Adding persistence of order 1 to the "
@@ -1892,7 +1897,7 @@ public class DeclarationFactory
                 LOGGER.debug( "Discovered these global thresholds to migrate: {}.", globalThresholds );
 
                 addThresholdsPerMetric = false;
-                DeclarationFactory.migrateThresholds( globalThresholds, builder );
+                DeclarationFactory.migrateGlobalThresholds( globalThresholds, builder );
             }
 
             // Now migrate the metrics
@@ -2665,15 +2670,16 @@ public class DeclarationFactory
      * @param builder the declaration builder
      */
 
-    private static void migrateThresholds( Map<wres.config.generated.ThresholdType, ThresholdsConfig> thresholds,
-                                           EvaluationDeclarationBuilder builder )
+    private static void migrateGlobalThresholds( Map<wres.config.generated.ThresholdType, ThresholdsConfig> thresholds,
+                                                 EvaluationDeclarationBuilder builder )
     {
         // Probability thresholds
         if ( thresholds.containsKey( wres.config.generated.ThresholdType.PROBABILITY ) )
         {
             ThresholdsConfig probabilityThresholdsConfig =
                     thresholds.get( wres.config.generated.ThresholdType.PROBABILITY );
-            Set<Threshold> probabilityThresholds = DeclarationFactory.migrateThresholds( probabilityThresholdsConfig );
+            Set<Threshold> probabilityThresholds = DeclarationFactory.migrateThresholds( probabilityThresholdsConfig,
+                                                                                         builder );
             builder.probabilityThresholds( probabilityThresholds );
             LOGGER.debug( "Migrated these probability thresholds for all metrics: {}.", probabilityThresholds );
         }
@@ -2683,7 +2689,8 @@ public class DeclarationFactory
         {
             ThresholdsConfig valueThresholdsConfig =
                     thresholds.get( wres.config.generated.ThresholdType.VALUE );
-            Set<Threshold> valueThresholds = DeclarationFactory.migrateThresholds( valueThresholdsConfig );
+            Set<Threshold> valueThresholds = DeclarationFactory.migrateThresholds( valueThresholdsConfig,
+                                                                                   builder );
             builder.valueThresholds( valueThresholds );
             LOGGER.debug( "Migrated these value thresholds for all metrics: {}.", valueThresholds );
         }
@@ -2693,7 +2700,8 @@ public class DeclarationFactory
         {
             ThresholdsConfig classifierThresholdsConfig =
                     thresholds.get( wres.config.generated.ThresholdType.PROBABILITY_CLASSIFIER );
-            Set<Threshold> classifierThresholds = DeclarationFactory.migrateThresholds( classifierThresholdsConfig );
+            Set<Threshold> classifierThresholds = DeclarationFactory.migrateThresholds( classifierThresholdsConfig,
+                                                                                        builder );
             builder.classifierThresholds( classifierThresholds );
             LOGGER.debug( "Migrated these classifier thresholds for all metrics: {}.", classifierThresholds );
         }
@@ -2727,8 +2735,10 @@ public class DeclarationFactory
 
                 Set<MetricConstants> metricNames = MetricConstantsFactory.getMetricsFromConfig( next, projectConfig );
                 // Acquire the parameters
-                MetricParameters parameters =
-                        DeclarationFactory.migrateMetricParameters( next, projectConfig, addThresholdsPerMetric );
+                MetricParameters parameters = DeclarationFactory.migrateMetricParameters( next,
+                                                                                          projectConfig,
+                                                                                          builder,
+                                                                                          addThresholdsPerMetric );
 
                 Set<Metric> innerMetrics = metricNames.stream()
                                                       .map( nextName -> new Metric( nextName, parameters ) )
@@ -2777,10 +2787,12 @@ public class DeclarationFactory
      *
      * @param metric the metric whose parameters should be read
      * @param projectConfig the overall declaration used as context when migrating metrics
+     * @param builder the builder, which may be updated with threshold service declaration
      * @param addThresholdsPerMetric whether the thresholds declared in each metric group should be added to each metric
      */
     private static MetricParameters migrateMetricParameters( MetricsConfig metric,
                                                              ProjectConfig projectConfig,
+                                                             EvaluationDeclarationBuilder builder,
                                                              boolean addThresholdsPerMetric )
     {
         Set<MetricConstants> metricNames = MetricConstantsFactory.getMetricsFromConfig( metric, projectConfig );
@@ -2791,7 +2803,8 @@ public class DeclarationFactory
         {
             List<ThresholdsConfig> thresholds = metric.getThresholds();
             Set<Threshold> migratedThresholds = thresholds.stream()
-                                                          .map( DeclarationFactory::migrateThresholds )
+                                                          .map( next -> DeclarationFactory.migrateThresholds( next,
+                                                                                                              builder ) )
                                                           .flatMap( Set::stream )
 
                                                           .collect( Collectors.toSet() );
@@ -2847,86 +2860,193 @@ public class DeclarationFactory
     /**
      * Migrates old-style declaration of thresholds to canonical thresholds.
      * @param thresholds the thresholds to migrate
+     * @param builder the builder, which may be updated with threshold service declaration
      * @return the migrated thresholds
      */
 
-    private static Set<Threshold> migrateThresholds( ThresholdsConfig thresholds )
+    private static Set<Threshold> migrateThresholds( ThresholdsConfig thresholds,
+                                                     EvaluationDeclarationBuilder builder )
     {
         // Either an internal list of thresholds in CSV format or an external point, such as a file or service call,
         // which are not migrated here
         Object internalOrExternal = thresholds.getCommaSeparatedValuesOrSource();
 
+        // Concrete thresholds?
+        if ( internalOrExternal instanceof String csv )
+        {
+            return DeclarationFactory.migrateCsvThresholds( csv, thresholds );
+        }
+        // External source of thresholds call to obtain concrete thresholds
+        else if ( internalOrExternal instanceof ThresholdsConfig.Source source )
+        {
+            return DeclarationFactory.migrateExternalThresholds( source, thresholds, builder );
+        }
+
+        LOGGER.warn( "Discovered an unrecognized threshold source, which will not be migrated: {}.", thresholds );
+        return Collections.emptySet();
+    }
+
+    /**
+     * Migrates a CSV-formatted threshold string.
+     *
+     * @param thresholds the threshold string
+     * @param metadata the threshold metadata
+     * @return the thresholds
+     */
+    private static Set<Threshold> migrateCsvThresholds( String thresholds, ThresholdsConfig metadata )
+    {
+        LOGGER.debug( "Discovered a source of thresholds in CSV format to migrate: {}.", metadata );
         Set<Threshold> migrated = new LinkedHashSet<>();
 
-        // Concrete thresholds?
-        if ( internalOrExternal instanceof String )
+        // Default threshold
+        wres.statistics.generated.Threshold.Builder builder = DEFAULT_CANONICAL_THRESHOLD.toBuilder();
+
+        // Need to map enums
+        wres.config.generated.ThresholdType type = DeclarationFactory.getThresholdType( metadata );
+        ThresholdType newType = ThresholdType.valueOf( type.name() );
+
+        if ( Objects.nonNull( metadata.getOperator() ) )
         {
-            // Default threshold
-
-            wres.statistics.generated.Threshold.Builder builder = DEFAULT_CANONICAL_THRESHOLD.toBuilder();
-
-            // Need to map enums
-            wres.config.generated.ThresholdType type = DeclarationFactory.getThresholdType( thresholds );
-            ThresholdType newType = ThresholdType.valueOf( type.name() );
-
-            if ( Objects.nonNull( thresholds.getOperator() ) )
-            {
-                wres.config.generated.ThresholdOperator operator = thresholds.getOperator();
-                wres.statistics.generated.Threshold.ThresholdOperator canonicalOperator =
-                        ProjectConfigs.getThresholdOperator( operator );
-                builder.setOperator( canonicalOperator );
-            }
-
-            if ( Objects.nonNull( thresholds.getApplyTo() ) )
-            {
-                ThresholdDataType dataType = thresholds.getApplyTo();
-                wres.statistics.generated.Threshold.ThresholdDataType canonicalDataType =
-                        DeclarationFactory.getThresholdDataType( dataType.name() );
-                builder.setDataType( canonicalDataType );
-            }
-
-            // Read the threshold values
-            String csvString = internalOrExternal.toString();
-            double[] values = Arrays.stream( csvString.split( "," ) )
-                                    .mapToDouble( Double::parseDouble )
-                                    .toArray();
-
-            // Create the thresholds
-            for ( double next : values )
-            {
-                // Clear existing values
-                builder.clearLeftThresholdValue()
-                       .clearLeftThresholdProbability();
-
-                DoubleValue value = DoubleValue.of( next );
-
-                if ( newType == ThresholdType.VALUE )
-                {
-                    builder.setLeftThresholdValue( value );
-                }
-                else
-                {
-                    builder.setLeftThresholdProbability( value );
-                }
-
-                wres.statistics.generated.Threshold migratedThreshold = builder.build();
-                Threshold nextThreshold = ThresholdBuilder.builder()
-                                                          .threshold( migratedThreshold )
-                                                          .type( newType )
-                                                          .build();
-                migrated.add( nextThreshold );
-            }
-
-            LOGGER.debug( "Migrated the following thresholds: {}.", migrated );
+            wres.config.generated.ThresholdOperator operator = metadata.getOperator();
+            wres.statistics.generated.Threshold.ThresholdOperator canonicalOperator =
+                    ProjectConfigs.getThresholdOperator( operator );
+            builder.setOperator( canonicalOperator );
         }
-        // Service call to obtain concrete thresholds
-        else
+
+        if ( Objects.nonNull( metadata.getApplyTo() ) )
         {
-            LOGGER.debug( "Discovered an external source of thresholds, but no explicitly declared thresholds to "
-                          + "migrate from: {}.", thresholds );
+            ThresholdDataType dataType = metadata.getApplyTo();
+            wres.statistics.generated.Threshold.ThresholdDataType canonicalDataType =
+                    DeclarationFactory.getThresholdDataType( dataType.name() );
+            builder.setDataType( canonicalDataType );
         }
+
+        // Read the threshold values
+        double[] values = Arrays.stream( thresholds.split( "," ) )
+                                .mapToDouble( Double::parseDouble )
+                                .toArray();
+
+        // Create the thresholds
+        for ( double next : values )
+        {
+            // Clear existing values
+            builder.clearLeftThresholdValue()
+                   .clearLeftThresholdProbability();
+
+            DoubleValue value = DoubleValue.of( next );
+
+            if ( newType == ThresholdType.VALUE )
+            {
+                builder.setLeftThresholdValue( value );
+            }
+            else
+            {
+                builder.setLeftThresholdProbability( value );
+            }
+
+            wres.statistics.generated.Threshold migratedThreshold = builder.build();
+            Threshold nextThreshold = ThresholdBuilder.builder()
+                                                      .threshold( migratedThreshold )
+                                                      .type( newType )
+                                                      .build();
+            migrated.add( nextThreshold );
+        }
+
+        LOGGER.debug( "Migrated the following thresholds: {}.", migrated );
 
         return Collections.unmodifiableSet( migrated );
+    }
+
+    /**
+     * Attempts to migrate an external source of thresholds. If the thresholds are contained in a sidecar file, these
+     * are read and returned. If a threshold service is configured, the service declaration is migrated, but no
+     * thresholds are read.
+     *
+     * @param thresholdSource the external source of thresholds
+     * @param thresholds the thresholds
+     * @param builder the builder, which may be updated with threshold service declaration
+     * @return the thresholds, if any
+     */
+
+    private static Set<Threshold> migrateExternalThresholds( ThresholdsConfig.Source thresholdSource,
+                                                             ThresholdsConfig thresholds,
+                                                             EvaluationDeclarationBuilder builder )
+    {
+        LOGGER.debug( "Discovered an external source of thresholds to migrate: {}.", thresholds );
+
+        wres.config.generated.ThresholdType thresholdType = DeclarationFactory.getThresholdType( thresholds );
+        ThresholdType canonicalType = ThresholdType.valueOf( thresholdType.name() );
+
+        // Web service?
+        if ( thresholdSource.getFormat() == ThresholdFormat.WRDS )
+        {
+            LOGGER.debug( "Discovered threshold service declaration to migrate: {}.", thresholdSource );
+
+            DatasetOrientation orientation = DatasetOrientation.LEFT;
+            double missingValue = -999.0;  // The default in the legacy schema
+            if ( Objects.nonNull( thresholdSource.getFeatureNameFrom() ) )
+            {
+                orientation = DatasetOrientation.valueOf( thresholdSource.getFeatureNameFrom()
+                                                                         .name() );
+            }
+            if ( Objects.nonNull( thresholdSource.getMissingValue() ) )
+            {
+                missingValue = Double.parseDouble( thresholdSource.getMissingValue() );
+            }
+
+            ThresholdService thresholdService
+                    = ThresholdServiceBuilder.builder()
+                                             .uri( thresholdSource.getValue() )
+                                             .parameter( thresholdSource.getParameterToMeasure() )
+                                             .provider( thresholdSource.getProvider() )
+                                             .ratingProvider( thresholdSource.getRatingProvider() )
+                                             .featureNameFrom( orientation )
+                                             .unit( thresholdSource.getUnit() )
+                                             .missingValue( missingValue )
+                                             .build();
+
+            // Set the declaration
+            builder.thresholdService( thresholdService );
+
+            LOGGER.debug( "Migrated this threshold service declaration: {}.", thresholdService );
+
+            return Collections.emptySet();
+        }
+        // Attempt to read a source of thresholds in CSV format
+        else
+        {
+            try
+            {
+                String unit = builder.unit();
+                if ( Objects.nonNull( thresholdSource.getUnit() ) && !thresholdSource.getUnit()
+                                                                                     .isBlank() )
+                {
+                    unit = thresholdSource.getUnit();
+                }
+
+                Set<Threshold> migrated = new LinkedHashSet<>();
+                Map<String, Set<wres.statistics.generated.Threshold>> external =
+                        CsvThresholdReader.readThresholds( thresholds, unit );
+                for ( Map.Entry<String, Set<wres.statistics.generated.Threshold>> nextEntry : external.entrySet() )
+                {
+                    String featureName = nextEntry.getKey();
+                    Set<wres.statistics.generated.Threshold> toMigrate = nextEntry.getValue();
+                    Set<Threshold> innerMigrated = toMigrate.stream()
+                                                            .map( next -> new Threshold( next,
+                                                                                         canonicalType,
+                                                                                         featureName ) )
+                                                            .collect( Collectors.toCollection( LinkedHashSet::new ) );
+                    migrated.addAll( innerMigrated );
+                }
+
+                return Collections.unmodifiableSet( migrated );
+            }
+            catch ( IOException e )
+            {
+                throw new DeclarationException( "Encountered an error when attempting to migrate an external source "
+                                                + "of thresholds from " + thresholdSource.getValue(), e );
+            }
+        }
     }
 
     /**
