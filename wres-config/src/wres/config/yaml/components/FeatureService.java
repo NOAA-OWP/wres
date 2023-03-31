@@ -1,6 +1,8 @@
 package wres.config.yaml.components;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -30,7 +32,12 @@ public record FeatureService( URI uri,
     {
         if ( Objects.isNull( featureGroups ) )
         {
-            featureGroups = Set.of();
+            featureGroups = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            featureGroups = Collections.unmodifiableSet( new LinkedHashSet<>( featureGroups ) );
         }
     }
 }

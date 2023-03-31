@@ -607,13 +607,13 @@ public class PoolFactory
     /**
      * Unpacks each supplier and pairs it with the original request that produced it. The only difference between the
      * original request and the corresponding request attached to the supplier and obtained from 
-     * {@link SupplierWithPoolRequest#getPoolRequest()} is the pool identifier and it is friendly to preserve these 
+     * {@link SupplierWithPoolRequest#poolRequest()} is the pool identifier and it is friendly to preserve these
      * identifiers, which are otherwise destroyed by feature-batching.
      *
      * @param <T> the type of data supplied
      * @param optimizedGroups the optimized pool requests
      * @param suppliers the suppliers
-     * @return a map of requests to suppliers
+     * @return a list of requests to suppliers
      */
 
     private <T> List<Pair<PoolRequest, Supplier<T>>>
@@ -625,8 +625,8 @@ public class PoolFactory
         // Iterate through the suppliers
         for ( SupplierWithPoolRequest<T> nextSupplier : suppliers )
         {
-            PoolRequest poolRequest = nextSupplier.getPoolRequest();
-            PoolRequest optimizedPoolRequest = nextSupplier.getOptimizedPoolRequest();
+            PoolRequest poolRequest = nextSupplier.poolRequest();
+            PoolRequest optimizedPoolRequest = nextSupplier.optimizedPoolRequest();
 
             FeatureGroup nextOptimizedGroup = optimizedPoolRequest.getMetadata()
                                                                   .getFeatureGroup();
@@ -1597,7 +1597,7 @@ public class PoolFactory
 
         for ( SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>> nextSupplier : toDecompose )
         {
-            PoolRequest nextRequest = nextSupplier.getPoolRequest();
+            PoolRequest nextRequest = nextSupplier.poolRequest();
             FeatureGroup nextGroup = nextRequest.getMetadata()
                                                 .getFeatureGroup();
 
@@ -1684,10 +1684,10 @@ public class PoolFactory
     {
         List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> mod = new ArrayList<>( toSort );
         Comparator<SupplierWithPoolRequest<Pool<TimeSeries<Pair<L, R>>>>> c = ( a, b ) -> {
-            PoolMetadata left = a.getPoolRequest()
+            PoolMetadata left = a.poolRequest()
                                  .getMetadata();
 
-            PoolMetadata right = b.getPoolRequest()
+            PoolMetadata right = b.poolRequest()
                                   .getMetadata();
 
             int compare = left.getFeatureGroup().compareTo( right.getFeatureGroup() );
@@ -1945,19 +1945,15 @@ public class PoolFactory
 
     /**
      * A supplier that keeps track of the {@link PoolRequest} that it is fulfilling.
+     * @param delegated delegated supplier.
+     * @param poolRequest the pool request.
+     * @param optimizedPoolRequest the optimized pool request, else the {@link #poolRequest} where no optimization was
+     *                             conducted.
      */
 
-    private static class SupplierWithPoolRequest<T> implements Supplier<T>
+    private record SupplierWithPoolRequest<T>( Supplier<T> delegated, PoolRequest poolRequest,
+                                               PoolRequest optimizedPoolRequest ) implements Supplier<T>
     {
-
-        /** Delegated supplier. */
-        private final Supplier<T> delegated;
-
-        /** The pool request. */
-        private final PoolRequest poolRequest;
-
-        /** The optimized pool request, else the {@link #poolRequest} where no optimization was conducted. */
-        private final PoolRequest optimizedPoolRequest;
 
         @Override
         public T get()
@@ -1980,37 +1976,14 @@ public class PoolFactory
         }
 
         /**
-         * @return the pool request
-         */
-
-        private PoolRequest getPoolRequest()
-        {
-            return this.poolRequest;
-        }
-
-        /**
-         * @return the optimized pool request
-         */
-
-        private PoolRequest getOptimizedPoolRequest()
-        {
-            return this.optimizedPoolRequest;
-        }
-
-        /**
          * @param delegated the delegated supplier
          * @param poolRequest the pool request
          */
-        private SupplierWithPoolRequest( Supplier<T> delegated,
-                                         PoolRequest poolRequest,
-                                         PoolRequest optimizedPoolRequest )
+        private SupplierWithPoolRequest
         {
             Objects.requireNonNull( delegated );
             Objects.requireNonNull( poolRequest );
             Objects.requireNonNull( optimizedPoolRequest );
-            this.delegated = delegated;
-            this.poolRequest = poolRequest;
-            this.optimizedPoolRequest = optimizedPoolRequest;
         }
     }
 

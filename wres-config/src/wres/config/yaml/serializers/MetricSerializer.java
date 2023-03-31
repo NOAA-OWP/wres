@@ -14,6 +14,7 @@ import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.MetricParametersBuilder;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**
@@ -34,7 +35,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
         String friendlyName = DeclarationFactory.getFriendlyName( name.name() );
 
         // Simple metric
-        if ( Objects.isNull( metric.parameters() ) )
+        if ( this.isSimpleMetric( metric.parameters() ) )
         {
             writer.writeString( friendlyName );
         }
@@ -115,6 +116,16 @@ public class MetricSerializer extends JsonSerializer<Metric>
         }
 
         writer.writeEndObject();
+    }
+
+    /**
+     * @param parameters the metric parameters
+     * @return whether the metric has any non-default parameter values
+     */
+    private boolean isSimpleMetric( MetricParameters parameters )
+    {
+        return Objects.isNull( parameters ) || parameters.equals( MetricParametersBuilder.builder()
+                                                                                         .build() );
     }
 
 }

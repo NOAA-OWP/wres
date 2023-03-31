@@ -106,9 +106,11 @@ definitions:
             anyOf:
               - "$ref": "#/definitions/MetricEnum"
               - "$ref": "#/definitions/CategoricalMetricEnum"
+              - "$ref": "#/definitions/SingleValuedMetricEnum"
               - "$ref": "#/definitions/TimeSeriesMetricEnum"
               - "$ref": "#/definitions/MetricWithParameters"
               - "$ref": "#/definitions/CategoricalMetricWithParameters"
+              - "$ref": "#/definitions/SingleValuedMetricWithParameters"
               - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
         minItems: 1
         uniqueItems: true
@@ -125,8 +127,8 @@ definitions:
           anyOf:   
             - "$ref": "#/definitions/FormatEnum"
             - "$ref": "#/definitions/GraphicFormatEnum"
-            - "$ref": "#/definitions/Format"
-            - "$ref": "#/definitions/GraphicFormat"
+            - "$ref": "#/definitions/FormatWithParameters"
+            - "$ref": "#/definitions/GraphicFormatWithParameters"
         minItems: 1
         uniqueItems: true
     required:
@@ -254,6 +256,12 @@ definitions:
           - type: integer
       interface:
         "$ref": "#/definitions/SourceInterfaceEnum"
+      # Parameters form a dictionary with any pair of strings allowed
+      parameters:
+        type: object
+        additionalProperties:
+          type: string
+        minItems: 1
       time_scale:
         "$ref": "#/definitions/TimeScale"
       missing_value:
@@ -448,6 +456,21 @@ definitions:
       - uri
     title: MultiGroupFeatureService
 
+  # A key-value pair that represents a source interface parameter.
+  SourceInterfaceParameter:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      value:
+        type: string
+        minLength: 1
+        maxLength: 2083
+    title: SourceInterfaceParameter
+
   # The declaration of a feature group to acquire from a feature service.
   FeatureServiceGroup:
     type: object
@@ -496,9 +519,9 @@ definitions:
     type: object
     additionalProperties: false
     properties:
-      minimum:
+      minimum_exclusive:
         type: integer
-      maximum_exclusive:
+      maximum:
         type: integer
       unit:
         "$ref": "#/definitions/DurationEnum"
@@ -860,6 +883,8 @@ definitions:
       minimum_sample_size:
         type: integer
         minimum: 1
+      ensemble_average:
+        "$ref": "#/definitions/EnsembleAverageEnum"
       svg:
         type: boolean
       png:
@@ -867,6 +892,30 @@ definitions:
     required:
       - name
     title: CategoricalMetricWithParameters
+
+  # A parameterized single-valued metric.
+  SingleValuedMetricWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        "$ref": "#/definitions/SingleValuedMetricEnum"
+      probability_thresholds:
+        "$ref": "#/definitions/ProbabilityThresholds"
+      value_thresholds:
+        "$ref": "#/definitions/ValueThresholds"
+      minimum_sample_size:
+        type: integer
+        minimum: 1
+      ensemble_average:
+        "$ref": "#/definitions/EnsembleAverageEnum"
+      svg:
+        type: boolean
+      png:
+        type: boolean
+    required:
+      - name
+    title: SingleValuedMetricWithParameters
 
   # A parameterized time-series metric.
   TimeSeriesMetricWithParameters:
@@ -892,7 +941,7 @@ definitions:
 
   # Format. A facade to allow the same declaration across
   # all types of format. For example, format: csv2
-  Format:
+  FormatWithParameters:
     type: object
     additionalProperties: false
     properties:
@@ -900,10 +949,10 @@ definitions:
         "$ref": "#/definitions/FormatEnum"
     required:
       - format
-    title: Format
+    title: FormatWithParameters
 
   # Graphic format.
-  GraphicFormat:
+  GraphicFormatWithParameters:
     type: object
     additionalProperties: false
     properties:
@@ -920,7 +969,7 @@ definitions:
         minimum: 300
     required:
       - format
-    title: GraphicFormat
+    title: GraphicFormatWithParameters
 
   DurationEnum:
     type: string
@@ -1016,49 +1065,23 @@ definitions:
   MetricEnum:
     type: string
     enum:
-      - bias fraction
-      - box plot of errors
-      - box plot of percentage errors
       - box plot of errors by observed value
       - box plot of errors by forecast value
       - brier score
       - brier skill score
-      - coefficient of determination
       - contingency table
-      - pearson correlation coefficient
       - continuous ranked probability score
       - continuous ranked probability skill score
-      - threat score
-      - equitable threat score
       - ensemble quantile quantile diagram
-      - frequency bias
-      - index of agreement
-      - kling gupta efficiency
       - maximum
-      - mean absolute error
       - mean
-      - mean error
-      - mean square error
-      - mean square error skill score
-      - mean square error skill score normalized
-      - median error
       - minimum
-      - peirce skill score
-      - probability of detection
-      - probability of false detection
-      - quantile quantile diagram
       - rank histogram
       - relative operating characteristic diagram
       - relative operating characteristic score
       - reliability diagram
-      - root mean square error
-      - root mean square error normalized
       - sample size
-      - sum of square error
       - standard deviation
-      - volumetric efficiency
-      - false alarm ratio
-      - mean absolute error skill score
     title: MetricEnum
 
   # Time-series metrics
@@ -1080,7 +1103,34 @@ definitions:
       - probability of detection
       - probability of false detection
       - false alarm ratio
+      - peirce skill score
     title: CategoricalMetricEnum
+
+  # Single-valued metrics
+  SingleValuedMetricEnum:
+    type: string
+    enum:
+      - bias fraction
+      - box plot of errors
+      - box plot of percentage errors
+      - coefficient of determination
+      - pearson correlation coefficient
+      - index of agreement
+      - kling gupta efficiency
+      - mean absolute error
+      - mean error
+      - mean square error
+      - mean square error skill score
+      - mean square error skill score normalized
+      - median error
+      - quantile quantile diagram
+      - root mean square error
+      - root mean square error normalized
+      - sample size
+      - sum of square error
+      - volumetric efficiency
+      - mean absolute error skill score
+    title: SingleValuedMetricEnum
 
   FormatEnum:
     type: string

@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -86,6 +87,16 @@ class DeclarationFactoryTest
     private static final String DRRC2 = "DRRC2";
     /** Re-used feature string. */
     private static final String DOLC2 = "DOLC2";
+    /** All data threshold. */
+    private static final wres.config.yaml.components.Threshold ALL_DATA_THRESHOLD =
+            new wres.config.yaml.components.Threshold( wres.statistics.generated.Threshold.newBuilder()
+                                                                                          .setLeftThresholdValue(
+                                                                                                  DoubleValue.of( Double.NEGATIVE_INFINITY ) )
+                                                                                          .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
+                                                                                          .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                                                                          .build(),
+                                                       wres.config.yaml.components.ThresholdType.VALUE,
+                                                       null );
 
     @BeforeEach
     void runBeforeEach()
@@ -181,6 +192,9 @@ class DeclarationFactoryTest
                       missing_value: -999.0
                     - uri: https://foo.bar
                       interface: usgs nwis
+                      parameters:
+                        foo: bar
+                        baz: qux
                       time_scale:
                         function: mean
                         period: 1
@@ -230,7 +244,8 @@ class DeclarationFactoryTest
         wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
         Source yetAnotherObservedSource = SourceBuilder.builder()
                                                        .uri( yetAnotherObservedUri )
-                                                       .api( SourceInterface.USGS_NWIS )
+                                                       .sourceInterface( SourceInterface.USGS_NWIS )
+                                                       .parameters( Map.of( "foo", "bar", "baz", "qux" ) )
                                                        .timeScale( outerTimeScale )
                                                        .build();
 
@@ -263,7 +278,7 @@ class DeclarationFactoryTest
                 outerTimeScalePredicted = new wres.config.yaml.components.TimeScale( timeScalePredicted );
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
-                                                        .api( SourceInterface.WRDS_AHPS )
+                                                        .sourceInterface( SourceInterface.WRDS_AHPS )
                                                         .timeScale(
                                                                 outerTimeScalePredicted )
                                                         .build();
@@ -564,8 +579,8 @@ class DeclarationFactoryTest
                   frequency: 17
                   unit: hours
                 analysis_durations:
-                  minimum: 0
-                  maximum_exclusive: 1
+                  minimum_exclusive: 0
+                  maximum: 1
                   unit: hours
                   """;
 
@@ -1038,6 +1053,133 @@ class DeclarationFactoryTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testInterpolateCsv2FormatWhenNoneDeclared()
+    {
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .build();
+
+        EvaluationDeclaration interpolate = DeclarationFactory.interpolate( declaration );
+
+        Formats actual = interpolate.formats();
+        Formats expected = FormatsBuilder.builder()
+                                         .csv2Format( Formats.CSV2_FORMAT )
+                                         .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateAllValidMetricsForSingleValuedTimeSeries() throws IOException
+    {
+        Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
+                                                 .type( DataType.SIMULATIONS )
+                                                 .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( predictedDataset )
+                                                                        .build();
+
+        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( declaration );
+
+        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
+                                                               .stream()
+                                                               .map( Metric::name )
+                                                               .collect( Collectors.toSet() );
+
+        assertEquals( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics(), actualMetrics );
+    }
+
+    @Test
+    void testInterpolateAllValidMetricsForEnsembleTimeSeries() throws IOException
+    {
+        Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
+                                                 .type( DataType.ENSEMBLE_FORECASTS )
+                                                 .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( predictedDataset )
+                                                                        .build();
+
+        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( declaration );
+
+        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
+                                                               .stream()
+                                                               .map( Metric::name )
+                                                               .collect( Collectors.toSet() );
+
+        Set<MetricConstants> expectedMetrics = new HashSet<>( MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics() );
+        expectedMetrics.addAll( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics() );
+        expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+
+        assertEquals( expectedMetrics, actualMetrics );
+    }
+
+    // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation
+
+    @Test
+    void testDeserializeAndInterpolateAllValidMetricsForSingleValuedTimeSeriesWithThresholds() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                  type: simulations
+                value_thresholds: [23.0, 25.0]
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
+
+        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
+                                                               .stream()
+                                                               .map( Metric::name )
+                                                               .collect( Collectors.toSet() );
+
+        Set<MetricConstants> singleValued = MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics();
+        Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
+
+        Set<MetricConstants> expectedMetrics = new HashSet<>( singleValued );
+        expectedMetrics.addAll( dichotomous );
+
+        assertEquals( expectedMetrics, actualMetrics );
+    }
+
+    @Test
+    void testDeserializeAndInterpolateAllValidMetricsForEnsembleTimeSeriesWithThresholds() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources:
+                    - uri: another_file.csv
+                  type: ensemble forecasts
+                value_thresholds: [23.0, 25.0]
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
+
+        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
+                                                               .stream()
+                                                               .map( Metric::name )
+                                                               .collect( Collectors.toSet() );
+
+        Set<MetricConstants> expectedMetrics = new HashSet<>( MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics() );
+        expectedMetrics.addAll( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics() );
+        expectedMetrics.addAll( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
+        expectedMetrics.addAll( MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics() );
+        expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+
+        assertEquals( expectedMetrics, actualMetrics );
+    }
+
     @ParameterizedTest
     @ValueSource( strings = {
             """
@@ -1067,7 +1209,7 @@ class DeclarationFactoryTest
                       unit: days
                         """
     } )
-    void testInterpolatePredictedDatasetAsSingleValuedForecastWhenNoEnsembleDeclaration( String declaration )
+    void testDeserializeAndInterpolatePredictedDatasetAsSingleValuedForecastWhenNoEnsembleDeclaration( String declaration )
             throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
@@ -1111,7 +1253,7 @@ class DeclarationFactoryTest
                           interface: nwm medium range ensemble channel rt conus hourly
                     """
     } )
-    void testInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
+    void testDeserializeAndInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
         EvaluationDeclaration interpolated = DeclarationFactory.interpolate( actual );
@@ -1121,7 +1263,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testInterpolateObservedDatasetAsAnalysesWhenAnalysisDurationsDeclared() throws IOException
+    void testDeserializeAndInterpolateObservedDatasetAsAnalysesWhenAnalysisDurationsDeclared() throws IOException
     {
         String yaml = """
                 observed:
@@ -1129,8 +1271,8 @@ class DeclarationFactoryTest
                 predicted:
                   - another_file.csv
                 analysis_durations:
-                  minimum: 0
-                  maximum_exclusive: 0
+                  minimum_exclusive: 0
+                  maximum: 0
                   unit: hours
                   """;
 
@@ -1197,115 +1339,180 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeAndInterpolateAllValidMetricsForSingleValuedTimeSeries() throws IOException
+    void testDeserializeAndInterpolateAddsUnitToValueThresholds() throws IOException
     {
         String yaml = """
                 observed:
                   - some_file.csv
                 predicted:
-                  sources:
-                    - uri: another_file.csv
-                  type: simulations
+                  - another_file.csv
+                unit: foo
+                value_thresholds: [26,9,73]
+                threshold_sets:
+                  - value_thresholds: [23,2,45]
+                metrics:
+                  - name: mean square error skill score
+                    value_thresholds: [12, 24, 27]
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
 
-        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
-                                                               .stream()
-                                                               .map( Metric::name )
-                                                               .collect( Collectors.toSet() );
-
-        assertEquals( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics(), actualMetrics );
+        assertAll( () -> assertEquals( "foo", actualInterpolated.valueThresholds()
+                                                                .iterator()
+                                                                .next()
+                                                                .threshold()
+                                                                .getThresholdValueUnits() ),
+                   () -> assertEquals( "foo", actualInterpolated.thresholdSets()
+                                                                .iterator()
+                                                                .next()
+                                                                .threshold()
+                                                                .getThresholdValueUnits() ),
+                   () -> assertEquals( "foo", actualInterpolated.metrics()
+                                                                .iterator()
+                                                                .next()
+                                                                .parameters()
+                                                                .valueThresholds()
+                                                                .iterator()
+                                                                .next()
+                                                                .threshold()
+                                                                .getThresholdValueUnits() )
+        );
     }
 
     @Test
-    void testDeserializeAndInterpolateAllValidMetricsForSingleValuedTimeSeriesWithThresholds() throws IOException
+    void testDeserializeAndInterpolateAddsGraphicsFormatsWhenDeclaredByMetricsAlone() throws IOException
     {
         String yaml = """
                 observed:
                   - some_file.csv
                 predicted:
-                  sources:
-                    - uri: another_file.csv
-                  type: simulations
-                value_thresholds: [23.0, 25.0]
+                  - another_file.csv
+                metrics:
+                  - name: mean square error skill score
+                    ensemble_average: median
+                    png: true
+                  - name: pearson correlation coefficient
+                    ensemble_average: mean
+                    svg: true
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
 
-        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
-                                                               .stream()
-                                                               .map( Metric::name )
-                                                               .collect( Collectors.toSet() );
+        assertAll( () -> assertEquals( Formats.PNG_FORMAT, actualInterpolated.formats()
+                                                                             .pngFormat() ),
 
-        Set<MetricConstants> singleValued = MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics();
-        Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
-
-        Set<MetricConstants> expectedMetrics = new HashSet<>( singleValued );
-        expectedMetrics.addAll( dichotomous );
-
-        assertEquals( expectedMetrics, actualMetrics );
+                   () -> assertEquals( Formats.SVG_FORMAT, actualInterpolated.formats()
+                                                                             .svgFormat() )
+        );
     }
 
     @Test
-    void testDeserializeAndInterpolateAllValidMetricsForEnsembleTimeSeries() throws IOException
+    void testDeserializeAndInterpolateAddsThresholdsToMetrics() throws IOException
     {
         String yaml = """
                 observed:
                   - some_file.csv
                 predicted:
-                  sources:
-                    - uri: another_file.csv
-                  type: ensemble forecasts
+                  - another_file.csv
+                value_thresholds: [1]
+                classifier_thresholds: [0.1]
+                threshold_sets:
+                  - value_thresholds: [2]
+                  - classifier_thresholds: [0.2]
+                metrics:
+                  - mean square error skill score
+                  - probability of detection
                   """;
 
-        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
+        EvaluationDeclaration actualDeclaration = DeclarationFactory.from( yaml );
+        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actualDeclaration );
 
-        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
-                                                               .stream()
-                                                               .map( Metric::name )
-                                                               .collect( Collectors.toSet() );
+        Set<Metric> actual = actualInterpolated.metrics();
 
-        Set<MetricConstants> expectedMetrics = new HashSet<>( MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics() );
-        expectedMetrics.addAll( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics() );
-        expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .build();
+        wres.config.yaml.components.Threshold oneWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( one )
+                                .type( ThresholdType.VALUE )
+                                .build();
 
-        assertEquals( expectedMetrics, actualMetrics );
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 2 ) )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .build();
+
+        wres.config.yaml.components.Threshold twoWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( two )
+                                .type( ThresholdType.VALUE )
+                                .build();
+
+        // Preserve insertion order
+        Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
+        valueThresholds.add( oneWrapped );
+        valueThresholds.add( twoWrapped );
+        valueThresholds.add( ALL_DATA_THRESHOLD );
+
+        MetricParameters firstParameters =
+                MetricParametersBuilder.builder()
+                                       .valueThresholds( valueThresholds )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .parameters( firstParameters )
+                                    .build();
+
+        Threshold three = Threshold.newBuilder()
+                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                   .setOperator( Threshold.ThresholdOperator.GREATER )
+                                   .build();
+        wres.config.yaml.components.Threshold threeWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( three )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        Threshold four = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .build();
+
+        wres.config.yaml.components.Threshold fourWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( four )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        // Preserve insertion order
+        Set<wres.config.yaml.components.Threshold> classifierThresholds = new LinkedHashSet<>();
+        classifierThresholds.add( threeWrapped );
+        classifierThresholds.add( fourWrapped );
+
+        // Re-use the value thresholds without the all data threshold
+        valueThresholds.remove( ALL_DATA_THRESHOLD );
+
+        MetricParameters secondParameters =
+                MetricParametersBuilder.builder()
+                                       .valueThresholds( valueThresholds )
+                                       .classifierThresholds( classifierThresholds )
+                                       .build();
+        Metric second = MetricBuilder.builder()
+                                     .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                                     .parameters( secondParameters )
+                                     .build();
+
+        // Preserve iteration order
+        Set<Metric> expected = new LinkedHashSet<>();
+        expected.add( first );
+        expected.add( second );
+
+        assertEquals( expected, actual );
     }
-
-    @Test
-    void testDeserializeAndInterpolateAllValidMetricsForEnsembleTimeSeriesWithThresholds() throws IOException
-    {
-        String yaml = """
-                observed:
-                  - some_file.csv
-                predicted:
-                  sources:
-                    - uri: another_file.csv
-                  type: ensemble forecasts
-                value_thresholds: [23.0, 25.0]
-                  """;
-
-        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
-
-        Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
-                                                               .stream()
-                                                               .map( Metric::name )
-                                                               .collect( Collectors.toSet() );
-
-        Set<MetricConstants> expectedMetrics = new HashSet<>( MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics() );
-        expectedMetrics.addAll( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics() );
-        expectedMetrics.addAll( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
-        expectedMetrics.addAll( MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics() );
-        expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-
-        assertEquals( expectedMetrics, actualMetrics );
-    }
-
 
     @Test
     void testSerializeWithShortSources() throws IOException
@@ -1313,10 +1520,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                   """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -1335,13 +1542,13 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 baseline:
                   sources:
-                    - uri: yet_another_file.csv
+                    - yet_another_file.csv
                   """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
@@ -1375,13 +1582,15 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
                       time_zone_offset: -0600
                       missing_value: -999.0
                     - uri: https://foo.bar
                       interface: usgs nwis
+                      parameters:
+                        foo: bar
                       time_scale:
                         function: mean
                         period: 3600
@@ -1390,7 +1599,7 @@ class DeclarationFactoryTest
                   type: observations
                 predicted:
                   sources:
-                    - uri: forecasts_with_NWS_feature_authority.csv
+                    - forecasts_with_NWS_feature_authority.csv
                     - uri: file:/some/other/directory
                       pattern: '**/*.xml*'
                       time_zone_offset: -0600
@@ -1429,7 +1638,8 @@ class DeclarationFactoryTest
         wres.config.yaml.components.TimeScale outerTimeScale = new wres.config.yaml.components.TimeScale( timeScale );
         Source yetAnotherObservedSource = SourceBuilder.builder()
                                                        .uri( yetAnotherObservedUri )
-                                                       .api( SourceInterface.USGS_NWIS )
+                                                       .sourceInterface( SourceInterface.USGS_NWIS )
+                                                       .parameters( Map.of( "foo", "bar" ) )
                                                        .timeScale( outerTimeScale )
                                                        .build();
 
@@ -1462,7 +1672,7 @@ class DeclarationFactoryTest
                 outerTimeScalePredicted = new wres.config.yaml.components.TimeScale( timeScalePredicted );
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
-                                                        .api( SourceInterface.WRDS_AHPS )
+                                                        .sourceInterface( SourceInterface.WRDS_AHPS )
                                                         .timeScale(
                                                                 outerTimeScalePredicted )
                                                         .build();
@@ -1495,10 +1705,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 metrics:
                   - name: mean square error skill score
                     value_thresholds: [0.3]
@@ -1507,7 +1717,6 @@ class DeclarationFactoryTest
                     probability_thresholds:
                       values: [0.1]
                       operator: greater than or equal to
-                      apply_to: observed
                   - name: time to peak error
                     summary_statistics:
                       - mean
@@ -1555,8 +1764,8 @@ class DeclarationFactoryTest
                                      .parameters( secondParameters )
                                      .build();
 
-        // Predictable iteration order
-        Set<ComponentName> summaryStatistics = new TreeSet<>();
+        // preserve insertion order
+        Set<ComponentName> summaryStatistics = new LinkedHashSet<>();
         summaryStatistics.add( ComponentName.MEAN );
         summaryStatistics.add( ComponentName.MEDIAN );
         summaryStatistics.add( ComponentName.MINIMUM );
@@ -1593,17 +1802,15 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 feature_groups:
                   - name: a group
                     features:
-                      - observed: DRRC2
-                        predicted: DRRC2
-                      - observed: DOLC2
-                        predicted: DOLC2
+                      - DRRC2
+                      - DOLC2
                   """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
@@ -1644,10 +1851,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 feature_service:
                   uri: https://foo.service
                   group: RFC
@@ -1682,10 +1889,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 feature_service:
                   uri: https://foo.service
                   groups:
@@ -1732,10 +1939,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 spatial_mask:
                   name: a spatial mask!
                   wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))"
@@ -1763,10 +1970,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 reference_dates:
                   minimum: 2551-03-17T00:00:00Z
                   maximum: 2551-03-20T00:00:00Z
@@ -1790,8 +1997,8 @@ class DeclarationFactoryTest
                   frequency: 17
                   unit: hours
                 analysis_durations:
-                  minimum: 0
-                  maximum_exclusive: 1
+                  minimum_exclusive: 0
+                  maximum: 1
                   unit: hours
                   """;
 
@@ -1833,10 +2040,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 time_scale:
                   function: mean
                   period: 3600
@@ -1866,10 +2073,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 unit: m3/s
                 unit_aliases:
                   - alias: °F
@@ -1904,10 +2111,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 pair_frequency:
                   period: 43200
                   unit: seconds
@@ -1930,10 +2137,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 cross_pair: exact
                   """;
 
@@ -1954,10 +2161,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 ensemble_average: median
                   """;
 
@@ -1978,10 +2185,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 season:
                   minimum_day: 1
                   minimum_month: 4
@@ -2007,10 +2214,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 values:
                   minimum: 12.1
                   maximum: 23.2
@@ -2036,10 +2243,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 duration_format: hours
                 decimal_format: '#0.000'
                 output_formats:
@@ -2097,10 +2304,10 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 probability_thresholds: [0.1, 0.2, 0.9]
                 value_thresholds:
                   name: MAJOR FLOOD
@@ -2109,7 +2316,6 @@ class DeclarationFactoryTest
                       feature: DOLC2
                     - value: 23.0
                       feature: DRRC2
-                  operator: greater than
                   apply_to: predicted
                 classifier_thresholds:
                   name: COLONEL DROUGHT
@@ -2118,8 +2324,6 @@ class DeclarationFactoryTest
                       feature: DOLC2
                     - value: 0.2
                       feature: DRRC2
-                  operator: greater than
-                  apply_to: observed
                 """;
 
         Threshold pOne = Threshold.newBuilder()
@@ -2231,15 +2435,14 @@ class DeclarationFactoryTest
         String expected = """
                 observed:
                   sources:
-                    - uri: some_file.csv
+                    - some_file.csv
                 predicted:
                   sources:
-                    - uri: another_file.csv
+                    - another_file.csv
                 threshold_sets:
                   - probability_thresholds:
                       values: [0.1, 0.2]
                       operator: greater than or equal to
-                      apply_to: observed
                 """;
 
         Threshold pOne = Threshold.newBuilder()

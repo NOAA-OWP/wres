@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -153,7 +154,12 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
         {
             LOGGER.debug( "No metrics were declared, assuming \"all valid\" metrics are required." );
 
-            metrics = Set.of();
+            metrics = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            metrics = Collections.unmodifiableSet( new LinkedHashSet<>( metrics ) );
         }
 
         if ( Objects.isNull( rescaleLenience ) )
@@ -165,20 +171,40 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
         {
             probabilityThresholds = Collections.emptySet();
         }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            probabilityThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( probabilityThresholds ) );
+        }
 
         if ( Objects.isNull( valueThresholds ) )
         {
             valueThresholds = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            valueThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( valueThresholds ) );
         }
 
         if ( Objects.isNull( classifierThresholds ) )
         {
             classifierThresholds = Collections.emptySet();
         }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            classifierThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( classifierThresholds ) );
+        }
 
         if ( Objects.isNull( thresholdSets ) )
         {
             thresholdSets = Collections.emptySet();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            thresholdSets = Collections.unmodifiableSet( new LinkedHashSet<>( thresholdSets ) );
         }
 
         if ( Objects.isNull( decimalFormat ) )

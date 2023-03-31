@@ -19,10 +19,10 @@ import wres.config.MetricConstants;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
- * A container of {@link ThresholdOuter} by {@link MetricConstants} that supports slicing and dicing by threshold and 
+ * <p>A container of {@link ThresholdOuter} by {@link MetricConstants} that supports slicing and dicing by threshold and
  * metric.
  * 
- * TODO: consider moving some of this behavior to the {@link ThresholdSlicer}.
+ * <p>TODO: consider moving some of this behavior to the {@link ThresholdSlicer}.
  * 
  * @author James Brown
  */
@@ -60,7 +60,7 @@ public class ThresholdsByMetric
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof ThresholdsByMetric ) )
+        if ( ! ( o instanceof ThresholdsByMetric in ) )
         {
             return false;
         }
@@ -69,8 +69,6 @@ public class ThresholdsByMetric
         {
             return true;
         }
-
-        ThresholdsByMetric in = (ThresholdsByMetric) o;
 
         return Objects.equals( this.probabilities, in.probabilities )
                && Objects.equals( this.probabilityClassifiers, in.probabilityClassifiers )
@@ -117,19 +115,13 @@ public class ThresholdsByMetric
     {
         Objects.requireNonNull( type, NULL_THRESHOLD_TYPE_ERROR );
 
-        switch ( type )
-        {
-            case PROBABILITY:
-                return this.getProbabilities();
-            case VALUE:
-                return this.getValues();
-            case PROBABILITY_CLASSIFIER:
-                return this.getProbabilityClassifiers();
-            case QUANTILE:
-                return this.getQuantiles();
-            default:
-                throw new IllegalArgumentException( "Unrecognized option '" + type + "'." );
-        }
+        return switch ( type )
+                {
+                    case PROBABILITY -> this.getProbabilities();
+                    case VALUE -> this.getValues();
+                    case PROBABILITY_CLASSIFIER -> this.getProbabilityClassifiers();
+                    case QUANTILE -> this.getQuantiles();
+                };
     }
 
     /**
@@ -281,31 +273,30 @@ public class ThresholdsByMetric
 
     public static class Builder
     {
-
         /**
          * Thresholds by {@link ThresholdGroup#PROBABILITY}.
          */
 
-        private Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
+        private final Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
 
         /**
          * Thresholds by {@link ThresholdGroup#VALUE}.
          */
 
-        private Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
+        private final Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
 
         /**
          * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
          */
 
-        private Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
+        private final Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
                 new EnumMap<>( MetricConstants.class );
 
         /**
          * Thresholds by {@link ThresholdGroup#QUANTILE}.
          */
 
-        private Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
+        private final Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
 
         /**
          * @return true if the builder contains no thresholds, otherwise false.
@@ -513,8 +504,7 @@ public class ThresholdsByMetric
                 MetricConstants nextMetric = next.getKey();
                 SortedSet<OneOrTwoThresholds> nextThresholds = next.getValue();
 
-                nextThresholds.stream()
-                              .forEach( aThreshold -> this.addThreshold( nextMetric, aThreshold ) );
+                nextThresholds.forEach( aThreshold -> this.addThreshold( nextMetric, aThreshold ) );
             }
 
             return this;

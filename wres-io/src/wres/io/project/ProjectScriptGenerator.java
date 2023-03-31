@@ -18,14 +18,20 @@ import wres.io.database.Database;
  */
 final class ProjectScriptGenerator
 {
-    // Since this class is only used for helper functions, we don't want anything to instantiate it
-    private ProjectScriptGenerator()
-    {
-    }
+    /** Pseudorandom number generator for re-use. */
+    private static final Random RANDOM = new Random();
+
+    private static final String AND_EXISTS = "AND EXISTS";
+    private static final String SELECT_1 = "SELECT 1";
+    private static final String FROM_WRES_SOURCE_S = "FROM wres.Source S";
+    private static final String INNER_JOIN_WRES_PROJECT_SOURCE_PS = "INNER JOIN wres.ProjectSource PS";
+    private static final String ON_PS_SOURCE_ID_S_SOURCE_ID = "ON PS.source_id = S.source_id";
+    private static final String WHERE_PS_PROJECT_ID = "WHERE PS.project_id = ";
+    private static final String WHERE_PS_PROJECT_IDQ = "WHERE PS.project_id = ?";
 
     /**
      * Creates a script that retrieves a mapping between forecasted and observed features.
-     * 
+     *
      * @param database The database to use
      * @param projectId The wres.project row id to look for intersecting data.
      * @param featureDeclarations Original or generated feature declarations.
@@ -94,13 +100,13 @@ final class ProjectScriptGenerator
             script.addTab().addLine( "L.name = R.name" );
         }
 
-        script.addLine( "AND EXISTS" );
+        script.addLine( AND_EXISTS );
         script.addLine( "(" );
-        script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.Source S" );
-        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab().addLine( "ON PS.source_id = S.source_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ", projectId );
+        script.addTab().addLine( SELECT_1 );
+        script.addTab().addLine( FROM_WRES_SOURCE_S );
+        script.addTab().addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+        script.addTab().addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
+        script.addTab().addLine( WHERE_PS_PROJECT_ID, projectId );
         script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
         script.addTab( 2 ).addLine( "AND S.feature_id = L.feature_id" );
         // Do NOT additionally inspect wres.TimeSeriesValue. See #70130.
@@ -111,13 +117,13 @@ final class ProjectScriptGenerator
             script.addLine( "INNER JOIN wres.Feature R ON X.right_name = R.name" );
         }
 
-        script.addLine( "AND EXISTS" );
+        script.addLine( AND_EXISTS );
         script.addLine( "(" );
-        script.addTab().addLine( "SELECT 1" );
-        script.addTab().addLine( "FROM wres.Source S" );
-        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab().addLine( "ON PS.source_id = S.source_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ", projectId );
+        script.addTab().addLine( SELECT_1 );
+        script.addTab().addLine( FROM_WRES_SOURCE_S );
+        script.addTab().addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+        script.addTab().addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
+        script.addTab().addLine( WHERE_PS_PROJECT_ID, projectId );
         script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
         script.addTab( 2 ).addLine( "AND S.feature_id = R.feature_id" );
 
@@ -143,13 +149,13 @@ final class ProjectScriptGenerator
                 script.addTab().addLine( "L.name = B.name" );
             }
 
-            script.addLine( "AND EXISTS" );
+            script.addLine( AND_EXISTS );
             script.addLine( "(" );
-            script.addTab().addLine( "SELECT 1" );
-            script.addTab().addLine( "FROM wres.Source S" );
-            script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab().addLine( "ON PS.source_id = S.source_id" );
-            script.addTab().addLine( "WHERE PS.project_id = ", projectId );
+            script.addTab().addLine( SELECT_1 );
+            script.addTab().addLine( FROM_WRES_SOURCE_S );
+            script.addTab().addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+            script.addTab().addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
+            script.addTab().addLine( WHERE_PS_PROJECT_ID, projectId );
             script.addTab( 2 ).addLine( "AND PS.member = 'baseline'" );
             script.addTab( 2 ).addLine( "AND S.feature_id = B.feature_id" );
             script.addLine( ")" );
@@ -158,7 +164,6 @@ final class ProjectScriptGenerator
         // Cannot drop here because we need the script to return data. Let the
         // database system remove the temp table when it sees fit, e.g. at
         // end of session or restart of database server or whatever.
-        // script.addLine( "DROP TABLE " + tempTableName + ";" );
 
         return script;
     }
@@ -166,7 +171,7 @@ final class ProjectScriptGenerator
 
     /**
      * Creates a script that retrieves the mostly commonly occurring measurement unit among the right-ish sources. 
-     * 
+     *
      * @param database The database to use
      * @param projectId The wres.project row id to look for intersecting data.
      * @return the script
@@ -177,17 +182,17 @@ final class ProjectScriptGenerator
     {
         DataScripter script = new DataScripter( database );
 
-        /* For a given project, select the most common measurement unit (by source)" );
-           for the right-ish sources. All time-series have units. */
+        // For a given project, select the most common measurement unit (by source)
+        // for the right-ish sources. All time-series have units.
         script.addLine( "SELECT MU.unit_name," );
         script.addTab().addLine( "S.measurementunit_id," );
         script.addTab().addLine( "PS.member" );
-        script.addLine( "FROM wres.Source S" );
-        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        script.addLine( FROM_WRES_SOURCE_S );
+        script.addTab().addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+        script.addTab( 2 ).addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
         script.addTab().addLine( "INNER JOIN wres.MeasurementUnit MU" );
         script.addTab( 2 ).addLine( "ON MU.measurementunit_id = S.measurementunit_id" );
-        script.addLine( "WHERE PS.project_id = ?" );
+        script.addLine( WHERE_PS_PROJECT_IDQ );
         script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member='right'" );
         script.addLine( "GROUP BY S.measurementunit_id," );
@@ -201,7 +206,7 @@ final class ProjectScriptGenerator
 
     /**
      * Creates a script that retrieves the distinct varaible names for a given side of data.
-     * 
+     *
      * @param database The database, not null
      * @param projectId The project identifier
      * @param lrb The side of data, not null
@@ -219,10 +224,10 @@ final class ProjectScriptGenerator
         DataScripter script = new DataScripter( database );
 
         script.addLine( "SELECT DISTINCT S.variable_name" );
-        script.addLine( "FROM wres.Source S" );
+        script.addLine( FROM_WRES_SOURCE_S );
         script.addLine( "INNER JOIN wres.ProjectSource PS ON" );
         script.addTab().addLine( "PS.source_id = S.source_id" );
-        script.addLine( "WHERE PS.project_id = ?" );
+        script.addLine( WHERE_PS_PROJECT_IDQ );
         script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( lrb.toString().toLowerCase() );
@@ -233,7 +238,7 @@ final class ProjectScriptGenerator
 
     /**
      * Returns a script that checks whether the condition on the ensemble name is valid.
-     *  
+     *
      * @param database the database, not null
      * @param ensembleName the ensemble name
      * @param projectId the project id
@@ -259,15 +264,15 @@ final class ProjectScriptGenerator
         /* For a given project, determine whether an ensemble condition will select
            some time-series data. */
         script.addLine( "SELECT EXISTS (" );
-        script.addTab().addLine( "SELECT 1" );
+        script.addTab().addLine( SELECT_1 );
         script.addTab().addLine( "FROM wres.Ensemble E" );
         script.addTab().addLine( "INNER JOIN wres.TimeSeries TS" );
         script.addTab( 2 ).addLine( "ON TS.ensemble_id = E.ensemble_id" );
         script.addTab().addLine( "INNER JOIN wres.Source S" );
         script.addTab( 2 ).addLine( "ON S.source_id = TS.source_id" );
-        script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addTab().addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+        script.addTab( 2 ).addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
+        script.addTab().addLine( WHERE_PS_PROJECT_IDQ );
         script.addArgument( projectId );
         script.addTab( 2 ).addLine( "AND E.ensemble_name ", condition, " ?" );
         script.addArgument( ensembleName );
@@ -278,7 +283,7 @@ final class ProjectScriptGenerator
 
     /**
      * Returns the set of existing time scales for the ingested time-series data.
-     * 
+     *
      * @param database the database
      * @param projectId the project identifier
      * @return the set of time scales
@@ -292,10 +297,10 @@ final class ProjectScriptGenerator
         script.addLine( "SELECT DISTINCT TS.duration_ms, TS.function_name" );
         script.addLine( "FROM wres.projectSource PS" );
         script.addTab().addLine( "INNER JOIN wres.Source S" );
-        script.addTab( 2 ).addLine( "ON PS.source_id = S.source_id" );
+        script.addTab( 2 ).addLine( ON_PS_SOURCE_ID_S_SOURCE_ID );
         script.addTab().addLine( "INNER JOIN wres.TimeScale TS" );
         script.addTab( 2 ).addLine( "ON TS.timescale_id = S.timescale_id" );
-        script.addTab().addLine( "WHERE PS.project_id = ?" );
+        script.addTab().addLine( WHERE_PS_PROJECT_IDQ );
         script.addArgument( projectId );
 
         return script;
@@ -320,10 +325,10 @@ final class ProjectScriptGenerator
                                                  List<NamedFeature> features,
                                                  boolean isGrouped )
     {
-        int qualifier = 0;
+        long qualifier = 0;
         if ( isGrouped )
         {
-            qualifier = new Random().nextInt();
+            qualifier = RANDOM.nextInt();
         }
 
         Random random = new Random( Instant.now()
@@ -345,7 +350,7 @@ final class ProjectScriptGenerator
     /**
      * Create an insert statement for feature correlations. May be two or three
      * columns, depending on no-baseline vs has-baseline respectively.
-     * 
+     *
      * @param tempTableName The name of the temporary table to use.
      * @param features The list of features declared (or generated).
      * @param hasBaseline True if baseline is used, false otherwise.
@@ -414,22 +419,20 @@ final class ProjectScriptGenerator
         {
             return joiner.toString();
         }
-        else
-        {
-            // In the case where no features were added, return empty string.
-            // No features will be inserted (if features were declared).
-            return "";
-        }
+
+        // In the case where no features were added, return empty string.
+        // No features will be inserted (if features were declared).
+        return "";
     }
 
     /**
-     * Use an allowed-character list to prevent control chars and/or ; and '
+     * <p>Use an allowed-character list to prevent control chars and/or ; and '
      *
-     * Only here because the commons-lang method is deprecated, commons-text
+     * <p>Only here because the commons-lang method is deprecated, commons-text
      * does not provide a method to escape sql, and esapi only has something
      * rudimentary as well (and has a particular DBMS name in it).
      *
-     * TODO: replace with a more robust 3rd party implementation that accounts
+     * <p>TODO: replace with a more robust 3rd party implementation that accounts
      * for various attacks, encodings, etc.
      *
      * @param possiblyDangerousString Potential sql injection attack String.
@@ -446,10 +449,18 @@ final class ProjectScriptGenerator
                                         && !Character.isIdeographic( c )
                                         && Character.getType( c ) != Character.DASH_PUNCTUATION
                                         && Character.getType( c ) != Character.CONNECTOR_PUNCTUATION )
-                                       throw new IllegalArgumentException( "Unsupported char '" + (char) c
+                                   {
+                                       throw new IllegalArgumentException( "Unsupported char '" + ( char ) c
                                                                            + "' found" );
+                                   }
                                } );
 
         return possiblyDangerousString;
     }
+
+    // Since this class is only used for helper functions, we don't want anything to instantiate it
+    private ProjectScriptGenerator()
+    {
+    }
+
 }

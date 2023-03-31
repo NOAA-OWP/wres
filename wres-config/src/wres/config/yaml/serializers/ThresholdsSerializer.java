@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Threshold;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
@@ -29,13 +28,6 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsSerializer.class );
-
-    /** Default threshold with no values. */
-    private static final Threshold DEFAULT_THRESHOLD
-            = new Threshold( wres.statistics.generated.Threshold.newBuilder()
-                                                                .setDataType( ThresholdDataType.LEFT )
-                                                                .setOperator( ThresholdOperator.GREATER )
-                                                                .build(), null, null );
 
     @Override
     public void serialize( Set<Threshold> thresholds,
@@ -87,13 +79,12 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         // For the basic metadata
         Threshold first = thresholds.iterator()
                                     .next();
+        wres.statistics.generated.Threshold innerThreshold = first.threshold();
 
-        if ( !first.threshold()
-                   .getName()
-                   .isBlank() )
+        if ( !innerThreshold.getName()
+                            .isBlank() )
         {
-            writer.writeStringField( "name", first.threshold()
-                                                  .getName() );
+            writer.writeStringField( "name", innerThreshold.getName() );
         }
 
         // More than one feature?
@@ -131,20 +122,28 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             writer.writeObjectField( "values", values );
         }
 
-        // Write the user-friendly threshold operator name
-        ThresholdOperator operator = first.threshold()
-                                          .getOperator();
-        wres.config.yaml.components.ThresholdOperator friendlyOperator =
-                wres.config.yaml.components.ThresholdOperator.from( operator );
-        String operatorName = friendlyOperator.toString();
-        writer.writeStringField( "operator", operatorName );
-
+        // Write the user-friendly threshold operator name, if not default
+        if ( innerThreshold.getOperator() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getOperator() )
+        {
+            ThresholdOperator operator = innerThreshold.getOperator();
+            wres.config.yaml.components.ThresholdOperator friendlyOperator =
+                    wres.config.yaml.components.ThresholdOperator.from( operator );
+            String operatorName = friendlyOperator.toString();
+            writer.writeStringField( "operator", operatorName );
+        }
         // Write the data orientation
-        ThresholdDataType dataType = first.threshold()
-                                          .getDataType();
-        DatasetOrientation orientation = DatasetOrientation.valueOf( dataType.name() );
-        String sideName = DeclarationFactory.getFriendlyName( orientation.toString() );
-        writer.writeStringField( "apply_to", sideName );
+        if ( innerThreshold.getDataType() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getDataType() )
+        {
+            ThresholdDataType dataType = innerThreshold.getDataType();
+            String sideName = DeclarationFactory.getThresholdDataTypeName( dataType );
+            writer.writeStringField( "apply_to", sideName );
+        }
+
+        if ( !innerThreshold.getThresholdValueUnits()
+                            .isBlank() )
+        {
+            writer.writeStringField( "unit", innerThreshold.getThresholdValueUnits() );
+        }
 
         writer.writeEndObject();
     }
@@ -199,7 +198,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
 
             Threshold blankOuter = new Threshold( blank, null, null );
 
-            if ( !blankOuter.equals( DEFAULT_THRESHOLD )
+            if ( !blankOuter.equals( DeclarationFactory.DEFAULT_THRESHOLD )
                  || Objects.nonNull( next.featureName() ) )
             {
                 return false;

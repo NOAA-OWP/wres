@@ -2,6 +2,7 @@ package wres.config.yaml.serializers;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -42,6 +43,13 @@ public class FeatureGroupsSerializer extends JsonSerializer<FeatureGroups>
             }
             gen.writeEndArray();
         }
+    }
+
+    @Override
+    public boolean isEmpty( SerializerProvider serializers, FeatureGroups value )
+    {
+        return Objects.isNull( value ) || value.geometryGroups()
+                                               .isEmpty();
     }
 
     /**

@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.MetricsConfig;
@@ -34,7 +33,6 @@ import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
 public class ThresholdsGenerator
 {
-
     /**
      * Reads the internally configured thresholds within a project declaration, if any.
      * 
@@ -74,9 +72,9 @@ public class ThresholdsGenerator
     }
 
     /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * <p>Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
      * 
-     * TODO: make these enumerations match on name to reduce brittleness.
+     * <p>TODO: make these enumerations match on name to reduce brittleness.
      * 
      * @param thresholdsConfig the threshold configuration
      * @return the mapped operator
@@ -89,24 +87,14 @@ public class ThresholdsGenerator
         Objects.requireNonNull( thresholdsConfig );
         Objects.requireNonNull( thresholdsConfig.getOperator() );
 
-        switch ( thresholdsConfig.getOperator() )
-        {
-            case EQUAL_TO:
-                return Operator.EQUAL;
-            case LESS_THAN:
-                return Operator.LESS;
-            case GREATER_THAN:
-                return Operator.GREATER;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                throw new MetricConfigException( thresholdsConfig,
-                                                 "Unrecognized threshold operator in project configuration '"
-                                                                   + thresholdsConfig.getOperator()
-                                                                   + "'." );
-        }
+        return switch ( thresholdsConfig.getOperator() )
+                {
+                    case EQUAL_TO -> Operator.EQUAL;
+                    case LESS_THAN -> Operator.LESS;
+                    case GREATER_THAN -> Operator.GREATER;
+                    case LESS_THAN_OR_EQUAL_TO -> Operator.LESS_EQUAL;
+                    case GREATER_THAN_OR_EQUAL_TO -> Operator.GREATER_EQUAL;
+                };
     }
 
     /**
@@ -234,8 +222,6 @@ public class ThresholdsGenerator
             return thresholds;
         }
 
-        Set<ThresholdOuter> returnMe = new HashSet<>();
-
         // All data only
         if ( !metric.isAThresholdMetric() )
         {
@@ -243,7 +229,7 @@ public class ThresholdsGenerator
         }
 
         // Otherwise, add the input thresholds
-        returnMe.addAll( thresholds );
+        Set<ThresholdOuter> returnMe = new HashSet<>( thresholds );
 
         // Add all data for appropriate types
         if ( metric.isInGroup( SampleDataGroup.ENSEMBLE ) || metric.isInGroup( SampleDataGroup.SINGLE_VALUED )
@@ -334,14 +320,14 @@ public class ThresholdsGenerator
                                                                               MeasurementUnit units )
     {
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
-
         Objects.requireNonNull( oper, "Specify a non-null operator." );
-
         Objects.requireNonNull( dataType, "Specify a non-null data type." );
 
         //Parse the double values
         List<Double> addMe =
-                Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
+                Arrays.stream( inputString.split( "," ) )
+                      .map( Double::parseDouble )
+                      .toList();
         Set<ThresholdOuter> returnMe = new TreeSet<>();
 
         //Between operator

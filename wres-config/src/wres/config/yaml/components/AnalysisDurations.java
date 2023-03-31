@@ -1,6 +1,7 @@
 package wres.config.yaml.components;
 
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -10,11 +11,11 @@ import wres.config.yaml.serializers.ChronoUnitSerializer;
 
 /**
  * Analysis durations.
- * @param minimum the earliest analysis duration
- * @param maximumExclusive the latest exclusive analysis duration
+ * @param minimumExclusive the earliest analysis duration, exclusive
+ * @param maximum the latest analysis duration
  */
 @RecordBuilder
-public record AnalysisDurations( @JsonProperty( "minimum" ) Integer minimum,
-                                 @JsonProperty( "maximum_exclusive" ) Integer maximumExclusive,
+public record AnalysisDurations( @JsonProperty( "minimum_exclusive" ) Integer minimumExclusive,
+                                 @JsonProperty( "maximum" ) Integer maximum,
                                  @JsonSerialize( using = ChronoUnitSerializer.class )
                                  @JsonProperty( "unit" ) ChronoUnit unit ) {}

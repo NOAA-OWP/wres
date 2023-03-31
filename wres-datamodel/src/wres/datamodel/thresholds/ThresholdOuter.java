@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.DoublePredicate;
 
 import com.google.protobuf.DoubleValue;
+import net.jcip.annotations.Immutable;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
@@ -14,27 +15,26 @@ import wres.statistics.generated.Threshold;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 
 /**
- * <p>Stores a threshold value and associated logical condition. A threshold comprises one or both of: 
- * 
+ * <p>A threshold contains one or both of:
+ *
  * <ol>
  * <li>One or two real values, contained in a {@link OneOrTwoDoubles}.</li>
  * <li>One or two probability values, contained in a {@link OneOrTwoDoubles}.</li>
  * </ol>
- * 
+ *
  * <p>The presence of the former is determined by {@link #hasValues()}. The presence of the latter is determined by 
  * {@link #hasProbabilities()}. If both are present, the threshold is a "quantile", as revealed by 
  * {@link #isQuantile()}. A summary of the threshold type can be obtained from {@link #getType()}.</p>
- * 
+ *
  * <p>Additionally, a threshold comprises an {@link Operator}, denoting the type of threshold condition. Optionally,
- * a threshold may comprise a label and a {@link MeasurementUnit} that describes the units of the real-valued thresholds.</p>
- * 
- * <p>This implementation is immutable.</p>
- * 
+ * a threshold may comprise a label and a {@link MeasurementUnit} that describes the units of the real-valued
+ * thresholds.</p>
+ *
  * <p>The internal data is stored, and accessible, as a {@link Threshold}.
- * 
+ *
  * @author James Brown
  */
-
+@Immutable
 public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredicate
 {
     /**
@@ -53,7 +53,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param values the values
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -67,7 +67,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param values the values
      * @param condition the threshold condition
      * @param units the optional units for the threshold values
@@ -85,7 +85,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param values the threshold values
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -110,7 +110,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param values the values
      * @param probabilities the probabilities
      * @param condition the threshold condition
@@ -128,7 +128,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns a {@link ThresholdOuter} from the specified input
-     * 
+     *
      * @param values the value or null
      * @param probabilities the probabilities or null
      * @param condition the threshold condition
@@ -156,7 +156,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -172,7 +172,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -190,7 +190,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
-     * 
+     *
      * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -208,7 +208,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns {@link ThresholdOuter} from the specified input. Both inputs must be in the unit interval, [0,1].
-     * 
+     *
      * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
@@ -234,7 +234,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
      * <code>false</code>.
-     * 
+     *
      * @return true if ordinary values are defined, false otherwise
      */
 
@@ -245,7 +245,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns <code>true</code> if the threshold contains one or more probability values, otherwise <code>false</code>.
-     * 
+     *
      * @return true if probability values are defined, false otherwise
      */
 
@@ -256,7 +256,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns <code>true</code> if {@link #getLabel()} returns a non-null label, otherwise <code>false</code>.
-     * 
+     *
      * @return true if the threshold has a label, false otherwise
      */
 
@@ -269,7 +269,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns <code>true</code> if the threshold is a quantile; that is, when {@link #hasValues()} and 
      * {@link #hasProbabilities()} both return <code>true</code>.
-     * 
+     *
      * @return true if the threshold is a quantile, false otherwise
      */
 
@@ -281,7 +281,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns <code>true</code> if {@link #getUnits()} returns a non-null {@link MeasurementUnit}, 
      * otherwise <code>false</code>.
-     * 
+     *
      * @return true if the threshold units are defined, false otherwise
      */
 
@@ -292,7 +292,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns the {@link ThresholdType}.
-     * 
+     *
      * @return the threshold type
      */
 
@@ -311,7 +311,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns the {@link ThresholdDataType} to which the threshold applies.
-     * 
+     *
      * @return the threshold data type
      */
 
@@ -325,7 +325,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns the threshold values or null if no threshold values are defined. If no threshold values are defined,
      * {@link #getProbabilities()} always returns non-null.
-     * 
+     *
      * @return the threshold values or null
      */
 
@@ -351,7 +351,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns the probability values or null if no probability values are defined. If no probability values are 
      * defined, {@link #getValues()} always returns non-null.
-     * 
+     *
      * @return the threshold values or null
      */
 
@@ -377,15 +377,16 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns the units associated with the {@link ThresholdOuter} or null. Always returns null when 
      * {@link #hasValues()} returns <code>false</code>.
-     * 
+     *
      * @return the units or null
      */
 
     public MeasurementUnit getUnits()
     {
         MeasurementUnit returnMe = null;
-        String unit = this.getThreshold().getThresholdValueUnits();
-        if ( Objects.nonNull( unit ) && !unit.isBlank() )
+        String unit = this.getThreshold()
+                          .getThresholdValueUnits();
+        if ( !unit.isBlank() )
         {
             returnMe = MeasurementUnit.of( unit );
         }
@@ -395,7 +396,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns the logical operator associated with the threshold.
-     * 
+     *
      * @return the logical operator associated with the threshold
      */
 
@@ -406,7 +407,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns the label associated with the {@link ThresholdOuter} or null if no label is defined.
-     * 
+     *
      * @return the label or null
      */
 
@@ -417,7 +418,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns the canonical representation of the threshold wrapped by this instance.
-     * 
+     *
      * @return the canonical representation
      */
 
@@ -428,7 +429,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Returns <code>true</code> if the {@link ThresholdOuter} condition corresponds to a {@link Operator#BETWEEN} condition.
-     * 
+     *
      * @return true if the condition is a {@link Operator#BETWEEN} condition, false otherwise.
      */
 
@@ -440,7 +441,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns <code>true</code> if {@link Double#isFinite(double)} returns <code>true</code> for all threshold values,
      * otherwise <code>false</code>.
-     * 
+     *
      * @return true if the threshold is finite, false otherwise
      */
 
@@ -485,12 +486,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             return true;
         }
 
-        if ( ! ( o instanceof ThresholdOuter ) )
+        if ( !( o instanceof final ThresholdOuter in ) )
         {
             return false;
         }
-
-        final ThresholdOuter in = (ThresholdOuter) o;
 
         return in.getThreshold().equals( this.getThreshold() );
     }
@@ -544,10 +543,9 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     @Override
     public int compareTo( final ThresholdOuter o )
     {
-        Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
-
         //Compare condition
-        int returnMe = this.getOperator().compareTo( o.getOperator() );
+        int returnMe = this.getOperator()
+                           .compareTo( o.getOperator() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -564,7 +562,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         //Compare ordinary values
         if ( hasValues() )
         {
-            returnMe = this.getValues().compareTo( o.getValues() );
+            returnMe = this.getValues()
+                           .compareTo( o.getValues() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -574,7 +573,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         //Compare probability values
         if ( hasProbabilities() )
         {
-            returnMe = this.getProbabilities().compareTo( o.getProbabilities() );
+            returnMe = this.getProbabilities()
+                           .compareTo( o.getProbabilities() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -582,7 +582,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         }
 
         //Compare data type
-        returnMe = this.getDataType().compareTo( o.getDataType() );
+        returnMe = this.getDataType()
+                       .compareTo( o.getDataType() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -591,7 +592,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         //Compare labels
         if ( hasLabel() )
         {
-            returnMe = this.getLabel().compareTo( o.getLabel() );
+            returnMe = this.getLabel()
+                           .compareTo( o.getLabel() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -601,11 +603,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         //Compare units
         if ( hasUnits() )
         {
-            returnMe = this.getUnits().compareTo( o.getUnits() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
+            return this.getUnits()
+                       .compareTo( o.getUnits() );
         }
 
         return 0;
@@ -631,23 +630,15 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         Operator operator = this.getOperator();
 
-        switch ( operator )
-        {
-            case GREATER:
-                return t > lowerBound;
-            case LESS:
-                return t < lowerBound;
-            case GREATER_EQUAL:
-                return t >= lowerBound;
-            case LESS_EQUAL:
-                return t <= lowerBound;
-            case BETWEEN:
-                return t >= lowerBound && t < upperBound;
-            case EQUAL:
-                return Math.abs( t - lowerBound ) < .00000001;
-            default:
-                throw new UnsupportedOperationException( "Unexpected logical condition." );
-        }
+        return switch ( operator )
+                {
+                    case GREATER -> t > lowerBound;
+                    case LESS -> t < lowerBound;
+                    case GREATER_EQUAL -> t >= lowerBound;
+                    case LESS_EQUAL -> t <= lowerBound;
+                    case BETWEEN -> t >= lowerBound && t < upperBound;
+                    case EQUAL -> Math.abs( t - lowerBound ) < .00000001;
+                };
     }
 
     /**
@@ -695,7 +686,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the {@link Operator} associated with the threshold
-         * 
+         *
          * @param condition the threshold condition
          * @return the builder
          */
@@ -708,7 +699,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the {@link ThresholdDataType} associated with the threshold
-         * 
+         *
          * @param dataType the data type
          * @return the builder
          */
@@ -721,7 +712,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the values
-         * 
+         *
          * @param values the values
          * @return the builder
          */
@@ -734,7 +725,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the probability.
-         * 
+         *
          * @param probabilities the probabilities
          * @return the builder
          */
@@ -747,7 +738,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the label for the threshold.
-         * 
+         *
          * @param label the threshold label
          * @return the builder
          */
@@ -760,7 +751,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Sets the units associated with the threshold.
-         * 
+         *
          * @param units the units
          * @return the builder
          */
@@ -773,7 +764,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Return the {@link ThresholdOuter}
-         * 
+         *
          * @return the {@link ThresholdOuter}
          */
         public ThresholdOuter build()
@@ -791,7 +782,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         /**
          * Construct with an existing {@link Threshold}.
-         * 
+         *
          * @param threshold the threshold.
          * @throws NullPointerException if the threshold is null
          */
@@ -940,7 +931,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Validates the probabilities.  
-     * 
+     *
      * @throws IllegalArgumentException if the validation fails
      */
 
@@ -973,7 +964,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Validates the parameters for a one-sided threshold.  
-     * 
+     *
      * @throws IllegalArgumentException if the validation fails
      */
 
@@ -994,7 +985,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     /**
      * Validates the parameters for a two-sided threshold.  
-     * 
+     *
      * @throws IllegalArgumentException if the validation fails
      */
 
@@ -1044,7 +1035,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns a string representation of a condition that is not a {@link Operator#BETWEEN}
      * condition.
-     * 
+     *
      * @return a string for the elementary condition
      */
 
@@ -1052,33 +1043,27 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         Operator operator = this.getOperator();
 
-        switch ( operator )
-        {
-            case GREATER:
-                return "> ";
-            case LESS:
-                return "< ";
-            case GREATER_EQUAL:
-                return ">= ";
-            case LESS_EQUAL:
-                return "<= ";
-            case EQUAL:
-                return "= ";
-            default:
-                return "";
-        }
+        return switch ( operator )
+                {
+                    case GREATER -> "> ";
+                    case LESS -> "< ";
+                    case GREATER_EQUAL -> ">= ";
+                    case LESS_EQUAL -> "<= ";
+                    case EQUAL -> "= ";
+                    default -> "";
+                };
     }
 
     /**
      * Compares the input against the current threshold for equivalence in terms of:
-     * 
+     *
      * <ol>
      * <li>{@link #hasValues()}</li>
      * <li>{@link #hasProbabilities()}</li>
-     * <li>{@link #hasLabels()}</li>
+     * <li>{@link #hasLabel()}</li>
      * <li>{@link #hasUnits()}</li>
      * </ol>
-     * 
+     *
      * @param o the threshold
      * @return a negative, zero, or positive integer if this threshold is less than, equal to, or greater than the 
      *            input, respectively
@@ -1104,12 +1089,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             return returnMe;
         }
-        returnMe = Boolean.compare( this.hasUnits(), o.hasUnits() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        return 0;
+
+        return Boolean.compare( this.hasUnits(), o.hasUnits() );
     }
 
 

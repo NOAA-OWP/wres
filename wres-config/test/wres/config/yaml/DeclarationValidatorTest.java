@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -111,10 +112,10 @@ class DeclarationValidatorTest
     void testVariablesAreDeclaredWhenRequiredResultsInError()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.USGS_NWIS )
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
-                                            .api( SourceInterface.WRDS_NWM )
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
                                             .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -161,13 +162,13 @@ class DeclarationValidatorTest
     void testDatesAreDeclaredForWebServiceSourcesResultsInErrors()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.USGS_NWIS )
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
-                                            .api( SourceInterface.WRDS_NWM )
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
                                             .build();
         Source yetAnotherSource = SourceBuilder.builder()
-                                               .api( SourceInterface.WRDS_AHPS )
+                                               .sourceInterface( SourceInterface.WRDS_AHPS )
                                                .build();
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( source ) )
@@ -249,13 +250,13 @@ class DeclarationValidatorTest
     void testInterfacesAreConsistentWithDataTypesResultsInErrorsAndWarnings()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.USGS_NWIS )
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
-                                            .api( SourceInterface.WRDS_AHPS )
+                                            .sourceInterface( SourceInterface.WRDS_AHPS )
                                             .build();
         Source yetAnotherSource = SourceBuilder.builder()
-                                               .api( SourceInterface.WRDS_AHPS )
+                                               .sourceInterface( SourceInterface.WRDS_AHPS )
                                                .build();
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( source ) )
@@ -336,7 +337,7 @@ class DeclarationValidatorTest
     void testTypesAreConsistentWithForecastDeclarationResultsinError()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.NWM_SHORT_RANGE_CHANNEL_RT_CONUS )
+                                     .sourceInterface( SourceInterface.NWM_SHORT_RANGE_CHANNEL_RT_CONUS )
                                      .build();
 
         Dataset left = DatasetBuilder.builder()
@@ -523,12 +524,14 @@ class DeclarationValidatorTest
     {
         TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
         LeadTimeInterval leadInterval = new LeadTimeInterval( 3, 1, ChronoUnit.HOURS );
+        AnalysisDurations analysisDurations = new AnalysisDurations( 1, 0, ChronoUnit.HOURS );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
                                                                         .referenceDates( interval )
                                                                         .validDates( interval )
                                                                         .leadTimes( leadInterval )
+                                                                        .analysisDurations( analysisDurations )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
@@ -540,6 +543,9 @@ class DeclarationValidatorTest
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'lead_times' interval "
                                                                                 + "is invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'analysis_durations' "
+                                                                                + "interval is invalid",
                                                                         StatusLevel.ERROR ) )
         );
     }
@@ -660,7 +666,7 @@ class DeclarationValidatorTest
     void testMissingFeaturesAndWebSourcesResultsInErrors()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.USGS_NWIS )
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
                                      .build();
 
         Dataset dataset = DatasetBuilder.builder()
@@ -694,7 +700,7 @@ class DeclarationValidatorTest
     void testMissingFeaturesAndNwmInterfaceResultsInErrors()
     {
         Source source = SourceBuilder.builder()
-                                     .api( SourceInterface.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS )
+                                     .sourceInterface( SourceInterface.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS )
                                      .build();
 
         Dataset dataset = DatasetBuilder.builder()

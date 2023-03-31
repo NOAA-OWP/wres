@@ -29,7 +29,7 @@ import wres.config.yaml.serializers.VariableSerializer;
 public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonSerialize( using = VariableSerializer.class )
                        @JsonProperty( "variable" ) Variable variable,
-                       @JsonProperty( "feature_authority" ) String featureAuthority,
+                       @JsonProperty( "feature_authority" ) FeatureAuthority featureAuthority,
                        @JsonProperty( "type" ) DataType type,
                        @JsonProperty( "label" ) String label,
                        @JsonSerialize( using = EnsembleFilterSerializer.class )
@@ -52,6 +52,11 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
         if ( Objects.isNull( sources ) )
         {
             sources = List.of();
+        }
+        else
+        {
+            // Immutable
+            sources = List.copyOf( sources );
         }
     }
 }
