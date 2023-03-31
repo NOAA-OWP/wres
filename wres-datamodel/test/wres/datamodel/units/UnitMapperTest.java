@@ -14,7 +14,7 @@ import static org.apache.commons.math3.util.Precision.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;

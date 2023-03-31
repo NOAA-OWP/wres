@@ -2,7 +2,7 @@ package wres.io.writing;
 
 import java.util.Objects;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 

@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;

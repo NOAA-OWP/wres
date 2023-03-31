@@ -21,7 +21,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;

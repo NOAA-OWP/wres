@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigPlus;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;

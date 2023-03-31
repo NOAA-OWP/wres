@@ -1,4 +1,4 @@
-package wres.config;
+package wres.config.xml;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +26,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.ProjectConfigs;
 
 public class ProjectConfigsTest
 {

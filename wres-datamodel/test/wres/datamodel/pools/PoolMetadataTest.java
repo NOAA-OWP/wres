@@ -12,7 +12,7 @@ import java.util.Arrays;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.EnsembleAverageType;

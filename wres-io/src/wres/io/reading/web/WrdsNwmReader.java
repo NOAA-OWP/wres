@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.PairConfig;

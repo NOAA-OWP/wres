@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigs;
+import wres.config.xml.ProjectConfigException;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;

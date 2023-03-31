@@ -24,8 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigException;
+import wres.config.xml.ProjectConfigPlus;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.config.Validation;
 import wres.io.database.Database;

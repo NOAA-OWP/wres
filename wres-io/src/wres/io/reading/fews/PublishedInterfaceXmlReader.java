@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; // NOSONAR
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.messages.MessageFactory;

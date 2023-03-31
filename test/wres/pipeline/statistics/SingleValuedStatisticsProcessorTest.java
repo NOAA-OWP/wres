@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;

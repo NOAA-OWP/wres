@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import wres.config.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;

@@ -21,7 +21,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
-import wres.io.thresholds.exceptions.NoThresholdsFoundException;
+import wres.io.thresholds.wrds.NoThresholdsFoundException;
 
 /**
  * Tests the {@link ThresholdExtractor}.  This has been modified to include a test that was

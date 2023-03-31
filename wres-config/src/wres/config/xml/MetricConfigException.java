@@ -1,4 +1,6 @@
-package wres.config;
+package wres.config.xml;
+
+import java.io.Serial;
 
 import com.sun.xml.bind.Locatable;
 
@@ -10,11 +12,11 @@ import com.sun.xml.bind.Locatable;
 
 public final class MetricConfigException extends ProjectConfigException
 {
-
     /**
      * Serial identifier.
      */
 
+    @Serial
     private static final long serialVersionUID = 6790246291277821024L;
 
     /**

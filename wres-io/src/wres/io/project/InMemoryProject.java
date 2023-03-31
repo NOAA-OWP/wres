@@ -20,7 +20,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.NamedFeature;

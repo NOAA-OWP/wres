@@ -6,17 +6,16 @@ package wres.config.yaml;
  * @author James Brown
  */
 
-class SchemaValidationException extends RuntimeException
+class DeclarationSchemaException extends RuntimeException
 {
     /**
-     * Constructs a {@link SchemaValidationException} with the specified message.
+     * Constructs a {@link DeclarationSchemaException} with the specified message.
      * 
      * @param message the message.
      */
 
-    SchemaValidationException( final String message )
+    DeclarationSchemaException( final String message )
     {
         super( message );
     }
-
 }

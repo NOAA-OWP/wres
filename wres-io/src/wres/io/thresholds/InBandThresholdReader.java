@@ -1,10 +1,10 @@
 package wres.io.thresholds;
 
-import wres.config.MetricConfigException;
+import wres.config.xml.MetricConfigException;
 import wres.config.generated.*;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;

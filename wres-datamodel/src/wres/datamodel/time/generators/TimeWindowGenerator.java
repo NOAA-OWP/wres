@@ -11,7 +11,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
+import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DateCondition;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;

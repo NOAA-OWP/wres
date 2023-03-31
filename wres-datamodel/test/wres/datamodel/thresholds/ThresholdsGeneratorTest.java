@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import wres.config.MetricConfigException;
-import wres.config.MetricConstantsFactory;
+import wres.config.xml.MetricConfigException;
+import wres.config.xml.MetricConstantsFactory;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;

@@ -34,8 +34,8 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import wres.config.ProjectConfigException;
-import wres.config.ProjectConfigs;
+import wres.config.xml.ProjectConfigException;
+import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.messages.generated.Job;
 

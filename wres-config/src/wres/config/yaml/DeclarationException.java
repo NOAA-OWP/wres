@@ -6,17 +6,16 @@ package wres.config.yaml;
  * @author James Brown
  */
 
-class DeclarationValidationException extends RuntimeException
+class DeclarationException extends RuntimeException
 {
     /**
-     * Constructs a {@link DeclarationValidationException} with the specified message.
+     * Constructs a {@link DeclarationException} with the specified message.
      *
      * @param message the message.
      */
 
-    DeclarationValidationException( final String message )
+    DeclarationException( final String message )
     {
         super( message );
     }
-
 }
