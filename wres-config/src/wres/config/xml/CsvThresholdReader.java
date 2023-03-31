@@ -10,6 +10,7 @@ import com.opencsv.exceptions.CsvValidationException;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.yaml.DeclarationFactory;
 import wres.statistics.generated.Threshold;
 
 import java.io.IOException;

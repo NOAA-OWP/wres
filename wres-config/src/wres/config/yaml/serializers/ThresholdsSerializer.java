@@ -51,7 +51,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             // Write the thresholds with their full metadata
             else
             {
-                this.writeThresholdsWithFullMetadata( thresholds, context, writer );
+                this.groupAndWriteThresholdsWithFullMetadata( thresholds, context, writer );
             }
         }
     }
@@ -60,6 +60,39 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     public boolean isEmpty( SerializerProvider provider, Set<Threshold> thresholds )
     {
         return thresholds.isEmpty();
+    }
+
+    /**
+     * Groups the thresholds by common name and writes the thresholds with complete metadata.
+     * @param thresholds the thresholds
+     * @param context the context
+     * @param writer the writer
+     * @throws IOException if the threshold could not be written for any reason
+     */
+
+    private void groupAndWriteThresholdsWithFullMetadata( Set<Threshold> thresholds,
+                                                          String context,
+                                                          JsonGenerator writer ) throws IOException
+    {
+        Map<String,Set<Threshold>> grouped = thresholds.stream()
+                                                       .collect( Collectors.groupingBy( next -> next.threshold()
+                                                                                                    .getName(),
+                                                                                        Collectors.toSet() ) );
+        // Write the groups to an array, one set in each position
+        if( grouped.size() > 1 )
+        {
+            writer.writeStartArray();
+            for( Set<Threshold> nextThresholds: grouped.values() )
+            {
+                this.writeThresholdsWithFullMetadata( nextThresholds, context, writer );
+            }
+            writer.writeEndArray();
+        }
+        // Write the single set to an object
+        else
+        {
+            this.writeThresholdsWithFullMetadata( thresholds, context, writer );
+        }
     }
 
     /**
