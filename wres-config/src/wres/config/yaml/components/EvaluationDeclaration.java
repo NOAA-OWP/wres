@@ -54,6 +54,7 @@ import wres.statistics.generated.Pool;
  * @param valueThresholds the value thresholds
  * @param classifierThresholds the probability classifier thresholds
  * @param thresholdSets a collection of thresholds sets
+ * @param thresholdService the threshold service
  * @param ensembleAverageType the type of ensemble average to use
  * @param season the season
  * @param values the valid values
@@ -141,6 +142,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
      * @param valueThresholds the value thresholds
      * @param classifierThresholds the probability classifier thresholds
      * @param thresholdSets a collection of thresholds sets
+     * @param thresholdService the threshold service
      * @param ensembleAverageType the type of ensemble average to use
      * @param season the season
      * @param values the valid values
