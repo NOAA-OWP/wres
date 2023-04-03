@@ -59,7 +59,7 @@ class DatabaseSchema implements Closeable
                                .getClassLoader()
                                .getResource( relativeToClasspath );
         Objects.requireNonNull( changelogURL,
-                                "The definition for the WRES data model could not be found at classpath:'"
+                                "The database migration scripts could not be found at classpath:'"
                                 + relativeToClasspath + "'" );
 
         // Prevent inclusion of absolute paths in liquibase changelog by
@@ -75,12 +75,12 @@ class DatabaseSchema implements Closeable
         {
             database = DatabaseFactory.getInstance()
                                       .findCorrectDatabaseImplementation(
-                                                       new JdbcConnection( connection )
-                                               );
+                                              new JdbcConnection( connection )
+                                      );
         }
         catch ( DatabaseException e )
         {
-            throw new IOException("A database instance could not be accessed.");
+            throw new IOException( "A database instance could not be accessed." );
         }
 
         try
@@ -95,9 +95,9 @@ class DatabaseSchema implements Closeable
             LabelExpression expression = new LabelExpression();
             liquibase.update( contexts, expression );
         }
-        catch (LiquibaseException e)
+        catch ( LiquibaseException e )
         {
-            throw new SQLException( "The WRES could not be properly initialized.", e);
+            throw new SQLException( "The WRES could not be properly initialized.", e );
         }
     }
 

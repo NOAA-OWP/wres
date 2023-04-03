@@ -497,7 +497,7 @@ project(':wres-io')
                 // Flatten the contents of /dist/lib/conf so that the classpath
                 // path to the liquibase changesets is exactly 
                 // 'database/[changeset].xml'.
-                srcDirs += '/dist/lib/conf'
+                srcDirs += 'dist/lib/conf'
             }
         }
     }
