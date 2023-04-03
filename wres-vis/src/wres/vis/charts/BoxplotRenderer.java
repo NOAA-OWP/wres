@@ -7,6 +7,7 @@ import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.io.Serial;
 
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CrosshairState;
@@ -28,6 +29,7 @@ class BoxplotRenderer extends AbstractXYItemRenderer
      * Serial version identifier.
      */
 
+    @Serial
     private static final long serialVersionUID = 255814654677603115L;
 
     /**
@@ -194,17 +196,14 @@ class BoxplotRenderer extends AbstractXYItemRenderer
 
         double exactboxWidth = dataAreaX / itemCount * 4.5 / 7;
         double width;
+
         if ( exactboxWidth < 3 )
         {
             width = 3;
         }
-        else if ( exactboxWidth > maxboxWidth )
-        {
-            width = maxboxWidth;
-        }
         else
         {
-            width = exactboxWidth;
+            width = Math.min( exactboxWidth, maxboxWidth );
         }
 
         return width;

@@ -321,8 +321,8 @@ public class DataProviderTest
         Assert.assertEquals( (Integer) 4, data.getInt( column ) );
         Assert.assertEquals( (Long) (long) 4, data.getLong( column ) );
         Assert.assertEquals( (float) 4, data.getFloat( column ), 0.00001 );
-        Assert.assertEquals( (double) 4, data.getDouble( column ), 0.00001 );
-        Assert.assertEquals( new BigDecimal( 4 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( 4.0, data.getDouble( column ), 0.00001 );
+        Assert.assertEquals( BigDecimal.valueOf( 4F ), data.getBigDecimal( column ) );
         Assert.assertEquals( "4.0", data.getString( column ) );
 
         // "double" column conversions
@@ -333,7 +333,7 @@ public class DataProviderTest
         Assert.assertEquals( (Long) (long) 5, data.getLong( column ) );
         Assert.assertEquals( (float) 5, data.getFloat( column ), 0.00001 );
         Assert.assertEquals( (double) 5, data.getDouble( column ), 0.00001 );
-        Assert.assertEquals( new BigDecimal( 5 ), data.getBigDecimal( column ) );
+        Assert.assertEquals( BigDecimal.valueOf( 5.0 ), data.getBigDecimal( column ) );
         Assert.assertEquals( "5.0", data.getString( column ) );
 
         // "String" column conversions

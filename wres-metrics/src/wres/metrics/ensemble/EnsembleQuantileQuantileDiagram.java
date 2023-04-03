@@ -122,7 +122,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
                                       .getLabels()
                                       .getLabels();
 
-            Arrays.stream( nextLabels ).forEach( labels::add );
+            labels.addAll( Arrays.asList( nextLabels ) );
         }
 
         DiagramStatistic.Builder qqBuilder = DiagramStatistic.newBuilder()

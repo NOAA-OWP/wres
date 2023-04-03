@@ -263,18 +263,6 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     }
 
     /**
-     * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
-     * 
-     * @param check the thresholds to check
-     * @return true if the input list contains one or more probability thresholds, false otherwise
-     */
-
-    boolean hasProbabilityThreshold( Set<ThresholdOuter> check )
-    {
-        return check.stream().anyMatch( ThresholdOuter::hasProbabilities );
-    }
-
-    /**
      * @return the threshold executor
      */
 
@@ -289,7 +277,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * 
      * @param inGroup the {@link SampleDataGroup}, may be null
      * @param outGroup the {@link StatisticType}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
+     * @return an array of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
@@ -325,7 +313,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         filtered.remove( MetricConstants.FALSE_NEGATIVES );
         filtered.remove( MetricConstants.TRUE_NEGATIVES );
 
-        return filtered.toArray( new MetricConstants[filtered.size()] );
+        return filtered.toArray( new MetricConstants[0] );
     }
 
     /**
@@ -354,10 +342,9 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * Builds a metric future for a {@link MetricCollection} that consumes dichotomous pairs.
      * 
      * @param <T> the type of {@link Statistic}
-     * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
-     * @return true if the future was added successfully
+     * @return the future result
      */
 
     private <T extends Statistic<?>> Future<List<T>>

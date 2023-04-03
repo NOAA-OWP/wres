@@ -12,7 +12,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Helpers for data on Variables used in timeseries data.
+ * Helpers for data on variables used in time-series data.
  */
 public class Variables
 {

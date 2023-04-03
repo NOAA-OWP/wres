@@ -1,9 +1,9 @@
 package wres.datamodel;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -12,6 +12,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +42,8 @@ public final class DataUtilities
 
     private static final String ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING =
             "Enter non-null metadata to establish a path for writing.";
+    private static final String MAXDURATION = "MAXDURATION";
+    private static final String MINDURATION = "MINDURATION";
 
     /**
      * Returns a string representation of the {@link OneOrTwoThresholds} that contains only alphanumeric characters 
@@ -181,11 +187,11 @@ public final class DataUtilities
 
         if ( duration.equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            return "MINDURATION";
+            return MINDURATION;
         }
         else if ( duration.equals( TimeWindowOuter.DURATION_MAX ) )
         {
-            return "MAXDURATION";
+            return MAXDURATION;
         }
 
         return DataUtilities.durationToNumericUnits( duration, units )
@@ -235,7 +241,7 @@ public final class DataUtilities
                             + "_TO_"
                             + DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), units );
 
-        if ( !baseString.endsWith( "MAXDURATION" ) )
+        if ( !baseString.endsWith( MAXDURATION ) )
         {
             baseString += "_"
                           + units.name()
@@ -268,29 +274,17 @@ public final class DataUtilities
                                                .add( BigDecimal.valueOf( duration.get( ChronoUnit.NANOS ), 9 ) );
 
         // Divisor
-        BigDecimal divisor = null;
-        switch ( durationUnits )
-        {
-            case DAYS:
-                divisor = BigDecimal.valueOf( 60.0 * 60.0 * 24.0 );
-                break;
-            case HOURS:
-                divisor = BigDecimal.valueOf( 60.0 * 60.0 );
-                break;
-            case MINUTES:
-                divisor = BigDecimal.valueOf( 60.0 );
-                break;
-            case SECONDS:
-                divisor = BigDecimal.valueOf( 1.0 );
-                break;
-            case MILLIS:
-                divisor = BigDecimal.valueOf( 1000.0 );
-                break;
-            default:
-                throw new IllegalArgumentException( "The input time units '" + durationUnits
-                                                    + "' are not supported "
-                                                    + "in this context." );
-        }
+        BigDecimal divisor = switch ( durationUnits )
+                {
+                    case DAYS -> BigDecimal.valueOf( 60.0 * 60.0 * 24.0 );
+                    case HOURS -> BigDecimal.valueOf( 60.0 * 60.0 );
+                    case MINUTES -> BigDecimal.valueOf( 60.0 );
+                    case SECONDS -> BigDecimal.valueOf( 1.0 );
+                    case MILLIS -> BigDecimal.valueOf( 1000.0 );
+                    default -> throw new IllegalArgumentException( "The input time units '" + durationUnits
+                                                                   + "' are not supported "
+                                                                   + "in this context." );
+                };
 
         double durationDouble = durationSeconds.divide( divisor, RoundingMode.HALF_UP )
                                                .doubleValue();
@@ -316,7 +310,6 @@ public final class DataUtilities
      * @param append an optional string to append
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
-     * @throws IOException if the path cannot be produced
      */
 
     public static Path getPathFromPoolMetadata( Path outputDirectory,
@@ -326,7 +319,6 @@ public final class DataUtilities
                                                 MetricConstants metricName,
                                                 MetricConstants metricComponentName,
                                                 String append )
-            throws IOException
     {
         Objects.requireNonNull( meta, DataUtilities.ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
 
@@ -340,51 +332,12 @@ public final class DataUtilities
         // this class.
         String appendString = DataUtilities.toStringSafe( timeWindow.getLatestLeadDuration(), leadUnits );
 
-        if ( !appendString.endsWith( "MAXDURATION" ) )
+        if ( !appendString.endsWith( MAXDURATION ) )
         {
             appendString += "_"
                             + leadUnits.name()
                                        .toUpperCase();
         }
-
-        if ( Objects.nonNull( append ) )
-        {
-            appendString = appendString + "_" + append;
-        }
-
-        return DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                      meta,
-                                                      appendString,
-                                                      metricName,
-                                                      metricComponentName );
-    }
-
-    /**
-     * Returns a path to write from the inputs.
-     *
-     * @param outputDirectory the directory into which to write
-     * @param meta the metadata
-     * @param threshold the threshold
-     * @param metricName the metric name
-     * @param metricComponentName name the optional component name
-     * @param append an optional string to append
-     * @return a path to write, without a file type extension
-     * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
-     * @throws IOException if the path cannot be produced
-     */
-
-    public static Path getPathFromPoolMetadata( Path outputDirectory,
-                                                PoolMetadata meta,
-                                                OneOrTwoThresholds threshold,
-                                                MetricConstants metricName,
-                                                MetricConstants metricComponentName,
-                                                String append )
-            throws IOException
-    {
-        Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
-        Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
-
-        String appendString = DataUtilities.toStringSafe( threshold );
 
         if ( Objects.nonNull( append ) )
         {
@@ -409,7 +362,6 @@ public final class DataUtilities
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated 
      *            with the sample metadata
-     * @throws IOException if the path cannot be produced
      * @throws ProjectConfigException when the destination configuration is invalid
      */
 
@@ -418,7 +370,6 @@ public final class DataUtilities
                                                 String append,
                                                 MetricConstants metricName,
                                                 MetricConstants metricComponentName )
-            throws IOException
     {
         Objects.requireNonNull( meta, ENTER_NON_NULL_METADATA_TO_ESTABLISH_A_PATH_FOR_WRITING );
         Objects.requireNonNull( metricName, "Specify a non-null metric name." );
@@ -458,7 +409,8 @@ public final class DataUtilities
         }
 
         // Derive a sanitized name
-        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ), "UTF-8" );
+        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ),
+                                             StandardCharsets.UTF_8 );
 
         return Paths.get( outputDirectory.toUri() )
                     .resolve( safeName );
@@ -473,20 +425,68 @@ public final class DataUtilities
      * @param metricComponentName name the optional component name
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated with the metadata
-     * @throws IOException if the path cannot be produced
      */
 
     public static Path getPathFromPoolMetadata( Path outputDirectory,
                                                 PoolMetadata meta,
                                                 MetricConstants metricName,
                                                 MetricConstants metricComponentName )
-            throws IOException
     {
         return DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                       meta,
-                                                      (String) null,
+                                                      null,
                                                       metricName,
                                                       metricComponentName );
+    }
+
+    /**
+     * Return x,y from a wkt with a POINT in it.
+     * As of 2020-06-30 only used for gridded evaluation.
+     * @param wkt A well-known text geometry with POINT
+     * @return point with x,y doubles parsed
+     * @throws IllegalArgumentException when parsing fails
+     */
+
+    public static Coordinate getLonLatFromPointWkt( String wkt )
+    {
+        String wktUpperCase = wkt.strip()
+                                 .toUpperCase();
+
+        WKTReader reader = new WKTReader();
+
+        try
+        {
+            Geometry geometry = reader.read( wktUpperCase );
+            return geometry.getCoordinate();
+        }
+        catch( ParseException e )
+        {
+            throw new IllegalArgumentException( "Failed to read a coordinate pair from this wkt: "
+                                                + wkt
+                                                + "." );
+        }
+    }
+
+    /**
+     * Return x,y from a wkt with a POINT in it.
+     * A less strict version of the above method, returns null if anything goes
+     * wrong. The above strict version is needed for gridded evaluation whereas
+     * this one will return null when it cannot get a GeoPoitn out of the wkt.
+     * @param wkt a well-known text geometry that may have POINT
+     * @return point with x,y doubles parsed, null when anything goes wrong
+     */
+
+    public static Coordinate getLonLatOrNullFromWkt( String wkt )
+    {
+        try
+        {
+            return DataUtilities.getLonLatFromPointWkt( wkt );
+        }
+        catch( IllegalArgumentException e )
+        {
+            LOGGER.debug( "Failed to read a coordinate pair from this wkt: {}.", wkt );
+            return null;
+        }
     }
 
     /**
@@ -531,7 +531,7 @@ public final class DataUtilities
         // When you make gridded benchmarks congruent, remove this.
         if ( firstTuple.getRight()
                        .getName()
-                       .matches( "^-?[0-9]+\\.[0-9]+ -?[0-9]+\\.[0-9]+$" ) )
+                       .matches( "^-?\\d+\\.\\d+ -?\\d+\\.\\d+$" ) )
         {
             LOGGER.debug( "Using ugly workaround for ugly gridded benchmarks: {}",
                           firstTuple );

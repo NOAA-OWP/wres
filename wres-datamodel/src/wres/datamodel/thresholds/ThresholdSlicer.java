@@ -36,6 +36,7 @@ import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
+import wres.statistics.generated.Threshold;
 
 /**
  * Class for slicing and dicing thresholds.
@@ -82,9 +83,13 @@ public class ThresholdSlicer
             // Has value thresholds?
             if ( next.hasValues() )
             {
+                Threshold.Builder builder = next.getThreshold()
+                                                .toBuilder();
+                builder.clearLeftThresholdProbability();
+                builder.clearRightThresholdProbability();
+
                 ThresholdOuter noProbs =
-                        new ThresholdOuter.Builder( next.getThreshold() ).setProbabilities( null )
-                                                                         .build();
+                        new ThresholdOuter.Builder( builder.build() ).build();
 
                 if ( mappedThresholds.containsKey( noProbs ) )
                 {
@@ -106,9 +111,9 @@ public class ThresholdSlicer
             }
         }
 
-        return mappedThresholds.entrySet()
+        return mappedThresholds.values()
                                .stream()
-                               .map( next -> next.getValue().last() )
+                               .map( SortedSet::last )
                                .collect( Collectors.toUnmodifiableSet() );
     }
 
@@ -227,10 +232,7 @@ public class ThresholdSlicer
                                       .findAny();
 
                 // Add to the map
-                if ( aMatchingThreshold.isPresent() )
-                {
-                    nextMap.put( nextKey, aMatchingThreshold.get() );
-                }
+                aMatchingThreshold.ifPresent( thresholdOuter -> nextMap.put( nextKey, thresholdOuter ) );
             }
 
             // Add to the list
@@ -510,7 +512,7 @@ public class ThresholdSlicer
     {
         Objects.requireNonNull( thresholdsByMetric );
 
-        if ( Objects.nonNull( inGroup ) && Arrays.equals( inGroup, ThresholdGroup.values() ) )
+        if ( Objects.nonNull( inGroup ) && Arrays.equals( inGroup, SampleDataGroup.values() ) )
         {
             return thresholdsByMetric;
         }
@@ -572,7 +574,7 @@ public class ThresholdSlicer
             {
                 Feature leftFeature = nextFeature.getLeft();
 
-                if ( Objects.isNull( climatology ) || !climatology.hasFeature( leftFeature ) )
+                if ( Objects.isNull( climatology ) || climatology.hasNoClimatology( leftFeature ) )
                 {
                     throw new ThresholdException( "Quantiles were required for feature tuple '"
                                                   + nextFeature.toStringShort()
@@ -605,10 +607,9 @@ public class ThresholdSlicer
             {
                 LOGGER.debug( "Failed to add quantile thresholds for {}. In order to add a quantile threshold, a "
                               + "probability threshold and some climatological data must both be available. "
-                              + "Climatological data found: {}. Probability threshold found: {}.",
+                              + "Climatological data found: {}. Probability threshold found: false.",
                               nextFeature,
-                              Objects.nonNull( climatology ),
-                              hasProbabilityThreshold );
+                              Objects.nonNull( climatology ) );
 
                 // Preserve them
                 returnMe.put( nextFeature, nextThresholdSet );
@@ -698,7 +699,7 @@ public class ThresholdSlicer
             Set<ThresholdGroup> nextGroup = thresholds.getThresholdTypesForThisMetric( next );
             Set<ThresholdGroup> types = new HashSet<>( nextGroup );
             types.removeIf( type -> type == ThresholdGroup.PROBABILITY_CLASSIFIER );
-            ThresholdGroup[] nextArray = types.toArray( new ThresholdGroup[types.size()] );
+            ThresholdGroup[] nextArray = types.toArray( new ThresholdGroup[0] );
             Set<ThresholdOuter> nonClassifiers = thresholds.union( next, nextArray );
 
             // Thresholds to add

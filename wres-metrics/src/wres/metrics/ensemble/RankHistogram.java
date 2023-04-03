@@ -8,7 +8,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -92,7 +91,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
      * A random number generator, used to assign ties randomly.
      */
 
-    private Random rng;
+    private final Random rng;
 
     /**
      * Returns an instance.
@@ -176,7 +175,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                          .setMetric( RankHistogram.RANK_ORDER )
                                          .addAllValues( Arrays.stream( ranks )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatisticComponent obs =
@@ -184,7 +183,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                          .setMetric( RankHistogram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( Arrays.stream( relativeFrequencies )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatistic histogram = DiagramStatistic.newBuilder()

@@ -1,5 +1,7 @@
 package wres.events;
 
+import java.io.Serial;
+
 /**
  * Exception to throw when the evaluation messaging fails in an unrecoverable way.
  * 
@@ -8,11 +10,11 @@ package wres.events;
 
 public class EvaluationFailedToCompleteException extends RuntimeException
 {
-
     /**
      * Serialization id.
      */
     
+    @Serial
     private static final long serialVersionUID = 2265382485793031701L;
 
     /**

@@ -34,7 +34,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  */
 public class TimeToPeakError extends TimingError
 {
-
     /**
      * Canonical representation of the metric.
      */

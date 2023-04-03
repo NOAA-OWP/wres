@@ -1,5 +1,7 @@
 package wres.io.writing.netcdf;
 
+import java.io.Serial;
+
 import wres.io.writing.WriteException;
 
 /**
@@ -10,6 +12,7 @@ import wres.io.writing.WriteException;
 
 public class NetcdfWriteException extends WriteException
 {
+    @Serial
     private static final long serialVersionUID = 4078132138204917922L;
 
     /**

@@ -25,7 +25,7 @@ public class TimeScaleDetails extends CachedDetail<TimeScaleDetails, TimeScaleOu
     private static final long PLACEHOLDER_ID = Long.MIN_VALUE;
 
     private long id = PLACEHOLDER_ID;
-    private TimeScaleOuter key = null;
+    private TimeScaleOuter key;
 
     /**
      * Creates an instance.

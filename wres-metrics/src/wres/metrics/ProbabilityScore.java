@@ -21,16 +21,16 @@ import wres.datamodel.statistics.ScoreStatistic;
  * <p>
  * The propriety of a scoring rule is not guaranteed, and an otherwise proper scoring rule may be hedged for a subset of
  * data. For example, when conditioning on observed amount, a proper scoring rule will favour models that overestimate
- * large observations, otherwise known as the "forecaster's dilemma" (see: https://arxiv.org/abs/1512.09244v1).
+ * large observations, otherwise known as the "forecaster's dilemma" (see:
+ * <a href="https://arxiv.org/abs/1512.09244v1">https://arxiv.org/abs/1512.09244v1</a>).
  * </p>
- * 
+ *
  * @author James Brown
  */
 public interface ProbabilityScore<S extends Pool<?>, T extends ScoreStatistic<?,?>> extends Score<S,T>
 {
-
     /**
-     * Returns true if the the scoring rule is, in principle, a proper scoring rule. A probabilistic scoring rule is
+     * Returns true if the scoring rule is, in principle, a proper scoring rule. A probabilistic scoring rule is
      * proper if it cannot be hedged.
      * 
      * @return true if the scoring rule is proper
@@ -45,5 +45,4 @@ public interface ProbabilityScore<S extends Pool<?>, T extends ScoreStatistic<?,
      */
 
     boolean isStrictlyProper();
-
 }

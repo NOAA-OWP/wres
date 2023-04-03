@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -72,12 +71,10 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
             return true;
         }
 
-        if ( ! ( o instanceof DurationDiagramStatisticOuter ) )
+        if ( ! ( o instanceof DurationDiagramStatisticOuter v ) )
         {
             return false;
         }
-
-        DurationDiagramStatisticOuter v = (DurationDiagramStatisticOuter) o;
 
         return this.getData().equals( v.getData() ) && this.getMetadata().equals( v.getMetadata() );
     }
@@ -115,7 +112,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
                                                                  next.getTime().getNanos() ),
                                           Duration.ofSeconds( next.getDuration().getSeconds(),
                                                               next.getDuration().getNanos() ) ) )
-                   .collect( Collectors.toUnmodifiableList() );
+                   .toList();
     }
 
     @Override

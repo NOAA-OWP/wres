@@ -60,12 +60,6 @@ public final class FunctionFactoryTest
     }
 
     @Test
-    public void testRound()
-    {
-        assertTrue( doubleTester.test( FunctionFactory.round().apply( 2.04, 1 ), 2.0 ) );
-    }
-
-    @Test
     public void testDoubleEquals()
     {
         assertTrue( doubleTester.test( 1.0000131, 1.0000131 ) );

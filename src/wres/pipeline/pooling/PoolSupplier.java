@@ -218,7 +218,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
             baselineData = this.baseline.get();
         }
 
-        Pool<TimeSeries<Pair<L, R>>> returnMe = null;
+        Pool<TimeSeries<Pair<L, R>>> returnMe;
 
         // In this context, a stream can mean an open connection to a resource, such as a database, so it is essential 
         // that each stream is closed on completion. A well-behaved stream will then close any resources on which it 
@@ -1431,7 +1431,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
     {
         // Find the feature-tuple context for the pairs to add. The pairs may appear for more than one feature tuple. 
         // For example, the same left/right pairs may appear in N baseline contexts
-        Set<FeatureTuple> nextFeatures = null;
+        Set<FeatureTuple> nextFeatures;
 
         if ( rightOrBaselineOrientation == LeftOrRightOrBaseline.RIGHT )
         {
@@ -1514,7 +1514,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
 
     private Set<Feature> getLeftFeaturesForRightOrBaseline( Feature rightOrBaselineFeature, LeftOrRightOrBaseline lrb )
     {
-        Set<Feature> correlated = null;
+        Set<Feature> correlated;
 
         if ( lrb == LeftOrRightOrBaseline.RIGHT )
         {

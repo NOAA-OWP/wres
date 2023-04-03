@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.io.Serial;
+
 /**
  * A base class for a runtime exception associated with a dataset.
  * 
@@ -8,11 +10,11 @@ package wres.datamodel;
 
 public class DataException extends RuntimeException
 {
-
     /**
      * Serial ID.
      */
     
+    @Serial
     private static final long serialVersionUID = -9205464442064407973L;
 
     /**

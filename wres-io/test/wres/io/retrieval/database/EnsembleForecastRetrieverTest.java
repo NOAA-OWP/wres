@@ -345,7 +345,6 @@ public class EnsembleForecastRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
@@ -358,7 +357,6 @@ public class EnsembleForecastRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );

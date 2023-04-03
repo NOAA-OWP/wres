@@ -34,7 +34,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class ContinousRankedProbabilitySkillScoreTest
 {
-
     /**
      * Default instance of a {@link ContinuousRankedProbabilitySkillScore}.
      */
@@ -103,9 +102,9 @@ public final class ContinousRankedProbabilitySkillScoreTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                Pool.of( Arrays.asList(),
+                Pool.of( List.of(),
                          PoolMetadata.of(),
-                         Arrays.asList(),
+                         List.of(),
                          PoolMetadata.of( true ),
                          null );
 
@@ -113,11 +112,6 @@ public final class ContinousRankedProbabilitySkillScoreTest
 
         assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
-
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#getName()} returns 
-     * {@link MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -205,21 +199,6 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                              () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crpss.getName() + "'.", actual.getMessage() );
-    }
-
-    /**
-     * Tests for an expected exception on building a {@link ContinuousRankedProbabilitySkillScore} with 
-     * an unrecognized decomposition identifier.
-     * @throws MetricParameterException if the metric could not be built for an unexpected reason
-     */
-
-    @Test
-    public void testApplyExceptionOnUnrecognizedDecompositionIdentifier() throws MetricParameterException
-    {
-        MetricParameterException actual = assertThrows( MetricParameterException.class,
-                                                        () -> ContinuousRankedProbabilitySkillScore.of( MetricGroup.LBR ) );
-
-        assertEquals( "Unsupported decomposition identifier 'LBR'.", actual.getMessage() );
     }
 
     /**

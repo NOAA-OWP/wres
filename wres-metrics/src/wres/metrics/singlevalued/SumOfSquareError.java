@@ -10,12 +10,10 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
-import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Collectable;
 import wres.metrics.DecomposableScore;
 import wres.metrics.FunctionFactory;
-import wres.metrics.MetricParameterException;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -155,17 +153,4 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     {
         super();
     }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    SumOfSquareError( MetricGroup decompositionId )
-    {
-        super( decompositionId );
-    }
-
 }

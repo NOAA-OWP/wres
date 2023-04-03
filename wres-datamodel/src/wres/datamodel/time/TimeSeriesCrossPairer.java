@@ -49,7 +49,7 @@ public class TimeSeriesCrossPairer<L, R>
          * once.
          */
 
-        FUZZY;
+        FUZZY
     }
 
     /** Logger. */

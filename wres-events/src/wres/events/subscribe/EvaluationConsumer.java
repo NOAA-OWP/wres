@@ -475,12 +475,10 @@ class EvaluationConsumer
     /**
      * Accepts an evaluation status message for consumption.
      * @param status the evaluation status message
-     * @param groupId a message group identifier, which only applies to grouped messages
      * @param messageId the message identifier to help with logging
-     * @throws JMSException if a group completion could not be notified
      */
 
-    void acceptStatusMessage( EvaluationStatus status, String groupId, String messageId ) throws JMSException
+    void acceptStatusMessage( EvaluationStatus status, String messageId )
     {
         Objects.requireNonNull( status );
 
@@ -495,18 +493,14 @@ class EvaluationConsumer
 
         switch ( status.getCompletionStatus() )
         {
-            case GROUP_PUBLICATION_COMPLETE:
-                this.setExpectedMessageCountForGroups( status );
-                break;
-            case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
-                this.setExpectedMessageCount( status );
-                break;
-            case PUBLICATION_COMPLETE_REPORTED_FAILURE:
-            case EVALUATION_COMPLETE_REPORTED_FAILURE:
-                this.markEvaluationFailedOnProduction( status );
-                break;
-            default:
-                break;
+            case GROUP_PUBLICATION_COMPLETE -> this.setExpectedMessageCountForGroups( status );
+            case PUBLICATION_COMPLETE_REPORTED_SUCCESS -> this.setExpectedMessageCount( status );
+            case PUBLICATION_COMPLETE_REPORTED_FAILURE, EVALUATION_COMPLETE_REPORTED_FAILURE ->
+                    this.markEvaluationFailedOnProduction( status );
+            default ->
+            {
+                // Do nothing
+            }
         }
 
         this.registerProgress();
@@ -720,7 +714,7 @@ class EvaluationConsumer
             List<String> addThesePaths = this.getPathsWritten()
                                              .stream()
                                              .map( Path::toString )
-                                             .collect( Collectors.toUnmodifiableList() );
+                                             .toList();
 
             message.addAllResourcesCreated( addThesePaths );
         }
@@ -862,7 +856,7 @@ class EvaluationConsumer
 
         if ( count > 0 )
         {
-            String paths = "";
+            String paths;
             if ( parentPaths.size() > 1 )
             {
                 paths = parentPaths.toString();
@@ -980,7 +974,6 @@ class EvaluationConsumer
      * Sets the expected message count for message groups.
      *
      * @param status the evaluation status message
-     * @throws JMSException if the group completion could not be notified
      * @throws EvaluationEventException if the completion state could not be published
      * @throws IllegalArgumentException if the status message does not have all expected fields
      */
@@ -1078,7 +1071,7 @@ class EvaluationConsumer
 
         // Create the group consumer from the underlying consumer that should be called once per group
         OneGroupConsumer<Statistics> newGroupConsumer =
-                OneGroupConsumer.of( this.consumerForGroupedMessages::apply, groupId );
+                OneGroupConsumer.of( this.consumerForGroupedMessages, groupId );
         OneGroupConsumer<Statistics> existingGroupConsumer = this.groupConsumers.putIfAbsent( groupId,
                                                                                               newGroupConsumer );
 
@@ -1157,7 +1150,7 @@ class EvaluationConsumer
         Objects.requireNonNull( consumerId );
 
         // Where outputs files will be written
-        Path outputDirectory = null;
+        Path outputDirectory;
         String tempDir = System.getProperty( "java.io.tmpdir" );
 
         // Is this instance running in a context that uses a wres job identifier?

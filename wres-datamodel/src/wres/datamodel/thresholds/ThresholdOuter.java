@@ -15,7 +15,8 @@ import wres.statistics.generated.Threshold;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 
 /**
- * <p>A threshold contains one or both of:
+ * <p>A threshold used to partition or classify data. Wraps a canonical {@link Threshold} and adds behavior. A
+ * threshold contains one or both of:
  *
  * <ol>
  * <li>One or two real values, contained in a {@link OneOrTwoDoubles}.</li>
@@ -24,13 +25,11 @@ import wres.statistics.generated.Threshold.ThresholdOperator;
  *
  * <p>The presence of the former is determined by {@link #hasValues()}. The presence of the latter is determined by 
  * {@link #hasProbabilities()}. If both are present, the threshold is a "quantile", as revealed by 
- * {@link #isQuantile()}. A summary of the threshold type can be obtained from {@link #getType()}.</p>
+ * {@link #isQuantile()}. A summary of the threshold type can be obtained from {@link #getType()}.
  *
  * <p>Additionally, a threshold comprises an {@link Operator}, denoting the type of threshold condition. Optionally,
  * a threshold may comprise a label and a {@link MeasurementUnit} that describes the units of the real-valued
- * thresholds.</p>
- *
- * <p>The internal data is stored, and accessible, as a {@link Threshold}.
+ * thresholds.
  *
  * @author James Brown
  */
@@ -41,15 +40,28 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
      * Threshold that represents "all data", i.e., no filtering.
      */
 
-    public static final ThresholdOuter ALL_DATA = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                     ThresholdConstants.Operator.GREATER,
-                                                                     ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
+    public static final ThresholdOuter ALL_DATA =
+            ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
+                               ThresholdConstants.Operator.GREATER,
+                               ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
     /**
      * The actual threshold.
      */
 
     private final Threshold threshold;
+
+    /**
+     * Returns {@link ThresholdOuter} from the specified input.
+     *
+     * @param threshold the threshold
+     * @return a threshold
+     */
+
+    public static ThresholdOuter of( Threshold threshold )
+    {
+        return new ThresholdOuter.Builder( threshold ).build();
+    }
 
     /**
      * Returns {@link ThresholdOuter} from the specified input.
@@ -642,58 +654,31 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     }
 
     /**
-     * A builder to build the threshold.
+     * A builder to build the threshold. Wraps a canonical {@link Threshold.Builder}.
      */
 
     public static class Builder
     {
-
         /**
-         * The threshold condition.
+         * The canonical builder.
          */
 
-        private Operator condition;
+        private Threshold.Builder innerBuilder = Threshold.newBuilder();
 
         /**
-         * The threshold data type.
-         */
-
-        private ThresholdDataType dataType;
-
-        /**
-         * The values
-         */
-
-        private OneOrTwoDoubles values;
-
-        /**
-         * The probabilities.
-         */
-
-        private OneOrTwoDoubles probabilities;
-
-        /**
-         * The threshold label or null.
-         */
-
-        private String label;
-
-        /**
-         * The units associated with the threshold.
-         */
-
-        private MeasurementUnit units;
-
-        /**
-         * Sets the {@link Operator} associated with the threshold
+         * Sets the {@link Operator} associated with the threshold.
          *
-         * @param condition the threshold condition
+         * @param operator the threshold operator
          * @return the builder
          */
 
-        public Builder setOperator( Operator condition )
+        public Builder setOperator( Operator operator )
         {
-            this.condition = condition;
+            if( Objects.nonNull( operator ) )
+            {
+                ThresholdOperator anOperator = ThresholdOperator.valueOf( operator.name() );
+                innerBuilder.setOperator( anOperator );
+            }
             return this;
         }
 
@@ -706,7 +691,11 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setDataType( ThresholdDataType dataType )
         {
-            this.dataType = dataType;
+            if( Objects.nonNull( dataType ) )
+            {
+                Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
+                innerBuilder.setDataType( aDataType );
+            }
             return this;
         }
 
@@ -719,7 +708,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setValues( OneOrTwoDoubles values )
         {
-            this.values = values;
+            if ( Objects.nonNull( values ) )
+            {
+                innerBuilder.setLeftThresholdValue( DoubleValue.of( values.first() ) );
+                if ( values.hasTwo() )
+                {
+                    innerBuilder.setRightThresholdValue( DoubleValue.of( values.second() ) );
+                }
+            }
             return this;
         }
 
@@ -732,7 +728,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setProbabilities( OneOrTwoDoubles probabilities )
         {
-            this.probabilities = probabilities;
+            if ( Objects.nonNull( probabilities ) )
+            {
+                innerBuilder.setLeftThresholdProbability( DoubleValue.of( probabilities.first() ) );
+                if ( probabilities.hasTwo() )
+                {
+                    innerBuilder.setRightThresholdProbability( DoubleValue.of( probabilities.second() ) );
+                }
+            }
             return this;
         }
 
@@ -745,7 +748,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setLabel( String label )
         {
-            this.label = label;
+            if ( Objects.nonNull( label ) )
+            {
+                innerBuilder.setName( label );
+            }
             return this;
         }
 
@@ -758,7 +764,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setUnits( MeasurementUnit units )
         {
-            this.units = units;
+            if ( Objects.nonNull( units ) )
+            {
+                innerBuilder.setThresholdValueUnits( units.getUnit() );
+            }
             return this;
         }
 
@@ -790,44 +799,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         public Builder( Threshold threshold )
         {
             Objects.requireNonNull( threshold );
-
-            if ( !threshold.getThresholdValueUnits().isBlank() )
-            {
-                this.units = MeasurementUnit.of( threshold.getThresholdValueUnits() );
-            }
-            if ( !threshold.getName().isBlank() )
-            {
-                this.label = threshold.getName();
-            }
-
-            this.condition = Operator.valueOf( threshold.getOperator().name() );
-            this.dataType = ThresholdDataType.valueOf( threshold.getDataType().name() );
-
-            if ( threshold.hasLeftThresholdValue() || threshold.hasRightThresholdValue() )
-            {
-                if ( !threshold.hasRightThresholdValue() )
-                {
-                    this.values = OneOrTwoDoubles.of( threshold.getLeftThresholdValue().getValue() );
-                }
-                else
-                {
-                    this.values = OneOrTwoDoubles.of( threshold.getLeftThresholdValue().getValue(),
-                                                      threshold.getRightThresholdValue().getValue() );
-                }
-            }
-
-            if ( threshold.hasLeftThresholdProbability() || threshold.hasRightThresholdProbability() )
-            {
-                if ( !threshold.hasRightThresholdProbability() )
-                {
-                    this.probabilities = OneOrTwoDoubles.of( threshold.getLeftThresholdProbability().getValue() );
-                }
-                else
-                {
-                    this.probabilities = OneOrTwoDoubles.of( threshold.getLeftThresholdProbability().getValue(),
-                                                             threshold.getRightThresholdProbability().getValue() );
-                }
-            }
+            this.innerBuilder = threshold.toBuilder();
         }
     }
 
@@ -840,54 +812,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     private ThresholdOuter( Builder builder )
     {
         //Set, then validate
-        Operator operator = builder.condition;
-        String label = builder.label;
-        MeasurementUnit units = builder.units;
-        ThresholdDataType dataType = builder.dataType;
-        OneOrTwoDoubles localValues = builder.values;
-        OneOrTwoDoubles localProbabilities = builder.probabilities;
-
-        Threshold.Builder thresholdBuilder = Threshold.newBuilder();
-
-        Objects.requireNonNull( operator, "Cannot build a threshold without an operator." );
-        Objects.requireNonNull( dataType, "Cannot build a threshold without a threshold data type." );
-
-        ThresholdOperator anOperator = ThresholdOperator.valueOf( operator.name() );
-        thresholdBuilder.setOperator( anOperator );
-
-        Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
-        thresholdBuilder.setDataType( aDataType );
-
-        if ( Objects.nonNull( label ) )
-        {
-            thresholdBuilder.setName( label );
-        }
-
-        if ( Objects.nonNull( units ) )
-        {
-            thresholdBuilder.setThresholdValueUnits( units.getUnit() );
-        }
-
-        if ( Objects.nonNull( localValues ) )
-        {
-            thresholdBuilder.setLeftThresholdValue( DoubleValue.of( localValues.first() ) );
-            if ( localValues.hasTwo() )
-            {
-                thresholdBuilder.setRightThresholdValue( DoubleValue.of( localValues.second() ) );
-            }
-        }
-
-        if ( Objects.nonNull( localProbabilities ) )
-        {
-            thresholdBuilder.setLeftThresholdProbability( DoubleValue.of( localProbabilities.first() ) );
-            if ( localProbabilities.hasTwo() )
-            {
-                thresholdBuilder.setRightThresholdProbability( DoubleValue.of( localProbabilities.second() ) );
-            }
-        }
-
-        this.threshold = thresholdBuilder.build();
-
+        this.threshold = builder.innerBuilder.build();
         this.validate();
     }
 
@@ -1121,8 +1046,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                        + append;
             }
 
-            return ">= Pr = " +
-                   +this.getProbabilities().first()
+            return ">= Pr = "
+                   + this.getProbabilities().first()
                    + " AND < Pr = "
                    + this.getProbabilities().second()
                    + append;
@@ -1187,5 +1112,4 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         }
         return "Pr " + conditionString + this.getProbabilities().first() + append;
     }
-
 }

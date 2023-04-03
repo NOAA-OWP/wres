@@ -32,6 +32,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.commons.math3.util.Precision;
+import org.locationtech.jts.geom.Coordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +69,6 @@ import wres.config.MetricConstants.MetricGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.Feature;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
@@ -1024,6 +1027,47 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
+     * Metadata about a NetCDF value.
+     * @param variableName
+     * @param origin
+     * @param value
+     */
+    private record NetcdfValueKey( String variableName, int[] origin, double value )
+    {
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || this.getClass() != o.getClass() )
+            {
+                return false;
+            }
+            NetcdfValueKey in = ( NetcdfValueKey ) o;
+            return Objects.equals( this.variableName(), in.variableName() )
+                   && Arrays.equals( this.origin(), in.origin() ) && Precision.equals( this.value(), in.value() );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.variableName(), Arrays.hashCode( this.origin() ), this.value() );
+        }
+
+        @Override
+        public String toString()
+        {
+            return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                    .append( "variableName", this.variableName() )
+                    .append( "origin", this.origin() )
+                    .append( "value", this.value() )
+                    .toString();
+        }
+    }
+
+    /**
      * Writes output for a specific pair of lead times, representing the {@link TimeWindowOuter#getEarliestLeadDuration()} and
      * the {@link TimeWindowOuter#getLatestLeadDuration()}.
      */
@@ -1214,14 +1258,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 for ( NetcdfValueKey key : this.valuesToSave )
                 {
-                    int[] shape = new int[key.getOrigin().length];
+                    int[] shape = new int[key.origin().length];
                     Arrays.fill( shape, 1 );
 
                     if ( !this.isDeprecatedWriter )
                     {
                         netcdfValue = Array.factory( DataType.DOUBLE, shape );
                         ima = netcdfValue.getIndex();
-                        double value = key.getValue();
+                        double value = key.value();
 
                         if ( MissingValues.isMissingValue( value ) )
                         {
@@ -1238,21 +1282,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                         netcdfValue = Array.factory( DataType.FLOAT, shape );
 
                         ima = netcdfValue.getIndex();
-                        netcdfValue.setFloat( ima, ( float ) key.getValue() );
+                        netcdfValue.setFloat( ima, ( float ) key.value() );
                     }
 
                     try
                     {
-                        this.writer.write( key.getVariableName(), key.getOrigin(), netcdfValue );
+                        this.writer.write( key.variableName(), key.origin(), netcdfValue );
                     }
                     catch ( NullPointerException | IOException | InvalidRangeException e )
                     {
                         String exceptionMessage = "While attempting to write data value "
-                                                  + key.getValue()
+                                                  + key.value()
                                                   + " with variable name "
-                                                  + key.getVariableName()
+                                                  + key.variableName()
                                                   + " to index "
-                                                  + Arrays.toString( key.getOrigin() )
+                                                  + Arrays.toString( key.origin() )
                                                   + " within file "
                                                   + this.outputPath
                                                   + ": ";
@@ -1387,8 +1431,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
          * @param sampleMetadata the sample metadata
          * @param metricNameString a string name for the metric
          * @param append a string to append to the variable name
-         * @param secondThresholdIsEqual
-         * @return
+         * @param secondThresholdIsEqual whether the second threshold is equal to the first
+         * @return the variable name or null
          */
 
         private String getVariableNameOrNull( OneOrTwoThresholds thresholdFromScore,
@@ -1515,7 +1559,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
 
                 String wkt = location.getWkt();
-                Feature.GeoPoint point = Feature.getLonLatFromPointWkt( wkt );
+                Coordinate point = DataUtilities.getLonLatFromPointWkt( wkt );
 
                 // contains the the y index and the x index
                 origin = new int[2];
@@ -1525,8 +1569,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     GridDatatype variable = gridDataset.findGridDatatype( name );
                     int[] xyIndex = variable.getCoordinateSystem()
-                                            .findXYindexFromLatLon( point.y(),
-                                                                    point.x(),
+                                            .findXYindexFromLatLon( point.getY(),
+                                                                    point.getX(),
                                                                     null );
 
                     origin[0] = xyIndex[1];
@@ -1832,6 +1876,5 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
             }
         }
-
     }
 }

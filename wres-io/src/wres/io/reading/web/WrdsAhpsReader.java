@@ -207,7 +207,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                                                       dataSource.getLeftOrRightOrBaseline() );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = null;
+        Set<Pair<Instant, Instant>> dateRanges;
         if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
         {
             dateRanges = ReaderUtilities.getYearRanges( pairConfig, dataSource );

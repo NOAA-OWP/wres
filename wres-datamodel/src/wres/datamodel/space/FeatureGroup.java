@@ -20,7 +20,7 @@ import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryGroup;
 
 /**
- * A set of {@link FeatureTuple}, which may be named.
+ * A group of geographic feature tuples. Wraps a canonical {@link GeometryGroup} and adds behavior.
  * 
  * @author James Brown
  */
@@ -110,12 +110,10 @@ public class FeatureGroup implements Comparable<FeatureGroup>
             return true;
         }
 
-        if ( ! ( o instanceof FeatureGroup ) )
+        if ( ! ( o instanceof FeatureGroup in ) )
         {
             return false;
         }
-
-        FeatureGroup in = (FeatureGroup) o;
 
         return Objects.equals( in.getGeometryGroup(), this.getGeometryGroup() );
     }
@@ -137,8 +135,6 @@ public class FeatureGroup implements Comparable<FeatureGroup>
     @Override
     public int compareTo( FeatureGroup o )
     {
-        Objects.requireNonNull( o );
-
         return MessageUtilities.compare( this.geometryGroup, o.getGeometryGroup() );
     }
 

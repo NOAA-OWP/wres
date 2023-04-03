@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -171,42 +170,6 @@ public class EvaluationSubscriber implements Closeable
      */
 
     private final MessagePublisher evaluationStatusPublisher;
-
-    /**
-     * Status message consumer.
-     */
-
-    private final MessageConsumer evaluationStatusConsumer;
-
-    /**
-     * Evaluation message consumer.
-     */
-
-    private final MessageConsumer evaluationConsumer;
-
-    /**
-     * Statistics message consumer.
-     */
-
-    private final MessageConsumer statisticsConsumer;
-
-    /**
-     * An evaluation status topic.
-     */
-
-    private final Topic evaluationStatusTopic;
-
-    /**
-     * An evaluation topic.
-     */
-
-    private final Topic evaluationTopic;
-
-    /**
-     * A statistics topic.
-     */
-
-    private final Topic statisticsTopic;
 
     /**
      * A session for evaluation description messages.
@@ -579,9 +542,6 @@ public class EvaluationSubscriber implements Closeable
         return this.getClientId() + "-statistics";
     }
 
-
-    Set<EvaluationStatus> pubComplete = new HashSet<>();
-
     /**
      * Awaits evaluation status messages and then consumes them. 
      */
@@ -594,7 +554,7 @@ public class EvaluationSubscriber implements Closeable
             String messageId = null;
             com.google.protobuf.Message messageBody = null;
             String correlationId = null;
-            String groupId = null;
+            String groupId;
 
             try
             {
@@ -621,8 +581,7 @@ public class EvaluationSubscriber implements Closeable
                     consumer = this.processStatusEvent( statusEvent,
                                                         correlationId,
                                                         message,
-                                                        messageId,
-                                                        groupId );
+                                                        messageId );
                 }
 
                 // Acknowledge and then attempt to register complete
@@ -770,7 +729,6 @@ public class EvaluationSubscriber implements Closeable
      * @param evaluationId the evaluation identifier
      * @param message the originating message
      * @param messageId the identifier of the originating message
-     * @param groupId the message group identifier
      * @return the evaluation consumer used, where applicable
      * @throws JMSException if the processing fails
      */
@@ -778,8 +736,7 @@ public class EvaluationSubscriber implements Closeable
     private EvaluationConsumer processStatusEvent( EvaluationStatus statusEvent,
                                                    String evaluationId,
                                                    Message message,
-                                                   String messageId,
-                                                   String groupId )
+                                                   String messageId )
             throws JMSException
     {
         EvaluationConsumer consumer = null;
@@ -818,20 +775,21 @@ public class EvaluationSubscriber implements Closeable
             {
                 if ( LOGGER.isDebugEnabled() )
                 {
-                    LOGGER.debug( "Subscriber {} received a status message {} with completion status {}, which will "
-                                  + "not be forwarded for consumption because subscribers do not await the completion "
-                                  + "of an evaluation, only of their work on behalf of an evaluation, and such a "
-                                  + "message should not start a new evaluation from the perspective of this subscriber.",
+                    LOGGER.debug( "Subscriber {} in evaluation {} received a status message {} with completion status "
+                                  + "{}, which will not be forwarded for consumption because subscribers do not await "
+                                  + "the completion of an evaluation, only of their work on behalf of an evaluation, "
+                                  + "and such a message should not start a new evaluation from the perspective of this "
+                                  + "subscriber.",
                                   this.getClientId(),
+                                  evaluationId,
                                   messageId,
-                                  completionStatus,
-                                  evaluationId );
+                                  completionStatus );
                 }
             }
             else
             {
                 consumer = this.getOrCreateNewEvaluationConsumer( evaluationId );
-                consumer.acceptStatusMessage( statusEvent, groupId, messageId );
+                consumer.acceptStatusMessage( statusEvent, messageId );
             }
         }
 
@@ -878,7 +836,7 @@ public class EvaluationSubscriber implements Closeable
             String messageId = null;
             com.google.protobuf.Message messageBody = null;
             String correlationId = null;
-            String jobId = null;
+            String jobId;
 
             try
             {
@@ -1645,10 +1603,10 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            this.evaluationStatusTopic =
-                    (Topic) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
-            this.evaluationTopic = (Topic) broker.getDestination( QueueType.EVALUATION_QUEUE.toString() );
-            this.statisticsTopic = (Topic) broker.getDestination( QueueType.STATISTICS_QUEUE.toString() );
+            Topic evaluationStatusTopic =
+                    ( Topic ) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
+            Topic evaluationTopic = ( Topic ) broker.getDestination( QueueType.EVALUATION_QUEUE.toString() );
+            Topic statisticsTopic = ( Topic ) broker.getDestination( QueueType.STATISTICS_QUEUE.toString() );
 
             // The broker connection factory is responsible for closing these
             this.consumerConnection = broker.get();
@@ -1662,7 +1620,7 @@ public class EvaluationSubscriber implements Closeable
                     new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
 
             this.evaluationStatusPublisher = MessagePublisher.of( broker,
-                                                                  this.evaluationStatusTopic,
+                                                                  evaluationStatusTopic,
                                                                   publisherConnectionListener );
 
             ConnectionExceptionListener consumerConnectionListener =
@@ -1679,26 +1637,26 @@ public class EvaluationSubscriber implements Closeable
             this.statisticsSession = this.statisticsConsumerConnection.createSession( false,
                                                                                       Session.CLIENT_ACKNOWLEDGE );
 
-            this.evaluationStatusConsumer = this.getMessageConsumer( this.statusSession,
-                                                                     this.evaluationStatusTopic,
-                                                                     this.getEvaluationStatusSubscriberName() );
+            MessageConsumer evaluationStatusConsumer = this.getMessageConsumer( this.statusSession,
+                                                                                evaluationStatusTopic,
+                                                                                this.getEvaluationStatusSubscriberName() );
 
             MessageListener statusListener = this.getStatusListener();
-            this.evaluationStatusConsumer.setMessageListener( statusListener );
+            evaluationStatusConsumer.setMessageListener( statusListener );
 
-            this.evaluationConsumer = this.getMessageConsumer( this.evaluationDescriptionSession,
-                                                               this.evaluationTopic,
-                                                               this.getEvaluationSubscriberName() );
+            MessageConsumer evaluationConsumer = this.getMessageConsumer( this.evaluationDescriptionSession,
+                                                                          evaluationTopic,
+                                                                          this.getEvaluationSubscriberName() );
 
             MessageListener evaluationListener = this.getEvaluationListener();
-            this.evaluationConsumer.setMessageListener( evaluationListener );
+            evaluationConsumer.setMessageListener( evaluationListener );
 
-            this.statisticsConsumer = this.getMessageConsumer( this.statisticsSession,
-                                                               this.statisticsTopic,
-                                                               this.getStatisticsSubscriberName() );
+            MessageConsumer statisticsConsumer = this.getMessageConsumer( this.statisticsSession,
+                                                                          statisticsTopic,
+                                                                          this.getStatisticsSubscriberName() );
 
             MessageListener statisticsListener = this.getStatisticsListener();
-            this.statisticsConsumer.setMessageListener( statisticsListener );
+            statisticsConsumer.setMessageListener( statisticsListener );
 
             // A finite cache of evaluations that persist after they are closed, in order to mop-up any late arriving 
             // messages (for evaluations that succeeded, these are non-essential evaluation status messages only)
@@ -1749,55 +1707,52 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Listen for failures on a connection.
-     */
+         * Listen for failures on a connection.
+         */
 
-    private static class ConnectionExceptionListener implements ExceptionListener
-    {
-
-        private final EvaluationSubscriber subscriber;
-        private final String connectionId;
-
-        @Override
-        public void onException( JMSException exception )
+        private record ConnectionExceptionListener( EvaluationSubscriber subscriber, String connectionId )
+            implements ExceptionListener
         {
-            // Ignore errors on connections encountered during the shutdown sequence
-            if ( !this.subscriber.isClosing.get() )
+
+            @Override
+            public void onException( JMSException exception )
             {
-                String message = "Encountered an error on connection " + this.connectionId
-                                 + " owned by subscriber "
-                                 + this.subscriber.getClientId()
-                                 + ". If a failover policy was "
-                                 + "configured on the connection factory (e.g., connection retries), then that policy "
-                                 + "was exhausted before this error was thrown. As such, the error is not recoverable "
-                                 + "and the subscriber will now stop.";
-
-                UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message, exception );
-
-                try
+                // Ignore errors on connections encountered during the shutdown sequence
+                if ( !this.subscriber.isClosing.get() )
                 {
+                    String message = "Encountered an error on connection " + this.connectionId
+                                     + " owned by subscriber "
+                                     + this.subscriber.getClientId()
+                                     + ". If a failover policy was "
+                                     + "configured on the connection factory (e.g., connection retries), then that "
+                                     + "policy was exhausted before this error was thrown. As such, the error is not "
+                                     + "recoverable and the subscriber will now stop.";
 
-                    this.subscriber.markSubscriberFailed( propagate );
-                }
-                catch ( UnrecoverableSubscriberException e )
-                {
-                    // Do nothing as the exception is rethrown always.
+                    UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message,
+                                                                                                       exception );
+
+                    try
+                    {
+
+                        this.subscriber.markSubscriberFailed( propagate );
+                    }
+                    catch ( UnrecoverableSubscriberException e )
+                    {
+                        // Do nothing as the exception is rethrown always.
+                    }
                 }
             }
-        }
 
-        /**
-         * Create an instance.
-         * @param subscriber the subscriber
-         * @param connectionId the connection identifier
-         */
-        private ConnectionExceptionListener( EvaluationSubscriber subscriber, String connectionId )
-        {
-            Objects.requireNonNull( subscriber );
+            /**
+             * Create an instance.
+             * @param subscriber the subscriber
+             * @param connectionId the connection identifier
+             */
+            private ConnectionExceptionListener
+            {
+                Objects.requireNonNull( subscriber );
 
-            this.subscriber = subscriber;
-            this.connectionId = connectionId;
+            }
         }
-    }
 
 }

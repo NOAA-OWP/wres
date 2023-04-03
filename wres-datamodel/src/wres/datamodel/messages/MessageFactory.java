@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -140,7 +139,7 @@ public class MessageFactory
 
     /**
      * Builds a pool from the input, some of which may be missing. The pool is assigned the default identifier.
-     * 
+     *
      * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param timeScale the time scale
@@ -160,7 +159,7 @@ public class MessageFactory
 
     /**
      * Builds a pool from the input, some of which may be missing.
-     * 
+     *
      * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param timeScale the time scale
@@ -188,7 +187,7 @@ public class MessageFactory
 
     /**
      * Builds a pool from the input, some of which may be missing.
-     * 
+     *
      * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param timeScale the time scale
@@ -218,7 +217,7 @@ public class MessageFactory
             List<GeometryTuple> geoTuples = featureGroup.getFeatures()
                                                         .stream()
                                                         .map( MessageFactory::parse )
-                                                        .collect( Collectors.toList() );
+                                                        .toList();
             poolBuilder.addAllGeometryTuples( geoTuples );
 
             GeometryGroup.Builder geometryBuilder = GeometryGroup.newBuilder()
@@ -288,13 +287,13 @@ public class MessageFactory
 
     /**
      * Returns a {@link Pairs} from a {@link Pool}.
-     * 
+     *
      * @param pairs The pairs
      * @return a pairs message
      */
 
     public static Pairs
-            getTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
+    getTimeSeriesOfEnsemblePairs( wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
         Objects.requireNonNull( pairs );
 
@@ -346,36 +345,8 @@ public class MessageFactory
     }
 
     /**
-     * Returns the graphical destinations associated with the outputs message.
-     * 
-     * @param outputs the outputs message
-     * @return the graphical destinations
-     * @throws NullPointerException if the input is null 
-     */
-
-    public static Set<DestinationType> getGraphicsTypes( Outputs outputs )
-    {
-        Objects.requireNonNull( outputs );
-
-        Set<DestinationType> returnMe = new HashSet<>();
-
-        if ( outputs.hasPng() )
-        {
-            returnMe.add( DestinationType.PNG );
-            returnMe.add( DestinationType.GRAPHIC );
-        }
-
-        if ( outputs.hasSvg() )
-        {
-            returnMe.add( DestinationType.SVG );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
      * Uncovers a set of declared formats from a description of the outputs.
-     * 
+     *
      * @param outputs the outputs that declare the formats to write
      * @return the declared formats to write
      */
@@ -387,7 +358,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry tuple from the input.
-     * 
+     *
      * @param left the left feature, required
      * @param right the right feature, required
      * @param baseline the baseline feature, optional
@@ -414,7 +385,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry tuple from the input.
-     * 
+     *
      * @param left the left geometry, required
      * @param right the right geometry, required
      * @param baseline the baseline geometry, optional
@@ -441,7 +412,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry group from the input.
-     * 
+     *
      * @param groupName the group name
      * @param singleton the single geometry tuple
      * @return the geometry group
@@ -465,7 +436,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry group from the input.
-     * 
+     *
      * @param name the group name, optional
      * @param features the features, required
      * @return the geometry tuple
@@ -480,7 +451,7 @@ public class MessageFactory
         List<FeatureTuple> sorted = new ArrayList<>( new TreeSet<>( features ) );
         List<GeometryTuple> geometries = sorted.stream()
                                                .map( FeatureTuple::getGeometryTuple )
-                                               .collect( Collectors.toList() );
+                                               .toList();
 
         GeometryGroup.Builder builder = GeometryGroup.newBuilder()
                                                      .addAllGeometryTuples( geometries );
@@ -495,7 +466,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry group from the input.
-     * 
+     *
      * @param features the features, required
      * @return the geometry tuple
      * @throws NullPointerException if the features are null
@@ -508,7 +479,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry group from the input.
-     * 
+     *
      * @param name the group name, optional
      * @param singleton the singleton feature, required
      * @return the geometry tuple
@@ -522,7 +493,7 @@ public class MessageFactory
 
     /**
      * Creates a geometry group from the input.
-     * 
+     *
      * @param singleton the singleton feature, required
      * @return the geometry tuple
      * @throws NullPointerException if the singleton is null
@@ -596,7 +567,7 @@ public class MessageFactory
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
      * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
+     *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
      * @param earliestValidTime the earliest valid time, optional
@@ -676,7 +647,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
-     * 
+     *
      * @param earliestValidTime the earliest valid time, optional
      * @param latestValidTime the latest valid time, optional
      * @return the time window
@@ -691,7 +662,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Durations on the lower and upper bounds 
      * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
+     *
      * @param earliestLead the earliest lead time, optional
      * @param latestLead the latest lead time, optional
      * @return the time window
@@ -706,7 +677,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
-     * 
+     *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
      * @param earliestValidTime the earliest valid time, optional
@@ -731,7 +702,7 @@ public class MessageFactory
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
      * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
+     *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
      * @param lead the earliest and latest lead time, optional
@@ -749,7 +720,7 @@ public class MessageFactory
      * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
      * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
+     *
      * @param earliestReferenceTime the earliest reference time, optional
      * @param latestReferenceTime the latest reference time, optional
      * @param earliestLead the earliest lead time, optional
@@ -774,7 +745,7 @@ public class MessageFactory
      * Creates an empty {@link wres.statistics.generated.TimeWindow} in which the times on the lower and upper bounds 
      * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively, and the durations on the lower and upper 
      * bounds default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     * 
+     *
      * @return the empty time window
      */
 
@@ -790,7 +761,7 @@ public class MessageFactory
 
     /**
      * Creates an evaluation from a project declaration.
-     * 
+     *
      * @param projectConfigPlus the project declaration plus graphics strings
      * @return an evaluation
      * @throws NullPointerException if the project is null
@@ -848,7 +819,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link Season} message from a {@link wres.config.generated.PairConfig.Season}.
-     * 
+     *
      * @param season the declared season
      * @return the season message
      */
@@ -867,7 +838,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link ValueFilter} message from a {@link DoubleBoundsType}.
-     * 
+     *
      * @param filter the declared value filter
      * @return the value filter message
      */
@@ -893,7 +864,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.TimeScale} from a {@link wres.datamodel.scale.TimeScaleOuter}.
-     * 
+     *
      * @param timeScale the time scale from which to create a message
      * @return the message
      */
@@ -907,7 +878,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.TimeWindow} from a {@link wres.datamodel.time.TimeWindowOuter}.
-     * 
+     *
      * @param timeWindow the time window from which to create a message
      * @return the message
      */
@@ -984,7 +955,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.Threshold} from a 
      * {@link wres.datamodel.thresholds.ThresholdOuter}.
-     * 
+     *
      * @param threshold the threshold from which to create a message
      * @return the message
      */
@@ -999,7 +970,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.DoubleScoreStatistic} from a
      * {@link wres.datamodel.statistics.DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param statistic the statistic from which to create a message
      * @return the message
      */
@@ -1014,7 +985,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.DurationScoreStatistic} from a 
      * {@link wres.datamodel.statistics.DurationScoreStatisticOuter}.
-     * 
+     *
      * @param statistic the statistic from which to create a message
      * @return the message
      */
@@ -1029,7 +1000,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
      * {@link wres.datamodel.statistics.DiagramStatisticOuter}.
-     * 
+     *
      * @param statistic the statistic from which to create a message
      * @return the message
      */
@@ -1045,7 +1016,7 @@ public class MessageFactory
      * Creates a {@link wres.statistics.generated.DurationDiagramStatistic} from a
      * {@link wres.datamodel.statistics.DurationDiagramStatisticOuter} composed of timing
      * errors.
-     * 
+     *
      * @param statistic the statistic from which to create a message
      * @return the message
      */
@@ -1060,7 +1031,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.DiagramStatistic} from a 
      * {@link wres.datamodel.statistics.BoxplotStatisticOuter}.
-     * 
+     *
      * @param statistic the statistic from which to create a message
      * @return the message
      */
@@ -1074,7 +1045,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link wres.datamodel.space.FeatureTuple}.
-     * 
+     *
      * @param featureTuple the feature tuple from which to create a message
      * @return the message
      */
@@ -1088,7 +1059,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.GeometryTuple} from a {@link NamedFeature}.
-     * 
+     *
      * @param feature a declared feature from which to build the instance, not null
      * @return the message
      */
@@ -1114,7 +1085,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Geometry} from a {@link wres.datamodel.space.Feature}.
-     * 
+     *
      * @param featureKey the feature key from which to create a message
      * @return the message
      */
@@ -1150,7 +1121,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.datamodel.space.FeatureTuple} from a {@link wres.statistics.generated.GeometryTuple}.
-     * 
+     *
      * @param location the location from which to create a message
      * @return the message
      */
@@ -1164,41 +1135,25 @@ public class MessageFactory
 
     /**
      * Creates a {@link Format} from a {@link DestinationType}.
-     * 
+     *
      * @param destinationType the destination type
      * @return the format
      */
 
     public static Format parse( DestinationType destinationType )
     {
-        switch ( destinationType )
-        {
-            case GRAPHIC:
-                return Format.PNG;
-            case NUMERIC:
-                return Format.CSV;
-            default:
-                return Format.valueOf( destinationType.name() );
-        }
-    }
-
-    /**
-     * Returns <code>true</code> if the outputs contains graphics type, otherwise <code>false</code>.
-     * 
-     * @param outputs the outputs message
-     * @return true if graphics are required
-     * @throws NullPointerException if the input is null 
-     */
-
-    public static boolean hasGraphicsTypes( Outputs outputs )
-    {
-        return !MessageFactory.getGraphicsTypes( outputs ).isEmpty();
+        return switch ( destinationType )
+                {
+                    case GRAPHIC -> Format.PNG;
+                    case NUMERIC -> Format.CSV;
+                    default -> Format.valueOf( destinationType.name() );
+                };
     }
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsStore}.
-     * 
+     *
      * @param project the project statistics
      * @param pairs the optional pairs
      * @return the statistics messages
@@ -1229,7 +1184,7 @@ public class MessageFactory
     /**
      * Creates a {@link wres.statistics.generated.Statistics} from a 
      * {@link wres.datamodel.statistics.StatisticsStore}.
-     * 
+     *
      * @param onePool the pool-shaped statistics
      * @return the statistics message or null
      * @throws IllegalArgumentException if there are zero statistics in total
@@ -1456,50 +1411,10 @@ public class MessageFactory
      * @author James Brown
      */
 
-    private static class PoolBoundaries
-    {
-        private final OneOrTwoThresholds thresholds;
-        private final wres.datamodel.time.TimeWindowOuter window;
-        private final Set<wres.datamodel.space.FeatureTuple> features;
-        private final boolean isBaselinePool;
-
-        private PoolBoundaries( Set<wres.datamodel.space.FeatureTuple> features,
-                                wres.datamodel.time.TimeWindowOuter window,
-                                OneOrTwoThresholds thresholds,
-                                boolean isBaselinePool )
-        {
-            this.features = features;
-            this.window = window;
-            this.thresholds = thresholds;
-            this.isBaselinePool = isBaselinePool;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( o == this )
-            {
-                return true;
-            }
-
-            if ( ! ( o instanceof PoolBoundaries ) )
-            {
-                return false;
-            }
-
-            PoolBoundaries input = (PoolBoundaries) o;
-
-            return Objects.equals( this.features, input.features ) && Objects.equals( this.window, input.window )
-                   && Objects.equals( this.thresholds, input.thresholds )
-                   && this.isBaselinePool == input.isBaselinePool;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( this.features, this.window, this.thresholds, this.isBaselinePool );
-        }
-    }
+    private record PoolBoundaries( Set<FeatureTuple> features,
+                                   TimeWindowOuter window,
+                                   OneOrTwoThresholds thresholds,
+                                   boolean isBaselinePool ) {}
 
     /**
      * Adds the new statistics to the map.
@@ -1541,8 +1456,8 @@ public class MessageFactory
      */
 
     private static void
-            addDurationScoreStatisticsToPool( List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics,
-                                              Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
+    addDurationScoreStatisticsToPool( List<wres.datamodel.statistics.DurationScoreStatisticOuter> statistics,
+                                      Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics )
     {
         Objects.requireNonNull( mappedStatistics );
 
@@ -1672,10 +1587,9 @@ public class MessageFactory
 
     /**
      * Adds the inputs declaration to an evaluation builder.
-     * 
-     * @param project the project declaration
-     * 
-     * @return an evaluation
+     *
+     * @param inputs the inputs
+     * @param builder the builder
      * @throws NullPointerException if the project is null
      */
 
@@ -1753,9 +1667,9 @@ public class MessageFactory
 
     /**
      * Adds a default baseline, as requried by the project declaration.
-     * 
+     *
      * @param projectConfig the project declaration
-     * @return an evaluation
+     * @param builder the builder
      * @throws NullPointerException if the project is null
      */
 
@@ -1768,8 +1682,8 @@ public class MessageFactory
             List<MetricsConfig> declaredMetrics = projectConfig.getMetrics();
             Set<MetricConstants> metrics = declaredMetrics.stream()
                                                           .flatMap( a -> MetricConstantsFactory.getMetricsFromConfig( a,
-                                                                                                             projectConfig )
-                                                                                      .stream() )
+                                                                                                                      projectConfig )
+                                                                                               .stream() )
                                                           .collect( Collectors.toSet() );
 
             builder.setMetricCount( metrics.size() );
@@ -1810,7 +1724,7 @@ public class MessageFactory
 
     /**
      * Creates a {@link wres.statistics.generated.Outputs} from a {@link ProjectConfigPlus}.
-     * 
+     *
      * @param projectConfigPlus the project declaration plus graphics string from which to create a message
      * @param evaluation the evaluation builder
      */

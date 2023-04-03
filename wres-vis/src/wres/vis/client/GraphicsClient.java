@@ -1,6 +1,7 @@
 package wres.vis.client;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
@@ -44,7 +45,6 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 
 class GraphicsClient
 {
-
     /**
      * Logger.
      */
@@ -148,9 +148,10 @@ class GraphicsClient
         EmbeddedBroker broker = null;
         if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
         {
-            broker = EmbeddedBroker.of( brokerConnectionProperties, false ); // No dynamic binding, nominated port only
+            // No dynamic binding, nominated port only
+            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
         }
-        EmbeddedBroker brokerToClose = broker;
+        final EmbeddedBroker brokerToClose = broker;
 
         BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties );
         GraphicsClient graphics = GraphicsClient.of( brokerConnections );
@@ -551,12 +552,15 @@ class GraphicsClient
         return pool;
     }
 
+    /**
+     * Graphics client exception.
+     */
     static class GraphicsClientException extends RuntimeException
     {
-
         /**
          * Serial identifier.
          */
+        @Serial
         private static final long serialVersionUID = -3496487018421078900L;
 
         /**

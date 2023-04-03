@@ -1,5 +1,7 @@
 package wres.events.subscribe;
 
+import java.io.Serial;
+
 /**
  * An unchecked exception that indicates an unrecoverable failure in an evaluation that must be propagated.
  * 
@@ -8,7 +10,7 @@ package wres.events.subscribe;
 
 public class UnrecoverableEvaluationException extends RuntimeException
 {
-
+    @Serial
     private static final long serialVersionUID = 5046708759822468416L;
 
     /**

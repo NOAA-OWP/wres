@@ -49,9 +49,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
+     * <p>Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
      * 
-     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
+     * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
@@ -64,9 +64,9 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
+     * <p>Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
      * 
-     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
+     * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
      */
@@ -78,10 +78,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     }
 
     /**
-     * Overrides the default implementation to get all specified time-series in one pull, rather than one pull for 
+     * <p>Overrides the default implementation to get all specified time-series in one pull, rather than one pull for
      * each series.
      * 
-     * TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
+     * <p>TODO: implement this method when there is an identifier for an observed time-series. See #68334 and #56214-56.
      * 
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
@@ -120,7 +120,7 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
         dataScripter.addLine( "INNER JOIN wres.TimeSeriesValue TSV" );
         dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
-        this.addTimeWindowClause( dataScripter, 0 );
+        this.addTimeWindowClause( dataScripter );
         this.addSeasonClause( dataScripter, 1 );
 
         // Add ORDER BY clause
@@ -174,9 +174,6 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
         scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
-
-        // Some code will be confused if a reference_time shows up in "obs" data
-        //scripter.addTab().addLine( "metadata.reference_time," );
         scripter.addTab().addLine( "TSV.series_value AS trace_value," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
         scripter.addTab().addLine( "metadata.scale_period," );

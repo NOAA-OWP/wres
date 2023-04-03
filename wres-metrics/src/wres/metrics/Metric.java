@@ -24,7 +24,6 @@ import wres.datamodel.statistics.Statistic;
  */
 public interface Metric<S extends Pool<?>, T extends Statistic<?>> extends Function<S, T>
 {
-
     /**
      * Applies the function to the input and throws a {@link MetricCalculationException} if the calculation fails.
      * 

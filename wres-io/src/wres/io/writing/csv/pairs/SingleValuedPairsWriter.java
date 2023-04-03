@@ -5,6 +5,7 @@ import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,7 +15,7 @@ import wres.datamodel.time.TimeSeries;
 
 /**
  * Class for writing a {@link Pool} that contains single-valued pairs.
- * 
+ *
  * @author James Brown
  */
 
@@ -23,7 +24,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 
     /**
      * Build an instance of a writer.
-     * 
+     *
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @return the writer
@@ -38,7 +39,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 
     /**
      * Build an instance of a writer.
-     * 
+     *
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
@@ -67,7 +68,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
@@ -85,7 +86,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 
     /**
      * Returns the string formatter from the paired input using an optional {@link DecimalFormat}.
-     *  
+     *
      * @param decimalFormatter the optional decimal formatter, may be null
      * @return the string formatter
      */
@@ -96,7 +97,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
-            Function<Double, String> handleNaNs = input -> {
+            DoubleFunction<String> handleNaNs = input -> {
                 if ( Double.isNaN( input ) || Objects.isNull( decimalFormatter ) )
                 {
                     return Double.toString( input );

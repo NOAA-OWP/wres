@@ -1,6 +1,5 @@
 package wres.vis.writing;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -144,7 +143,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
                 pathsWrittenTo.addAll( finishedPaths );
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating duration diagram charts: ", e );
         }

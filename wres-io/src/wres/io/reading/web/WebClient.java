@@ -302,11 +302,9 @@ public class WebClient
      *
      * @param request The request to attempt
      * @return The response if successful, null if retriable.
-     * @throws IOException When non-retriable exception occurs.
      */
 
     private Response tryRequest( Request request )
-            throws IOException
     {
         LOGGER.debug( "Called tryRequest with {}", request );
         HttpUrl uri = request.url();

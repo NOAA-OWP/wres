@@ -1,5 +1,7 @@
 package wres.events.publish;
 
+import java.io.Serial;
+
 /**
  * An unchecked exception that indicates an unrecoverable failure in a publisher that must be propagated.
  * 
@@ -8,20 +10,9 @@ package wres.events.publish;
 
 class UnrecoverablePublisherException extends RuntimeException
 {
-
+    @Serial
     private static final long serialVersionUID = 5655493413619097256L;
 
-    /**
-     * Constructs a {@link UnrecoverablePublisherException} with the specified message.
-     * 
-     * @param message the message.
-     */
-
-    public UnrecoverablePublisherException( final String message )
-    {
-        super( message );
-    }
-    
     /**
      * Builds a {@link UnrecoverablePublisherException} with the specified message.
      * 

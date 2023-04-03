@@ -15,7 +15,6 @@ import wres.datamodel.statistics.ScoreStatistic;
 
 public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extends Metric<S, T>
 {
-
     /**
      * Returns <code>true</code> if the score is decomposable in principle, false otherwise. In practice, the output 
      * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link MetricGroup#NONE} when 
@@ -46,5 +45,4 @@ public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extend
      */
 
     MetricGroup getScoreOutputGroup();
-
 }

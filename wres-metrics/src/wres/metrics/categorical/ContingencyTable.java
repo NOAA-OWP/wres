@@ -127,7 +127,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                 returnMe[1][1] += 1;
             }
             // False positives aka false alarms
-            else if ( !left && right )
+            else if ( !left )
             {
                 returnMe[0][1] += 1;
             }
@@ -139,7 +139,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
         };
 
         // Increment the count in a serial stream as the lambda is stateful
-        s.get().stream().forEach( f );
+        s.get().forEach( f );
 
         // Name the outcomes for a 2x2 contingency table
         DoubleScoreStatistic table =

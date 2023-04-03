@@ -202,8 +202,8 @@ public class RelativeOperatingCharacteristicScore
                                              .map( right -> right.getRight().getProbability() )
                                              .collect( Collectors.toList() );
         //Sort descending
-        Collections.sort( byOccurrence, Collections.reverseOrder() );
-        Collections.sort( byNonOccurrence, Collections.reverseOrder() );
+        byOccurrence.sort( Collections.reverseOrder() );
+        byNonOccurrence.sort( Collections.reverseOrder() );
 
         //For each occurrence, determine how may forecasts associated with non-occurrences had a larger or equal 
         //probability. Derive the AUC from this.

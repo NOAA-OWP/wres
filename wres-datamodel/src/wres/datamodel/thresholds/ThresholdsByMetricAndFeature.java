@@ -1,7 +1,5 @@
 package wres.datamodel.thresholds;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -142,7 +140,7 @@ public class ThresholdsByMetricAndFeature
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof ThresholdsByMetricAndFeature ) )
+        if ( ! ( o instanceof ThresholdsByMetricAndFeature in ) )
         {
             return false;
         }
@@ -151,8 +149,6 @@ public class ThresholdsByMetricAndFeature
         {
             return true;
         }
-
-        ThresholdsByMetricAndFeature in = (ThresholdsByMetricAndFeature) o;
 
         return Objects.equals( this.getThresholdsByMetricAndFeature(), in.getThresholdsByMetricAndFeature() )
                && this.getMinimumSampleSize() == in.getMinimumSampleSize();
@@ -212,7 +208,7 @@ public class ThresholdsByMetricAndFeature
         }
 
         this.thresholds =
-                Collections.unmodifiableMap( new HashMap<>( thresholds ) );
+                Map.copyOf( thresholds );
         this.minimumSampleSize = minimumSampleSize;
         this.metrics = this.getThresholdsByMetricAndFeature()
                            .values()

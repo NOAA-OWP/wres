@@ -1,5 +1,6 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 class BoxplotByLead extends AbstractIntervalXYDataset
 {
     /** serial version identifier. */
+    @Serial
     private static final long serialVersionUID = -1990283965174892955L;
 
     /** The underlying dataset. */

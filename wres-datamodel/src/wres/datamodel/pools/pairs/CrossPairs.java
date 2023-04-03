@@ -73,7 +73,7 @@ public class CrossPairs<L, R>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof CrossPairs ) )
+        if ( ! ( o instanceof CrossPairs<?, ?> in ) )
         {
             return false;
         }
@@ -82,8 +82,6 @@ public class CrossPairs<L, R>
         {
             return true;
         }
-
-        CrossPairs<?, ?> in = (CrossPairs<?, ?>) o;
 
         return in.getMainPairs().equals( this.getMainPairs() )
                && in.getBaselinePairs().equals( this.getBaselinePairs() );
@@ -107,9 +105,7 @@ public class CrossPairs<L, R>
 
     /**
      * Hidden constructor.
-     * 
-     * @param <L> the left type of data on one side of a pairing
-     * @param <R> the right type of data on one side of a pairing
+     *
      * @param mainPairs the main pairs
      * @param baselinePairs the baseline pairs
      * @throws NullPointerException if either input is null

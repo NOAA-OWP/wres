@@ -17,6 +17,7 @@ import wres.statistics.generated.Geometry;
  * Caches details about Features
  * @author Jesse Bickel
  * @author Christopher Tubbs
+ * @author James Brown
  */
 public class Features
 {

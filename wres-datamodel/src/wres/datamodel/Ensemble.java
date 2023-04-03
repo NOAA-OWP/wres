@@ -112,12 +112,10 @@ public class Ensemble implements Comparable<Ensemble>
                 return true;
             }
 
-            if ( ! ( other instanceof Labels ) )
+            if ( ! ( other instanceof Labels otherLabels ) )
             {
                 return false;
             }
-
-            Labels otherLabels = (Labels) other;
 
             return Arrays.equals( this.labs, otherLabels.labs );
         }

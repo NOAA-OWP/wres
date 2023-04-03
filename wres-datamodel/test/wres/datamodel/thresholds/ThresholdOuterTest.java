@@ -1,13 +1,13 @@
 package wres.datamodel.thresholds;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
@@ -17,10 +17,10 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Tests the {@link ThresholdOuter}. 
- * 
+ *
  * @author James Brown
  */
-public final class ThresholdOuterTest
+final class ThresholdOuterTest
 {
     private static final String THRESHOLD_LABEL = "a threshold";
 
@@ -29,7 +29,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
         // One threshold
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -145,7 +145,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testCompareTo()
+    void testCompareTo()
     {
         // Same conditions
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
@@ -366,7 +366,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         ThresholdOuter left = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                            .setOperator( Operator.GREATER )
@@ -551,7 +551,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testAccessors()
+    void testAccessors()
     {
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
@@ -574,7 +574,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testToString()
+    void testToString()
     {
 
         // All data
@@ -610,19 +610,19 @@ public final class ThresholdOuterTest
 
         // Pair of probability thresholds
         ThresholdOuter twoProb = new Builder()
-                                              .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
-                                              .setOperator( Operator.BETWEEN )
-                                              .setDataType( ThresholdDataType.LEFT )
-                                              .build();
+                .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
+                .setOperator( Operator.BETWEEN )
+                .setDataType( ThresholdDataType.LEFT )
+                .build();
 
         assertEquals( "Pr >= 0.0 AND < 0.5", twoProb.toString() );
 
         // Pair of value thresholds
         ThresholdOuter twoVal = new Builder()
-                                             .setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
-                                             .setOperator( Operator.BETWEEN )
-                                             .setDataType( ThresholdDataType.LEFT )
-                                             .build();
+                .setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
+                .setOperator( Operator.BETWEEN )
+                .setDataType( ThresholdDataType.LEFT )
+                .build();
 
         assertEquals( ">= 0.0 AND < 0.5", twoVal.toString() );
 
@@ -700,13 +700,13 @@ public final class ThresholdOuterTest
 
         assertEquals( "< Pr = 0.1 (FOO)", quantileNaN.toString() );
     }
-    
+
     /**
-     * Tests the {@link ThresholdOuter#test(Double)}.
+     * Tests the {@link ThresholdOuter#test(double)}}.
      */
 
     @Test
-    public void testTest()
+    void testTest()
     {
         // Operator.BETWEEN real values
         ThresholdOuter realVals = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -781,7 +781,7 @@ public final class ThresholdOuterTest
      */
 
     @Test
-    public void testIsFinite()
+    void testIsFinite()
     {
         // Finite threshold
         ThresholdOuter realVals = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -832,7 +832,7 @@ public final class ThresholdOuterTest
     }
 
     @Test
-    public void testBuildFromExistingThreshold()
+    void testBuildFromExistingThreshold()
     {
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
@@ -853,134 +853,139 @@ public final class ThresholdOuterTest
     }
 
     @Test
-    public void testExceptionOnConstructionWithoutCondition()
-    {
-        Builder builder = new Builder();
-        assertThrows( NullPointerException.class, () -> builder.build() );
-    }
-
-    @Test
-    public void testExceptionOnConstructionWithNullThresholds()
+    void testExceptionOnConstructionWithNullThresholds()
     {
         Builder builder = new Builder().setOperator( Operator.GREATER )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "Specify one or more values" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionWithNegativeProbability()
+    void testExceptionOnConstructionWithNegativeProbability()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( -1.0 ) )
                                        .setOperator( Operator.GREATER )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "out of bounds" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionWithProbabilityGreaterThanOne()
+    void testExceptionOnConstructionWithProbabilityGreaterThanOne()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 2.0 ) )
                                        .setOperator( Operator.GREATER )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "out of bounds" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAThresholdThatChecksForProbabilitiesGreaterThanOne()
+    void testExceptionOnConstructionOfAThresholdThatChecksForProbabilitiesGreaterThanOne()
     {
-        Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.0 ) )
-                                       .setOperator( Operator.GREATER )
+        Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.1 ) )
+                                       .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "out of bounds" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfATwoSidedThresholdWithoutABetweenCondition()
+    void testExceptionOnConstructionOfATwoSidedThresholdWithoutABetweenCondition()
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                                        .setOperator( Operator.GREATER )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class,
-                      () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class,
+                                             builder::build );
+        assertTrue( e.getMessage().contains( "appropriate BETWEEN condition" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAProbabilityThresholdWithAMissingUpperBound()
+    void testExceptionOnConstructionOfAProbabilityThresholdWithAMissingUpperBound()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "thresholds must be defined in pairs" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAValueThresholdWithAMissingUpperBound()
+    void testExceptionOnConstructionOfAValueThresholdWithAMissingUpperBound()
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "thresholds must be defined in pairs" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAValueThresholdWithALowerBoundAboveTheUpperBound()
+    void testExceptionOnConstructionOfAValueThresholdWithALowerBoundAboveTheUpperBound()
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 1.0, 0.0 ) )
                                        .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "must be greater than" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundAboveTheUpperBound()
+    void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundAboveTheUpperBound()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 1.0, 0.0 ) )
                                        .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "must be greater than" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAProbabilityThresholdWithAnUpperBoundAboveOne()
+    void testExceptionOnConstructionOfAProbabilityThresholdWithAnUpperBoundAboveOne()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 2.0 ) )
                                        .setOperator( Operator.BETWEEN )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "out of bounds" ) );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundBelowZero()
+    void testExceptionOnConstructionOfAProbabilityThresholdWithALowerBoundBelowZero()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( Operator.LESS )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e = assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "Cannot apply a threshold operator of '<'") );
     }
 
     @Test
-    public void testExceptionOnConstructionOfAProbabilityThresholdWithASingleBoundAboveOne()
+    void testExceptionOnConstructionOfAProbabilityThresholdWithASingleBoundAboveOne()
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 1.0 ) )
                                        .setOperator( Operator.GREATER )
                                        .setDataType( ThresholdDataType.LEFT );
 
-        assertThrows( ThresholdException.class, () -> builder.build() );
+        ThresholdException e =assertThrows( ThresholdException.class, builder::build );
+        assertTrue( e.getMessage().contains( "Cannot apply a threshold operator of '>'") );
     }
 
     @Test
-    public void testExceptionOnComparingWithNullInput()
+    void testExceptionOnComparingWithNullInput()
     {
         ThresholdOuter threshold =
                 ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ), Operator.GREATER, ThresholdDataType.LEFT );

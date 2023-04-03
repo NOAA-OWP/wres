@@ -16,18 +16,24 @@ import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.system.DatabaseLockFailed;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseType;
 
 class DatabaseSchema implements Closeable
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSchema.class );
     private final DatabaseLockManager lockManager;
 
     DatabaseSchema( final String databaseName,
                     DatabaseLockManager lockManager )
     {
         this.lockManager = lockManager;
+
+        LOGGER.debug( "Migrating database {}.", databaseName );
 
         try
         {
@@ -42,7 +48,6 @@ class DatabaseSchema implements Closeable
             throw error;
         }
     }
-
 
     // Left public for unit testing
     String getChangelogURL()
@@ -65,7 +70,7 @@ class DatabaseSchema implements Closeable
     void applySchema( final Connection connection )
             throws SQLException, IOException
     {
-        Database database = null;
+        Database database;
         try
         {
             database = DatabaseFactory.getInstance()

@@ -9,13 +9,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import javax.measure.Unit;
+
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.EvaluationStatusMessage;
@@ -26,20 +26,15 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.Evaluati
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Ensemble} 
+ * <p>A minimal implementation of a {@link TimeSeriesUpscaler} for a {@link TimeSeries} comprised of {@link Ensemble}
  * values. Makes the same assumptions as the {@link TimeSeriesOfDoubleUpscaler}, but additionally requires that every
  * {@link Ensemble} contains the same number of ensemble members.
- * 
+ *
  * @author James Brown
  */
 
 public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble>
 {
-    /** Function that returns a double value or {@link MissingValues#DOUBLE} if the
-     * input is not finite. */
-    private static final DoubleUnaryOperator RETURN_DOUBLE_OR_MISSING =
-            a -> MissingValues.isMissingValue( a ) ? MissingValues.DOUBLE : a;
-
     /** A map of declared unit aliases to help with unit conversion when unit conversion is required as part of 
      * upscaling. */
     private final Map<String, String> unitAliases;
@@ -54,7 +49,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     /**
      * Creates an instance that enforces strict upscaling or no leniency.
-     * 
+     *
      * @see #of(boolean)
      * @return an instance of the ensemble upscaler
      */
@@ -68,7 +63,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
      * Creates an instance with a prescribed leniency. Lenient upscaling means that missing data does not prevent 
      * upscaling and that irregularly spaced data (which could indicate implicitly missing values) does not prevent 
      * upscaling. Data is explicitly missing if it matches the {@link MissingValues#DOUBLE}.
-     * 
+     *
      * @param isLenient is {@code true} to enforce lenient upscaling, {@code false} otherwise
      * @return an instance of the ensemble upscaler
      */
@@ -83,7 +78,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
      * unit conversion. Lenient upscaling means that missing data does not prevent upscaling and that irregularly 
      * spaced data (which could indicate implicitly missing values) does not prevent upscaling. Data is explicitly 
      * missing if it matches the {@link MissingValues#DOUBLE}.
-     * 
+     *
      * @param isLenient is {@code true} to enforce lenient upscaling, {@code false} otherwise
      * @param unitAliases a map of declared unit aliases
      * @return an instance of the ensemble upscaler
@@ -161,7 +156,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     /**
      * Returns the ensemble upscaler used by this instance.
-     * 
+     *
      * @param function the time-scale function
      * @return the ensemble upscaler
      */
@@ -185,7 +180,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
                 int nextIndex = i;
                 List<Double> doubles = events.stream()
                                              .map( next -> next.getValue().getMembers()[nextIndex] )
-                                             .collect( Collectors.toList() );
+                                             .toList();
 
                 double nextUpscaled = upscaler.applyAsDouble( doubles );
                 upscaled[i] = nextUpscaled;
@@ -197,7 +192,7 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     /**
      * Returns the number of ensemble members associated with every ensemble in the set of events.
-     * 
+     *
      * @param events the events
      * @return the number of ensemble members
      * @throws UnsupportedOperationException if the number of ensemble members is not fixed
@@ -227,9 +222,8 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     }
 
     /**
-     * Returns a function that corresponds to a {@link TimeScaleFunction}, additionally wrapped by 
-     * {@link #RETURN_DOUBLE_OR_MISSING} so that missing input produces missing output.
-     * 
+     * Returns a function that corresponds to a {@link TimeScaleFunction} and handles missing values.
+     *
      * @param function The nominated function
      * @return a function for upscaling
      * @throws UnsupportedOperationException if the nominated function is not recognized
@@ -239,58 +233,45 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
     {
         return events -> {
 
-            double upscaled;
-
             List<Double> eventsToUse = events;
 
             if ( this.isLenient() )
             {
                 eventsToUse = eventsToUse.stream()
                                          .filter( Double::isFinite )
-                                         .collect( Collectors.toList() );
+                                         .toList();
             }
 
-            switch ( function )
-            {
-                case MAXIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Double::valueOf )
-                                          .max()
-                                          .getAsDouble();
-                    break;
-                case MEAN:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Double::valueOf )
-                                          .average()
-                                          .getAsDouble();
-                    break;
-                case MINIMUM:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Double::valueOf )
-                                          .min()
-                                          .getAsDouble();
-                    break;
-                case TOTAL:
-                    upscaled = eventsToUse.stream()
-                                          .mapToDouble( Double::valueOf )
-                                          .sum();
-                    break;
-                default:
-                    throw new UnsupportedOperationException( "Could not create an upscaling function for the "
-                                                             + "function identifier '"
-                                                             + function
-                                                             + "'." );
-
-            }
-
-            return RETURN_DOUBLE_OR_MISSING.applyAsDouble( upscaled );
+            return switch ( function )
+                    {
+                        case MAXIMUM -> eventsToUse.stream()
+                                                   .mapToDouble( Double::valueOf )
+                                                   .max()
+                                                   .orElse( MissingValues.DOUBLE );
+                        case MEAN -> eventsToUse.stream()
+                                                .mapToDouble( Double::valueOf )
+                                                .average()
+                                                .orElse( MissingValues.DOUBLE );
+                        case MINIMUM -> eventsToUse.stream()
+                                                   .mapToDouble( Double::valueOf )
+                                                   .min()
+                                                   .orElse( MissingValues.DOUBLE );
+                        case TOTAL -> eventsToUse.stream()
+                                                 .mapToDouble( Double::valueOf )
+                                                 .sum();
+                        default -> throw new UnsupportedOperationException(
+                                "Could not create an upscaling function for the "
+                                + "function identifier '"
+                                + function
+                                + "'." );
+                    };
         };
     }
 
     /**
      * Performs a time-integration step on the rescaled time-series values, which represent mean averages over the scale 
      * period, and then converts the units to time integrated units.
-     * 
+     *
      * @param toIntegrate the time-series to integrate
      * @param existingUnit the existing measurement unit
      * @param desiredUnit the desired measurement unit
@@ -300,11 +281,11 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
      */
 
     private RescaledTimeSeriesPlusValidation<Ensemble>
-            doTimeIntegralConversion( RescaledTimeSeriesPlusValidation<Ensemble> toIntegrate,
-                                      Unit<?> existingUnit,
-                                      Unit<?> desiredUnit,
-                                      String desiredUnitString,
-                                      TimeScaleOuter desiredTimeScale )
+    doTimeIntegralConversion( RescaledTimeSeriesPlusValidation<Ensemble> toIntegrate,
+                              Unit<?> existingUnit,
+                              Unit<?> desiredUnit,
+                              String desiredUnitString,
+                              TimeScaleOuter desiredTimeScale )
     {
         TimeSeries<Ensemble> seriesToIntegrate = toIntegrate.getTimeSeries();
         List<EvaluationStatusMessage> validationEvents = new ArrayList<>( toIntegrate.getValidationEvents() );
@@ -383,9 +364,9 @@ public class TimeSeriesOfEnsembleUpscaler implements TimeSeriesUpscaler<Ensemble
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param isLenient is true if the lenient upscaling is required, false otherwise
-     * @param a map of declared unit aliases, possibly empty
+     * @param unitAliases a map of declared unit aliases, possibly empty
      * @throws NullPointerException if the unitAliases is null
      */
 

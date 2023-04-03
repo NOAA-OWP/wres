@@ -19,7 +19,6 @@ import wres.statistics.generated.BoxplotStatistic;
 @Immutable
 public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
 {
-
     /**
      * The statistics metadata.
      */
@@ -63,7 +62,7 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof BoxplotStatisticOuter ) )
+        if ( ! ( o instanceof BoxplotStatisticOuter p ) )
         {
             return false;
         }
@@ -72,8 +71,6 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
         {
             return true;
         }
-
-        BoxplotStatisticOuter p = (BoxplotStatisticOuter) o;
 
         if ( !this.getData().equals( p.getData() ) )
         {

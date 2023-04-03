@@ -3,9 +3,9 @@ package wres.datamodel.time;
 import java.time.Instant;
 
 /**
- * An outcome or value at a specific {@link Instant} on the timeline.
+ * <p>An outcome or value at a specific {@link Instant} on the timeline.
  * 
- * TODO: collapse this interface and the default implementation {@link DefaultEvent} when generic specialization is 
+ * <p>TODO: collapse this interface and the default implementation {@link DefaultEvent} when generic specialization is
  * supported by the JDK so that the {@link DoubleEvent} is no longer required for performance.
  * 
  * @param <T> the type of event

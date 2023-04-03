@@ -7,13 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.FunctionFactory;
-import wres.metrics.MetricCalculationException;
-import wres.metrics.MetricParameterException;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -67,18 +64,8 @@ public class MeanSquareError extends SumOfSquareError
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
     {
         LOGGER.debug( "Computing the {}.", this );
-        
-        switch ( this.getScoreOutputGroup() )
-        {
-            case NONE:
-                return this.aggregate( this.getIntermediateStatistic( s ), s );
-            case CR:
-            case LBR:
-            case CR_AND_LBR:
-            default:
-                throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
-                                                      + "'." );
-        }
+
+        return this.aggregate( this.getIntermediateStatistic( s ), s );
     }
 
     @Override
@@ -132,17 +119,4 @@ public class MeanSquareError extends SumOfSquareError
     {
         super();
     }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    MeanSquareError( MetricGroup decompositionId )
-    {
-        super( decompositionId );
-    }
-
 }

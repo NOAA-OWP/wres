@@ -1,15 +1,18 @@
 package wres.datamodel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.apache.commons.math3.util.Precision.EPSILON;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
@@ -21,14 +24,14 @@ import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Tests the {@link DataUtilities}.
+ * <p>Tests the {@link DataUtilities}.
  * 
- * TODO: refactor the tests of containers (as opposed to factory methods) into their own test classes.
+ * <p>TODO: refactor the tests of containers (as opposed to factory methods) into their own test classes.
  * 
  * @author James Brown
  * @author jesse
  */
-public final class DataUtilitiesTest
+final class DataUtilitiesTest
 {
     /** First time for testing. */
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
@@ -39,12 +42,35 @@ public final class DataUtilitiesTest
     /** Threshold label. */
     private static final String THRESHOLD_LABEL = "a threshold";
 
-    /**
-     * Tests for the correct implementation of {@link Comparable} by the {@link Pair}.
-     */
+    @Test
+    void testParsePointFromPointWkt()
+    {
+        String wkt = "POINT ( 3.141592654 5.1 )";
+        Coordinate point = DataUtilities.getLonLatFromPointWkt( wkt );
+        assertEquals( 3.141592654, point.getX(), EPSILON );
+        assertEquals( 5.1, point.getY(), EPSILON );
+    }
 
     @Test
-    public void compareDefaultMapBiKeyTest()
+    void testParsePointFromPointWktNonStrict()
+    {
+        String wkt = "POINT ( 3.141592654 5.1 )";
+        Coordinate point = DataUtilities.getLonLatOrNullFromWkt( wkt );
+        assertNotNull( point );
+        assertEquals( 3.141592654, point.getX(), EPSILON );
+        assertEquals( 5.1, point.getY(), EPSILON );
+    }
+
+    @Test
+    void testParsePointFromPointWktNonStrictExpectsNull()
+    {
+        String wkt = "foo";
+        Coordinate point = DataUtilities.getLonLatOrNullFromWkt( wkt );
+        assertNull( point );
+    }
+
+    @Test
+    void compareDefaultMapBiKeyTest()
     {
         //Test equality
         Pair<TimeWindowOuter, ThresholdOuter> first =
@@ -69,7 +95,7 @@ public final class DataUtilitiesTest
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( first ) > 0 );
-        assertTrue( first.compareTo( third ) + third.compareTo( first ) == 0 );
+        assertEquals( 0, first.compareTo( third ) + third.compareTo( first ) );
         //Latest date
         Pair<TimeWindowOuter, ThresholdOuter> fourth =
                 Pair.of( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
@@ -78,7 +104,7 @@ public final class DataUtilitiesTest
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT ) );
         assertTrue( third.compareTo( fourth ) > 0 );
-        assertTrue( third.compareTo( fourth ) + fourth.compareTo( third ) == 0 );
+        assertEquals( 0, third.compareTo( fourth ) + fourth.compareTo( third ) );
         //Valid time
         Pair<TimeWindowOuter, ThresholdOuter> fifth =
                 Pair.of( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
@@ -89,7 +115,7 @@ public final class DataUtilitiesTest
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT ) );
         assertTrue( fourth.compareTo( fifth ) < 0 );
-        assertTrue( fourth.compareTo( fifth ) + fifth.compareTo( fourth ) == 0 );
+        assertEquals( 0, fourth.compareTo( fifth ) + fifth.compareTo( fourth ) );
         //Threshold
         Pair<TimeWindowOuter, ThresholdOuter> sixth =
                 Pair.of( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
@@ -100,18 +126,14 @@ public final class DataUtilitiesTest
                                             Operator.GREATER,
                                             ThresholdDataType.LEFT ) );
         assertTrue( fifth.compareTo( sixth ) > 0 );
-        assertTrue( fifth.compareTo( sixth ) + sixth.compareTo( fifth ) == 0 );
+        assertEquals( 0, fifth.compareTo( sixth ) + sixth.compareTo( fifth ) );
 
         //Check nullity contract
         assertThrows( NullPointerException.class, () -> first.compareTo( null ) );
     }
 
-    /**
-     * Tests the {@link Pair#equals(Object)} and {@link Pair#hashCode()}.
-     */
-
     @Test
-    public void equalsHashCodePairTest()
+    void equalsHashCodePairTest()
     {
         //Equality
         Pair<TimeWindowOuter, ThresholdOuter> zeroeth =
@@ -189,13 +211,8 @@ public final class DataUtilitiesTest
         assertNotEquals( fifth, sixth );
     }
 
-    /**
-     * Constructs a {@link OneOrTwoThresholds} and tests {@link OneOrTwoThresholds#toStringSafe()} against other 
-     * instances.
-     */
-
     @Test
-    public void testToStringSafeOneOrTwoThresholds()
+    void testToStringSafeOneOrTwoThresholds()
     {
         OneOrTwoThresholds testString =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 27.0 ),
@@ -203,7 +220,7 @@ public final class DataUtilitiesTest
                                                                            Operator.GREATER_EQUAL,
                                                                            ThresholdDataType.LEFT ) );
 
-        assertTrue( "GTE_27.0_Pr_EQ_0.5".equals( DataUtilities.toStringSafe( testString ) ) );
+        assertEquals( "GTE_27.0_Pr_EQ_0.5", DataUtilities.toStringSafe( testString ) );
 
         OneOrTwoThresholds secondTestString =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 23.0 ),
@@ -214,15 +231,11 @@ public final class DataUtilitiesTest
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) );
 
-        assertTrue( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1".equals( DataUtilities.toStringSafe( secondTestString ) ) );
+        assertEquals( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1", DataUtilities.toStringSafe( secondTestString ) );
     }
 
-    /**
-     * Tests the {@link ThresholdOuter#toStringSafe()}.
-     */
-
     @Test
-    public void testToStringSafeThresholdOuter()
+    void testToStringSafeThresholdOuter()
     {
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -241,7 +254,7 @@ public final class DataUtilitiesTest
      */
 
     @Test
-    public void testToStringSafeEliminatesReservedCharactersInUnits()
+    void testToStringSafeEliminatesReservedCharactersInUnits()
     {
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
                                                 .setOperator( Operator.GREATER )
@@ -252,12 +265,8 @@ public final class DataUtilitiesTest
         assertEquals( "GT_23.0_ft3s", DataUtilities.toStringSafe( threshold ) );
     }
 
-    /**
-     * Tests the {@link ThresholdOuter#toStringWithoutUnits()}.
-     */
-
     @Test
-    public void testToStringWithoutUnits()
+    void testToStringWithoutUnits()
     {
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
@@ -275,12 +284,12 @@ public final class DataUtilitiesTest
     }
 
     /**
-     * Tests the {@link ThresholdOuter#toStringWithoutUnits()} with a unit string that contains regex characters. 
-     * See #109152. These characters should be interpreted literally, not as a regex.
+     * Tests the {@link DataUtilities#toStringWithoutUnits(ThresholdOuter)} with a unit string that contains regex
+     * characters. See #109152. These characters should be interpreted literally, not as a regex.
      */
 
     @Test
-    public void testToStringWithoutUnitsForRegexString()
+    void testToStringWithoutUnitsForRegexString()
     {
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
@@ -294,7 +303,7 @@ public final class DataUtilitiesTest
     }
 
     @Test
-    public void testToStringSafeInstant()
+    void testToStringSafeInstant()
     {
         Instant instant = Instant.parse( "2027-12-23T00:00:01Z" );
 

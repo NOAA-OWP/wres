@@ -35,7 +35,7 @@ abstract class ContingencyTableScore implements Score<Pool<Pair<Boolean, Boolean
      * Null string warning, used in several places.
      */
 
-    private final String nullString = "Specify non-null input to the '" + this.toString() + "'.";
+    private final String nullString = "Specify non-null input to the '" + this + "'.";
 
     @Override
     public MetricConstants getCollectionOf()

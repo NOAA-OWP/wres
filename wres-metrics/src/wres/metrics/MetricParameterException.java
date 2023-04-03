@@ -1,5 +1,7 @@
 package wres.metrics;
 
+import java.io.Serial;
+
 /**
  * An unchecked exception associated with a metric parameter.
  * 
@@ -8,11 +10,11 @@ package wres.metrics;
 
 public final class MetricParameterException extends RuntimeException
 {
-
     /**
      * Serial identifier.
      */
     
+    @Serial
     private static final long serialVersionUID = -905153232324061637L;
     
     /**

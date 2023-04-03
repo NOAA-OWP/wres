@@ -400,7 +400,6 @@ public class SingleValuedForecastRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamOne =
@@ -413,7 +412,6 @@ public class SingleValuedForecastRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamTwo =
@@ -427,7 +425,6 @@ public class SingleValuedForecastRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamThree =

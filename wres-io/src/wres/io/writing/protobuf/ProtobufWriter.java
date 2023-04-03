@@ -3,6 +3,7 @@ package wres.io.writing.protobuf;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -182,7 +183,7 @@ public class ProtobufWriter implements Function<Statistics,Set<Path>>
     private static class ProtobufWriteException extends WriteException
     {
         /** Serial identifier.*/
-
+        @Serial
         private static final long serialVersionUID = 310749020741932142L;
 
         /**

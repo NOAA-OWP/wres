@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -19,8 +17,6 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.statistics.StatisticsStore.Builder;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
@@ -275,23 +271,6 @@ class StatisticsFutures
         }
 
         /**
-         * Adds a set of future {@link DoubleScoreStatisticOuter} to the appropriate internal store.
-         * 
-         * @param value the future result
-         * @return the builder
-         */
-
-        MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindowOuter, OneOrTwoThresholds> key,
-                                                         Future<List<DoubleScoreStatisticOuter>> value )
-        {
-            Objects.requireNonNull( key.getLeft() );
-
-            this.doubleScore.add( value );
-
-            return this;
-        }
-
-        /**
          * Build the metric futures.
          * 
          * @return the metric futures
@@ -307,9 +286,7 @@ class StatisticsFutures
          * merge list.
          * 
          * @param futures the input futures
-         * @param mergeSet the merge list
          * @return the builder
-         * @throws StatisticsMergeException if the outputs cannot be merged across calls
          */
 
         MetricFuturesByTimeBuilder addFutures( StatisticsFutures futures )
@@ -325,7 +302,6 @@ class StatisticsFutures
          * @param futures the input futures
          * @param mergeSet the merge list
          * @return the builder
-         * @throws StatisticsMergeException if the outputs cannot be merged across calls
          */
 
         MetricFuturesByTimeBuilder addFutures( StatisticsFutures futures,

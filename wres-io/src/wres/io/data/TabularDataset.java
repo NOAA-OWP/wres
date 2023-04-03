@@ -30,7 +30,11 @@ import wres.datamodel.time.TimeSeriesSlicer;
  */
 public class TabularDataset implements DataProvider
 {
+    private static final String THE_DATA_SET_IS_INACCESSIBLE = "The data set is inaccessible.";
     private static final Logger LOGGER = LoggerFactory.getLogger( TabularDataset.class );
+    private static final String THE_TYPE = "The type '";
+    private static final String WITH_THE_VALUE = "' with the value '";
+    private static final String IN_THE_COLUMN = "' in the column '";
     private Map<String, Integer> columnNames;
     private List<Object[]> rows;
     private int currentRow = -1;
@@ -169,7 +173,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         return this.getObject( currentRow, this.getColumnIndex( columnName ) ) == null;
@@ -203,7 +207,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         // If "next" hasn't been called, go ahead and move on to the next row
@@ -239,7 +243,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         if ( this.columnNames == null )
@@ -272,7 +276,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         return this.currentRow;
@@ -283,7 +287,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         if ( this.currentRow < 0 )
@@ -304,7 +308,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -313,21 +317,21 @@ public class TabularDataset implements DataProvider
         {
             return false;
         }
-        else if ( value instanceof Boolean )
+        else if ( value instanceof Boolean v )
         {
-            return ( Boolean ) value;
+            return v;
         }
-        else if ( value instanceof Integer )
+        else if ( value instanceof Integer v )
         {
-            return ( Integer ) value == 1;
+            return v == 1;
         }
-        else if ( value instanceof Short )
+        else if ( value instanceof Short v )
         {
-            return ( Short ) value == 1;
+            return v == 1;
         }
-        else if ( value instanceof Long )
+        else if ( value instanceof Long v )
         {
-            return ( Long ) value == 1;
+            return v == 1;
         }
 
         return value.toString().contains( "1" );
@@ -338,7 +342,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -352,10 +356,10 @@ public class TabularDataset implements DataProvider
         {
             return ( byte ) value;
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
             // Use Number to convert a numerical type to a byte
-            return ( ( Number ) value ).byteValue();
+            return v.byteValue();
         }
 
         try
@@ -367,9 +371,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a byte." );
         }
     }
@@ -379,7 +383,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -392,9 +396,9 @@ public class TabularDataset implements DataProvider
         {
             return ( int ) value;
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
-            return ( ( Number ) value ).intValue();
+            return v.intValue();
         }
 
         try
@@ -406,9 +410,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as an integer." );
         }
     }
@@ -418,7 +422,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -431,9 +435,9 @@ public class TabularDataset implements DataProvider
         {
             return ( short ) value;
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
-            return ( ( Number ) value ).shortValue();
+            return v.shortValue();
         }
 
         try
@@ -445,9 +449,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a short." );
         }
     }
@@ -457,7 +461,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -470,9 +474,9 @@ public class TabularDataset implements DataProvider
         {
             return ( long ) value;
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
-            return ( ( Number ) value ).longValue();
+            return v.longValue();
         }
 
         try
@@ -484,9 +488,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a long." );
         }
     }
@@ -496,7 +500,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -509,9 +513,9 @@ public class TabularDataset implements DataProvider
         {
             return ( float ) value;
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
-            return ( ( Number ) value ).floatValue();
+            return v.floatValue();
         }
 
         try
@@ -523,9 +527,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a float." );
         }
     }
@@ -535,7 +539,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -548,9 +552,9 @@ public class TabularDataset implements DataProvider
         {
             return ( double ) this.getObject( columnName );
         }
-        else if ( value instanceof Number )
+        else if ( value instanceof Number v )
         {
-            return ( ( Number ) value ).doubleValue();
+            return v.doubleValue();
         }
 
         try
@@ -562,9 +566,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a double." );
         }
     }
@@ -574,47 +578,45 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new Double[0];
         }
         else if ( array instanceof Double[] )
         {
             return ( Double[] ) this.getObject( columnName );
         }
-        else if ( array instanceof Number[] )
+        else if ( array instanceof Number[] v )
         {
-            Number[] numbers = ( Number[] ) array;
-            Double[] result = new Double[numbers.length];
+            Double[] result = new Double[v.length];
 
-            for ( int i = 0; i < numbers.length; ++i )
+            for ( int i = 0; i < v.length; ++i )
             {
-                result[i] = numbers[i].doubleValue();
+                result[i] = v[i].doubleValue();
             }
 
             return result;
         }
-        else if ( array instanceof String[] )
+        else if ( array instanceof String[] v )
         {
-            String[] numbers = ( String[] ) array;
-            Double[] result = new Double[numbers.length];
+            Double[] result = new Double[v.length];
 
-            for ( int i = 0; i < numbers.length; ++i )
+            for ( int i = 0; i < v.length; ++i )
             {
-                result[i] = Double.parseDouble( numbers[i] );
+                result[i] = Double.parseDouble( v[i] );
             }
 
             return result;
         }
 
-        throw new ClassCastException( "The type '" +
+        throw new ClassCastException( THE_TYPE +
                                       array.getClass().toString() +
-                                      "' in the column '" + columnName +
+                                      IN_THE_COLUMN + columnName +
                                       "' cannot be casted as a double array." );
     }
 
@@ -623,47 +625,45 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new Integer[0];
         }
         else if ( array instanceof Integer[] )
         {
             return ( Integer[] ) this.getObject( columnName );
         }
-        else if ( array instanceof Number[] )
+        else if ( array instanceof Number[] v )
         {
-            Number[] numbers = ( Number[] ) array;
-            Integer[] result = new Integer[numbers.length];
+            Integer[] result = new Integer[v.length];
 
-            for ( int i = 0; i < numbers.length; ++i )
+            for ( int i = 0; i < v.length; ++i )
             {
-                result[i] = numbers[i].intValue();
+                result[i] = v[i].intValue();
             }
 
             return result;
         }
-        else if ( array instanceof String[] )
+        else if ( array instanceof String[] v )
         {
-            String[] numbers = ( String[] ) array;
-            Integer[] result = new Integer[numbers.length];
+            Integer[] result = new Integer[v.length];
 
-            for ( int i = 0; i < numbers.length; ++i )
+            for ( int i = 0; i < v.length; ++i )
             {
-                result[i] = Integer.parseInt( numbers[i] );
+                result[i] = Integer.parseInt( v[i] );
             }
 
             return result;
         }
 
-        throw new ClassCastException( "The type '" +
+        throw new ClassCastException( THE_TYPE +
                                       array.getClass().toString() +
-                                      "' in the column '" + columnName +
+                                      IN_THE_COLUMN + columnName +
                                       "' cannot be casted as a integer array." );
     }
 
@@ -672,23 +672,23 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new String[0];
         }
-        else if ( array instanceof String[] )
+        else if ( array instanceof String[] v )
         {
-            return ( String[] ) array;
+            return v;
         }
 
-        throw new ClassCastException( "The type '" +
+        throw new ClassCastException( THE_TYPE +
                                       array.getClass().toString() +
-                                      "' in the column '" + columnName +
+                                      IN_THE_COLUMN + columnName +
                                       "' cannot be casted as a String array." );
     }
 
@@ -697,7 +697,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -706,29 +706,29 @@ public class TabularDataset implements DataProvider
         {
             return null;
         }
-        else if ( value instanceof Double )
+        else if ( value instanceof Double v )
         {
-            return new BigDecimal( ( Double ) value );
+            return BigDecimal.valueOf( v );
         }
-        else if ( value instanceof Float )
+        else if ( value instanceof Float v )
         {
-            return new BigDecimal( ( Float ) value );
+            return BigDecimal.valueOf( v );
         }
-        else if ( value instanceof Integer )
+        else if ( value instanceof Integer v )
         {
-            return new BigDecimal( ( Integer ) value );
+            return new BigDecimal( v );
         }
-        else if ( value instanceof Long )
+        else if ( value instanceof Long v )
         {
-            return new BigDecimal( ( Long ) value );
+            return new BigDecimal( v );
         }
-        else if ( value instanceof Short )
+        else if ( value instanceof Short v )
         {
-            return new BigDecimal( ( Short ) value );
+            return new BigDecimal( v );
         }
-        else if ( value instanceof Byte )
+        else if ( value instanceof Byte v )
         {
-            return new BigDecimal( ( Byte ) value );
+            return new BigDecimal( v );
         }
 
         try
@@ -740,9 +740,9 @@ public class TabularDataset implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type '" + value.getClass().toString() +
-                    "' with the value '" + value.toString() +
-                    "' in the column '" + columnName +
+                    THE_TYPE + value.getClass().toString() +
+                    WITH_THE_VALUE + value +
+                    IN_THE_COLUMN + columnName +
                     "' cannot be casted as a BigDecimal." );
         }
     }
@@ -752,7 +752,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -761,13 +761,13 @@ public class TabularDataset implements DataProvider
         {
             return ( LocalTime ) this.getObject( columnName );
         }
-        else if ( value instanceof LocalDateTime )
+        else if ( value instanceof LocalDateTime v )
         {
-            return ( ( LocalDateTime ) value ).toLocalTime();
+            return ( v.toLocalTime() );
         }
-        else if ( value instanceof OffsetDateTime )
+        else if ( value instanceof OffsetDateTime v )
         {
-            return ( ( OffsetDateTime ) value ).toLocalTime();
+            return ( v.toLocalTime() );
         }
 
         Instant instant = this.getInstant( columnName );
@@ -779,7 +779,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -788,13 +788,13 @@ public class TabularDataset implements DataProvider
         {
             return ( LocalDate ) this.getObject( columnName );
         }
-        else if ( value instanceof LocalDateTime )
+        else if ( value instanceof LocalDateTime v )
         {
-            return ( ( LocalDateTime ) value ).toLocalDate();
+            return v.toLocalDate();
         }
-        else if ( value instanceof OffsetDateTime )
+        else if ( value instanceof OffsetDateTime v )
         {
-            return ( ( OffsetDateTime ) value ).toLocalDate();
+            return v.toLocalDate();
         }
 
         Instant instant = this.getInstant( columnName );
@@ -806,14 +806,14 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
 
-        if ( value instanceof OffsetDateTime )
+        if ( value instanceof OffsetDateTime v )
         {
-            return ( OffsetDateTime ) value;
+            return v;
         }
 
         // Since we know this isn't natively an offset date time, we try to
@@ -833,7 +833,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -845,17 +845,17 @@ public class TabularDataset implements DataProvider
 
         Instant result;
 
-        if ( value instanceof Instant )
+        if ( value instanceof Instant v )
         {
-            result = ( Instant ) value;
+            result = v;
         }
-        else if ( value instanceof OffsetDateTime )
+        else if ( value instanceof OffsetDateTime v )
         {
-            result = ( ( OffsetDateTime ) value ).toInstant();
+            result = ( v.toInstant() );
         }
-        else if ( value instanceof LocalDateTime )
+        else if ( value instanceof LocalDateTime v )
         {
-            result = ( ( LocalDateTime ) value ).toInstant( ZoneOffset.UTC );
+            result = ( v.toInstant( ZoneOffset.UTC ) );
         }
         // Timestamps are interpretted as strings in order to avoid the 'help'
         // that JDBC provides by converting timestamps to local times and
@@ -872,17 +872,16 @@ public class TabularDataset implements DataProvider
 
             result = Instant.parse( stringRepresentation );
         }
-        else if ( value instanceof Integer )
+        else if ( value instanceof Integer v )
         {
-            result = Instant.ofEpochSecond( ( Integer ) value );
+            result = Instant.ofEpochSecond( v );
         }
-        else if ( value instanceof Long )
+        else if ( value instanceof Long v )
         {
-            result = Instant.ofEpochSecond( ( Long ) value );
+            result = Instant.ofEpochSecond( v );
         }
-        else if ( value instanceof Double )
+        else if ( value instanceof Double epochSeconds )
         {
-            Double epochSeconds = ( Double ) value;
             result = Instant.ofEpochSecond( epochSeconds.longValue() );
         }
         else
@@ -905,9 +904,9 @@ public class TabularDataset implements DataProvider
         {
             return null;
         }
-        else if ( value instanceof Duration )
+        else if ( value instanceof Duration v )
         {
-            result = ( Duration ) value;
+            result = v;
         }
         else if ( value instanceof Number )
         {
@@ -933,7 +932,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
         return ( V ) this.getObject( columnName );
     }
@@ -943,7 +942,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -961,7 +960,7 @@ public class TabularDataset implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -971,15 +970,15 @@ public class TabularDataset implements DataProvider
         {
             return null;
         }
-        else if ( value instanceof URI )
+        else if ( value instanceof URI v )
         {
-            uri = ( URI ) value;
+            uri = v;
         }
-        else if ( value instanceof URL )
+        else if ( value instanceof URL v )
         {
             try
             {
-                uri = ( ( URL ) value ).toURI();
+                uri = v.toURI();
             }
             catch ( URISyntaxException e )
             {

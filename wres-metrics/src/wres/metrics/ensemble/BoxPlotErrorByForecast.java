@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.ToDoubleFunction;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -106,7 +105,6 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      * Creates a box from an ensemble pair.
      * 
      * @param pair an ensemble pair
-     * @param metadata the box metadata
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */
@@ -127,7 +125,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
                                 .mapToDouble( Double::doubleValue )
                                 .map( Slicer.getQuantileFunction( sortedErrors ) )
                                 .boxed()
-                                .collect( Collectors.toList() );
+                                .toList();
 
         VectorOfDoubles domain = VectorOfDoubles.of( sorted );
         double linkedValue = this.domainMapper.applyAsDouble( domain );
@@ -140,9 +138,6 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
 
     /**
      * Hidden constructor.
-     * 
-     * @param probabilities the probabilities
-     * @param domainDimension the domain axis dimension
      */
 
     private BoxPlotErrorByForecast()
@@ -184,18 +179,13 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
 
         switch ( domainDimension )
         {
-            case ENSEMBLE_MEAN:
-                this.domainMapper = FunctionFactory.mean();
-                break;
-            case ENSEMBLE_MEDIAN:
-                this.domainMapper =
-                        a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
-                break;
-            default:
-                throw new MetricParameterException( "Unsupported dimension for the domain axis of the box plot: "
-                                                    + "'"
-                                                    + domainDimension
-                                                    + "'." );
+            case ENSEMBLE_MEAN -> this.domainMapper = FunctionFactory.mean();
+            case ENSEMBLE_MEDIAN -> this.domainMapper =
+                    a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
+            default -> throw new MetricParameterException( "Unsupported dimension for the domain axis of the box plot: "
+                                                           + "'"
+                                                           + domainDimension
+                                                           + "'." );
         }
 
         LinkedValueType linkedValueType = LinkedValueType.valueOf( this.domainDimension.name() );

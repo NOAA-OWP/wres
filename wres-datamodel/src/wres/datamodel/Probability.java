@@ -1,7 +1,5 @@
 package wres.datamodel;
 
-import java.util.Objects;
-
 import org.apache.commons.math3.util.Precision;
 
 /**
@@ -11,7 +9,6 @@ import org.apache.commons.math3.util.Precision;
  */
 public class Probability implements Comparable<Probability>
 {
-
     /**
      * Lower bound.
      */
@@ -67,8 +64,6 @@ public class Probability implements Comparable<Probability>
     @Override
     public int compareTo( Probability other )
     {
-        Objects.requireNonNull( other );
-
         return Double.compare( this.getProbability(), other.getProbability() );
     }
 
@@ -80,12 +75,10 @@ public class Probability implements Comparable<Probability>
             return true;
         }
         
-        if ( ! ( other instanceof Probability ) )
+        if ( ! ( other instanceof Probability input ) )
         {
             return false;
         }
-
-        Probability input = (Probability) other;
 
         return Double.compare( this.getProbability(), input.getProbability() ) == 0;
     }
@@ -105,9 +98,8 @@ public class Probability implements Comparable<Probability>
     /**
      * Hidden constructor.
      * 
-     * @param members the ensemble members
-     * @param labels the ensemble member labels
-     * @throws IllegalArgumentException if the labels are non-null and differ in size to the number of members
+     * @param probability the probability
+     * @throws IllegalArgumentException if the probability is invalid
      */
 
     private Probability( double probability )

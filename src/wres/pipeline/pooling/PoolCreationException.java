@@ -1,5 +1,7 @@
 package wres.pipeline.pooling;
 
+import java.io.Serial;
+
 /**
  * Runtime exception associated with pool creation.
  * 
@@ -12,16 +14,8 @@ public class PoolCreationException extends RuntimeException
      * Serial identifier.
      */
 
+    @Serial
     private static final long serialVersionUID = 7909727897078743659L;
-
-    /**
-     * Constructs an {@link PoolCreationException} with no message.
-     */
-
-    public PoolCreationException()
-    {
-        super();
-    }
 
     /**
      * Constructs a {@link PoolCreationException} with the specified message.

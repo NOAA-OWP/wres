@@ -10,6 +10,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
@@ -44,7 +45,7 @@ import wres.datamodel.space.Feature;
 
 /**
  * A utility class for slicing/dicing and transforming datasets.
- * 
+ *
  * @author James Brown
  * @see    TimeSeriesSlicer
  * @see    PoolSlicer
@@ -71,7 +72,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to the left side of a pair. 
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -86,7 +87,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to the right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -101,7 +102,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to the both the left and right sides of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -115,23 +116,8 @@ public final class Slicer
     }
 
     /**
-     * <p>Composes the input predicate as applying to the either the left side or to the right side of a pair.
-     * 
-     * @param predicate the input predicate
-     * @return a composed predicate
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Predicate<Pair<Double, Double>> leftOrRight( DoublePredicate predicate )
-    {
-        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left or right." );
-
-        return pair -> predicate.test( pair.getLeft() ) || predicate.test( pair.getRight() );
-    }
-
-    /**
      * <p>Composes the input predicate as applying to the left side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -146,7 +132,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to all elements of the right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -161,7 +147,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to one or more elements of the right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -176,7 +162,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -193,7 +179,7 @@ public final class Slicer
     /**
      * <p>Composes the input predicate as applying to the left side of a pair and any element of the right side of a 
      * pair.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed predicate
      * @throws NullPointerException if the input is null
@@ -209,7 +195,7 @@ public final class Slicer
 
     /**
      * <p>Composes the input predicate as applying to the transformed value of the right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @param transformer the transformer
      * @return a composed predicate
@@ -229,7 +215,7 @@ public final class Slicer
     /**
      * <p>Composes the input predicate as applying to the left side of a pair and to the transformed value of the 
      * right side of a pair.
-     * 
+     *
      * @param predicate the input predicate
      * @param transformer the transformer
      * @return a composed predicate
@@ -250,7 +236,7 @@ public final class Slicer
     /**
      * A transformer that applies a predicate to the left and each of the right separately, returning a transformed
      * pair or null if the left and none of the right meet the condition.
-     * 
+     *
      * @param predicate the input predicate
      * @return a composed function
      */
@@ -293,7 +279,7 @@ public final class Slicer
                                                           .mapToDouble( Double::doubleValue )
                                                           .toArray();
 
-            String[] filteredLabelArray = filteredLabels.toArray( new String[filteredLabels.size()] );
+            String[] filteredLabelArray = filteredLabels.toArray( new String[0] );
 
             //One or more of right meets condition
             if ( filteredMemberArray.length > 0 )
@@ -308,7 +294,7 @@ public final class Slicer
 
     /**
      * Returns the left side of the input as a primitive array of doubles.
-     * 
+     *
      * @param <T> the data type
      * @param input the input pairs
      * @return the left side
@@ -324,7 +310,7 @@ public final class Slicer
 
     /**
      * Returns the right side of the input as a primitive array of doubles.
-     * 
+     *
      * @param <T> the data type
      * @param input the input pairs
      * @return the right side
@@ -342,10 +328,10 @@ public final class Slicer
      * <p>Returns a subset of metric outputs whose {@link PoolMetadata} matches the supplied predicate. For 
      * example, to filter by a particular {@link TimeWindowOuter} and {@link OneOrTwoThresholds} associated with the 
      * output metadata:</p>
-     * 
+     *
      * <p><code>Slicer.filter( list, a {@literal ->} a.getMetadata().getTimeWindow().equals( someWindow ) 
      *                      {@literal &&} a.getMetadata().getThresholds().equals( someThreshold ) );</code></p>
-     *              
+     *
      * @param <T> the output type
      * @param outputs the outputs to filter
      * @param predicate the predicate to use as a filter
@@ -360,12 +346,12 @@ public final class Slicer
 
         Objects.requireNonNull( predicate, NULL_INPUT_EXCEPTION );
 
-        return outputs.stream().filter( predicate ).collect( Collectors.toUnmodifiableList() );
+        return outputs.stream().filter( predicate ).toList();
     }
 
     /**
      * Removes the ensemble members that match the input labels.
-     * 
+     *
      * @param ensemble the ensemble to modify
      * @param labels the labels to remove
      * @return the modified ensemble
@@ -413,7 +399,7 @@ public final class Slicer
                                                  .mapToDouble( Double::doubleValue )
                                                  .toArray();
 
-        String[] filteredLabelArray = newLabels.toArray( new String[newLabels.size()] );
+        String[] filteredLabelArray = newLabels.toArray( new String[0] );
 
         return Ensemble.of( filteredMemberArray, Labels.of( filteredLabelArray ) );
     }
@@ -421,18 +407,18 @@ public final class Slicer
     /**
      * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to 
      * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
-     * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     *
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
      *                                         next.getMetadata().getThresholds() );</code></p>
-     * 
+     *
      * <p>To discover the unique pairs of lead times in the list of outputs:</p>
-     * 
-     * <p><code>Slicer.discover( outputs, next {@literal ->} 
+     *
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
      * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
      * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
-     * 
+     *
      * <p>Returns the empty set if no elements are mapped.</p>
-     * 
+     *
      * @param <S> the metric output type
      * @param <T> the type of information required about the output
      * @param statistics the list of outputs
@@ -441,8 +427,8 @@ public final class Slicer
      * @throws NullPointerException if the input list is null or the mapper is null
      */
 
-    public static <S extends Statistic<?>, T extends Object> SortedSet<T> discover( List<S> statistics,
-                                                                                    Function<S, T> mapper )
+    public static <S extends Statistic<?>, T> SortedSet<T> discover( List<S> statistics,
+                                                                     Function<S, T> mapper )
     {
         Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
 
@@ -457,9 +443,9 @@ public final class Slicer
     /**
      * <p>Convenience method that returns the metric output in the store whose identifier matches the 
      * input. This is equivalent to:</p>
-     * 
+     *
      * <p><code>Slicer.filter( out, meta {@literal ->} meta.getMetricID() == metricIdentifier )</code></p>
-     * 
+     *
      * @param <T> the metric output type
      * @param statistics the list of outputs
      * @param metricIdentifier the metric identifier                     
@@ -476,12 +462,12 @@ public final class Slicer
 
         return statistics.stream()
                          .filter( next -> metricIdentifier == next.getMetricName() )
-                         .collect( Collectors.toUnmodifiableList() );
+                         .toList();
     }
 
     /**
      * <p>Sorts the statistics by time window, then threshold, returning a new list with sorted statistics.
-     * 
+     *
      * @param <T> the type of statistics
      * @param statistics the statistics to sort    
      * @throws NullPointerException if the input is null
@@ -516,14 +502,14 @@ public final class Slicer
      * i.e. each list of ensemble pairs in the returned result has an equal number of elements, internally, and a 
      * different number of elements than all other subsets of pairs. The subsets are returned in a map, indexed by the 
      * number of elements on the right side.
-     * 
+     *
      * @param input a list of ensemble pairs to slice
      * @return as many subsets of ensemble pairs as groups of pairs in the input of equal size
      * @throws NullPointerException if the input is null
      */
 
     public static Map<Integer, List<Pair<Double, Ensemble>>>
-            filterByRightSize( List<Pair<Double, Ensemble>> input )
+    filterByRightSize( List<Pair<Double, Ensemble>> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -533,7 +519,7 @@ public final class Slicer
     /**
      * Returns a map of {@link ScoreComponent} for each component in the input map of {@link ScoreStatistic}. The 
      * slices are mapped to their {@link MetricConstants} component identifier.
-     * 
+     *
      * @param <S>  the score component type
      * @param <T> the score type
      * @param input the input map
@@ -542,7 +528,7 @@ public final class Slicer
      */
 
     public static <S extends ScoreComponent<?>, T extends ScoreStatistic<?, S>> Map<MetricConstants, List<S>>
-            filterByMetricComponent( List<T> input )
+    filterByMetricComponent( List<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -572,10 +558,10 @@ public final class Slicer
     /**
      * Converts an ensemble pair to a pair that contains the probabilities that a discrete event occurs according to 
      * the left side and the right side, respectively. The event is represented by a {@link ThresholdOuter}.
-     * 
+     *
      * @param pair the pair to transform
      * @param threshold the threshold
-     * @return the transformed pair
+     * @return the transformed pair or null if no pair could be formed
      * @throws NullPointerException if either input is null
      */
 
@@ -586,12 +572,17 @@ public final class Slicer
 
         Objects.requireNonNull( threshold, NULL_INPUT_EXCEPTION );
 
-        double rhs = Arrays.stream( pair.getRight().getMembers() )
-                           .map( a -> threshold.test( a ) ? 1 : 0 )
-                           .average()
-                           .getAsDouble();
+        OptionalDouble rhs = Arrays.stream( pair.getRight().getMembers() )
+                                   .map( a -> threshold.test( a ) ? 1 : 0 )
+                                   .average();
 
-        return Pair.of( threshold.test( pair.getLeft() ) ? Probability.ONE : Probability.ZERO, Probability.of( rhs ) );
+        if ( rhs.isPresent() )
+        {
+            return Pair.of( threshold.test( pair.getLeft() ) ? Probability.ONE : Probability.ZERO,
+                            Probability.of( rhs.getAsDouble() ) );
+        }
+
+        return null;
     }
 
     /**
@@ -602,7 +593,7 @@ public final class Slicer
      * "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html">https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html</a>.
      * Also see: <a href=
      * "https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample">https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample</a>.
-     * 
+     *
      * @param sorted the sorted input array
      * @return the threshold
      * @throws NullPointerException if the input is null
@@ -643,7 +634,7 @@ public final class Slicer
             {
                 double floorPos = Math.floor( pos );
                 double dif = pos - floorPos;
-                int intPos = (int) floorPos;
+                int intPos = ( int ) floorPos;
                 double lower = sorted[intPos - 1];
                 double upper = sorted[intPos];
                 return lower + dif * ( upper - lower );
@@ -655,7 +646,7 @@ public final class Slicer
      * Returns a {@link ThresholdOuter} with quantiles defined from a prescribed {@link ThresholdOuter} with probabilities, 
      * where the quantiles are mapped using {@link #getQuantileFunction(double[])}. If the input is empty, returns
      * a threshold whose value is {@link Double#NaN}.
-     * 
+     *
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile threshold is determined
      * @param digits an optional number of decimal places to which the threshold will be rounded up (may be null)
@@ -688,11 +679,12 @@ public final class Slicer
                                                        threshold.getUnits() );
         }
         DoubleUnaryOperator qF = Slicer.getQuantileFunction( sorted );
-        Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
+        double first = qF.applyAsDouble( threshold.getProbabilities().first() );
 
         if ( Objects.nonNull( digits ) )
         {
-            first = Slicer.rounder().apply( first, digits );
+            first = Slicer.rounder( digits )
+                          .applyAsDouble( first );
         }
         Double second = null;
 
@@ -701,7 +693,8 @@ public final class Slicer
             second = qF.applyAsDouble( threshold.getProbabilities().second() );
             if ( Objects.nonNull( digits ) )
             {
-                second = Slicer.rounder().apply( second, digits );
+                second = Slicer.rounder( digits )
+                               .applyAsDouble( second );
             }
         }
 
@@ -715,7 +708,7 @@ public final class Slicer
 
     /**
      * Filters a {@link Climatology}, returning a subset whose elements meet the condition.
-     * 
+     *
      * @param input the input
      * @param condition the condition
      * @return the filtered vector
@@ -743,8 +736,8 @@ public final class Slicer
     }
 
     /**
-     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
-     * 
+     * Rounds the input to the prescribed number of decimal places using {@link RoundingMode#HALF_UP}.
+     *
      * @param decimalPlaces the number of decimal places
      * @return a function that rounds to a prescribed number of decimal places
      */
@@ -758,17 +751,17 @@ public final class Slicer
 
     /**
      * Returns a map of statistics grouped by their {@link LeftOrRightOrBaseline}.
-     * 
+     *
      * @param <T> the type of statistic
      * @param input the input list of statistics
      * @return the statistics grouped by context
      */
 
     public static <T extends Statistic<?>> Map<LeftOrRightOrBaseline, List<T>>
-            getStatisticsGroupedByContext( List<T> input )
+    getStatisticsGroupedByContext( List<T> input )
     {
 
-        Function<? super T, ? extends LeftOrRightOrBaseline> classifier = statistic -> {
+        Function<? super T, LeftOrRightOrBaseline> classifier = statistic -> {
             if ( statistic.getMetadata().getPool().getIsBaselinePool() )
             {
                 return LeftOrRightOrBaseline.BASELINE;
@@ -786,7 +779,7 @@ public final class Slicer
 
     /**
      * Concatenates the input, appending from left to right.
-     * 
+     *
      * @param input the input
      * @return the concatenated input
      */
@@ -799,15 +792,8 @@ public final class Slicer
         {
             for ( VectorOfDoubles next : input )
             {
-                if ( Objects.isNull( combined ) )
-                {
-                    combined = Arrays.stream( next.getDoubles() );
-                }
-                else
-                {
-                    DoubleStream nextStream = Arrays.stream( next.getDoubles() );
-                    combined = DoubleStream.concat( combined, nextStream );
-                }
+                DoubleStream nextStream = Arrays.stream( next.getDoubles() );
+                combined = DoubleStream.concat( combined, nextStream );
             }
 
             return VectorOfDoubles.of( combined.toArray() );
@@ -819,8 +805,8 @@ public final class Slicer
     }
 
     /**
-     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
-     * 
+     * Rounds the input to the prescribed number of decimal places using {@link RoundingMode#HALF_UP}.
+     *
      * @return a function that rounds to a prescribed number of decimal places
      */
 

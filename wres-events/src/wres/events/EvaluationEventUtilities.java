@@ -17,7 +17,6 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 
 public class EvaluationEventUtilities
 {
-
     /**
      * Used to generate unique evaluation identifiers.
      */
@@ -100,7 +99,7 @@ public class EvaluationEventUtilities
 
     /**
      * Generate a compact, unique, identifier for an evaluation. Thanks to: 
-     * https://neilmadden.blog/2018/08/30/moving-away-from-uuids/
+     * <a href="https://neilmadden.blog/2018/08/30/moving-away-from-uuids/">https://neilmadden.blog/2018/08/30/moving-away-from-uuids</a>
      */
 
     private static class RandomString

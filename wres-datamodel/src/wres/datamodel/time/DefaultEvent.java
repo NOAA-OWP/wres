@@ -66,12 +66,10 @@ public class DefaultEvent<T> implements Event<T>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof DefaultEvent ) )
+        if ( ! ( o instanceof DefaultEvent<?> inEvent ) )
         {
             return false;
         }
-
-        DefaultEvent<?> inEvent = (DefaultEvent<?>) o;
 
         return inEvent.value.equals( this.value ) && inEvent.eventTime.equals( this.eventTime );
     }
@@ -111,8 +109,6 @@ public class DefaultEvent<T> implements Event<T>
     @Override
     public int compareTo( Event<T> o )
     {
-        Objects.requireNonNull( o, "Specify a non-null input for comparison." );
-        
         int returnMe = this.getTime().compareTo( o.getTime() );        
         
         if( returnMe != 0 )

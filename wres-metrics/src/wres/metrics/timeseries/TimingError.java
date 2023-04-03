@@ -17,7 +17,6 @@ import wres.metrics.Metric;
  */
 public abstract class TimingError implements Metric<Pool<TimeSeries<Pair<Double,Double>>>, DurationDiagramStatisticOuter>
 {
-
     /**
      * A random number generator for resolving ties.
      */

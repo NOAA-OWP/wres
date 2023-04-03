@@ -29,7 +29,6 @@ import wres.statistics.generated.TimeWindow;
 
 public final class TimeWindowGenerator
 {
-
     private static final String CANNOT_DETERMINE_TIME_WINDOWS_FROM_NULL_PAIR_CONFIGURATION = "Cannot determine time "
                                                                                              + "windows from null pair "
                                                                                              + "configuration.";
@@ -460,27 +459,28 @@ public final class TimeWindowGenerator
                                                            boolean areIssuedTimes )
     {
         // Issued dates
+        TimeWindow inner;
         if ( areIssuedTimes )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( earliestExclusive,
-                                                             latestInclusive,
-                                                             baseWindow.getEarliestValidTime(),
-                                                             baseWindow.getLatestValidTime(),
-                                                             baseWindow.getEarliestLeadDuration(),
-                                                             baseWindow.getLatestLeadDuration() );
-            return TimeWindowOuter.of( inner );
+            inner = MessageFactory.getTimeWindow( earliestExclusive,
+                                                  latestInclusive,
+                                                  baseWindow.getEarliestValidTime(),
+                                                  baseWindow.getLatestValidTime(),
+                                                  baseWindow.getEarliestLeadDuration(),
+                                                  baseWindow.getLatestLeadDuration() );
         }
         // Valid dates
         else
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
-                                                             baseWindow.getLatestReferenceTime(),
-                                                             earliestExclusive,
-                                                             latestInclusive,
-                                                             baseWindow.getEarliestLeadDuration(),
-                                                             baseWindow.getLatestLeadDuration() );
-            return TimeWindowOuter.of( inner );
+            inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                  baseWindow.getLatestReferenceTime(),
+                                                  earliestExclusive,
+                                                  latestInclusive,
+                                                  baseWindow.getEarliestLeadDuration(),
+                                                  baseWindow.getLatestLeadDuration() );
         }
+
+        return TimeWindowOuter.of( inner );
     }
 
     /**

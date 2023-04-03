@@ -142,7 +142,6 @@ public class ChartFactory
 
     /**
      * @return an instance
-     * @throws FontLoadingException if the chart font resource not be loaded
      */
 
     public static ChartFactory of()

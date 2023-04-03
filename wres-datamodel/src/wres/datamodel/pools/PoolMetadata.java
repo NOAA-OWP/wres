@@ -23,10 +23,10 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
- * An immutable store of metadata that describes a {@link Pool}.
+ * <p>An immutable store of metadata that describes a {@link Pool}.
  * 
- * TODO: eliminate the evaluation description from this class. This would be aided by integrating the measurement units 
- * into the pool description and deprecating the corresponding attribute of the evaluation description.
+ * <p>TODO: eliminate the evaluation description from this class. This would be aided by integrating the measurement
+ * units into the pool description and deprecating the corresponding attribute of the evaluation description.
  * 
  * @author James Brown
  */
@@ -352,8 +352,6 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     @Override
     public int compareTo( PoolMetadata input )
     {
-        Objects.requireNonNull( input, "Specify non-null metadata for comparison." );
-
         // Check measurement units, which are always available
         int returnMe = MessageUtilities.compare( this.getEvaluation(), input.getEvaluation() );
 
@@ -373,12 +371,10 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             return true;
         }
 
-        if ( ! ( o instanceof PoolMetadata ) )
+        if ( ! ( o instanceof PoolMetadata p ) )
         {
             return false;
         }
-
-        PoolMetadata p = (PoolMetadata) o;
 
         return Objects.equals( this.getEvaluation(), p.getEvaluation() )
                && Objects.equals( this.getPool(), p.getPool() );
@@ -646,7 +642,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             {
                 wres.statistics.generated.Threshold decision = this.getPool()
                                                                    .getDecisionThreshold();
-                decisionOuter = new ThresholdOuter.Builder( decision ).build();
+                decisionOuter = ThresholdOuter.of( decision );
             }
 
             thresholdsInner = OneOrTwoThresholds.of( eventOuter, decisionOuter );

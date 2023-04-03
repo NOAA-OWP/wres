@@ -272,7 +272,7 @@ public class IncompleteIngest
      * Assumes that the caller (or caller of caller) holds an exclusive lock on
      * the database instance.
      * @param database The database to use.
-     * @return Whether or not values were removed
+     * @return Whether values were removed
      * @throws SQLException Thrown when one of the required scripts could not complete
      */
 

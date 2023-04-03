@@ -17,7 +17,6 @@ import wres.datamodel.statistics.Statistic;
 
 class MetricTask<S extends Pool<?>, T extends Statistic<?>> implements Callable<T>
 {
-
     /**
      * The metric.
      */

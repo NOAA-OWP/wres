@@ -489,7 +489,6 @@ public class EnsembleRetrieverFactoryTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
@@ -498,7 +497,6 @@ public class EnsembleRetrieverFactoryTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
 
@@ -511,7 +509,6 @@ public class EnsembleRetrieverFactoryTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamThree =

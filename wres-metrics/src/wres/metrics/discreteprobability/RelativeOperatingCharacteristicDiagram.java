@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -177,13 +176,13 @@ public class RelativeOperatingCharacteristicDiagram
         DiagramStatisticComponent pod =
                 DiagramStatisticComponent.newBuilder()
                                          .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_DETECTION )
-                                         .addAllValues( Arrays.stream( pOD ).boxed().collect( Collectors.toList() ) )
+                                         .addAllValues( Arrays.stream( pOD ).boxed().toList() )
                                          .build();
 
         DiagramStatisticComponent pofd =
                 DiagramStatisticComponent.newBuilder()
                                          .setMetric( RelativeOperatingCharacteristicDiagram.PROBABILITY_OF_FALSE_DETECTION )
-                                         .addAllValues( Arrays.stream( pOFD ).boxed().collect( Collectors.toList() ) )
+                                         .addAllValues( Arrays.stream( pOFD ).boxed().toList() )
                                          .build();
 
         DiagramStatistic rocDiagram = DiagramStatistic.newBuilder()

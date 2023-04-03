@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 
 public interface Retriever<T> extends Supplier<Stream<T>>
 {
-
     /**
      * Reads an object with a prescribed identifier.
      * 
@@ -72,5 +71,4 @@ public interface Retriever<T> extends Supplier<Stream<T>>
     {
         return this.get( this.getAllIdentifiers() );
     }
-
 }

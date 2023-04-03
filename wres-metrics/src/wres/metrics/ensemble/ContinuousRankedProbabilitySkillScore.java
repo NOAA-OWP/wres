@@ -6,13 +6,11 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
 import wres.config.MetricConstants;
-import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.FunctionFactory;
-import wres.metrics.MetricParameterException;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -72,19 +70,6 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         return new ContinuousRankedProbabilitySkillScore();
     }
 
-    /**
-     * Returns an instance.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @return an instance
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    public static ContinuousRankedProbabilitySkillScore of( MetricGroup decompositionId )
-    {
-        return new ContinuousRankedProbabilitySkillScore( decompositionId );
-    }
-
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
     {
@@ -96,8 +81,8 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         {
             throw new PoolException( "Specify a non-null baseline for the '" + this + "'." );
         }
-        //CRPSS, currently without decomposition
-        //TODO: implement the decomposition
+        // CRPSS, currently without decomposition
+        // TODO: implement the decomposition
         double numerator = super.apply( s ).getComponent( MetricConstants.MAIN )
                                            .getData()
                                            .getValue();
@@ -152,17 +137,4 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     {
         super();
     }
-
-    /**
-     * Hidden constructor.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    private ContinuousRankedProbabilitySkillScore( MetricGroup decompositionId )
-    {
-        super( decompositionId );
-    }
-
 }

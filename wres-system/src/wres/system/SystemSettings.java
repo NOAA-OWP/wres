@@ -48,7 +48,6 @@ public class SystemSettings extends XMLReader
     private int maximumWebClientThreads = 3;
     private int maximumNwmIngestThreads = 6;
     private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
-    private boolean updateProgressMonitor = false;
     private int maximumPoolThreads = 6;
     private int maximumThresholdThreads = 1;
     private int maximumMetricThreads = 1;
@@ -288,15 +287,6 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return Return <code>true</code> if progress monitoring is turned on, <code>false</code> if turned off.
-     */
-
-    public boolean getUpdateProgressMonitor()
-    {
-        return this.updateProgressMonitor;
-    }
-
-    /**
      * @return the maximum number of pool threads
      */
 
@@ -374,8 +364,6 @@ public class SystemSettings extends XMLReader
                          this.maximumNwmIngestThreads )
                 .append( "dataDirectory",
                          this.dataDirectory )
-                .append( "updateProgressMonitor",
-                         this.updateProgressMonitor )
                 .append( "maximumPoolThreads",
                          this.maximumPoolThreads )
                 .append( "maximumThresholdThreads",
@@ -540,8 +528,6 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * The Default constructor
-     *
      * Creates a new XMLReader and parses the System Configuration document
      * Looks on the classpath for the default filename
      * <br/><br/>
@@ -601,7 +587,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.minimumCachedNetcdf = Integer.parseInt( value );
         }
@@ -611,7 +597,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.maximumCachedNetcdf = Integer.parseInt( value );
         }
@@ -621,7 +607,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.netcdfCachePeriod = Integer.parseInt( value );
         }
@@ -631,7 +617,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.hardNetcdfCacheLimit = Integer.parseInt( value );
         }
@@ -641,7 +627,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.maximumThreadCount = Integer.parseInt( value );
         }
@@ -650,7 +636,7 @@ public class SystemSettings extends XMLReader
     private void setMaximumArchiveThreads( XMLStreamReader reader ) throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.maximumArchiveThreads = Integer.parseInt( value );
         }
@@ -709,7 +695,7 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.poolObjectLifespan = Integer.parseInt( value );
         }
@@ -719,27 +705,22 @@ public class SystemSettings extends XMLReader
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.maximumCopies = Integer.parseInt( value );
         }
     }
 
     private void setUpdateFrequency( XMLStreamReader reader )
-            throws XMLStreamException
     {
-        String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
-        {
-            ProgressMonitor.setUpdateFrequency( Long.parseLong( value ) );
-        }
+        LOGGER.debug( "Detected an update frequency for progress monitoring, but progress monitoring is disabled." );
     }
 
     private void setFetchSize( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
-        if ( value != null && StringUtils.isNumeric( value ) )
+        if ( StringUtils.isNumeric( value ) )
         {
             this.fetchSize = Integer.parseInt( value );
         }
@@ -766,11 +747,10 @@ public class SystemSettings extends XMLReader
         }
     }
 
-    private void setUpdateProgressMonitor( XMLStreamReader reader ) throws XMLStreamException
+    private void setUpdateProgressMonitor( XMLStreamReader reader )
     {
-        String updateMonitorString = XMLHelper.getXMLText( reader );
-        this.updateProgressMonitor = "true".equalsIgnoreCase( updateMonitorString );
-        ProgressMonitor.setShouldUpdate( this.getUpdateProgressMonitor() );
+        LOGGER.debug( "Detected an attempt to set a flag for progress monitoring, but progress monitoring is "
+                      + "disabled." );
     }
 
     private void setFeatureBatchThreshold( XMLStreamReader reader )
@@ -778,7 +758,7 @@ public class SystemSettings extends XMLReader
     {
         String threshold = XMLHelper.getXMLText( reader );
 
-        if ( threshold != null && StringUtils.isNumeric( threshold ) )
+        if ( StringUtils.isNumeric( threshold ) )
         {
             int thresholdInt = Integer.parseInt( threshold );
             if ( thresholdInt >= 0 )
@@ -805,7 +785,7 @@ public class SystemSettings extends XMLReader
     {
         String size = XMLHelper.getXMLText( reader );
 
-        if ( size != null && StringUtils.isNumeric( size ) )
+        if ( StringUtils.isNumeric( size ) )
         {
             int sizeInt = Integer.parseInt( size );
             if ( sizeInt >= 1 )

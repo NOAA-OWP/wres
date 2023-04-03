@@ -1,5 +1,7 @@
 package wres.io.retrieval;
 
+import java.io.Serial;
+
 /**
  * Runtime exception associated with data access.
  * 
@@ -12,6 +14,7 @@ public class DataAccessException extends RuntimeException
      * Serial identifier.
      */
     
+    @Serial
     private static final long serialVersionUID = 2826302222876172482L;
 
     /**

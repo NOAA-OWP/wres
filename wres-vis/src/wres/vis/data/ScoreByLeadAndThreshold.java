@@ -1,5 +1,6 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
 {
 
     /** Serial version identifier. */
+    @Serial
     private static final long serialVersionUID = -6260904713900350909L;
 
     /** Logger. */

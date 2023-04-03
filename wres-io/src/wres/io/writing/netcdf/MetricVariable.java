@@ -18,41 +18,28 @@ import wres.datamodel.time.TimeWindowOuter;
 
 class MetricVariable
 {
-
     private static final String UNDEFINED = "UNDEFINED";
-
     private static final String UNKNOWN = "UNKNOWN";
-
     private static final String NONE = "NONE";
 
     private final ChronoUnit durationUnits;
-
     private final String variableName;
     private final String longName;
-
     private final String measurementUnit;
-
     private final String firstCondition;
     private final String firstDataType;
     private final String eventThresholdName;
-
     private final String secondCondition;
     private final String secondDataType;
-
     private final String earliestReferenceTime;
     private final String latestReferenceTime;
-
     private final String earliestValidTime;
     private final String latestValidTime;
-
     private final String timeScalePeriod;
     private final String timeScaleFunction;
-
     private final String timeScaleStartMonthDay;
     private final String timeScaleEndMonthDay;
-
     private final OneOrTwoThresholds thresholds;
-
     private final Number earliestLead;
     private final Number latestLead;
 

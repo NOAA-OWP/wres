@@ -167,8 +167,8 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
             List<Double> one = first.getQuantilesList();
             List<Double> two = second.getQuantilesList();
 
-            return Arrays.compare( one.toArray( new Double[one.size()] ),
-                                   two.toArray( new Double[two.size()] ),
+            return Arrays.compare( one.toArray( new Double[0] ),
+                                   two.toArray( new Double[0] ),
                                    Double::compare );
         };
     }

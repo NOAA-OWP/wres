@@ -8,7 +8,6 @@ package wres.datamodel.thresholds;
 
 public final class ThresholdConstants
 {
-
     /**
      * Operators associated with a {@link ThresholdOuter}.
      */

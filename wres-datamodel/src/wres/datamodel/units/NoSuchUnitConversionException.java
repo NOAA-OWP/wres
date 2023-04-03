@@ -1,5 +1,7 @@
 package wres.datamodel.units;
 
+import java.io.Serial;
+
 /**
  * Runtime exception associated with a unit conversion.
  * 
@@ -8,21 +10,12 @@ package wres.datamodel.units;
 
 public class NoSuchUnitConversionException extends RuntimeException
 {
-
     /**
      * Serial identifier.
      */
     
+    @Serial
     private static final long serialVersionUID = -4437476823446392472L;
-
-    /**
-     * Constructs an {@link NoSuchUnitConversionException} with no message.
-     */
-
-    public NoSuchUnitConversionException()
-    {
-        super();
-    }
 
     /**
      * Constructs a {@link NoSuchUnitConversionException} with the specified message.
@@ -45,7 +38,5 @@ public class NoSuchUnitConversionException extends RuntimeException
     public NoSuchUnitConversionException(final String message, final Throwable cause)
     {
         super(message, cause);
-    }    
-    
-    
+    }
 }

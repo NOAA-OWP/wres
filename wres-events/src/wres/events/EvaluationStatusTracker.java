@@ -29,6 +29,7 @@ import jakarta.jms.MessageConsumer;
 import jakarta.jms.MessageListener;
 import jakarta.jms.Session;
 import jakarta.jms.Topic;
+
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ProtocolStringList;
 
 import net.jcip.annotations.ThreadSafe;
+
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.events.broker.BrokerConnectionFactory;
@@ -52,14 +54,13 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 /**
  * A class that tracks the status of an evaluation via its {@link EvaluationStatus} messages and awaits its 
  * completion upon request ({@link #await()}).
- * 
+ *
  * @author James Brown
  */
 
 @ThreadSafe
 class EvaluationStatusTracker implements Closeable
 {
-
     private static final String WHILE_COMPLETING_EVALUATION = "While completing evaluation ";
 
     private static final String FOR_SUBSCRIPTION = "for subscription {}.";
@@ -145,12 +146,6 @@ class EvaluationStatusTracker implements Closeable
      */
 
     private final Map<Format, String> negotiatedSubscribers;
-
-    /**
-     * The set of formats required by the evaluation.
-     */
-
-    private final Set<Format> formatsRequired;
 
     /**
      * A set of subscribers that succeeded.
@@ -277,7 +272,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns the strings (paths or URIs) that represent resources written.
-     * 
+     *
      * @return the resources written
      */
 
@@ -288,7 +283,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Wait until publication and consumption has completed.
-     * 
+     *
      * @return the exit code. A non-zero exit code corresponds to failure
      * @throws InterruptedException if the evaluation was interrupted
      */
@@ -307,7 +302,7 @@ class EvaluationStatusTracker implements Closeable
     /**
      * Awaits the conclusion of negotiations for output formats that are delivered by subscribers. The negotiation is 
      * concluded when all formats have been negotiated or the timeout is reached.
-     * 
+     *
      * @throws InterruptedException if the negotiation of subscriptions was interrupted
      */
 
@@ -320,7 +315,8 @@ class EvaluationStatusTracker implements Closeable
         // Add the subscriber latches that are freed when consumption completes
         this.negotiatedSubscribers.values()
                                   .forEach( nextSubscriber -> this.negotiatedSubscriberLatches.put( nextSubscriber,
-                                                                                                    new TimedCountDownLatch( 1 ) ) );
+                                                                                                    new TimedCountDownLatch(
+                                                                                                            1 ) ) );
 
         // Add the subscribers to the flow controller
         this.negotiatedSubscribers.values().forEach( this.flowController::addSubscriber );
@@ -348,18 +344,18 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Returns <code>true</code> if this status tracker is in a failure state, otherwise <code>false</code>.
-     * 
+     * Returns <code>true</code> if this status tracker is not in a failure state, otherwise <code>false</code>.
+     *
      * @return true if an unrecoverable exception occurred.
      */
 
-    boolean isFailed()
+    boolean isNotFailed()
     {
-        return this.isFailedUnrecoverably.get();
+        return !this.isFailedUnrecoverably.get();
     }
 
     /**
-     * @return a set of negotiated subscribers by format.
+     * @return a map of negotiated subscribers by format.
      */
 
     Map<Format, String> getNegotiatedSubscribers()
@@ -572,7 +568,7 @@ class EvaluationStatusTracker implements Closeable
     /**
      * Returns a task for monitoring subscribers and stopping an evaluation if they become inactive beyond an 
      * prescribed period without a progress report.
-     *  
+     *
      * @param statusTracker the status tracker
      * @param evaluationId the evaluation identifier
      * @param consumerId the consumer identifier
@@ -627,7 +623,8 @@ class EvaluationStatusTracker implements Closeable
                     }
 
                     // Report
-                    if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER ) > 0
+                    if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER )
+                         > 0
                          && LOGGER.isInfoEnabled() )
                     {
                         LOGGER.info( "While completing evaluation {}, awaiting subscriber {}. There is {} remaining "
@@ -645,7 +642,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns an {@link EvaluationStatus} message indicating that consumption has failed due to inactivity.
-     * 
+     *
      * @param evaluationId the evaluation identifier
      * @param consumerId the consumer identifier
      * @param timeoutPeriod the timeout period
@@ -692,16 +689,16 @@ class EvaluationStatusTracker implements Closeable
      * @return true if the tracker is closed, false if it is still open.
      */
 
-    boolean isClosed()
+    boolean isNotClosed()
     {
-        return this.isClosed.get();
+        return !this.isClosed.get();
     }
 
     /**
-     * Registers the publication of a message group complete.
-     * 
-     * TODO: delegate producer flow control to the broker. See #83536.
-     * 
+     * <p>Registers the publication of a message group complete.
+     *
+     * <p>TODO: delegate producer flow control to the broker. See #83536.
+     *
      * @param message the status message containing the status event
      * @throws NullPointerException if the message is null
      */
@@ -716,10 +713,10 @@ class EvaluationStatusTracker implements Closeable
     }
 
     /**
-     * Registers the publication of a message group complete.
-     * 
-     * TODO: delegate producer flow control to the broker. See #83536.
-     * 
+     * <p>Registers the publication of a message group complete.
+     *
+     * <p>TODO: delegate producer flow control to the broker. See #83536.
+     *
      * @param message the status message containing the status event
      * @throws NullPointerException if the message is null
      * @throws IllegalArgumentException if the consumer is absent
@@ -749,7 +746,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Attempts to negotiate a subscription for one of the formats required by this evaluation.
-     * 
+     *
      * @param evaluationId the evaluation identifier
      * @param message the message with the subscription information
      */
@@ -779,7 +776,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Registers publication as completed successfully.
-     * 
+     *
      * @param message the status message containing the evaluation event
      */
 
@@ -795,7 +792,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Registers consumption as completed successfully.
-     * 
+     *
      * @param message the status message containing the subscriber event
      * @throws IllegalStateException if the consumer has already been marked as failed
      */
@@ -842,7 +839,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Registers consumption as ongoing for a given subscriber.
-     * 
+     *
      * @param message the status message containing the subscriber event
      */
 
@@ -867,7 +864,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Validates the consumer identifier.
-     * 
+     *
      * @param consumerId the consumer identifier
      * @return true if the consumer is not me and is being tracked by this tracker instance, false otherwise
      * @throws EvaluationEventException if the consumer identifier is blank
@@ -889,19 +886,18 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns true if the identified consumer is a negotiated subscriber, otherwise false.
-     * 
+     *
      * @return true if the identified consumer has been negotiated by this evaluation, otherwise false
      */
 
     private boolean isNegotiatedSubscriber( String consumerId )
     {
-        return this.negotiatedSubscribers.values()
-                                         .contains( consumerId );
+        return this.negotiatedSubscribers.containsValue( consumerId );
     }
 
     /**
      * Returns true if the identified subscriber is this status tracker, false otherwise.
-     * 
+     *
      * @param consumerId the subscriber identifier
      * @return true if it is me, false otherwise
      */
@@ -913,7 +909,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns a subscriber latch for a given subscriber identifier.
-     * 
+     *
      * @param consumerId the subscriber identifier
      * @return the latch
      */
@@ -927,7 +923,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns the unique identifier of the messaging client that created the evaluation being tracked.
-     * 
+     *
      * @return the client identifier
      */
 
@@ -951,7 +947,7 @@ class EvaluationStatusTracker implements Closeable
      * @param evaluation the evaluation
      * @param broker the broker connection factory
      * @param formatsRequired the formats to be delivered by subscribers yet to be negotiated
-     * @param maximum retries the maximum number of retries on failing to consume a message
+     * @param maximumRetries retries the maximum number of retries on failing to consume a message
      * @param subscriberApprover determines whether subscription offers from format writers are viable
      * @param flowController producer flow controller
      * @throws NullPointerException if any input is null
@@ -992,10 +988,9 @@ class EvaluationStatusTracker implements Closeable
         this.failure = ConcurrentHashMap.newKeySet();
         this.negotiatedSubscribers = new EnumMap<>( Format.class );
         this.flowController = flowController;
-        this.formatsRequired = formatsRequired;
         this.subscriberInactivityTimer = new Timer( "SubscriberInactivityTimer-1", true );
         this.subscriberNegotiator = new SubscriberNegotiator( this.evaluation,
-                                                              this.formatsRequired,
+                                                              formatsRequired,
                                                               subscriberApprover );
 
         // Non-durable subscribers until we can properly recover from broker/client failures to warrant durable ones
@@ -1027,7 +1022,7 @@ class EvaluationStatusTracker implements Closeable
 
             this.connection.setExceptionListener( new ConnectionExceptionListener( this ) );
             this.session = connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-            Topic topic = (Topic) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
+            Topic topic = ( Topic ) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
 
             // Only consider messages that belong to this evaluation. Even when negotiating subscribers, offers should
             // refer to the specific evaluation that requested one or more format writers
@@ -1056,7 +1051,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Returns a consumer.
-     * 
+     *
      * @param topic the topic
      * @param name the name of the subscriber
      * @param selector a selector
@@ -1081,7 +1076,7 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Registers a listener to a consumer.
-     * 
+     *
      * @param statusConsumer the status consumer
      * @param evaluationId the identifier of the evaluation being tracked
      * @throws JMSException if the listener could not be registered for any reason
@@ -1093,7 +1088,7 @@ class EvaluationStatusTracker implements Closeable
     {
         // Now listen for status messages when a group completes
         MessageListener listener = message -> {
-            BytesMessage receivedBytes = (BytesMessage) message;
+            BytesMessage receivedBytes = ( BytesMessage ) message;
             String messageId = null;
             String correlationId = null;
 
@@ -1106,7 +1101,7 @@ class EvaluationStatusTracker implements Closeable
                     correlationId = message.getJMSCorrelationID();
 
                     // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    int messageLength = ( int ) receivedBytes.getBodyLength();
 
                     byte[] messageContainer = new byte[messageLength];
 
@@ -1162,7 +1157,7 @@ class EvaluationStatusTracker implements Closeable
 
     private boolean isAlive()
     {
-        return !this.isFailed() && !this.isClosed();
+        return this.isNotFailed() && this.isNotClosed();
     }
 
     /**
@@ -1176,47 +1171,30 @@ class EvaluationStatusTracker implements Closeable
         CompletionStatus status = message.getCompletionStatus();
         switch ( status )
         {
-            case PUBLICATION_COMPLETE_REPORTED_SUCCESS:
-                this.registerPublicationCompleteReportedSuccess( message );
-                break;
-            case PUBLICATION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            case READY_TO_CONSUME:
-                this.registerAnOfferToDeliverFormats( evaluationId, message );
-                break;
-            case CONSUMPTION_COMPLETE_REPORTED_SUCCESS:
-                this.registerConsumptionCompleteReportedSuccess( message );
-                break;
-            case CONSUMPTION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            case CONSUMPTION_ONGOING:
-                this.registerConsumptionOngoing( message );
-                break;
-            case GROUP_PUBLICATION_COMPLETE:
-                this.registerGroupPublicationComplete( message );
-                break;
-            case GROUP_CONSUMPTION_COMPLETE:
-                this.registerGroupConsumptionComplete( message );
-                break;
-            case EVALUATION_COMPLETE_REPORTED_FAILURE:
-                this.stopOnFailure( message );
-                break;
-            default:
-                break;
+            case PUBLICATION_COMPLETE_REPORTED_SUCCESS -> this.registerPublicationCompleteReportedSuccess( message );
+            case PUBLICATION_COMPLETE_REPORTED_FAILURE, CONSUMPTION_COMPLETE_REPORTED_FAILURE, EVALUATION_COMPLETE_REPORTED_FAILURE ->
+                    this.stopOnFailure( message );
+            case READY_TO_CONSUME -> this.registerAnOfferToDeliverFormats( evaluationId, message );
+            case CONSUMPTION_COMPLETE_REPORTED_SUCCESS -> this.registerConsumptionCompleteReportedSuccess( message );
+            case CONSUMPTION_ONGOING -> this.registerConsumptionOngoing( message );
+            case GROUP_PUBLICATION_COMPLETE -> this.registerGroupPublicationComplete( message );
+            case GROUP_CONSUMPTION_COMPLETE -> this.registerGroupConsumptionComplete( message );
+            default ->
+            {
+                // Do nothing
+            }
         }
     }
 
     /**
-     * <p>Attempts to recover the session up to the {@link #MAXIMUM_RETRIES}.
-     * 
+     * <p>Attempts to recover the session up to the {@link #getMaximumRetries()}}.
+     *
      * <p>TODO: Retries happen per message. Thus, for example, all graphics formats will be retried when any one format 
      * fails. This may in turn generate a different exception on attempting to overwrite. Thus, when the writing fails
      * for any one format, the consumer should be considered exceptional for all formats and the consumer should 
      * clean-up after itself (deleting paths written for all formats), ready for the next retry. Else, the consumer
      * should track what succeeded and failed and only retry the things that failed.
-     * 
+     *
      * @param messageId the message identifier for the exceptional consumption
      * @param correlationId the correlation identifier for the exceptional consumption
      * @param exception the exception encountered
@@ -1225,7 +1203,7 @@ class EvaluationStatusTracker implements Closeable
     private void recover( String messageId, String correlationId, Exception exception )
     {
         // Only try to recover if the tracker hasn't already failed or been closed
-        if ( !this.isFailed() && !this.isClosed() )
+        if ( this.isNotFailed() && this.isNotClosed() )
         {
             int retryCount = this.getNumberOfRetriesAttempted()
                                  .incrementAndGet(); // Counter starts at zero
@@ -1233,7 +1211,7 @@ class EvaluationStatusTracker implements Closeable
             try
             {
                 // Exponential back-off, which includes a PT2S wait before the first attempt
-                Thread.sleep( (long) Math.pow( 2, retryCount ) * 1000 );
+                Thread.sleep( ( long ) Math.pow( 2, retryCount ) * 1000 );
 
                 String errorMessage = "While attempting to consume a message with identifier " + messageId
                                       + " and correlation identifier "
@@ -1311,8 +1289,8 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Logs the subscriber policy.
-     * 
-     * @param durable is true to use durable subscribers, false for temporary subscribers
+     *
+     * @param durableSubscribers is true to use durable subscribers, false for temporary subscribers
      */
 
     private void logSubscriberPolicy( boolean durableSubscribers )
@@ -1364,16 +1342,11 @@ class EvaluationStatusTracker implements Closeable
 
     /**
      * Listen for failures on a connection.
+     * @param statusTracker the status tracker.
      */
 
-    private static class ConnectionExceptionListener implements ExceptionListener
+    private record ConnectionExceptionListener( EvaluationStatusTracker statusTracker ) implements ExceptionListener
     {
-
-        /**
-         * The status tracker.
-         */
-
-        private final EvaluationStatusTracker statusTracker;
 
         @Override
         public void onException( JMSException exception )
@@ -1389,7 +1362,8 @@ class EvaluationStatusTracker implements Closeable
                                                       .setClientId( this.statusTracker.getClientId() )
                                                       .setCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE )
                                                       .addStatusEvents( EvaluationStatusEvent.newBuilder()
-                                                                                             .setStatusLevel( StatusLevel.ERROR )
+                                                                                             .setStatusLevel(
+                                                                                                     StatusLevel.ERROR )
                                                                                              .setEventMessage( message ) )
                                                       .build();
 
@@ -1398,15 +1372,14 @@ class EvaluationStatusTracker implements Closeable
 
         /**
          * Creates an instance with a status tracker.
-         * 
+         *
          * @param statusTracker the status tracker
          */
 
-        ConnectionExceptionListener( EvaluationStatusTracker statusTracker )
+        private ConnectionExceptionListener
         {
             Objects.requireNonNull( statusTracker );
 
-            this.statusTracker = statusTracker;
         }
 
     }

@@ -1,7 +1,6 @@
 package wres.datamodel.pools;
 
 import java.util.Objects;
-
 import wres.datamodel.statistics.Statistic;
 
 /**
@@ -75,8 +74,7 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
     @Override
     public boolean equals( final Object o )
     {
-        return o instanceof MeasurementUnit && ( (MeasurementUnit) o ).isRealUnit() == isRealUnit()
-               && ( (MeasurementUnit) o ).getUnit().equals( getUnit() );
+        return o instanceof MeasurementUnit e && e.isRealUnit() == isRealUnit() && e.getUnit().equals( getUnit() );
     }
 
     @Override
@@ -94,8 +92,6 @@ public class MeasurementUnit implements Comparable<MeasurementUnit>
     @Override
     public int compareTo( MeasurementUnit o )
     {
-        Objects.requireNonNull( o, "Specify a non-null dimension to compare with this dimension." );
-
         return unit.compareTo( o.getUnit() );
     }
 

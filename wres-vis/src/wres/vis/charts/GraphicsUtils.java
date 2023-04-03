@@ -8,18 +8,13 @@ import org.jfree.chart.plot.DefaultDrawingSupplier;
 
 /**
  * A utility class for graphics.
- * 
+ *
  * @author James Brown
  * @author Hank Herr
  */
 
 public class GraphicsUtils
 {
-    /** Names of shapes that may be used in point and line charts. */
-    private static final String[] SHAPE_NAMES = { "square", "circle", "up triangle", "diamond", "horizontal rectangle",
-                                                  "down triangle", "horizontal ellipse", "right triangle",
-                                                  "vertical rectangle", "left triangle", "x", "cross" };
-
     /**
      * @return a sequence of base colors.
      */
@@ -30,11 +25,12 @@ public class GraphicsUtils
         //Those shades do not show up well on white
         final Paint[] p = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
         final ArrayList<Color> baseColors = new ArrayList<>();
-        for ( int i = 0; i < p.length; i++ )
+        for ( Paint paint : p )
         {
-            if ( ( (Color) p[i] ).getRed() != 255 || ( (Color) p[i] ).getGreen() != 255 )
+            Color c = ( Color ) paint;
+            if ( c.getRed() != 255 || c.getGreen() != 255 )
             {
-                baseColors.add( (Color) p[i] );
+                baseColors.add( c );
             }
         }
 
@@ -42,20 +38,11 @@ public class GraphicsUtils
     }
 
     /**
-     * @return the supported shape names
-     */
-
-    public static String[] getShapeNames()
-    {
-        return SHAPE_NAMES.clone();
-    }
-
-    /**
      * Builds an array of colors, stepping from the first color provided to the last color provided through each of the
      * intermediary colors. This algorithm cannot guarantee that the intermediary colors will be in the list, since the
      * steps are all equal sized, meaning that colors can be stepped over by this algorithm. Only the first and last
      * colors are guaranteed to be in the returned array.
-     * 
+     *
      * @param numberOfColors the number of colors to create.
      * @param baseColors the colors that dictate the palette.
      * @return a palette of colors.
@@ -82,9 +69,10 @@ public class GraphicsUtils
             {
                 // Base color index is used to identify the first of the two colors.  It is the truncation
                 // of the fractional counter.
-                baseColorIndex = (int) baseColorFractionalCounter;
+                baseColorIndex = ( int ) baseColorFractionalCounter;
                 mixingFraction = ( baseColorFractionalCounter - baseColorIndex );
-                if ( baseColorIndex == numberOfBaseColors - 1 ) //The last color is called for, which causes an index error
+                if ( baseColorIndex
+                     == numberOfBaseColors - 1 ) //The last color is called for, which causes an index error
                 {
                     baseColorIndex--;
                     mixingFraction = 1.0;
@@ -113,10 +101,10 @@ public class GraphicsUtils
      */
     private static Color mixColors( Color first, Color second, double distanceFraction )
     {
-        return new Color( (int) ( first.getRed() + distanceFraction * ( second.getRed() - first.getRed() ) ),
-                          (int) ( first.getGreen() + distanceFraction * ( second.getGreen() - first.getGreen() ) ),
-                          (int) ( first.getBlue() + distanceFraction * ( second.getBlue() - first.getBlue() ) ),
-                          (int) ( first.getAlpha() + distanceFraction * ( second.getAlpha() - first.getAlpha() ) ) );
+        return new Color( ( int ) ( first.getRed() + distanceFraction * ( second.getRed() - first.getRed() ) ),
+                          ( int ) ( first.getGreen() + distanceFraction * ( second.getGreen() - first.getGreen() ) ),
+                          ( int ) ( first.getBlue() + distanceFraction * ( second.getBlue() - first.getBlue() ) ),
+                          ( int ) ( first.getAlpha() + distanceFraction * ( second.getAlpha() - first.getAlpha() ) ) );
     }
 
     /**

@@ -151,6 +151,18 @@ public class Projects
         return project;
     }
 
+    /**
+     * Continue ingest. TODO: refactor this method as it's far too long.
+     * @param database the database
+     * @param caches the database caches
+     * @param griddedFeatures the gridded features cache
+     * @param projectConfig the config that produced the ingest results
+     * @param leftIds the left-sided data identifiers
+     * @param rightIds the right-sided data identifiers
+     * @param baselineIds the baseline-sided data identifiers
+     * @return the project
+     * @throws SQLException if the project could not be ingested
+     */
     private static DatabaseProject getProjectFromIngestStepTwo( Database database,
                                                                 DatabaseCaches caches,
                                                                 GriddedFeatures griddedFeatures,

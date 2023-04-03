@@ -85,9 +85,9 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
+     * <p>Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
      * 
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
@@ -101,9 +101,9 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance. 
+     * <p>Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
      * 
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
      * @throws UnsupportedOperationException in all cases - see #68334.
@@ -116,10 +116,10 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Overrides the default implementation to get all specified time-series in one pull, rather than one pull for 
+     * <p>Overrides the default implementation to get all specified time-series in one pull, rather than one pull for
      * each series.
      * 
-     * TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
+     * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
      * 
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
@@ -162,7 +162,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         dataScripter.addTab().addLine( "ON TSV.timeseries_id = TS.timeseries_id" );
 
         // Add time window constraint at zero tabs
-        this.addTimeWindowClause( dataScripter, 0 );
+        this.addTimeWindowClause( dataScripter );
 
         // Add season constraint at one tab
         this.addSeasonClause( dataScripter, 1 );
@@ -191,9 +191,9 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     }
 
     /**
-     * Returns a function that obtains the measured value.
+     * <p>Returns a function that obtains the measured value.
      * 
-     * TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these, 
+     * <p>TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these,
      * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 
      * String[] are comparatively expensive.
      * 
@@ -231,7 +231,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
             // Labels are cached centrally
             String[] names = ensemble.keySet()
-                                     .toArray( new String[ensemble.size()] );
+                                     .toArray( new String[0] );
             Labels labels = Labels.of( names );
             double[] unboxed = ensemble.values()
                                        .stream()

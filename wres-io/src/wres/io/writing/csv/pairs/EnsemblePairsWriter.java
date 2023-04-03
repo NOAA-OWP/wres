@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.StringJoiner;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,7 +25,6 @@ import wres.datamodel.time.TimeSeries;
 
 public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 {
-
     /**
      * Build an instance of a writer.
      * 
@@ -132,7 +132,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
         return pair -> {
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
-            Function<Double, String> handleNaNs = input -> {
+            DoubleFunction<String> handleNaNs = input -> {
                 if ( Double.isNaN( input ) || Objects.isNull( decimalFormatter ) )
                 {
                     return Double.toString( input );

@@ -1,15 +1,9 @@
 package wres.io.database;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,10 +29,7 @@ import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.collect.Range;
 import com.zaxxer.hikari.HikariDataSource;
-
-import static java.time.ZoneOffset.UTC;
 
 import wres.io.data.TabularDataset;
 import wres.io.ingesting.IngestException;
@@ -54,6 +45,7 @@ import wres.system.SystemSettings;
  */
 public class Database
 {
+    private static final String TRUNCATE_TABLE = "TRUNCATE TABLE ";
     private final SystemSettings systemSettings;
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Database.class );
@@ -78,7 +70,7 @@ public class Database
 
     /**
      * System agnostic newline character used to make generated queries human
-     * readable
+     * readable.
      */
     private static final String NEWLINE = System.lineSeparator();
 
@@ -131,18 +123,34 @@ public class Database
     }
 
     /**
-     * Waits until all passed in jobs have executed and then shuts down the database.
+     * Shuts down the database in an orderly sequence.
      */
     public void shutdown()
     {
         LOGGER.info( "Shutting down the database..." );
-        if ( !sqlTasks.isShutdown() )
+        try
         {
-            sqlTasks.shutdown();
+            if ( !sqlTasks.isShutdown() )
+            {
+                boolean died = sqlTasks.awaitTermination( 5, TimeUnit.SECONDS );
 
-            // The wait functions for the executor aren't 100% reliable, so we spin until it's done
-            while ( !sqlTasks.isTerminated() )
-                ;
+                if ( !died )
+                {
+                    List<Runnable> tasks = sqlTasks.shutdownNow();
+
+                    if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                    {
+                        LOGGER.info( "Abandoned {} tasks from {}.",
+                                     tasks.size(),
+                                     sqlTasks );
+                    }
+                }
+            }
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while shutting down {}.", sqlTasks, ie );
+            Thread.currentThread().interrupt();
         }
 
         this.closePools();
@@ -243,8 +251,8 @@ public class Database
      * Creates and returns a raw connection without using a connection pool.
      * @param connectionString the connection string
      * @param properties the connection properties
-     * @return
-     * @throws SQLException
+     * @return the connection
+     * @throws SQLException if the connection could not be acquired
      */
 
     Connection getRawConnection( String connectionString, Properties properties ) throws SQLException
@@ -334,35 +342,6 @@ public class Database
     }
 
     /**
-     * Returns a high priority connection to the connection pool
-     * @param connection The connection to return
-     */
-    public static void returnHighPriorityConnection( Connection connection )
-    {
-        if ( connection != null )
-        {
-            try
-            {
-                // The implementation of the C3P0 Connection option returns the
-                // connection to the pool when "close"d. Despite seeming
-                // unneccessary, extra logic may be needed if the implementation
-                // changes (for instance, extra logic must be present if C3PO is not
-                // used) or for further diagnostic purposes
-                connection.close();
-                LOGGER.debug( "A high priority database operation has completed." );
-            }
-            catch ( SQLException se )
-            {
-                // Exception on close should not affect primary outputs.
-                LOGGER.warn( "A high priority connection could not be "
-                             + "returned to the connection pool properly.",
-                             se );
-            }
-        }
-    }
-
-
-    /**
      * Inserts data into the database (or copies in the case of postgres).
      * @param tableName The table name for the copy or insert statement.
      * @param columnNames The column names in the order the values appear.
@@ -435,7 +414,7 @@ public class Database
         }
 
         String insertHeader = "INSERT INTO " + tableName
-                              + columns.toString()
+                              + columns
                               + "VALUES\n";
         StringJoiner insertsJoiner = new StringJoiner( ",\n", insertHeader, ";\n" );
 
@@ -463,7 +442,7 @@ public class Database
 
         String insertsQuery = insertsJoiner.toString();
         Query query = new Query( this.getSystemSettings(), insertsQuery );
-        int rowsModified = -1;
+        int rowsModified;
 
         try ( Connection connection = this.getConnection() )
         {
@@ -500,23 +479,20 @@ public class Database
     {
         StringJoiner columns = new StringJoiner( ",", " ( ", " )" );
 
-        for ( String column : columnNames )
-        {
-            columns.add( column );
-        }
+        columnNames.forEach( columns::add );
 
-        String table_definition = tableName + columns.toString();
+        String tableDefinition = tableName + columns;
         String delimiter = "|";
 
         // The format of the copy statement needs to be of the format
         // "COPY wres.TimeSeriesValue_xxxx FROM STDIN WITH DELIMITER '|'"
-        String copy_definition = "COPY "
-                                 + table_definition
+        String copyDefinition = "COPY "
+                                 + tableDefinition
                                  + " FROM STDIN WITH DELIMITER '"
                                  + delimiter
                                  + "'";
 
-        final byte[] NULL = "\\N".getBytes( StandardCharsets.UTF_8 );
+        final byte[] nullBytes = "\\N".getBytes( StandardCharsets.UTF_8 );
         CopyIn copyIn = null;
 
         try ( Connection connection = this.getConnection() )
@@ -528,36 +504,13 @@ public class Database
             CopyManager manager = pgConnection.getCopyAPI();
 
             // Use the manager to stream the data through to the database
-            copyIn = manager.copyIn( copy_definition );
+            copyIn = manager.copyIn( copyDefinition );
             byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
             byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
 
             for ( String[] row : values )
             {
-                for ( int i = 0; i < row.length; i++ )
-                {
-                    if ( Objects.nonNull( row[i] ) )
-                    {
-                        byte[] bytes = row[i].getBytes( StandardCharsets.UTF_8 );
-                        copyIn.writeToCopy( bytes, 0, bytes.length );
-
-                    }
-                    else
-                    {
-                        copyIn.writeToCopy( NULL, 0, NULL.length );
-                    }
-
-                    if ( i < row.length - 1 )
-                    {
-                        copyIn.writeToCopy( valueDelimiterBytes,
-                                            0,
-                                            valueDelimiterBytes.length );
-                    }
-                }
-
-                copyIn.writeToCopy( valueRowDelimiterBytes,
-                                    0,
-                                    valueDelimiterBytes.length );
+                this.copyRow( row, valueDelimiterBytes, valueRowDelimiterBytes, nullBytes, copyIn );
             }
 
             copyIn.endCopy();
@@ -571,7 +524,7 @@ public class Database
                 String allValues = values.toString();
                 int subStringMax = Math.min( allValues.length(), 5000 );
                 LOGGER.debug( "Data could not be copied to the database:{}{}...",
-                              copy_definition,
+                              copyDefinition,
                               allValues.substring( 0, subStringMax ),
                               e );
             }
@@ -586,15 +539,55 @@ public class Database
                 }
                 catch ( SQLException se )
                 {
-                    LOGGER.warn( "Failed to cancel copy operation on table {}",
+                    LOGGER.warn( "Failed to cancel copy operation on table {}.",
                                  tableName,
                                  se );
                 }
             }
 
-            throw new IngestException( "Data could not be copied to the database.",
-                                       e );
+            throw new IngestException( "Data could not be copied to the database.", e );
         }
+    }
+
+    /**
+     * Copies a row to the database.
+     * @param row the row
+     * @param valueDelimiterBytes the value delimiter bytes
+     * @param valueRowDelimiterBytes the value row delimiter bytes
+     * @param nullBytes the null bytes
+     * @param copyIn the copy operation
+     * @throws SQLException if the copy failed for any reason
+     */
+    private void copyRow( String[] row,
+                          byte[] valueDelimiterBytes,
+                          byte[] valueRowDelimiterBytes,
+                          byte[] nullBytes,
+                          CopyIn copyIn ) throws SQLException
+    {
+        for ( int i = 0; i < row.length; i++ )
+        {
+            if ( Objects.nonNull( row[i] ) )
+            {
+                byte[] bytes = row[i].getBytes( StandardCharsets.UTF_8 );
+                copyIn.writeToCopy( bytes, 0, bytes.length );
+
+            }
+            else
+            {
+                copyIn.writeToCopy( nullBytes, 0, nullBytes.length );
+            }
+
+            if ( i < row.length - 1 )
+            {
+                copyIn.writeToCopy( valueDelimiterBytes,
+                                    0,
+                                    valueDelimiterBytes.length );
+            }
+        }
+
+        copyIn.writeToCopy( valueRowDelimiterBytes,
+                            0,
+                            valueDelimiterBytes.length );
     }
 
     /**
@@ -740,7 +733,7 @@ public class Database
      */
     int execute( final Query query, final boolean isHighPriority ) throws SQLException
     {
-        int modifiedRows = 0;
+        int modifiedRows;
 
         try ( Connection connection = this.getConnection( isHighPriority ) )
         {
@@ -842,7 +835,7 @@ public class Database
 
     /**
      * Removes all user data from the database
-     * TODO: This should probably accept an object or list to allow for the removal of business logic
+     * TODO: This should probably accept an object or list to allow for the removal of business logic.
      * Assumes that locking has already been done at a higher level by caller(s)
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
@@ -865,7 +858,7 @@ public class Database
 
         for ( String partition : partitions )
         {
-            builder.add( "TRUNCATE TABLE " + partition + ";" );
+            builder.add( TRUNCATE_TABLE + partition + ";" );
         }
 
         List<String> tables = List.of( "wres.Source",
@@ -880,11 +873,11 @@ public class Database
         {
             if ( this.getType().hasTruncateCascade() )
             {
-                builder.add( "TRUNCATE TABLE " + table + " CASCADE;" );
+                builder.add( TRUNCATE_TABLE + table + " CASCADE;" );
             }
             else
             {
-                builder.add( "TRUNCATE TABLE " + table + ";" );
+                builder.add( TRUNCATE_TABLE + table + ";" );
             }
         }
 
@@ -901,7 +894,7 @@ public class Database
             String message = "WRES data could not be removed from the database."
                              + NEWLINE
                              + NEWLINE
-                             + builder.toString();
+                             + builder;
             // Decorate with contextual information.
             throw new SQLException( message, e );
         }

@@ -6,10 +6,10 @@ import java.util.Objects;
 import org.apache.commons.math3.util.Precision;
 
 /**
- * A real-valued outcome at a specific {@link Instant} on the timeline. A specialization of an {@link Event} to reduce 
- * memory overhead.
+ * <p>A real-valued outcome at a specific {@link Instant} on the timeline. A specialization of an {@link Event} to
+ * reduce memory overhead.
  * 
- * TODO: remove this class when Valhalla is fully realized and generics over primitive types are supported.
+ * <p>TODO: remove this class when the JDK supports generics over primitive types.
  * 
  * @author James Brown
  */
@@ -67,12 +67,10 @@ public class DoubleEvent implements Event<Double>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof DoubleEvent ) )
+        if ( ! ( o instanceof DoubleEvent inEvent ) )
         {
             return false;
         }
-
-        DoubleEvent inEvent = (DoubleEvent) o;
 
         return Precision.equalsIncludingNaN( inEvent.value, this.value, Precision.EPSILON )
                && inEvent.eventTime.equals( this.eventTime );
@@ -96,8 +94,6 @@ public class DoubleEvent implements Event<Double>
     {
         Objects.requireNonNull( eventTime, "Specify a non-null time for the event." );
 
-        Objects.requireNonNull( event, "Specify a non-null value for the event." );
-
         this.value = event;
         this.eventTime = eventTime;
     }
@@ -114,8 +110,6 @@ public class DoubleEvent implements Event<Double>
     @Override
     public int compareTo( Event<Double> o )
     {
-        Objects.requireNonNull( o, "Specify a non-null input for comparison." );
-
         int returnMe = this.getTime().compareTo( o.getTime() );
 
         if ( returnMe != 0 )

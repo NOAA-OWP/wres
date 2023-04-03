@@ -405,7 +405,6 @@ public class ObservationRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
@@ -417,7 +416,6 @@ public class ObservationRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamTwo =

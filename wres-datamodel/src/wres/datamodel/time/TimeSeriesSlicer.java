@@ -423,11 +423,11 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Groups the input events according to the event valid time. An event falls within a group if its valid time falls 
-     * within the corresponding group interval. Each interval is right-closed.
+     * <p>Groups the input events according to the event valid time. An event falls within a group if its valid time
+     * falls within the corresponding group interval. Each interval is right-closed.
      * 
-     * TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality of
-     * <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of 
+     * <p>TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality
+     * of <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of
      * <code>endsAt</code>, it does not scale well for very large datasets.
      * 
      * @param <T> the type of event value
@@ -732,6 +732,7 @@ public final class TimeSeriesSlicer
                           left.getMetadata(),
                           right.getMetadata(),
                           desiredTimeScale,
+                          immutableIntersectingTimes.size(),
                           immutableIntersectingTimes );
 
             return immutableIntersectingTimes;
@@ -807,7 +808,7 @@ public final class TimeSeriesSlicer
      * <p>Returns a trace-view of an ensemble time-series. The input series is decomposed into one Set for each ensemble 
      * trace, with the label as a key.
      *
-     * Reference datetimes metadata are lost but ensemble labels are preserved.
+     * <p>Reference datetimes metadata are lost but ensemble labels are preserved.
      *
      * @param timeSeries The time-series to decompose
      * @return A map with the trace label as key, sorted set of Events as value.
@@ -1138,73 +1139,6 @@ public final class TimeSeriesSlicer
         return builder.build();
     }
 
-
-    /**
-     * Returns the subset of time-series where the condition is met. Applies to both the main pairs and any baseline 
-     * pairs. Does not modify the metadata associated with the input.
-     * 
-     * @param <L> the type of left value
-     * @param <R> the type of right value
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws NullPointerException if either the input or condition is null
-     */
-
-    public static <L, R> Pool<TimeSeries<Pair<L, R>>> filterPerSeries( Pool<TimeSeries<Pair<L, R>>> input,
-                                                                       Predicate<TimeSeries<Pair<L, R>>> condition,
-                                                                       DoublePredicate applyToClimatology )
-    {
-        Objects.requireNonNull( input );
-
-        Objects.requireNonNull( condition );
-
-        Pool.Builder<TimeSeries<Pair<L, R>>> builder = new Pool.Builder<>();
-
-        builder.setMetadata( input.getMetadata() );
-
-        //Filter climatology as required
-        if ( input.hasClimatology() )
-        {
-            Climatology climatology = input.getClimatology();
-
-            if ( Objects.nonNull( applyToClimatology ) )
-            {
-                climatology = Slicer.filter( input.getClimatology(), applyToClimatology );
-            }
-
-            builder.setClimatology( climatology );
-        }
-
-        // Filter the main data
-        for ( TimeSeries<Pair<L, R>> next : input.get() )
-        {
-            if ( condition.test( next ) )
-            {
-                builder.addData( next );
-            }
-        }
-
-        //Filter baseline as required
-        if ( input.hasBaseline() )
-        {
-            Pool<TimeSeries<Pair<L, R>>> baseline = input.getBaselineData();
-
-            for ( TimeSeries<Pair<L, R>> nextBase : baseline.get() )
-            {
-                if ( condition.test( nextBase ) )
-                {
-                    builder.addDataForBaseline( nextBase );
-                }
-            }
-
-            builder.setMetadataForBaseline( baseline.getMetadata() );
-        }
-
-        return builder.build();
-    }
-
     /**
      * Consolidates the input collection of time-series into one time-series. Requires that none of the valid datetimes 
      * are duplicates.
@@ -1264,14 +1198,14 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Adds a declared existing time-scale to a time-series that has no time-scale defined or updates the function 
-     * associated with a time scale that is defined. 
+     * Adds a declared existing timescale to a time-series that has no timescale defined or updates the function
+     * associated with a timescale that is defined.
      * 
      * @param <T> the time-series event value type
      * @param timeSeries the time-series
-     * @param timeScale the declared existing time scale
+     * @param timeScale the declared existing timescale
      * @return the augmented time-series
-     * @throws IllegalArgumentException if the declared time scale is inconsistent with the existing time-scale
+     * @throws IllegalArgumentException if the declared timescale is inconsistent with the existing timescale
      * @throws NullPointerException if either input is null
      */
 
@@ -1337,7 +1271,7 @@ public final class TimeSeriesSlicer
     /**
      * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
      * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
-     * events by time. See {@link #groupEventsByInterval(SortedSet, Set, Duration)}.
+     * events by time. See {@link #groupEventsByInterval(SortedSet, SortedSet, Duration)}.
      * 
      * @param workBackFromHere the index at which to begin searching backwards
      * @param startTime the start time that must be exceeded
@@ -1394,7 +1328,7 @@ public final class TimeSeriesSlicer
 
         if ( !labels.isEmpty() )
         {
-            String[] stringLabels = labels.toArray( new String[labels.size()] );
+            String[] stringLabels = labels.toArray( new String[0] );
             // These are de-duplicated centrally
             labs = Labels.of( stringLabels );
         }
@@ -1712,7 +1646,7 @@ public final class TimeSeriesSlicer
      * @param time the time to test
      * @param lowerExclusive the lower exclusive limit
      * @param upperInclusive the upper inclusive limit
-     * @returns true if the time is within (lowerExclusive, upperInclusive], otherwise false
+     * @return true if the time is within (lowerExclusive, upperInclusive], otherwise false
      */
 
     private static boolean isContained( Instant time, Instant lowerExclusive, Instant upperInclusive )
@@ -1737,7 +1671,7 @@ public final class TimeSeriesSlicer
      * @param duration the duration to test
      * @param lowerExclusive the lower exclusive limit
      * @param upperInclusive the upper inclusive limit
-     * @returns true if the duration is within (lowerExclusive, upperInclusive], otherwise false
+     * @return true if the duration is within (lowerExclusive, upperInclusive], otherwise false
      */
 
     private static boolean isContained( Duration duration, Duration lowerExclusive, Duration upperInclusive )
@@ -1850,7 +1784,7 @@ public final class TimeSeriesSlicer
             jump = period;
         }
 
-        List<Instant> listedTimesToThin = Collections.unmodifiableList( new ArrayList<>( timesToThin ) );
+        List<Instant> listedTimesToThin = List.copyOf( timesToThin );
 
         // Get the start time for the regular sequence
         Instant nextTime = TimeSeriesSlicer.getStartTimeForRegularSequence( origin,
@@ -1960,10 +1894,8 @@ public final class TimeSeriesSlicer
         while ( nextSequenceTime.compareTo( lastTime ) <= 0 )
         {
             // Does a time exist in the list of times that matches the next time in the sequence?
-            for ( int i = 0; i < totalTimes; i++ )
+            for ( Instant nextTime : timeOrderedListOfTimes )
             {
-                Instant nextTime = timeOrderedListOfTimes.get( i );
-
                 int compare = nextTime.compareTo( nextSequenceTime );
 
                 // Yes it does. Return it.

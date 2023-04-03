@@ -1,5 +1,7 @@
 package wres.datamodel.pools;
 
+import java.io.Serial;
+
 import wres.datamodel.DataException;
 
 /**
@@ -10,10 +12,10 @@ import wres.datamodel.DataException;
 
 public class PoolException extends DataException
 {
-
     /**
      * Serial identifier.
      */
+    @Serial
     private static final long serialVersionUID = -382138122319205095L;
 
     /**

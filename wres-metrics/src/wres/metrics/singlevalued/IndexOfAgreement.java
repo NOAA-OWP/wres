@@ -96,17 +96,25 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
         if ( !s.get().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.get().stream().mapToDouble( Pair::getLeft ).average().getAsDouble();
-            //Compute the score
-            double numerator = 0.0;
-            double denominator = 0.0;
-            for ( Pair<Double, Double> nextPair : s.get() )
+            double oBar = s.get()
+                           .stream()
+                           .mapToDouble( Pair::getLeft )
+                           .average().orElse( Double.NaN );
+
+            if( ! Double.isNaN( oBar ) )
             {
-                numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
-                denominator += ( Math.abs( nextPair.getRight() - oBar )
-                                 + Math.pow( Math.abs( nextPair.getLeft() - oBar ), exponent ) );
+                //Compute the score
+                double numerator = 0.0;
+                double denominator = 0.0;
+                for ( Pair<Double, Double> nextPair : s.get() )
+                {
+                    numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
+                    denominator += ( Math.abs( nextPair.getRight() - oBar )
+                                     + Math.pow( Math.abs( nextPair.getLeft() - oBar ), exponent ) );
+                }
+                returnMe = FunctionFactory.skill()
+                                          .applyAsDouble( numerator, denominator );
             }
-            returnMe = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

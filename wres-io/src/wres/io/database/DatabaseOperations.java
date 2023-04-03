@@ -127,8 +127,9 @@ public class DatabaseOperations
      */
     public static void refreshDatabase( Database database ) throws SQLException
     {
-        IncompleteIngest.removeOrphanedData( database );
+        boolean removed = IncompleteIngest.removeOrphanedData( database );
         database.refreshStatistics( true );
+        LOGGER.debug( "Upon refreshing the database, orphaned data was removed: {}.", removed );
     }
 
     /**
@@ -191,7 +192,7 @@ public class DatabaseOperations
         }
 
         try ( DatabaseSchema schema = new DatabaseSchema( databaseName, lockManager );
-              Connection connection = database.getRawConnection(); )
+              Connection connection = database.getRawConnection() )
         {
             schema.applySchema( connection );
         }

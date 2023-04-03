@@ -556,8 +556,7 @@ public class ExternalThresholdReader
                     builder.setRightThresholdValue( DoubleValue.of( mappedThreshold ) );
                 }
 
-                ThresholdOuter wrappedThreshold = new ThresholdOuter.Builder( builder.build() )
-                        .build();
+                ThresholdOuter wrappedThreshold = ThresholdOuter.of( builder.build() );
                 wrapped.add( wrappedThreshold );
             }
 

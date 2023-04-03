@@ -36,7 +36,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -105,7 +104,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     private final SystemSettings systemSettings;
     private final Database database;
     private final DatabaseCaches caches;
-    private final ProjectConfig projectConfig;
     private final DatabaseLockManager lockManager;
 
     /** A thread pool to process ingests. */
@@ -120,7 +118,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         private SystemSettings systemSettings;
         private Database database;
         private DatabaseCaches caches;
-        private ProjectConfig projectConfig;
         private DatabaseLockManager lockManager;
 
         /**
@@ -150,16 +147,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         public Builder setCaches( DatabaseCaches caches )
         {
             this.caches = caches;
-            return this;
-        }
-
-        /**
-         * @param projectConfig the project declaration to set
-         * @return the builder
-         */
-        public Builder setProjectConfig( ProjectConfig projectConfig )
-        {
-            this.projectConfig = projectConfig;
             return this;
         }
 
@@ -1533,7 +1520,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         if ( timeSeries.getReferenceTimes().isEmpty() )
         {
             throw new IllegalStateException( "Data must have at least one reference datetime: "
-                                             + timeSeries.toString() );
+                                             + timeSeries );
         }
 
         // Use the first reference datetime found until the database allows
@@ -1700,13 +1687,11 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         this.systemSettings = builder.systemSettings;
         this.database = builder.database;
         this.caches = builder.caches;
-        this.projectConfig = builder.projectConfig;
         this.lockManager = builder.lockManager;
 
         Objects.requireNonNull( this.systemSettings );
         Objects.requireNonNull( this.database );
         Objects.requireNonNull( this.caches );
-        Objects.requireNonNull( this.projectConfig );
         Objects.requireNonNull( this.lockManager );
 
         // Create a thread pool for ingesting

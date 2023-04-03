@@ -15,5 +15,5 @@ public enum DuplicatePolicy
     KEEP_LATEST_REFERENCE_TIME,
 
     /** Keep only one duplicate by valid time, namely the earliest one by reference time. */
-    KEEP_EARLIEST_REFERENCE_TIME;
+    KEEP_EARLIEST_REFERENCE_TIME
 }

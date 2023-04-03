@@ -305,7 +305,7 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
                                       .value() );
 
         // Time window
-        this.addTimeWindowClause( dataScripter, 0 );
+        this.addTimeWindowClause( dataScripter );
 
         return dataScripter;
     }

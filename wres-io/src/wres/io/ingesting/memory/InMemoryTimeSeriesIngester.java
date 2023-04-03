@@ -2,7 +2,6 @@ package wres.io.ingesting.memory;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -43,7 +42,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         // Close the stream on completion
         try ( timeSeriesTuple )
         {
-            List<TimeSeriesTuple> listedTuples = timeSeriesTuple.collect( Collectors.toList() );
+            List<TimeSeriesTuple> listedTuples = timeSeriesTuple.toList();
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
                 DataSource innerSource = nextTuple.getDataSource();

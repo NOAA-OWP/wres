@@ -17,11 +17,11 @@ import wres.io.retrieval.RetrieverUtilities;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
+ * <p>Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
  * in the pattern expected for treating the nth timestep of each analysis as if
  * it were an event in a timeseries across analyses, sort of like observations.
  *
- * The reason for separating it from forecast and observation timeseries
+ * <p>The reason for separating it from forecast and observation timeseries
  * retrieval is that each analysis has N events in an actual timeseries, but the
  * structure and use of the analyses and origin of analyses differs from both
  * observation and timeseries. The structure of an NWM analysis, for example, is

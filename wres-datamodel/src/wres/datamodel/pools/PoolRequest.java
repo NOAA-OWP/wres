@@ -7,13 +7,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * A composition of up to two {@link PoolMetadata}. A {@link PoolRequest} drives the creation of a {@link Pool} and 
+ * <p>A composition of up to two {@link PoolMetadata}. A {@link PoolRequest} drives the creation of a {@link Pool} and
  * its contained {@link PoolMetadata} describe that pool once created. There is one {@link PoolMetadata} for each 
  * combination of left/right and left/baseline datasets within an evaluation because each pair of datasets may represent
  * its own pools for metric calculation, while the composition may be used for comparative metrics, such as skill.
- * 
- * TODO: candidate to replace with a Java Record in JDK 17.
- * 
+ *
  * @author James Brown
  */
 
@@ -82,12 +80,10 @@ public class PoolRequest implements Comparable<PoolRequest>
         {
             return true;
         }
-        if ( ! ( o instanceof PoolRequest ) )
+        if ( ! ( o instanceof PoolRequest in ) )
         {
             return false;
         }
-
-        PoolRequest in = (PoolRequest) o;
 
         return Objects.equals( in.getMetadata(), this.getMetadata() )
                && Objects.equals( in.getMetadataForBaseline(), this.getMetadataForBaseline() );
@@ -111,8 +107,6 @@ public class PoolRequest implements Comparable<PoolRequest>
     @Override
     public int compareTo( PoolRequest o )
     {
-        Objects.requireNonNull( o );
-
         int compare = this.getMetadata()
                           .compareTo( o.getMetadata() );
 
