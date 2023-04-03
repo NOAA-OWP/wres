@@ -1,6 +1,5 @@
 package wres.vis.writing;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -247,7 +246,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }
@@ -260,8 +259,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * lead duration statistics for one valid time or issued time pool. If there is a single pool, creates one plot.
      *
      * @param outputDirectory the directory into which to write
-     * @param destinations the destinations for the written output
-     * @param output the metric results, which contains all results for one metric across several pools
+     * @param outputsDescription the outputs
      * @throws GraphicsWriteException when an error occurs during writing
      * @return the paths actually written to
      */
@@ -319,7 +317,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating box plot charts: ", e );
         }
@@ -331,7 +329,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * Slices the statistics for individual graphics by {@link EnsembleAverageType}. Returns as many slices as graphics 
      * to create.
      * 
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
@@ -360,7 +358,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * Slices the statistics for individual graphics by time-based pooling window. Returns as many slices as graphics 
      * to create.
      * 
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 

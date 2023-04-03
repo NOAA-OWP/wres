@@ -1,5 +1,7 @@
 package wres.events;
 
+import java.io.Serial;
+
 /**
  * Exception to throw when an evaluation event occurs. These events may be recoverable.
  * 
@@ -8,11 +10,11 @@ package wres.events;
 
 public class EvaluationEventException extends RuntimeException
 {
-
     /**
      * Serialization id.
      */
     
+    @Serial
     private static final long serialVersionUID = 2265382485793031701L;
 
     /**

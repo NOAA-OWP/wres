@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import jakarta.jms.JMSException;
 import jakarta.jms.Topic;
+
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.ThreadSafe;
+
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
@@ -46,17 +48,17 @@ import wres.statistics.generated.Statistics;
  * <p>Manages the publication and consumption of messages associated with one evaluation, defined as a single 
  * computational instance of one project declaration. Manages the publication of, and subscription to, the following 
  * types of messages that map to evaluation events:
- * 
+ *
  * <ol>
  * <li>Evaluation messages contained in {@link wres.statistics.generated.Evaluation};</li>
  * <li>Evaluation status messages contained in {@link wres.statistics.generated.EvaluationStatus}; and</li>
  * <li>Statistics messages contained in {@link wres.statistics.generated.Statistics}.</li>
  * <li>Pairs messages contained in {@link wres.statistics.generated.Pairs}.</li>
  * </ol>
- * 
+ *
  * <p>An evaluation is assigned a unique identifier on construction. This identifier is used to correlate messages that
  * belong to the same evaluation.
- * 
+ *
  * <p> The lifecycle for an evaluation is composed of three parts:
  * <ol>
  * <li>Opening, which corresponds to 
@@ -64,7 +66,7 @@ import wres.statistics.generated.Statistics;
  * <li>Awaiting completion {@link #await()}; and</li>
  * <li>Closing, either forcibly ({@link #stop(Exception)}) or nominally {@link #close()}.</li>
  * </ol>
- * 
+ *
  * <p>Currently, this is intended for internal use by java producers and consumers within the core of the wres. In 
  * future, it is envisaged that an "advanced" API will be exposed to external clients that can post evaluations and 
  * register consumers to consume all types of evaluation messages. This advanced API would provide developers of 
@@ -73,7 +75,7 @@ import wres.statistics.generated.Statistics;
  * request-response pattern, such as gRPC (www.grpc.io), in order to register an evaluation and obtain the evaluation 
  * identifier and connection details for brokered (i.e., non request-response) communication. Alternatively, the broker
  * could broadcast its existence to listening consumers.
- * 
+ *
  * @author James Brown
  */
 
@@ -104,7 +106,7 @@ public class Evaluation implements Closeable
 
     private static final String PAIRS_QUEUE = QueueType.PAIRS_QUEUE.toString();
 
-    /** 
+    /**
      * Logger. 
      */
 
@@ -136,12 +138,6 @@ public class Evaluation implements Closeable
      */
 
     private final EvaluationStatus statusOngoing;
-
-    /**
-     * A description of the evaluation.
-     */
-
-    private final wres.statistics.generated.Evaluation evaluationDescription;
 
     /**
      * A publisher for {@link wres.statistics.generated.Evaluation} messages.
@@ -254,7 +250,7 @@ public class Evaluation implements Closeable
 
     /**
      * Returns the unique evaluation identifier.
-     * 
+     *
      * @return the evaluation identifier
      */
 
@@ -265,7 +261,7 @@ public class Evaluation implements Closeable
 
     /**
      * Opens an evaluation.
-     * 
+     *
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
      * @param clientId the identifier of the messaging client requesting an evaluation
@@ -287,7 +283,7 @@ public class Evaluation implements Closeable
 
     /**
      * Opens an evaluation with a prescribed evaluation identifier.
-     * 
+     *
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
      * @param clientId the identifier of the messaging client requesting an evaluation
@@ -312,7 +308,7 @@ public class Evaluation implements Closeable
 
     /**
      * Opens an evaluation with a prescribed evaluation identifier and restrictions on approved subscribers.
-     * 
+     *
      * @param evaluationDescription the evaluation description message
      * @param broker the broker
      * @param clientId the identifier of the messaging client requesting an evaluation
@@ -340,7 +336,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
-     * 
+     *
      * @param status the status message
      * @throws NullPointerException if the input is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
@@ -353,7 +349,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
-     * 
+     *
      * @param statistics the statistics message
      * @throws NullPointerException if the input is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
@@ -366,7 +362,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.Pairs} message for the current evaluation.
-     * 
+     *
      * @param pairs the pairs message
      * @throws NullPointerException if the input is null
      * @throws IllegalStateException if the publication of messages to this evaluation has been notified complete
@@ -387,7 +383,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.EvaluationStatus} message for the current evaluation.
-     * 
+     *
      * @param status the status message
      * @param groupId an optional group identifier to identify grouped messages
      * @throws NullPointerException if the message is null
@@ -418,7 +414,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.Statistics} message for the current evaluation.
-     * 
+     *
      * @param statistics the statistics message
      * @param groupId an optional group identifier to identify grouped messages
      * @throws NullPointerException if the message is null
@@ -473,11 +469,11 @@ public class Evaluation implements Closeable
      * cannot be published using the public methods of this instance. However, other instances may continue to publish 
      * messages about other evaluations and consumers may continue to publish their own status with respect to this 
      * evaluation. 
-     * 
+     *
      * <p>If the evaluation failed, then a failure message should be published so that consumers can learn about the 
      * failure and then evaluation should then be stopped promptly. This is achieved by 
      * {@link #stop(Exception)}.
-     * 
+     *
      * @see #stop(Exception)
      */
 
@@ -532,10 +528,10 @@ public class Evaluation implements Closeable
 
     /**
      * <p>Marks complete the publication of statistics messages by this instance for the prescribed message group. 
-     * 
-     * If no statistics messages were published by this instance, then no tracking by group is needed and 
+     *
+     * <p>If no statistics messages were published by this instance, then no tracking by group is needed and
      * {@link #markPublicationCompleteReportedSuccess()} should be used instead.
-     * 
+     *
      * @param groupId the group identifier
      * @see #markPublicationCompleteReportedSuccess()
      * @throws NullPointerException if the group identifier is null
@@ -550,8 +546,7 @@ public class Evaluation implements Closeable
         // Some messages published?
         if ( this.messageGroups.containsKey( groupId ) )
         {
-            AtomicInteger mCount = this.messageGroups.get( groupId );
-            groupCount = mCount;
+            groupCount = this.messageGroups.get( groupId );
         }
         // No. This is allowed in a no data scenario.
         else
@@ -586,17 +581,6 @@ public class Evaluation implements Closeable
         groupCount.set( -1 );
     }
 
-    /**
-     * Returns the message that describes the evaluation, provided on construction of this instance.
-     * 
-     * @return the evaluation description
-     */
-
-    public wres.statistics.generated.Evaluation getEvaluationDescription()
-    {
-        return this.evaluationDescription;
-    }
-
     @Override
     public String toString()
     {
@@ -608,12 +592,12 @@ public class Evaluation implements Closeable
      * necessary when an out-of-band exception is encountered (e.g., when producing messages for publication by this 
      * evaluation), which requires the evaluation to terminate promptly, without attempting further progress. To 
      * terminate gracefully and await all outstanding publication and consumption, use {@link #await()}.
-     * 
+     *
      * <p>The provided exception is used to notify consumers of the failed evaluation, even when publication has been
      * marked complete for this instance.
-     * 
+     *
      * <p>Calling this method multiple times has no effect.
-     * 
+     *
      * @param exception an optional exception instance to propagate to consumers
      * @see #close()
      */
@@ -625,7 +609,7 @@ public class Evaluation implements Closeable
             LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
             // Publish the completion status, if possible
-            this.publishCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE, exception );
+            this.publishEvaluationFailed( exception );
 
             // Stop any flow control
             this.stopFlowControl();
@@ -638,10 +622,10 @@ public class Evaluation implements Closeable
 
     /**
      * <p>Closes the evaluation.
-     * 
+     *
      * <p>This method does not wait for publication or consumption to complete. To await completion, call 
      * {@link #await()} before calling {@link #close()}. An exception may be notified with {@link #stop(Exception)}.
-     * 
+     *
      * <p>Calling this method multiple times has no effect (other than logging the additional attempts).
      */
 
@@ -665,7 +649,7 @@ public class Evaluation implements Closeable
 
         // Close the tracker
         this.statusTracker.close();
-        
+
         // Cancel otherwise the current instance will persist in cluster-server mode: #103066
         this.timer.cancel();
 
@@ -692,7 +676,7 @@ public class Evaluation implements Closeable
 
     /**
      * Uncovers all paths written by subscribers.
-     * 
+     *
      * @return the paths written
      */
 
@@ -708,26 +692,26 @@ public class Evaluation implements Closeable
 
     /**
      * <p>Waits for the evaluation to complete. Complete in this context means two specific things:
-     * 
+     *
      * <ol>
      * <li>That publication has been marked completed; and</li>
      * <li>That every subscriber has received all of the messages it expected to receive.</li>
      * </ol>
-     * 
+     *
      * <p>It does *not* mean that every inner consumer within a subscriber has completed all of its work. For example,
      * consider the possibility of a consumer that implements a delayed write, as described in #81790-21. This method
      * may (probably will) complete before that delayed write has occurred. Thus, an evaluation should not be 
      * considered complete until all underlying consumers have reported complete.
-     *  
+     *
      * <p>In short, this method awaits with limited scope and makes only the guarantees described herein. 
-     * 
+     *
      * <p>To await with broader scope (e.g., to guarantee that consumers have finished their work), the inner consumers 
      * would need to implement a reporting contract. The simplest way to achieve this would be to promote each inner 
      * consumer to an external/outer subscriber that registers with an evaluation using a unique identifier. An outer 
      * subscriber is always responsible for messaging its own lifecycle and this evaluation will await those messages.
-     * 
+     *
      * <p>Calling this method multiple times has no effect (other than logging the additional attempts).
-     * 
+     *
      * @return the exit code on completion.
      * @throws EvaluationFailedToCompleteException if the evaluation failed to complete while waiting
      * @throws EvaluationEventException if the evaluation is asked to wait before publication is complete.
@@ -803,7 +787,7 @@ public class Evaluation implements Closeable
     /**
      * Checks whether the evaluation has failed. If the evaluation has not failed at the time of calling, it may yet
      * fail.
-     * 
+     *
      * @return true if the evaluation has failed, false if the evaluation has succeeded or is ongoing
      */
 
@@ -814,7 +798,7 @@ public class Evaluation implements Closeable
 
     /**
      * Returns the status of the evaluation on exit.
-     * 
+     *
      * @return the exit status
      * @throws IllegalStateException if this message is called before the evaluation has been closed.
      */
@@ -823,7 +807,7 @@ public class Evaluation implements Closeable
     {
         int code = this.exitCode.get();
 
-        if ( ! ( this.isStopped() || this.isClosed() ) )
+        if ( !( this.isStopped() || this.isClosed() ) )
         {
             throw new IllegalStateException( "Cannot acquire the exit status of a running evaluation." );
         }
@@ -833,7 +817,7 @@ public class Evaluation implements Closeable
 
     /**
      * Builds an evaluation.
-     * 
+     *
      * @author James Brown
      */
 
@@ -871,7 +855,7 @@ public class Evaluation implements Closeable
 
         /**
          * Sets the broker.
-         * 
+         *
          * @param broker the broker
          * @return this builder
          */
@@ -885,7 +869,7 @@ public class Evaluation implements Closeable
 
         /**
          * Sets the evaluation message containing an overview of the evaluation.
-         * 
+         *
          * @param evaluationDescription the evaluation
          * @return this builder
          */
@@ -899,7 +883,7 @@ public class Evaluation implements Closeable
 
         /**
          * Sets the messaging client identifier.
-         * 
+         *
          * @param clientId the messaging client identifier
          * @return this builder 
          */
@@ -913,7 +897,7 @@ public class Evaluation implements Closeable
 
         /**
          * Sets the evaluation identifier. See {@link EvaluationEventUtilities#getId()}.
-         * 
+         *
          * @param evaluationId the evaluation identifier
          * @return this builder 
          */
@@ -927,7 +911,7 @@ public class Evaluation implements Closeable
 
         /**
          * Sets the {@link SubscriberApprover}.
-         * 
+         *
          * @param subscriberApprover the subscriber approver
          * @return this builder 
          */
@@ -941,7 +925,7 @@ public class Evaluation implements Closeable
 
         /**
          * Builds an evaluation.
-         * 
+         *
          * @return an evaluation
          */
 
@@ -952,76 +936,8 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Small bag of evaluation state for sharing.
-     * 
-     * @author James Brown
-     */
-
-    static class EvaluationInfo
-    {
-
-        /**
-         * Evaluation identifier.
-         */
-
-        private final String evaluationId;
-
-        /**
-         * Number of queues constructed with respect to this evaluation, which assists in naming durable queues.
-         */
-
-        private final AtomicInteger queuesConstructed;
-
-        /**
-         * Returns the next available queue number, one more than the number of queues constructed before this call.
-         * 
-         * @return the next queue number.
-         */
-
-        int getNextQueueNumber()
-        {
-            return this.queuesConstructed.incrementAndGet();
-        }
-
-        /**
-         * @return the evaluation identifier
-         */
-        String getEvaluationId()
-        {
-            return evaluationId;
-        }
-
-        /**
-         * Return an instance.
-         * 
-         * @param evaluationId the evaluation identifier
-         * @return an instance
-         */
-
-        static EvaluationInfo of( String evaluationId )
-        {
-            return new EvaluationInfo( evaluationId );
-        }
-
-        /**
-         * Build an instance.
-         * 
-         * @param evaluationId the evaluation identifier
-         * @throws NullPointerException if any input is null
-         */
-
-        private EvaluationInfo( String evaluationId )
-        {
-            Objects.requireNonNull( evaluationId );
-
-            this.evaluationId = evaluationId;
-            this.queuesConstructed = new AtomicInteger();
-        }
-    }
-
-    /**
      * Returns the unique identifier of the client that is responsible for publishing the evaluation being tracked.
-     * 
+     *
      * @return the client identifier
      */
 
@@ -1050,19 +966,18 @@ public class Evaluation implements Closeable
     }
 
     /**
-     * Publishes the completion status of an evaluation.
-     * @param completionStatus the completion status
+     * Publishes the completion status of an evaluation as failed.
      * @param exception an optional exception encountered before completion
      */
 
-    private void publishCompletionStatus( CompletionStatus completionStatus, Exception exception )
+    private void publishEvaluationFailed( Exception exception )
     {
         Instant now = Instant.now();
         long seconds = now.getEpochSecond();
         int nanos = now.getNano();
 
         EvaluationStatus.Builder complete = EvaluationStatus.newBuilder()
-                                                            .setCompletionStatus( completionStatus )
+                                                            .setCompletionStatus( CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE )
                                                             .setClientId( this.getClientId() )
                                                             .setTime( Timestamp.newBuilder()
                                                                                .setSeconds( seconds )
@@ -1089,7 +1004,7 @@ public class Evaluation implements Closeable
         {
             LOGGER.warn( "Unable to publish the completion status of evaluation {}, which was {}.",
                          this.getEvaluationId(),
-                         completionStatus );
+                         CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE );
         }
     }
 
@@ -1117,7 +1032,7 @@ public class Evaluation implements Closeable
     /**
      * Returns the expected number of messages, excluding evaluation status messages. This is one more than the number
      * of statistics messages because an evaluation starts with an evaluation description message.
-     * 
+     *
      * @return the published message count
      */
 
@@ -1152,7 +1067,7 @@ public class Evaluation implements Closeable
 
     /**
      * Returns the expected number of evaluation status messages.
-     * 
+     *
      * @return the evaluation status message count
      */
 
@@ -1163,7 +1078,7 @@ public class Evaluation implements Closeable
 
     /**
      * Returns the expected number of pairs messages.
-     * 
+     *
      * @return the pairs message count
      */
 
@@ -1174,7 +1089,7 @@ public class Evaluation implements Closeable
 
     /**
      * Returns the  number of groups to which statistics messages were published.
-     * 
+     *
      * @return the group  count
      */
 
@@ -1185,7 +1100,7 @@ public class Evaluation implements Closeable
 
     /**
      * Validates a request to publish.
-     * 
+     *
      * @throws IllegalStateException if publication is already complete or the evaluation has been stopped
      */
 
@@ -1237,7 +1152,7 @@ public class Evaluation implements Closeable
 
     /**
      * Validates a status message for expected content and looks for the presence of a group identifier where required. 
-     * 
+     *
      * @param message the message
      * @param groupId a group identifier
      * @throws NullPointerException if the group identifier is null
@@ -1290,7 +1205,7 @@ public class Evaluation implements Closeable
 
     /**
      * Looks for the presence of a group identifier and throws an exception when the group has already been completed.
-     * 
+     *
      * @param groupId a group identifier
      * @param queue the queue name to use in any error message
      * @throws IllegalArgumentException if there are group subscriptions and the group has already been marked complete
@@ -1318,7 +1233,7 @@ public class Evaluation implements Closeable
 
     /**
      * Builds an exception with the specified message.
-     * 
+     *
      * @param builder the builder
      * @throws EvaluationEventException if the evaluation could not be constructed for any reason
      * @throws NullPointerException if the broker is null
@@ -1343,7 +1258,7 @@ public class Evaluation implements Closeable
         // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
 
-        this.evaluationDescription = builder.evaluationDescription;
+        wres.statistics.generated.Evaluation evaluationDescription = builder.evaluationDescription;
         this.clientId = builder.clientId;
         SubscriberApprover subscriberApprover = builder.subscriberApprover;
 
@@ -1354,15 +1269,15 @@ public class Evaluation implements Closeable
         }
 
         // Get the formats that are required
-        Outputs outputs = this.evaluationDescription.getOutputs();
+        Outputs outputs = evaluationDescription.getOutputs();
         Set<Format> formatsRequired = MessageUtilities.getDeclaredFormats( outputs );
 
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
-        Objects.requireNonNull( this.evaluationDescription,
+        Objects.requireNonNull( evaluationDescription,
                                 "Cannot create an evaluation without an evaluation description message." );
         Objects.requireNonNull( this.clientId,
                                 "Cannot create an evaluation without the identifier of the messaging "
-                                               + "client that requested it." );
+                                + "client that requested it." );
 
         // Must have one or more formats
         if ( formatsRequired.isEmpty() )
@@ -1396,17 +1311,17 @@ public class Evaluation implements Closeable
                                                               subscriberApprover,
                                                               this.flowController );
 
-            Topic status = (Topic) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
+            Topic status = ( Topic ) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
 
             this.evaluationStatusPublisher = MessagePublisher.of( broker, status );
 
-            Topic evaluation = (Topic) broker.getDestination( Evaluation.EVALUATION_QUEUE );
+            Topic evaluation = ( Topic ) broker.getDestination( Evaluation.EVALUATION_QUEUE );
             this.evaluationPublisher = MessagePublisher.of( broker, evaluation );
 
-            Topic statistics = (Topic) broker.getDestination( Evaluation.STATISTICS_QUEUE );
+            Topic statistics = ( Topic ) broker.getDestination( Evaluation.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( broker, statistics );
 
-            Topic pairs = (Topic) broker.getDestination( Evaluation.PAIRS_QUEUE );
+            Topic pairs = ( Topic ) broker.getDestination( Evaluation.PAIRS_QUEUE );
             this.pairsPublisher = MessagePublisher.of( broker, pairs );
         }
         catch ( JMSException | NamingException e )
@@ -1449,7 +1364,7 @@ public class Evaluation implements Closeable
         this.publish( started );
 
         // Publish the evaluation description  and update the evaluation status
-        this.internalPublish( this.evaluationDescription );
+        this.internalPublish( evaluationDescription );
 
         // Notify that the evaluation is alive
         this.checkAndNotifyStatusAtFixedInterval( this, this.timer );
@@ -1461,7 +1376,7 @@ public class Evaluation implements Closeable
 
     /**
      * Internal publish, do not expose.
-     * 
+     *
      * @param body the message body
      * @param publisher the publisher
      * @param queue the queue name on the amq.topic
@@ -1529,7 +1444,7 @@ public class Evaluation implements Closeable
 
     /**
      * Publish an {@link wres.statistics.generated.Evaluation} message for the current evaluation.
-     * 
+     *
      * @param evaluation the evaluation message
      */
 
@@ -1547,7 +1462,7 @@ public class Evaluation implements Closeable
     /**
      * Notifies all clients that depend on this evaluation that it is still alive. The notification happens at a fixed
      * time interval of {@link Evaluation#NOTIFY_ALIVE_MILLISECONDS}.
-     * 
+     *
      * @param evaluation the evaluation
      * @param timer the timer
      */
@@ -1573,7 +1488,7 @@ public class Evaluation implements Closeable
 
     /**
      * Closes a publisher gracefully.
-     * 
+     *
      * @param publisher the publisher to close
      */
 

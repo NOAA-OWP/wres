@@ -22,12 +22,13 @@ import wres.statistics.generated.TimeWindow;
 
 
 /**
- * <p>Wraps a canonical {@link TimeWindow} and describes the partition of three time lines in which a sample is collated 
- * for the purposes of a statistical calculation. The first timeline is a reference timeline in UTC, which may be used 
- * to represent the origin of a forecast (e.g. the issued datetime). The second timeline represents the valid datetime 
- * of a measurement, also in UTC. The third timeline describes the duration of a measurement, such as a forecast lead 
- * duration. Each timeline is bounded with an earliest and latest bookend. A {@link TimeWindowOuter} represents the 
- * intersection of these three timelines, i.e., each of its elements are members of each of the three timelines.
+ * <p>Wraps a canonical {@link TimeWindow} and adds behavior. Describes the partition of three time lines in which a
+ * sample is collated for the purposes of a statistical calculation. The first timeline is a reference timeline in UTC,
+ * which may be used to represent the origin of a forecast (e.g. the issued datetime). The second timeline represents
+ * the valid datetime of a measurement, also in UTC. The third timeline describes the duration of a measurement, such
+ * as a forecast lead duration. Each timeline is bounded with an earliest and latest bookend. A {@link TimeWindowOuter}
+ * represents the intersection of these three timelines, i.e., each of its elements are members of each of the three
+ * timelines.
  * 
  * <p>In summary, a {@link TimeWindowOuter} comprises the following required elements:
  * 
@@ -43,7 +44,7 @@ import wres.statistics.generated.TimeWindow;
  * <p><b>Implementation Requirements:</b>
  * 
  * <p>TODO: If a future JDK implements something equivalent to an Interval in joda.time, consider replacing the 
- * earliest time and latest time with an Interval.
+ * earliest time and latest time with that abstraction.
  *
  * @author James Brown
  */
@@ -51,7 +52,6 @@ import wres.statistics.generated.TimeWindow;
 @Immutable
 public class TimeWindowOuter implements Comparable<TimeWindowOuter>
 {
-
     /**
      * <p>Minimum {@link Duration}. 
      * 
@@ -180,19 +180,16 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
     @Override
     public int compareTo( TimeWindowOuter o )
     {
-        Objects.requireNonNull( o );
-
         return MessageUtilities.compare( this.getTimeWindow(), o.getTimeWindow() );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof TimeWindowOuter ) )
+        if ( ! ( o instanceof TimeWindowOuter in ) )
         {
             return false;
         }
-        TimeWindowOuter in = (TimeWindowOuter) o;
 
         return Objects.equals( this.getTimeWindow(), in.getTimeWindow() );
     }

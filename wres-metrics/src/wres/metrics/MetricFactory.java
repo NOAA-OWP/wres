@@ -9,7 +9,6 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DataUtilities;
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Probability;
@@ -76,7 +75,6 @@ import wres.metrics.timeseries.TimingErrorDurationStatistics;
 
 public final class MetricFactory
 {
-
     /**
      * String used in several error messages to denote an unrecognized metric.
      */
@@ -532,53 +530,31 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>
             ofSingleValuedScore( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case BIAS_FRACTION:
-                return BiasFraction.of();
-            case KLING_GUPTA_EFFICIENCY:
-                return KlingGuptaEfficiency.of();
-            case MEAN_ABSOLUTE_ERROR:
-                return MeanAbsoluteError.of();
-            case MEAN_ABSOLUTE_ERROR_SKILL_SCORE:
-                return MeanAbsoluteErrorSkillScore.of();
-            case MEAN_ERROR:
-                return MeanError.of();
-            case MEDIAN_ERROR:
-                return MedianError.of();
-            case SAMPLE_SIZE:
-                return SampleSize.of();
-            case INDEX_OF_AGREEMENT:
-                return IndexOfAgreement.of();
-            case VOLUMETRIC_EFFICIENCY:
-                return VolumetricEfficiency.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MeanSquareErrorSkillScore.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED:
-                return MeanSquareErrorSkillScoreNormalized.of();
-            case COEFFICIENT_OF_DETERMINATION:
-                return CoefficientOfDetermination.of();
-            case PEARSON_CORRELATION_COEFFICIENT:
-                return CorrelationPearsons.of();
-            case MEAN_SQUARE_ERROR:
-                return MeanSquareError.of();
-            case ROOT_MEAN_SQUARE_ERROR:
-                return RootMeanSquareError.of();
-            case ROOT_MEAN_SQUARE_ERROR_NORMALIZED:
-                return RootMeanSquareErrorNormalized.of();
-            case SUM_OF_SQUARE_ERROR:
-                return SumOfSquareError.of();
-            case MEAN:
-                return Mean.of();
-            case STANDARD_DEVIATION:
-                return StandardDeviation.of();
-            case MINIMUM:
-                return Minimum.of();
-            case MAXIMUM:
-                return Maximum.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case BIAS_FRACTION -> BiasFraction.of();
+                    case KLING_GUPTA_EFFICIENCY -> KlingGuptaEfficiency.of();
+                    case MEAN_ABSOLUTE_ERROR -> MeanAbsoluteError.of();
+                    case MEAN_ABSOLUTE_ERROR_SKILL_SCORE -> MeanAbsoluteErrorSkillScore.of();
+                    case MEAN_ERROR -> MeanError.of();
+                    case MEDIAN_ERROR -> MedianError.of();
+                    case SAMPLE_SIZE -> SampleSize.of();
+                    case INDEX_OF_AGREEMENT -> IndexOfAgreement.of();
+                    case VOLUMETRIC_EFFICIENCY -> VolumetricEfficiency.of();
+                    case MEAN_SQUARE_ERROR_SKILL_SCORE -> MeanSquareErrorSkillScore.of();
+                    case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED -> MeanSquareErrorSkillScoreNormalized.of();
+                    case COEFFICIENT_OF_DETERMINATION -> CoefficientOfDetermination.of();
+                    case PEARSON_CORRELATION_COEFFICIENT -> CorrelationPearsons.of();
+                    case MEAN_SQUARE_ERROR -> MeanSquareError.of();
+                    case ROOT_MEAN_SQUARE_ERROR -> RootMeanSquareError.of();
+                    case ROOT_MEAN_SQUARE_ERROR_NORMALIZED -> RootMeanSquareErrorNormalized.of();
+                    case SUM_OF_SQUARE_ERROR -> SumOfSquareError.of();
+                    case MEAN -> Mean.of();
+                    case STANDARD_DEVIATION -> StandardDeviation.of();
+                    case MINIMUM -> Minimum.of();
+                    case MAXIMUM -> Maximum.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -592,25 +568,17 @@ public final class MetricFactory
     public static Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofSingleValuedScoreCollectable( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case SUM_OF_SQUARE_ERROR:
-                return SumOfSquareError.of();
-            case COEFFICIENT_OF_DETERMINATION:
-                return CoefficientOfDetermination.of();
-            case PEARSON_CORRELATION_COEFFICIENT:
-                return CorrelationPearsons.of();
-            case MEAN_SQUARE_ERROR:
-                return MeanSquareError.of();
-            case ROOT_MEAN_SQUARE_ERROR:
-                return RootMeanSquareError.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE:
-                return MeanSquareErrorSkillScore.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED:
-                return MeanSquareErrorSkillScoreNormalized.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case SUM_OF_SQUARE_ERROR -> SumOfSquareError.of();
+                    case COEFFICIENT_OF_DETERMINATION -> CoefficientOfDetermination.of();
+                    case PEARSON_CORRELATION_COEFFICIENT -> CorrelationPearsons.of();
+                    case MEAN_SQUARE_ERROR -> MeanSquareError.of();
+                    case ROOT_MEAN_SQUARE_ERROR -> RootMeanSquareError.of();
+                    case MEAN_SQUARE_ERROR_SKILL_SCORE -> MeanSquareErrorSkillScore.of();
+                    case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED -> MeanSquareErrorSkillScoreNormalized.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -645,15 +613,12 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
             ofSingleValuedBoxPlot( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case BOX_PLOT_OF_ERRORS:
-                return BoxPlotError.of();
-            case BOX_PLOT_OF_PERCENTAGE_ERRORS:
-                return BoxPlotPercentageError.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case BOX_PLOT_OF_ERRORS -> BoxPlotError.of();
+                    case BOX_PLOT_OF_PERCENTAGE_ERRORS -> BoxPlotPercentageError.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -667,17 +632,13 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
             ofDiscreteProbabilityScore( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case BRIER_SCORE:
-                return BrierScore.of();
-            case BRIER_SKILL_SCORE:
-                return BrierSkillScore.of();
-            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
-                return RelativeOperatingCharacteristicScore.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case BRIER_SCORE -> BrierScore.of();
+                    case BRIER_SKILL_SCORE -> BrierSkillScore.of();
+                    case RELATIVE_OPERATING_CHARACTERISTIC_SCORE -> RelativeOperatingCharacteristicScore.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -691,27 +652,18 @@ public final class MetricFactory
     public static Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             ofDichotomousScore( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case THREAT_SCORE:
-                return ThreatScore.of();
-            case EQUITABLE_THREAT_SCORE:
-                return EquitableThreatScore.of();
-            case PEIRCE_SKILL_SCORE:
-                return PeirceSkillScore.of();
-            case PROBABILITY_OF_DETECTION:
-                return ProbabilityOfDetection.of();
-            case PROBABILITY_OF_FALSE_DETECTION:
-                return ProbabilityOfFalseDetection.of();
-            case FREQUENCY_BIAS:
-                return FrequencyBias.of();
-            case CONTINGENCY_TABLE:
-                return ContingencyTable.of();
-            case FALSE_ALARM_RATIO:
-                return FalseAlarmRatio.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case THREAT_SCORE -> ThreatScore.of();
+                    case EQUITABLE_THREAT_SCORE -> EquitableThreatScore.of();
+                    case PEIRCE_SKILL_SCORE -> PeirceSkillScore.of();
+                    case PROBABILITY_OF_DETECTION -> ProbabilityOfDetection.of();
+                    case PROBABILITY_OF_FALSE_DETECTION -> ProbabilityOfFalseDetection.of();
+                    case FREQUENCY_BIAS -> FrequencyBias.of();
+                    case CONTINGENCY_TABLE -> ContingencyTable.of();
+                    case FALSE_ALARM_RATIO -> FalseAlarmRatio.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -726,15 +678,12 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
             ofDiscreteProbabilityDiagram( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
-                return RelativeOperatingCharacteristicDiagram.of();
-            case RELIABILITY_DIAGRAM:
-                return ReliabilityDiagram.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM -> RelativeOperatingCharacteristicDiagram.of();
+                    case RELIABILITY_DIAGRAM -> ReliabilityDiagram.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -748,17 +697,13 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
             ofEnsembleScore( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case CONTINUOUS_RANKED_PROBABILITY_SCORE:
-                return ContinuousRankedProbabilityScore.of();
-            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
-                return ContinuousRankedProbabilitySkillScore.of();
-            case SAMPLE_SIZE:
-                return SampleSize.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case CONTINUOUS_RANKED_PROBABILITY_SCORE -> ContinuousRankedProbabilityScore.of();
+                    case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE -> ContinuousRankedProbabilitySkillScore.of();
+                    case SAMPLE_SIZE -> SampleSize.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -772,15 +717,12 @@ public final class MetricFactory
     public static Metric<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
             ofEnsembleBoxPlot( MetricConstants metric )
     {
-        switch ( metric )
-        {
-            case BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE:
-                return BoxPlotErrorByObserved.of();
-            case BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE:
-                return BoxPlotErrorByForecast.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE -> BoxPlotErrorByObserved.of();
+                    case BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE -> BoxPlotErrorByForecast.of();
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -796,13 +738,16 @@ public final class MetricFactory
     {
         switch ( metric )
         {
-            case RANK_HISTOGRAM:
+            case RANK_HISTOGRAM ->
+            {
                 Random random = MetricFactory.getRandomNumberGenerator();
                 return RankHistogram.of( random );
-            case ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM:
+            }
+            case ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM ->
+            {
                 return EnsembleQuantileQuantileDiagram.of();
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            }
+            default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -821,15 +766,12 @@ public final class MetricFactory
         // Use a random number generator with a fixed seed if required
         Random random = MetricFactory.getRandomNumberGenerator();
 
-        switch ( metric )
-        {
-            case TIME_TO_PEAK_ERROR:
-                return TimeToPeakError.of( random );
-            case TIME_TO_PEAK_RELATIVE_ERROR:
-                return TimeToPeakRelativeError.of( random );
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
+        return switch ( metric )
+                {
+                    case TIME_TO_PEAK_ERROR -> TimeToPeakError.of( random );
+                    case TIME_TO_PEAK_RELATIVE_ERROR -> TimeToPeakRelativeError.of( random );
+                    default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                };
     }
 
     /**
@@ -851,15 +793,15 @@ public final class MetricFactory
 
         Random random = MetricFactory.getRandomNumberGenerator();
 
-        switch ( timingMetric )
-        {
-            case TIME_TO_PEAK_ERROR:
-                return TimingErrorDurationStatistics.of( TimeToPeakError.of( random ), summaryStatistics );
-            case TIME_TO_PEAK_RELATIVE_ERROR:
-                return TimingErrorDurationStatistics.of( TimeToPeakRelativeError.of( random ), summaryStatistics );
-            default:
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + timingMetric + "'." );
-        }
+        return switch ( timingMetric )
+                {
+                    case TIME_TO_PEAK_ERROR ->
+                            TimingErrorDurationStatistics.of( TimeToPeakError.of( random ), summaryStatistics );
+                    case TIME_TO_PEAK_RELATIVE_ERROR ->
+                            TimingErrorDurationStatistics.of( TimeToPeakRelativeError.of( random ), summaryStatistics );
+                    default -> throw new IllegalArgumentException(
+                            UNRECOGNIZED_METRIC_ERROR + " '" + timingMetric + "'." );
+                };
     }
 
     /**
@@ -938,8 +880,6 @@ public final class MetricFactory
 
     /**
      * Hidden constructor.
-     * 
-     * @param outputFactory a {@link DataUtilities}
      */
 
     private MetricFactory()

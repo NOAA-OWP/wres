@@ -1,8 +1,10 @@
 package wres.io.reading.netcdf.grid;
 
+import org.locationtech.jts.geom.Coordinate;
 import thredds.client.catalog.ServiceType;
 import ucar.nc2.NetcdfFile;
 
+import wres.datamodel.DataUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
@@ -304,7 +306,7 @@ public class GridReader
             int time = 0;
             this.readLock.lock();
 
-            Feature.GeoPoint point = getLatLonCoordFromSridWkt( wkt );
+            Coordinate point = getLatLonCoordFromSridWkt( wkt );
 
             // This is underlying THREDDS code. It generally expects some semi-remote location for its data, but we're
             // local, so we're using
@@ -328,7 +330,7 @@ public class GridReader
 
                 // Returns XY from YX parameters
                 int[] xIndexYIndex = variable.getCoordinateSystem()
-                                             .findXYindexFromLatLon( point.y(), point.x(), null );
+                                             .findXYindexFromLatLon( point.getY(), point.getX(), null );
 
                 // readDataSlice takes (time, z, y, x) as parameters. Since the previous call was XY, we need to flip
                 // the two, yielding indexes 1 then 0
@@ -353,9 +355,9 @@ public class GridReader
          * Parse a point from a point WKT, ignoring srid.
          * TODO: do an affine transform, not just parse a point.
          */
-        private static Feature.GeoPoint getLatLonCoordFromSridWkt( String wkt )
+        private static Coordinate getLatLonCoordFromSridWkt( String wkt )
         {
-            return Feature.getLonLatFromPointWkt( wkt );
+            return DataUtilities.getLonLatFromPointWkt( wkt );
         }
 
         private Instant getValidTime() throws IOException

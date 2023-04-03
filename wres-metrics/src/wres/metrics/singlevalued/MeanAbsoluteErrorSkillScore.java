@@ -29,7 +29,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * prediction (MAE) and a baseline set of predictions (MAE_baseline), {@code MAESS = 1.0 - MAE / MAE_baseline}. When no
  * explicit baseline is provided, a default baseline is used, which corresponds to the average observation or 
  * "climatology".
- * 
+ *
  * @author James Brown
  */
 public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -45,10 +45,11 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
                                                                                     .build();
 
     /** Full description of the metric.*/
-    public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( MeanAbsoluteErrorSkillScore.MAIN )
-                                                                    .setName( MetricName.MEAN_ABSOLUTE_ERROR_SKILL_SCORE )
-                                                                    .build();
+    public static final DoubleScoreMetric METRIC_INNER
+            = DoubleScoreMetric.newBuilder()
+                               .addComponents( MeanAbsoluteErrorSkillScore.MAIN )
+                               .setName( MetricName.MEAN_ABSOLUTE_ERROR_SKILL_SCORE )
+                               .build();
 
     /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
@@ -60,7 +61,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -180,7 +181,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
 
     private MeanAbsoluteErrorSkillScore()
     {
-        super( FunctionFactory.absError(), MeanAbsoluteErrorSkillScore.METRIC );
+        super( FunctionFactory.absError(), MeanAbsoluteErrorSkillScore.METRIC_INNER );
     }
 
 }

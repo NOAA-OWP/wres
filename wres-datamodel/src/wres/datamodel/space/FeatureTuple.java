@@ -11,13 +11,12 @@ import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryTuple;
 
 /**
- * Vector features correlated either as declared or by a service call. Contains
- * at least a left and right, optionally a baseline. Optionally (eventually) a
- * climatology. This class wraps a canonical {@link GeometryTuple}.
+ * Represents a tuple of geographic features. Wraps a canonical {@link GeometryTuple} and adds behavior.
  */
 
 public class FeatureTuple implements Comparable<FeatureTuple>
 {
+    /** The canonical tuple. */
     private final GeometryTuple geometryTuple;
 
     /**

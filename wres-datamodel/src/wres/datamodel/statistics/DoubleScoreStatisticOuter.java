@@ -104,7 +104,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
                 return false;
             }
 
-            if ( ! ( o instanceof DoubleScoreComponentOuter ) )
+            if ( ! ( o instanceof DoubleScoreComponentOuter inner ) )
             {
                 return false;
             }
@@ -113,8 +113,6 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
             {
                 return true;
             }
-
-            DoubleScoreComponentOuter inner = (DoubleScoreComponentOuter) o;
 
             return Objects.equals( this.getMetricName(), inner.getMetricName() );
         }
@@ -155,7 +153,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
             return false;
         }
 
-        if ( ! ( o instanceof DoubleScoreStatisticOuter ) )
+        if ( ! ( o instanceof DoubleScoreStatisticOuter inner ) )
         {
             return false;
         }
@@ -164,8 +162,6 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         {
             return true;
         }
-
-        DoubleScoreStatisticOuter inner = (DoubleScoreStatisticOuter) o;
 
         return Objects.equals( this.getMetricName(), inner.getMetricName() );
     }

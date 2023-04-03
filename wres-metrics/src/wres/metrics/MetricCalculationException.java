@@ -1,5 +1,7 @@
 package wres.metrics;
 
+import java.io.Serial;
+
 import wres.datamodel.DataException;
 
 /**
@@ -10,10 +12,10 @@ import wres.datamodel.DataException;
 
 public class MetricCalculationException extends DataException
 {
-
     /**
      * Serial identifier.
      */
+    @Serial
     private static final long serialVersionUID = 3189229577290445611L;
 
     /**

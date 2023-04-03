@@ -982,9 +982,9 @@ public class DatabaseProject implements Project
                                                                          Collections.unmodifiableSet( rightNames ),
                                                                          Collections.unmodifiableSet( baselineNames ) );
 
-        this.leftVariable = variableNames.getLeftVariableName();
-        this.rightVariable = variableNames.getRightVariableName();
-        this.baselineVariable = variableNames.getBaselineVariableName();
+        this.leftVariable = variableNames.leftVariableName();
+        this.rightVariable = variableNames.rightVariableName();
+        this.baselineVariable = variableNames.baselineVariableName();
 
         ProjectUtilities.validateVariableNames( this.getDeclaredLeftVariableName(),
                                                 this.getDeclaredRightVariableName(),

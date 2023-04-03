@@ -16,7 +16,6 @@ import wres.statistics.generated.Consumer.Format;
 
 public class MessageUtilities
 {
-
     /**
      * Uncovers a set of declared formats from a description of the outputs.
      * 

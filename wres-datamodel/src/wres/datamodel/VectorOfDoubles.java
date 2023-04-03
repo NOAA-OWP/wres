@@ -75,9 +75,8 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
     @Override
     public boolean equals( Object other )
     {
-        if ( other instanceof VectorOfDoubles )
+        if ( other instanceof VectorOfDoubles otherVec )
         {
-            VectorOfDoubles otherVec = (VectorOfDoubles) other;
             return 0 == VectorOfDoubles.compareDoubleArray( this.getDoubles(), otherVec.getDoubles() );
         }
         else
@@ -110,12 +109,12 @@ public class VectorOfDoubles implements Comparable<VectorOfDoubles>
     }
 
     /**
-     * Consistent comparison of double arrays, first checks count of elements,
+     * <p>Consistent comparison of double arrays, first checks count of elements,
      * next goes through values.
      *
-     * If first has fewer values, return -1, if first has more values, return 1.
+     * <p>If first has fewer values, return -1, if first has more values, return 1.
      *
-     * If value count is equal, go through in order until an element is less
+     * <p>If value count is equal, go through in order until an element is less
      * or greater than another. If all values are equal, return 0.
      *
      * @param first the first array

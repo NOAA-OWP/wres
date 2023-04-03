@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
@@ -50,7 +51,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link Slicer}.
- * 
+ *
  * @author James Brown
  */
 public final class SlicerTest
@@ -68,9 +69,8 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
         double[] expected = new double[] { 0, 0, 1, 1, 0, 1 };
 
-        assertTrue( Arrays.equals( Slicer.getLeftSide( Pool.of( values,
-                                                                PoolMetadata.of() ) ),
-                                   expected ) );
+        assertArrayEquals( expected, Slicer.getLeftSide( Pool.of( values,
+                                                                  PoolMetadata.of() ) ), 0.0 );
     }
 
     @Test
@@ -85,9 +85,15 @@ public final class SlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
 
         double[] expected = new double[] { 3.0 / 5.0, 1.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0, 0.0 / 5.0, 1.0 / 5.0 };
-        assertTrue( Arrays.equals( Slicer.getRightSide( Pool.of( values,
-                                                                 PoolMetadata.of() ) ),
-                                   expected ) );
+        assertArrayEquals( expected, Slicer.getRightSide( Pool.of( values,
+                                                                   PoolMetadata.of() ) ), 0.0 );
+    }
+
+    @Test
+    public void testRound()
+    {
+        DoubleUnaryOperator rounder = Slicer.rounder( 1 );
+        assertEquals( 2.0, rounder.applyAsDouble( 2.04 ), 0.001 );
     }
 
     @Test
@@ -106,12 +112,12 @@ public final class SlicerTest
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
 
-        assertTrue( mapper.apply( a ).equals( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) ) );
-        assertTrue( mapper.apply( b ).equals( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) ) );
-        assertTrue( mapper.apply( c ).equals( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ) ) );
-        assertTrue( mapper.apply( d ).equals( Pair.of( Probability.ONE, Probability.of( 1.0 ) ) ) );
-        assertTrue( mapper.apply( e ).equals( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) ) );
-        assertTrue( mapper.apply( f ).equals( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ) ) );
+        assertEquals( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ), mapper.apply( a ) );
+        assertEquals( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ), mapper.apply( b ) );
+        assertEquals( Pair.of( Probability.ZERO, Probability.of( 0.0 / 5.0 ) ), mapper.apply( c ) );
+        assertEquals( Pair.of( Probability.ONE, Probability.of( 1.0 ) ), mapper.apply( d ) );
+        assertEquals( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ), mapper.apply( e ) );
+        assertEquals( Pair.of( Probability.ONE, Probability.of( 3.0 / 5.0 ) ), mapper.apply( f ) );
     }
 
     @Test
@@ -170,10 +176,10 @@ public final class SlicerTest
         Map<Integer, List<Pair<Double, Ensemble>>> sliced = Slicer.filterByRightSize( input );
 
         //Check the results
-        assertTrue( "Expected three slices of data.", sliced.size() == 3 );
-        assertTrue( "Expected the first slice to contain three pairs.", sliced.get( 3 ).size() == 3 );
-        assertTrue( "Expected the second slice to contain five pairs.", sliced.get( 5 ).size() == 5 );
-        assertTrue( "Expected the third slice to contain four pairs.", sliced.get( 6 ).size() == 4 );
+        assertEquals( "Expected three slices of data.", 3, sliced.size() );
+        assertEquals( "Expected the first slice to contain three pairs.", 3, sliced.get( 3 ).size() );
+        assertEquals( "Expected the second slice to contain five pairs.", 5, sliced.get( 5 ).size() );
+        assertEquals( "Expected the third slice to contain four pairs.", 4, sliced.get( 6 ).size() );
     }
 
     @Test
@@ -188,18 +194,21 @@ public final class SlicerTest
         DoubleScoreStatisticComponent reliability = DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.5 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.RELIABILITY ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.RELIABILITY ) )
                                                                                  .build();
         DoubleScoreStatisticComponent resolution = DoubleScoreStatisticComponent.newBuilder()
                                                                                 .setValue( 0.2 )
                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                      .setName( ComponentName.RESOLUTION ) )
+                                                                                                                      .setName(
+                                                                                                                              ComponentName.RESOLUTION ) )
                                                                                 .build();
 
         DoubleScoreStatisticComponent sharpness = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setValue( 0.1 )
                                                                                .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                     .setName( ComponentName.SHARPNESS ) )
+                                                                                                                     .setName(
+                                                                                                                             ComponentName.SHARPNESS ) )
                                                                                .build();
 
         DoubleScoreStatistic one =
@@ -277,9 +286,12 @@ public final class SlicerTest
                                            .build(),
                                  wres.statistics.generated.Pool.newBuilder()
                                                                .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                                               .addGeometryTuples( GeometryTuple.newBuilder()
-                                                                                                                                .setLeft( geometry )
-                                                                                                                                .setRight( geometry ) ) )
+                                                                                               .addGeometryTuples(
+                                                                                                       GeometryTuple.newBuilder()
+                                                                                                                    .setLeft(
+                                                                                                                            geometry )
+                                                                                                                    .setRight(
+                                                                                                                            geometry ) ) )
                                                                .build() );
         Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), climatology );
         Pool<Pair<Double, Double>> sliced =
@@ -380,7 +392,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -389,7 +402,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -399,7 +413,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
@@ -477,7 +492,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -486,7 +502,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -496,7 +513,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
@@ -515,7 +533,7 @@ public final class SlicerTest
 
         // Discover the metrics available
         Set<MetricConstants> actualOutputOne =
-                Slicer.discover( listOfOutputs, next -> next.getMetricName() );
+                Slicer.discover( listOfOutputs, DoubleScoreStatisticOuter::getMetricName );
         Set<MetricConstants> expectedOutputOne = Collections.singleton( MetricConstants.BIAS_FRACTION );
 
         assertEquals( actualOutputOne, expectedOutputOne );
@@ -634,7 +652,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -643,7 +662,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -653,7 +673,8 @@ public final class SlicerTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> unorderedStatistics =
@@ -695,57 +716,54 @@ public final class SlicerTest
     @Test
     public void testFilterEnsembleThrowsIllegalArgumentExceptionWhenLabelsAreMissing()
     {
+        Ensemble ensemble = Ensemble.of( 1.0 );
         assertThrows( IllegalArgumentException.class,
-                      () -> Slicer.filter( Ensemble.of( 1.0 ),
-                                           "aLabel" ) );
+                      () -> Slicer.filter( ensemble, "aLabel" ) );
     }
 
     @Test
     public void testFilterThrowsNullPointerExceptionWhenEnsembleIsNull()
     {
         assertThrows( NullPointerException.class,
-                      () -> Slicer.filter( null,
-                                           "aLabel" ) );
+                      () -> Slicer.filter( null, "aLabel" ) );
     }
 
     @Test
     public void testFilterThrowsNullPointerExceptionWhenLabelsIsNull()
     {
+        Ensemble ensemble = Ensemble.of( 1.0 );
         assertThrows( NullPointerException.class,
-                      () -> Slicer.filter( Ensemble.of( 1.0 ),
-                                           (String[]) null ) );
+                      () -> Slicer.filter( ensemble, ( String[] ) null ) );
     }
 
     @Test
     public void testFilterListOfMetricOutputsWithNullListProducesNPE()
     {
         assertThrows( NullPointerException.class,
-                      () -> Slicer.filter( (List<Statistic<?>>) null,
-                                           (Predicate<Statistic<?>>) null ) );
+                      () -> Slicer.filter( null, ( Predicate<Statistic<?>> ) null ) );
     }
 
     @Test
     public void testFilterListOfMetricOutputsWithNullPredicateProducesNPE()
     {
+        List<Statistic<?>> list = List.of();
         assertThrows( NullPointerException.class,
-                      () -> Slicer.filter( List.of(),
-                                           (Predicate<Statistic<?>>) null ) );
+                      () -> Slicer.filter( list, ( Predicate<Statistic<?>> ) null ) );
     }
 
     @Test
     public void testDiscoverListOfMetricOutputsWithNullListProducesNPE()
     {
         assertThrows( NullPointerException.class,
-                      () -> Slicer.discover( (List<Statistic<?>>) null,
-                                             (Function<Statistic<?>, ?>) null ) );
+                      () -> Slicer.discover( null, ( Function<Statistic<?>, ?> ) null ) );
     }
 
     @Test
     public void testDiscoverListOfMetricOutputsWithNullFunctionProducesNPE()
     {
+        List<Statistic<?>> list = List.of();
         assertThrows( NullPointerException.class,
-                      () -> Slicer.discover( List.of(),
-                                             (Function<Statistic<?>, ?>) null ) );
+                      () -> Slicer.discover( list, ( Function<Statistic<?>, ?> ) null ) );
     }
 
 }

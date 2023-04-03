@@ -7,7 +7,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,7 +21,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.metrics.MetricParameterException;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -34,7 +32,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class ContinousRankedProbabilityScoreTest
 {
-
     /**
      * Default instance of a {@link ContinuousRankedProbabilityScore}.
      */
@@ -212,17 +209,12 @@ public final class ContinousRankedProbabilityScoreTest
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
         assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
     }
-
-    /**
-     * Checks that the {@link ContinuousRankedProbabilityScore#getName()} returns 
-     * {@link MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -289,25 +281,8 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testExceptionOnNullInput()
     {
-        PoolException actual = assertThrows( PoolException.class,
-                                             () -> this.crps.apply( (Pool<Pair<Double, Ensemble>>) null ) );
+        PoolException actual = assertThrows( PoolException.class, () -> this.crps.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crps.getName() + "'.", actual.getMessage() );
     }
-
-
-    /**
-     * Tests for an expected exception on building a {@link ContinuousRankedProbabilityScore} with 
-     * an unrecognized decomposition identifier.
-     */
-
-    @Test
-    public void testApplyExceptionOnUnrecognizedDecompositionIdentifier()
-    {
-        MetricParameterException actual = assertThrows( MetricParameterException.class,
-                                                        () -> ContinuousRankedProbabilityScore.of( MetricGroup.LBR ) );
-
-        assertEquals( "Unsupported decomposition identifier 'LBR'.", actual.getMessage() );
-    }
-
 }

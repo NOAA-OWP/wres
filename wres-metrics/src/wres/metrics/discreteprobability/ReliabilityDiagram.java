@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -177,7 +176,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
                                          .setMetric( ReliabilityDiagram.FORECAST_PROBABILITY )
                                          .addAllValues( Arrays.stream( fProb )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatisticComponent observedFrequency =
@@ -185,7 +184,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
                                          .setMetric( ReliabilityDiagram.OBSERVED_RELATIVE_FREQUENCY )
                                          .addAllValues( Arrays.stream( oProb )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatisticComponent sampleSize =
@@ -193,7 +192,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
                                          .setMetric( ReliabilityDiagram.SAMPLE_SIZE )
                                          .addAllValues( Arrays.stream( samples )
                                                               .boxed()
-                                                              .collect( Collectors.toList() ) )
+                                                              .toList() )
                                          .build();
 
         DiagramStatistic statistic = DiagramStatistic.newBuilder()

@@ -195,18 +195,6 @@ public class DataScripter extends ScriptBuilder
     }
 
     /**
-     * Retrieves a single value, denoted by the given label, asynchronously
-     * using the script
-     * @param label The name of the column containing the value
-     * @param <V> The type of the value to retrieve
-     * @return The task that retrieves the value
-     */
-    public <V> Future<V> submit( final String label )
-    {
-        return this.database.submit( this.formQuery(), label, this.isHighPriority );
-    }
-
-    /**
      * Schedules the query to run in the database asynchronously
      * @return The scheduled task
      */
@@ -269,13 +257,13 @@ public class DataScripter extends ScriptBuilder
         List<String> parameterStrings = new ArrayList<>();
         for ( Object next : this.getParameters() )
         {
-            if ( next instanceof long[] )
+            if ( next instanceof long[] v )
             {
-                parameterStrings.add( Arrays.toString( ( long[] ) next ) );
+                parameterStrings.add( Arrays.toString( v ) );
             }
-            else if ( next instanceof Long[] )
+            else if ( next instanceof Long[] v )
             {
-                parameterStrings.add( Arrays.toString( ( Long[] ) next ) );
+                parameterStrings.add( Arrays.toString( v ) );
             }
             else
             {
@@ -313,7 +301,7 @@ public class DataScripter extends ScriptBuilder
         else
         {
             String script = super.toString();
-            script = script.replaceAll( "\\?", "'%s'" );
+            script = script.replace( "\\?", "'%s'" );
             return String.format( script, this.arguments.toArray() );
         }
     }

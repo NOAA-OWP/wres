@@ -1,5 +1,6 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,10 +20,10 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Creates an XY dataset for plotting a verification score component by threshold (X axis) and score value (Y axis) with 
+ * <p>Creates an XY dataset for plotting a verification score component by threshold (X axis) and score value (Y axis) with
  * up to N series per dataset, each representing a distinct lead duration.
  * 
- * In order to support displays of intervals, such as confidence intervals, upgrade to 
+ * <p>In order to support displays of intervals, such as confidence intervals, upgrade to
  * {@link AbstractIntervalXYDataset}.
  * 
  * @author James Brown
@@ -30,15 +31,12 @@ import wres.datamodel.time.TimeWindowOuter;
 
 class ScoreByThresholdAndLead extends AbstractXYDataset
 {
-
     /** Serial version identifier. */
+    @Serial
     private static final long serialVersionUID = -5997279852022884528L;
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ScoreByThresholdAndLead.class );
-
-    /** The duration units. */
-    private final ChronoUnit durationUnits;
 
     /** The statistics to plot, arranged by series. Each item in the outer list contains a series, indexed by name. */
     private final List<Pair<String, List<DoubleScoreComponentOuter>>> statistics;
@@ -124,8 +122,6 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( durationUnits );
 
-        this.durationUnits = durationUnits;
-
         // Arrange the series by threshold and then set them, ignoring the all data threshold
         List<Pair<String, List<DoubleScoreComponentOuter>>> innerStatistics = new ArrayList<>();
         SortedSet<TimeWindowOuter> timeWindows =
@@ -143,7 +139,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
 
 
             Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
-                                                                      this.durationUnits );
+                                                                        durationUnits );
             String name = leadDuration.toString();
             Pair<String, List<DoubleScoreComponentOuter>> pair = Pair.of( name, sliced );
             innerStatistics.add( pair );

@@ -462,7 +462,7 @@ public class ChartDataFactory
                 }
 
                 // Add the new diagram for this qualifier
-                builder = builder.clearStatistics();
+                builder.clearStatistics();
                 builder.addAllStatistics( components );
 
                 DiagramStatistic newDiagram = builder.build();
@@ -517,8 +517,7 @@ public class ChartDataFactory
      * @param slice the slice of statistics from which to generate series
      * @param leadDurations the lead durations by which to filter series
      * @param poolingTimes the times by which to filter series
-     * @param referenceTimes the reference times
-     * @param GraphicShape the graphic shape
+     * @param graphicShape the graphic shape
      * @param durationUnits the duration units
      */
 

@@ -1,5 +1,7 @@
 package wres.events.subscribe;
 
+import java.io.Serial;
+
 /**
  * Exception to throw when an evaluation message could not be consumed for any reason.
  * 
@@ -8,11 +10,11 @@ package wres.events.subscribe;
 
 public class ConsumerException extends RuntimeException
 {
-
     /**
      * Serialization id.
      */
     
+    @Serial
     private static final long serialVersionUID = -1604366016990242665L;
 
     /**

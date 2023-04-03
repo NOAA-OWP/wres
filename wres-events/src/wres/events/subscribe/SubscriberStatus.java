@@ -19,7 +19,6 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class SubscriberStatus
 {
-
     /** The client identifier.*/
     private final String clientId;
 

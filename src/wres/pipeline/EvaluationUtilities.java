@@ -83,7 +83,6 @@ import wres.pipeline.statistics.StatisticsProcessor;
 import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
 
 /**
@@ -148,7 +147,7 @@ class EvaluationUtilities
         }
 
         Set<Path> resources = new TreeSet<>();
-        String projectHash = null;
+        String projectHash;
 
         // Get a unique evaluation identifier
         String evaluationId = EvaluationEventUtilities.getId();
@@ -201,7 +200,7 @@ class EvaluationUtilities
               EvaluationSubscriber ignoredFormatsSubscriber = EvaluationSubscriber.of( consumerFactory,
                                                                                        executors.productExecutor(),
                                                                                        connections,
-                                                                                       evaluationId ); )
+                                                                                       evaluationId ) )
         {
             // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
             // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
@@ -399,13 +398,11 @@ class EvaluationUtilities
             throws IOException
     {
         Evaluation evaluation = null;
-        String projectHash = null;
+        String projectHash;
         try
         {
             ProjectConfigPlus projectConfigPlus = evaluationDetails.getProjectConfigPlus();
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-            ProgressMonitor.setShowStepDescription( false );
-            ProgressMonitor.resetMonitor();
 
             // Look up any needed feature correlations, generate a new declaration.
             ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
@@ -415,7 +412,7 @@ class EvaluationUtilities
 
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
-            Project project = null;
+            Project project;
             SystemSettings systemSettings = evaluationDetails.getSystemSettings();
 
             // Gridded features cache, if required. See #51232.
@@ -432,9 +429,8 @@ class EvaluationUtilities
                               new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
                                                                       .setDatabase( databaseServices.database() )
                                                                       .setCaches( caches )
-                                                                      .setProjectConfig( projectConfig )
                                                                       .setLockManager( databaseServices.databaseLockManager() )
-                                                                      .build(); )
+                                                                      .build() )
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.getSystemSettings(),
@@ -501,8 +497,6 @@ class EvaluationUtilities
                                         evaluationDetails.getSubscriberApprover() );
             evaluationDetails.setEvaluation( evaluation );
 
-            ProgressMonitor.setShowStepDescription( false );
-
             // Acquire the individual feature tuples to correlate with thresholds
             Set<FeatureTuple> features = project.getFeatures();
 
@@ -553,10 +547,6 @@ class EvaluationUtilities
             }
 
             evaluationDetails.setThresholdsByMetricAndFeature( thresholdsByMetricAndFeature );
-
-            // Deactivate progress monitoring within features, as features are processed asynchronously - the internal
-            // completion state of features has no value when reported in this way
-            ProgressMonitor.deactivate();
 
             PoolFactory poolFactory = PoolFactory.of( project );
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
@@ -795,7 +785,7 @@ class EvaluationUtilities
         Objects.requireNonNull( evaluationId );
 
         // Where outputs files will be written
-        Path outputDirectory = null;
+        Path outputDirectory;
         String tempDir = System.getProperty( "java.io.tmpdir" );
 
         // Is this instance running in a context that uses a wres job identifier?
@@ -1059,7 +1049,7 @@ class EvaluationUtilities
                                                            PoolGroupTracker poolGroupTracker )
     {
 
-        CompletableFuture<Object> poolTasks = null;
+        CompletableFuture<Object> poolTasks;
 
         DatasourceType type = evaluationDetails.getProject()
                                                .getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT )
@@ -1136,7 +1126,7 @@ class EvaluationUtilities
                                                                executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory = null;
+        RetrieverFactory<Double, Double> retrieverFactory;
         if ( evaluationDetails.hasInMemoryStore() )
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
@@ -1225,7 +1215,7 @@ class EvaluationUtilities
                                                            executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory = null;
+        RetrieverFactory<Double, Ensemble> retrieverFactory;
         if ( evaluationDetails.hasInMemoryStore() )
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );

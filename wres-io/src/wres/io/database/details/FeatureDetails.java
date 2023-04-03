@@ -25,7 +25,7 @@ public class FeatureDetails extends CachedDetail<FeatureDetails, Feature>
     private static final long PLACEHOLDER_ID = Long.MIN_VALUE;
 
     private long id = PLACEHOLDER_ID;
-    private Feature key = null;
+    private Feature key;
 
     /**
      * Creates an instance.

@@ -17,7 +17,6 @@ import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 
 public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statistic<T>, Iterable<U>
 {
-
     /**
      * Returns the value associated with a prescribed {@link MetricConstants} in the input.
      * 
@@ -27,15 +26,6 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
      */
 
     U getComponent( MetricConstants component );
-
-    /**
-     * Returns <code>true</code> if the score has the component specified, <code>false</code> otherwise.
-     * 
-     * @param component the component to test
-     * @return true if the score component exists in this context, false otherwise
-     */
-
-    boolean hasComponent( MetricConstants component );
 
     /**
      * Returns the set of components for which score results exist.
@@ -60,7 +50,7 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
      * @author James Brown
      */
     
-    public interface ScoreComponent<S> extends Statistic<S>
+    interface ScoreComponent<S> extends Statistic<S>
     {
     }
     

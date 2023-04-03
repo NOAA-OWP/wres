@@ -141,7 +141,7 @@ public class DataSources
             this.addToDatabaseAndCache( new SourceDetails( key ) );
         }
 
-        Long id = null;
+        Long id;
         
         LOGGER.debug( "Getting data source with hash {} from the data sources cache.", key );
 

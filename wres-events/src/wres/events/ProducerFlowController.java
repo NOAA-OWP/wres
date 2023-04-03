@@ -15,12 +15,12 @@ import net.jcip.annotations.ThreadSafe;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 
 /**
- * Implements producer flow control to prevent a broker becoming overwhelmed with messages when producers are much
+ * <p>Implements producer flow control to prevent a broker becoming overwhelmed with messages when producers are much
  * faster than consumers. Flow control is managed at the level of a message group. Subscribers are registered for flow
  * control once they have been negotiated.
  * 
- * TODO: this implementation should be replaced with broker-managed flow control, rather than application-managed flow
- * control.
+ * <p>TODO: this implementation should be replaced with broker-managed flow control, rather than application-managed
+ * flow control.
  * 
  * @author James Brown
  */
@@ -90,7 +90,9 @@ class ProducerFlowController
             // probably safer to control flow only if the current thread can acquire the lock within a short period.
             // This increases the risk of broker overflow if a subscriber dies, temporarily, but reduces the risk of
             // application deadlock.
-            this.flowControlLock.tryLock( 10, TimeUnit.SECONDS );
+            boolean lockAcquired = this.flowControlLock.tryLock( 10, TimeUnit.SECONDS );
+
+            LOGGER.debug( "Attempted to acuire lock with result: {}.", lockAcquired );
         }
         catch ( InterruptedException e )
         {

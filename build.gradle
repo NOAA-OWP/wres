@@ -335,6 +335,9 @@ project(':wres-datamodel')
         implementation 'systems.uom:systems-ucum:2.1'
         implementation 'systems.uom:systems-quantity:2.1'
 
+        // For geometries
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
+
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
@@ -1708,12 +1711,6 @@ dependencies
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.1'
 
     implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.4' )
-    {
-        // Not used at runtime, bloat
-        exclude group: 'org.checkerframework', module: 'checker-qual'
-    }
-
-    implementation( 'com.google.guava:guava:31.1-jre' )
     {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'

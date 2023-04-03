@@ -143,7 +143,7 @@ public class Query
             // to either side of a semi-colon with no other chars. That is not
             // multiple statements, then.
             String[] chunks = script.split( ";" );
-            List<String> statements = new ArrayList<>( chunks.length );
+            List<String> innerStatements = new ArrayList<>( chunks.length );
 
             for ( String chunk : chunks )
             {
@@ -153,20 +153,20 @@ public class Query
                      && !stripped.startsWith( "'" )
                      && !stripped.endsWith( "'" ) )
                 {
-                    statements.add( chunk );
+                    innerStatements.add( chunk );
                 }
                 else
                 {
                     LOGGER.debug( "Treating the given query as single query." );
-                    statements.clear();
+                    innerStatements.clear();
                     break;
                 }
             }
 
-            if ( statements.size() > 1 )
+            if ( innerStatements.size() > 1 )
             {
                 this.hasMultipleStatements = true;
-                this.statements = statements.toArray( new String[0] );
+                this.statements = innerStatements.toArray( new String[0] );
             }
             else
             {
@@ -423,12 +423,6 @@ public class Query
             {
                 String sqlState = exception.getSQLState();
 
-                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
-                              sqlState,
-                              connection,
-                              this,
-                              exception );
-
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.isClosed()
@@ -550,12 +544,6 @@ public class Query
             {
                 String sqlState = exception.getSQLState();
 
-                LOGGER.debug( "SQLState: {}, Connection: {}, this: {}",
-                                  sqlState,
-                                  connection,
-                                  this,
-                                  exception );
-
                 // If the connection doesn't automatically rollback any changes, do so manually before
                 // rethrowing the error
                 if ( !connection.isClosed()
@@ -658,7 +646,7 @@ public class Query
                         this.insertedIds.add( keySet.getLong( 1 ) );
                     }
 
-                    if ( this.insertedIds.size() > 0 )
+                    if ( !this.insertedIds.isEmpty() && LOGGER.isDebugEnabled() )
                     {
                         LOGGER.debug( "Found an inserted id for Query {}.",
                                       this );

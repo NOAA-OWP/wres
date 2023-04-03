@@ -139,7 +139,7 @@ public class FeatureCorrelator
                        // Ignore pairs with null keys or values
                        .filter( next -> Objects.nonNull( keyMapper.apply( next ) )
                                         && Objects.nonNull( valueMapper.apply( next ) ) )
-                       .collect( Collectors.toUnmodifiableMap( keyMapper::apply,
+                       .collect( Collectors.toUnmodifiableMap( keyMapper,
                                                                next -> Set.of( valueMapper.apply( next ) ),
                                                                merger ) );
     }

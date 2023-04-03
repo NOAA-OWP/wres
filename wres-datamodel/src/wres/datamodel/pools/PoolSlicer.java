@@ -34,8 +34,8 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
  * A utility class for slicing/dicing and transforming pool-shaped datasets
  * 
  * @author James Brown
- * @see    Slicer
- * @see    TimeSeriesSlicer
+ * @see Slicer
+ * @see TimeSeriesSlicer
  */
 
 public class PoolSlicer
@@ -160,7 +160,7 @@ public class PoolSlicer
         Objects.requireNonNull( condition, PoolSlicer.NULL_PREDICATE_EXCEPTION );
         Objects.requireNonNull( metaTransformer, PoolSlicer.NULL_META_MAPPER_EXCEPTION );
 
-        Pool.Builder<T> poolBuilder = new Pool.Builder<T>();
+        Pool.Builder<T> poolBuilder = new Pool.Builder<>();
 
         // Filter climatology as required
         if ( pool.hasClimatology() )
@@ -242,7 +242,7 @@ public class PoolSlicer
             return poolBuilder.build();
         }
 
-        Pool.Builder<S> poolBuilder = new Pool.Builder<S>();
+        Pool.Builder<S> poolBuilder = new Pool.Builder<>();
 
         // Iterate the pools and apply the filters
         Set<T> keysWithoutFilter = new HashSet<>();
@@ -345,7 +345,7 @@ public class PoolSlicer
         // Iterate the pools and apply the transformers
         Set<T> keysWithoutTransformer = new HashSet<>();
 
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>();
+        Pool.Builder<U> poolBuilder = new Pool.Builder<>();
 
         for ( Map.Entry<T, Pool<S>> nextEntry : pools.entrySet() )
         {
@@ -430,7 +430,7 @@ public class PoolSlicer
     {
         Objects.requireNonNull( pool );
 
-        Pool.Builder<U> poolBuilder = new Pool.Builder<U>();
+        Pool.Builder<U> poolBuilder = new Pool.Builder<>();
 
         // Preserve any small pools
         for ( Pool<TimeSeries<U>> nextMiniPool : pool.getMiniPools() )
@@ -484,7 +484,7 @@ public class PoolSlicer
 
         for ( Pool<T> nextPool : pool.getMiniPools() )
         {
-            S key = null;
+            S key;
 
             try
             {
@@ -831,7 +831,7 @@ public class PoolSlicer
                                  .stream()
                                  .flatMap( next -> next.getEvents().stream() )
                                  .map( Event::getValue )
-                                 .collect( Collectors.toUnmodifiableList() );
+                                 .toList();
 
         List<U> baselineSampleData = null;
         PoolMetadata baselineMetadata = null;
@@ -843,7 +843,7 @@ public class PoolSlicer
                                      .stream()
                                      .flatMap( next -> next.getEvents().stream() )
                                      .map( Event::getValue )
-                                     .collect( Collectors.toUnmodifiableList() );
+                                     .toList();
 
             baselineMetadata = pool.getBaselineData().getMetadata();
         }
@@ -931,7 +931,7 @@ public class PoolSlicer
         List<T> mainPairsSubset =
                 mainPairs.stream()
                          .filter( condition )
-                         .collect( Collectors.toList() );
+                         .toList();
 
         PoolMetadata unmapped = pool.getMetadata();
         PoolMetadata mapped = metaTransformer.apply( unmapped );
@@ -959,7 +959,7 @@ public class PoolSlicer
             List<T> basePairsSubset =
                     basePairs.stream()
                              .filter( condition )
-                             .collect( Collectors.toList() );
+                             .toList();
 
             PoolMetadata unmappedBaseline = baseline.getMetadata();
             PoolMetadata mappedBaseline = metaTransformer.apply( unmappedBaseline );

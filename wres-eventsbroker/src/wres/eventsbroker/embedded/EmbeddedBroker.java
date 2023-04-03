@@ -62,7 +62,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * An exception encountered on starting the broker that is not fatal as judged by Artemis, but is fatal as judged
-     * by this application. See: https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html
+     * by this application. See: <a href="https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html">https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html</a>
      */
 
     private final AtomicReference<Exception> exceptionOnStartup;
@@ -105,7 +105,7 @@ public class EmbeddedBroker implements Closeable
         LOGGER.debug( "Attempting to extract the desired port from the binding URL {}.", bindingUrl );
 
         // Discover the port to which a broker should be bound
-        String regex = ":(?<port>[0-9]+)";
+        String regex = ":(?<port>[\\d]+)";
 
         Pattern p = Pattern.compile( regex );
         Matcher m = p.matcher( bindingUrl );

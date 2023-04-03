@@ -39,15 +39,15 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 
 /**
- * A feature service implementation for the WRDS feature service, which enables bulk lookup of features for prescribed
+ * <p>A feature service implementation for the WRDS feature service, which enables bulk lookup of features for prescribed
  * feature dimensions and retrieval of features from a supplied URI.
  * 
- * TODO: abstract an interface from this class if more than one feature service implementation arises. In that case, 
+ * <p>TODO: abstract an interface from this class if more than one feature service implementation arises. In that case,
  * the {@link FeatureFinder} API should be changed to accept an instance of the abstracted class. The objective would
  * be an improved separation of two concerns, namely filling out a sparse declaration with dense features on the one 
  * hand and acquiring named features from a feature service using partial or implicit declaration, on the other.
  * 
- * @Author Jesse Bickel
+ * @author Jesse Bickel
  * @author James Brown
  */
 

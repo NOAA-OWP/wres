@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileWriter;
+import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
 import wres.io.reading.netcdf.Netcdf;
@@ -61,7 +63,7 @@ public class NetCDFCopier implements Closeable
             DataType.UINT,
             DataType.ULONG
     };
-
+    private static final String ANALYSIS_TIME = "analysis_time";
     private final String fromFileName;
     private final String targetFileName;
     private final ZonedDateTime analysisTime;
@@ -87,22 +89,22 @@ public class NetCDFCopier implements Closeable
         this.copyVariables();
 
         // Make sure that there's an analysis time variable to tie everything together
-        if ( this.getWriter().findVariable( "analysis_time" ) == null )
+        if ( this.getWriter().findVariable( ANALYSIS_TIME ) == null )
         {
-            if ( this.getWriter().findDimension( "analysis_time" ) == null )
+            if ( this.getWriter().findDimension( ANALYSIS_TIME ) == null )
             {
-                this.getWriter().addDimension( "analysis_time", 1 );
+                this.getWriter().addDimension( ANALYSIS_TIME, 1 );
             }
 
             Map<String, Object> attributes = new TreeMap<>();
             attributes.put( "units", "minutes since 1970-01-01 00:00:00 UTC" );
-            attributes.put( "standard_name", "analysis_time" );
+            attributes.put( "standard_name", ANALYSIS_TIME );
             attributes.put( "long_name", "lead hour" );
 
             List<String> dimensionNames = new ArrayList<>();
-            dimensionNames.add( "analysis_time" );
+            dimensionNames.add( ANALYSIS_TIME );
 
-            this.addVariable( "analysis_time", DataType.INT, dimensionNames, attributes );
+            this.addVariable( ANALYSIS_TIME, DataType.INT, dimensionNames, attributes );
         }
     }
 
@@ -132,7 +134,7 @@ public class NetCDFCopier implements Closeable
         if ( this.source == null )
         {
             LOGGER.debug( "Opening the template at {} to copy", this.fromFileName );
-            this.source = NetcdfFile.open( this.fromFileName );
+            this.source = NetcdfFiles.open( this.fromFileName );
         }
         return this.source;
     }
@@ -338,17 +340,21 @@ public class NetCDFCopier implements Closeable
 
             Attribute esriPEString = coordinateSystem.findAttribute( "esri_pe_string" );
 
-            if ( esriPEString != null )
+            if ( esriPEString != null && esriPEString.isString() )
             {
                 this.getWriter()
-                    .addVariableAttribute( name, new Attribute( "esri_pe_string", esriPEString.getStringValue() ) );
+                    .addVariableAttribute( name,
+                                           new Attribute( "esri_pe_string",
+                                                          Objects.requireNonNull( esriPEString.getStringValue() ) ) );
             }
 
             Attribute proj4 = coordinateSystem.findAttribute( "proj4" );
 
-            if ( esriPEString != null )
+            if ( proj4 != null && proj4.isString() )
             {
-                this.getWriter().addVariableAttribute( name, new Attribute( "proj4", proj4.getStringValue() ) );
+                this.getWriter().addVariableAttribute( name,
+                                                       new Attribute( "proj4",
+                                                                      Objects.requireNonNull( proj4.getStringValue() ) ) );
             }
 
             this.getWriter().addVariableAttribute( name, new Attribute( "coordinates", "time lat lon" ) );

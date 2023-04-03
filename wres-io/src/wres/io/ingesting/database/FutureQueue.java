@@ -50,12 +50,6 @@ class FutureQueue
     private final TimeUnit timeoutUnit;
 
     /**
-     * The maximum number of tasks that may live in the queue without
-     * being forced to process early
-     */
-    private int maximumTasks = Integer.MAX_VALUE;
-
-    /**
      * Creates the queue with the default timeout of 500 milliseconds
      */
     public FutureQueue()
@@ -66,68 +60,17 @@ class FutureQueue
         this.timeoutUnit = TimeUnit.MILLISECONDS;
     }
 
-    public FutureQueue( final int size )
-    {
-        this.queue = new LinkedList<>();
-        this.queueLock = new ReentrantLock();
-        this.timeout = 500;
-        this.timeoutUnit = TimeUnit.MILLISECONDS;
-        this.maximumTasks = size;
-    }
-
     /**
-     * Creates the queue with the given timeout between task completion attempts
-     * @param timeout The number of timeout units to wait before moving on to another future
-     * @param timeoutUnit The unit of time to wait before moving on to another future
-     */
-    public FutureQueue( final int timeout, final TimeUnit timeoutUnit )
-    {
-        this.queue = new LinkedList<>();
-        this.queueLock = new ReentrantLock();
-        this.timeout = timeout;
-        this.timeoutUnit = timeoutUnit;
-    }
-
-    /**
-     * Adds a future to the list of tasks to process
-     * <br><br>
-     * If adding a task will grow the queue beyond the limit, one is completed
-     * prior to adding the new one. The resulting value is both returned and stored so
-     * it is included in the final list of results.
+     * Adds a future to the list of tasks to process.
      * @param future An asynchronous task to process
-     * @return The possible result of a task that had to be completed before a new one
-     * could be added. All non-null results are also added to a collection that will be
-     * included in any final processing.
      * @throws ExecutionException Thrown if an asynchronous task had to be complete prior to
      * adding a new task threw an exception
      */
-    public Object add( final Future<?> future ) throws ExecutionException
+    public void add( final Future<?> future ) throws ExecutionException
     {
-        Object earlyResult = null;
-
         try
         {
             this.queueLock.lock();
-
-            if ( this.queue.size() > this.maximumTasks )
-            {
-                try
-                {
-                    earlyResult = this.processTask();
-
-                    if ( earlyResult != null )
-                    {
-                        this.earlyResults.add( earlyResult );
-                    }
-                }
-                catch ( ExecutionException e )
-                {
-                    throw new ExecutionException( "An asynchronous task needed to be completed prior "
-                                                  + "to adding a new one, but failed during execution.",
-                                                  e );
-                }
-            }
-
             this.queue.add( future );
         }
         finally
@@ -137,8 +80,6 @@ class FutureQueue
                 this.queueLock.unlock();
             }
         }
-
-        return earlyResult;
     }
 
     public int size()
@@ -147,50 +88,6 @@ class FutureQueue
         {
             this.queueLock.lock();
             return this.queue.size();
-        }
-        finally
-        {
-            if ( this.queueLock.isHeldByCurrentThread() )
-            {
-                this.queueLock.unlock();
-            }
-        }
-    }
-
-    /**
-     * Sets the maximum number of allowable tasks in the queue
-     * <br><br>
-     * If the new maximum number is greater than the number of tasks
-     * currently in the queue, tasks are completed and their results are stored
-     * so that the new queue size fits within the limit
-     * @param maximumTasks The maximum number of asynchronous tasks that may be held at once
-     * @throws ExecutionException Thrown if tasks had to be completed to force the queue
-     * to be the correct size but one threw an exception.
-     */
-    public void setMaximumTasks( final int maximumTasks ) throws ExecutionException
-    {
-        try
-        {
-            this.queueLock.lock();
-
-            this.maximumTasks = maximumTasks;
-
-            while ( this.size() > this.maximumTasks )
-            {
-                Object earlyResult = processTask();
-
-                if ( earlyResult != null )
-                {
-                    this.earlyResults.add( earlyResult );
-                }
-            }
-        }
-        catch ( ExecutionException e )
-        {
-            throw new ExecutionException( "Tasks had to be completed to comply with the new "
-                                          + "limit for the maximum number of tasks, but a "
-                                          + "task encountered an exception.",
-                                          e );
         }
         finally
         {
@@ -246,7 +143,7 @@ class FutureQueue
      */
     private Object processTask() throws ExecutionException
     {
-        Object result = null;
+        Object result;
 
         while ( !this.queue.isEmpty() )
         {
@@ -258,7 +155,7 @@ class FutureQueue
             }
         }
 
-        return result;
+        return null;
     }
 
     /**

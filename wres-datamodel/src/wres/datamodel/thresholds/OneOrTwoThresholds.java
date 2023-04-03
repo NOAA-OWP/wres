@@ -98,11 +98,10 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof OneOrTwoThresholds ) )
+        if ( ! ( o instanceof OneOrTwoThresholds in ) )
         {
             return false;
         }
-        OneOrTwoThresholds in = (OneOrTwoThresholds) o;
 
         return Objects.equals( this.first, in.first )
                && Objects.equals( this.second, in.second );
@@ -117,8 +116,6 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
     @Override
     public int compareTo( OneOrTwoThresholds o )
     {
-        Objects.requireNonNull( o, "Specify a non-null instance of thresholds for comparison." );
-
         int returnMe = this.first.compareTo( o.first() );
 
         if ( returnMe != 0 )
@@ -136,7 +133,6 @@ public class OneOrTwoThresholds implements Comparable<OneOrTwoThresholds>
      * 
      * @param first the first threshold
      * @param second the second threshold, may be null
-     * @return a composition of one or two thresholds
      * @throws NullPointerException if the first threshold is null
      */
 

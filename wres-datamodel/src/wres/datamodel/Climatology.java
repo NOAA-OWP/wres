@@ -63,7 +63,7 @@ public class Climatology
     {
         Objects.requireNonNull( feature );
 
-        if ( !this.hasFeature( feature ) )
+        if ( this.hasNoClimatology( feature ) )
         {
             throw new IllegalArgumentException( "There is no climatology available for feature " + feature + "." );
         }
@@ -83,18 +83,18 @@ public class Climatology
 
     /**
      * @param feature the feature
-     * @return whether a climatological dataset exists for the specified feature
+     * @return whether a climatological dataset is missing for the specified feature
      */
 
-    public boolean hasFeature( Feature feature )
+    public boolean hasNoClimatology( Feature feature )
     {
-        return this.climateData.containsKey( feature );
+        return !this.climateData.containsKey( feature );
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof Climatology ) )
+        if ( ! ( o instanceof Climatology in ) )
         {
             return false;
         }
@@ -103,8 +103,6 @@ public class Climatology
         {
             return true;
         }
-
-        Climatology in = (Climatology) o;
 
         // Check the mapped items
         if ( in.climateData.size() != this.climateData.size() )
@@ -253,7 +251,7 @@ public class Climatology
     /**
      * Creates an instance.
      * 
-     * @param timeSeries the time-series
+     * @param builder the builder
      * @throws NullPointerException if the input is null
      */
 
@@ -293,8 +291,8 @@ public class Climatology
         Set<Feature> invalid = climatology.entrySet()
                                           .stream()
                                           .filter( next -> next.getValue().length == 0
-                                                           || !Arrays.stream( next.getValue() )
-                                                                     .anyMatch( Double::isFinite ) )
+                                                           || Arrays.stream( next.getValue() )
+                                                                    .noneMatch( Double::isFinite ) )
                                           .map( Map.Entry::getKey )
                                           .collect( Collectors.toSet() );
 

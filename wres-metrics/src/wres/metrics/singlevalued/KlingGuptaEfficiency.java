@@ -31,7 +31,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * climate change scenarios. <i>Journal of Hydrology</i>, <b>424-425</b>, pp. 264-277, 
  * DOI:10.1016/j.jhydrol.2012.01.011</p>
  * 
- * TODO: add this to a {@link Collectable} with {@link CorrelationPearsons} and have both use a {DoubleScoreOutput}
+ * <p>TODO: add this to a {@link Collectable} with {@link CorrelationPearsons} and have both use a {DoubleScoreOutput}
  * that contains the relevant components for computing both, including the marginal means and variances and the 
  * covariances. Do the same for any other scores that uses these components.
  * 
@@ -130,8 +130,8 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
-        //template as the componentID in the metadata
+        // TODO: implement any required decompositions, based on the instance parameters and return the decomposition
+        // template as the componentID in the metadata
 
         double result = Double.NaN;
         // Compute the components

@@ -11,7 +11,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -25,10 +24,7 @@ import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
-import wres.system.ProgressMonitor;
 import wres.system.SystemSettings;
-
-import com.google.common.collect.Range;
 
 /**
  * Entry point for the standalone application.
@@ -39,7 +35,7 @@ import com.google.common.collect.Range;
  */
 public class Main
 {
-    // Allow for logging of the native process ID of the process running this standalone
+    // Allow for logging of the native ID of the process running this standalone
     static
     {
         ProcessHandle processHandle = ProcessHandle.current();
@@ -47,8 +43,11 @@ public class Main
         MDC.put( "pid", Long.toString( pid ) );
     }
 
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Main.class );
+    /** System settings. */
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    /** Software version information. */
     private static final Version version = new Version( SYSTEM_SETTINGS );
 
     /**
@@ -217,7 +216,6 @@ public class Main
         finally
         {
             LOGGER.info( "Closing the application..." );
-            ProgressMonitor.deactivate();
             if ( SYSTEM_SETTINGS.isInDatabase() && Objects.nonNull( database ) )
             {
                 // #81660
@@ -229,7 +227,8 @@ public class Main
                 else
                 {
                     LOGGER.info( "Forcefully terminating database activities (you may see some errors)..." );
-                    database.forceShutdown( 6, TimeUnit.SECONDS );
+                    List<Runnable> abandoned = database.forceShutdown( 6, TimeUnit.SECONDS );
+                    LOGGER.info( "Abandoned {} database tasks.", abandoned.size() );
                 }
             }
 

@@ -586,7 +586,7 @@ public class ReaderUtilities
             tokens.add( lastToken );
         }
 
-        return tokens.toArray( new String[tokens.size()] );
+        return tokens.toArray( new String[0] );
     }
 
     /**
@@ -638,12 +638,12 @@ public class ReaderUtilities
                 for ( TrustManager manager : TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() )
                                                                 .getTrustManagers() )
                 {
-                    if ( manager instanceof X509TrustManager )
+                    if ( manager instanceof X509TrustManager m )
                     {
                         LOGGER.warn( "Failed to load {} from classpath. Using this X509TrustManager: {}",
                                      trustFileOnClassPath,
                                      manager );
-                        theTrustManager = (X509TrustManager) manager;
+                        theTrustManager = m;
                     }
                 }
                 if ( Objects.isNull( theTrustManager ) )
@@ -709,9 +709,9 @@ public class ReaderUtilities
         catch ( URISyntaxException e )
         {
             throw new IllegalArgumentException( "Could not create URI from "
-                                                + uri.toString()
+                                                + uri
                                                 + " and "
-                                                + urlParameters.toString(),
+                                                + urlParameters,
                                                 e );
         }
     }
@@ -747,7 +747,7 @@ public class ReaderUtilities
                 }
 
                 // Nothing to return
-                LOGGER.debug( "Skipping chunk because no time-series were returned from " + sourceName + "." );
+                LOGGER.debug( "Skipping chunk because no time-series were returned from {}.", sourceName );
             }
             catch ( InterruptedException e )
             {

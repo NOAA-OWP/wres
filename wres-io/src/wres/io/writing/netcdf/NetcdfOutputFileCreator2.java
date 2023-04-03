@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ import wres.config.generated.FeatureDimension;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DataUtilities;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
@@ -524,7 +526,7 @@ class NetcdfOutputFileCreator2
                           first,
                           writer.getNetcdfFile()
                                 .getLocation() );
-            List<Feature.GeoPoint> points = Collections.emptyList();
+            List<Coordinate> points = Collections.emptyList();
             Integer srid = null;
 
             if ( datasetWithGeo.equals( LeftOrRightOrBaseline.LEFT ) )
@@ -534,8 +536,8 @@ class NetcdfOutputFileCreator2
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getLeft )
                                  .map( Feature::getWkt )
-                                 .map( Feature::getLonLatOrNullFromWkt )
-                                 .collect( Collectors.toList() );
+                                 .map( DataUtilities::getLonLatOrNullFromWkt )
+                                 .toList();
             }
             else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.RIGHT ) )
             {
@@ -544,7 +546,7 @@ class NetcdfOutputFileCreator2
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getRight )
                                  .map( Feature::getWkt )
-                                 .map( Feature::getLonLatOrNullFromWkt )
+                                 .map( DataUtilities::getLonLatOrNullFromWkt )
                                  .collect( Collectors.toList() );
             }
             else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.BASELINE ) )
@@ -554,7 +556,7 @@ class NetcdfOutputFileCreator2
                 points = orderedTuples.stream()
                                  .map( FeatureTuple::getBaseline )
                                  .map( Feature::getWkt )
-                                 .map( Feature::getLonLatOrNullFromWkt )
+                                 .map( DataUtilities::getLonLatOrNullFromWkt )
                                  .collect( Collectors.toList() );
             }
 
@@ -631,13 +633,13 @@ class NetcdfOutputFileCreator2
             // features themselves, thus null needs to be preserved.
             for ( int i = 0; i < points.size(); i++ )
             {
-                Feature.GeoPoint point = points.get( i );
+                Coordinate point = points.get( i );
 
                 if ( Objects.nonNull( point ) )
                 {
                     int[] index = { i };
-                    Array ncArrayX = ArrayDouble.D1.makeFromJavaArray( new double[] { point.x() } );
-                    Array ncArrayY = ArrayDouble.D1.makeFromJavaArray( new double[] { point.y() } );
+                    Array ncArrayX = ArrayDouble.D1.makeFromJavaArray( new double[] { point.getX() } );
+                    Array ncArrayY = ArrayDouble.D1.makeFromJavaArray( new double[] { point.getY() } );
 
                     try
                     {
@@ -649,8 +651,8 @@ class NetcdfOutputFileCreator2
                         throw new WriteException( "Failed to write geometry X/Y point metadata in "
                                                   + writer.getNetcdfFile()
                                                           .getLocation()
-                                                  + " for x=" + point.x()
-                                                  + " for y=" + point.y() ,
+                                                  + " for x=" + point.getX()
+                                                  + " for y=" + point.getY() ,
                                                   e );
                     }
                 }

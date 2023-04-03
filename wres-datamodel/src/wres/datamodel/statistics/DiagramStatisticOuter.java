@@ -1,6 +1,7 @@
 package wres.datamodel.statistics;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -203,11 +204,10 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             return true;
         }
 
-        if ( ! ( o instanceof DiagramStatisticOuter ) )
+        if ( ! ( o instanceof final DiagramStatisticOuter v ) )
         {
             return false;
         }
-        final DiagramStatisticOuter v = (DiagramStatisticOuter) o;
 
         return this.getMetadata().equals( v.getMetadata() ) && this.getData().equals( v.getData() );
     }
@@ -258,7 +258,8 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         SortedSet<MetricDimension> cNames = new TreeSet<>();
         SortedSet<String> cQual = new TreeSet<>();
         Map<Pair<MetricDimension, String>, Integer> cInd = new HashMap<>();
-        Map<DiagramComponentType, Pair<DiagramMetricComponent, MetricDimension>> byType = new HashMap<>();
+        Map<DiagramComponentType, Pair<DiagramMetricComponent, MetricDimension>> byType
+                = new EnumMap<>( DiagramComponentType.class );
 
         int index = 0;
         for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )

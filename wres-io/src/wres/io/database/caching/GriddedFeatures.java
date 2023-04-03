@@ -338,7 +338,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
     }
 
     /**
-     * TODO: support concave polygons by making a library call
+     * TODO: support concave polygons by making a library call.
      * @param point the point
      * @param convexPolygon the convex polygon filter
      * @return true if the point is contained within the convex polygon, otherwise false

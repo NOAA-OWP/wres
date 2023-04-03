@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import wres.datamodel.Climatology;
@@ -37,7 +37,7 @@ import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link ThresholdSlicer}.
- * 
+ *
  * @author James Brown
  */
 
@@ -50,7 +50,7 @@ class ThresholdSlicerTest
     private FeatureTuple featureTuple;
     private FeatureTuple anotherFeatureTuple;
 
-    @Before
+    @BeforeEach
     public void runBeforeEachTest()
     {
         Geometry a = MessageFactory.getGeometry( "a" );
@@ -131,26 +131,29 @@ class ThresholdSlicerTest
         // Value thresholds
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ) ) ) );
+                    new HashSet<>( Collections.singletonList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
+                                                                                 Operator.GREATER,
+                                                                                 ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( values, ThresholdGroup.VALUE );
 
         // Probability classifier thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
         probabilityClassifiers.put( MetricConstants.FREQUENCY_BIAS,
-                                    new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                                         Operator.GREATER,
-                                                                                                         ThresholdDataType.LEFT ) ) ) );
+                                    new HashSet<>( Collections.singletonList( ThresholdOuter.ofProbabilityThreshold(
+                                            OneOrTwoDoubles.of( 0.3 ),
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Quantile thresholds
         Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
         quantiles.put( MetricConstants.FREQUENCY_BIAS,
-                       new HashSet<>( Arrays.asList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                                                         OneOrTwoDoubles.of( 0.5 ),
-                                                                                         Operator.GREATER,
-                                                                                         ThresholdDataType.LEFT ) ) ) );
+                       new HashSet<>( Collections.singletonList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             0.4 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.5 ),
+                                                                                                     Operator.GREATER,
+                                                                                                     ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( quantiles, ThresholdGroup.QUANTILE );
 
         probabilities.put( MetricConstants.FREQUENCY_BIAS,
@@ -190,7 +193,7 @@ class ThresholdSlicerTest
     }
 
     @Test
-    public void testFilterByThresholdGroup()
+    void testFilterByThresholdGroup()
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
@@ -219,7 +222,7 @@ class ThresholdSlicerTest
         // Test the empty set
         assertEquals( Collections.emptySet(), ThresholdSlicer.filterByGroup( container ).union() );
         assertEquals( Collections.emptySet(),
-                      ThresholdSlicer.filterByGroup( container, (ThresholdGroup[]) null ).union() );
+                      ThresholdSlicer.filterByGroup( container, ( ThresholdGroup[] ) null ).union() );
 
         // Set all types       
         assertSame( container, ThresholdSlicer.filterByGroup( container, ThresholdGroup.values() ) );
@@ -236,7 +239,7 @@ class ThresholdSlicerTest
         Climatology climatology =
                 new Climatology.Builder().addClimatology( feature,
                                                           new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8,
-                                                                         7001.4, 12038.5, 17897.2 } )
+                                                                  7001.4, 12038.5, 17897.2 } )
                                          .build();
 
         wres.statistics.generated.Pool.Builder builder = wres.statistics.generated.Pool.newBuilder();
@@ -379,7 +382,7 @@ class ThresholdSlicerTest
     }
 
     @Test
-    public void testFilterByThresholdValuesAndNames()
+    void testFilterByThresholdValuesAndNames()
     {
         // Same values, different probabilities
         Set<ThresholdOuter> input = new HashSet<>();
@@ -473,7 +476,7 @@ class ThresholdSlicerTest
     }
 
     @Test
-    public void testUnionOfOneOrTwoThresholds()
+    void testUnionOfOneOrTwoThresholds()
     {
         ThresholdsByMetric container = this.getDefaultContainerFour();
 
@@ -504,7 +507,7 @@ class ThresholdSlicerTest
     }
 
     @Test
-    public void testUnionOfOneOrTwoThresholdsWithDichotomousScore()
+    void testUnionOfOneOrTwoThresholdsWithDichotomousScore()
     {
         ThresholdsByMetric container = this.getDefaultContainerOne();
 
@@ -550,7 +553,7 @@ class ThresholdSlicerTest
     }
 
     @Test
-    public void testGetOneOrTwoThresholds()
+    void testGetOneOrTwoThresholds()
     {
         ThresholdsByMetric container = this.getDefaultContainerThree();
 
@@ -583,7 +586,7 @@ class ThresholdSlicerTest
 
     /**
      * Returns a default container for testing.
-     * 
+     *
      * @return a default container
      */
 
@@ -608,26 +611,29 @@ class ThresholdSlicerTest
         // Value thresholds
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.FREQUENCY_BIAS,
-                    new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ) ) ) );
+                    new HashSet<>( Collections.singletonList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
+                                                                                 Operator.GREATER,
+                                                                                 ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( values, ThresholdGroup.VALUE );
 
         // Probability classifier thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
         probabilityClassifiers.put( MetricConstants.FREQUENCY_BIAS,
-                                    new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                                         Operator.GREATER,
-                                                                                                         ThresholdDataType.LEFT ) ) ) );
+                                    new HashSet<>( Collections.singletonList( ThresholdOuter.ofProbabilityThreshold(
+                                            OneOrTwoDoubles.of( 0.3 ),
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Quantile thresholds
         Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
         quantiles.put( MetricConstants.FREQUENCY_BIAS,
-                       new HashSet<>( Arrays.asList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 0.4 ),
-                                                                                         OneOrTwoDoubles.of( 0.5 ),
-                                                                                         Operator.GREATER,
-                                                                                         ThresholdDataType.LEFT ) ) ) );
+                       new HashSet<>( Collections.singletonList( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             0.4 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.5 ),
+                                                                                                     Operator.GREATER,
+                                                                                                     ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( quantiles, ThresholdGroup.QUANTILE );
 
         return builder.build();
@@ -635,7 +641,7 @@ class ThresholdSlicerTest
 
     /**
      * Returns a default container for testing.
-     * 
+     *
      * @return a default container
      */
 
@@ -647,9 +653,10 @@ class ThresholdSlicerTest
         // Probability thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
         probabilities.put( MetricConstants.BRIER_SCORE,
-                           new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.7 ),
-                                                                                                Operator.GREATER_EQUAL,
-                                                                                                ThresholdDataType.LEFT ) ) ) );
+                           new HashSet<>( Collections.singletonList( ThresholdOuter.ofProbabilityThreshold(
+                                   OneOrTwoDoubles.of( 0.7 ),
+                                   Operator.GREATER_EQUAL,
+                                   ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilities, ThresholdGroup.PROBABILITY );
 
         return builder.build();
@@ -657,7 +664,7 @@ class ThresholdSlicerTest
 
     /**
      * Returns a default container for testing.
-     * 
+     *
      * @return a default container
      */
 
@@ -681,9 +688,11 @@ class ThresholdSlicerTest
         // Probability classifier thresholds
         Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
         probabilityClassifiers.put( MetricConstants.PROBABILITY_OF_DETECTION,
-                                    new HashSet<>( Arrays.asList( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                                         Operator.GREATER,
-                                                                                                         ThresholdDataType.LEFT ) ) ) );
+                                    new HashSet<>( Collections.singletonList( ThresholdOuter.ofProbabilityThreshold(
+                                            OneOrTwoDoubles.of(
+                                                    0.3 ),
+                                            Operator.GREATER,
+                                            ThresholdDataType.LEFT ) ) ) );
         builder.addThresholds( probabilityClassifiers, ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         return builder.build();
@@ -691,7 +700,7 @@ class ThresholdSlicerTest
 
     /**
      * Returns a default container for testing.
-     * 
+     *
      * @return a default container
      */
 

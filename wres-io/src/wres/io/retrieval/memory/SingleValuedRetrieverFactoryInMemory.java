@@ -177,7 +177,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                       TimeWindowOuter timeWindow,
                                                       Set<Feature> features )
     {
-        Stream<TimeSeries<Double>> allSeries = null;
+        Stream<TimeSeries<Double>> allSeries;
 
         if ( Objects.isNull( timeWindow ) )
         {
@@ -237,7 +237,6 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
      * Hidden constructor.
      * 
      * @param project the project
-     * @param timeSeriesStore the time-series store
      * @param timeSeriesStore the store of time-series
      * @throws NullPointerException if any input is null
      */

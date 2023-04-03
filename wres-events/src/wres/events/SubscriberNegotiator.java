@@ -38,7 +38,6 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 @ThreadSafe
 class SubscriberNegotiator
 {
-
     private static final String WHILE_COMPLETING_EVALUATION = "While completing evaluation ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( SubscriberNegotiator.class );
@@ -485,10 +484,7 @@ class SubscriberNegotiator
                                                         .max( ( a, b ) -> a.getKey().compareTo( b.getKey() ) );
 
         // Must be at least one - see exception on entry - but guard nonetheless
-        if ( max.isPresent() )
-        {
-            returnMe.addAll( max.get().getValue() );
-        }
+        max.ifPresent( longSetEntry -> returnMe.addAll( longSetEntry.getValue() ) );
 
         return Collections.unmodifiableSet( returnMe );
     }

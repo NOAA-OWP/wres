@@ -1,8 +1,6 @@
 package wres.datamodel.time;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -283,18 +281,12 @@ public class TimeSeriesStore
                                   Collection<TimeSeries<Double>> baselineSingleValuedSeries,
                                   LeftOrRightOrBaseline orientation )
     {
-        switch ( orientation )
-        {
-            case LEFT:
-                return leftSingleValuedSeries;
-            case RIGHT:
-                return rightSingleValuedSeries;
-            case BASELINE:
-                return baselineSingleValuedSeries;
-            default:
-                throw new IllegalArgumentException( "Unexpected orientation '" + orientation
-                                                    + "'. Expected LEFT or RIGHT or BASELINE." );
-        }
+        return switch ( orientation )
+                {
+                    case LEFT -> leftSingleValuedSeries;
+                    case RIGHT -> rightSingleValuedSeries;
+                    case BASELINE -> baselineSingleValuedSeries;
+                };
     }
 
     /**
@@ -313,18 +305,12 @@ public class TimeSeriesStore
                               Collection<TimeSeries<Ensemble>> baselineEnsembleSeries,
                               LeftOrRightOrBaseline context )
     {
-        switch ( context )
-        {
-            case LEFT:
-                return leftEnsembleSeries;
-            case RIGHT:
-                return rightEnsembleSeries;
-            case BASELINE:
-                return baselineEnsembleSeries;
-            default:
-                throw new IllegalArgumentException( "Unexpected context '" + context
-                                                    + "'. Expected LEFT or RIGHT or BASELINE." );
-        }
+        return switch ( context )
+                {
+                    case LEFT -> leftEnsembleSeries;
+                    case RIGHT -> rightEnsembleSeries;
+                    case BASELINE -> baselineEnsembleSeries;
+                };
     }
 
     /**
@@ -335,14 +321,14 @@ public class TimeSeriesStore
     private TimeSeriesStore( Builder builder )
     {
         // No longer need a concurrent collection type because writing is complete and the collection is now immutable
-        this.leftSingleValuedSeries = Collections.unmodifiableList( new ArrayList<>( builder.leftSingleValuedSeries ) );
+        this.leftSingleValuedSeries = List.copyOf( builder.leftSingleValuedSeries );
         this.rightSingleValuedSeries =
-                Collections.unmodifiableList( new ArrayList<>( builder.rightSingleValuedSeries ) );
+                List.copyOf( builder.rightSingleValuedSeries );
         this.baselineSingleValuedSeries =
-                Collections.unmodifiableList( new ArrayList<>( builder.baselineSingleValuedSeries ) );
-        this.leftEnsembleSeries = Collections.unmodifiableList( new ArrayList<>( builder.leftEnsembleSeries ) );
-        this.rightEnsembleSeries = Collections.unmodifiableList( new ArrayList<>( builder.rightEnsembleSeries ) );
-        this.baselineEnsembleSeries = Collections.unmodifiableList( new ArrayList<>( builder.baselineEnsembleSeries ) );
+                List.copyOf( builder.baselineSingleValuedSeries );
+        this.leftEnsembleSeries = List.copyOf( builder.leftEnsembleSeries );
+        this.rightEnsembleSeries = List.copyOf( builder.rightEnsembleSeries );
+        this.baselineEnsembleSeries = List.copyOf( builder.baselineEnsembleSeries );
 
         if ( LOGGER.isInfoEnabled() )
         {

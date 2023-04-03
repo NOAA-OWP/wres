@@ -10,11 +10,11 @@ import net.jcip.annotations.Immutable;
 import wres.statistics.generated.Consumer.Format;
 
 /**
- * A class that contains approved subscriptions for each of several format types. When negotiating subscriptions, use
+ * <p>A class that contains approved subscriptions for each of several format types. When negotiating subscriptions, use
  * this class to determine whether the subscriber is approved to deliver the format required. The default behavior is
  * permissive; in other words, if no subscriber is explicitly set for a given format, then every subscriber is approved.
  * 
- * Currently, some subscribers are attached to short-running wres-core clients and others are attached to dedicated 
+ * <p>Currently, some subscribers are attached to short-running wres-core clients and others are attached to dedicated
  * format writers in long-running processes. Subscriptions from short-running clients should not be accepted unless the 
  * short-running client contains the evaluation being negotiated. See #88262 and #88267. This class satisfies the 
  * requirement that some subscribers are not considered equal and are not, therefore, approved for negotiation. However,

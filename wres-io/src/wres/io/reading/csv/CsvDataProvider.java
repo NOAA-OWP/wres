@@ -43,6 +43,10 @@ public class CsvDataProvider implements DataProvider
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvDataProvider.class );
 
     private static final String DEFAULT_COMMENT_STRING = "#";
+    private static final String THE_DATA_SET_IS_INACCESSIBLE = "The data set is inaccessible.";
+    private static final String IN_THE_FIELD = "' in the field '";
+    private static final String THE_VALUE = "The value '";
+    private static final String TARGET = "(\\(|\\)|\\{|\\}|]][|\\])";
 
     private Map<String, Integer> columnNames;
     private int currentRow = -1;
@@ -226,7 +230,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         return this.getObject( this.getColumnIndex( columnName ) ) == null;
@@ -259,7 +263,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         // If "next" hasn't been called, go ahead and move on to the next row
@@ -281,7 +285,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         if ( this.columnNames == null )
@@ -314,7 +318,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         return this.currentRow;
@@ -325,7 +329,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         if ( this.currentRow < 0 )
@@ -346,7 +350,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -360,7 +364,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -380,15 +384,14 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The type '" + value.getClass().toString()
-                                          +
-                                          "' with the value '"
-                                          + value.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a byte." );
+                    "The type '" + value.getClass().toString()
+                    +
+                    "' with the value '"
+                    + value
+                    + IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as a byte." );
         }
     }
 
@@ -397,7 +400,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -416,12 +419,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The type value '" + value.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as an integer." );
+                    "The type value '" + value.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as an integer." );
         }
     }
 
@@ -430,7 +433,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -448,10 +451,8 @@ public class CsvDataProvider implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                                          "The value '" + value.toString()
-                                          +
-                                          "' in the field '"
+            throw new ClassCastException( THE_VALUE + value
+                                          + IN_THE_FIELD
                                           + columnName
                                           +
                                           "' cannot be cast as a short." );
@@ -463,7 +464,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -482,12 +483,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The type value '" + value.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a long." );
+                    "The type value '" + value.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as a long." );
         }
     }
 
@@ -496,7 +497,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -515,12 +516,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The value '" + value.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a float." );
+                    THE_VALUE + value.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as a float." );
         }
     }
 
@@ -529,7 +530,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         String value = this.getString( columnName );
@@ -547,9 +548,9 @@ public class CsvDataProvider implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException( "The value '" + value
+            throw new ClassCastException( THE_VALUE + value
                                           +
-                                          "' in the field '"
+                                          IN_THE_FIELD
                                           + columnName
                                           +
                                           "' cannot be cast as a double." );
@@ -561,20 +562,20 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new Double[0];
         }
 
-        String arrayRepresentation = (String) array;
+        String arrayRepresentation = ( String ) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
-        arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
+        arrayRepresentation = arrayRepresentation.replace( TARGET, "" );
 
         if ( arrayRepresentation.isEmpty() )
         {
@@ -595,12 +596,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The value '" + array.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a double array." );
+                    THE_VALUE + array.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as a double array." );
         }
 
         return result;
@@ -611,20 +612,20 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new Integer[0];
         }
 
-        String arrayRepresentation = (String) array;
+        String arrayRepresentation = ( String ) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
-        arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
+        arrayRepresentation = arrayRepresentation.replace( TARGET, "" );
 
         if ( arrayRepresentation.isEmpty() )
         {
@@ -645,12 +646,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The value '" + array.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as an integer array." );
+                    THE_VALUE + array.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as an integer array." );
         }
 
         return result;
@@ -661,29 +662,27 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object array = this.getObject( columnName );
 
         if ( array == null )
         {
-            return null;
+            return new String[0];
         }
 
-        String arrayRepresentation = (String) array;
+        String arrayRepresentation = ( String ) array;
 
         // Remove all '(', ')', '{', '}', '[', and ']' characters
-        arrayRepresentation = arrayRepresentation.replace( "(\\(|\\)|\\{|\\}|]][|\\])", "" );
+        arrayRepresentation = arrayRepresentation.replace( TARGET, "" );
 
         if ( arrayRepresentation.isEmpty() )
         {
             return new String[0];
         }
 
-        String[] values = arrayRepresentation.split( "," );
-
-        return values;
+        return arrayRepresentation.split( "," );
     }
 
     @Override
@@ -691,7 +690,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -710,12 +709,12 @@ public class CsvDataProvider implements DataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                                          "The value '" + value.toString()
-                                          +
-                                          "' in the field '"
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a BigDecimal." );
+                    THE_VALUE + value.toString()
+                    +
+                    IN_THE_FIELD
+                    + columnName
+                    +
+                    "' cannot be cast as a BigDecimal." );
         }
     }
 
@@ -724,7 +723,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Instant instant = this.getInstant( columnName );
@@ -736,7 +735,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Instant instant = this.getInstant( columnName );
@@ -748,7 +747,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         // Since we know this isn't natively an offset date time, we try to
@@ -768,10 +767,10 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
-        CharSequence value = (CharSequence) this.getObject( columnName );
+        CharSequence value = ( CharSequence ) this.getObject( columnName );
         return Instant.parse( value );
     }
 
@@ -815,7 +814,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         Object value = this.getObject( columnName );
@@ -833,7 +832,7 @@ public class CsvDataProvider implements DataProvider
     {
         if ( this.isClosed() )
         {
-            throw new IllegalStateException( "The data set is inaccessible." );
+            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
         }
 
         String uri = this.getString( columnName );

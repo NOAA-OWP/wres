@@ -31,11 +31,11 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 import wres.statistics.generated.MetricName;
 
 /**
- * A collection of timing error summary statistics that consume a {@link Pool} of doubles and produce a 
+ * <p>A collection of timing error summary statistics that consume a {@link Pool} of doubles and produce a
  * {@link DurationScoreStatisticOuter}.
- * 
- * TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
- * 
+ *
+ * <p>TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
+ *
  * @author James Brown
  */
 public class TimingErrorDurationStatistics
@@ -68,7 +68,7 @@ public class TimingErrorDurationStatistics
 
     /**
      * Returns an instance.
-     * 
+     *
      * @param timingError the underlying measure of timing error, not null
      * @param statistics the list of statistics the compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
@@ -114,17 +114,19 @@ public class TimingErrorDurationStatistics
                                                                      * 1000 )
                                                                    + ( a.getDuration()
                                                                         .getNanos()
-                                                                       / 1_000_000 ) )
+                                                                       / 1_000_000.0 ) )
                                                 .toArray();
 
                 // Some loss of precision here, not consequential
                 Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
-                                                                                  .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
+                                                                                  .applyAsDouble( VectorOfDoubles.of(
+                                                                                          input ) ) ) );
 
                 // Add statistic component
                 DurationScoreMetricComponent componentMetric = this.components.get( nextIdentifier );
                 DurationScoreStatisticComponent.Builder builder = DurationScoreStatisticComponent.newBuilder()
-                                                                                                 .setMetric( componentMetric );
+                                                                                                 .setMetric(
+                                                                                                         componentMetric );
 
                 builder.setValue( MessageFactory.parse( duration ) );
 
@@ -151,7 +153,7 @@ public class TimingErrorDurationStatistics
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param timingError the underlying measure of timing error, not null
      * @param statistics the list of statistics the compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
@@ -217,7 +219,7 @@ public class TimingErrorDurationStatistics
 
     /**
      * Returns a metric description for the identifier.
-     * 
+     *
      * @param identifier the metric identifier
      * @return a metric description
      * @throws IllegalArgumentException if the identifier is not recognized
@@ -233,30 +235,23 @@ public class TimingErrorDurationStatistics
 
         switch ( componentName )
         {
-            case MEAN:
-            case MEDIAN:
-            case MINIMUM:
-            case MAXIMUM:
-                builder.setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( Long.MIN_VALUE ) )
-                       .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( Long.MAX_VALUE )
-                                                                .setNanos( 999_999_999 ) )
-                       .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( 0 ) );
-                break;
-            case MEAN_ABSOLUTE:
-            case STANDARD_DEVIATION:
-                builder.setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( 0 ) )
-                       .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( Long.MAX_VALUE )
-                                                                .setNanos( 999_999_999 ) )
-                       .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                .setSeconds( 0 ) );
-                break;
-            default:
-                throw new IllegalArgumentException( "Unrecognized duration score metric '" + identifier + "'." );
+            case MEAN, MEDIAN, MINIMUM, MAXIMUM -> builder.setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                   .setSeconds( Long.MIN_VALUE ) )
+                                                          .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                   .setSeconds( Long.MAX_VALUE )
+                                                                                                   .setNanos(
+                                                                                                           999_999_999 ) )
+                                                          .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                   .setSeconds( 0 ) );
+            case MEAN_ABSOLUTE, STANDARD_DEVIATION -> builder.setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                      .setSeconds( 0 ) )
+                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                                      .setSeconds( Long.MAX_VALUE )
+                                                                                                      .setNanos(
+                                                                                                              999_999_999 ) )
+                                                             .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                                      .setSeconds( 0 ) );
+            default -> throw new IllegalArgumentException( "Unrecognized duration score metric '" + identifier + "'." );
         }
 
         return builder.build();

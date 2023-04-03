@@ -144,8 +144,6 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
 
     /**
      * Hidden constructor.
-     * 
-     * @param decompositionId the decomposition identifier
      */
 
     BrierScore()

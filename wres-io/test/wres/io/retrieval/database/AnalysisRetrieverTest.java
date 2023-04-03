@@ -520,7 +520,6 @@ public class AnalysisRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
 
@@ -534,7 +533,6 @@ public class AnalysisRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamTwo =
@@ -547,7 +545,6 @@ public class AnalysisRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
         Stream<TimeSeriesTuple> tupleStreamThree =
@@ -562,7 +559,6 @@ public class AnalysisRetrieverTest
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
-                                                        .setProjectConfig( fakeConfig )
                                                         .setLockManager( this.lockManager )
                                                         .build();
 

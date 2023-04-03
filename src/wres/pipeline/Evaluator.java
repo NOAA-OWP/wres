@@ -141,7 +141,7 @@ public class Evaluator
             catch ( IOException ioe )
             {
                 String message = "Failed to unmarshal project configuration from "
-                                 + configPath.toString();
+                                 + configPath;
                 LOGGER.error( message, ioe );
                 UserInputException e = new UserInputException( message, ioe );
                 failure.setFailed();
@@ -287,7 +287,7 @@ public class Evaluator
             lockManager = new DatabaseLockManagerNoop();
         }
 
-        String projectHash = null;
+        String projectHash;
         Set<Path> pathsWrittenTo = new TreeSet<>();
         ScheduledExecutorService monitoringService = null;
         try

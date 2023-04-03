@@ -22,7 +22,7 @@ class PoolProcessingResult
         /** Exceptional situation where an evaluation has failed and some statistics were created and not published. */
         STATISTICS_AVAILABLE_NOT_PUBLISHED,
         /** No data situation. */
-        STATISTICS_NOT_AVAILABLE;
+        STATISTICS_NOT_AVAILABLE
     }
     
     /** The pool description. */

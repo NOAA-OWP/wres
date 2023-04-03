@@ -42,7 +42,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * persistence series is obtained from a template time-series supplied on demand. Uses the reference time as the anchor
  * datetime for persistence when available, otherwise the valid times. The template time-series must use the same 
  * feature identity as the data source from which the persistence time-series is generated.
- * 
+ *
  * @author James Brown
  * @param <T> the type of persistence value to generate
  */
@@ -82,7 +82,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
-     * 
+     *
      * @param <T> the type of time-series event value
      * @param persistenceSource the persistence data source, required
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
@@ -107,7 +107,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Provides an instance for persistence of order one, i.e., lag-1 persistence.
-     * 
+     *
      * @param <T> the type of time-series event value
      * @param persistenceSource the persistence data source, required
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
@@ -135,7 +135,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Creates a persistence time-series at a lag supplied on construction using the input time-series as a template.
-     * 
+     *
      * @param template the template time-series for which persistence values will be generated
      * @return a time-series with the lagged value at every time-step
      * @throws NullPointerException if the input is null
@@ -155,7 +155,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             LOGGER.trace( WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES,
                           template.hashCode(),
                           ", discovered that the input series had no events (i.e., was empty). Returning the same, "
-                                               + "empty, series." );
+                          + "empty, series." );
 
             return template;
         }
@@ -303,8 +303,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                                                     this.desiredUnit );
 
             ZonedDateTime time = referenceTime.atZone( ZONE_ID );
-            int yearsToSubtract = this.order;
-            time = time.minusYears( yearsToSubtract );
+            time = time.minusYears( this.order );
             Instant targetLower = time.toInstant();
             Instant targetUpper = time.plusYears( 1 )
                                       .toInstant();
@@ -357,10 +356,11 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             if ( Objects.isNull( persistenceEvent ) )
             {
-                LOGGER.trace( "While attempting to generate a persistence value for the reference time of {}, failed to "
-                              + "find a corresponding time in the persistence source, which contained {} values.",
-                              referenceTime,
-                              eventsToSearch.size() );
+                LOGGER.trace(
+                        "While attempting to generate a persistence value for the reference time of {}, failed to "
+                        + "find a corresponding time in the persistence source, which contained {} values.",
+                        referenceTime,
+                        eventsToSearch.size() );
 
                 return new Builder<T>().setMetadata( template.getMetadata() )
                                        .build();
@@ -597,8 +597,10 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             // Find the persistence event times at which the upscaled values must end, padding with null to retain shape
             List<Instant> persistenceEventTimes = persistenceEventPerValidTime.stream()
-                                                                              .map( next -> Objects.nonNull( next ) ? next.getTime()
-                                                                                                                    : null )
+                                                                              .map( next -> Objects.nonNull( next ) ?
+                                                                                      next.getTime()
+                                                                                      :
+                                                                                      null )
                                                                               .toList();
 
             // Get the pairs of template valid times and persistence event times based on index positions
@@ -610,7 +612,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Returns the paired times from the inputs based on corresponding index positions.
-     * 
+     *
      * @param validTimes the valid times of the template time-series for which persistence values are required
      * @param persistenceEventTimes the persistence event times
      * @return the template series valid times keyed against the persistence event times
@@ -645,7 +647,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Returns the interval within which a lagged month-day event must fall based on the prescribed lag and event time.
-     * 
+     *
      * @param eventTime the event time
      * @param lag the order of persistence
      * @return the interval
@@ -656,10 +658,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // The event must fall within the interval that begins N years before the event time, inclusive, and ends
         // up to N-1 years before the event time, exclusive
         ZonedDateTime time = eventTime.atZone( ZONE_ID );
-        int yearsToSubtract = lag;
-        Instant targetLower = time.minusYears( yearsToSubtract )
+        Instant targetLower = time.minusYears( lag )
                                   .toInstant();
-        Instant targetUpper = time.minusYears( yearsToSubtract - 1L )
+        Instant targetUpper = time.minusYears( lag - 1L )
                                   .minusNanos( 1 ) // Do not include the event time
                                   .toInstant();
 
@@ -716,9 +717,9 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * where N is the order of persistence. Repeats for each input time in the list of times. The returned list is
      * ordered according to the input list of times, with a null value in place if no event was found for a particular
      * time.
-     * 
+     *
      * @param eventsToSearch the events to search for a persistence value
-     * @param time the time relative to which the persistence value is needed
+     * @param times the times relative to which the persistence value is needed
      * @param order the order of persistence
      * @return the persistence events
      */
@@ -735,7 +736,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     /**
      * Searches the list of events and returns the event that is Nth nearest to, and earlier than, the input time, 
      * where N is the order of persistence.
-     * 
+     *
      * @param eventsToSearch the events to search for a persistence value
      * @param time the time relative to which the persistence value is needed
      * @param order the order of persistence
@@ -795,8 +796,6 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             }
         }
 
-        Event<T> returnMe = null;
-
         // Exact match? If so, return the time that is immediately before it, immediate being the "order"
         int indexMinusOrder = index - order;
         if ( indexMinusOrder > -1 )
@@ -812,13 +811,13 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             return eventsToSearch.get( closestMinusOrder );
         }
 
-        return returnMe;
+        return null;
     }
 
     /**
      * Maps the persistence event times in the upscaled time-series to their corresponding valid event times based on 
      * the mapping implied by the times at equivalent index positions in the two supplied lists.
-     * 
+     *
      * @param validTimePairs the pairs of valid times and corresponding persistence event times
      * @param upscaled the upscaled time-series expressed with persistence event times
      * @return the upscaled time-series expressed with valid event times
@@ -892,12 +891,12 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param order the order of persistence
      * @param persistenceSource the source data for the persistence values, not null
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
      *            persistenceSource
-     * @param admissableValue an optional constrain on each admissible values to persist
+     * @param admissibleValue an optional constrain on each admissible values to persist
      * @param desiredUnit the desired measurement unit, not null
      * @throws NullPointerException if any required input is null
      * @throws TimeSeriesGeneratorException if the generator could not be created
@@ -932,10 +931,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // The persistence source cannot contain forecast-like time-series
         if ( source.stream()
-                   .filter( next -> next.getReferenceTimes()
-                                        .keySet()
-                                        .contains( ReferenceTimeType.T0 ) )
-                   .count() > 0 )
+                   .anyMatch( next -> next.getReferenceTimes()
+                                          .containsKey( ReferenceTimeType.T0 ) ) )
         {
             throw new TimeSeriesGeneratorException( "When attempting to generate a persistence baseline, discovered "
                                                     + "one or more time-series that contained a reference time with "

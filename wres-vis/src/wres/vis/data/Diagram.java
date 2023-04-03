@@ -1,5 +1,6 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,9 +22,9 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
- * Creates an {@link XYDataset} for plotting a verification diagram.
+ * <p>Creates an {@link XYDataset} for plotting a verification diagram.
  * 
- * In order to support displays of intervals, such as confidence intervals, upgrade to 
+ * <p>In order to support displays of intervals, such as confidence intervals, upgrade to
  * {@link AbstractIntervalXYDataset}.
  * 
  * @author James Brown
@@ -33,6 +34,7 @@ class Diagram extends AbstractXYDataset
 {
 
     /** Serial version identifier. */
+    @Serial
     private static final long serialVersionUID = -6260904713900350909L;
 
     /** Logger. */

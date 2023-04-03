@@ -37,9 +37,6 @@ public class PoolGroupTracker
     /** The message groups and their completion state. */
     private final Map<String, CompletionTracker> groups;
 
-    /** The evaluation whose message groups should be marked complete. */
-    private final Evaluation evaluation;
-
     /** The pool group identity associated with each {@link PoolRequest}. */
     private final Map<PoolRequest, String> groupIdentities;
 
@@ -124,7 +121,6 @@ public class PoolGroupTracker
 
     private PoolGroupTracker( Evaluation evaluation, Map<PoolRequest, String> groupIdentities )
     {
-        this.evaluation = evaluation;
         this.groups = new HashMap<>();
         this.groupIdentities = new HashMap<>( groupIdentities );
 
@@ -140,7 +136,7 @@ public class PoolGroupTracker
         {
             String nextGroupId = nextGroup.getKey();
             Long nextGroupSize = nextGroup.getValue();
-            CompletionTracker nextTracker = new CompletionTracker( this.evaluation, nextGroupId, nextGroupSize );
+            CompletionTracker nextTracker = new CompletionTracker( evaluation, nextGroupId, nextGroupSize );
             this.groups.put( nextGroupId, nextTracker );
         }
     }

@@ -18,12 +18,12 @@ import wres.io.writing.csv.pairs.PairsWriter;
 import wres.io.writing.csv.pairs.SingleValuedPairsWriter;
 
 /**
- * A temporary class intended to host pairs writers. Currently, wres-io creates 
+ * <p>A temporary class intended to host pairs writers. Currently, wres-io creates
  * some friction by exposing the wildcard type of {@link Pool}, rather than 
  * a non-wildcard type. This class resolves that friction by providing access to 
  * parameterized types of writing on request.
  * 
- * TODO: remove this class in favor of the direct application of a parameterized 
+ * <p>TODO: remove this class in favor of the direct application of a parameterized
  * {@link SingleValuedPairsWriter} or {@link EnsemblePairsWriter} once the wres-io 
  * uses non-wildcard types of {@link Pool}.
  * 

@@ -101,7 +101,7 @@ class TimingErrorHelper
      * 
      * @param tiedTimes a collection of tied times
      * @param rng a random number generator used to resolve ties
-     * @returned a randomly selected time from the input
+     * @return a randomly selected time from the input
      * @throws NullPointerException if any input is null or any of the tied times is null
      */
 

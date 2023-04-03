@@ -1,6 +1,5 @@
 package wres.vis.writing;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -168,7 +167,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating diagram charts: ", e );
         }
@@ -179,7 +178,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
      * 
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
@@ -215,11 +214,10 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                             List<DiagramStatisticOuter> statistics,
                                             GraphicsHelper helper )
     {
-        String append = "";
+        String append;
 
-        if ( appendObject instanceof TimeWindowOuter )
+        if ( appendObject instanceof TimeWindowOuter timeWindow )
         {
-            TimeWindowOuter timeWindow = (TimeWindowOuter) appendObject;
             GraphicShape shape = helper.getGraphicShape();
             ChronoUnit leadUnits = helper.getDurationUnits();
 
@@ -243,9 +241,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        else if ( appendObject instanceof OneOrTwoThresholds )
+        else if ( appendObject instanceof OneOrTwoThresholds threshold)
         {
-            OneOrTwoThresholds threshold = (OneOrTwoThresholds) appendObject;
             append = DataUtilities.toStringSafe( threshold );
         }
         else

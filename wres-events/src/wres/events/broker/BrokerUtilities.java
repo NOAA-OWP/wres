@@ -141,8 +141,7 @@ public class BrokerUtilities
         String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
         BrokerUtilities.testConnectionProperty( connectionPropertyName, properties );
 
-        String key = connectionPropertyName;
-        String url = properties.getProperty( key );
+        String url = properties.getProperty( connectionPropertyName );
 
         // Look for a system property that definitively says whether an embedded broker should be started
         String startBroker = System.getProperty( "wres.startBroker" );
@@ -157,7 +156,8 @@ public class BrokerUtilities
         else if ( "false".equalsIgnoreCase( startBroker ) )
         {
             LOGGER.warn( "Discovered the WRES system property wres.startBroker=false. The evaluation will fail if no "
-                         + "active broker is discovered at the binding URL (after exhausting any failover options).",
+                         + "active broker is discovered at the binding URL (after exhausting any failover options): "
+                         + "{}.",
                          url );
 
             return false;
@@ -170,7 +170,7 @@ public class BrokerUtilities
         {
             LOGGER.debug( "Discovered the connection property {} with value {}, which "
                           + "indicates that a broker should be listening on localhost.",
-                          key,
+                          connectionPropertyName,
                           url );
 
             // Does the url contain the tcp reserved port 0, i.e. dynamic binding required?
@@ -200,8 +200,6 @@ public class BrokerUtilities
                     BrokerConnectionFactory.testConnection( properties, 0 );
 
                     LOGGER.info( "Discovered an active AMQP broker at {}", url );
-                    
-                    returnMe = false;
                 }
                 catch ( BrokerConnectionException e )
                 {
@@ -285,7 +283,7 @@ public class BrokerUtilities
 
             String innerConnectionProperty = connectionProperty;
 
-            connectionProperty = connectionProperty.replaceAll( ":(?<port>[0-9]+)", ":" + port );
+            connectionProperty = connectionProperty.replaceAll( ":(?<port>\\d+)", ":" + port );
 
             LOGGER.debug( "Updated the port in the binding URL. The old binding URL was: {}. The new binding URL is: "
                           + "{}.",

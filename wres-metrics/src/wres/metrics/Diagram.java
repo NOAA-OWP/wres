@@ -11,7 +11,6 @@ import wres.datamodel.statistics.Statistic;
 
 public abstract class Diagram<S extends Pool<?>, T extends Statistic<?>> implements Metric<S, T>
 {
-    
     @Override
     public String toString()
     {

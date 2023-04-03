@@ -17,6 +17,7 @@ import java.util.StringJoiner;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.TikaException;
@@ -314,7 +315,7 @@ public class DataSource
         {
             return false;
         }
-        DataSource that = (DataSource) o;
+        DataSource that = ( DataSource ) o;
         return source.equals( that.source ) &&
                links.equals( that.links )
                &&
@@ -376,10 +377,9 @@ public class DataSource
         }
     }
 
-
     /**
      * Look at the data, open the data to detect its WRES type.
-     * 
+     *
      * @param inputStream The stream to examine, at position 0, will be kept
      *                    there, must support mark/reset.
      * @param uri A real or fake URI (basically a name) to log with messages.
@@ -388,8 +388,85 @@ public class DataSource
      * @throws UnsupportedOperationException When !inputStream.markSupported()
      */
 
-    public static DataDisposition detectFormat( InputStream inputStream,
-                                                URI uri )
+    public static DataDisposition detectFormat( InputStream inputStream, URI uri )
+    {
+        LOGGER.debug( "detectFormat called on input stream for {}", uri );
+
+        // Determine the media type
+        Pair<MediaType, byte[]> mediaTypeAndBytes = DataSource.getMediaType( inputStream, uri );
+
+        MediaType detectedMediaType = mediaTypeAndBytes.getLeft();
+        byte[] firstBytes = mediaTypeAndBytes.getRight();
+
+        String mediaType = detectedMediaType.getType()
+                                            .toLowerCase();
+        String subtype = detectedMediaType.getSubtype()
+                                          .toLowerCase();
+        LOGGER.debug( "For data labeled {}, mediaType={}, subtype={}",
+                      uri,
+                      mediaType,
+                      subtype );
+
+        DataDisposition disposition = DataDisposition.UNKNOWN;
+
+        if ( firstBytes.length < 4 )
+        {
+            LOGGER.warn( "Found document with only {} bytes: '{}'",
+                         firstBytes.length,
+                         uri );
+        }
+        else if ( subtype.equals( "xml" ) )
+        {
+            disposition = DataSource.getDispositionOfXmlSubtype( firstBytes, uri );
+        }
+        else if ( subtype.equals( "json" ) && firstBytes.length > 4 )
+        {
+            disposition = DataSource.getDispositionOfJsonSubtype( firstBytes, uri );
+        }
+        else if ( subtype.equals( "csv" ) )
+        {
+            disposition = DataSource.getDispositionOfCsvSubtype( firstBytes, uri );
+        }
+        else if ( subtype.equals( "x-hdf" ) )
+        {
+            // Not much more can be done accurately from here for netCDF short
+            // of opening up the file using netCDF libraries, which is the job
+            // of the reader.
+            // The caller will probably want to use a pattern to narrow it down,
+            // or the reader will need to be lenient.
+            disposition = DataDisposition.NETCDF_GRIDDED;
+        }
+        else if ( subtype.equals( "gzip" ) )
+        {
+            disposition = DataDisposition.GZIP;
+        }
+        else if ( subtype.equals( "x-tar" ) || subtype.equals( "x-gtar" ) )
+        {
+            disposition = DataDisposition.TARBALL;
+        }
+        else if ( subtype.equals( "plain" ) && mediaType.equals( "text" ) )
+        {
+            disposition = DataSource.getDispositionOfTextTypeAndPlainSubtype( firstBytes, uri );
+        }
+        else if ( subtype.equals( "fastinfosetxml" ) )
+        {
+            disposition = DataSource.getDispositionOfFastInfosetSubtype( firstBytes, uri );
+        }
+
+        LOGGER.debug( "Detected {} for {}", disposition, uri );
+        return disposition;
+    }
+
+    /**
+     * Determines the media type.
+     *
+     * @param inputStream The stream to examine, at position 0, will be kept
+     *                    there, must support mark/reset.
+     * @param uri A real or fake URI (basically a name) to log with messages.
+     * @return the detected media type and first 4096 bytes
+     */
+
+    public static Pair<MediaType, byte[]> getMediaType( InputStream inputStream, URI uri )
     {
         LOGGER.debug( "detectFormat called on input stream for {}", uri );
         MediaType detectedMediaType;
@@ -397,7 +474,6 @@ public class DataSource
         metadata.set( TikaCoreProperties.RESOURCE_NAME_KEY,
                       uri.toString() );
         byte[] firstBytes;
-        DataDisposition disposition = DataDisposition.UNKNOWN;
 
         try
         {
@@ -439,155 +515,180 @@ public class DataSource
                                           e );
         }
 
-        String mediaType = detectedMediaType.getType()
-                                            .toLowerCase();
-        String subtype = detectedMediaType.getSubtype()
-                                          .toLowerCase();
-        LOGGER.debug( "For data labeled {}, mediaType={}, subtype={}",
-                      uri,
-                      mediaType,
-                      subtype );
-
-        if ( firstBytes.length < 4 )
-        {
-            LOGGER.warn( "Found document with only {} bytes: '{}'",
-                         firstBytes.length,
-                         uri );
-        }
-        else if ( subtype.equals( "xml" ) )
-        {
-            Charset xmlCharset = DataSource.getXmlCharsetFromBom( firstBytes );
-            String start = new String( firstBytes, xmlCharset );
-
-            if ( start.contains( "fews/PI" ) && start.contains( "<TimeSeries" ) )
-            {
-                disposition = DataDisposition.XML_PI_TIMESERIES;
-            }
-            else
-            {
-                LOGGER.warn( "Found XML document but it did not appear to be a FEWS PI TimeSeries: '{}'",
-                             uri );
-            }
-        }
-        else if ( subtype.equals( "json" ) && firstBytes.length > 4 )
-        {
-            // This could be either WRDS json or USGS-style json.
-            Charset jsonCharset = DataSource.getJsonCharset( firstBytes );
-
-            if ( jsonCharset == null )
-            {
-                throw new PreIngestException( "Unable to detect charset for JSON document starting with bytes "
-                                              + Arrays.toString( firstBytes ) );
-            }
-
-            String start = new String( firstBytes, jsonCharset );
-
-            if ( start.contains( "org.cuahsi.waterml" ) )
-            {
-                disposition = DataDisposition.JSON_WATERML;
-            }
-            // There is a WRDS json format for thresholds (it's not timeseries).
-            else if ( !start.contains( "\"threshold" ) )
-            {
-                if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
-                {
-                    disposition = DataDisposition.JSON_WRDS_NWM;
-                }
-                else if ( start.contains( "\"header\":" ) )
-                {
-                    disposition = DataDisposition.JSON_WRDS_AHPS;
-                }
-            }
-            else
-            {
-                LOGGER.warn( "Found JSON document but it did not appear to be one WRES could parse: '{}'",
-                             uri );
-            }
-        }
-        else if ( subtype.equals( "csv" ) )
-        {
-            // Our CSV reader used default charset as of 5.10, changing it to
-            // UTF-8 as of this commit, see CSVDataProvider class.
-            String start = new String( firstBytes, StandardCharsets.UTF_8 );
-            String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
-                                                "location", "measurement_unit",
-                                                "value" };
-            boolean missingHeaders = false;
-
-            for ( String requiredHeader : wresCsvRequiredHeaders )
-            {
-                if ( !start.contains( requiredHeader ) )
-                {
-                    LOGGER.warn( "Found CSV document but it did not contain required column '{}': '{}'",
-                                 requiredHeader,
-                                 uri );
-                    missingHeaders = true;
-                }
-            }
-
-            if ( !missingHeaders )
-            {
-                disposition = DataDisposition.CSV_WRES;
-            }
-        }
-        else if ( subtype.equals( "x-hdf" ) )
-        {
-            // Not much more can be done accurately from here for netCDF short
-            // of opening up the file using netCDF libraries, which is the job
-            // of the reader.
-            // The caller will probably want to use a pattern to narrow it down,
-            // or the reader will need to be lenient.
-            disposition = DataDisposition.NETCDF_GRIDDED;
-        }
-        else if ( subtype.equals( "gzip" ) )
-        {
-            disposition = DataDisposition.GZIP;
-        }
-        else if ( subtype.equals( "x-tar" ) || subtype.equals( "x-gtar" ) )
-        {
-            disposition = DataDisposition.TARBALL;
-        }
-        else if ( subtype.equals( "plain" ) && mediaType.equals( "text" ) )
-        {
-            if ( DataSource.detectDatacardFromTextPlain( firstBytes, uri ) )
-            {
-                disposition = DataDisposition.DATACARD;
-            }
-            // Sometimes a tar file is returned as text/plain from tika
-            else if ( DataSource.detectTarFileFromTextPlain( firstBytes, uri ) )
-            {
-                LOGGER.warn( "Using a potentially corrupt tarball: '{}'", uri );
-                disposition = DataDisposition.TARBALL;
-            }
-            // Sometimes a CSV file is returned as text/plain from tika
-            else if ( DataSource.detectCsvFromTextPlain( firstBytes, uri ) )
-            {
-                disposition = DataDisposition.CSV_WRES;
-            }
-            else
-            {
-                LOGGER.warn( "Found a text/plain document, but it did not appear to be NWS datacard: '{}'",
-                             uri );
-            }
-        }
-        else if ( subtype.equals( "fastinfosetxml" ) )
-        {
-            // It is nominally Fast Infoset encoded XML, but is it Published Interface XML?
-            if ( DataSource.isFastInfosetPixml( firstBytes, uri ) )
-            {
-                disposition = DataDisposition.XML_FI_TIMESERIES;
-            }
-            else
-            {
-                LOGGER.warn( "Found an application/fastinfosetxml document, but it did not appear to be PI-XML: '{}'",
-                             uri );
-            }
-        }
-
-        LOGGER.debug( "Detected {} for {}", disposition, uri );
-        return disposition;
+        return Pair.of( detectedMediaType, firstBytes );
     }
 
+    /**
+     * Examines the first few bytes of an XML source for its detailed disposition.
+     * @param firstBytes the first few bytes
+     * @param uri the URI to help with logging
+     * @return the detailed disposition
+     */
+
+    private static DataDisposition getDispositionOfXmlSubtype( byte[] firstBytes, URI uri )
+    {
+        DataDisposition innerDisposition = DataDisposition.UNKNOWN;
+
+        Charset xmlCharset = DataSource.getXmlCharsetFromBom( firstBytes );
+        String start = new String( firstBytes, xmlCharset );
+
+        if ( start.contains( "fews/PI" ) && start.contains( "<TimeSeries" ) )
+        {
+            innerDisposition = DataDisposition.XML_PI_TIMESERIES;
+        }
+        else
+        {
+            LOGGER.warn( "Found XML document but it did not appear to be a FEWS PI TimeSeries: '{}'",
+                         uri );
+        }
+
+        return innerDisposition;
+    }
+
+    /**
+     * Examines the first few bytes of a JSON source for its detailed disposition.
+     * @param firstBytes the first few bytes
+     * @param uri the URI to help with logging
+     * @return the detailed disposition
+     */
+
+    private static DataDisposition getDispositionOfJsonSubtype( byte[] firstBytes, URI uri )
+    {
+        DataDisposition innerDisposition = DataDisposition.UNKNOWN;
+
+        // This could be either WRDS json or USGS-style json.
+        Charset jsonCharset = DataSource.getJsonCharset( firstBytes );
+
+        if ( jsonCharset == null )
+        {
+            throw new PreIngestException( "Unable to detect charset for JSON document starting with bytes "
+                                          + Arrays.toString( firstBytes ) );
+        }
+
+        String start = new String( firstBytes, jsonCharset );
+
+        if ( start.contains( "org.cuahsi.waterml" ) )
+        {
+            innerDisposition = DataDisposition.JSON_WATERML;
+        }
+        // There is a WRDS json format for thresholds (it's not timeseries).
+        else if ( !start.contains( "\"threshold" ) )
+        {
+            if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_NWM;
+            }
+            else if ( start.contains( "\"header\":" ) )
+            {
+                innerDisposition = DataDisposition.JSON_WRDS_AHPS;
+            }
+        }
+        else
+        {
+            LOGGER.warn( "Found JSON document but it did not appear to be one WRES could parse: '{}'",
+                         uri );
+        }
+
+        return innerDisposition;
+    }
+
+    /**
+     * Examines the first few bytes of a CSV source for its detailed disposition.
+     * @param firstBytes the first few bytes
+     * @param uri the URI to help with logging
+     * @return the detailed disposition
+     */
+
+    private static DataDisposition getDispositionOfCsvSubtype( byte[] firstBytes, URI uri )
+    {
+        DataDisposition innerDisposition = DataDisposition.UNKNOWN;
+
+        // Our CSV reader used default charset as of 5.10, changing it to
+        // UTF-8 as of this commit, see CSVDataProvider class.
+        String start = new String( firstBytes, StandardCharsets.UTF_8 );
+        String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
+                "location", "measurement_unit",
+                "value" };
+        boolean missingHeaders = false;
+
+        for ( String requiredHeader : wresCsvRequiredHeaders )
+        {
+            if ( !start.contains( requiredHeader ) )
+            {
+                LOGGER.warn( "Found CSV document but it did not contain required column '{}': '{}'",
+                             requiredHeader,
+                             uri );
+                missingHeaders = true;
+            }
+        }
+
+        if ( !missingHeaders )
+        {
+            innerDisposition = DataDisposition.CSV_WRES;
+        }
+
+        return innerDisposition;
+    }
+
+    /**
+     * Examines the first few bytes of a source identified as plain text for its detailed disposition.
+     * @param firstBytes the first few bytes
+     * @param uri the URI to help with logging
+     * @return the detailed disposition
+     */
+
+    private static DataDisposition getDispositionOfTextTypeAndPlainSubtype( byte[] firstBytes, URI uri )
+    {
+        DataDisposition innerDisposition = DataDisposition.UNKNOWN;
+
+        if ( DataSource.detectDatacardFromTextPlain( firstBytes, uri ) )
+        {
+            innerDisposition = DataDisposition.DATACARD;
+        }
+        // Sometimes a tar file is returned as text/plain from tika
+        else if ( DataSource.detectTarFileFromTextPlain( firstBytes, uri ) )
+        {
+            LOGGER.warn( "Using a potentially corrupt tarball: '{}'", uri );
+            innerDisposition = DataDisposition.TARBALL;
+        }
+        // Sometimes a CSV file is returned as text/plain from tika
+        else if ( DataSource.detectCsvFromTextPlain( firstBytes, uri ) )
+        {
+            innerDisposition = DataDisposition.CSV_WRES;
+        }
+        else
+        {
+            LOGGER.warn( "Found a text/plain document, but it did not appear to be NWS datacard: '{}'",
+                         uri );
+        }
+
+        return innerDisposition;
+    }
+
+    /**
+     * Examines the first few bytes of a source identified as Fast Infoset for its detailed disposition.
+     * @param firstBytes the first few bytes
+     * @param uri the URI to help with logging
+     * @return the detailed disposition
+     */
+
+    private static DataDisposition getDispositionOfFastInfosetSubtype( byte[] firstBytes, URI uri )
+    {
+        DataDisposition innerDisposition = DataDisposition.UNKNOWN;
+
+        // It is nominally Fast Infoset encoded XML, but is it Published Interface XML?
+        if ( DataSource.isFastInfosetPixml( firstBytes, uri ) )
+        {
+            innerDisposition = DataDisposition.XML_FI_TIMESERIES;
+        }
+        else
+        {
+            LOGGER.warn( "Found an application/fastinfosetxml document, but it did not appear to be PI-XML: '{}'",
+                         uri );
+        }
+
+        return innerDisposition;
+    }
 
     /**
      * Get the charset for a JSON document.
@@ -686,7 +787,7 @@ public class DataSource
 
     private static boolean isFastInfosetPixml( byte[] firstBytes, URI uri )
     {
-        try ( InputStream stream = new ByteArrayInputStream( firstBytes ); )
+        try ( InputStream stream = new ByteArrayInputStream( firstBytes ) )
         {
             XMLStreamReader reader = new StAXDocumentParser( stream );
 
@@ -876,8 +977,8 @@ public class DataSource
     {
         String start = new String( firstBytes, StandardCharsets.UTF_8 );
         String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
-                                            "location", "measurement_unit",
-                                            "value" };
+                "location", "measurement_unit",
+                "value" };
 
         for ( String requiredHeader : wresCsvRequiredHeaders )
         {
@@ -931,7 +1032,7 @@ public class DataSource
         }
 
         String lineTwo = filtered.get( 1 );
-        
+
         // Strip any trailing whitespace
         lineTwo = lineTwo.stripTrailing();
 

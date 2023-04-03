@@ -1,6 +1,5 @@
 package wres.vis.writing;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -144,7 +143,7 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
                 pathsWrittenTo.addAll( finishedPaths );
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating duration score charts: ", e );
         }
@@ -157,7 +156,6 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      *
      * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
-     * @param durationUnits the time units for durations
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */

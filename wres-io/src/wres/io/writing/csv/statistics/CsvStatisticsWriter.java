@@ -619,7 +619,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
         // Use a more helpful api
-        ThresholdOuter outer = new ThresholdOuter.Builder( threshold ).build();
+        ThresholdOuter outer = ThresholdOuter.of( threshold );
 
         joiner.add( outer.getLabel() );
 
@@ -1616,7 +1616,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         Duration duration = durationUnits.getDuration();
         BigDecimal nanoAdd = BigDecimal.valueOf( duration.getNano(), 9 );
         this.nanosPerDuration = BigDecimal.valueOf( duration.getSeconds() )
-                                          .add( nanoAdd );;
+                                          .add( nanoAdd );
 
         // Create the evaluation description from the evaluation
         this.evaluationDescription = this.createEvaluationDescription( evaluation );

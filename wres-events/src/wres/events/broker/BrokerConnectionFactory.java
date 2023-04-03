@@ -2,6 +2,7 @@ package wres.events.broker;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -86,7 +87,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     private final List<Connection> connectionPool;
 
     /**
-     * A lock for the {@link connectionPool}.
+     * A lock for the {@link #connectionPool}.
      */
 
     private final Object connectionPoolLock;
@@ -252,11 +253,10 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     /**
      * Tests the connection with exponential back-off, up to the prescribed number of retries. If the properties 
-     * contains a binding url that configures its own retries, then these retries will nest. Thus, to delegate retries 
+     * contain a binding url that configures its own retries, then these retries will nest. Thus, to delegate retries
      * to the broker (based on the declared burl), request zero retries in this context. 
      * 
-     * @param connectionUrl the connection url string
-     * @param conFactory the connection factory
+     * @param properties the connection properties
      * @param retries the number of retries
      * @throws BrokerConnectionException if the connection fails, possibly after retries
      * @throws NullPointerException if any input is null
@@ -379,7 +379,6 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
      * @param context the context
      * @param connectionPropertyName the connection property name
      * @return a connection factory
-     * @throws NamingException if the connection factory could not be located
      * @throws NullPointerException if any input is null
      */
 
@@ -475,11 +474,11 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     private static class FailedToAcquireConnectionException extends RuntimeException
     {
-
         /**
          * Serial version identifier.
          */
 
+        @Serial
         private static final long serialVersionUID = -5224784772553896250L;
 
         /**

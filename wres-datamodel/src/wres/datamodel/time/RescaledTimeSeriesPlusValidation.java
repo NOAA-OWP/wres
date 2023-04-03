@@ -27,7 +27,6 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 
 public class RescaledTimeSeriesPlusValidation<T>
 {
-
     /**
      * Logger.
      */

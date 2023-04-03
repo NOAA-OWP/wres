@@ -39,6 +39,10 @@ public class DatabaseDataProvider implements DataProvider
     private static final String THE_DATA_IS_NOT_ACCESSIBLE = "The data is not accessible.";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseDataProvider.class );
+    private static final String COULD_NOT_CAST_THE_INPUT_TYPE_OF = "Could not cast the input type of '";
+    private static final String WITH_SQL_TYPE = "' with SQL type '";
+    private static final String COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN =
+            "Could not release resources for column {} in {}";
 
     /**
      * The connection to the database that returned this data. Must be kept open for the
@@ -74,7 +78,7 @@ public class DatabaseDataProvider implements DataProvider
      * @param connection The connection to where this data came from
      * @param resultSet The data streaming through the connection
      */
-    DatabaseDataProvider(final Connection connection, final ResultSet resultSet)
+    DatabaseDataProvider( final Connection connection, final ResultSet resultSet )
     {
         Objects.requireNonNull( connection );
         Objects.requireNonNull( resultSet );
@@ -84,7 +88,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Go ahead and throw an error if we can't access the data
-            if (resultSet.isClosed())
+            if ( resultSet.isClosed() )
             {
                 throw new IllegalStateException( "The given resultset has already been closed." );
             }
@@ -100,9 +104,9 @@ public class DatabaseDataProvider implements DataProvider
             int columnCount = this.resultSet.getMetaData().getColumnCount();
 
             // ResultSets are 1's indexed
-            for (int index = 1; index <= columnCount; ++index)
+            for ( int index = 1; index <= columnCount; ++index )
             {
-                this.columnNames.add( resultSet.getMetaData().getColumnLabel( index ));
+                this.columnNames.add( resultSet.getMetaData().getColumnLabel( index ) );
             }
         }
         catch ( SQLException e )
@@ -116,7 +120,7 @@ public class DatabaseDataProvider implements DataProvider
     {
         // If we've already acknowledged that the connection is closed, we don't have to do anything,
         // otherwise we need to consult the result set to be sure
-        if (!this.closed)
+        if ( !this.closed )
         {
             try
             {
@@ -196,14 +200,14 @@ public class DatabaseDataProvider implements DataProvider
     public int getColumnIndex( String columnName )
     {
         // Find the string, ignoring case
-        for( int i = 0; i < this.columnNames.size(); i++ )
+        for ( int i = 0; i < this.columnNames.size(); i++ )
         {
-            if( this.columnNames.get( i ).equalsIgnoreCase( columnName ) )
+            if ( this.columnNames.get( i ).equalsIgnoreCase( columnName ) )
             {
                 return i;
             }
         }
-        
+
         return -1;
     }
 
@@ -258,31 +262,31 @@ public class DatabaseDataProvider implements DataProvider
     @Override
     public Object[] getRowValues()
     {
-        ArrayList<Object> values = new ArrayList<>(  );
+        ArrayList<Object> values = new ArrayList<>();
 
-        for (String columnName : this.getColumnNames())
+        for ( String columnName : this.getColumnNames() )
         {
             Object value = this.getObject( columnName );
 
-            if (value == null)
+            if ( value == null )
             {
-                values.add(null);
+                values.add( null );
             }
-            else if (value instanceof Array )
+            else if ( value instanceof Array )
             {
-                values.add(this.getArray( columnName ));
+                values.add( this.getArray( columnName ) );
             }
-            else if (value instanceof Time)
+            else if ( value instanceof Time )
             {
-                values.add(this.getTime( columnName ));
+                values.add( this.getTime( columnName ) );
             }
-            else if (value instanceof Date)
+            else if ( value instanceof Date )
             {
-                values.add(this.getDate( columnName ));
+                values.add( this.getDate( columnName ) );
             }
-            else if (value instanceof Timestamp)
+            else if ( value instanceof Timestamp )
             {
-                values.add(this.getInstant( columnName ));
+                values.add( this.getInstant( columnName ) );
             }
             else
             {
@@ -302,7 +306,7 @@ public class DatabaseDataProvider implements DataProvider
      * @param columnName The name of the column that should contain array data
      * @return An object that may be used as a Java (vs. JDBC) array
      */
-    private Object getArray(final String columnName)
+    private Object getArray( final String columnName )
     {
         try
         {
@@ -321,7 +325,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -339,7 +343,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -357,7 +361,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -370,20 +374,20 @@ public class DatabaseDataProvider implements DataProvider
     }
 
     @Override
-    public URI getURI( String columnName)
+    public URI getURI( String columnName )
     {
         String possibleURI;
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
 
             possibleURI = this.resultSet.getString( columnName );
 
-            if (possibleURI == null)
+            if ( possibleURI == null )
             {
                 return null;
             }
@@ -404,7 +408,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -423,7 +427,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -441,7 +445,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -459,7 +463,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -477,7 +481,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -495,19 +499,19 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
-            
+
             double returnMe = this.resultSet.getDouble( columnName );
-            
+
             // Return Double.NaN if the value was SQL NULL
-            if( this.resultSet.wasNull() )
+            if ( this.resultSet.wasNull() )
             {
                 return MissingValues.DOUBLE;
             }
-            
+
             return returnMe;
         }
         catch ( SQLException e )
@@ -529,20 +533,19 @@ public class DatabaseDataProvider implements DataProvider
             outer = this.resultSet.getArray( columnName );
             Object inner = outer.getArray();
 
-            if ( inner instanceof Double[] )
+            if ( inner instanceof Double[] d )
             {
-                rawResult = (Double[]) inner;
+                rawResult = d;
             }
-            else if ( inner instanceof Object[] )
+            else if ( inner instanceof Object[] toTransform )
             {
-                Object[] toTransform = (Object[]) inner;
                 rawResult = Arrays.copyOf( toTransform, toTransform.length, Double[].class );
             }
             else
             {
-                throw new ClassCastException( "Could not cast the input type of '"
+                throw new ClassCastException( COULD_NOT_CAST_THE_INPUT_TYPE_OF
                                               + inner.getClass()
-                                              + "' with SQL type '"
+                                              + WITH_SQL_TYPE
                                               + outer.getBaseTypeName()
                                               + "' to a Double[]." );
             }
@@ -562,7 +565,7 @@ public class DatabaseDataProvider implements DataProvider
                 }
                 catch ( SQLException se )
                 {
-                    LOGGER.warn( "Could not release resources for column {} in {}",
+                    LOGGER.warn( COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN,
                                  columnName, this.resultSet );
                 }
             }
@@ -587,20 +590,19 @@ public class DatabaseDataProvider implements DataProvider
             outer = this.resultSet.getArray( columnName );
             Object inner = outer.getArray();
 
-            if ( inner instanceof Integer[] )
+            if ( inner instanceof Integer[] v )
             {
-                rawResult = (Integer[]) inner;
+                rawResult = v;
             }
-            else if ( inner instanceof Object[] )
+            else if ( inner instanceof Object[] toTransform )
             {
-                Object[] toTransform = (Object[]) inner;
                 rawResult = Arrays.copyOf( toTransform, toTransform.length, Integer[].class );
             }
             else
             {
-                throw new ClassCastException( "Could not cast the input type of '"
+                throw new ClassCastException( COULD_NOT_CAST_THE_INPUT_TYPE_OF
                                               + inner.getClass()
-                                              + "' with SQL type '"
+                                              + WITH_SQL_TYPE
                                               + outer.getBaseTypeName()
                                               + "' to a Integer[]." );
             }
@@ -620,7 +622,7 @@ public class DatabaseDataProvider implements DataProvider
                 }
                 catch ( SQLException se )
                 {
-                    LOGGER.warn( "Could not release resources for column {} in {}",
+                    LOGGER.warn( COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN,
                                  columnName,
                                  this.resultSet );
                 }
@@ -628,10 +630,10 @@ public class DatabaseDataProvider implements DataProvider
         }
 
         return rawResult;
-    }  
+    }
 
     @Override
-    public String[] getStringArray(String columnName)
+    public String[] getStringArray( String columnName )
     {
         Array outer = null;
         String[] rawResult;
@@ -643,20 +645,19 @@ public class DatabaseDataProvider implements DataProvider
             outer = this.resultSet.getArray( columnName );
             Object inner = outer.getArray();
 
-            if ( inner instanceof Double[] )
+            if ( inner instanceof String[] toTransform )
             {
-                rawResult = (String[]) inner;
+                rawResult = toTransform;
             }
-            else if ( inner instanceof Object[] )
+            else if ( inner instanceof Object[] toTransform )
             {
-                Object[] toTransform = (Object[]) inner;
                 rawResult = Arrays.copyOf( toTransform, toTransform.length, String[].class );
             }
             else
             {
-                throw new ClassCastException( "Could not cast the input type of '"
+                throw new ClassCastException( COULD_NOT_CAST_THE_INPUT_TYPE_OF
                                               + inner.getClass()
-                                              + "' with SQL type '"
+                                              + WITH_SQL_TYPE
                                               + outer.getBaseTypeName()
                                               + "' to a String[]." );
             }
@@ -676,22 +677,22 @@ public class DatabaseDataProvider implements DataProvider
                 }
                 catch ( SQLException se )
                 {
-                    LOGGER.warn( "Could not release resources for column {} in {}",
+                    LOGGER.warn( COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN,
                                  columnName, this.resultSet );
                 }
             }
         }
-        
+
         return rawResult;
     }
-    
+
     @Override
     public BigDecimal getBigDecimal( String columnName )
     {
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -709,16 +710,16 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
 
-            if (resultSet.getObject( columnName ) instanceof java.sql.Time)
+            if ( resultSet.getObject( columnName ) instanceof java.sql.Time )
             {
                 return this.resultSet.getTime( columnName ).toLocalTime();
             }
-            else if (resultSet.getObject( columnName ) instanceof java.sql.Timestamp)
+            else if ( resultSet.getObject( columnName ) instanceof java.sql.Timestamp )
             {
                 return this.resultSet.getTimestamp( columnName ).toLocalDateTime().toLocalTime();
             }
@@ -738,7 +739,7 @@ public class DatabaseDataProvider implements DataProvider
         try
         {
             // Jump to the first row if the jump hasn't already been made
-            if (this.resultSet.isBeforeFirst())
+            if ( this.resultSet.isBeforeFirst() )
             {
                 this.resultSet.next();
             }
@@ -755,7 +756,7 @@ public class DatabaseDataProvider implements DataProvider
     {
         Instant instant = this.getInstant( columnName );
 
-        if (instant == null)
+        if ( instant == null )
         {
             return null;
         }
@@ -766,7 +767,7 @@ public class DatabaseDataProvider implements DataProvider
     @Override
     public LocalDateTime getLocalDateTime( String columnName )
     {
-        return LocalDateTime.ofInstant( this.getInstant( columnName ), ZoneId.of("UTC"));
+        return LocalDateTime.ofInstant( this.getInstant( columnName ), ZoneId.of( "UTC" ) );
     }
 
     @Override
@@ -787,7 +788,7 @@ public class DatabaseDataProvider implements DataProvider
                                                                OffsetDateTime.class );
             result = resultObject.toInstant();
         }
-        catch (SQLException e)
+        catch ( SQLException e )
         {
             throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
         }
@@ -796,24 +797,24 @@ public class DatabaseDataProvider implements DataProvider
     }
 
     @Override
-    public Duration getDuration(String columnName)
+    public Duration getDuration( String columnName )
     {
         Duration result;
 
         Object value = this.getObject( columnName );
 
-        if (value == null)
+        if ( value == null )
         {
             return null;
         }
-        else if (value instanceof Number)
+        else if ( value instanceof Number )
         {
             // If the returned number was somewhat numerical, we're going to treat it as the number of
             // units in our resolution. Since there's no other information to go by, we just need to
             // assume the lead resolution of the application
             result = Duration.of( this.getLong( columnName ), TimeSeriesSlicer.LEAD_RESOLUTION );
         }
-        else if (value instanceof String)
+        else if ( value instanceof String )
         {
             result = Duration.parse( value.toString() );
         }
@@ -850,7 +851,7 @@ public class DatabaseDataProvider implements DataProvider
     @Override
     public void close()
     {
-        if (!this.isClosed())
+        if ( !this.isClosed() )
         {
             try
             {
@@ -898,7 +899,7 @@ public class DatabaseDataProvider implements DataProvider
                 if ( this.connection.isClosed() )
                 {
                     LOGGER.trace( "The connection {} in {} successfully closed.",
-                                 this.connection, this );
+                                  this.connection, this );
                 }
                 else
                 {
@@ -914,7 +915,7 @@ public class DatabaseDataProvider implements DataProvider
         }
         else
         {
-            LOGGER.debug("This {} data set is already closed.", this );
+            LOGGER.debug( "This {} data set is already closed.", this );
         }
     }
 }

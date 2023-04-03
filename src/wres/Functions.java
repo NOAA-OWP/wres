@@ -343,7 +343,6 @@ final class Functions
                         new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.systemSettings() )
                                                                 .setDatabase( sharedResources.database() )
                                                                 .setCaches( caches )
-                                                                .setProjectConfig( projectConfig )
                                                                 .setLockManager( lockManager )
                                                                 .build();
 

@@ -24,7 +24,6 @@ import wres.statistics.generated.MetricName;
  */
 class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOuter>
 {
-
     /**
      * Default logger.
      */
@@ -89,8 +88,8 @@ class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOute
                                     .setMetric( SampleSize.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setMetric( SampleSize.MAIN )
-                                                                                 .setValue( (double) s.get()
-                                                                                                      .size() ) )
+                                                                                 .setValue( s.get()
+                                                                                             .size() ) )
                                     .build();
 
         return DoubleScoreStatisticOuter.of( score, s.getMetadata() );

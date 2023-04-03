@@ -2,10 +2,8 @@ package wres.datamodel.statistics;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -183,66 +181,15 @@ public class StatisticsStore
 
     public boolean hasStatistic( StatisticType outGroup )
     {
-        switch ( outGroup )
-        {
-            case DOUBLE_SCORE:
-                return !this.doubleScores.isEmpty();
-            case DURATION_SCORE:
-                return !this.durationScores.isEmpty();
-            case DIAGRAM:
-                return !this.diagrams.isEmpty();
-            case BOXPLOT_PER_PAIR:
-                return !this.boxplotPerPair.isEmpty();
-            case BOXPLOT_PER_POOL:
-                return !this.boxplotPerPool.isEmpty();
-            case DURATION_DIAGRAM:
-                return !this.paired.isEmpty();
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Returns all {@link StatisticType} for which outputs are available.
-     * 
-     * @return all {@link StatisticType} for which outputs are available
-     */
-
-    public Set<StatisticType> getStatisticTypes()
-    {
-        Set<StatisticType> returnMe = new HashSet<>();
-
-        if ( this.hasStatistic( StatisticType.DOUBLE_SCORE ) )
-        {
-            returnMe.add( StatisticType.DOUBLE_SCORE );
-        }
-
-        if ( this.hasStatistic( StatisticType.DURATION_SCORE ) )
-        {
-            returnMe.add( StatisticType.DURATION_SCORE );
-        }
-
-        if ( this.hasStatistic( StatisticType.DIAGRAM ) )
-        {
-            returnMe.add( StatisticType.DIAGRAM );
-        }
-
-        if ( this.hasStatistic( StatisticType.BOXPLOT_PER_PAIR ) )
-        {
-            returnMe.add( StatisticType.BOXPLOT_PER_PAIR );
-        }
-
-        if ( this.hasStatistic( StatisticType.BOXPLOT_PER_POOL ) )
-        {
-            returnMe.add( StatisticType.BOXPLOT_PER_POOL );
-        }
-
-        if ( this.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
-        {
-            returnMe.add( StatisticType.DURATION_DIAGRAM );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
+        return switch ( outGroup )
+                {
+                    case DOUBLE_SCORE -> !this.doubleScores.isEmpty();
+                    case DURATION_SCORE -> !this.durationScores.isEmpty();
+                    case DIAGRAM -> !this.diagrams.isEmpty();
+                    case BOXPLOT_PER_PAIR -> !this.boxplotPerPair.isEmpty();
+                    case BOXPLOT_PER_POOL -> !this.boxplotPerPool.isEmpty();
+                    case DURATION_DIAGRAM -> !this.paired.isEmpty();
+                };
     }
 
     /**
@@ -260,7 +207,6 @@ public class StatisticsStore
 
     public static class Builder
     {
-
         /**
          * Thread safe map for {@link DoubleScoreStatisticOuter}.
          */

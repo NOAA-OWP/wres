@@ -29,7 +29,7 @@ import wres.statistics.generated.GeometryTuple;
 
 /**
  * Utilities for working with {@link Project}.
- * 
+ *
  * @author James Brown
  */
 
@@ -56,38 +56,11 @@ class ProjectUtilities
     private static final String WHILE_ATTEMPTING_TO_DETECT_THE = "While attempting to detect the ";
 
     /**
-     * Small value class to hold variable names. TODO: candidate for a "Record" in JDK 17+.
+     * Small value class to hold variable names.
      * @author James Brown
      */
 
-    static class VariableNames
-    {
-        private final String leftVariableName;
-        private final String rightVariableName;
-        private final String baselineVariableName;
-
-        String getLeftVariableName()
-        {
-            return this.leftVariableName;
-        }
-
-        String getRightVariableName()
-        {
-            return this.rightVariableName;
-        }
-
-        String getBaselineVariableName()
-        {
-            return this.baselineVariableName;
-        }
-
-        VariableNames( String leftVariableName, String rightVariableName, String baselineVariableName )
-        {
-            this.leftVariableName = leftVariableName;
-            this.rightVariableName = rightVariableName;
-            this.baselineVariableName = baselineVariableName;
-        }
-    }
+    record VariableNames( String leftVariableName, String rightVariableName, String baselineVariableName ) {}
 
     /**
      * Creates feature groups from the inputs.
@@ -176,7 +149,7 @@ class ProjectUtilities
 
     /**
      * Validates the variable names and emits a warning if assumptions have been made by the software.
-     * 
+     *
      * @param declaredLeftVariableName the declared left variable name
      * @param declaredRightVariableName the declared right variable name
      * @param declaredBaselineVariableName the declared baseline variable name
@@ -253,36 +226,36 @@ class ProjectUtilities
         {
             throw new ProjectConfigException( leftConfig,
                                               WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.LEFT
-                                                          + VARIABLE
-                                                          + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                                          + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                                          + NAME_FOR_THE
-                                                          + LeftOrRightOrBaseline.LEFT
-                                                          + DATA_SOURCES_TO_DISAMBIGUATE );
+                                              + VARIABLE
+                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                              + NAME_FOR_THE
+                                              + LeftOrRightOrBaseline.LEFT
+                                              + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
         if ( right.isEmpty() )
         {
             throw new ProjectConfigException( rightConfig,
                                               WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.RIGHT
-                                                           + VARIABLE
-                                                           + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                                           + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                                           + NAME_FOR_THE
-                                                           + LeftOrRightOrBaseline.RIGHT
-                                                           + DATA_SOURCES_TO_DISAMBIGUATE );
+                                              + VARIABLE
+                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                              + NAME_FOR_THE
+                                              + LeftOrRightOrBaseline.RIGHT
+                                              + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
         if ( Objects.nonNull( baselineConfig ) && baseline.isEmpty() )
         {
             throw new ProjectConfigException( baselineConfig,
                                               WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.BASELINE
-                                                              + VARIABLE
-                                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                                              + NAME_FOR_THE
-                                                              + LeftOrRightOrBaseline.BASELINE
-                                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+                                              + VARIABLE
+                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                              + NAME_FOR_THE
+                                              + LeftOrRightOrBaseline.BASELINE
+                                              + DATA_SOURCES_TO_DISAMBIGUATE );
 
         }
 
@@ -337,33 +310,19 @@ class ProjectUtilities
 
         LenienceType lenience = desiredTimeScale.getLenient();
 
-        switch ( lenience )
-        {
-            case ALL:
-                return true;
-            case NONE:
-                return false;
-            case TRUE:
-                return true;
-            case FALSE:
-                return false;
-            case LEFT:
-                return lrb == LeftOrRightOrBaseline.LEFT;
-            case RIGHT:
-                return lrb == LeftOrRightOrBaseline.RIGHT;
-            case BASELINE:
-                return lrb == LeftOrRightOrBaseline.BASELINE;
-            case LEFT_AND_RIGHT:
-                return lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.RIGHT;
-            case LEFT_AND_BASELINE:
-                return lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.BASELINE;
-            case RIGHT_AND_BASELINE:
-                return lrb == LeftOrRightOrBaseline.RIGHT || lrb == LeftOrRightOrBaseline.BASELINE;
-            default:
-                throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                    + lrb
-                                                    + "'." );
-        }
+        return switch ( lenience )
+                {
+                    case ALL, TRUE -> true;
+                    case NONE, FALSE -> false;
+                    case LEFT -> lrb == LeftOrRightOrBaseline.LEFT;
+                    case RIGHT -> lrb == LeftOrRightOrBaseline.RIGHT;
+                    case BASELINE -> lrb == LeftOrRightOrBaseline.BASELINE;
+                    case LEFT_AND_RIGHT -> lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.RIGHT;
+                    case LEFT_AND_BASELINE ->
+                            lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.BASELINE;
+                    case RIGHT_AND_BASELINE ->
+                            lrb == LeftOrRightOrBaseline.RIGHT || lrb == LeftOrRightOrBaseline.BASELINE;
+                };
     }
 
     /**
@@ -389,8 +348,7 @@ class ProjectUtilities
                       right,
                       baseline );
 
-        Set<String> intersection = new HashSet<>();
-        intersection.addAll( left );
+        Set<String> intersection = new HashSet<>( left );
         intersection.retainAll( right );
 
         if ( hasBaseline )
@@ -402,7 +360,6 @@ class ProjectUtilities
         {
             String leftVariableName = intersection.iterator()
                                                   .next();
-            String rightVariableName = leftVariableName;
             String baselineVariableName = null;
 
             if ( hasBaseline )
@@ -413,22 +370,22 @@ class ProjectUtilities
             LOGGER.debug( "After intersecting the variable names, discovered one variable name to evaluate, {}.",
                           leftVariableName );
 
-            return new VariableNames( leftVariableName, rightVariableName, baselineVariableName );
+            return new VariableNames( leftVariableName, leftVariableName, baselineVariableName );
         }
         else
         {
             throw new ProjectConfigException( inputs,
                                               "While attempting to auto-detect "
-                                                      + "the variable to evaluate, failed to identify a "
-                                                      + "single variable name that is common to all data "
-                                                      + "sources. Discovered LEFT variable names of "
-                                                      + left
-                                                      + ", RIGHT variable names of "
-                                                      + right
-                                                      + " and BASELINE variable names of "
-                                                      + baseline
-                                                      + ". Please declare an explicit variable name for "
-                                                      + "each required data source to disambiguate." );
+                                              + "the variable to evaluate, failed to identify a "
+                                              + "single variable name that is common to all data "
+                                              + "sources. Discovered LEFT variable names of "
+                                              + left
+                                              + ", RIGHT variable names of "
+                                              + right
+                                              + " and BASELINE variable names of "
+                                              + baseline
+                                              + ". Please declare an explicit variable name for "
+                                              + "each required data source to disambiguate." );
         }
     }
 
@@ -450,14 +407,14 @@ class ProjectUtilities
         {
             throw new ProjectConfigException( pairConfig,
                                               "Discovered "
-                                                          + declaredGroups.size()
-                                                          + " feature group in the project declaration, but could not "
-                                                          + "find any features with time-series data to correlate with "
-                                                          + "the declared features in these groups. If the feature "
-                                                          + "names are missing for some sides of data, it may help to "
-                                                          + "qualify them, else to use an explicit "
-                                                          + "\"featureDimension\" for all sides of data, in order to "
-                                                          + "aid interpolation of the feature names." );
+                                              + declaredGroups.size()
+                                              + " feature group in the project declaration, but could not "
+                                              + "find any features with time-series data to correlate with "
+                                              + "the declared features in these groups. If the feature "
+                                              + "names are missing for some sides of data, it may help to "
+                                              + "qualify them, else to use an explicit "
+                                              + "\"featureDimension\" for all sides of data, in order to "
+                                              + "aid interpolation of the feature names." );
         }
 
         return declaredGroups;
@@ -493,7 +450,7 @@ class ProjectUtilities
      */
 
     private static FeatureTuple
-            findFeature( NamedFeature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
+    findFeature( NamedFeature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
     {
         // Find the left-name matching features first.
         Set<FeatureTuple> leftMatched = featuresToSearch.stream()
@@ -558,16 +515,16 @@ class ProjectUtilities
 
         throw new ProjectConfigException( nextGroup,
                                           "Discovered a feature group called '" + nextGroup.getName()
-                                                     + "', which has an ambiguous feature tuple. Please additionally "
-                                                     + "qualify the feature with left name "
-                                                     + featureToFind.getLeft()
-                                                     + ", right name "
-                                                     + featureToFind.getRight()
-                                                     + " and baseline name "
-                                                     + featureToFind.getBaseline()
-                                                     + ", which matches the feature tuples "
-                                                     + baselineMatched
-                                                     + "." );
+                                          + "', which has an ambiguous feature tuple. Please additionally "
+                                          + "qualify the feature with left name "
+                                          + featureToFind.getLeft()
+                                          + ", right name "
+                                          + featureToFind.getRight()
+                                          + " and baseline name "
+                                          + featureToFind.getBaseline()
+                                          + ", which matches the feature tuples "
+                                          + baselineMatched
+                                          + "." );
     }
 
 }

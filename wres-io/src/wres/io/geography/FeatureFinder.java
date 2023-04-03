@@ -31,18 +31,21 @@ import wres.io.geography.wrds.WrdsLocation;
 import wres.io.ingesting.PreIngestException;
 
 /**
- * When sparse features are declared, this class helps build the features.
+ * <p>When sparse features are declared, this class helps build the features.
  *
- * In other words, if a declaration says "left feature is ABC" but leaves the
+ * <p>In other words, if a declaration says "left feature is ABC" but leaves the
  * right feature out, this class can help figure out the right feature name
  * and return objects that can be used for the remainder of the evaluation.
  *
- * When a group of features is declared with a feature service, this class makes
+ * <p>When a group of features is declared with a feature service, this class makes
  * the requests needed and adds the found features to the declaration used by
  * the rest of the WRES pipeline.
  * 
- * TODO: decouple this implementation from a particular feature service, 
+ * <p>TODO: decouple this implementation from a particular feature service,
  * currently {@link WrdsFeatureService}, by injecting a service interface.
+ *
+ * <p>TODO: there are some implausible long and complicated methods in this
+ * class. Fix them.
  */
 
 public class FeatureFinder
@@ -91,14 +94,9 @@ public class FeatureFinder
                                                                  .getBaseline() );
 
         PairConfig pairConfig = projectDeclaration.getPair();
-        boolean requiresFeatureRequests = false;
-
-        if ( Objects.nonNull( pairConfig.getFeatureService() )
-             && Objects.nonNull( pairConfig.getFeatureService()
-                                           .getGroup() ) )
-        {
-            requiresFeatureRequests = true;
-        }
+        boolean requiresFeatureRequests = Objects.nonNull( pairConfig.getFeatureService() )
+                                          && Objects.nonNull( pairConfig.getFeatureService()
+                                                                        .getGroup() );
 
         // In many cases, no need to declare features, such as evaluations where
         // all the feature names are identical in sources on both sides or in
@@ -218,7 +216,7 @@ public class FeatureFinder
                                                         .stream()
                                                         .flatMap( nextGroup -> nextGroup.getFeature().stream() )
                                                         .filter( filter )
-                                                        .collect( Collectors.toList() );
+                                                        .toList();
         sparseFeatures.addAll( sparseGroupedFeatures );
 
         return Collections.unmodifiableList( sparseFeatures );
@@ -271,7 +269,7 @@ public class FeatureFinder
                                                                                         rightDimension,
                                                                                         baselineDimension )
                                                                       .stream() )
-                                  .collect( Collectors.toList() );
+                                  .toList();
 
             if ( LOGGER.isDebugEnabled() )
             {

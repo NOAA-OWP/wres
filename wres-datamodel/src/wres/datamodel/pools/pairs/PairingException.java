@@ -1,5 +1,7 @@
 package wres.datamodel.pools.pairs;
 
+import java.io.Serial;
+
 import wres.datamodel.DataException;
 
 /**
@@ -10,21 +12,12 @@ import wres.datamodel.DataException;
 
 public class PairingException extends DataException
 {
-
     /**
      * Serial identifier.
      */
 
+    @Serial
     private static final long serialVersionUID = -2717305674399391470L;
-
-    /**
-     * Constructs an {@link PairingException} with no message.
-     */
-
-    public PairingException()
-    {
-        super();
-    }
 
     /**
      * Constructs a {@link PairingException} with the specified message.
@@ -36,17 +29,4 @@ public class PairingException extends DataException
     {
         super(message);
     }
-
-    /**
-     * Constructs a {@link PairingException} with the specified message.
-     * 
-     * @param message the message.
-     * @param cause the cause of the exception
-     */
-
-    public PairingException(final String message, final Throwable cause)
-    {
-        super(message, cause);
-    }
-
 }

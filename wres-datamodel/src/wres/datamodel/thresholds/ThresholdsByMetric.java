@@ -30,7 +30,7 @@ import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 @Immutable
 public class ThresholdsByMetric
 {
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsByMetric.class );
 
     /** Null metric error string. */

@@ -58,7 +58,6 @@ import wres.metrics.categorical.ContingencyTable;
 public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
         implements Function<S, List<U>>
 {
-
     /**
      * Logger.
      */
@@ -368,7 +367,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
         // Compute the results
         List<U> unpacked = new ArrayList<>();
 
-        this.logStartOfCalculation( LOGGER, metrics, collectableMetrics );
+        this.logStartOfCalculation( metrics, collectableMetrics );
 
         for ( CompletableFuture<U> nextResult : metricFutures )
         {
@@ -377,7 +376,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
         List<U> returnMe = Collections.unmodifiableList( unpacked );
 
-        this.logEndOfCalculation( LOGGER, metrics, collectableMetrics, returnMe );
+        this.logEndOfCalculation( metrics, collectableMetrics, returnMe );
 
         return returnMe;
     }
@@ -448,17 +447,15 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Logs the start of a calculation.
-     * 
-     * @param logger the logger to use
+     *
      * @param metrics the metrics
      * @param collectableMetrics the collectable metrics
      */
 
-    private void logStartOfCalculation( Logger logger,
-                                        Map<MetricConstants, Metric<S, U>> metrics,
+    private void logStartOfCalculation( Map<MetricConstants, Metric<S, U>> metrics,
                                         Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> collectableMetrics )
     {
-        if ( logger.isTraceEnabled() )
+        if ( LOGGER.isTraceEnabled() )
         {
             // Determine the metrics to compute
             Set<MetricConstants> started = new TreeSet<>();
@@ -467,7 +464,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
             started.addAll( metrics.keySet() );
             started.addAll( collect );
 
-            logger.trace( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
+            LOGGER.trace( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). The metrics include {}.",
                           metrics.size(),
                           collect.size(),
@@ -477,26 +474,24 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Logs the end of a calculation.
-     * 
-     * @param logger the logger to use
+     *
      * @param metrics the metrics
      * @param collectableMetrics the collectable metrics
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( Logger logger,
-                                      Map<MetricConstants, Metric<S, U>> metrics,
+    private void logEndOfCalculation( Map<MetricConstants, Metric<S, U>> metrics,
                                       Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> collectableMetrics,
                                       List<U> results )
     {
-        if ( logger.isTraceEnabled() )
+        if ( LOGGER.isTraceEnabled() )
         {
             // Determine the metrics computed
             Set<MetricConstants> collect = new TreeSet<>();
             collectableMetrics.values().forEach( next -> collect.addAll( next.keySet() ) );
             Set<MetricConstants> completed = Slicer.discover( results, U::getMetricName );
 
-            logger.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
+            LOGGER.trace( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
                           + "obtained for these metrics {}.",
                           metrics.size(),

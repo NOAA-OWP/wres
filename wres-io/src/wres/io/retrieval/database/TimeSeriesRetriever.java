@@ -261,11 +261,10 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * right-closed.
      *
      * @param script the script to augment
-     * @param tabsIn the number of tabs in for the outermost clause
      * @throws NullPointerException if the input is null
      */
 
-    void addTimeWindowClause( DataScripter script, int tabsIn )
+    void addTimeWindowClause( DataScripter script )
     {
         Objects.requireNonNull( script );
 
@@ -277,8 +276,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // Forecasts?
             if ( this.isForecast() )
             {
-                this.addLeadBoundsToScript( script, filter, tabsIn );
-                this.addReferenceTimeBoundsToScript( script, filter, tabsIn );
+                this.addLeadBoundsToScript( script, filter, 0 );
+                this.addReferenceTimeBoundsToScript( script, filter, 0 );
             }
 
             // Is the time column a reference time?
@@ -286,11 +285,11 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             // datasets, such as analyses, may have reference times and lead durations
             if ( this.timeColumnIsReferenceTime() )
             {
-                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, tabsIn );
+                this.addValidTimeBoundsToScriptUsingReferenceTimeAndLeadDuration( script, filter, 0 );
             }
             else
             {
-                this.addValidTimeBoundsToScript( script, filter, tabsIn );
+                this.addValidTimeBoundsToScript( script, filter, 0 );
             }
         }
     }

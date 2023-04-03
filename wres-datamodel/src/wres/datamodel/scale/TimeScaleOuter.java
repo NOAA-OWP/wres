@@ -13,6 +13,7 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import net.jcip.annotations.Immutable;
 import org.apache.commons.math3.util.ArithmeticUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,24 +27,20 @@ import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * <p>Metadata that describes the time scale associated with each value in a time-series. Wraps a canonical 
- * {@link TimeScale}.
+ * <p>Metadata that describes the timescale associated with each value in a time-series. Wraps a canonical
+ * {@link TimeScale}, adding behavior
  *
  * <p>As of 20 August 2018, the convention adopted by the WRES is that time series values "end at" the specified valid 
  * time. In other words, the datetime represents the right bookened of the time scale to which the value refers. The 
  * treatment of the left and right bookends as including or excluding the datetime at which they begin and end, 
  * respectively, is undefined. Finally, the meaning of an "instantaneous" time scale is given by 
- * {@link #INSTANTANEOUS_DURATION}.</p>
+ * {@link #INSTANTANEOUS_DURATION}.
  *
- * <p>Further information can be found in #44539.</p>
- *
- * <p>This class is immutable and thread-safe.</p>
- *
- * <p>The internal data is stored, and accessible, as a {@link TimeScale}.
+ * <p>Further information can be found in #44539.
  *
  * @author James Brown
  */
-
+@Immutable
 public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 {
     /** Upper bound (inclusive) for an instantaneous duration. */

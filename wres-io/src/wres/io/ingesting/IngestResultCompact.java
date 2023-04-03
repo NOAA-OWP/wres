@@ -19,6 +19,7 @@ import wres.io.reading.DataSource;
 class IngestResultCompact implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultCompact.class );
+    private static final String TOO_MANY_RE_USES_OF = "Too many re-uses of ";
     private final long surrogateKey;
     private final short leftCount;
     private final short rightCount;
@@ -47,67 +48,67 @@ class IngestResultCompact implements IngestResult
         this.surrogateKey = surrogateKey;
         LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
 
-        short leftCount = 0;
-        short rightCount = 0;
-        short baselineCount = 0;
+        short leftCountInner = 0;
+        short rightCountInner = 0;
+        short baselineCountInner = 0;
 
         if ( lrb == LeftOrRightOrBaseline.LEFT )
         {
-            leftCount++;
+            leftCountInner++;
         }
         else if ( lrb == LeftOrRightOrBaseline.RIGHT )
         {
-            rightCount++;
+            rightCountInner++;
         }
         else if ( lrb == LeftOrRightOrBaseline.BASELINE )
         {
-            baselineCount++;
+            baselineCountInner++;
         }
 
         for ( LeftOrRightOrBaseline lrbn : dataSource.getLinks() )
         {
             if ( lrbn.equals( LeftOrRightOrBaseline.LEFT ) )
             {
-                if ( leftCount == MAX_VALUE )
+                if ( leftCountInner == MAX_VALUE )
                 {
-                    throw new IllegalArgumentException( "Too many re-uses of "
+                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
                                                         + dataSource
                                                         + " in left, more than "
                                                         + MAX_VALUE );
                 }
 
-                leftCount++;
+                leftCountInner++;
             }
             else if ( lrbn.equals( LeftOrRightOrBaseline.RIGHT ) )
             {
-                if ( rightCount == MAX_VALUE )
+                if ( rightCountInner == MAX_VALUE )
                 {
-                    throw new IllegalArgumentException( "Too many re-uses of "
+                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
                                                         + dataSource
                                                         + " in right, more than "
                                                         + MAX_VALUE );
                 }
 
-                rightCount++;
+                rightCountInner++;
             }
             else if ( lrbn.equals( LeftOrRightOrBaseline.BASELINE ) )
             {
-                if ( baselineCount == MAX_VALUE )
+                if ( baselineCountInner == MAX_VALUE )
                 {
-                    throw new IllegalArgumentException( "Too many re-uses of "
+                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
                                                         + dataSource
                                                         + " in baseline, more than "
                                                         + MAX_VALUE );
                 }
 
-                baselineCount++;
+                baselineCountInner++;
             }
         }
 
         this.foundAlready = foundAlready;
-        this.leftCount = leftCount;
-        this.rightCount = rightCount;
-        this.baselineCount = baselineCount;
+        this.leftCount = leftCountInner;
+        this.rightCount = rightCountInner;
+        this.baselineCount = baselineCountInner;
     }
 
     /**

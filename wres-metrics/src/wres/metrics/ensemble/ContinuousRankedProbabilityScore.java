@@ -20,7 +20,6 @@ import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.DecomposableScore;
 import wres.metrics.FunctionFactory;
-import wres.metrics.MetricParameterException;
 import wres.metrics.ProbabilityScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -43,7 +42,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * ensemble members, and the per-forecast CRPS is computed for each group separately. The average CRPS is then computed
  * from the per-forecast CRPS values.
  * </p>
- * 
+ *
  * @author James Brown
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pair<Double, Ensemble>>>
@@ -86,26 +85,13 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
     public static ContinuousRankedProbabilityScore of()
     {
         return new ContinuousRankedProbabilityScore();
-    }
-
-    /**
-     * Returns an instance.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @return an instance
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    public static ContinuousRankedProbabilityScore of( MetricGroup decompositionId )
-    {
-        return new ContinuousRankedProbabilityScore( decompositionId );
     }
 
     @Override
@@ -121,12 +107,12 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                       this.getName(),
                       pool.getMetadata() );
 
-        //Slice the data into groups with an equal number of ensemble members
+        // Slice the data into groups with an equal number of ensemble members
         Map<Integer, List<Pair<Double, Ensemble>>> grouped =
                 Slicer.filterByRightSize( pool.get() );
 
-        //CRPS, currently without decomposition
-        //TODO: implement the decomposition
+        // CRPS, currently without decomposition
+        // TODO: implement the decomposition
         double[] crps = new double[1];
         for ( Map.Entry<Integer, List<Pair<Double, Ensemble>>> nextGroup : grouped.entrySet() )
         {
@@ -144,7 +130,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                           pool.getMetadata() );
         }
 
-        //Compute the average (implicitly weighted by the number of pairs in each group)
+        // Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / pool.get().size() );
 
         String units = pool.getMetadata()
@@ -152,8 +138,10 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                            .toString();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilityScore.MAIN.toBuilder()
-                                                                                                                                .setUnits( units ) )
+                                                                               .setMetric(
+                                                                                       ContinuousRankedProbabilityScore.MAIN.toBuilder()
+                                                                                                                            .setUnits(
+                                                                                                                                    units ) )
                                                                                .setValue( crps[0] )
                                                                                .build();
         DoubleScoreStatistic score =
@@ -199,35 +187,11 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     }
 
     /**
-     * Constructor.
-     * 
-     * @param decompositionId the decomposition identifier
-     * @throws MetricParameterException if one or more parameters is invalid 
-     */
-
-    ContinuousRankedProbabilityScore( MetricGroup decompositionId )
-    {
-        super( decompositionId );
-
-        // Validate
-        switch ( decompositionId )
-        {
-            case NONE:
-            case CR:
-                break;
-            default:
-                throw new MetricParameterException( "Unsupported decomposition identifier '"
-                                                    + getScoreOutputGroup()
-                                                    + "'." );
-        }
-    }
-
-    /**
-     * Returns the sum of the CRPS values for the individual pairs, without any decomposition. Uses the procedure
+     * <p>Returns the sum of the CRPS values for the individual pairs, without any decomposition. Uses the procedure
      * outlined in Hersbach, H. (2000). Requires an equal number of ensemble members in each pair.
-     * 
-     * TODO: implement the decomposition
-     * 
+     *
+     * <p>TODO: implement the decomposition
+     *
      * @param pairs the pairs
      * @param memberCount the number of ensemble members
      * @return the mean CRPS, with decomposition if required
@@ -269,7 +233,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     /**
      * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
      * forecasts. 
-     * 
+     *
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
@@ -300,7 +264,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     /**
      * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
      * forecasts. Appropriate for low outliers, where the observation falls below the lowest member.
-     * 
+     *
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
@@ -311,7 +275,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
             if ( pair[0] < pair[1] )
             {
                 final double nextBeta = pair[1] - pair[0];
-//                    inc.betaSum += nextBeta; //Alpha unchanged
+                //                    inc.betaSum += nextBeta; //Alpha unchanged
                 inc.totCRPS += ( nextBeta * inc.invProbSquared );
             }
         };
@@ -320,7 +284,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     /**
      * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
      * forecasts. Appropriate where the observation falls within the ensemble forecast distribution.
-     * 
+     *
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
@@ -354,7 +318,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
     /**
      * Returns a consumer that increments the parameters within an {@link Incrementer} for each input pair with sorted
      * forecasts. Appropriate for high outliers, where the observation falls above the highest member.
-     * 
+     *
      * @return a consumer that increments the parameters in the {@link Incrementer} for each input pair
      */
 
@@ -365,7 +329,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
             if ( pair[0] > pair[inc.member] )
             {
                 final double nextAlpha = pair[0] - pair[inc.member];
-//                inc.alphaSum += nextAlpha; //Beta unchanged
+                //                inc.alphaSum += nextAlpha; //Beta unchanged
                 inc.totCRPS += ( nextAlpha * inc.probSquared );
             }
         };
@@ -377,7 +341,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
 
     private static class Incrementer
     {
-
         /**
          * Member number.
          */
@@ -389,12 +352,6 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
          */
 
         private final int totalMembers;
-
-        /**
-         * Probability.
-         */
-
-        private final double prob;
 
         /**
          * Probability squared.
@@ -416,7 +373,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
 
         /**
          * Construct the incrementer.
-         * 
+         *
          * @param member the member position
          * @param totalMembers the total number of members
          */
@@ -425,9 +382,9 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
         {
             this.member = member;
             this.totalMembers = totalMembers;
-            this.prob = ( (double) member ) / totalMembers;
-            this.probSquared = Math.pow( this.prob, 2 );
-            this.invProbSquared = Math.pow( 1.0 - this.prob, 2 );
+            double prob = ( ( double ) member ) / totalMembers;
+            this.probSquared = Math.pow( prob, 2 );
+            this.invProbSquared = Math.pow( 1.0 - prob, 2 );
         }
 
     }

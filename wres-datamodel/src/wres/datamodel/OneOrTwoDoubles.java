@@ -87,8 +87,6 @@ public class OneOrTwoDoubles implements Comparable<OneOrTwoDoubles>
     @Override
     public int compareTo( OneOrTwoDoubles o )
     {
-        Objects.requireNonNull( o, "Specify non-null input for comparison." );
-
         // Same structure
         int returnMe = Boolean.compare( this.hasTwo(), o.hasTwo() );
         if ( returnMe != 0 )
@@ -114,12 +112,10 @@ public class OneOrTwoDoubles implements Comparable<OneOrTwoDoubles>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof OneOrTwoDoubles ) )
+        if ( ! ( o instanceof OneOrTwoDoubles in ) )
         {
             return false;
         }
-
-        OneOrTwoDoubles in = (OneOrTwoDoubles) o;
 
         return Objects.equals( first(), in.first() ) && Objects.equals( second(), in.second() );
     }

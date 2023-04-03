@@ -164,27 +164,18 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
      */
 
-    private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter input )
+    private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter threshold )
     {
-        switch ( input.getDataType() )
-        {
-            case LEFT:
-                return Slicer.left( input );
-            case LEFT_AND_RIGHT:
-            case LEFT_AND_ANY_RIGHT:
-            case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input );
-            case RIGHT:
-            case ANY_RIGHT:
-            case RIGHT_MEAN:
-                return Slicer.right( input );
-            default:
-                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
-        }
+        return switch ( threshold.getDataType() )
+                {
+                    case LEFT -> Slicer.left( threshold );
+                    case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( threshold );
+                    case RIGHT, ANY_RIGHT, RIGHT_MEAN -> Slicer.right( threshold );
+                };
     }
 
     /**
-     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
+     * Helper that returns a predicate for filtering time-series of single-valued pairs based on the
      * {@link ThresholdOuter#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
@@ -194,23 +185,15 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private static Predicate<TimeSeries<Pair<Double, Double>>>
-            getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter input )
+            getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter threshold )
     {
-        switch ( input.getDataType() )
-        {
-            case LEFT:
-                return TimeSeriesSlicer.anyOfLeftInTimeSeries( input::test );
-            case LEFT_AND_RIGHT:
-            case LEFT_AND_ANY_RIGHT:
-            case LEFT_AND_RIGHT_MEAN:
-                return TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( input::test );
-            case RIGHT:
-            case ANY_RIGHT:
-            case RIGHT_MEAN:
-                return TimeSeriesSlicer.anyOfRightInTimeSeries( input::test );
-            default:
-                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
-        }
+        return switch ( threshold.getDataType() )
+                {
+                    case LEFT -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
+                    case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN ->
+                            TimeSeriesSlicer.anyOfLeftAndAnyOfRightInTimeSeries( threshold::test );
+                    case RIGHT, ANY_RIGHT, RIGHT_MEAN -> TimeSeriesSlicer.anyOfRightInTimeSeries( threshold::test );
+                };
     }
 
     /**
@@ -338,22 +321,14 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         switch ( outGroup )
         {
-            case DOUBLE_SCORE:
-                futures.addDoubleScoreOutput( this.processSingleValuedPairs( pairs,
-                                                                             this.singleValuedScore ) );
-                break;
-
-            case DIAGRAM:
-                futures.addDiagramOutput( this.processSingleValuedPairs( pairs,
-                                                                         this.singleValuedDiagrams ) );
-                break;
-            case BOXPLOT_PER_POOL:
-                futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( pairs,
-                                                                                this.singleValuedBoxPlot ) );
-                break;
-            default:
-                throw new IllegalStateException( "The statistic group '" + outGroup
-                                                 + "' is not supported in this context." );
+            case DOUBLE_SCORE -> futures.addDoubleScoreOutput( this.processSingleValuedPairs( pairs,
+                                                                                              this.singleValuedScore ) );
+            case DIAGRAM -> futures.addDiagramOutput( this.processSingleValuedPairs( pairs,
+                                                                                     this.singleValuedDiagrams ) );
+            case BOXPLOT_PER_POOL -> futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( pairs,
+                                                                                                     this.singleValuedBoxPlot ) );
+            default -> throw new IllegalStateException( "The statistic group '" + outGroup
+                                                        + "' is not supported in this context." );
         }
     }
 
@@ -777,7 +752,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
     /**
      * Validates the state of the processor.
-     * @throw MetricConfigException if the state is invalid for any reason
+     * @throws MetricConfigException if the state is invalid for any reason
      */
 
     private void validate()

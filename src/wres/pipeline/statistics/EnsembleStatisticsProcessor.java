@@ -80,7 +80,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
     private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right )
                                                                              .average()
-                                                                             .getAsDouble();
+                                                                             .orElse( MissingValues.DOUBLE );
 
     /** Median function. */
     private static final Median MEDIAN = new Median();
@@ -220,7 +220,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     }
 
     /**
-     * <p>Removes a duplicate instance of the {@link MetricConstants.SAMPLE_SIZE}, which may appear in more than one
+     * <p>Removes a duplicate instance of the {@link MetricConstants#SAMPLE_SIZE}, which may appear in more than one
      * context.
      * 
      * <p>See #65138. 
@@ -229,7 +229,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * 
      * @param inGroup the {@link SampleDataGroup}, may be null
      * @param outGroup the {@link StatisticType}, may be null
-     * @return a set of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
+     * @return an array of {@link MetricConstants} for a specified {@link SampleDataGroup} and {@link StatisticType}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
@@ -238,12 +238,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         Set<MetricConstants> metrics = new HashSet<>( Arrays.asList( super.getMetrics( inGroup, outGroup ) ) );
 
-        if ( inGroup == SampleDataGroup.SINGLE_VALUED && metrics.contains( MetricConstants.SAMPLE_SIZE ) )
+        if ( inGroup == SampleDataGroup.SINGLE_VALUED )
         {
             metrics.remove( MetricConstants.SAMPLE_SIZE );
         }
 
-        return metrics.toArray( new MetricConstants[metrics.size()] );
+        return metrics.toArray( new MetricConstants[0] );
     }
 
     /**
@@ -290,7 +290,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * Helper that returns a predicate for filtering pairs based on the {@link ThresholdOuter#getDataType()}
      * of the input threshold.
      * 
-     * @param threshold the threshold
+     * @param input the threshold
      * @return the predicate for filtering pairs
      * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
      * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
@@ -298,33 +298,23 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
     static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( ThresholdOuter input )
     {
-        switch ( input.getDataType() )
-        {
-            case LEFT:
-                return Slicer.leftVector( input::test );
-            case RIGHT:
-                return Slicer.allOfRight( input::test );
-            case LEFT_AND_RIGHT:
-                return Slicer.leftAndAllOfRight( input::test );
-            case ANY_RIGHT:
-                return Slicer.anyOfRight( input::test );
-            case LEFT_AND_ANY_RIGHT:
-                return Slicer.leftAndAnyOfRight( input::test );
-            case RIGHT_MEAN:
-                return Slicer.right( input::test, AVERAGE );
-            case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test, AVERAGE );
-            default:
-                throw new IllegalStateException( "Unrecognized threshold type '" + input.getDataType() + "'." );
-        }
-
+        return switch ( input.getDataType() )
+                {
+                    case LEFT -> Slicer.leftVector( input );
+                    case RIGHT -> Slicer.allOfRight( input );
+                    case LEFT_AND_RIGHT -> Slicer.leftAndAllOfRight( input );
+                    case ANY_RIGHT -> Slicer.anyOfRight( input );
+                    case LEFT_AND_ANY_RIGHT -> Slicer.leftAndAnyOfRight( input );
+                    case RIGHT_MEAN -> Slicer.right( input, AVERAGE );
+                    case LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( input, AVERAGE );
+                };
     }
 
     /**
-     * Processes a set of metric futures that consume ensemble pairs, which are mapped from the input pairs,
+     * <p>Processes a set of metric futures that consume ensemble pairs, which are mapped from the input pairs,
      * ensemble pairs, using a configured mapping function.
      * 
-     * TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
+     * <p>TODO: collapse this with a generic call to futures.addOutput and take an input collection of metrics
      * 
      * @param input the input pairs
      * @param futures the metric futures
@@ -577,7 +567,6 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * @param pairs the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
-     * @param threshold the threshold
      */
 
     private void processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> pairs,
@@ -857,21 +846,13 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         Objects.requireNonNull( ensembleAverageType );
 
-        switch ( ensembleAverageType )
-        {
-            case MEAN:
-                return ensemble -> Arrays.stream( ensemble.getMembers() )
-                                         .average()
-                                         .getAsDouble();
-            case MEDIAN:
-                return ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
-            default:
-                throw new IllegalArgumentException( "Unrecognized type for averaging an ensemble '"
-                                                    + ensembleAverageType
-                                                    + "'. The recognized types are "
-                                                    + Set.of( EnsembleAverageType.MEAN, EnsembleAverageType.MEDIAN )
-                                                    + "." );
-        }
+        return switch ( ensembleAverageType )
+                {
+                    case MEAN -> ensemble -> Arrays.stream( ensemble.getMembers() )
+                                                   .average()
+                                                   .orElse( MissingValues.DOUBLE );
+                    case MEDIAN -> ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
+                };
     }
 
     /**
@@ -938,7 +919,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             if ( !filteredMetrics.isEmpty() )
             {
                 MetricConstants[] filteredArray =
-                        filteredMetrics.toArray( new MetricConstants[filteredMetrics.size()] );
+                        filteredMetrics.toArray( new MetricConstants[0] );
 
                 this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                                         filteredArray );

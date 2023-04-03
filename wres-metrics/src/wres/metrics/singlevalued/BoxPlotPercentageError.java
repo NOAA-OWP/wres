@@ -3,13 +3,11 @@ package wres.metrics.singlevalued;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.metrics.Diagram;
-import wres.metrics.FunctionFactory;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
@@ -47,7 +45,7 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
      * Function for rounding the errors.
      */
 
-    private static final DoubleUnaryOperator ROUNDER = v -> FunctionFactory.round().apply( v, 8 );
+    private static final DoubleUnaryOperator ROUNDER = Slicer.rounder( 8 );
 
     /**
      * The canonical representation of the metric.
@@ -107,7 +105,7 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
                                 .map( Slicer.getQuantileFunction( sortedPercentageErrors ) )
                                 .map( BoxPlotPercentageError.ROUNDER )
                                 .boxed()
-                                .collect( Collectors.toList() );
+                                .toList();
 
         BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
                                                      .setMetric( this.getMetric() )

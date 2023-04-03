@@ -1,14 +1,11 @@
 package wres.metrics;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
@@ -109,28 +106,6 @@ public class FunctionFactory
     }
 
     /**
-     * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
-     * 
-     * @return a function that rounds to a prescribed number of decimal places
-     */
-
-    public static BiFunction<Double, Integer, Double> round()
-    {
-        return ( input, digits ) -> {
-
-            if ( Double.isFinite( input ) )
-            {
-                BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
-                bd = bd.setScale( digits, RoundingMode.HALF_UP );
-
-                return bd.doubleValue();
-            }
-
-            return input;
-        };
-    }
-
-    /**
      * <p>
      * Return a function that computes the equality of two doubles to 8 d.p.
      * </p>
@@ -157,7 +132,7 @@ public class FunctionFactory
         return a -> Arrays.stream( a.getDoubles() )
                           .sorted() // Sort for accuracy/consistency: #72568
                           .average()
-                          .getAsDouble();
+                          .orElse( MissingValues.DOUBLE );
     }
 
     /**
@@ -187,7 +162,7 @@ public class FunctionFactory
                           .map( Math::abs )
                           .sorted() // Sort for accuracy/consistency: #72568
                           .average()
-                          .getAsDouble();
+                          .orElse( MissingValues.DOUBLE );
     }
 
     /**
@@ -202,7 +177,7 @@ public class FunctionFactory
     {
         return a -> Arrays.stream( a.getDoubles() )
                           .min()
-                          .getAsDouble();
+                          .orElse( MissingValues.DOUBLE );
     }
 
     /**
@@ -217,7 +192,7 @@ public class FunctionFactory
     {
         return a -> Arrays.stream( a.getDoubles() )
                           .max()
-                          .getAsDouble();
+                          .orElse( MissingValues.DOUBLE );
     }
 
     /**

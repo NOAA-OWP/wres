@@ -1,5 +1,6 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -19,6 +20,7 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 class RankHistogram extends AbstractIntervalXYDataset
 {
     /** Serial version identifier. */
+    @Serial
     private static final long serialVersionUID = 4164482599232111408L;
 
     /** Logger. */

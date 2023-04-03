@@ -1,8 +1,8 @@
 package wres.vis.data;
 
+import java.io.Serial;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.jfree.data.xy.AbstractIntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
@@ -20,6 +20,7 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 class Boxplot extends AbstractIntervalXYDataset
 {
     /** serial version identifier. */
+    @Serial
     private static final long serialVersionUID = 4254109136599641286L;
 
     /** Logger. */
@@ -123,7 +124,7 @@ class Boxplot extends AbstractIntervalXYDataset
         this.boxes = statistics.stream()
                                .map( next -> next.getData().getStatisticsList() )
                                .flatMap( List::stream )
-                               .collect( Collectors.toList() );
+                               .toList();
 
         this.itemCount = statistics.stream()
                                    .mapToInt( next -> next.getData().getStatisticsCount() )

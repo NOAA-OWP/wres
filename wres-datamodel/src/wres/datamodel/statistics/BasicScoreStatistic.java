@@ -63,12 +63,11 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof BasicScoreStatistic ) )
+        if ( ! ( o instanceof BasicScoreStatistic<?, ?> v ) )
         {
             return false;
         }
 
-        BasicScoreStatistic<?, ?> v = (BasicScoreStatistic<?, ?>) o;
         boolean start = this.getMetadata().equals( v.getMetadata() );
 
         if ( !start )
@@ -101,12 +100,6 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     public Set<MetricConstants> getComponents()
     {
         return Collections.unmodifiableSet( this.internal.keySet() );
-    }
-
-    @Override
-    public boolean hasComponent( MetricConstants component )
-    {
-        return this.internal.containsKey( component );
     }
 
     @Override
@@ -188,12 +181,10 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
                 return true;
             }
 
-            if ( ! ( o instanceof BasicScoreComponent ) )
+            if ( ! ( o instanceof BasicScoreComponent<?> c ) )
             {
                 return false;
             }
-
-            BasicScoreComponent<?> c = (BasicScoreComponent<?>) o;
 
             return Objects.equals( this.getMetricName(), c.getMetricName() )
                    && Objects.equals( this.getData(), c.getData() )

@@ -146,7 +146,7 @@ class SubscriberOfferer
 
     /**
      * Attempts to "book" the subscriber and thereby prevent further offers for work. The subscriber is booked if there
-     * is no evaluation underway. Always returns true if {@link EvaluationSubscriber.BOOKING_ENABLED} is false.
+     * is no evaluation underway. Always returns true if {@link SubscriberOfferer#BOOKING_ENABLED} is false.
      * 
      * @see #unbook(String)
      * @param evaluationId the evaluation identifier to use when booking the subscriber

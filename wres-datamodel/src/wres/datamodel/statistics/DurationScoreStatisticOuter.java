@@ -106,7 +106,7 @@ public class DurationScoreStatisticOuter
                 return false;
             }
 
-            if ( ! ( o instanceof DurationScoreComponentOuter ) )
+            if ( ! ( o instanceof DurationScoreComponentOuter inner ) )
             {
                 return false;
             }
@@ -115,8 +115,6 @@ public class DurationScoreStatisticOuter
             {
                 return true;
             }
-
-            DurationScoreComponentOuter inner = (DurationScoreComponentOuter) o;
 
             return Objects.equals( this.getMetricName(), inner.getMetricName() );
         }
@@ -156,7 +154,7 @@ public class DurationScoreStatisticOuter
             return false;
         }
 
-        if ( ! ( o instanceof DurationScoreStatisticOuter ) )
+        if ( ! ( o instanceof DurationScoreStatisticOuter inner ) )
         {
             return false;
         }
@@ -165,8 +163,6 @@ public class DurationScoreStatisticOuter
         {
             return true;
         }
-
-        DurationScoreStatisticOuter inner = (DurationScoreStatisticOuter) o;
 
         return Objects.equals( this.getMetricName(), inner.getMetricName() );
     }

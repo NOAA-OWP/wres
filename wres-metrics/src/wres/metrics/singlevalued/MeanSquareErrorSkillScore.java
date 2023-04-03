@@ -82,17 +82,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         
-        switch ( this.getScoreOutputGroup() )
-        {
-            case NONE:
-                return this.aggregate( this.getIntermediateStatistic( s ), s );
-            case CR:
-            case LBR:
-            case CR_AND_LBR:
-            default:
-                throw new MetricCalculationException( "Decomposition is not currently implemented for the '" + this
-                                                      + "'." );
-        }
+        return this.aggregate( this.getIntermediateStatistic( s ), s );
     }
 
     @Override
@@ -123,19 +113,19 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
                                                   + "'." );
         }
 
-        //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
-        //template as the componentID in the metadata
+        // TODO: implement any required decompositions, based on the instance parameters and return the decomposition
+        // template as the componentID in the metadata
         double result = Double.NaN;
 
         // Some data, proceed
         if ( !pool.get().isEmpty() )
         {
-            double sse = output.getComponent( MetricConstants.MAIN )
+            double sseInner = output.getComponent( MetricConstants.MAIN )
                                .getData()
                                .getValue();
 
             double numerator = FunctionFactory.finiteOrMissing()
-                                              .applyAsDouble( sse );
+                                              .applyAsDouble( sseInner );
 
             double denominator = 0.0;
             if ( pool.hasBaseline() )

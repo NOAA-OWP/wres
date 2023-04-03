@@ -1,6 +1,5 @@
 package wres.vis.writing;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
@@ -164,7 +162,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        catch ( ChartBuildingException | IOException e )
+        catch ( ChartBuildingException e )
         {
             throw new GraphicsWriteException( "Error while generating double score charts: ", e );
         }
@@ -175,7 +173,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
      * 
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
@@ -213,7 +211,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                                             .filter( next -> !next.getMetadata()
                                                                                                   .getThresholds()
                                                                                                   .hasTwo() )
-                                                                            .collect( Collectors.toList() );
+                                                                            .toList();
 
                     sliced.add( primaryOnly );
                 }
@@ -290,7 +288,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @param append a string to append to the path
      * @param outputsDescription a description of the outputs required
      * @return the paths written
-     * @throws IOException if the graphic could not be created or written
      * @throws ChartBuildingException if the chart could not be created
      */
 
@@ -300,7 +297,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                            MetricConstants metricName,
                                                            String append,
                                                            Outputs outputsDescription )
-            throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>();
 

@@ -75,21 +75,15 @@ public class MessagePublisher implements Closeable
         @Override
         public String toString()
         {
-            switch ( this )
-            {
-                case JMSX_GROUP_ID:
-                    return "JMSXGroupID";
-                case JMS_CORRELATION_ID:
-                    return "JMSCorrelationID";
-                case JMS_MESSAGE_ID:
-                    return "JMSMessageID";
-                case CONSUMER_ID:
-                    return "ConsumerID";
-                case EVALUATION_JOB_ID:
-                    return "EvaluationJobID";
-                default:
-                    return super.toString();
-            }
+            return switch ( this )
+                    {
+                        case JMSX_GROUP_ID -> "JMSXGroupID";
+                        case JMS_CORRELATION_ID -> "JMSCorrelationID";
+                        case JMS_MESSAGE_ID -> "JMSMessageID";
+                        case CONSUMER_ID -> "ConsumerID";
+                        case EVALUATION_JOB_ID -> "EvaluationJobID";
+                        default -> super.toString();
+                    };
         }
     }
 
@@ -465,14 +459,9 @@ public class MessagePublisher implements Closeable
         {
             switch ( next.getKey() )
             {
-                case JMS_MESSAGE_ID:
-                    message.setJMSMessageID( next.getValue() );
-                    break;
-                case JMS_CORRELATION_ID:
-                    message.setJMSCorrelationID( next.getValue() );
-                    break;
-                default:
-                    message.setStringProperty( next.getKey().toString(), next.getValue() );
+                case JMS_MESSAGE_ID -> message.setJMSMessageID( next.getValue() );
+                case JMS_CORRELATION_ID -> message.setJMSCorrelationID( next.getValue() );
+                default -> message.setStringProperty( next.getKey().toString(), next.getValue() );
             }
         }
 
@@ -583,8 +572,7 @@ public class MessagePublisher implements Closeable
 
         /**
          * Creates an instance with an evaluation identifier and a message client identifier.
-         * 
-         * @param evaluationId the evaluation identifier
+         *
          * @param clientId the client identifier
          */
 

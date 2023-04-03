@@ -53,10 +53,6 @@ import wres.statistics.generated.GeometryTuple;
 
 public class InMemoryProject implements Project
 {
-    private static final String EXPECTED_LEFT_OR_RIGHT_OR_BASELINE = "': expected LEFT or RIGHT or BASELINE.";
-
-    private static final String UNEXPECTED_CONTEXT = "Unexpected context '";
-
     private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryProject.class );
 
     /** Project declaration. */
@@ -334,8 +330,6 @@ public class InMemoryProject implements Project
                     case LEFT -> this.getLeft();
                     case RIGHT -> this.getRight();
                     case BASELINE -> this.getBaseline();
-                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                                   + EXPECTED_LEFT_OR_RIGHT_OR_BASELINE );
                 };
     }
 
@@ -356,9 +350,6 @@ public class InMemoryProject implements Project
                     case LEFT -> this.getLeftVariableName();
                     case RIGHT -> this.getRightVariableName();
                     case BASELINE -> this.getBaselineVariableName();
-                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                                   + "': expected LEFT or "
-                                                                   + "RIGHT or BASELINE." );
                 };
     }
 
@@ -379,9 +370,6 @@ public class InMemoryProject implements Project
                     case LEFT -> this.getDeclaredLeftVariableName();
                     case RIGHT -> this.getDeclaredRightVariableName();
                     case BASELINE -> this.getDeclaredBaselineVariableName();
-                    default -> throw new IllegalArgumentException( UNEXPECTED_CONTEXT + lrb
-                                                                   + "': expected LEFT or "
-                                                                   + "RIGHT or BASELINE." );
                 };
     }
 
@@ -433,9 +421,6 @@ public class InMemoryProject implements Project
                     case LEFT -> this.leftUsesGriddedData;
                     case RIGHT -> this.rightUsesGriddedData;
                     case BASELINE -> this.baselineUsesGriddedData;
-                    default -> throw new IllegalArgumentException( "Unrecognized enumeration value in this context, '"
-                                                                   + lrb
-                                                                   + "'." );
                 };
     }
 
@@ -677,9 +662,9 @@ public class InMemoryProject implements Project
                                                                          Collections.unmodifiableSet( rightNames ),
                                                                          Collections.unmodifiableSet( baselineNames ) );
 
-        this.leftVariable = variableNames.getLeftVariableName();
-        this.rightVariable = variableNames.getRightVariableName();
-        this.baselineVariable = variableNames.getBaselineVariableName();
+        this.leftVariable = variableNames.leftVariableName();
+        this.rightVariable = variableNames.rightVariableName();
+        this.baselineVariable = variableNames.baselineVariableName();
 
         ProjectUtilities.validateVariableNames( this.getDeclaredLeftVariableName(),
                                                 this.getDeclaredRightVariableName(),

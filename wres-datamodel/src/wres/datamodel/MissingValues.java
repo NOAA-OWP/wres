@@ -1,6 +1,5 @@
 package wres.datamodel;
 
-import java.time.Duration;
 import org.apache.commons.math3.util.Precision;
 
 /**
@@ -11,9 +10,6 @@ import org.apache.commons.math3.util.Precision;
 
 public class MissingValues
 {
-    /** Default output for {@link Duration} when missing. */
-    public static final Duration DURATION = null;
-
     /** Default output for {@link Double} when missing. */
     public static final double DOUBLE = Double.NaN;
 

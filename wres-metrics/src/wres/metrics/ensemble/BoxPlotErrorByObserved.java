@@ -2,7 +2,6 @@ package wres.metrics.ensemble;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -80,7 +79,7 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
                                 .mapToDouble( Double::doubleValue )
                                 .map( Slicer.getQuantileFunction( sortedErrors ) )
                                 .boxed()
-                                .collect( Collectors.toList() );
+                                .toList();
 
         return Box.newBuilder()
                   .setLinkedValue( pair.getLeft() )

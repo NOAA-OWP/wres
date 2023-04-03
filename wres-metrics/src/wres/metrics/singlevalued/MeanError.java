@@ -17,7 +17,6 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  */
 public class MeanError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 {
-
     /**
      * Canonical description of the metric.
      */

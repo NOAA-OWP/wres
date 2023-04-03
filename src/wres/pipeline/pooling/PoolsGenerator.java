@@ -922,7 +922,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
             List<TimeSeries<L>> climData = climatologySupplier.get()
                                                               .toList();
 
-            TimeSeriesMetadata existingMetadata = null;
+            TimeSeriesMetadata existingMetadata;
 
             List<TimeSeries<L>> returnMe = new ArrayList<>();
 
