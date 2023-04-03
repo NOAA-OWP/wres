@@ -1071,7 +1071,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testInterpolateAllValidMetricsForSingleValuedTimeSeries() throws IOException
+    void testInterpolateAllValidMetricsForSingleValuedTimeSeries()
     {
         Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
                                                  .type( DataType.SIMULATIONS )
@@ -1093,7 +1093,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testInterpolateAllValidMetricsForEnsembleTimeSeries() throws IOException
+    void testInterpolateAllValidMetricsForEnsembleTimeSeries()
     {
         Dataset predictedDataset = DatasetBuilder.builder( this.predictedDataset )
                                                  .type( DataType.ENSEMBLE_FORECASTS )
