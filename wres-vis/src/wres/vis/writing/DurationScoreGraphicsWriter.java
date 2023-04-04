@@ -13,7 +13,6 @@ import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
@@ -41,7 +40,6 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
     public static DurationScoreGraphicsWriter of( Outputs outputsDescription,
@@ -156,7 +154,6 @@ public class DurationScoreGraphicsWriter extends GraphicsWriter
      *
      * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 

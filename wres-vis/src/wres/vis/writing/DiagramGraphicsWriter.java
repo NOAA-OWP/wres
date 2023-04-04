@@ -17,7 +17,6 @@ import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
@@ -49,7 +48,6 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
     public static DiagramGraphicsWriter of( Outputs outputsDescription,
@@ -277,7 +275,6 @@ public class DiagramGraphicsWriter extends GraphicsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param outputsDescription a description of the required outputs
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 

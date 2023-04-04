@@ -1,6 +1,7 @@
 package wres.config.yaml;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.time.Instant;
@@ -26,13 +27,46 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
+import wres.config.generated.DataSourceBaselineConfig;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DateCondition;
+import wres.config.generated.DesiredTimeScaleConfig;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
+import wres.config.generated.DoubleBoundsType;
+import wres.config.generated.DurationBoundsType;
+import wres.config.generated.DurationUnit;
+import wres.config.generated.EnsembleCondition;
+import wres.config.generated.FeatureDimension;
+import wres.config.generated.FeatureGroup;
+import wres.config.generated.FeaturePool;
+import wres.config.generated.GraphicalType;
+import wres.config.generated.IntBoundsType;
+import wres.config.generated.LenienceType;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
+import wres.config.generated.NamedFeature;
+import wres.config.generated.OutputTypeSelection;
+import wres.config.generated.PairConfig;
+import wres.config.generated.Polygon;
+import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.TimeScaleFunction;
+import wres.config.generated.UnnamedFeature;
+import wres.config.generated.UrlParameter;
 import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisDurationsBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.DecimalFormatPretty;
+import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
@@ -40,12 +74,15 @@ import wres.config.yaml.components.FeatureServiceBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.FeatureServiceGroupBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.Season;
+import wres.config.yaml.components.SeasonBuilder;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.SourceBuilder;
@@ -55,13 +92,23 @@ import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.SpatialMaskBuilder;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.TimeScaleBuilder;
+import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
+import wres.config.yaml.components.UnitAliasBuilder;
 import wres.config.yaml.components.Values;
+import wres.config.yaml.components.ValuesBuilder;
 import wres.config.yaml.components.Variable;
+import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -79,6 +126,8 @@ import wres.statistics.generated.TimeScale;
 
 class DeclarationFactoryTest
 {
+    /** A predicted source for re-use. */
+    private Source predictedSource;
     /** An observed dataset for re-use. */
     private Dataset observedDataset;
     /** A predicted dataset for re-use. */
@@ -97,6 +146,20 @@ class DeclarationFactoryTest
                                                                                           .build(),
                                                        wres.config.yaml.components.ThresholdType.VALUE,
                                                        null );
+    /** Default list of observed sources in the old-style declaration. */
+    List<DataSourceConfig.Source> observedSources;
+    /** Default list of predicted sources in the old-style declaration. */
+    List<DataSourceConfig.Source> predictedSources;
+    /** Default list of baseline sources in the old-style declaration. */
+    List<DataSourceConfig.Source> baselineSources;
+    /** A default set of datasets in the old-style declaration. */
+    private ProjectConfig.Inputs inputs;
+    /** A default set of metrics in the old-style declaration. */
+    private List<MetricsConfig> metrics;
+    /** A default set of outputs in the old-style declaration. */
+    private ProjectConfig.Outputs outputs;
+    /** Default pairs in the old-style declaration. */
+    private PairConfig pairs;
 
     @BeforeEach
     void runBeforeEach()
@@ -107,9 +170,9 @@ class DeclarationFactoryTest
                                              .build();
 
         URI predictedUri = URI.create( "another_file.csv" );
-        Source predictedSource = SourceBuilder.builder()
-                                              .uri( predictedUri )
-                                              .build();
+        this.predictedSource = SourceBuilder.builder()
+                                            .uri( predictedUri )
+                                            .build();
 
         List<Source> observedSources = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
@@ -120,6 +183,70 @@ class DeclarationFactoryTest
         this.predictedDataset = DatasetBuilder.builder()
                                               .sources( predictedSources )
                                               .build();
+
+        DataSourceConfig.Source observedDataSource = new DataSourceConfig.Source( observedUri,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null );
+
+        DataSourceConfig.Source predictedDataSource = new DataSourceConfig.Source( predictedUri,
+                                                                                   null,
+                                                                                   null,
+                                                                                   null,
+                                                                                   null );
+
+        this.observedSources = List.of( observedDataSource );
+        this.predictedSources = List.of( predictedDataSource );
+        this.baselineSources = List.of( predictedDataSource );
+
+        this.inputs = new ProjectConfig.Inputs( new DataSourceConfig( null,
+                                                                      List.of( observedDataSource ),
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null ),
+                                                new DataSourceConfig( null,
+                                                                      List.of( predictedDataSource ),
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      null ),
+                                                null );
+
+        this.pairs = new PairConfig( null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null,
+                                     null );
+
+        MetricsConfig defaultMetrics = new MetricsConfig( null, null, null, null, null );
+        this.metrics = List.of( defaultMetrics );
+
+        this.outputs = new ProjectConfig.Outputs( null, null );
     }
 
     @Test
@@ -989,6 +1116,57 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithMultipleSetsOfValueThresholds() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                value_thresholds:
+                  - name: moon
+                    values: [0.1]
+                  - name: bat
+                    values: [0.2]
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdValue( DoubleValue.of( 0.1 ) )
+                                                              .setName( "moon" )
+                                                              .build();
+        Threshold vTwo =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdValue( DoubleValue.of( 0.2 ) )
+                                                              .setName( "bat" )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vTwo )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
+        valueThresholds.add( vOneWrapped );
+        valueThresholds.add( vTwoWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .valueThresholds( valueThresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithThresholdSetsAndMetricsAndAnchorAlias() throws IOException
     {
         String yaml = """
@@ -1048,6 +1226,75 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .thresholdSets( probabilityThresholds )
                                                                      .metrics( metrics )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithBaselineAndSeparateMetrics() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                baseline:
+                  sources:
+                    - another_file.csv
+                  separate_metrics: true
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.predictedDataset )
+                                                         .separateMetrics( true )
+                                                         .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .baseline( baseline )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithThresholdService() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                threshold_service:
+                  uri: https://foo
+                  provider: bar
+                  rating_provider: baz
+                  parameter: moon
+                  missing_value: -9999999
+                  unit: qux
+                  feature_name_from: observed
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        ThresholdService thresholdService = ThresholdServiceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .provider( "bar" )
+                                                                   .ratingProvider( "baz" )
+                                                                   .parameter( "moon" )
+                                                                   .missingValue( -9999999.0 )
+                                                                   .unit( "qux" )
+                                                                   .featureNameFrom( DatasetOrientation.LEFT )
+                                                                   .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .thresholdService( thresholdService )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -2476,6 +2723,545 @@ class DeclarationFactoryTest
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithBaselineAndSeparateMetrics() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - some_file.csv
+                predicted:
+                  sources:
+                    - another_file.csv
+                baseline:
+                  sources:
+                    - another_file.csv
+                  separate_metrics: true
+                  """;
+
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.predictedDataset )
+                                                         .separateMetrics( true )
+                                                         .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .baseline( baseline )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithThresholdService() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources:
+                    - some_file.csv
+                predicted:
+                  sources:
+                    - another_file.csv
+                threshold_service:
+                  uri: https://foo
+                  parameter: moon
+                  unit: qux
+                  provider: bar
+                  rating_provider: baz
+                  missing_value: -9999999.0
+                  feature_name_from: observed
+                  """;
+
+        ThresholdService thresholdService = ThresholdServiceBuilder.builder()
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .provider( "bar" )
+                                                                   .ratingProvider( "baz" )
+                                                                   .parameter( "moon" )
+                                                                   .missingValue( -9999999.0 )
+                                                                   .unit( "qux" )
+                                                                   .featureNameFrom( DatasetOrientation.LEFT )
+                                                                   .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .thresholdService( thresholdService )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithShortSources()
+    {
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithLongSources()
+    {
+        EnsembleCondition ensembleCondition = new EnsembleCondition( null, "baz", false );
+        DataSourceConfig left = new DataSourceConfig( null,
+                                                      this.observedSources,
+                                                      new DataSourceConfig.Variable( "foo", "fooest" ),
+                                                      null,
+                                                      null,
+                                                      List.of( ensembleCondition ),
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null );
+
+        DataSourceConfig right = new DataSourceConfig( null,
+                                                       this.predictedSources,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       new DataSourceConfig.TimeShift( 2, DurationUnit.HOURS ),
+                                                       new TimeScaleConfig( TimeScaleFunction.MEAN,
+                                                                            3,
+                                                                            DurationUnit.HOURS,
+                                                                            null ),
+                                                       List.of( new UrlParameter( "moon", "bat" ) ),
+                                                       null,
+                                                       FeatureDimension.NWS_LID );
+
+        DataSourceBaselineConfig baseline = new DataSourceBaselineConfig( null,
+                                                                          this.predictedSources,
+                                                                          null,
+                                                                          null,
+                                                                          2,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          false );
+
+        ProjectConfig.Inputs longSources = new ProjectConfig.Inputs( left, right, baseline );
+
+        ProjectConfig project = new ProjectConfig( longSources,
+                                                   this.pairs,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+
+        Dataset observedLong = DatasetBuilder.builder( this.observedDataset )
+                                             .variable( VariableBuilder.builder()
+                                                                       .label( "fooest" )
+                                                                       .name( "foo" )
+                                                                       .build() )
+                                             .ensembleFilter( EnsembleFilterBuilder.builder()
+                                                                                   .members( Set.of( "baz" ) )
+                                                                                   .exclude( false )
+                                                                                   .build() )
+                                             .build();
+
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( Duration.newBuilder()
+                                                           .setSeconds( 10_800 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+
+        Source predictedSourceLong = SourceBuilder.builder( this.predictedSource )
+                                                  .timeScale( TimeScaleBuilder.builder()
+                                                                              .timeScale( timeScale )
+                                                                              .build() )
+                                                  .parameters( Map.of( "moon", "bat" ) )
+                                                  .build();
+
+        Dataset predictedLong = DatasetBuilder.builder()
+                                              .sources( List.of( predictedSourceLong ) )
+                                              .timeShift( java.time.Duration.ofHours( 2 ) )
+                                              .featureAuthority( FeatureAuthority.NWS_LID )
+                                              .build();
+
+        BaselineDataset baselineLong = BaselineDatasetBuilder.builder()
+                                                             .dataset( this.predictedDataset )
+                                                             .persistence( 2 )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observedLong )
+                                                                     .right( predictedLong )
+                                                                     .baseline( baselineLong )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithPairOptions()
+    {
+        wres.config.generated.FeatureService featureService =
+                new wres.config.generated.FeatureService( URI.create( "https://moo" ),
+                                                          List.of( new FeatureGroup( "small", "ball", false ) ) );
+        List<wres.config.generated.UnitAlias> aliases =
+                List.of( new wres.config.generated.UnitAlias( "banana", "pear" ) );
+        List<NamedFeature> features = List.of( new NamedFeature( "red", "blue", "green" ) );
+        List<FeaturePool> featureGroup = List.of( new FeaturePool( features, "groupish" ) );
+        Polygon polygon = new Polygon( List.of( new Polygon.Point( 2.0F, 1.0F ),
+                                                new Polygon.Point( 4.0F, 3.0F ),
+                                                new Polygon.Point( 6.0F, 5.0F ) ),
+                                       BigInteger.valueOf( 4326 ) );
+        List<UnnamedFeature> grid = List.of( new UnnamedFeature( null, polygon, null ) );
+        DesiredTimeScaleConfig timeScale = new DesiredTimeScaleConfig( TimeScaleFunction.MEAN,
+                                                                       3,
+                                                                       DurationUnit.HOURS,
+                                                                       null,
+                                                                       7,
+                                                                       null,
+                                                                       null,
+                                                                       null,
+                                                                       null,
+                                                                       LenienceType.RIGHT );
+
+        PoolingWindowConfig leadTimesPoolingWindowConfig =
+                new PoolingWindowConfig( 24, null, DurationUnit.HOURS );
+        PoolingWindowConfig issuedDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
+        PoolingWindowConfig validDatesPoolingWindowConfig =
+                new PoolingWindowConfig( 17, 4, DurationUnit.HOURS );
+        PairConfig pairOptions = new PairConfig( "dogfish",
+                                                 aliases,
+                                                 featureService,
+                                                 features,
+                                                 featureGroup,
+                                                 grid,
+                                                 new IntBoundsType( 1, 3 ),
+                                                 new DurationBoundsType( 4, 5, DurationUnit.HOURS ),
+                                                 new DateCondition( "2096-12-01T00:00:00Z", "2097-12-01T00:00:00Z" ),
+                                                 new DateCondition( "2093-12-01T00:00:00Z", "2094-12-01T00:00:00Z" ),
+                                                 new PairConfig.Season( ( short ) 1,
+                                                                        ( short ) 1,
+                                                                        ( short ) 2,
+                                                                        ( short ) 2 ),
+                                                 new DoubleBoundsType( -1.0, 3.0, 7.0, 9.0 ),
+                                                 timeScale,
+                                                 issuedDatesPoolingWindowConfig,
+                                                 validDatesPoolingWindowConfig,
+                                                 leadTimesPoolingWindowConfig,
+                                                 new wres.config.generated.CrossPair( false ),
+                                                 null );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   pairOptions,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        // Create the expected outcome
+        FeatureService featureServiceEx
+                = FeatureServiceBuilder.builder()
+                                       .uri( URI.create( "https://moo" ) )
+                                       .featureGroups( Set.of( FeatureServiceGroupBuilder.builder()
+                                                                                         .group( "small" )
+                                                                                         .value( "ball" )
+                                                                                         .build() ) )
+                                       .build();
+        Set<UnitAlias> unitAliases = Set.of( UnitAliasBuilder.builder()
+                                                             .unit( "pear" )
+                                                             .alias( "banana" )
+                                                             .build() );
+        GeometryTuple geometry = GeometryTuple.newBuilder()
+                                              .setLeft( Geometry.newBuilder()
+                                                                .setName( "red" ) )
+                                              .setRight( Geometry.newBuilder()
+                                                                 .setName( "blue" ) )
+                                              .setBaseline( Geometry.newBuilder()
+                                                                    .setName( "green" ) )
+                                              .build();
+        Set<GeometryTuple> geometries = Set.of( geometry );
+        Features featuresEx = FeaturesBuilder.builder()
+                                             .geometries( geometries )
+                                             .build();
+        GeometryGroup geoGroup = GeometryGroup.newBuilder()
+                                              .addAllGeometryTuples( geometries )
+                                              .setRegionName( "groupish" )
+                                              .build();
+        Set<GeometryGroup> groups = Set.of( geoGroup );
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( groups )
+                                                          .build();
+        SpatialMask spatialMask = SpatialMaskBuilder.builder()
+                                                    .wkt( "POLYGON ((1 2, 3 4, 5 6, 1 2))" )
+                                                    .srid( 4326L )
+                                                    .build();
+        TimeScale innerTimeScale = TimeScale.newBuilder()
+                                            .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                            .setPeriod( Duration.newBuilder()
+                                                                .setSeconds( 10800 )
+                                                                .build() )
+                                            .build();
+        wres.config.yaml.components.TimeScale timeScaleEx = TimeScaleBuilder.builder()
+                                                                            .timeScale( innerTimeScale )
+                                                                            .build();
+        LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
+                                                                   .minimum( 1 )
+                                                                   .maximum( 3 )
+                                                                   .unit( ChronoUnit.HOURS )
+                                                                   .build();
+        TimeInterval validTimeInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2096-12-01T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2097-12-01T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval referenceTimeInterval = TimeIntervalBuilder.builder()
+                                                                .minimum( Instant.parse( "2093-12-01T00:00:00Z" ) )
+                                                                .maximum( Instant.parse( "2094-12-01T00:00:00Z" ) )
+                                                                .build();
+        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
+                                                                      .minimumExclusive( 4 )
+                                                                      .maximum( 5 )
+                                                                      .unit( ChronoUnit.HOURS )
+                                                                      .build();
+        TimePools validTimePools = TimePoolsBuilder.builder()
+                                                   .period( 17 )
+                                                   .frequency( 4 )
+                                                   .unit( ChronoUnit.HOURS )
+                                                   .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( 13 )
+                                                       .frequency( 7 )
+                                                       .unit( ChronoUnit.HOURS )
+                                                       .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( 24 )
+                                                  .unit( ChronoUnit.HOURS )
+                                                  .build();
+        Season season = SeasonBuilder.builder()
+                                     .minimum( MonthDay.of( 1, 1 ) )
+                                     .maximum( MonthDay.of( 2, 2 ) )
+                                     .build();
+
+        Values values = ValuesBuilder.builder()
+                                     .minimum( -1.0 )
+                                     .maximum( 3.0 )
+                                     .belowMinimum( 7.0 )
+                                     .aboveMaximum( 9.0 )
+                                     .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .featureService( featureServiceEx )
+                                                                     .features( featuresEx )
+                                                                     .featureGroups( featureGroups )
+                                                                     .unitAliases( unitAliases )
+                                                                     .spatialMask( spatialMask )
+                                                                     .timeScale( timeScaleEx )
+                                                                     .pairFrequency( java.time.Duration.ofHours( 7 ) )
+                                                                     .rescaleLenience( TimeScaleLenience.RIGHT )
+                                                                     .leadTimes( leadTimeInterval )
+                                                                     .validDates( validTimeInterval )
+                                                                     .analysisDurations( analysisDurations )
+                                                                     .referenceDates( referenceTimeInterval )
+                                                                     .validDatePools( validTimePools )
+                                                                     .referenceDatePools( referenceTimePools )
+                                                                     .leadTimePools( leadTimePools )
+                                                                     .season( season )
+                                                                     .values( values )
+                                                                     .crossPair( CrossPair.FUZZY )
+                                                                     .unit( "dogfish" )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithFormats()
+    {
+        String decimalFormat = "0.00";
+        GraphicalType graphicalType = new GraphicalType( null, 500, 300 );
+        DestinationConfig one = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                       graphicalType,
+                                                       null,
+                                                       DestinationType.PNG,
+                                                       null );
+        DestinationConfig two = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                       null,
+                                                       null,
+                                                       DestinationType.CSV,
+                                                       decimalFormat );
+        DestinationConfig three = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                         null,
+                                                         null,
+                                                         DestinationType.CSV2,
+                                                         decimalFormat );
+        DestinationConfig four = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                        null,
+                                                        null,
+                                                        DestinationType.NETCDF,
+                                                        null );
+        DestinationConfig five = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                        null,
+                                                        null,
+                                                        DestinationType.NETCDF_2,
+                                                        null );
+        DestinationConfig six = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                       null,
+                                                       null,
+                                                       DestinationType.PROTOBUF,
+                                                       null );
+        DestinationConfig seven = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                         null,
+                                                         null,
+                                                         DestinationType.PAIRS,
+                                                         decimalFormat );
+        DestinationConfig eight = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                         graphicalType,
+                                                         null,
+                                                         DestinationType.SVG,
+                                                         null );
+        List<DestinationConfig> destinations = List.of( one, two, three, four, five, six, seven, eight );
+        ProjectConfig.Outputs innerOutputs = new ProjectConfig.Outputs( destinations, DurationUnit.HOURS );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   this.metrics,
+                                                   innerOutputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
+                                                                   .setDecimalFormat( "#0.00" )
+                                                                   .build();
+        Outputs.GraphicFormat graphicFormat = Outputs.GraphicFormat.newBuilder()
+                                                                   .setWidth( 500 )
+                                                                   .setHeight( 300 )
+                                                                   .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
+                                                                   .build();
+        Formats formats = FormatsBuilder.builder()
+                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
+                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
+                                        .pairsFormat( Outputs.PairFormat.newBuilder()
+                                                                        .setOptions( numericFormat )
+                                                                        .build() )
+                                        .csv2Format( Outputs.Csv2Format.newBuilder()
+                                                                       .setOptions( numericFormat )
+                                                                       .build() )
+                                        .csvFormat( Outputs.CsvFormat.newBuilder()
+                                                                     .setOptions( numericFormat )
+                                                                     .build() )
+                                        .pngFormat( Outputs.PngFormat.newBuilder()
+                                                                     .setOptions( graphicFormat )
+                                                                     .build() )
+                                        .svgFormat( Outputs.SvgFormat.newBuilder()
+                                                                     .setOptions( graphicFormat )
+                                                                     .build() )
+                                        .protobufFormat( Outputs.ProtobufFormat.getDefaultInstance() )
+                                        .build();
+
+        DecimalFormat formatter = new DecimalFormatPretty( "#0.00" );
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .durationFormat( ChronoUnit.HOURS )
+                                                                     .formats( formats )
+                                                                     .decimalFormat( formatter )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithFormatsAndMetricsToExclude()
+    {
+        List<MetricConfigName> metricsToExcludeGraphics = List.of( MetricConfigName.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConfigName.PEARSON_CORRELATION_COEFFICIENT );
+        GraphicalType graphicalType = new GraphicalType( metricsToExcludeGraphics, 500, 300 );
+        DestinationConfig one = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                       graphicalType,
+                                                       null,
+                                                       DestinationType.PNG,
+                                                       null );
+        List<DestinationConfig> destinations = List.of( one );
+        ProjectConfig.Outputs innerOutputs = new ProjectConfig.Outputs( destinations, DurationUnit.HOURS );
+
+        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ),
+                                                  new MetricConfig( null,
+                                                                    MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ),
+                                                  new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        MetricsConfig someMetricsWrapped = new MetricsConfig( null, null, someMetrics, null, null );
+
+        List<MetricsConfig> innerMetrics = List.of( someMetricsWrapped );
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   innerMetrics,
+                                                   innerOutputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        Outputs.GraphicFormat graphicFormat = Outputs.GraphicFormat.newBuilder()
+                                                                   .setWidth( 500 )
+                                                                   .setHeight( 300 )
+                                                                   .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
+                                                                   .build();
+        Formats expectedFormats = FormatsBuilder.builder()
+                                                .pngFormat( Outputs.PngFormat.newBuilder()
+                                                                             .setOptions( graphicFormat )
+                                                                             .build() )
+                                                .build();
+
+        MetricParameters omitParameter = MetricParametersBuilder.builder()
+                                                                .png( false )
+                                                                .build();
+        Metric metricOne = MetricBuilder.builder()
+                                        .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                        .parameters( omitParameter )
+                                        .build();
+        Metric metricTwo = MetricBuilder.builder()
+                                        .name( MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                                        .parameters( omitParameter )
+                                        .build();
+        Metric metricThree = MetricBuilder.builder()
+                                          .name( MetricConstants.MEAN_ERROR )
+                                          .build();
+        Set<Metric> expectedMetrics = Set.of( metricOne, metricTwo, metricThree );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( expectedMetrics )
+                                                                     .formats( expectedFormats )
+                                                                     .durationFormat( ChronoUnit.HOURS )
+                                                                     .build();
 
         assertEquals( expected, actual );
     }

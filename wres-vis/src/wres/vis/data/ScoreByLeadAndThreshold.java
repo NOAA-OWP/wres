@@ -20,10 +20,10 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
- * Creates an XY dataset for plotting a verification score component by lead duration (X axis) and score value (Y axis) 
+ * <p>Creates an XY dataset for plotting a verification score component by lead duration (X axis) and score value (Y axis)
  * with up to N series per dataset, each representing a distinct threshold.
  * 
- * In order to support displays of intervals, such as confidence intervals, upgrade to 
+ * <p>In order to support displays of intervals, such as confidence intervals, upgrade to
  * {@link AbstractIntervalXYDataset}.
  * 
  * @author James Brown
@@ -31,7 +31,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 class ScoreByLeadAndThreshold extends AbstractXYDataset
 {
-
     /** Serial version identifier. */
     @Serial
     private static final long serialVersionUID = -6260904713900350909L;

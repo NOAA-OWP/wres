@@ -297,7 +297,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
             if ( netcdfWriters.isEmpty() )
             {
-                throw new IllegalArgumentException( "Expected at least one netCDF writer." );
+                throw new IllegalArgumentException( "Expected at least one NetCDF writer." );
             }
         }
 

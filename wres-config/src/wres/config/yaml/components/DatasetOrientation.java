@@ -8,9 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public enum DatasetOrientation
 {
-    /** A left or observed dataset. */
+    /** A left dataset. Whereas "observed" is the user-friendly name, "left" is the pair orientation in software. */
     @JsonProperty( "observed" ) LEFT( "observed" ),
-    /** A right or predicted dataset. */
+    /** A right dataset. Whereas "predicted" is the user-friendly name, "right" is the pair orientation in software. */
     @JsonProperty( "predicted" ) RIGHT( "predicted" ),
     /** A baseline dataset. */
     @JsonProperty( "baseline" ) BASELINE( "baseline" );

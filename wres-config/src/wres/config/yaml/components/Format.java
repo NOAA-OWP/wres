@@ -25,7 +25,9 @@ public enum Format
     /** NETCDF Version 2.0. */
     @JsonProperty( "netcdf2" ) NETCDF2,
     /** Protocol Buffers. */
-    @JsonProperty( "protobuf" ) PROTOBUF;
+    @JsonProperty( "protobuf" ) PROTOBUF,
+    /** A bag of graphics formats. This is not part of the declaration language, but is used internally. */
+    GRAPHIC;
 
     @Override
     public String toString()

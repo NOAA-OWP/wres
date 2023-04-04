@@ -152,10 +152,8 @@ public final class TimeSeriesCrossPairerTest
 
         Event<Pair<Integer, Integer>> third = Event.of( FIRST, Pair.of( 3, 3 ) );
 
-        TimeSeriesMetadata thirdMetadata = firstMetadata;
-
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
-                new Builder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( third )
                                                                .build();
 
@@ -424,10 +422,8 @@ public final class TimeSeriesCrossPairerTest
 
         Event<Pair<Integer, Integer>> third = Event.of( FIRST, Pair.of( 3, 3 ) );
 
-        TimeSeriesMetadata thirdMetadata = firstMetadata;
-
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
-                new Builder<Pair<Integer, Integer>>().setMetadata( thirdMetadata )
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
                                                                .addEvent( third )
                                                                .build();
 
@@ -523,9 +519,11 @@ public final class TimeSeriesCrossPairerTest
                                                                .addEvent( second )
                                                                .build();
 
+        List<TimeSeries<Pair<Integer,Integer>>> firstThrow = List.of( firstSeries );
+        List<TimeSeries<Pair<Integer,Integer>>> secondThrow = List.of( secondSeries );
         PairingException exception = assertThrows( PairingException.class,
-                                                  () -> this.instance.apply( List.of( firstSeries ),
-                                                                             List.of( secondSeries ) ) );
+                                                  () -> this.instance.apply( firstThrow,
+                                                                             secondThrow ) );
 
         // TODO, make an exception specific to the situation, assert that
         // the exception type is thrown, skip attempting to match message text.

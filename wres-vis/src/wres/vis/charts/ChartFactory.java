@@ -55,7 +55,6 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -94,6 +93,24 @@ import wres.vis.data.ChartDataFactory;
  */
 public class ChartFactory
 {
+    /**
+     * The chart type.
+     */
+
+    public enum ChartType
+    {
+        /** Not one of the other types, unique. */
+        UNIQUE,
+        /** Arranged by lead duration and then threshold. */
+        LEAD_THRESHOLD,
+        /** Arranged by threshold and then lead duration. */
+        THRESHOLD_LEAD,
+        /** Pooling windows. */
+        POOLING_WINDOW, // Internal type only, not declared
+        /** Timing error summary statistics. */
+        TIMING_ERROR_SUMMARY_STATISTICS // Internal type only, not declared
+    }
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartFactory.class );
 
@@ -121,24 +138,6 @@ public class ChartFactory
 
     /** Chart font for the main chart title. */
     private final Font chartFontTitle;
-
-    /**
-     * Expands upon the {@link OutputTypeSelection} for non-declared output types.
-     */
-
-    public enum ChartType
-    {
-        /** Not one of the other types, unique. */
-        UNIQUE,
-        /** Arranged by lead duration and then threshold. */
-        LEAD_THRESHOLD,
-        /** Arranged by threshold and then lead duration. */
-        THRESHOLD_LEAD,
-        /** Pooling windows. */
-        POOLING_WINDOW, // Internal type only, not declared
-        /** Timing error summary statistics. */
-        TIMING_ERROR_SUMMARY_STATISTICS; // Internal type only, not declared
-    }
 
     /**
      * @return an instance
@@ -327,7 +326,7 @@ public class ChartFactory
                                                StatisticType.DIAGRAM,
                                                ensembleAverageType );
 
-            XYDataset dataset = null;
+            XYDataset dataset;
 
             // One lead duration and up to many thresholds
             if ( chartType == ChartType.LEAD_THRESHOLD || chartType == ChartType.POOLING_WINDOW )
@@ -346,7 +345,7 @@ public class ChartFactory
                                                                                  durationUnits );
             }
 
-            JFreeChart chart = null;
+            JFreeChart chart;
 
             // The reliability diagram is a special case, combining two plots
             if ( metricName == MetricConstants.RELIABILITY_DIAGRAM )
@@ -763,11 +762,11 @@ public class ChartFactory
                             + metricUnits
                             + "]";
 
-        JFreeChart chart = null;
+        JFreeChart chart;
 
 
         // Build the source
-        XYDataset source = null;
+        XYDataset source;
 
         // Lead duration and then threshold
         if ( chartType == ChartType.LEAD_THRESHOLD )
@@ -804,7 +803,7 @@ public class ChartFactory
         else if ( chartType == ChartType.POOLING_WINDOW )
         {
             source = ChartDataFactory.ofDoubleScoreByPoolingWindow( statistics, durationUnits, graphicShape );
-            String domainTitle = "";
+            String domainTitle;
             if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
             {
                 domainTitle = "TIME AT CENTER OF ISSUED TIME WINDOW [UTC]";
@@ -873,8 +872,8 @@ public class ChartFactory
         Objects.requireNonNull( durationUnits );
         Objects.requireNonNull( statistics );
 
-        XYDataset sampleSize = null;
-        XYDataset reliability = null;
+        XYDataset sampleSize;
+        XYDataset reliability;
 
         if ( leadThreshold )
         {
@@ -1252,7 +1251,7 @@ public class ChartFactory
     {
         Objects.requireNonNull( chart );
 
-        int itemCount = 0;
+        int itemCount;
 
         if ( isCategoryPlot )
         {
@@ -1733,7 +1732,7 @@ public class ChartFactory
                 start = " and ";
             }
 
-            String middle = "";
+            String middle;
 
             Number earliestNumber = DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
                                                                           durationUnits );
@@ -1885,7 +1884,7 @@ public class ChartFactory
     /**
      * @param metricName the metric name.
      * @param graphicShape The graphic shape.
-     * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
+     * @return the chart type for the plot.
      * @throws NullPointerException if any input is null
      */
     private static ChartType getChartType( MetricConstants metricName,

@@ -122,7 +122,9 @@ class DeclarationValidatorTest
                                         .sources( List.of( source, anotherSource ) )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        BaselineDataset baseline = new BaselineDataset( dataset, null );
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
@@ -182,7 +184,9 @@ class DeclarationValidatorTest
                                               .sources( List.of( yetAnotherSource ) )
                                               .type( DataType.SINGLE_VALUED_FORECASTS )
                                               .build();
-        BaselineDataset baseline = new BaselineDataset( baselineInner, null );
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineInner )
+                                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( left )
                                                                         .right( right )
@@ -270,7 +274,9 @@ class DeclarationValidatorTest
                                               .sources( List.of( yetAnotherSource ) )
                                               .type( DataType.SIMULATIONS )
                                               .build();
-        BaselineDataset baseline = new BaselineDataset( baselineInner, null );
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineInner )
+                                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( left )
                                                                         .right( right )
@@ -648,7 +654,7 @@ class DeclarationValidatorTest
     @Test
     void testInvalidSpatialMaskResultsInError()
     {
-        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask", 0 );
+        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask",0L );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -672,7 +678,9 @@ class DeclarationValidatorTest
         Dataset dataset = DatasetBuilder.builder()
                                         .sources( List.of( source ) )
                                         .build();
-        BaselineDataset baseline = new BaselineDataset( dataset, null );
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
@@ -702,12 +710,12 @@ class DeclarationValidatorTest
         Source source = SourceBuilder.builder()
                                      .sourceInterface( SourceInterface.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS )
                                      .build();
-
         Dataset dataset = DatasetBuilder.builder()
                                         .sources( List.of( source ) )
                                         .build();
-
-        BaselineDataset baseline = new BaselineDataset( dataset, null );
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )

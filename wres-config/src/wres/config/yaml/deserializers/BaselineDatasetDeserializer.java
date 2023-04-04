@@ -16,7 +16,7 @@ import wres.config.yaml.components.Dataset;
  * 
  * @author James Brown
  */
-public class BaselineDeserializer extends JsonDeserializer<BaselineDataset>
+public class BaselineDatasetDeserializer extends JsonDeserializer<BaselineDataset>
 {
     @Override
     public BaselineDataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
@@ -28,16 +28,25 @@ public class BaselineDeserializer extends JsonDeserializer<BaselineDataset>
         Dataset basicDataset = deserializer.deserialize( jp, context );
 
         Integer order = null;
+        Boolean separateMetrics = null;
 
         // The node just read
         JsonNode lastNode = deserializer.getLastNode();
-        if ( Objects.nonNull( lastNode )
-             && lastNode.has( "persistence" ) )
+        if ( Objects.nonNull( lastNode ) )
         {
-            order = lastNode.get( "persistence" )
-                            .asInt();
+            if( lastNode.has( "persistence" ) )
+            {
+                order = lastNode.get( "persistence" )
+                                .asInt();
+            }
+
+            if( lastNode.has( "separate_metrics" ) )
+            {
+                separateMetrics = lastNode.get( "separate_metrics" )
+                                          .asBoolean();
+            }
         }
 
-        return new BaselineDataset( basicDataset, order );
+        return new BaselineDataset( basicDataset, order, separateMetrics );
     }
 }

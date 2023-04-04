@@ -188,8 +188,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                           JsonNode thresholdNode,
                                           ThresholdType type ) throws IOException
     {
-        wres.statistics.generated.Threshold.Builder builder
-                = wres.statistics.generated.Threshold.newBuilder();
+        wres.statistics.generated.Threshold.Builder builder =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
 
         if ( thresholdNode.has( "name" ) )
         {

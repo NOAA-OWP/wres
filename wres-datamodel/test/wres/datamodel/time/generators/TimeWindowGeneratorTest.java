@@ -1,14 +1,14 @@
 package wres.datamodel.time.generators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import wres.config.generated.DateCondition;
 import wres.config.generated.DurationUnit;
@@ -27,7 +27,6 @@ import wres.statistics.generated.TimeWindow;
 
 class TimeWindowGeneratorTest
 {
-
     private static final String INSTANT_ONE = "2017-08-08T00:00:00Z";
     private static final String INSTANT_TWO = "2017-08-08T23:00:00Z";
     private static final String INSTANT_THREE = "2017-08-09T17:00:00Z";
