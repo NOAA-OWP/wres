@@ -26,7 +26,10 @@ import wres.vis.writing.DurationDiagramGraphicsWriter;
 import wres.vis.writing.DurationScoreGraphicsWriter;
 
 /**
- * Implementation of a {@link ConsumerFactory} for graphics writing.
+ * Implementation of a {@link ConsumerFactory} for graphics writing. A single consumer is registered for all graphics
+ * formats because each consumer can handle multiple formats and it is efficient to create each graphics abstraction
+ * (i.e., {@link org.jfree.chart.JFreeChart}) only once in memory for all formats.
+ *
  * @author James Brown
  */
 

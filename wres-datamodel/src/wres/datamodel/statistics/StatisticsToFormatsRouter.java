@@ -34,10 +34,12 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 
 /**
- * <p>A consumer that routes a collection of statistics to inner consumers than deliver specific output formats. There 
- * is up to one inner consumer for each type of statistic and format. The format is represented as a 
- * {@link DestinationType}, which includes aggregate destinations, such as {@link DestinationType#GRAPHIC} and 
- * {@link DestinationType#NUMERIC}, as well as specific format destinations, such as {@link DestinationType#PNG}.
+ * <p>A consumer that routes a collection of statistics to inner consumers that deliver specific output formats. By
+ * default, all statistics are sent to all consumers registered with this implementation. However, the consumer
+ * additionally tracks the format associated with each inner consumer. Thus, when an evaluation requires only a subset
+ * of statistics to be written to any given format, those instructions can be registered here and used to filter the
+ * format writers used to consume a particular statistic. There is up to one format writer (inner consumer) for each
+ * format and type of statistic.
  * 
  * @author James Brown
  */
@@ -125,7 +127,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      */
     public static class Builder
     {
-
         /**
          * The evaluation description.
          */
@@ -964,19 +965,27 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         Map<DestinationType, Set<MetricConstants>> returnMe = new EnumMap<>( DestinationType.class );
 
         // PNG
-        if ( outputs.hasPng() && outputs.getPng().hasOptions() )
+        if ( outputs.hasPng() && outputs.getPng()
+                                        .hasOptions() )
         {
-            List<MetricName> ignore = outputs.getPng().getOptions().getIgnoreList();
+            List<MetricName> ignore = outputs.getPng()
+                                             .getOptions()
+                                             .getIgnoreList();
             Set<MetricConstants> mapped = ignore.stream()
                                                 .map( next -> MetricConstants.valueOf( next.name() ) )
                                                 .collect( Collectors.toUnmodifiableSet() );
+
+            // Synonyms
             returnMe.put( DestinationType.PNG, mapped );
             returnMe.put( DestinationType.GRAPHIC, mapped );
         }
         // SVG
-        if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
+        if ( outputs.hasSvg() && outputs.getSvg()
+                                        .hasOptions() )
         {
-            List<MetricName> ignore = outputs.getSvg().getOptions().getIgnoreList();
+            List<MetricName> ignore = outputs.getSvg()
+                                             .getOptions()
+                                             .getIgnoreList();
             Set<MetricConstants> mapped = ignore.stream()
                                                 .map( next -> MetricConstants.valueOf( next.name() ) )
                                                 .collect( Collectors.toUnmodifiableSet() );

@@ -19,6 +19,7 @@ public class BaselineDatasetSerializer extends JsonSerializer<BaselineDataset>
     public void serialize( BaselineDataset dataset, JsonGenerator writer, SerializerProvider serializers )
             throws IOException
     {
+        // Write the basic dataset
         writer.writeObject( dataset.dataset() );
 
         // Persistence defined?
@@ -26,5 +27,16 @@ public class BaselineDatasetSerializer extends JsonSerializer<BaselineDataset>
         {
             writer.writeNumberField( "persistence", dataset.persistence() );
         }
+
+        // Separate metrics defined with a non-default setting?
+        if ( Objects.nonNull( dataset.separateMetrics() ) && Boolean.TRUE.equals( dataset.separateMetrics() ) )
+        {
+            writer.writeBooleanField( "separate_metrics", true );
+        }
+    }
+
+    @Override
+    public boolean isUnwrappingSerializer() {
+        return true;
     }
 }

@@ -32,6 +32,7 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
+import org.apache.commons.lang3.tuple.Pair;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -261,6 +262,10 @@ public class DeclarationFactory
 
     /** String representation of the default missing value in the old declaration language. */
     private static final String DEFAULT_MISSING_STRING_OLD = "-999.0";
+
+    /** Default metric parameters. */
+    private static final MetricParameters DEFAULT_METRIC_PARAMETERS = MetricParametersBuilder.builder()
+                                                                                             .build();
 
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema. Optionally performs
@@ -991,7 +996,7 @@ public class DeclarationFactory
      */
     private static void interpolateGraphicsFormatsFromMetricParameters( EvaluationDeclarationBuilder builder )
     {
-        FormatsBuilder formatsBuilder = null;
+        FormatsBuilder formatsBuilder;
 
         if ( Objects.isNull( builder.formats() ) )
         {
@@ -1612,9 +1617,12 @@ public class DeclarationFactory
 
     private static void migrateFeatures( List<NamedFeature> features, EvaluationDeclarationBuilder builder )
     {
-        Set<GeometryTuple> geometries = DeclarationFactory.migrateFeatures( features );
-        Features wrappedFeatures = new Features( geometries );
-        builder.features( wrappedFeatures );
+        if ( !features.isEmpty() )
+        {
+            Set<GeometryTuple> geometries = DeclarationFactory.migrateFeatures( features );
+            Features wrappedFeatures = new Features( geometries );
+            builder.features( wrappedFeatures );
+        }
     }
 
     /**
@@ -1625,12 +1633,15 @@ public class DeclarationFactory
 
     private static void migrateFeatureGroups( List<FeaturePool> featureGroups, EvaluationDeclarationBuilder builder )
     {
-        Set<GeometryGroup> geometryGroups =
-                featureGroups.stream()
-                             .map( DeclarationFactory::migrateFeatureGroup )
-                             .collect( Collectors.toSet() );
-        FeatureGroups wrappedGroups = new FeatureGroups( geometryGroups );
-        builder.featureGroups( wrappedGroups );
+        if ( !featureGroups.isEmpty() )
+        {
+            Set<GeometryGroup> geometryGroups =
+                    featureGroups.stream()
+                                 .map( DeclarationFactory::migrateFeatureGroup )
+                                 .collect( Collectors.toSet() );
+            FeatureGroups wrappedGroups = new FeatureGroups( geometryGroups );
+            builder.featureGroups( wrappedGroups );
+        }
     }
 
     /**
@@ -1666,10 +1677,16 @@ public class DeclarationFactory
     {
         if ( Objects.nonNull( mask ) && !mask.isEmpty() )
         {
-            String wkt = DeclarationFactory.migrateSpatialMask( mask );
-            SpatialMask spatialMask = SpatialMaskBuilder.builder()
-                                                        .wkt( wkt )
-                                                        .build();
+            Pair<String, Long> maskComponents = DeclarationFactory.migrateSpatialMask( mask );
+            SpatialMask spatialMask = null;
+            if ( Objects.nonNull( maskComponents ) && Objects.nonNull( maskComponents.getLeft() ) )
+            {
+                spatialMask = SpatialMaskBuilder.builder()
+                                                .wkt( maskComponents.getLeft() )
+                                                .srid( maskComponents.getRight() )
+                                                .build();
+            }
+
             builder.spatialMask( spatialMask );
         }
     }
@@ -1968,15 +1985,31 @@ public class DeclarationFactory
             formatsBuilder = FormatsBuilder.builder( builder.formats() );
         }
 
+        // Set the decimal formatter for the individual output options
+        Outputs.NumericFormat numericFormat = Formats.DEFAULT_NUMERIC_FORMAT;
+        if ( Objects.nonNull( builder.decimalFormat() ) )
+        {
+            numericFormat = numericFormat.toBuilder()
+                                         .setDecimalFormat( builder.decimalFormat()
+                                                                   .toPattern() )
+                                         .build();
+        }
+
         switch ( output.getType() )
         {
-            case CSV, NUMERIC -> formatsBuilder.csvFormat( Formats.CSV_FORMAT );
-            case CSV2 -> formatsBuilder.csv2Format( Formats.CSV2_FORMAT );
+            case CSV, NUMERIC -> formatsBuilder.csvFormat( Formats.CSV_FORMAT.toBuilder()
+                                                                             .setOptions( numericFormat )
+                                                                             .build() );
+            case CSV2 -> formatsBuilder.csv2Format( Formats.CSV2_FORMAT.toBuilder()
+                                                                       .setOptions( numericFormat )
+                                                                       .build() );
             case PNG, GRAPHIC -> DeclarationFactory.migratePngFormat( output, formatsBuilder, builder );
             case SVG -> DeclarationFactory.migrateSvgFormat( output, formatsBuilder, builder );
             case NETCDF -> formatsBuilder.netcdfFormat( Formats.NETCDF_FORMAT );
             case NETCDF_2 -> formatsBuilder.netcdf2Format( Formats.NETCDF2_FORMAT );
-            case PAIRS -> formatsBuilder.pairsFormat( Formats.PAIR_FORMAT );
+            case PAIRS -> formatsBuilder.pairsFormat( Formats.PAIR_FORMAT.toBuilder()
+                                                                         .setOptions( numericFormat )
+                                                                         .build() );
             case PROTOBUF -> formatsBuilder.protobufFormat( Formats.PROTOBUF_FORMAT );
         }
 
@@ -2117,6 +2150,7 @@ public class DeclarationFactory
         Set<MetricConstants> suppressMigrated = suppress.stream()
                                                         .map( MetricConstantsFactory::from )
                                                         .collect( Collectors.toSet() );
+
         for ( Metric metric : metrics )
         {
             if ( suppressMigrated.contains( metric.name() ) )
@@ -2124,7 +2158,13 @@ public class DeclarationFactory
                 LOGGER.debug( "Migrating a metric parameter for {} to suppress format {}.", metric.name(), format );
 
                 MetricBuilder migratedMetricBuilder = MetricBuilder.builder( metric );
-                MetricParametersBuilder parBuilder = MetricParametersBuilder.builder( metric.parameters() );
+                MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
+
+                // Set the existing parameters if available
+                if( Objects.nonNull( metric.parameters() ) )
+                {
+                    parBuilder =  MetricParametersBuilder.builder( metric.parameters() );
+                }
 
                 // Suppress the format
                 if ( format == Format.PNG )
@@ -2373,12 +2413,13 @@ public class DeclarationFactory
     /**
      * Migrates a collection of features to a WKT geometry string.
      * @param features the features
-     * @return the WKT string
+     * @return the WKT string and associated SRID, if any
      */
 
-    private static String migrateSpatialMask( List<UnnamedFeature> features )
+    private static Pair<String, Long> migrateSpatialMask( List<UnnamedFeature> features )
     {
         org.locationtech.jts.geom.Geometry unionGeometry = null;
+        Long srid = null;
 
         if ( features.isEmpty() )
         {
@@ -2390,7 +2431,12 @@ public class DeclarationFactory
         {
             for ( UnnamedFeature next : features )
             {
-                org.locationtech.jts.geom.Geometry nextGeometry = DeclarationFactory.migrateGeometry( next );
+                Pair<org.locationtech.jts.geom.Geometry, Long> nextG = DeclarationFactory.migrateGeometry( next );
+                org.locationtech.jts.geom.Geometry nextGeometry = nextG.getLeft();
+                if ( Objects.nonNull( nextG.getRight() ) )
+                {
+                    srid = ( long ) nextGeometry.getSRID();
+                }
                 if ( Objects.isNull( unionGeometry ) && Objects.nonNull( nextGeometry ) )
                 {
                     unionGeometry = nextGeometry;
@@ -2403,7 +2449,9 @@ public class DeclarationFactory
         }
         else
         {
-            unionGeometry = DeclarationFactory.migrateGeometry( features.get( 0 ) );
+            Pair<org.locationtech.jts.geom.Geometry, Long> g = DeclarationFactory.migrateGeometry( features.get( 0 ) );
+            unionGeometry = g.getLeft();
+            srid = g.getRight();
         }
 
         String wkt = null;
@@ -2413,18 +2461,21 @@ public class DeclarationFactory
             wkt = writer.write( unionGeometry );
         }
 
-        return wkt;
+        LOGGER.debug( "Migrated a spatial mask with a WKT string of {} and a SRID of {}.", wkt, srid );
+
+        return Pair.of( wkt, srid );
     }
 
     /**
      * Migrates a {@link UnnamedFeature} to a {@link org.locationtech.jts.geom.Geometry}.
      * @param feature the feature
-     * @return the migrated geometry
+     * @return the migrated geometry and SRID, if any
      */
 
-    private static org.locationtech.jts.geom.Geometry migrateGeometry( UnnamedFeature feature )
+    private static Pair<org.locationtech.jts.geom.Geometry, Long> migrateGeometry( UnnamedFeature feature )
     {
         org.locationtech.jts.geom.Geometry geometry = null;
+        Long srid = null;
 
         if ( Objects.nonNull( feature.getCircle() ) )
         {
@@ -2433,12 +2484,16 @@ public class DeclarationFactory
             shapeMaker.setWidth( circle.getDiameter() );
             shapeMaker.setBase( new CoordinateXY( circle.getLongitude(), circle.getLatitude() ) );
             geometry = shapeMaker.createCircle();
+            srid = circle.getSrid()
+                         .longValue();
         }
         else if ( Objects.nonNull( feature.getPolygon() ) && feature.getPolygon()
                                                                     .getPoint()
                                                                     .size() > 1 )
         {
             Polygon polygon = feature.getPolygon();
+            srid = polygon.getSrid()
+                          .longValue();
             List<Polygon.Point> points = polygon.getPoint();
             GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -2464,7 +2519,7 @@ public class DeclarationFactory
                          + "circle." );
         }
 
-        return geometry;
+        return Pair.of( geometry, srid );
     }
 
     /**
@@ -2789,6 +2844,7 @@ public class DeclarationFactory
      * @param projectConfig the overall declaration used as context when migrating metrics
      * @param builder the builder, which may be updated with threshold service declaration
      * @param addThresholdsPerMetric whether the thresholds declared in each metric group should be added to each metric
+     * @return the migrated metric parameters
      */
     private static MetricParameters migrateMetricParameters( MetricsConfig metric,
                                                              ProjectConfig projectConfig,
@@ -2854,7 +2910,17 @@ public class DeclarationFactory
             parametersBuilder.summaryStatistics( componentNameSet );
         }
 
-        return parametersBuilder.build();
+        MetricParameters migratedParameters = parametersBuilder.build();
+
+        // Do not set default parameters
+        if ( DEFAULT_METRIC_PARAMETERS.equals( migratedParameters ) )
+        {
+            LOGGER.debug( "While migrating parameters, discovered default parameters values, which will not be "
+                          + "migrated explicitly. The original declaration to migrate was: {}.", metric );
+            migratedParameters = null;
+        }
+
+        return migratedParameters;
     }
 
     /**
@@ -3039,7 +3105,7 @@ public class DeclarationFactory
                     migrated.addAll( innerMigrated );
                 }
 
-                if( LOGGER.isTraceEnabled() )
+                if ( LOGGER.isTraceEnabled() )
                 {
                     LOGGER.trace( "Read these thresholds from {}: {}.", thresholdSource.getValue(), migrated );
                 }

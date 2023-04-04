@@ -18,7 +18,6 @@ import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
@@ -55,7 +54,6 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * @param outputDirectory the directory into which to write
      * @return a writer
      * @throws NullPointerException if either input is null
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
     public static BoxplotGraphicsWriter of( Outputs outputsDescription,
@@ -444,7 +442,6 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
      * 
      * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if either input is null
      */
 

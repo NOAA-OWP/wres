@@ -29,6 +29,11 @@ public record Formats( Outputs.PngFormat pngFormat,
     /** A value that is re-used several times. */
     private static final String ZERO = "#0.000000";
 
+    /** Defaukt numeric format options. */
+    public static Outputs.NumericFormat DEFAULT_NUMERIC_FORMAT = Outputs.NumericFormat.newBuilder()
+                                                                                      .setDecimalFormat( ZERO )
+                                                                                      .build();
+
     /** Default PNG format. **/
     public static final Outputs.PngFormat PNG_FORMAT =
             Outputs.PngFormat.newBuilder()
@@ -48,15 +53,13 @@ public record Formats( Outputs.PngFormat pngFormat,
     /** Default CSV format. **/
     public static final Outputs.CsvFormat CSV_FORMAT =
             Outputs.CsvFormat.newBuilder()
-                             .setOptions( Outputs.NumericFormat.newBuilder()
-                                                               .setDecimalFormat( ZERO ) )
+                             .setOptions( DEFAULT_NUMERIC_FORMAT )
                              .build();
 
     /** Default CSV2 format. **/
     public static final Outputs.Csv2Format CSV2_FORMAT =
             Outputs.Csv2Format.newBuilder()
-                              .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( ZERO ) )
+                              .setOptions( DEFAULT_NUMERIC_FORMAT )
                               .build();
 
     /** Default NetCDF format. **/
@@ -74,8 +77,7 @@ public record Formats( Outputs.PngFormat pngFormat,
     /** Default pair format. **/
     public static final Outputs.PairFormat PAIR_FORMAT =
             Outputs.PairFormat.newBuilder()
-                              .setOptions( Outputs.NumericFormat.newBuilder()
-                                                                .setDecimalFormat( ZERO ) )
+                              .setOptions( DEFAULT_NUMERIC_FORMAT )
                               .build();
 
     @Override

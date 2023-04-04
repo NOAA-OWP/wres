@@ -215,6 +215,8 @@ definitions:
       persistence:
         type: integer
         minimum: 0
+      separate_metrics:
+        type: boolean
       type:
         "$ref": "#/definitions/DataTypeEnum"
     required:

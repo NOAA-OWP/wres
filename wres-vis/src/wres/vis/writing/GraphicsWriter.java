@@ -34,13 +34,13 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
-import wres.vis.charts.ChartFactory;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
+import wres.vis.charts.ChartFactory;
 
 /**
  * An abstract base class for writing graphics formats.
- * 
+ *
  * @author James Brown
  */
 
@@ -83,7 +83,7 @@ abstract class GraphicsWriter
 
     /**
      * Returns the outputs description
-     * 
+     *
      * @return the outputs description
      */
 
@@ -103,7 +103,7 @@ abstract class GraphicsWriter
 
     /**
      * Returns a {@link ChartFactory} for creating charts from statistics.
-     * 
+     *
      * @return a chart factory.
      */
 
@@ -193,7 +193,7 @@ abstract class GraphicsWriter
 
     /**
      * Generates a path qualifier for diagram and box-plot-style graphics based on the statistics provided.
-     * 
+     *
      * @param appendObject the object to use in the path qualifier
      * @param statistics the statistics
      * @param helper the graphics helper
@@ -286,7 +286,7 @@ abstract class GraphicsWriter
 
     /**
      * Attempts to delete a set of paths on encountering an error.
-     * 
+     *
      * @param pathsToDelete the paths to delete
      */
 
@@ -345,7 +345,7 @@ abstract class GraphicsWriter
     /**
      * Helper that groups destinations by their common graphics parameters. Each inner outputs requires one set of 
      * graphics, written for each format present.
-     * 
+     *
      * @param outputs the outputs
      * @return the groups of outputs by common graphics parameters
      */
@@ -390,7 +390,7 @@ abstract class GraphicsWriter
      * Uncovers the graphic parameters from a description of the outputs. Assumes that all graphics contain the same
      * graphics declarations. Use {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)} to obtain output 
      * groups.
-     * 
+     *
      * @author James Brown
      */
 
@@ -459,7 +459,7 @@ abstract class GraphicsWriter
          * is present. Formats should be written for common graphics parameters. See 
          * {@link GraphicsWriter#getOutputsGroupedByGraphicsParameters(Outputs)}. Returns a default of 
          * {@link ChronoUnit#HOURS} if no units are present.
-         * 
+         *
          * @param outputs the outputs
          * @return the duration units for graphics writing
          * @throws NullPointerException if the input is null
@@ -477,11 +477,12 @@ abstract class GraphicsWriter
                  && outputs.getPng().hasOptions()
                  && !outputs.getPng().getOptions().getLeadUnit().equals( outputs.getSvg().getOptions().getLeadUnit() ) )
             {
-                throw new IllegalArgumentException( "Discovered more than one lead duration unit in the outputs message ("
-                                                    + outputs.getPng().getOptions().getLeadUnit()
-                                                    + ", "
-                                                    + outputs.getSvg().getOptions().getLeadUnit()
-                                                    + ")." );
+                throw new IllegalArgumentException(
+                        "Discovered more than one lead duration unit in the outputs message ("
+                        + outputs.getPng().getOptions().getLeadUnit()
+                        + ", "
+                        + outputs.getSvg().getOptions().getLeadUnit()
+                        + ")." );
             }
 
             if ( outputs.hasPng() )
@@ -517,7 +518,7 @@ abstract class GraphicsWriter
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param outputs a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null
@@ -531,7 +532,7 @@ abstract class GraphicsWriter
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
         LOGGER.debug( "Creating a graphics format writer." );
-        
+
         // Validate
         if ( !Files.isDirectory( outputDirectory ) || !Files.exists( outputDirectory )
              || !Files.isWritable( outputDirectory ) )
@@ -542,7 +543,7 @@ abstract class GraphicsWriter
 
         this.outputs = outputs;
         this.outputDirectory = outputDirectory;
-        
+
         LOGGER.debug( "Created a graphics format writer." );
     }
 }

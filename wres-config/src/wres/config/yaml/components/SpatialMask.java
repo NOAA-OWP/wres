@@ -15,4 +15,4 @@ import wres.config.yaml.deserializers.SpatialMaskDeserializer;
 @JsonDeserialize( using = SpatialMaskDeserializer.class )
 public record SpatialMask( @JsonProperty( "name" ) String name,
                            @JsonProperty( "wkt" ) String wkt,
-                           @JsonProperty( "srid" ) Integer srid ) {}
+                           @JsonProperty( "srid" ) Long srid ) {}
