@@ -1042,9 +1042,9 @@ public class SystemSettings extends XMLReader
         }
         else
         {
-            LOGGER.warn( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
-                         directory,
-                         this.dataDirectory );
+            LOGGER.debug( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
+                          directory,
+                          this.dataDirectory );
         }
 
         String maxPoolThreads = System.getProperty( "wres.maximumPoolThreads" );

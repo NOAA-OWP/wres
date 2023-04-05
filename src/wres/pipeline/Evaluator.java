@@ -2,7 +2,6 @@ package wres.pipeline;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.ExecutionResult;
 import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
+import wres.config.xml.ProjectConfigs;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.config.Validation;
 import wres.io.database.Database;
@@ -104,50 +104,22 @@ public class Evaluator
             return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
         }
 
+        // Attempt to read the declaration
         String evaluationConfigArgument = args.get( 0 )
                                               .trim();
 
         ProjectConfigPlus projectConfigPlus;
-
-        // Declaration passed directly as an argument
-        // TODO: use Tika to detect
-        if ( evaluationConfigArgument.startsWith( "<?xml " ) )
+        try
         {
-            // Successfully detected a project passed directly as an argument.
-            try
-            {
-                projectConfigPlus = ProjectConfigPlus.from( evaluationConfigArgument,
-                                                            "command line argument" );
-            }
-            catch ( IOException ioe )
-            {
-                String message = "Failed to unmarshal project configuration from command line argument.";
-                LOGGER.error( message, ioe );
-                UserInputException e = new UserInputException( message, ioe );
-                failure.setFailed();
-                failure.commit();
-                return ExecutionResult.failure( e );
-            }
+            projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
         }
-        else
+        catch ( IOException e )
         {
-            Path configPath = Paths.get( evaluationConfigArgument );
-
-            try
-            {
-                // Unmarshal the configuration
-                projectConfigPlus = ProjectConfigPlus.from( configPath );
-            }
-            catch ( IOException ioe )
-            {
-                String message = "Failed to unmarshal project configuration from "
-                                 + configPath;
-                LOGGER.error( message, ioe );
-                UserInputException e = new UserInputException( message, ioe );
-                failure.setFailed();
-                failure.commit();
-                return ExecutionResult.failure( e );
-            }
+            LOGGER.error( "Failed to unmarshal project configuration from command line argument.", e );
+            UserInputException translated = new UserInputException( "The project declaration was invalid.", e );
+            failure.setFailed();
+            failure.commit();
+            return ExecutionResult.failure( translated );
         }
 
         // Display the raw configuration in logs. Issue #56900.

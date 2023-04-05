@@ -67,12 +67,10 @@ public class Main
         String function = "-h";
         String[] finalArgs = args;
 
-        // No arguments or request for help, print help without any other start-up details
-        if ( args.length == 0 || ( args.length == 1 && ( "-h".equals( args[0] ) || "--help".equals( args[0] ) )
-                                   || "help".equals( args[0] ) ) )
+        // Is this a simple operation that does not require any stand-up or tear-down, such as "help"?
+        if ( Main.isSimpleOperation( args ) )
         {
-            Functions.call( function, null );
-
+            Main.runSimpleOperation( args );
             return;
         }
         // One argument that looks like a project declaration, so default to execute
@@ -88,8 +86,7 @@ public class Main
             function = args[0];
 
             // Remove the function from the args
-            finalArgs = new String[args.length - 1];
-            System.arraycopy( args, 1, finalArgs, 0, finalArgs.length );
+            finalArgs = Main.removeOperationFromArgs( args );
         }
         // Unknown function, log and print help information without any other start-up details
         else
@@ -139,6 +136,66 @@ public class Main
     }
 
     /**
+     * Determines whether the function requires any stand-up or tear-down or involves a simple execution. For example,
+     * a request for "help" is a simple execution.
+     *
+     * @return whether the command line arguments contain a simple operation
+     */
+
+    private static boolean isSimpleOperation( String[] args )
+    {
+        return args.length == 0 || Functions.isSimpleOperation( args[0] );
+    }
+
+    /**
+     * Runs a simple operation that does not require any stand-up or tear-down.
+     * @param args the arguments
+     */
+    private static void runSimpleOperation( String[] args )
+    {
+        // Default to help
+        String function = "-h";
+        if ( args.length > 0 )
+        {
+            function = args[0];
+        }
+
+        LOGGER.debug( "Discovered a simple operation to execute: {}.", function );
+
+        // Remove the operation from the arguments and list them
+        String[] finalArgs = Main.removeOperationFromArgs( args );
+        List<String> argList = Arrays.stream( finalArgs )
+                                     .toList();
+
+        Functions.SharedResources sharedResources =
+                new Functions.SharedResources( SYSTEM_SETTINGS,
+                                               null,
+                                               null,
+                                               function,
+                                               argList );
+
+        Functions.call( function, sharedResources );
+    }
+
+    /**
+     * Removes the operation in the first index of the argument array from the array
+     * @param args the arguments whose first argument should be removed
+     * @return the adjusted arguments
+     */
+    private static String[] removeOperationFromArgs( String[] args )
+    {
+        if ( args.length < 2 )
+        {
+            return args;
+        }
+
+        // Remove the function from the args
+        String[] finalArgs = new String[args.length - 1];
+        System.arraycopy( args, 1, finalArgs, 0, finalArgs.length );
+        return finalArgs;
+    }
+
+    /**
      * Completes an execution.
      * @param function the function to execute
      * @param args the arguments to execute
@@ -170,6 +227,7 @@ public class Main
                     new Functions.SharedResources( SYSTEM_SETTINGS,
                                                    database,
                                                    brokerConnectionFactory,
+                                                   function,
                                                    argList );
 
             result = Functions.call( function, sharedResources );
