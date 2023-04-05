@@ -2,6 +2,8 @@ package wres.config.xml;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -41,6 +43,53 @@ public class ProjectConfigs
 
     private static final String SPECIFY_NON_NULL_PROJECT_DECLARATION = "Specify non-null project declaration.";
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigs.class );
+
+    /**
+     * Attempts to read a project declaration string or a path to a declaration string.
+     * @param declarationStringOrPath the declaration string or path
+     * @return the project declaration
+     * @throws IOException if the declaration could not be read for any reason
+     */
+
+    public static ProjectConfigPlus readDeclaration( String declarationStringOrPath ) throws IOException
+    {
+        ProjectConfigPlus projectConfigPlus;
+
+        // Declaration passed directly as an argument
+        // TODO: use Tika to detect
+        if ( declarationStringOrPath.startsWith( "<?xml " ) )
+        {
+            // Successfully detected a project passed directly as an argument.
+            try
+            {
+                projectConfigPlus = ProjectConfigPlus.from( declarationStringOrPath,
+                                                            "command line argument" );
+            }
+            catch ( IOException ioe )
+            {
+                String message = "Failed to unmarshal project configuration from command line argument.";
+                throw new IOException( message, ioe );
+            }
+        }
+        else
+        {
+            Path configPath = Paths.get( declarationStringOrPath );
+
+            try
+            {
+                // Unmarshal the configuration
+                projectConfigPlus = ProjectConfigPlus.from( configPath );
+            }
+            catch ( IOException ioe )
+            {
+                String message = "Failed to unmarshal project configuration from "
+                                 + configPath;
+                throw new IOException( message, ioe );
+            }
+        }
+
+        return projectConfigPlus;
+    }
 
     /**
      * Returns <code>true</code> if the input configuration has legacy CSV declared, otherwise <code>false</code>.

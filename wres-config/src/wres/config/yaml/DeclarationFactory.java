@@ -336,10 +336,10 @@ public class DeclarationFactory
             // Map the schema to a json node
             JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
 
-            // Unfortunately, Jackson does not currently resolve anchors/aliases, despite using SnakeYAML under the
+            // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
             // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
             // because it means  that the declaration string is being read twice
-            // TODO: use Jackson to read the raw YAML string once it can handle anchors/aliases properly
+            // TODO: use Jackson to read the raw YAML string once it can handle anchors/references properly
             Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
                                        new Representer( new DumperOptions() ),
                                        new DumperOptions(),
@@ -350,7 +350,7 @@ public class DeclarationFactory
 
             LOGGER.info( "Resolved a YAML declaration string: {}.", resolvedYaml );
 
-            // Use Jackson to (re-)read the declaration string once any aliases/anchors are resolved
+            // Use Jackson to (re-)read the declaration string once any anchors/references are resolved
             JsonNode declaration = DESERIALIZER.readTree( resolvedYamlString );
 
             JsonSchemaFactory factory =
@@ -2350,14 +2350,21 @@ public class DeclarationFactory
 
     private static GeometryTuple migrateFeature( NamedFeature feature )
     {
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder();
         Geometry left = Geometry.newBuilder()
                                 .setName( feature.getLeft() )
                                 .build();
-        Geometry right = Geometry.newBuilder()
-                                 .setName( feature.getRight() )
-                                 .build();
 
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
+                                                     .setLeft( left );
+
+        String rightName = feature.getRight();
+        if ( Objects.nonNull( rightName ) )
+        {
+            Geometry right = Geometry.newBuilder()
+                                     .setName( rightName )
+                                     .build();
+            builder.setRight( right );
+        }
         String baselineName = feature.getBaseline();
         if ( Objects.nonNull( baselineName ) )
         {
@@ -2367,7 +2374,7 @@ public class DeclarationFactory
             builder.setBaseline( baseline );
         }
 
-        return builder.setLeft( left ).setRight( right ).build();
+        return builder.build();
     }
 
     /**
@@ -2704,8 +2711,20 @@ public class DeclarationFactory
      */
     private static TimeInterval migrateTimeInterval( DateCondition dateCondition )
     {
-        return new TimeInterval( Instant.parse( dateCondition.getEarliest() ),
-                                 Instant.parse( dateCondition.getLatest() ) );
+        Instant earliest = null;
+        Instant latest = null;
+
+        if( Objects.nonNull( dateCondition.getEarliest() ) )
+        {
+            earliest = Instant.parse( dateCondition.getEarliest() );
+        }
+
+        if( Objects.nonNull( dateCondition.getLatest() ) )
+        {
+            latest = Instant.parse( dateCondition.getLatest() );
+        }
+
+        return new TimeInterval( earliest, latest );
     }
 
     /**
@@ -2715,7 +2734,8 @@ public class DeclarationFactory
      */
     private static TimePools migrateTimePools( PoolingWindowConfig poolingWindow )
     {
-        ChronoUnit unit = ChronoUnit.valueOf( poolingWindow.getUnit().name() );
+        ChronoUnit unit = ChronoUnit.valueOf( poolingWindow.getUnit()
+                                                           .name() );
         return new TimePools( poolingWindow.getPeriod(), poolingWindow.getFrequency(), unit );
     }
 
@@ -2795,10 +2815,22 @@ public class DeclarationFactory
                                                                                           builder,
                                                                                           addThresholdsPerMetric );
 
+                // Increment the metrics, preserving insertion order
+                Set<Metric> overallMetrics = new LinkedHashSet<>();
+                if( Objects.nonNull( builder.metrics() ) )
+                {
+                    overallMetrics.addAll( builder.metrics() );
+                }
+
                 Set<Metric> innerMetrics = metricNames.stream()
                                                       .map( nextName -> new Metric( nextName, parameters ) )
                                                       .collect( Collectors.toSet() );
-                builder.metrics( innerMetrics );
+                overallMetrics.addAll( innerMetrics );
+
+                LOGGER.debug( "Adding these migrated metrics to the metric store, which now contains {} metrics: {}.",
+                              overallMetrics.size(), innerMetrics );
+
+                builder.metrics( overallMetrics );
             }
             else
             {

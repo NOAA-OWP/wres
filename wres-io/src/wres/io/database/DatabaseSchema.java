@@ -1,7 +1,6 @@
 package wres.io.database;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -49,7 +48,10 @@ class DatabaseSchema implements Closeable
         }
     }
 
-    // Left public for unit testing
+    /**
+     * Returns the change log URL. Left package private for unit testing
+     * @return the change log URL
+     */
     String getChangelogURL()
     {
         String relativeToClasspath = "database/db.changelog-master.xml";
@@ -58,17 +60,24 @@ class DatabaseSchema implements Closeable
         URL changelogURL = this.getClass()
                                .getClassLoader()
                                .getResource( relativeToClasspath );
-        Objects.requireNonNull( changelogURL,
-                                "The database migration scripts could not be found at classpath:'"
-                                + relativeToClasspath + "'" );
+
+        if( Objects.isNull( changelogURL ) )
+        {
+            throw new DatabaseMigrationException( "The database migration scripts could not be found at classpath: '"
+                                                  + relativeToClasspath + "'" );
+        }
 
         // Prevent inclusion of absolute paths in liquibase changelog by
         // returning the path on the classpath only.
         return relativeToClasspath;
     }
 
+    /**
+     * Apply the schema
+     * @param connection the connection
+     * @throws DatabaseMigrationException if the database failed to migrate
+     */
     void applySchema( final Connection connection )
-            throws SQLException, IOException
     {
         Database database;
         try
@@ -80,7 +89,7 @@ class DatabaseSchema implements Closeable
         }
         catch ( DatabaseException e )
         {
-            throw new IOException( "A database instance could not be accessed." );
+            throw new DatabaseMigrationException( "A database instance could not be accessed.", e );
         }
 
         try
@@ -97,7 +106,7 @@ class DatabaseSchema implements Closeable
         }
         catch ( LiquibaseException e )
         {
-            throw new SQLException( "The WRES could not be properly initialized.", e );
+            throw new DatabaseMigrationException( "The WRES could not be properly initialized.", e );
         }
     }
 
@@ -112,6 +121,31 @@ class DatabaseSchema implements Closeable
         {
             throw new IllegalStateException( "Unable to unlock using "
                                              + DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+        }
+    }
+
+    /**
+     * A database migration exception.
+     */
+    private static class DatabaseMigrationException extends RuntimeException
+    {
+        /**
+         * Creates an instance.
+         * @param message the message
+         */
+        public DatabaseMigrationException( String message )
+        {
+            super( message );
+        }
+
+        /**
+         * Creates an instance.
+         * @param message the message
+         * @param cause the cause
+         */
+        public DatabaseMigrationException( String message, Throwable cause )
+        {
+            super( message, cause );
         }
     }
 }

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,6 +53,9 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.Polygon;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdDataType;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.UnnamedFeature;
@@ -1167,7 +1171,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithThresholdSetsAndMetricsAndAnchorAlias() throws IOException
+    void testDeserializeWithThresholdSetsAndMetricsAndAnchorReference() throws IOException
     {
         String yaml = """
                 observed:
@@ -3095,6 +3099,88 @@ class DeclarationFactoryTest
                                                                      .values( values )
                                                                      .crossPair( CrossPair.FUZZY )
                                                                      .unit( "dogfish" )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithTwoGroupsOfMetricsAndThresholds()
+    {
+        // First group of metrics with thresholds
+        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ) );
+        ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.generated.ThresholdType.PROBABILITY,
+                                                                ThresholdDataType.LEFT, "0.1",
+                                                                ThresholdOperator.GREATER_THAN );
+        List<ThresholdsConfig> thresholdSets = List.of( someThresholds );
+        MetricsConfig someMetricsWrapped = new MetricsConfig( thresholdSets, null, someMetrics, null, null );
+
+        // Second group of metrics with thresholds
+        List<MetricConfig> moreMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
+        ThresholdsConfig moreThresholds = new ThresholdsConfig( wres.config.generated.ThresholdType.PROBABILITY,
+                                                                ThresholdDataType.LEFT, "0.2",
+                                                                ThresholdOperator.GREATER_THAN );
+        List<ThresholdsConfig> moreThresholdsSets = List.of( moreThresholds );
+        MetricsConfig moreMetricsWrapped = new MetricsConfig( moreThresholdsSets, null, moreMetrics, null, null );
+
+        // Add the two groups together
+        List<MetricsConfig> innerMetrics = List.of( someMetricsWrapped, moreMetricsWrapped );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   innerMetrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        Threshold pOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> someExpectedThresholds = Set.of( pOneWrapped );
+        MetricParameters someParameters = MetricParametersBuilder.builder()
+                                                                 .probabilityThresholds( someExpectedThresholds )
+                                                                 .build();
+
+        Metric metricOne = MetricBuilder.builder()
+                                        .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                        .parameters( someParameters )
+                                        .build();
+
+        Threshold pTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pTwoWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( pTwo )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> someMoreExpectedThresholds = Set.of( pTwoWrapped );
+        MetricParameters someMoreParameters = MetricParametersBuilder.builder()
+                                                                 .probabilityThresholds( someMoreExpectedThresholds )
+                                                                 .build();
+
+        Metric metricTwo = MetricBuilder.builder()
+                                          .name( MetricConstants.MEAN_ERROR )
+                                          .parameters( someMoreParameters )
+                                          .build();
+
+        Set<Metric> expectedMetrics = Set.of( metricOne, metricTwo );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( expectedMetrics )
                                                                      .build();
 
         assertEquals( expected, actual );

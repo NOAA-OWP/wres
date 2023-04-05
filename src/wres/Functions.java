@@ -6,13 +6,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
-import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
+import java.util.StringJoiner;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
@@ -29,6 +29,9 @@ import wres.config.xml.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
+import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
@@ -66,37 +69,71 @@ final class Functions
      * @param operation The desired operation to perform
      * @return True if there is a method mapped to the operation name
      */
-    static boolean hasOperation( final String operation )
+    static boolean hasOperation( String operation )
     {
-        return FUNCTIONS_MAP.keySet()
-                            .stream()
-                            .anyMatch( next -> operation.equalsIgnoreCase( next.shortName )
-                                               || operation.equalsIgnoreCase( next.longName ) );
+        Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> discovered
+                = Functions.getOperation( operation );
+        return discovered.isPresent();
     }
 
     /**
-     * Executes the operation with the given list of arguments
+     * Inspects the operation and determines whether it is "simple" and, therefore, involves no spin-up or tear-down.
+     * @param operation the operation name
+     * @return whether the operation is simple
+     */
+    static boolean isSimpleOperation( String operation )
+    {
+        Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> discovered
+                = Functions.getOperation( operation );
+        return discovered.isPresent() && discovered.get()
+                                                   .getKey()
+                                                   .isSimpleOperation();
+    }
+
+    /**
+     * Looks for a named operation.
+     * @param operation the operation
+     * @return an result that may contain the operation
+     */
+    private static Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> getOperation( String operation )
+    {
+        Objects.requireNonNull( operation );
+        String finalOperation = operation.toLowerCase();
+        return FUNCTIONS_MAP.entrySet()
+                            .stream()
+                            .filter( next -> finalOperation.equals( next.getKey().shortName() )
+                                             || finalOperation.equals( next.getKey().longName() ) )
+                            .findFirst();
+    }
+
+    /**
+     * Executes the operation.
      *
      * @param operation The name of the desired method to call
      * @param sharedResources The resources required, including args.
      */
-    static ExecutionResult call( String operation, final SharedResources sharedResources )
+    static ExecutionResult call( String operation, SharedResources sharedResources )
     {
-        operation = operation.toLowerCase();
-
-        final String finalOperation = operation;
-        Optional<Function<SharedResources, ExecutionResult>> function =
-                FUNCTIONS_MAP.entrySet()
-                             .stream()
-                             .filter( next -> finalOperation.equals( next.getKey().shortName )
-                                              || finalOperation.equals( next.getKey().longName ) )
-                             .findFirst()
-                             .map( Entry::getValue );
-
-        if ( function.isPresent() )
+        // Log the operation
+        if( LOGGER.isInfoEnabled() )
         {
-            return function.get()
-                           .apply( sharedResources );
+            StringJoiner joiner = new StringJoiner( " " );
+            if ( !sharedResources.arguments().contains( operation ) )
+            {
+                joiner.add( operation );
+            }
+            sharedResources.arguments().forEach( joiner::add );
+            LOGGER.info( "Executing: {}", joiner );
+        }
+
+        Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> discovered
+                = Functions.getOperation( operation );
+
+        if ( discovered.isPresent() )
+        {
+            return discovered.get()
+                             .getValue()
+                             .apply( sharedResources );
         }
         else
         {
@@ -110,46 +147,59 @@ final class Functions
      */
     private static Map<WresFunction, Function<SharedResources, ExecutionResult>> createMap()
     {
-        final Map<WresFunction, Function<SharedResources, ExecutionResult>> functions = new TreeMap<>();
+        // Map with insertion order
+        Map<WresFunction, Function<SharedResources, ExecutionResult>> functions = new LinkedHashMap<>();
 
-        functions.put( new WresFunction( "-cd", "connecttodb", "Connects to the WRES database." ),
-                       Functions::connectToDatabase );
-        functions.put( new WresFunction( "-co", "commands", "Prints this help information." ),
-                       Functions::printCommands );
-        functions.put( new WresFunction( "-h", "help", "Prints this help information." ),
-                       Functions::printCommands );
-        functions.put( new WresFunction( "-c", "cleandatabase", "Cleans the WRES database." ),
+        functions.put( new WresFunction( "-c", "cleandatabase", "Cleans the WRES database.", false ),
                        Functions::cleanDatabase );
-        functions.put( new WresFunction( "-e",
-                                         "execute",
-                                         "Executes an evaluation with the declaration supplied as a path or string "
-                                         + "(e.g., execute /foo/bar/project.xml)." ),
-                       Functions::execute );
-        functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database." ),
-                       Functions::refreshDatabase );
-        functions.put( new WresFunction( "-i",
-                                         "ingest",
-                                         "Ingests data supplied in a declaration path or string (e.g., ingest "
-                                         + "/foo/bar/project.xml)." ),
-                       Functions::ingest );
+        functions.put( new WresFunction( "-cd", "connecttodb", "Connects to the WRES "
+                                                               + "database.", false ),
+                       Functions::connectToDatabase );
+        functions.put( new WresFunction( "-co", "commands", "Prints this help information.", true ),
+                       Functions::printCommands );
         functions.put( new WresFunction( "-cn",
                                          "createnetcdftemplate",
-                                         "Creates a Netcdf template with the supplied Netcdf source (e.g., "
-                                         + "createnetcdftemplate /foo/bar/source.nc)." ),
+                                         "Creates a Netcdf template with the supplied Netcdf source. Example "
+                                         + "usage: createnetcdftemplate /foo/bar/source.nc", true ),
                        Functions::createNetCDFTemplate );
+        functions.put( new WresFunction( "-e",
+                                         "execute",
+                                         "Executes an evaluation with the declaration supplied as a path or "
+                                         + "string. Example usage: execute /foo/bar/project.xml", false ),
+                       Functions::execute );
+        functions.put( new WresFunction( "-h", "help", "Prints this help information.", true ),
+                       Functions::printCommands );
+        functions.put( new WresFunction( "-i",
+                                         "ingest",
+                                         "Ingests data supplied in a declaration path or string. Example "
+                                         + "usage: ingest /foo/bar/project.xml", false ),
+                       Functions::ingest );
+        functions.put( new WresFunction( "-m",
+                                         "migrate",
+                                         "Migrates a project declaration from XML (old-style) to YAML "
+                                         + "(new style). Example usage: migrate /foo/bar/project_config.xml", true ),
+                       Functions::migrate );
+        functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
+                       Functions::refreshDatabase );
         functions.put( new WresFunction( "-v",
                                          "validate",
-                                         "Validates the declaration supplied as a path or string (e.g., validate "
-                                         + "/foo/bar/project.xml)." ),
+                                         "Validates the declaration supplied as a path or string. Example "
+                                         + "usage: validate /foo/bar/project.xml", true ),
                        Functions::validate );
         functions.put( new WresFunction( "-vg",
                                          "validategrid",
                                          "Validates a netcdf grid supplied as a path and a corresponding variable "
-                                         + "name (e.g., validategrid /foo/bar/grid.nc baz)." ),
+                                         + "name. Example usage: validategrid /foo/bar/grid.nc baz", true ),
                        Functions::validateNetcdfGrid );
 
         return functions;
     }
+
+    /**
+     * Executes an evaluation.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
 
     private static ExecutionResult execute( SharedResources sharedResources )
     {
@@ -240,6 +290,11 @@ final class Functions
         return ExecutionResult.success();
     }
 
+    /**
+     * Validates a NetCDF grid for ingest.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
     private static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
         List<String> args = sharedResources.arguments();
@@ -282,6 +337,12 @@ final class Functions
         }
     }
 
+    /**
+     * Refreshes the core application database, where applicable.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
+
     private static ExecutionResult refreshDatabase( final SharedResources sharedResources )
     {
         DatabaseLockManager lockManager =
@@ -306,6 +367,12 @@ final class Functions
             lockManager.shutdown();
         }
     }
+
+    /**
+     * Performs ingest of datasets into the core application database.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
 
     private static ExecutionResult ingest( SharedResources sharedResources )
     {
@@ -386,6 +453,12 @@ final class Functions
         }
     }
 
+    /**
+     * Validates the project declaration.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
+
     private static ExecutionResult validate( SharedResources sharedResources )
     {
         List<String> args = sharedResources.arguments();
@@ -437,12 +510,71 @@ final class Functions
             String message = "A project path was not passed in"
                              + System.lineSeparator()
                              + "usage: validate <path to project>";
-            LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e );
         }
     }
 
+    /**
+     * Migrates an old-style XML declaration to a new-style YAML declaration.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
+
+    private static ExecutionResult migrate( SharedResources sharedResources )
+    {
+        List<String> args = sharedResources.arguments();
+
+        if ( !args.isEmpty() )
+        {
+            String evaluationConfigArgument = args.get( 0 )
+                                                  .trim();
+            try
+            {
+                ProjectConfigPlus projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
+                EvaluationDeclaration newDeclaration = DeclarationFactory.from( projectConfigPlus.getProjectConfig() );
+                LOGGER.debug( "Migrated the supplied declaration to: {}.", newDeclaration );
+                String yaml = DeclarationFactory.from( newDeclaration );
+                String announce = "Here is your migrated declaration:";
+                String start = "---"; // Start of a YAML document. Not needed or returned, in general, but clean here
+
+                // Log if possible
+                if ( LOGGER.isInfoEnabled() )
+                {
+                    LOGGER.info( "{}{}{}{}{}", announce, System.lineSeparator(), start, System.lineSeparator(), yaml );
+                }
+                else
+                {
+                    // This is intended behaviour, so disable SQ sqid S106
+                    System.out.println( announce // NOSONAR
+                                        + System.lineSeparator()
+                                        + start
+                                        + System.lineSeparator()
+                                        + yaml );
+                }
+
+                return ExecutionResult.success();
+            }
+            catch ( UserInputException | IOException e )
+            {
+                LOGGER.error( "Failed to unmarshal project configuration from command line argument.", e );
+                return ExecutionResult.failure( e );
+            }
+        }
+        else
+        {
+            String message = "The declaration path or string was missing. Usage: validate "
+                             + "<path to declaration or string>";
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e );
+        }
+    }
+
+    /**
+     * Creates a NetCDT template.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
     private static ExecutionResult createNetCDFTemplate( SharedResources sharedResources )
     {
         List<String> args = sharedResources.arguments();
@@ -502,8 +634,11 @@ final class Functions
     }
 
     /** Small value class of shared resources. */
-    record SharedResources( SystemSettings systemSettings, Database database,
-                            BrokerConnectionFactory brokerConnectionFactory, List<String> arguments )
+    record SharedResources( SystemSettings systemSettings,
+                            Database database,
+                            BrokerConnectionFactory brokerConnectionFactory,
+                            String operation,
+                            List<String> arguments )
     {
         /**
          * @param systemSettings the system settings, not null
@@ -515,28 +650,42 @@ final class Functions
         {
             Objects.requireNonNull( systemSettings );
             Objects.requireNonNull( arguments );
-            Objects.requireNonNull( brokerConnectionFactory );
 
-            if ( systemSettings.isInDatabase() )
+            // If this is not a simple operation, it requires a broker connection factory
+            if ( !arguments.isEmpty() && !Functions.isSimpleOperation( operation ) )
             {
-                Objects.requireNonNull( database );
+                Objects.requireNonNull( brokerConnectionFactory );
+
+                // If this complex operation involves a database, check that one exists
+                if ( systemSettings.isInDatabase() )
+                {
+                    Objects.requireNonNull( database );
+                }
             }
         }
     }
 
-    /** Small wrapper class for WRES functions. */
-    private record WresFunction( String shortName, String longName, String description )
-            implements Comparable<WresFunction>
+    /**
+     * Small wrapper for WRES functions.
+     * @param shortName the short name
+     * @param longName the long name
+     * @param description the description
+     * @param isSimpleOperation whether the operation is "simple" and does not, therefore, require spin-up pr tear-down
+     */
+    private record WresFunction( String shortName,
+                                 String longName,
+                                 String description,
+                                 boolean isSimpleOperation )
     {
         @Override
         public String toString()
         {
             String returnMe = "";
 
-            if ( Objects.nonNull( this.shortName ) )
+            if ( Objects.nonNull( this.shortName() ) )
             {
-                returnMe = this.shortName;
-                if ( Objects.isNull( this.longName ) )
+                returnMe = this.shortName();
+                if ( Objects.isNull( this.longName() ) )
                 {
                     returnMe = StringUtils.rightPad( returnMe, 30 );
                 }
@@ -546,65 +695,18 @@ final class Functions
                 }
             }
 
-            if ( Objects.nonNull( this.longName ) )
+            if ( Objects.nonNull( this.longName() ) )
             {
-                returnMe = returnMe + this.longName;
+                returnMe = returnMe + this.longName();
                 returnMe = StringUtils.rightPad( returnMe, 30 );
             }
 
-            if ( Objects.nonNull( this.description ) )
+            if ( Objects.nonNull( this.description() ) )
             {
-                returnMe = returnMe + this.description;
+                returnMe = returnMe + this.description();
             }
 
             return returnMe;
-        }
-
-        @Override
-        public int compareTo( WresFunction o )
-        {
-            Comparator<String> nullCompare = Comparator.nullsFirst( String::compareTo );
-            Comparator<String> nullFriendly = ( left, right ) -> {
-                if ( Objects.nonNull( left ) )
-                {
-                    left = left.toLowerCase();
-                }
-
-                if ( Objects.nonNull( right ) )
-                {
-                    right = right.toLowerCase();
-                }
-
-                return nullCompare.compare( left, right );
-            };
-
-            int compare = nullFriendly.compare( this.shortName, o.shortName );
-
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-
-            compare = nullFriendly.compare( this.longName, o.longName );
-
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-
-            return nullFriendly.compare( this.description, o.description );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( !( o instanceof WresFunction in ) )
-            {
-                return false;
-            }
-
-            return Objects.equals( in.shortName, this.shortName ) && Objects.equals( in.longName, this.longName )
-                   && Objects.equals( in.description, this.description );
         }
     }
 

@@ -16,6 +16,7 @@ import wres.config.yaml.serializers.TrueSerializer;
  * The baseline data.
  * @param dataset the dataset
  * @param persistence the order of persistence for a persistence baseline
+ * @param separateMetrics whether to compute separate metrics for the baseline
  */
 @RecordBuilder
 @JsonDeserialize( using = BaselineDatasetDeserializer.class )
@@ -34,6 +35,7 @@ public record BaselineDataset( @JsonUnwrapped   // Use unwrap annotation to seri
      * Creates an instance.
      * @param dataset the dataset, required
      * @param persistence the order of persistence, optional
+     * @param separateMetrics whether to compute separate metrics for the baseline
      */
     public BaselineDataset
     {

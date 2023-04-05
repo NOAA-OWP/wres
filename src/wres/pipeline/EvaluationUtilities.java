@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.ExecutionResult;
 import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
