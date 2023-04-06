@@ -159,6 +159,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
                                                                            chart,
+                                                                           metricName.getCanonicalName(),
                                                                            nextOutput );
 
                     pathsWrittenTo.addAll( finishedPaths );

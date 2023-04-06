@@ -11,7 +11,6 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DestinationType;
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.events.subscribe.ConsumerFactory;
 import wres.statistics.generated.Consumer;
@@ -27,7 +26,7 @@ import wres.vis.writing.DurationScoreGraphicsWriter;
 
 /**
  * Implementation of a {@link ConsumerFactory} for graphics writing. A single consumer is registered for all graphics
- * formats because each consumer can handle multiple formats and it is efficient to create each graphics abstraction
+ * formats because each consumer can handle multiple formats, and it is efficient to create each graphics abstraction
  * (i.e., {@link org.jfree.chart.JFreeChart}) only once in memory for all formats.
  *
  * @author James Brown
@@ -59,11 +58,15 @@ class GraphicsConsumerFactory implements ConsumerFactory
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
-        Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
-                                                                    .addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
-                                                                                                BoxplotGraphicsWriter.of( outputs,
-                                                                                                                          path ) )
-                                                                    .build();
+        // Use the wres.config.yaml.components.Format.GRAPHIC identifier because there is a single writer for multiple
+        // graphics formats
+        Function<Collection<Statistics>, Set<Path>> router
+                = builder.setEvaluationDescription( evaluation )
+                         .addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
+                                                     BoxplotGraphicsWriter.of(
+                                                             outputs,
+                                                             path ) )
+                         .build();
 
 
         return statistics -> router.apply( List.of( statistics ) );
@@ -90,17 +93,18 @@ class GraphicsConsumerFactory implements ConsumerFactory
         // Note that diagrams are always written by group, even if all the statistics could be written per pool because
         // grouping is currently done per feature and not, for example, per pool within a feature (grouping over the 
         // various thresholds that are messaged separately). To allow for writing per pool, an additional layer of 
-        // message grouping would be needed.       
+        // message grouping would be needed. Use the wres.config.yaml.components.Format.GRAPHIC identifier because
+        // there is a single writer for multiple graphics formats
         return builder.setEvaluationDescription( evaluation )
-                      .addBoxplotConsumerPerPool( DestinationType.GRAPHIC,
+                      .addBoxplotConsumerPerPool( wres.config.yaml.components.Format.GRAPHIC,
                                                   BoxplotGraphicsWriter.of( outputs, path ) )
-                      .addDoubleScoreConsumer( DestinationType.GRAPHIC,
+                      .addDoubleScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                                DoubleScoreGraphicsWriter.of( outputs, path ) )
-                      .addDurationScoreConsumer( DestinationType.GRAPHIC,
+                      .addDurationScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                                  DurationScoreGraphicsWriter.of( outputs, path ) )
-                      .addDiagramConsumer( DestinationType.GRAPHIC,
+                      .addDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                            DiagramGraphicsWriter.of( outputs, path ) )
-                      .addDurationDiagramConsumer( DestinationType.GRAPHIC,
+                      .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                                    DurationDiagramGraphicsWriter.of( outputs, path ) )
                       .build();
     }

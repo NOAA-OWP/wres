@@ -321,6 +321,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             // Write formats
             Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
                                                                    chart,
+                                                                   metricName.getCanonicalName(),
                                                                    outputsDescription );
 
             pathsWrittenTo.addAll( finishedPaths );

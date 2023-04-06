@@ -30,6 +30,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -117,12 +118,14 @@ abstract class GraphicsWriter
      *
      * @param path the path to write, without the image format extension
      * @param chart the chart
+     * @param metric the metric whose statistics will be written to a format, unless the metric/format is suppressed
      * @return the path actually written
      * @throws GraphicsWriteException if the chart could not be written
      */
 
     static Set<Path> writeGraphic( Path path,
                                    JFreeChart chart,
+                                   MetricName metric,
                                    Outputs outputs )
     {
         Objects.requireNonNull( path );
@@ -135,7 +138,10 @@ abstract class GraphicsWriter
         try
         {
             // Default is png
-            if ( outputs.hasPng() )
+            if ( outputs.hasPng() && !outputs.getPng()
+                                             .getOptions()
+                                             .getIgnoreList()
+                                             .contains( metric ) )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
@@ -153,7 +159,10 @@ abstract class GraphicsWriter
                     ChartUtils.saveChartAsPNG( outputImageFile, chart, width, height );
                 }
             }
-            if ( outputs.hasSvg() )
+            if ( outputs.hasSvg() && !outputs.getSvg()
+                                             .getOptions()
+                                             .getIgnoreList()
+                                             .contains( metric ) )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );

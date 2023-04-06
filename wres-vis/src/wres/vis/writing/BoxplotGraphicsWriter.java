@@ -203,8 +203,10 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // Build charts
         try
         {
-            MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 )
+                                                   .getMetricName();
+            PoolMetadata metadata = statistics.get( 0 )
+                                              .getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -238,6 +240,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
                                                                            chart,
+                                                                           metricName.getCanonicalName(),
                                                                            nextOutput );
 
                     pathsWrittenTo.addAll( finishedPaths );
@@ -273,8 +276,10 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // Build chart
         try
         {
-            MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
+            MetricConstants metricName = statistics.get( 0 )
+                                                   .getMetricName();
+            PoolMetadata metadata = statistics.get( 0 )
+                                              .getMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -309,6 +314,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                     // Write formats
                     Set<Path> finishedPaths = GraphicsWriter.writeGraphic( outputImage,
                                                                            chart,
+                                                                           metricName.getCanonicalName(),
                                                                            nextOutput );
 
                     pathsWrittenTo.addAll( finishedPaths );

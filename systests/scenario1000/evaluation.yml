@@ -15,10 +15,10 @@ unit: CMS
 metrics:
   - name: time to peak error
     summary_statistics:
-      - median
-      - mean absolute
       - minimum
+      - mean absolute
       - maximum
+      - median
       - standard deviation
       - mean
 output_formats:
