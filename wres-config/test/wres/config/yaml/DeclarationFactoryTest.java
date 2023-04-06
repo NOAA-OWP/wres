@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -113,7 +112,6 @@ import wres.config.yaml.components.Values;
 import wres.config.yaml.components.ValuesBuilder;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -493,10 +491,10 @@ class DeclarationFactoryTest
                                      .build();
 
         // Predictable iteration order
-        Set<ComponentName> summaryStatistics = new TreeSet<>();
-        summaryStatistics.add( ComponentName.MEAN );
-        summaryStatistics.add( ComponentName.MEDIAN );
-        summaryStatistics.add( ComponentName.MINIMUM );
+        Set<MetricConstants> summaryStatistics = new TreeSet<>();
+        summaryStatistics.add( MetricConstants.MEAN );
+        summaryStatistics.add( MetricConstants.MEDIAN );
+        summaryStatistics.add( MetricConstants.MINIMUM );
 
         MetricParameters thirdParameters =
                 MetricParametersBuilder.builder()
@@ -1171,6 +1169,52 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeTimeToPeakError() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                metrics:
+                  - name: time to peak error
+                    summary_statistics:
+                      - mean
+                      - minimum
+                      - mean absolute
+                      - standard deviation
+                      - maximum
+                      - median
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        MetricParameters firstParameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( Set.of( MetricConstants.MEAN,
+                                                                   MetricConstants.MEDIAN,
+                                                                   MetricConstants.MEAN_ABSOLUTE,
+                                                                   MetricConstants.MAXIMUM,
+                                                                   MetricConstants.MINIMUM,
+                                                                   MetricConstants.STANDARD_DEVIATION ) )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                    .parameters( firstParameters )
+                                    .build();
+
+        Set<Metric> metrics = Set.of( first );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( metrics )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithThresholdSetsAndMetricsAndAnchorReference() throws IOException
     {
         String yaml = """
@@ -1836,7 +1880,7 @@ class DeclarationFactoryTest
                     - some_file.csv
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
-                      time_zone_offset: -0600
+                      time_zone_offset: "-0600"
                       missing_value: -999.0
                     - uri: https://foo.bar
                       interface: usgs nwis
@@ -1844,8 +1888,8 @@ class DeclarationFactoryTest
                         foo: bar
                       time_scale:
                         function: mean
-                        period: 3600
-                        unit: seconds
+                        period: 1
+                        unit: hours
                   variable: foo
                   type: observations
                 predicted:
@@ -1853,14 +1897,17 @@ class DeclarationFactoryTest
                     - forecasts_with_NWS_feature_authority.csv
                     - uri: file:/some/other/directory
                       pattern: '**/*.xml*'
-                      time_zone_offset: -0600
+                      time_zone_offset: "-0600"
                     - uri: https://qux.quux
                       interface: wrds ahps
                       time_scale:
                         function: mean
-                        period: 7200
-                        unit: seconds
+                        period: 2
+                        unit: hours
                   type: ensemble forecasts
+                  time_shift:
+                    period: -2
+                    unit: hours
                 reference_dates:
                   minimum: 2551-03-17T00:00:00Z
                   maximum: 2551-03-20T00:00:00Z
@@ -1924,8 +1971,7 @@ class DeclarationFactoryTest
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
                                                         .sourceInterface( SourceInterface.WRDS_AHPS )
-                                                        .timeScale(
-                                                                outerTimeScalePredicted )
+                                                        .timeScale( outerTimeScalePredicted )
                                                         .build();
 
         List<Source> predictedSources =
@@ -1933,6 +1979,7 @@ class DeclarationFactoryTest
         Dataset predictedDataset = DatasetBuilder.builder()
                                                  .sources( predictedSources )
                                                  .type( DataType.ENSEMBLE_FORECASTS )
+                                                 .timeShift( java.time.Duration.ofHours( -2 ) )
                                                  .build();
 
         TimeInterval timeInterval = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
@@ -2016,10 +2063,10 @@ class DeclarationFactoryTest
                                      .build();
 
         // preserve insertion order
-        Set<ComponentName> summaryStatistics = new LinkedHashSet<>();
-        summaryStatistics.add( ComponentName.MEAN );
-        summaryStatistics.add( ComponentName.MEDIAN );
-        summaryStatistics.add( ComponentName.MINIMUM );
+        Set<MetricConstants> summaryStatistics = new LinkedHashSet<>();
+        summaryStatistics.add( MetricConstants.MEAN );
+        summaryStatistics.add( MetricConstants.MEDIAN );
+        summaryStatistics.add( MetricConstants.MINIMUM );
 
         MetricParameters thirdParameters =
                 MetricParametersBuilder.builder()
@@ -2251,6 +2298,9 @@ class DeclarationFactoryTest
                   minimum_exclusive: 0
                   maximum: 1
                   unit: hours
+                pair_frequency:
+                  period: 3
+                  unit: hours
                   """;
 
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
@@ -2278,6 +2328,7 @@ class DeclarationFactoryTest
                                                                        .leadTimes( leadTimeInterval )
                                                                        .leadTimePools( leadTimePools )
                                                                        .analysisDurations( analysisDurations )
+                                                                       .pairFrequency( java.time.Duration.ofHours( 3 ) )
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
@@ -2297,8 +2348,8 @@ class DeclarationFactoryTest
                     - another_file.csv
                 time_scale:
                   function: mean
-                  period: 3600
-                  unit: seconds
+                  period: 1
+                  unit: hours
                   """;
 
         TimeScale timeScale = TimeScale.newBuilder()
@@ -2367,8 +2418,8 @@ class DeclarationFactoryTest
                   sources:
                     - another_file.csv
                 pair_frequency:
-                  period: 43200
-                  unit: seconds
+                  period: 12
+                  unit: hours
                   """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -3167,13 +3218,13 @@ class DeclarationFactoryTest
 
         Set<wres.config.yaml.components.Threshold> someMoreExpectedThresholds = Set.of( pTwoWrapped );
         MetricParameters someMoreParameters = MetricParametersBuilder.builder()
-                                                                 .probabilityThresholds( someMoreExpectedThresholds )
-                                                                 .build();
+                                                                     .probabilityThresholds( someMoreExpectedThresholds )
+                                                                     .build();
 
         Metric metricTwo = MetricBuilder.builder()
-                                          .name( MetricConstants.MEAN_ERROR )
-                                          .parameters( someMoreParameters )
-                                          .build();
+                                        .name( MetricConstants.MEAN_ERROR )
+                                        .parameters( someMoreParameters )
+                                        .build();
 
         Set<Metric> expectedMetrics = Set.of( metricOne, metricTwo );
 

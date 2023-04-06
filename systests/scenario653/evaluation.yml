@@ -1,0 +1,31 @@
+observed:
+  sources:
+    - data/griddedExamples/land_soilsat_ellicott_city/analysis_assim/
+  variable: SOILSAT_TOP
+  label: NWM Analysis
+predicted:
+  sources:
+    - uri: data/griddedExamples/land_soilsat_ellicott_city/short_range/20180526
+      pattern: '**/*nwm.t*0[0-9]z*'
+  variable: SOILSAT_TOP
+  label: NWM Short Range
+spatial_mask:
+  wkt: 'POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))'
+  srid: 4326
+unit: fraction
+lead_times:
+  minimum: 0
+  maximum: 4
+  unit: hours
+lead_time_pools:
+  period: 4
+  frequency: 4
+  unit: hours
+metrics:
+  - mean error
+  - pearson correlation coefficient
+  - sample size
+output_formats:
+  - netcdf2
+  - csv
+  - pairs

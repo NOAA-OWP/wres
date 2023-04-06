@@ -1,0 +1,128 @@
+observed:
+  sources:
+    - smalldata/DRRC2QINE_FAKE_19850430.xml
+  variable: QINE
+predicted:
+  sources:
+    - smalldata/1985043012_DRRC2FAKE1_forecast.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_001.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_002.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_003.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_004.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_005.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_006.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_007.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_008.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_009.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_010.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_011.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_012.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_013.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_014.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_015.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_016.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_017.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_018.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_019.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_020.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_021.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_022.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_023.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_024.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_025.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_026.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_027.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_028.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_029.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_030.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_031.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_032.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_033.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_034.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_035.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_036.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_037.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_038.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_039.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_040.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_041.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_042.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_043.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_044.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_045.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_046.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_047.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_048.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_049.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_050.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_051.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_052.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_053.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_054.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_055.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_056.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_057.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_058.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_059.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_060.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_061.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_062.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_063.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_064.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_065.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_066.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_067.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_068.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_069.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_070.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_071.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_072.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_073.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_074.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_075.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_076.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_077.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_078.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_079.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_080.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_081.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_082.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_083.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_084.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_085.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_086.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_087.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_088.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_089.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_090.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_091.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_092.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_093.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_094.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_095.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_096.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_097.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_098.xml
+    - smalldata/1985043012_DRRC2FAKE1_forecast_copy_099.xml
+    - smalldata/1985043013_DRRC2FAKE1_forecast.xml
+    - smalldata/1985043014_DRRC2FAKE1_forecast.xml
+  variable: SQIN
+  type: ensemble forecasts
+features:
+  - FAKE1
+unit: CMS
+lead_times:
+  minimum: 1
+  maximum: 6
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+metrics:
+  - sample size
+  - mean error
+output_formats:
+  - csv
+  - pairs

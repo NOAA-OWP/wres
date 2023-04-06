@@ -1,11 +1,13 @@
 package wres.config.yaml.serializers;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,8 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
     @Override
     public void serialize( TimeScale value, JsonGenerator gen, SerializerProvider serializers ) throws IOException
     {
+        LOGGER.debug( "Discovered a timescale to serialize: {}.", value );
+
         wres.statistics.generated.TimeScale timeScale = value.timeScale();
 
         // Start
@@ -37,17 +41,18 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
         // Period, if available
         if ( timeScale.getPeriod().getSeconds() > 0 || timeScale.getPeriod().getNanos() > 0 )
         {
-            // Period
-            gen.writeStringField( "period", String.valueOf( timeScale.getPeriod()
-                                                                     .getSeconds() ) );
+            Duration duration = Duration.ofSeconds( timeScale.getPeriod()
+                                                             .getSeconds(),
+                                                    timeScale.getPeriod()
+                                                             .getNanos() );
 
-            if ( timeScale.getPeriod().getNanos() > 0 )
-            {
-                LOGGER.warn( "Could not write the nanosecond component of the timescale." );
-            }
+            Pair<Long,String> serialized = DeclarationFactory.getDurationInPreferredUnits( duration );
+
+            // Period
+            gen.writeNumberField( "period", serialized.getLeft() );
 
             // Units
-            gen.writeStringField( "unit", "seconds" );
+            gen.writeStringField( "unit", serialized.getRight() );
         }
 
         // Start month

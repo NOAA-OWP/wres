@@ -1,0 +1,54 @@
+observed:
+  sources:
+    - smalldata/25510317T00_FAKE2_observations.xml
+    - smalldata/25510317T00_FAKE3_observations.xml
+predicted:
+  sources:
+    - smalldata/25510317T12_FAKE2_forecast.xml
+    - smalldata/25510318T00_FAKE2_forecast.xml
+    - smalldata/25510318T12_FAKE2_forecast.xml
+    - smalldata/25510319T00_FAKE2_forecast.xml
+    - smalldata/25510317T12_FAKE3_forecast.xml
+    - smalldata/25510318T00_FAKE3_forecast.xml
+    - smalldata/25510318T12_FAKE3_forecast.xml
+    - smalldata/25510319T00_FAKE3_forecast.xml
+features:
+  - FAKE3
+  - FAKE2
+feature_groups:
+  - name: A FAKE FEATURE GROUP
+    features:
+      - FAKE3
+      - FAKE2
+unit: CMS
+reference_dates:
+  minimum: 2551-03-17T00:00:00Z
+  maximum: 2551-03-20T00:00:00Z
+lead_times:
+  minimum: 3
+  maximum: 33
+  unit: hours
+lead_time_pools:
+  period: 6
+  frequency: 6
+  unit: hours
+time_scale:
+  function: mean
+  period: 6
+  unit: hours
+value_thresholds:
+  - name: ACTION
+    values:
+      - { value: 400.0, feature: FAKE2 }
+      - { value: 480.0, feature: FAKE3 }
+    unit: CMS
+  - name: MINOR FLOOD
+    values:
+      - { value: 610.0, feature: FAKE2 }
+      - { value: 720.0, feature: FAKE3 }
+    unit: CMS
+metrics:
+  - sample size
+output_formats:
+  - csv
+  - pairs

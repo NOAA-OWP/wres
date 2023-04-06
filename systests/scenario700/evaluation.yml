@@ -1,0 +1,44 @@
+observed:
+  sources:
+    - https://nwis.waterservices.usgs.gov/nwis/iv
+  variable:
+    name: '00060'
+    label: streamflow
+  label: USGS
+predicted:
+  sources:
+    - uri: data/nwmVector/
+      interface: nwm short range channel rt conus
+  variable: streamflow
+  label: NWM Short Range
+features:
+  - observed: '09165000'
+    predicted: '18384141'
+unit: CMS
+reference_dates:
+  minimum: 2017-08-07T11:59:59Z
+  maximum: 2017-08-09T12:00:00Z
+valid_dates:
+  minimum: 2017-08-07T11:59:59Z
+  maximum: 2017-08-09T00:00:00Z
+lead_times:
+  minimum: 1
+  maximum: 18
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+metrics:
+  - mean error
+  - pearson correlation coefficient
+  - bias fraction
+  - sample size
+  - mean square error
+  - mean absolute error
+  - root mean square error
+  - coefficient of determination
+output_formats:
+  - csv
+  - pairs
+  - png

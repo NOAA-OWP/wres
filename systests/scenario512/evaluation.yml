@@ -1,0 +1,32 @@
+observed:
+  sources:
+    - smalldata/pizza_near_volcano_observed_in_celsius.csv
+  variable: 🍕
+predicted:
+  sources:
+    - smalldata/grapes_near_mountain_forecast_in_kelvin.xml
+  variable: 🍇
+features:
+  - observed: volcano
+    predicted: mountain
+unit: °F
+unit_aliases:
+  - alias: °F
+    unit: '[degF]'
+  - alias: ℃
+    unit: Cel
+lead_times:
+  minimum: 0
+  maximum: 3
+  unit: hours
+metrics:
+  - sample size
+  - mean error
+decimal_format: '#0.0'
+output_formats:
+  - netcdf2
+  - csv2
+  - csv
+  - pairs
+  - png
+  - svg

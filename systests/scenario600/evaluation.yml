@@ -1,0 +1,45 @@
+observed:
+  sources:
+    - uri: data/nwmVector/
+      interface: nwm analysis assim channel rt conus
+  variable: streamflow
+  label: NWM Analysis
+predicted:
+  sources:
+    - uri: data/nwmVector/
+      interface: nwm short range channel rt conus
+  variable: streamflow
+  label: NWM Short Range
+features:
+  - 18384141
+unit: CMS
+reference_dates:
+  minimum: 2017-08-07T23:59:59Z
+  maximum: 2017-08-08T23:00:00Z
+valid_dates:
+  minimum: 2017-08-07T23:59:59Z
+  maximum: 2017-08-09T17:00:00Z
+lead_times:
+  minimum: 0
+  maximum: 18
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+analysis_durations:
+  maximum: 0
+  unit: hours
+metrics:
+  - mean error
+  - mean absolute error
+  - mean square error
+  - root mean square error
+  - pearson correlation coefficient
+  - coefficient of determination
+  - sample size
+  - bias fraction
+output_formats:
+  - csv
+  - pairs
+  - png

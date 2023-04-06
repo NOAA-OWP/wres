@@ -1,0 +1,33 @@
+observed:
+  sources:
+    - data/abrfcExample/LGNN5_MAP.missing.xml
+  variable: MAP
+predicted:
+  sources:
+    - data/abrfcExample/LGNN5_precip_1yr.tgz
+  variable: MAPX
+  type: ensemble forecasts
+  label: HEFS
+features:
+  - LGNN5
+unit: MM
+lead_times:
+  minimum: 24
+  maximum: 48
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 24
+  unit: hours
+time_scale:
+  function: total
+  period: 86400
+  unit: seconds
+probability_thresholds: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+value_thresholds: [0.0]
+metrics:
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs

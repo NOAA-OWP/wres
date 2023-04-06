@@ -1,0 +1,24 @@
+observed:
+  sources:
+    - smalldata/DRRC2_QINE_FAKE.csv
+  variable: QINE
+predicted:
+  sources:
+    - smalldata/DRRC2_SQIN_ENSEMBLE_FAKE.csv
+  variable: SQIN
+  type: ensemble forecasts
+unit: CMS
+lead_times:
+  minimum: 1
+  maximum: 3
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+metrics:
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs

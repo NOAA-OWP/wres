@@ -1,0 +1,42 @@
+observed:
+  sources:
+    - data/CKLN6_STG.xml
+  variable:
+    name: STG
+    label: STAGE
+  type: observations
+predicted:
+  sources:
+    - data/CKLN6_HEFS_STG_forecasts.tgz
+  variable:
+    name: SSTG
+    label: STAGE
+  type: ensemble forecasts
+  label: HEFS
+features:
+  - observed: CKLN6
+    predicted: CKLN6SUQ
+unit: FT
+lead_times:
+  minimum: 144
+  maximum: 144
+  unit: hours
+lead_time_pools:
+  period: 0
+  unit: hours
+time_scale:
+  function: maximum
+  period: 96
+  unit: hours
+classifier_thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
+threshold_service:
+  uri: file:/thresholds/scenario802/thresholds.json
+  parameter: stage
+  provider: NWS-NRLDB
+  missing_value: -999.0
+  feature_name_from: observed
+metrics:
+  - contingency table
+output_formats:
+  - csv
+  - pairs

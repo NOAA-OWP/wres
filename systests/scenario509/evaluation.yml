@@ -1,0 +1,30 @@
+observed:
+  sources:
+    - smalldata/25510317T12_FAKE2_forecast.xml
+    - smalldata/25510318T00_FAKE2_forecast.xml
+  variable: STREAMFLOW
+  type: single valued forecasts
+predicted:
+  sources:
+    - smalldata/25510317T12_FAKE2_forecast.xml
+    - smalldata/25510318T00_FAKE2_forecast.xml
+  variable: STREAMFLOW
+  type: single valued forecasts
+features:
+  - FAKE2
+unit: CMS
+lead_times:
+  minimum: 0
+  maximum: 33
+  unit: hours
+time_scale:
+  function: mean
+  period: 4
+  unit: hours
+metrics:
+  - sample size
+  - mean error
+decimal_format: '#0.00'
+output_formats:
+  - csv
+  - pairs

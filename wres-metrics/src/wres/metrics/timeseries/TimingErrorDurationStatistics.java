@@ -1,8 +1,8 @@
 package wres.metrics.timeseries;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -41,7 +41,6 @@ import wres.statistics.generated.MetricName;
 public class TimingErrorDurationStatistics
         implements Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter>
 {
-
     /**
      * The summary statistics and associated identifiers
      */
@@ -70,7 +69,7 @@ public class TimingErrorDurationStatistics
      * Returns an instance.
      *
      * @param timingError the underlying measure of timing error, not null
-     * @param statistics the list of statistics the compute, not null
+     * @param statistics the list of statistics to compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
      * @return an instance
      */
@@ -93,17 +92,20 @@ public class TimingErrorDurationStatistics
 
         // Map of outputs
         DurationScoreMetric.Builder metricBuilder =
-                DurationScoreMetric.newBuilder().setName( MetricName.valueOf( this.getMetricName().name() ) );
+                DurationScoreMetric.newBuilder()
+                                   .setName( MetricName.valueOf( this.getMetricName()
+                                                                     .name() ) );
         DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
 
         // Iterate through the statistics
-        MetricConstants nextIdentifier = null;
+        MetricConstants nextIdentifier;
         for ( Entry<MetricConstants, ToDoubleFunction<VectorOfDoubles>> next : this.statistics.entrySet() )
         {
             nextIdentifier = next.getKey();
 
             // Data available
-            if ( statisticsInner.getData().getStatisticsCount() != 0 )
+            if ( statisticsInner.getData()
+                                .getStatisticsCount() != 0 )
             {
                 // Convert the input to double ms
                 double[] input = statisticsInner.getData()
@@ -118,15 +120,15 @@ public class TimingErrorDurationStatistics
                                                 .toArray();
 
                 // Some loss of precision here, not consequential
-                Duration duration = Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
-                                                                                  .applyAsDouble( VectorOfDoubles.of(
-                                                                                          input ) ) ) );
+                Duration duration =
+                        Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
+                                                                      .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
 
                 // Add statistic component
                 DurationScoreMetricComponent componentMetric = this.components.get( nextIdentifier );
-                DurationScoreStatisticComponent.Builder builder = DurationScoreStatisticComponent.newBuilder()
-                                                                                                 .setMetric(
-                                                                                                         componentMetric );
+                DurationScoreStatisticComponent.Builder builder
+                        = DurationScoreStatisticComponent.newBuilder()
+                                                         .setMetric( componentMetric );
 
                 builder.setValue( MessageFactory.parse( duration ) );
 
@@ -134,7 +136,8 @@ public class TimingErrorDurationStatistics
             }
         }
 
-        DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder ).build();
+        DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder )
+                                                   .build();
 
         return DurationScoreStatisticOuter.of( score, statisticsInner.getMetadata() );
     }
@@ -155,7 +158,7 @@ public class TimingErrorDurationStatistics
      * Hidden constructor.
      *
      * @param timingError the underlying measure of timing error, not null
-     * @param statistics the list of statistics the compute, not null
+     * @param statistics the list of statistics to compute, not null
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
@@ -172,49 +175,44 @@ public class TimingErrorDurationStatistics
             throw new MetricParameterException( "Specify a non-null container of summary statistics." );
         }
 
-        String parentMetricName = timingError.getMetricName().name();
-        String attemptedName = parentMetricName + "_STATISTIC";
-        try
-        {
-            this.identifier = MetricConstants.valueOf( attemptedName );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new MetricParameterException( "Unexpected timing error metric: no summary statisitcs are available "
-                                                + "with the name "
-                                                + attemptedName
-                                                + "." );
-        }
-
-        // Copy locally
-        Set<MetricConstants> input = new HashSet<>( statistics );
-
         // Validate
-        if ( input.isEmpty() )
+        if ( statistics.isEmpty() )
         {
             throw new MetricParameterException( "Specify one or more summary statistics." );
         }
 
-        this.statistics = new TreeMap<>();
-        this.components = new EnumMap<>( MetricConstants.class );
-        this.timingError = timingError;
+        Map<MetricConstants,ToDoubleFunction<VectorOfDoubles>> innerStatistics = new TreeMap<>();
+        Map<MetricConstants,DurationScoreMetricComponent> innerComponents = new EnumMap<>( MetricConstants.class );
 
         // Set and validate the copy
-        for ( MetricConstants next : input )
+        for ( MetricConstants next : statistics )
         {
             if ( Objects.isNull( next ) )
             {
                 throw new MetricParameterException( "Cannot build the metric with a null statistic." );
             }
 
-            String nextSummaryStatisticName = next.name();
-            nextSummaryStatisticName = nextSummaryStatisticName.replace( parentMetricName + "_", "" );
-            MetricConstants nextSummaryStatistic = MetricConstants.valueOf( nextSummaryStatisticName );
-            this.statistics.put( next, FunctionFactory.ofStatistic( nextSummaryStatistic ) );
+            MetricConstants nextSummaryStatistic = next.getChild();
+            // Try the parent name if no child
+            if( Objects.isNull( nextSummaryStatistic ) )
+            {
+                nextSummaryStatistic = next;
+            }
+
+            innerStatistics.put( next, FunctionFactory.ofStatistic( nextSummaryStatistic ) );
 
             DurationScoreMetricComponent component = this.getMetricDescription( next );
-            this.components.put( next, component );
+            innerComponents.put( next, component );
         }
+
+        this.statistics = Collections.unmodifiableMap( innerStatistics );
+        this.components = Collections.unmodifiableMap( innerComponents );
+        this.timingError = timingError;
+
+        // Identify the collection
+        MetricConstants statistic = statistics.iterator()
+                                              .next();
+        this.identifier = statistic.getCollection();
     }
 
     /**
@@ -227,8 +225,8 @@ public class TimingErrorDurationStatistics
 
     private DurationScoreMetricComponent getMetricDescription( MetricConstants identifier )
     {
-        String nameString = this.timingError.getMetricName().name() + "_";
-        String summaryNameString = identifier.name().replace( nameString, "" );
+        String summaryNameString = identifier.getChild()
+                                             .name();
         ComponentName componentName = ComponentName.valueOf( summaryNameString );
         DurationScoreMetricComponent.Builder builder = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( componentName );

@@ -1,0 +1,42 @@
+observed:
+  sources:
+    - https://nwis.waterservices.usgs.gov/nwis/iv
+  variable:
+    name: '00060'
+    label: streamflow
+  label: USGS
+predicted:
+  sources:
+    - smalldata/wrds_json/ahps/KCDM7_20180823T1435.json
+    - smalldata/wrds_json/ahps/KCDM7_20180823T1437.json
+    - smalldata/wrds_json/ahps/KCDM7_20180904.json
+    - smalldata/wrds_json/ahps/KCDM7_20180905.json
+    - smalldata/wrds_json/ahps/KCDM7_20180906.json
+    - smalldata/wrds_json/ahps/KCDM7_20180907.json
+    - smalldata/wrds_json/ahps/KCDM7_20180910.json
+  variable: QR
+  label: AHPS
+features:
+  - observed: '06893000'
+    predicted: KCDM7
+unit: kcfs
+reference_dates:
+  minimum: 2018-08-16T12:00:00Z
+  maximum: 2018-08-28T13:00:00Z
+valid_dates:
+  minimum: 2018-08-16T12:00:00Z
+  maximum: 2018-08-28T13:00:00Z
+lead_times:
+  minimum: 0
+  maximum: 120
+  unit: hours
+lead_time_pools:
+  period: 6
+  frequency: 6
+  unit: hours
+metrics:
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs

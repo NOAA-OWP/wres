@@ -1,0 +1,38 @@
+observed:
+  sources:
+    - data/DRRC2QINE.xml
+  variable:
+    name: QINE
+    label: discharge1
+predicted:
+  sources:
+    - data/drrc2ForecastsOneMonth/
+  variable:
+    name: SQIN
+    label: discharge2
+  label: HEFS
+features:
+  - DRRC2HSF
+unit: CMS
+reference_dates:
+  minimum: 1985-01-01T00:00:00Z
+  maximum: 1985-06-15T00:00:00Z
+lead_times:
+  minimum: 1
+  maximum: 24
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+probability_thresholds:
+  values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  operator: greater equal
+metrics:
+  - name: sample size
+    png: false
+  - mean error
+output_formats:
+  - csv
+  - pairs
+  - png

@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Geometry;
@@ -116,20 +115,17 @@ public class FeaturesSerializer extends JsonSerializer<Features>
         {
             writer.writeFieldName( context );
             writer.writeStartObject();
-            writer.writeFieldName( "name" );
-            writer.writeString( geometry.getName() );
+            writer.writeStringField( "name", geometry.getName() );
 
             if ( !geometry.getDescription()
                           .isBlank() )
             {
-                writer.writeFieldName( "description" );
-                writer.writeString( geometry.getDescription() );
+                writer.writeStringField( "description", geometry.getDescription() );
             }
             if ( !geometry.getWkt()
                           .isBlank() )
             {
-                writer.writeFieldName( "wkt" );
-                writer.writeString( geometry.getWkt() );
+                writer.writeStringField( "wkt", geometry.getWkt() );
             }
             if ( geometry.getSrid() != 0 )
             {

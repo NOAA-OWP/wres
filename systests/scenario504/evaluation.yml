@@ -1,0 +1,42 @@
+observed:
+  sources:
+    - smalldata/25510317T00_FAKE2_observations.xml
+  variable: DISCHARGE
+predicted:
+  sources:
+    - smalldata/25510317T12_FAKE2_forecast.xml
+    - smalldata/25510318T00_FAKE2_forecast.xml
+    - smalldata/25510318T12_FAKE2_forecast.xml
+    - smalldata/25510319T00_FAKE2_forecast.xml
+  variable: STREAMFLOW
+baseline:
+  sources:
+    - smalldata/25510317T00_FAKE2_observations.xml
+  variable: DISCHARGE
+  persistence: 1
+features:
+  - FAKE2
+unit: CMS
+reference_dates:
+  minimum: 2551-03-17T00:00:00Z
+  maximum: 2551-03-20T00:00:00Z
+lead_times:
+  minimum: 3
+  maximum: 33
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 3
+  unit: hours
+time_scale:
+  function: mean
+  period: 3
+  unit: hours
+metrics:
+  - sample size
+  - mean square error skill score
+  - mean error
+decimal_format: '#0.00'
+output_formats:
+  - csv
+  - pairs

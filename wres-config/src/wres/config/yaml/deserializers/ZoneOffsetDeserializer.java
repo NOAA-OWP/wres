@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Custom deserializer for a {@link ZoneId} that admits several informal shorthands, as well as all named time zones
@@ -21,6 +23,9 @@ import com.fasterxml.jackson.databind.ObjectReader;
  */
 public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( ZoneOffsetDeserializer.class );
+
     /** Time zone shorthands, which are currently CONUS-centric. */
     private static final Map<String, ZoneOffset> SHORTHANDS =
             Map.ofEntries( Map.entry( "UTC", ZoneOffset.of( "+0000" ) ),
@@ -61,6 +66,8 @@ public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
     public static ZoneOffset getZoneOffset( String zoneOffset )
     {
         Objects.requireNonNull( zoneOffset );
+
+        LOGGER.debug( "Discovered a 'time_zone_offset' of {} to deserialize.", zoneOffset );
 
         // Shorthand? If so, allow
         if ( SHORTHANDS.containsKey( zoneOffset ) )

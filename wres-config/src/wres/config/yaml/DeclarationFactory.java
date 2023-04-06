@@ -114,6 +114,7 @@ import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Format;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
@@ -144,7 +145,6 @@ import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.config.yaml.deserializers.ZoneOffsetDeserializer;
-import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -248,6 +248,7 @@ public class DeclarationFactory
             new ObjectMapper( new YAMLFactoryWithCustomGenerator().disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
                                                                   .disable( YAMLGenerator.Feature.SPLIT_LINES )
                                                                   .enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
+                                                                  .enable( YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
                                                                   .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR,
                                                                               true ) )
                     .registerModule( new JavaTimeModule() )
@@ -568,6 +569,33 @@ public class DeclarationFactory
     }
 
     /**
+     * Returns a string representation of the duration in hours if possible, otherwise seconds. Warns if this will
+     * result in a loss of precision.
+     *
+     * @param duration the duration to serialize
+     * @return the duration string and associated units
+     */
+
+    public static Pair<Long, String> getDurationInPreferredUnits( Duration duration )
+    {
+        // Loss of precision?
+        if ( duration.toNanosPart() > 0 )
+        {
+            LOGGER.warn( "Received a duration of {}, which  is not exactly divisible by hours or seconds. The "
+                         + "nanosecond part of this duration is {} and will not be serialized.", duration,
+                         duration.toNanosPart() );
+        }
+
+        // Integer number of hours?
+        if ( duration.toSeconds() % 3600L == 0 )
+        {
+            return Pair.of( duration.toHours(), "hours" );
+        }
+
+        return Pair.of( duration.toSeconds(), "seconds" );
+    }
+
+    /**
      * Returns a string representation of each ensemble declaration item discovered.
      * @param declaration the declaration
      * @return the ensemble declaration was found
@@ -639,9 +667,10 @@ public class DeclarationFactory
             ensembleDeclaration.add( "An 'ensemble_average' was declared." );
         }
 
-        // Ensemble metrics?
-        Set<String> ensembleMetrics =
-                DeclarationFactory.getMetricType( builder, MetricConstants.SampleDataGroup.ENSEMBLE );
+        // Ensemble metrics?  Ignore metrics that also belong to the single-valued group
+        Set<String> ensembleMetrics = DeclarationFactory.getMetricType( builder,
+                                                                        MetricConstants.SampleDataGroup.ENSEMBLE,
+                                                                        MetricConstants.SampleDataGroup.SINGLE_VALUED );
         if ( !ensembleMetrics.isEmpty() )
         {
             ensembleDeclaration.add( "Discovered metrics that require ensemble forecasts: " + ensembleMetrics + "." );
@@ -649,7 +678,9 @@ public class DeclarationFactory
 
         // Discrete probability metrics?
         Set<String> discreteProbabilityMetrics =
-                DeclarationFactory.getMetricType( builder, MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY );
+                DeclarationFactory.getMetricType( builder,
+                                                  MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY,
+                                                  null );
         if ( !discreteProbabilityMetrics.isEmpty() )
         {
             ensembleDeclaration.add( "Discovered metrics that focus on discrete probability forecasts and these can "
@@ -794,6 +825,15 @@ public class DeclarationFactory
                 adjusted.setBaseline( next.getLeft() );
             }
             adjustedGeometries.add( adjusted.build() );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            Features features = FeaturesBuilder.builder()
+                                               .geometries( adjustedGeometries )
+                                               .build();
+
+            LOGGER.debug( "Interpolated the following geometries: {}.", features );
         }
 
         return Collections.unmodifiableSet( adjustedGeometries );
@@ -1317,7 +1357,7 @@ public class DeclarationFactory
         DeclarationFactory.resolvePredictedDataTypeIfRequired( builder );
 
         // Baseline data type has the same as the predicted data type, by default
-        DeclarationFactory.setBaselineDataTypeFromPredictedDataTypeIfRequired( builder );
+        DeclarationFactory.resolveBaselineDataTypeIfRequired( builder );
     }
 
     /**
@@ -1429,16 +1469,22 @@ public class DeclarationFactory
 
     /**
      * @param builder the builder
-     * @param groupType the group type
+     * @param groupType the group the metric should be part of
+     * @param notInGroupType the optional group the metric should not be part of, in case it belongs to several groups
      * @return whether there are any metrics with the designated type
      */
     private static Set<String> getMetricType( EvaluationDeclarationBuilder builder,
-                                              MetricConstants.SampleDataGroup groupType )
+                                              MetricConstants.SampleDataGroup groupType,
+                                              MetricConstants.SampleDataGroup notInGroupType )
     {
         return builder.metrics()
                       .stream()
-                      .filter( next -> next.name().isInGroup( groupType ) )
-                      .map( next -> next.name().toString() )
+                      .filter( next -> next.name()
+                                           .isInGroup( groupType )
+                                       && ( Objects.isNull( notInGroupType ) || !next.name()
+                                                                                     .isInGroup( notInGroupType ) ) )
+                      .map( next -> next.name()
+                                        .toString() )
                       .collect( Collectors.toUnmodifiableSet() );
     }
 
@@ -1532,7 +1578,7 @@ public class DeclarationFactory
      * Sets the baseline data type to match the data type of the predicted dataset.
      * @param builder the builder
      */
-    private static void setBaselineDataTypeFromPredictedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static void resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
     {
         if ( DeclarationFactory.hasBaseline( builder ) )
         {
@@ -1543,8 +1589,22 @@ public class DeclarationFactory
             // Set the baseline data type, if required
             if ( Objects.isNull( baselineDataset.type() ) )
             {
+                // Same as the predicted data type, by default
+                DataType type = predicted.type();
+
+                String reason = "Assuming that the 'type' is '"
+                                + type
+                                + "' to match the 'type' of the predicted dataset.";
+
+                // Persistence defined? If so, observations
+                if ( Objects.nonNull( baseline.persistence() ) )
+                {
+                    type = DataType.OBSERVATIONS;
+                    reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
+                }
+
                 Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
-                                                           .type( predicted.type() )
+                                                           .type( type )
                                                            .build();
                 BaselineDataset newBaseline =
                         BaselineDatasetBuilder.builder( baseline )
@@ -1553,9 +1613,8 @@ public class DeclarationFactory
                 builder.baseline( newBaseline );
 
                 LOGGER.warn( "While reading the project declaration, discovered that the baseline dataset had no "
-                             + "declared data 'type'. Assuming that the 'type' is '{}' to match the type of the "
-                             + "predicted dataset. If this is incorrect, please declare the 'type' explicitly.",
-                             newBaselineDataset.type() );
+                             + "declared data 'type'. {} If this is incorrect, please declare the 'type' explicitly.",
+                             reason );
             }
         }
     }
@@ -2161,9 +2220,9 @@ public class DeclarationFactory
                 MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
 
                 // Set the existing parameters if available
-                if( Objects.nonNull( metric.parameters() ) )
+                if ( Objects.nonNull( metric.parameters() ) )
                 {
-                    parBuilder =  MetricParametersBuilder.builder( metric.parameters() );
+                    parBuilder = MetricParametersBuilder.builder( metric.parameters() );
                 }
 
                 // Suppress the format
@@ -2714,12 +2773,12 @@ public class DeclarationFactory
         Instant earliest = null;
         Instant latest = null;
 
-        if( Objects.nonNull( dateCondition.getEarliest() ) )
+        if ( Objects.nonNull( dateCondition.getEarliest() ) )
         {
             earliest = Instant.parse( dateCondition.getEarliest() );
         }
 
-        if( Objects.nonNull( dateCondition.getLatest() ) )
+        if ( Objects.nonNull( dateCondition.getLatest() ) )
         {
             latest = Instant.parse( dateCondition.getLatest() );
         }
@@ -2809,22 +2868,23 @@ public class DeclarationFactory
                 LOGGER.debug( "Discovered metrics to migrate from the following declaration: {}.", next );
 
                 Set<MetricConstants> metricNames = MetricConstantsFactory.getMetricsFromConfig( next, projectConfig );
-                // Acquire the parameters
-                MetricParameters parameters = DeclarationFactory.migrateMetricParameters( next,
-                                                                                          projectConfig,
-                                                                                          builder,
-                                                                                          addThresholdsPerMetric );
+
+                // Acquire the parameters that apply to all metrics in this group
+                MetricParameters groupParameters = DeclarationFactory.migrateMetricParameters( next,
+                                                                                               builder,
+                                                                                               addThresholdsPerMetric );
 
                 // Increment the metrics, preserving insertion order
                 Set<Metric> overallMetrics = new LinkedHashSet<>();
-                if( Objects.nonNull( builder.metrics() ) )
+                if ( Objects.nonNull( builder.metrics() ) )
                 {
                     overallMetrics.addAll( builder.metrics() );
                 }
 
-                Set<Metric> innerMetrics = metricNames.stream()
-                                                      .map( nextName -> new Metric( nextName, parameters ) )
-                                                      .collect( Collectors.toSet() );
+                // Acquire and set the parameters that apply to individual metrics, combining with the group parameters
+                Set<Metric> innerMetrics = DeclarationFactory.migrateMetricSpecificParameters( metricNames,
+                                                                                               groupParameters );
+
                 overallMetrics.addAll( innerMetrics );
 
                 LOGGER.debug( "Adding these migrated metrics to the metric store, which now contains {} metrics: {}.",
@@ -2837,6 +2897,55 @@ public class DeclarationFactory
                 LOGGER.debug( "The following metrics declaration had no explicit metrics to migrate: {}", next );
             }
         }
+    }
+
+    /**
+     * Migrates the metric-specific parameters, appending them to the input parameters. The only metric-specific
+     * parameters are timing error summary statistics, which can be gleaned from the metric names, since these include
+     * both the overall metrics and the summary statistics for timing error metrics.
+     *
+     * @param metricNames the metric names
+     * @param parameters the existing parameters that should be incremented
+     * @return the adjusted metrics with parameters
+     */
+
+    private static Set<Metric> migrateMetricSpecificParameters( Set<MetricConstants> metricNames,
+                                                                MetricParameters parameters )
+    {
+        Set<Metric> returnMe = new LinkedHashSet<>();
+        // Iterate through the metrics, increment the parameters and set them
+        for ( MetricConstants next : metricNames )
+        {
+            // Add the parameters for duration diagrams
+            if ( next.isInGroup( MetricConstants.StatisticType.DURATION_DIAGRAM ) )
+            {
+                MetricParametersBuilder builder = MetricParametersBuilder.builder();
+                if ( Objects.nonNull( parameters ) )
+                {
+                    builder = MetricParametersBuilder.builder( parameters );
+                }
+                Set<MetricConstants> durationScores
+                        = metricNames.stream()
+                                     // Find the duration scores whose parent is the diagram in question
+                                     .filter( m -> m.getParent() == next )
+                                     // Get the child, which is a univariate measure
+                                     .map( MetricConstants::getChild )
+                                     .collect( Collectors.toSet() );
+                builder.summaryStatistics( durationScores );
+                returnMe.add( new Metric( next, builder.build() ) );
+
+                LOGGER.debug( "Migrated these summary statistics for the {}: {}.",
+                              next,
+                              durationScores );
+            }
+            // Ignore duration scores, which are parameters of duration diagrams and add the other metrics as-is
+            else if ( !next.isInGroup( MetricConstants.StatisticType.DURATION_SCORE ) )
+            {
+                returnMe.add( new Metric( next, parameters ) );
+            }
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -2873,17 +2982,14 @@ public class DeclarationFactory
      * Migrates the parameters in the input to a {@link MetricParameters}.
      *
      * @param metric the metric whose parameters should be read
-     * @param projectConfig the overall declaration used as context when migrating metrics
      * @param builder the builder, which may be updated with threshold service declaration
      * @param addThresholdsPerMetric whether the thresholds declared in each metric group should be added to each metric
      * @return the migrated metric parameters
      */
     private static MetricParameters migrateMetricParameters( MetricsConfig metric,
-                                                             ProjectConfig projectConfig,
                                                              EvaluationDeclarationBuilder builder,
                                                              boolean addThresholdsPerMetric )
     {
-        Set<MetricConstants> metricNames = MetricConstantsFactory.getMetricsFromConfig( metric, projectConfig );
         MetricParametersBuilder parametersBuilder = MetricParametersBuilder.builder();
 
         // Set the thresholds, if needed
@@ -2924,22 +3030,6 @@ public class DeclarationFactory
             Pool.EnsembleAverageType average = Pool.EnsembleAverageType.valueOf( metric.getEnsembleAverage()
                                                                                        .name() );
             parametersBuilder.ensembleAverageType( average );
-        }
-
-        // Time-series summary statistics?
-        Set<MetricConstants> timeSeriesSummaryStats
-                = metricNames.stream()
-                             .filter( nextName -> nextName.isInGroup( MetricConstants.StatisticType.DURATION_SCORE ) )
-                             .collect( Collectors.toSet() );
-        if ( !timeSeriesSummaryStats.isEmpty() )
-        {
-            Set<DurationScoreMetric.DurationScoreMetricComponent.ComponentName> componentNameSet
-                    = timeSeriesSummaryStats.stream()
-                                            .map( MetricConstants::name )
-                                            .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
-                                            .collect( Collectors.toSet() );
-
-            parametersBuilder.summaryStatistics( componentNameSet );
         }
 
         MetricParameters migratedParameters = parametersBuilder.build();

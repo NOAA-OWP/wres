@@ -300,7 +300,7 @@ public final class GeneralWRDSReader
             throw new IOException( "No thresholds could be retrieved from " + fullSourceAddress.toString() );
         }
 
-        LOGGER.debug( "The following thresholds were obtained from WRDS: " + thresholdMapping );
+        LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );
 
         return thresholdMapping;
     }
@@ -469,8 +469,7 @@ public final class GeneralWRDSReader
             {
                 try ( InputStream data = Files.newInputStream( Paths.get( fullAddress ) ) )
                 {
-                    byte[] rawForecast = IOUtils.toByteArray( data );
-                    return rawForecast;
+                    return IOUtils.toByteArray( data );
                 }
             }
         }

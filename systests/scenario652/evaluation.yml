@@ -1,0 +1,38 @@
+observed:
+  sources:
+    - data/griddedExamples/land_snow_ellicott_city/analysis_assim/
+  variable: SNEQV
+  label: NWM Analysis
+predicted:
+  sources:
+    - uri: data/griddedExamples/land_snow_ellicott_city/short_range/20180526
+      pattern: '**/*nwm.t*0[0-9]z*'
+  variable: SNEQV
+  label: NWM Short Range
+spatial_mask:
+  wkt: 'POLYGON ((-124.75 50.45, -124.75 50.55, -124.77 50.55, -124.77 50.45, -124.75 50.45))'
+  srid: 4326
+unit: kg m-2
+reference_dates:
+  minimum: 2018-05-26T00:00:00Z
+  maximum: 2018-05-28T00:00:00Z
+reference_date_pools:
+  period: 4
+  frequency: 4
+  unit: hours
+lead_times:
+  minimum: 1
+  maximum: 4
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+metrics:
+  - mean error
+  - pearson correlation coefficient
+  - sample size
+output_formats:
+  - netcdf2
+  - csv
+  - pairs

@@ -1,0 +1,41 @@
+observed:
+  sources:
+    - data/DRRC2QINE.xml
+  variable: QINE
+predicted:
+  sources:
+    - data/drrc2ForecastsOneMonth/
+  variable: SQIN
+  label: HEFS
+  ensemble_filter: [2009]
+features:
+  - DRRC2HSF
+unit: CMS
+reference_dates:
+  minimum: 1985-06-01T12:00:00Z
+  maximum: 1985-06-07T12:00:00Z
+reference_date_pools:
+  period: 48
+  frequency: 24
+  unit: hours
+lead_times:
+  minimum: 4
+  maximum: 5
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+time_scale:
+  function: mean
+  period: 4
+  unit: hours
+pair_frequency:
+  period: 1
+  unit: hours
+metrics:
+  - mean error
+output_formats:
+  - csv
+  - pairs
+  - png
