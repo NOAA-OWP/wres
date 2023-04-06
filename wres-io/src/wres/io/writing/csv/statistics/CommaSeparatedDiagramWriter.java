@@ -26,9 +26,9 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
@@ -45,7 +45,7 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * Helps write box plots comprising {@link DiagramStatisticOuter} to a file of Comma Separated Values (CSV).
- * 
+ *
  * @author James Brown
  * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
@@ -59,7 +59,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Returns an instance of a writer.
-     * 
+     *
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
@@ -125,7 +125,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
+                Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
                         Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
@@ -348,9 +348,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneDiagram( List<DiagramStatisticOuter> output,
-                                  Format formatter,
-                                  ChronoUnit durationUnits )
+    getRowsForOneDiagram( List<DiagramStatisticOuter> output,
+                          Format formatter,
+                          ChronoUnit durationUnits )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
@@ -399,13 +399,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * Adds rows to the input map of merged rows for a specific {@link TimeWindowOuter} and {@link OneOrTwoThresholds}.
      *
      * @param output the diagram output
-     * @param key the key for which rows are required
      * @param merge the merged rows to mutate
      */
 
     private static void
-            addRowsForOneDiagramAtOneTimeWindowAndThreshold( DiagramStatisticOuter output,
-                                                             Map<Integer, List<Double>> merge )
+    addRowsForOneDiagramAtOneTimeWindowAndThreshold( DiagramStatisticOuter output,
+                                                     Map<Integer, List<Double>> merge )
     {
 
         // Check that the output exists
@@ -440,7 +439,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Returns the row from the diagram at a specified  row index.
-     * 
+     *
      * @param next the data
      * @param row the row index to generate
      * @return the row data
@@ -464,16 +463,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                 VectorOfDoubles doubles = CommaSeparatedDiagramWriter.getComponent( next, nextDimension, qualifier );
 
                 // Populate the values
-                if ( Objects.nonNull( doubles ) )
+                double addMe = Double.NaN;
+                if ( row < doubles.size() )
                 {
-                    Double addMe = Double.NaN;
-                    if ( row < doubles.size() )
-                    {
-                        addMe = doubles.getDoubles()[row];
-                    }
-
-                    valuesToAdd.add( addMe );
+                    addMe = doubles.getDoubles()[row];
                 }
+
+                valuesToAdd.add( addMe );
             }
         }
         return valuesToAdd;
@@ -481,7 +477,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Returns a prescribed vector from the map or null if no mapping exists.
-     * 
+     *
      * @param diagram the diagram
      * @param name the component name
      * @param qualifier the component qualifier
@@ -494,12 +490,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         DiagramStatisticComponent component = diagram.getComponent( name, qualifier );
         List<Double> values = component.getValuesList();
-        return VectorOfDoubles.of( values.toArray( new Double[values.size()] ) );
+        return VectorOfDoubles.of( values.toArray( new Double[0] ) );
     }
 
     /**
      * Helper that mutates the header for diagrams based on the input.
-     * 
+     *
      * @param output the diagram output
      * @param headerRow the header row
      * @return the mutated header
@@ -556,8 +552,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
-     * 
-     * @param the statistics to slice
+     *
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
@@ -595,13 +591,11 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                             List<DiagramStatisticOuter> statistics )
     {
         // Qualify all windows with the latest lead duration
-        String append = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+        return DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
                                                               leadUnits )
                         + "_"
                         + leadUnits.name().toUpperCase()
                         + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
-
-        return append;
     }
 
     /**
@@ -650,7 +644,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param projectConfig the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write

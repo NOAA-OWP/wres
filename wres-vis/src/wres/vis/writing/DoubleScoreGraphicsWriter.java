@@ -18,7 +18,7 @@ import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -87,7 +87,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 // Group the statistics by the LRB context in which they appear. There will be one path written
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<DoubleScoreStatisticOuter>> groups =
+                Map<DatasetOrientation, List<DoubleScoreStatisticOuter>> groups =
                         Slicer.getStatisticsGroupedByContext( filtered );
 
                 for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )

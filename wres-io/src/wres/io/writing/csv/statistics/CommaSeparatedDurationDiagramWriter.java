@@ -2,7 +2,6 @@ package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -26,8 +25,8 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -100,9 +99,9 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         try
         {
             // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-            Map<LeftOrRightOrBaseline, List<DurationDiagramStatisticOuter>> groups =
+            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+            // each window with DatasetOrientation.BASELINE data): #48287
+            Map<DatasetOrientation, List<DurationDiagramStatisticOuter>> groups =
                     Slicer.getStatisticsGroupedByContext( output );
 
             for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
@@ -110,7 +109,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                 Set<Path> innerPathsWrittenTo =
                         CommaSeparatedDurationDiagramWriter.writeOnePairedOutputType( super.getOutputDirectory(),
                                                                                       nextGroup,
-                                                                                      null,
                                                                                       super.getDurationUnits() );
 
                 paths.addAll( innerPathsWrittenTo );
@@ -129,7 +127,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      *
      * @param outputDirectory the directory into which to write  
      * @param output the paired output to iterate through
-     * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
      * @throws IOException if the output cannot be written
      * @return set of paths actually written to
@@ -137,7 +134,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
     private static Set<Path> writeOnePairedOutputType( Path outputDirectory,
                                                        List<DurationDiagramStatisticOuter> output,
-                                                       Format formatter,
                                                        ChronoUnit durationUnits )
             throws IOException
     {
@@ -163,7 +159,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                     CommaSeparatedDurationDiagramWriter.getRowsForOnePairedOutput( m,
                                                                                    nextOutput,
                                                                                    headerRow,
-                                                                                   formatter,
                                                                                    durationUnits );
 
             // Add the header row
@@ -195,7 +190,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
      * @param metricName the score name
      * @param output the paired output
      * @param headerRow the header row
-     * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
      * @return the rows to write
      */
@@ -204,7 +198,6 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             getRowsForOnePairedOutput( MetricConstants metricName,
                                        List<DurationDiagramStatisticOuter> output,
                                        StringJoiner headerRow,
-                                       Format formatter,
                                        ChronoUnit durationUnits )
     {
         String outerName = metricName.toString() + HEADER_DELIMITER;
@@ -242,7 +235,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                                                                                          .getTimeWindow() ),
                                                                   Arrays.asList( nextPair.getLeft(),
                                                                                  nextPair.getRight() ),
-                                                                  formatter,
+                                                                  null,
                                                                   // Append if there are multiple thresholds
                                                                   // otherwise, create a new row
                                                                   thresholds.size() > 1,
