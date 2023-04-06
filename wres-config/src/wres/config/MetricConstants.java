@@ -12,6 +12,7 @@ import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.MetricName;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
@@ -684,14 +685,25 @@ public enum MetricConstants
     }
 
     /**
-     * Returns <code>true</code> if the metric measures skill, otherwise <code>false</code>.
+     * Returns <code>true</code> if the metric is a skill metric, otherwise <code>false</code>.
      *
-     * @return true if the metric measures skill, otherwise false
+     * @return true if the metric is a skill metric, otherwise false
      */
 
     public boolean isSkillMetric()
     {
         return this.isSkillMetric;
+    }
+
+    /**
+     * Returns a canonical metric name.
+     *
+     * @return a canonical name
+     */
+
+    public MetricName getCanonicalName()
+    {
+        return MetricName.valueOf( this.name() );
     }
 
     /**

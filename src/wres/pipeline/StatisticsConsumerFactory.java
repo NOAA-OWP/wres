@@ -93,7 +93,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             for ( NetcdfOutputWriter writer : this.netcdfWriters )
             {
-                builder.addDoubleScoreConsumer( DestinationType.NETCDF,
+                builder.addDoubleScoreConsumer( wres.config.yaml.components.Format.NETCDF,
                                                 writer );
             }
         }
@@ -111,7 +111,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                                  durationUnits,
                                                                  formatter );
 
-            builder.addStatisticsConsumer( DestinationType.CSV2,
+            builder.addStatisticsConsumer( wres.config.yaml.components.Format.CSV2,
                                            statistics -> {
                                                Path aPath = writer.apply( statistics );
                                                return Set.of( aPath );
@@ -125,7 +125,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             Path protobufPath = path.resolve( "evaluation.pb3" );
             Function<Statistics, Set<Path>> protoWriter = ProtobufWriter.of( protobufPath, evaluation );
-            builder.addStatisticsConsumer( DestinationType.PROTOBUF, protoWriter );
+            builder.addStatisticsConsumer( wres.config.yaml.components.Format.PROTOBUF, protoWriter );
         }
 
         // Graphics
@@ -133,14 +133,14 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             // Specific formats are filtered at runtime via the router using the Outputs declaration
             BoxplotGraphicsWriter boxPlotWriter = BoxplotGraphicsWriter.of( outputs, path );
-            builder.addBoxplotConsumerPerPair( DestinationType.GRAPHIC,
+            builder.addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
                                                boxPlotWriter );
         }
 
         // Old-style CSV
         if ( formats.contains( Format.CSV ) )
         {
-            builder.addBoxplotConsumerPerPair( DestinationType.CSV,
+            builder.addBoxplotConsumerPerPair( wres.config.yaml.components.Format.CSV,
                                                CommaSeparatedBoxPlotWriter.of( this.projectConfig,
                                                                                durationUnits,
                                                                                path ) );
@@ -185,26 +185,26 @@ class StatisticsConsumerFactory implements ConsumerFactory
             ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
 
 
-            builder.addDiagramConsumer( DestinationType.CSV,
+            builder.addDiagramConsumer( wres.config.yaml.components.Format.CSV,
                                         CommaSeparatedDiagramWriter.of( this.projectConfig,
                                                                         durationUnits,
                                                                         path ) )
-                   .addBoxplotConsumerPerPool( DestinationType.CSV,
+                   .addBoxplotConsumerPerPool( wres.config.yaml.components.Format.CSV,
                                                CommaSeparatedBoxPlotWriter.of( this.projectConfig,
                                                                                durationUnits,
                                                                                path ) )
-                   .addDurationDiagramConsumer( DestinationType.CSV,
+                   .addDurationDiagramConsumer( wres.config.yaml.components.Format.CSV,
                                                 CommaSeparatedDurationDiagramWriter.of( this.projectConfig,
                                                                                         durationUnits,
                                                                                         path ) )
-                   .addDurationScoreConsumer( DestinationType.CSV,
+                   .addDurationScoreConsumer( wres.config.yaml.components.Format.CSV,
                                               CommaSeparatedScoreWriter.of( this.projectConfig,
                                                                             durationUnits,
                                                                             path,
                                                                             next -> MessageFactory.parse( next.getData()
                                                                                                               .getValue() )
                                                                                                   .toString() ) )
-                   .addDoubleScoreConsumer( DestinationType.CSV,
+                   .addDoubleScoreConsumer( wres.config.yaml.components.Format.CSV,
                                             CommaSeparatedScoreWriter.of( this.projectConfig,
                                                                           durationUnits,
                                                                           path,
@@ -214,15 +214,17 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // Graphics
         if ( this.hasGraphics( formats ) )
         {
-            builder.addBoxplotConsumerPerPool( DestinationType.GRAPHIC,
+            // Use the wres.config.yaml.components.Format.GRAPHIC identifier because there is a single writer for
+            // multiple graphics formats
+            builder.addBoxplotConsumerPerPool( wres.config.yaml.components.Format.GRAPHIC,
                                                BoxplotGraphicsWriter.of( outputs, path ) )
-                   .addDoubleScoreConsumer( DestinationType.GRAPHIC,
+                   .addDoubleScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                             DoubleScoreGraphicsWriter.of( outputs, path ) )
-                   .addDurationScoreConsumer( DestinationType.GRAPHIC,
+                   .addDurationScoreConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                               DurationScoreGraphicsWriter.of( outputs, path ) )
-                   .addDiagramConsumer( DestinationType.GRAPHIC,
+                   .addDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                         DiagramGraphicsWriter.of( outputs, path ) )
-                   .addDurationDiagramConsumer( DestinationType.GRAPHIC,
+                   .addDurationDiagramConsumer( wres.config.yaml.components.Format.GRAPHIC,
                                                 DurationDiagramGraphicsWriter.of( outputs, path ) );
         }
 
@@ -241,7 +243,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         LOGGER.debug( "Closing the consumer factory." );
 
@@ -260,7 +262,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     }
 
     /**
-     * Returns <code>true</code> if graphics are required and they will be delivered by this consumer factory, 
+     * Returns <code>true</code> if graphics are required and will be delivered by this consumer factory,
      * otherwise <code>false</code>.
      * 
      * @param formats the formats
