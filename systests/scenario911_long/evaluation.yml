@@ -1,0 +1,36 @@
+observed:
+  sources:
+    - uri: data/archive/baselineValidationExample/AMCK1_QME.xml
+      time_scale:
+        function: mean
+        period: 24
+        unit: hours
+  variable: QME
+predicted:
+  sources:
+    - data/archive/baselineValidationExample/AMCK1_Streamflow_hefs-mefp_Baseline_Validation.tgz
+  variable: QINE
+  type: ensemble forecasts
+  label: HEFS
+features:
+  - AMCK1
+unit: CMS
+lead_times:
+  minimum: 42
+  maximum: 714
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 24
+  unit: hours
+time_scale:
+  function: mean
+  period: 24
+  unit: hours
+probability_thresholds:
+  values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  operator: greater equal
+output_formats:
+  - csv
+  - pairs
+  - png

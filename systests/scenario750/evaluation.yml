@@ -1,0 +1,44 @@
+observed:
+  sources:
+    - https://nwis.waterservices.usgs.gov/nwis/iv
+  variable:
+    name: '00060'
+    label: streamflow
+  label: USGS
+predicted:
+  sources:
+    - uri: data/nwmVector/
+      interface: nwm medium range ensemble channel rt conus
+      time_scale:
+        function: mean
+        period: 1
+        unit: seconds
+  variable: streamflow
+  type: ensemble forecasts
+  label: NWM v2.0 Medium Range Ensemble
+features:
+  - observed: '09165000'
+    predicted: '18384141'
+  - observed: '02420000'
+    predicted: '21687086'
+unit: CMS
+reference_dates:
+  minimum: 2018-08-27T05:59:59Z
+  maximum: 2018-08-28T06:00:00Z
+valid_dates:
+  minimum: 2018-08-26T00:00:00Z
+  maximum: 2018-09-04T00:00:00Z
+lead_times:
+  minimum: 3
+  maximum: 9
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 3
+  unit: hours
+metrics:
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs

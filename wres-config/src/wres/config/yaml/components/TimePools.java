@@ -28,7 +28,7 @@ public record TimePools( @JsonProperty( "period" ) Integer period, @JsonProperty
      */
     public TimePools
     {
-        if ( Objects.isNull( frequency ) )
+        if ( Objects.isNull( frequency ) && period > 0  )
         {
             frequency = period;
         }

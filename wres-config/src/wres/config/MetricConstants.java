@@ -157,55 +157,6 @@ public enum MetricConstants
     /** A statistic derived from the {@link #TIME_TO_PEAK_RELATIVE_ERROR}. */
     TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
-    /** Time to peak error, mean across all instances. */
-    TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                             MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak error, median across all instances. */
-    TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                               MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak error, minimum across all instances. */
-    TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak error, maximum across all instances. */
-    TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak error, standard deviation across all instances. */
-    TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                           MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak error, mean absolute value across all instances. */
-    TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                      MetricConstants.TIME_TO_PEAK_ERROR ),
-
-    /** Time to peak relative error, mean across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
-    /** Time to peak relative error, median across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
-    /** Time to peak relative error, minimum across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
-    /** Time to peak relative error, maximum across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
-    /** Time to peak relative error, standard deviation across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
-                                                    StatisticType.DURATION_SCORE,
-                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
-    /** Time to peak relative error, mean absolute value across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
-                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ),
-
     /** Mean statistic. */
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
           MetricGroup.LRB ),
@@ -227,6 +178,79 @@ public enum MetricConstants
 
     /** Mean absolute statistic. */
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
+
+    /** Time to peak error, mean across all instances. */
+    TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                             MetricConstants.TIME_TO_PEAK_ERROR,
+                             MetricConstants.MEAN,
+                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak error, median across all instances. */
+    TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                               MetricConstants.TIME_TO_PEAK_ERROR,
+                               MetricConstants.MEDIAN,
+                               MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak error, minimum across all instances. */
+    TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                MetricConstants.TIME_TO_PEAK_ERROR,
+                                MetricConstants.MINIMUM,
+                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak error, maximum across all instances. */
+    TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                MetricConstants.TIME_TO_PEAK_ERROR,
+                                MetricConstants.MAXIMUM,
+                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak error, standard deviation across all instances. */
+    TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                           MetricConstants.STANDARD_DEVIATION,
+                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak error, mean absolute value across all instances. */
+    TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                      MetricConstants.TIME_TO_PEAK_ERROR,
+                                      MetricConstants.MEAN_ABSOLUTE,
+                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, mean across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                      MetricConstants.MEAN,
+                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, median across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                        MetricConstants.MEDIAN,
+                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, minimum across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                         MetricConstants.MINIMUM,
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, maximum across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                         MetricConstants.MAXIMUM,
+                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, standard deviation across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                                    StatisticType.DURATION_SCORE,
+                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                    MetricConstants.STANDARD_DEVIATION,
+                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+
+    /** Time to peak relative error, mean absolute value across all instances. */
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                               MetricConstants.MEAN_ABSOLUTE,
+                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
 
     /** Indicator for no decomposition. */
     NONE( MetricGroup.NONE ),
@@ -319,7 +343,24 @@ public enum MetricConstants
     private final MetricConstants parent;
 
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
+     * A child metric, may be null.
+     */
+
+    private final MetricConstants child;
+
+    /**
+     * A collection metric, may be null. This is used to distinguish a group of statistics that are associated with a
+     * common parent metric, but are distinct from the parent metric. For example, a {@link #TIME_TO_PEAK_ERROR_MEAN}
+     * is a summary error statistics associated with a {@link #TIME_TO_PEAK_ERROR}, but the {@link #TIME_TO_PEAK_ERROR}
+     * is a statistic itself (not summarized). In this case, the {@link #TIME_TO_PEAK_ERROR_STATISTIC} is used to
+     * collect the {@link #TIME_TO_PEAK_ERROR_MEAN}, together with all related summary statistics, allowing them to be
+     * identified collectively, but separately from the statistics produced by the {@link #TIME_TO_PEAK_ERROR}.
+     */
+
+    private final MetricConstants collection;
+
+    /**
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric is a skill metric.
      *
      * @param inGroup the input group
      * @param outGroup the output group
@@ -332,16 +373,23 @@ public enum MetricConstants
     }
 
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric measures skill.
+     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric is a skill metric,
+     * as well as a child, parent and collection metric, optionally.
      *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param parent the parent metric
+     * @param child the child metric
+     * @param collection the collection metric
      */
 
-    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricConstants parent )
+    MetricConstants( SampleDataGroup inGroup,
+                     StatisticType outGroup,
+                     MetricConstants parent,
+                     MetricConstants child,
+                     MetricConstants collection )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, false, parent );
+        this( new SampleDataGroup[] { inGroup }, outGroup, false, parent, child, collection, ( MetricGroup ) null );
     }
 
     /**
@@ -354,7 +402,7 @@ public enum MetricConstants
 
     MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, false, null, metricGroup );
+        this( new SampleDataGroup[] { inGroup }, outGroup, false, null, null, null, metricGroup );
     }
 
     /**
@@ -362,7 +410,8 @@ public enum MetricConstants
      *
      * @param inGroups the input groups
      * @param outGroup the output group
-     * @param isSkillMetric is true if the metric measures skill, otherwise false
+     * @param isSkillMetric is true if the metric is a skill metric, otherwise false
+     * @param parent the parent metric, may be null
      * @param metricGroup the metric group
      */
 
@@ -372,11 +421,36 @@ public enum MetricConstants
                      MetricConstants parent,
                      MetricGroup... metricGroup )
     {
+        this( inGroups, outGroup, isSkillMetric, parent, null, null, metricGroup );
+    }
+
+    /**
+     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
+     *
+     * @param inGroups the input groups
+     * @param outGroup the output group
+     * @param isSkillMetric is true if the metric is a skill metric, otherwise false
+     * @param parent the parent metric, may be null
+     * @param child the child metric, may be null
+     * @param collection the name used to collect the statistics associated with the parent, but are distinct from it
+     * @param metricGroup the metric group
+     */
+
+    MetricConstants( SampleDataGroup[] inGroups,
+                     StatisticType outGroup,
+                     boolean isSkillMetric,
+                     MetricConstants parent,
+                     MetricConstants child,
+                     MetricConstants collection,
+                     MetricGroup... metricGroup )
+    {
         this.inGroups = inGroups;
         this.outGroup = outGroup;
         this.metricGroups = metricGroup;
         this.isSkillMetric = isSkillMetric;
         this.parent = parent;
+        this.child = child;
+        this.collection = collection;
     }
 
     /**
@@ -391,6 +465,8 @@ public enum MetricConstants
         this.inGroups = null;
         this.outGroup = null;
         this.parent = null;
+        this.child = null;
+        this.collection = null;
         this.isSkillMetric = false;
     }
 
@@ -502,6 +578,24 @@ public enum MetricConstants
     public MetricConstants getParent()
     {
         return this.parent;
+    }
+
+    /**
+     * @return a child metric or null if none is defined.
+     */
+
+    public MetricConstants getChild()
+    {
+        return this.child;
+    }
+
+    /**
+     * @return a collection metric or null if none is defined. See {@link #collection} for an explanation.
+     */
+
+    public MetricConstants getCollection()
+    {
+        return this.collection;
     }
 
     /**

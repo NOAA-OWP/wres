@@ -1,0 +1,65 @@
+observed:
+  sources:
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+  variable: QINE
+  label: Observations
+predicted:
+  sources:
+    - data/singleValuedEx_ABRFC_ARCFUL_QINE
+  variable: QINE
+  label: Operational Single-Valued Forecasts
+features:
+  - observed: ANTO2X
+    predicted: ANTO2
+  - observed: BLUO2X
+    predicted: BLUO2
+  - observed: ARCT2X
+    predicted: ARCT2
+  - observed: GLOO2X
+    predicted: GLOO2
+unit: CMS
+lead_times:
+  minimum: 0
+  maximum: 24
+  unit: hours
+lead_time_pools:
+  period: 6
+  frequency: 6
+  unit: hours
+probability_thresholds:
+  - name: SMALL
+    values:
+      - { value: 0.1, feature: GLOO2 }
+      - { value: 0.4, feature: ANTO2 }
+      - { value: 0.7, feature: ARCT2 }
+      - { value: 0.95, feature: BLUO2 }
+    operator: greater equal
+    unit: CMS
+  - name: MEDIUM
+    values:
+      - { value: 0.2, feature: GLOO2 }
+      - { value: 0.5, feature: ANTO2 }
+      - { value: 0.8, feature: ARCT2 }
+    operator: greater equal
+    unit: CMS
+  - name: LARGE
+    values:
+      - { value: 0.3, feature: GLOO2 }
+      - { value: 0.6, feature: ANTO2 }
+      - { value: 0.9, feature: ARCT2 }
+      - { value: 0.99, feature: BLUO2 }
+    operator: greater equal
+    unit: CMS
+metrics:
+  - sample size
+  - mean error
+output_formats:
+  - csv
+  - pairs

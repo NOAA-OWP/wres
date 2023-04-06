@@ -11,10 +11,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
-import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.Pool;
 
 /**
@@ -39,7 +39,7 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
                                 @JsonDeserialize( using = ThresholdsDeserializer.class )
                                 @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                 @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
-                                @JsonProperty( "summary_statistics" ) Set<DurationScoreMetric.DurationScoreMetricComponent.ComponentName> summaryStatistics,
+                                @JsonProperty( "summary_statistics" ) Set<MetricConstants> summaryStatistics,
                                 @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
                                 @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                 @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,

@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,12 +29,11 @@ import wres.statistics.generated.MetricName;
 
 /**
  * Tests the {@link TimingErrorDurationStatistics}.
- * 
+ *
  * @author James Brown
  */
 public final class TimingErrorDurationStatisticsTest
 {
-
     @Test
     public void testApplyOneStatisticPerInstance() throws MetricParameterException
     {
@@ -47,7 +46,7 @@ public final class TimingErrorDurationStatisticsTest
         // Check the results
         DurationScoreStatisticOuter actual =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  Collections.singleton( MetricConstants.MEAN ) )
+                                                  Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MEAN ) )
                                              .apply( input );
 
         com.google.protobuf.Duration expectedSource = MessageFactory.parse( Duration.ofHours( 3 ) );
@@ -55,12 +54,16 @@ public final class TimingErrorDurationStatisticsTest
         DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( ComponentName.MEAN )
                                                                                    .setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( Long.MIN_VALUE ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    Long.MIN_VALUE ) )
                                                                                    .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( Long.MAX_VALUE )
-                                                                                                                            .setNanos( 999_999_999 ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    Long.MAX_VALUE )
+                                                                                                                            .setNanos(
+                                                                                                                                    999_999_999 ) )
                                                                                    .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 0 ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    0 ) )
                                                                                    .build();
 
         DurationScoreStatisticComponent component = DurationScoreStatisticComponent.newBuilder()
@@ -83,7 +86,7 @@ public final class TimingErrorDurationStatisticsTest
         // Maximum error = 12
         DurationScoreStatisticOuter max =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  Collections.singleton( MetricConstants.MAXIMUM ) )
+                                                  Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MAXIMUM ) )
                                              .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( 12 ) ),
@@ -92,7 +95,7 @@ public final class TimingErrorDurationStatisticsTest
         // Minimum error = -6
         DurationScoreStatisticOuter min =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  Collections.singleton( MetricConstants.MINIMUM ) )
+                                                  Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MINIMUM ) )
                                              .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( -6 ) ),
@@ -101,7 +104,7 @@ public final class TimingErrorDurationStatisticsTest
         // Mean absolute error = 9
         DurationScoreStatisticOuter meanAbs =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  Collections.singleton( MetricConstants.MEAN_ABSOLUTE ) )
+                                                  Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE ) )
                                              .apply( input );
 
         assertEquals( MessageFactory.parse( Duration.ofHours( 9 ) ),
@@ -120,10 +123,10 @@ public final class TimingErrorDurationStatisticsTest
         // Build the summary statistics
         TimingErrorDurationStatistics ttps =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  new HashSet<>( Arrays.asList( MetricConstants.MEAN,
-                                                                                MetricConstants.MAXIMUM,
-                                                                                MetricConstants.MINIMUM,
-                                                                                MetricConstants.MEAN_ABSOLUTE ) ) );
+                                                  new HashSet<>( List.of( MetricConstants.TIME_TO_PEAK_ERROR_MEAN,
+                                                                          MetricConstants.TIME_TO_PEAK_ERROR_MAXIMUM,
+                                                                          MetricConstants.TIME_TO_PEAK_ERROR_MINIMUM,
+                                                                          MetricConstants.TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE ) ) );
 
         com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
         com.google.protobuf.Duration expectedMin = MessageFactory.parse( Duration.ofHours( -6 ) );
@@ -153,16 +156,21 @@ public final class TimingErrorDurationStatisticsTest
                                                                                       .setName( ComponentName.MAXIMUM )
                                                                                       .build();
 
-        DurationScoreMetricComponent meanAbsMetricComponent = DurationScoreMetricComponent.newBuilder()
-                                                                                          .setName( ComponentName.MEAN_ABSOLUTE )
-                                                                                          .setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( 0 ) )
-                                                                                          .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( Long.MAX_VALUE )
-                                                                                                                                   .setNanos( 999_999_999 ) )
-                                                                                          .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( 0 ) )
-                                                                                          .build();
+        DurationScoreMetricComponent meanAbsMetricComponent
+                = DurationScoreMetricComponent.newBuilder()
+                                              .setName( ComponentName.MEAN_ABSOLUTE )
+                                              .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                                       .setSeconds(
+                                                                                               0 ) )
+                                              .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                                       .setSeconds(
+                                                                                               Long.MAX_VALUE )
+                                                                                       .setNanos(
+                                                                                               999_999_999 ) )
+                                              .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                                       .setSeconds(
+                                                                                               0 ) )
+                                              .build();
 
         DurationScoreStatisticComponent meanComponent = DurationScoreStatisticComponent.newBuilder()
                                                                                        .setMetric( meanMetricComponent )
@@ -180,7 +188,8 @@ public final class TimingErrorDurationStatisticsTest
                                                                                       .build();
 
         DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                          .setMetric( meanAbsMetricComponent )
+                                                                                          .setMetric(
+                                                                                                  meanAbsMetricComponent )
                                                                                           .setValue( expectedMeanAbs )
                                                                                           .build();
 
@@ -212,7 +221,7 @@ public final class TimingErrorDurationStatisticsTest
         // Build the summary statistics
         TimingErrorDurationStatistics ttps =
                 TimingErrorDurationStatistics.of( peakError,
-                                                  new HashSet<>( Arrays.asList( MetricConstants.MEAN ) ) );
+                                                  new HashSet<>( List.of( MetricConstants.TIME_TO_PEAK_ERROR_MEAN ) ) );
 
         // Check the results
         DurationScoreStatisticOuter actual = ttps.apply( input );
@@ -231,7 +240,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testExceptionOnNullStatistics()
     {
         TimeToPeakError metric = TimeToPeakError.of();
-        
+
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
                               () -> TimingErrorDurationStatistics.of( metric,
@@ -245,7 +254,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         TimeToPeakError metric = TimeToPeakError.of();
         Set<MetricConstants> names = Collections.emptySet();
-        
+
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
                               () -> TimingErrorDurationStatistics.of( metric,
@@ -259,7 +268,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         TimeToPeakError metric = TimeToPeakError.of();
         Set<MetricConstants> names = Collections.singleton( null );
-        
+
         MetricParameterException actual =
                 assertThrows( MetricParameterException.class,
                               () -> TimingErrorDurationStatistics.of( metric, names ) );
@@ -272,7 +281,7 @@ public final class TimingErrorDurationStatisticsTest
     {
         TimeToPeakError metric = TimeToPeakError.of();
         Set<MetricConstants> names = Collections.singleton( MetricConstants.NONE );
-        
+
         assertThrows( IllegalArgumentException.class,
                       () -> TimingErrorDurationStatistics.of( metric, names ) );
     }
@@ -281,7 +290,7 @@ public final class TimingErrorDurationStatisticsTest
     public void testExceptionOnNullIdentifier()
     {
         Set<MetricConstants> names = Collections.singleton( MetricConstants.MEAN );
-        
+
         assertThrows( MetricParameterException.class,
                       () -> TimingErrorDurationStatistics.of( null,
                                                               names ) );
@@ -291,9 +300,9 @@ public final class TimingErrorDurationStatisticsTest
     public void testApplyThrowsExceptionOnNullInput()
     {
         TimeToPeakError metric = TimeToPeakError.of();
-        Set<MetricConstants> names = Collections.singleton( MetricConstants.MEAN );       
+        Set<MetricConstants> names = Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MEAN );
         TimingErrorDurationStatistics innerMetric = TimingErrorDurationStatistics.of( metric, names );
-        
+
         assertThrows( PoolException.class,
                       () -> innerMetric.apply( null ) );
 

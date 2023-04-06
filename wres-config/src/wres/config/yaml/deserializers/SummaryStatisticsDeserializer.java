@@ -13,20 +13,22 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationFactory;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**
- * Custom deserializer for a {@link DurationScoreMetric.DurationScoreMetricComponent.ComponentName}.
+ * Custom deserializer for a {@link MetricConstants} that represents a
+ * {@link MetricConstants.MetricGroup#UNIVARIATE_STATISTIC}.
  *
  * @author James Brown
  */
 public class SummaryStatisticsDeserializer
-        extends JsonDeserializer<Set<DurationScoreMetric.DurationScoreMetricComponent.ComponentName>>
+        extends JsonDeserializer<Set<MetricConstants>>
 {
     @Override
-    public Set<DurationScoreMetric.DurationScoreMetricComponent.ComponentName> deserialize( JsonParser jp,
-                                                                                            DeserializationContext context )
+    public Set<MetricConstants> deserialize( JsonParser jp,
+                                             DeserializationContext context )
             throws IOException
     {
         Objects.requireNonNull( jp );
@@ -37,7 +39,9 @@ public class SummaryStatisticsDeserializer
         return StreamSupport.stream( node.spliterator(), false )
                             .map( JsonNode::asText )
                             .map( DeclarationFactory::toEnumName )
+                            // Use the canonical list of summary statistic names as a filter
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
+                            .map( next -> MetricConstants.valueOf( next.name() ) )
                             // Preserve insertion order
                             .collect( Collectors.toCollection( LinkedHashSet::new ) );
     }

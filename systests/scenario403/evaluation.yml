@@ -1,0 +1,54 @@
+observed:
+  sources:
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+      time_scale:
+        function: mean
+        period: 1
+        unit: seconds
+  variable: QINE
+  label: Observations
+predicted:
+  sources:
+    - data/singleValuedEx_ABRFC_ARCFUL_QINE
+  variable: QINE
+  label: Operational Single-Valued Forecasts
+baseline:
+  sources:
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+      time_scale:
+        function: mean
+        period: 1
+        unit: seconds
+  variable: QINE
+  type: observations
+  persistence: 1
+features:
+  - observed: GLOO2X
+    predicted: GLOO2
+    baseline: GLOO2X
+unit: CMS
+lead_times:
+  minimum: 0
+  maximum: 48
+  unit: hours
+lead_time_pools:
+  period: 24
+  frequency: 24
+  unit: hours
+time_scale:
+  function: mean
+  period: 24
+  unit: hours
+probability_thresholds:
+  values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  operator: greater equal
+metrics:
+  - mean square error skill score
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs
+  - png

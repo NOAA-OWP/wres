@@ -1,0 +1,25 @@
+observed:
+  sources:
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+  variable: QINE
+  label: Observations
+predicted:
+  sources:
+    - data/singleValuedEx_ABRFC_ARCFUL_QINE
+  variable: QINE
+  label: Operational Single-Valued Forecasts
+features:
+  - observed: GLOO2X
+    predicted: GLOO2
+unit: CMS
+lead_times:
+  minimum: -126
+  maximum: 120
+  unit: hours
+metrics:
+  - time to peak error
+output_formats:
+  - csv
+  - pairs
+  - png

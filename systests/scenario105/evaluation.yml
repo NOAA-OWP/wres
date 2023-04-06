@@ -1,0 +1,59 @@
+observed:
+  sources:
+    - data/abrfcExample/LGNN5_QME.xml
+  variable: QME
+predicted:
+  sources:
+    - data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
+  variable: QINE
+  label: HEFS
+baseline:
+  sources:
+    - data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz
+  variable: QINE
+  label: ESP
+features:
+  - LGNN5
+unit: CMS
+lead_times:
+  minimum: 42
+  maximum: 42
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 0
+  unit: hours
+time_scale:
+  function: mean
+  period: 24
+  unit: hours
+metrics:
+  - name: continuous ranked probability skill score
+    probability_thresholds:
+      values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+      operator: greater equal
+  - name: mean square error skill score
+    probability_thresholds:
+      values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+      operator: greater equal
+  - name: brier skill score
+    probability_thresholds:
+      values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+      operator: greater equal
+  - name: sample size
+    probability_thresholds:
+      values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+      operator: greater equal
+  - name: relative operating characteristic score
+    probability_thresholds:
+      values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+      operator: greater equal
+  - name: mean error
+    probability_thresholds:
+      values: [0.5, 0.8, 0.925]
+      operator: greater equal
+  - name: brier score
+    probability_thresholds: [0.2, 0.3, 0.7]
+output_formats:
+  - csv
+  - pairs

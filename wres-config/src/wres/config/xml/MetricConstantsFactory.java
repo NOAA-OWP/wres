@@ -450,7 +450,8 @@ public class MetricConstantsFactory
         List<SummaryStatisticsName> summaryStats = config.getSummaryStatistics()
                                                          .getName();
 
-        String outerNameString = config.getName().name();
+        String outerNameString = config.getName()
+                                       .name();
 
         if ( summaryStats.contains( SummaryStatisticsName.ALL_VALID ) )
         {
@@ -470,7 +471,6 @@ public class MetricConstantsFactory
 
         return Collections.unmodifiableSet( returnMe );
     }
-
 
     /**
      * Returns valid ordinary metrics for {@link SampleDataGroup#SINGLE_VALUED}.

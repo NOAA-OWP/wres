@@ -1,0 +1,92 @@
+observed:
+  sources:
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard
+      time_zone_offset: '-0600'
+  variable: QINE
+  type: observations
+  label: Observations
+predicted:
+  sources:
+    - data/singleValuedEx_ABRFC_ARCFUL_QINE
+  variable: QINE
+  type: single valued forecasts
+  label: Operational Single-Valued Forecasts
+features:
+  - observed: ANTO2X
+    predicted: ANTO2
+  - observed: BLUO2X
+    predicted: BLUO2
+  - observed: ARCT2X
+    predicted: ARCT2
+  - observed: GLOO2X
+    predicted: GLOO2
+unit: CMS
+lead_times:
+  minimum: 0
+  maximum: 24
+  unit: hours
+lead_time_pools:
+  period: 6
+  frequency: 6
+  unit: hours
+value_thresholds:
+  - name: pr1
+    values:
+      - { value: 0.15008, feature: ANTO2X }
+      - { value: 13.98569, feature: ARCT2X }
+      - { value: 0.09345, feature: GLOO2X }
+      - { value: 0.37378, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+  - name: pr2
+    values:
+      - { value: 0.95428, feature: ANTO2X }
+      - { value: 33.69563, feature: ARCT2X }
+      - { value: 0.51253, feature: GLOO2X }
+      - { value: 0.81269, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+  - name: pr3
+    values:
+      - { value: 6.34864, feature: ANTO2X }
+      - { value: 78.12618, feature: ARCT2X }
+      - { value: 2.6986, feature: GLOO2X }
+      - { value: 1.75564, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+  - name: pr4
+    values:
+      - { value: 35.49092, feature: ANTO2X }
+      - { value: 204.01439, feature: ARCT2X }
+      - { value: 9.13501, feature: GLOO2X }
+      - { value: 5.07296, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+  - name: pr5
+    values:
+      - { value: 118.66401, feature: ANTO2X }
+      - { value: 585.99336, feature: ARCT2X }
+      - { value: 26.36582, feature: GLOO2X }
+      - { value: 12.38862, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+  - name: pr6
+    values:
+      - { value: 222.16804, feature: ANTO2X }
+      - { value: 1002.59308, feature: ARCT2X }
+      - { value: 50.72057, feature: GLOO2X }
+      - { value: 23.93, feature: BLUO2X }
+    operator: greater equal
+    unit: CMS
+metrics:
+  - sample size
+  - mean error
+output_formats:
+  - csv
+  - pairs

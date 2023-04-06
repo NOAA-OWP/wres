@@ -1,0 +1,32 @@
+observed:
+  sources:
+    - smalldata/25510317T00_FAKE2_observations.xml
+  variable: DISCHARGE
+predicted:
+  sources:
+    - smalldata/wrds_json/25510317T12_FAKE2_forecast.json
+    - smalldata/wrds_json/25510318T00_FAKE2_forecast.json
+    - smalldata/wrds_json/25510318T12_FAKE2_forecast.json
+    - smalldata/wrds_json/25510319T00_FAKE2_forecast.json
+  variable: QR
+features:
+  - FAKE2
+unit: CMS
+lead_times:
+  minimum: 3
+  maximum: 33
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 3
+  unit: hours
+time_scale:
+  function: mean
+  period: 3
+  unit: hours
+metrics:
+  - mean error
+  - sample size
+output_formats:
+  - csv
+  - pairs

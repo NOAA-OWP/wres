@@ -15,7 +15,6 @@ import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
-import wres.statistics.generated.DurationScoreMetric;
 
 /**
  * Serializes a {@link Metric}.
@@ -93,7 +92,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
                         .isEmpty() )
         {
             List<String> mapped = parameters.summaryStatistics().stream()
-                                            .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::name )
+                                            .map( MetricConstants::name )
                                             .map( DeclarationFactory::fromEnumName )
                                             .toList();
             writer.writeObjectField( "summary_statistics", mapped );

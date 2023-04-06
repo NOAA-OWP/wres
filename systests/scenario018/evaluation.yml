@@ -1,0 +1,30 @@
+observed:
+  sources:
+    - data/DRRC2QINE.xml
+  variable: QINE
+predicted:
+  sources:
+    - data/drrc2ForecastsOneMonth/
+  variable: SQIN
+  label: HEFS
+features:
+  - DRRC2HSF
+unit: CMS
+lead_times:
+  minimum: 1
+  maximum: 24
+  unit: hours
+lead_time_pools:
+  period: 0
+  frequency: 1
+  unit: hours
+probability_thresholds:
+  values: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  operator: greater equal
+metrics:
+  - mean error
+  - sample size
+  - brier score
+output_formats:
+  - csv
+  - pairs
