@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +23,8 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
@@ -120,9 +119,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             try
             {
                 // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
+                // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+                // each window with DatasetOrientation.BASELINE data): #48287
+                Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
                         Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
@@ -192,7 +191,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         List<BoxplotStatisticOuter> perPool = output.stream()
                                                     .filter( next -> next.getMetricName()
                                                                          .isInGroup( StatisticType.BOXPLOT_PER_POOL ) )
-                                                    .collect( Collectors.toList() );
+                                                    .toList();
 
         SortedSet<MetricConstants> metricsPerPool = Slicer.discover( perPool, BoxplotStatisticOuter::getMetricName );
         for ( MetricConstants next : metricsPerPool )
@@ -443,7 +442,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
      * 
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 

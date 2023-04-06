@@ -27,7 +27,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble.Labels;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
@@ -750,27 +750,29 @@ public final class Slicer
     }
 
     /**
-     * Returns a map of statistics grouped by their {@link LeftOrRightOrBaseline}.
+     * Returns a map of statistics grouped by their {@link DatasetOrientation}.
      *
      * @param <T> the type of statistic
      * @param input the input list of statistics
      * @return the statistics grouped by context
      */
 
-    public static <T extends Statistic<?>> Map<LeftOrRightOrBaseline, List<T>>
+    public static <T extends Statistic<?>> Map<DatasetOrientation, List<T>>
     getStatisticsGroupedByContext( List<T> input )
     {
 
-        Function<? super T, LeftOrRightOrBaseline> classifier = statistic -> {
-            if ( statistic.getMetadata().getPool().getIsBaselinePool() )
+        Function<? super T, DatasetOrientation> classifier = statistic -> {
+            if ( statistic.getMetadata()
+                          .getPool()
+                          .getIsBaselinePool() )
             {
-                return LeftOrRightOrBaseline.BASELINE;
+                return DatasetOrientation.BASELINE;
             }
 
-            return LeftOrRightOrBaseline.RIGHT;
+            return DatasetOrientation.RIGHT;
         };
 
-        Map<LeftOrRightOrBaseline, List<T>> groups =
+        Map<DatasetOrientation, List<T>> groups =
                 input.stream()
                      .collect( Collectors.groupingBy( classifier ) );
 

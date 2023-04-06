@@ -17,7 +17,7 @@ import java.util.function.Function;
 
 import org.jfree.chart.JFreeChart;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -79,9 +79,9 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             List<DiagramStatisticOuter> filtered = Slicer.filter( output, next );
 
             // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-            Map<LeftOrRightOrBaseline, List<DiagramStatisticOuter>> groups =
+            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+            // each window with DatasetOrientation.BASELINE data): #48287
+            Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
                     Slicer.getStatisticsGroupedByContext( filtered );
 
             for ( List<DiagramStatisticOuter> nextGroup : groups.values() )

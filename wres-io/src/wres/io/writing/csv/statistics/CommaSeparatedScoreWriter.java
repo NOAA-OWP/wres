@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +23,9 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -119,9 +117,9 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             try
             {
                 // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<LeftOrRightOrBaseline, List<T>> groups =
+                // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+                // each window with DatasetOrientation.BASELINE data): #48287
+                Map<DatasetOrientation, List<T>> groups =
                         Slicer.getStatisticsGroupedByContext( output );
 
                 for ( List<T> nextGroup : groups.values() )
@@ -151,7 +149,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      * @param <T> the score type
      * @param outputDirectory the directory into which to write
      * @param destinationConfig the destination configuration    
-     * @param output the score output to iterate through
+     * @param statistics the score output to iterate through
      * @param durationUnits the time units for durations
      * @param mapper a mapper function that provides a string representation of the score
      * @throws IOException if the output cannot be written
@@ -324,7 +322,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   nextScore.get( 0 )
                                                                            .getMetadata(),
-                                                                  Arrays.asList( stringScore ),
+                                                                  Collections.singletonList( stringScore ),
                                                                   null,
                                                                   true,
                                                                   durationUnits );
@@ -334,7 +332,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   PoolMetadata.of( metadata, timeWindow ),
-                                                                  Arrays.asList( (Object) null ),
+                                                                  Collections.singletonList( null ),
                                                                   null,
                                                                   true,
                                                                   durationUnits );
@@ -347,7 +345,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
      * 
      * @param destinationConfig the destination configuration
-     * @param the statistics to slice
+     * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
@@ -384,7 +382,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
                                                     .filter( next -> !next.getMetadata()
                                                                           .getThresholds()
                                                                           .hasTwo() )
-                                                    .collect( Collectors.toList() );
+                                                    .toList();
 
                     sliced.add( primaryOnly );
                 }

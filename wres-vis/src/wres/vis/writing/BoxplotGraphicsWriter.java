@@ -18,7 +18,7 @@ import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -111,9 +111,9 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             List<BoxplotStatisticOuter> filtered = Slicer.filter( perPair, next );
 
             // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-            Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
+            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+            // each window with DatasetOrientation.BASELINE data): #48287
+            Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
                     Slicer.getStatisticsGroupedByContext( filtered );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
@@ -155,9 +155,9 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             List<BoxplotStatisticOuter> filtered = Slicer.filter( perPool, next );
 
             // Group the statistics by the LRB context in which they appear. There will be one path written
-            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-            Map<LeftOrRightOrBaseline, List<BoxplotStatisticOuter>> groups =
+            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+            // each window with DatasetOrientation.BASELINE data): #48287
+            Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
                     Slicer.getStatisticsGroupedByContext( filtered );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
