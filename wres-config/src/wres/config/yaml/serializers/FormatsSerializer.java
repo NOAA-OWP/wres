@@ -28,7 +28,7 @@ public class FormatsSerializer extends JsonSerializer<Formats>
     {
         writer.writeStartArray();
 
-        Outputs outputs = formats.formats();
+        Outputs outputs = formats.outputs();
 
         // Write the formats without parameters
         if ( outputs.hasProtobuf() )

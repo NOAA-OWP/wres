@@ -1704,11 +1704,11 @@ class DeclarationFactoryTest
         EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
 
         assertAll( () -> assertEquals( Formats.PNG_FORMAT, actualInterpolated.formats()
-                                                                             .formats()
+                                                                             .outputs()
                                                                              .getPng() ),
 
                    () -> assertEquals( Formats.SVG_FORMAT, actualInterpolated.formats()
-                                                                             .formats()
+                                                                             .outputs()
                                                                              .getSvg() )
         );
     }

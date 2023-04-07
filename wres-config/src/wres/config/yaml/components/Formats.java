@@ -18,7 +18,7 @@ import wres.statistics.generated.Outputs;
 @RecordBuilder
 @JsonSerialize( using = FormatsSerializer.class )
 @JsonDeserialize( using = FormatsDeserializer.class )
-public record Formats( Outputs formats )
+public record Formats( Outputs outputs )
 {
     /** A value that is re-used several times. */
     private static final String ZERO = "#0.000000";
@@ -76,14 +76,14 @@ public record Formats( Outputs formats )
 
     /**
      * Creates an instance, setting a default format if required.
-     * @param formats the formats
+     * @param outputs the formats
      */
 
     public Formats
     {
-        if( Objects.isNull( formats ) )
+        if( Objects.isNull( outputs ) )
         {
-            formats = Outputs.newBuilder()
+            outputs = Outputs.newBuilder()
                              .setCsv2( Formats.CSV2_FORMAT )
                              .build();
         }
@@ -93,6 +93,6 @@ public record Formats( Outputs formats )
     public String toString()
     {
         // Remove unnecessary whitespace from the JSON protobuf string
-        return DeclarationFactory.PROTBUF_STRINGIFIER.apply( this.formats() );
+        return DeclarationFactory.PROTBUF_STRINGIFIER.apply( this.outputs() );
     }
 }
