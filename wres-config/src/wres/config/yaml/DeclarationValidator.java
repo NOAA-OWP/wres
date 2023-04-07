@@ -38,6 +38,7 @@ import wres.config.yaml.components.Metric;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.GeometryTuple;
 
@@ -962,14 +963,16 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         Formats formats = declaration.formats();
-        if ( Objects.nonNull( formats ) )
+        if( Objects.nonNull( formats ) )
         {
+            Outputs outputs = formats.formats();
+
             String start = "The declaration requested '";
             String middle =
                     "' format, which has been marked deprecated and will be removed from a future version of the "
                     + "software without warning. It is recommended that you substitute this format with the '";
             String end = "' format.";
-            if ( Objects.nonNull( formats.csvFormat() ) )
+            if ( outputs.hasCsv() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -979,7 +982,7 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( Objects.nonNull( formats.netcdfFormat() ) )
+            if ( outputs.hasNetcdf() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1004,9 +1007,10 @@ public class DeclarationValidator
 
         // Do not allow both legacy netcdf and netcdf2 together
         Formats formats = declaration.formats();
-        if ( Objects.nonNull( formats ) )
+        if( Objects.nonNull( formats ) )
         {
-            if ( Objects.nonNull( formats.netcdfFormat() ) && Objects.nonNull( formats.netcdf2Format() ) )
+            Outputs outputs = formats.formats();
+            if ( outputs.hasNetcdf() && outputs.hasNetcdf2() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1020,7 +1024,7 @@ public class DeclarationValidator
             }
 
             // Do not allow legacy netcdf together with feature groups
-            if ( Objects.nonNull( formats.netcdfFormat() ) && Objects.nonNull( declaration.featureGroups() ) )
+            if ( outputs.hasNetcdf() && Objects.nonNull( declaration.featureGroups() ) )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1035,7 +1039,7 @@ public class DeclarationValidator
             }
 
             // Warn about netcdf2 when feature groups are declared
-            if ( Objects.nonNull( formats.netcdf2Format() ) && Objects.nonNull( declaration.featureGroups() ) )
+            if ( outputs.hasNetcdf2() && Objects.nonNull( declaration.featureGroups() ) )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1048,7 +1052,6 @@ public class DeclarationValidator
                 events.add( event );
             }
         }
-
         return Collections.unmodifiableList( events );
     }
 
@@ -1200,8 +1203,10 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Legacy CSV declared
-        if ( Objects.nonNull( declaration.formats() ) && Objects.nonNull( declaration.formats()
-                                                                                     .csvFormat() ) )
+        if ( Objects.nonNull( declaration.formats() )
+             && declaration.formats()
+                           .formats()
+                           .hasCsv() )
         {
             // Non-score metrics
             Predicate<MetricConstants> filter =

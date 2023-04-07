@@ -412,10 +412,6 @@ public class ExternalThresholdReader
         {
             Map<String, Set<ThresholdOuter>> readThresholds;
 
-            // If we're going with NWS_LIDs with WRDS, we want to do equality checks on the strict handbook-5s.
-            // Some RFC data append an added identifier to the end of their handbook 5, preventing a match, so we
-            // want to roll with equivalence based on those first five characters. To achieve this, we use a custom
-            // function for the equivalency checks in the coming loop rather than a strict String::equals
             BiPredicate<String, String> equalityCheck = String::equals;
 
             MeasurementUnit unit = this.getSourceMeasurementUnit( thresholdsConfig );

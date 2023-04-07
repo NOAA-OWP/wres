@@ -10,9 +10,6 @@ import java.time.Instant;
 import java.util.Arrays;
 
 import org.junit.Test;
-import org.mockito.Mockito;
-
-import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.EnsembleAverageType;
@@ -372,11 +369,7 @@ public class PoolMetadataTest
         TimeWindowOuter timeWindow = thirdWindow;
         OneOrTwoThresholds thresholds1 = thresholds;
 
-        ProjectConfigPlus mockConfigOnePlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( mockConfigOnePlus.getProjectConfig() )
-               .thenReturn( mockConfigOne );
-
-        Evaluation evaluationSix = MessageFactory.parse( mockConfigOnePlus );
+        Evaluation evaluationSix = MessageFactory.parse( mockConfigOne );
 
         Pool poolEleven = MessageFactory.getPool( featureGroupTwo,
                                                   timeWindow,
@@ -390,11 +383,7 @@ public class PoolMetadataTest
         TimeWindowOuter timeWindow1 = thirdWindow;
         OneOrTwoThresholds thresholds2 = thresholds;
 
-        ProjectConfigPlus mockConfigTwoPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( mockConfigTwoPlus.getProjectConfig() )
-               .thenReturn( mockConfigTwo );
-
-        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwoPlus );
+        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwo );
 
         Pool poolTwelve = MessageFactory.getPool( featureGroupTwo,
                                                   timeWindow1,
@@ -659,11 +648,7 @@ public class PoolMetadataTest
         TimeWindowOuter timeWindow = thirdWindow;
         OneOrTwoThresholds thresholds1 = thresholds;
 
-        ProjectConfigPlus mockConfigOnePlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( mockConfigOnePlus.getProjectConfig() )
-               .thenReturn( mockConfigOne );
-
-        Evaluation evaluationFour = MessageFactory.parse( mockConfigOnePlus );
+        Evaluation evaluationFour = MessageFactory.parse( mockConfigOne );
 
         Pool poolNine = MessageFactory.getPool( featureGroupTwo,
                                                 timeWindow,
@@ -674,11 +659,7 @@ public class PoolMetadataTest
 
         PoolMetadata m11 = PoolMetadata.of( evaluationFour, poolNine );
 
-        ProjectConfigPlus mockConfigTwoPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( mockConfigTwoPlus.getProjectConfig() )
-               .thenReturn( mockConfigTwo );
-
-        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwoPlus );
+        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwo );
 
         Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,

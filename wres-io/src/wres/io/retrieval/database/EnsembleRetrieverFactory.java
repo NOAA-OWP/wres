@@ -290,8 +290,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.baselineConfig = inputsConfig.getBaseline();
 
         // Obtain any seasonal constraints
-        this.seasonStart = project.getEarliestDayInSeason();
-        this.seasonEnd = project.getLatestDayInSeason();
+        this.seasonStart = project.getStartOfSeason();
+        this.seasonEnd = project.getEndOfSeason();
 
         // Obtain and set the desired time scale. 
         this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );

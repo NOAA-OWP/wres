@@ -233,13 +233,11 @@ public class InBandThresholdReader
      * @throws NullPointerException if the input is null
      */
 
-    public static Set<ThresholdOuter> readCommaSeparatedValues(
-            String inputString,
-            ThresholdConstants.Operator operator,
-            ThresholdConstants.ThresholdDataType dataType,
-            boolean valuesAreProbabilistic,
-            MeasurementUnit units
-    )
+    public static Set<ThresholdOuter> readCommaSeparatedValues( String inputString,
+                                                                ThresholdConstants.Operator operator,
+                                                                ThresholdConstants.ThresholdDataType dataType,
+                                                                boolean valuesAreProbabilistic,
+                                                                MeasurementUnit units )
     {
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
 
@@ -257,11 +255,10 @@ public class InBandThresholdReader
         //Between operator
         if ( operator == ThresholdConstants.Operator.BETWEEN )
         {
-            return InBandThresholdReader.readBetweenThresholds(
-                    valuesToAdd,
-                    dataType,
-                    valuesAreProbabilistic,
-                    units
+            return InBandThresholdReader.readBetweenThresholds( valuesToAdd,
+                                                                dataType,
+                                                                valuesAreProbabilistic,
+                                                                units
             );
         }
         //Other operators
@@ -284,11 +281,10 @@ public class InBandThresholdReader
             {
                 valuesToAdd.forEach(
                         value -> commaSeparatedThresholds.add(
-                                ThresholdOuter.of(
-                                        OneOrTwoDoubles.of( value ),
-                                        operator,
-                                        dataType,
-                                        units
+                                ThresholdOuter.of( OneOrTwoDoubles.of( value ),
+                                                   operator,
+                                                   dataType,
+                                                   units
                                 )
                         )
                 );

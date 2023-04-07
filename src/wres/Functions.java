@@ -33,7 +33,6 @@ import wres.config.xml.ProjectConfigs;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
@@ -385,7 +384,9 @@ final class Functions
 
             try
             {
-                projectConfig = ConfigHelper.read( projectPath );
+                Path actualPath = Paths.get( projectPath );
+                ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
+                projectConfig = configPlus.getProjectConfig();
             }
             catch ( IOException ioe )
             {

@@ -181,8 +181,8 @@ public class TimingErrorDurationStatistics
             throw new MetricParameterException( "Specify one or more summary statistics." );
         }
 
-        Map<MetricConstants,ToDoubleFunction<VectorOfDoubles>> innerStatistics = new TreeMap<>();
-        Map<MetricConstants,DurationScoreMetricComponent> innerComponents = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> innerStatistics = new TreeMap<>();
+        Map<MetricConstants, DurationScoreMetricComponent> innerComponents = new EnumMap<>( MetricConstants.class );
 
         // Set and validate the copy
         for ( MetricConstants next : statistics )
@@ -194,7 +194,7 @@ public class TimingErrorDurationStatistics
 
             MetricConstants nextSummaryStatistic = next.getChild();
             // Try the parent name if no child
-            if( Objects.isNull( nextSummaryStatistic ) )
+            if ( Objects.isNull( nextSummaryStatistic ) )
             {
                 nextSummaryStatistic = next;
             }

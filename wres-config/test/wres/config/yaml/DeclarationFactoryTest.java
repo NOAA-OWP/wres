@@ -79,7 +79,6 @@ import wres.config.yaml.components.FeatureServiceGroupBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
@@ -147,7 +146,7 @@ class DeclarationFactoryTest
                                                                                           .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                                                           .build(),
                                                        wres.config.yaml.components.ThresholdType.VALUE,
-                                                       null );
+                                                       null, null );
     /** Default list of observed sources in the old-style declaration. */
     List<DataSourceConfig.Source> observedSources;
     /** Default list of predicted sources in the old-style declaration. */
@@ -961,21 +960,21 @@ class DeclarationFactoryTest
                                                                    .setHeight( 600 )
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
                                                                    .build();
-        Formats formats = FormatsBuilder.builder()
-                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
-                                        .pairsFormat( Outputs.PairFormat.newBuilder()
-                                                                        .setOptions( numericFormat )
-                                                                        .build() )
-                                        .csv2Format( Outputs.Csv2Format.newBuilder()
-                                                                       .setOptions( numericFormat )
-                                                                       .build() )
-                                        .csvFormat( Outputs.CsvFormat.newBuilder()
-                                                                     .setOptions( numericFormat )
-                                                                     .build() )
-                                        .pngFormat( Outputs.PngFormat.newBuilder()
-                                                                     .setOptions( graphicFormat )
-                                                                     .build() )
-                                        .build();
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setPairs( Outputs.PairFormat.newBuilder()
+                                                              .setOptions( numericFormat )
+                                                              .build() )
+                                 .setCsv2( Outputs.Csv2Format.newBuilder()
+                                                             .setOptions( numericFormat )
+                                                             .build() )
+                                 .setCsv( Outputs.CsvFormat.newBuilder()
+                                                           .setOptions( numericFormat )
+                                                           .build() )
+                                 .setPng( Outputs.PngFormat.newBuilder()
+                                                           .setOptions( graphicFormat )
+                                                           .build() )
+                                 .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000000" );
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
@@ -983,7 +982,7 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .decimalFormat( formatter )
                                                                      .durationFormat( ChronoUnit.HOURS )
-                                                                     .formats( formats )
+                                                                     .formats( new Formats( formats ) )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -1065,14 +1064,18 @@ class DeclarationFactoryTest
 
         wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vOne )
-                                                                            .featureName( "DRRC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DRRC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.VALUE )
                                                                             .build();
 
         wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vTwo )
                                                                             .type( ThresholdType.VALUE )
-                                                                            .featureName( "DOLC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DOLC2" )
+                                                                                              .build() )
                                                                             .build();
 
         Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
@@ -1092,13 +1095,17 @@ class DeclarationFactoryTest
 
         wres.config.yaml.components.Threshold cOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cOne )
-                                                                            .featureName( "DRRC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DRRC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
         wres.config.yaml.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cTwo )
-                                                                            .featureName( "DOLC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DOLC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
@@ -1359,9 +1366,10 @@ class DeclarationFactoryTest
         EvaluationDeclaration interpolate = DeclarationFactory.interpolate( declaration );
 
         Formats actual = interpolate.formats();
-        Formats expected = FormatsBuilder.builder()
-                                         .csv2Format( Formats.CSV2_FORMAT )
-                                         .build();
+        Outputs outputs = Outputs.newBuilder()
+                                 .setCsv2( Formats.CSV2_FORMAT )
+                                 .build();
+        Formats expected = new Formats( outputs );
         assertEquals( expected, actual );
     }
 
@@ -1696,10 +1704,12 @@ class DeclarationFactoryTest
         EvaluationDeclaration actualInterpolated = DeclarationFactory.interpolate( actual );
 
         assertAll( () -> assertEquals( Formats.PNG_FORMAT, actualInterpolated.formats()
-                                                                             .pngFormat() ),
+                                                                             .formats()
+                                                                             .getPng() ),
 
                    () -> assertEquals( Formats.SVG_FORMAT, actualInterpolated.formats()
-                                                                             .svgFormat() )
+                                                                             .formats()
+                                                                             .getSvg() )
         );
     }
 
@@ -2570,21 +2580,21 @@ class DeclarationFactoryTest
                                                                    .setHeight( 800 )
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
                                                                    .build();
-        Formats formats = FormatsBuilder.builder()
-                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
-                                        .pairsFormat( Outputs.PairFormat.newBuilder()
-                                                                        .setOptions( numericFormat )
-                                                                        .build() )
-                                        .csv2Format( Outputs.Csv2Format.newBuilder()
-                                                                       .setOptions( numericFormat )
-                                                                       .build() )
-                                        .csvFormat( Outputs.CsvFormat.newBuilder()
-                                                                     .setOptions( numericFormat )
-                                                                     .build() )
-                                        .pngFormat( Outputs.PngFormat.newBuilder()
-                                                                     .setOptions( graphicFormat )
-                                                                     .build() )
-                                        .build();
+        Outputs outputs = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setPairs( Outputs.PairFormat.newBuilder()
+                                                              .setOptions( numericFormat )
+                                                              .build() )
+                                 .setCsv2( Outputs.Csv2Format.newBuilder()
+                                                             .setOptions( numericFormat )
+                                                             .build() )
+                                 .setCsv( Outputs.CsvFormat.newBuilder()
+                                                           .setOptions( numericFormat )
+                                                           .build() )
+                                 .setPng( Outputs.PngFormat.newBuilder()
+                                                           .setOptions( graphicFormat )
+                                                           .build() )
+                                 .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000" );
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -2592,7 +2602,7 @@ class DeclarationFactoryTest
                                                                        .right( this.predictedDataset )
                                                                        .decimalFormat( formatter )
                                                                        .durationFormat( ChronoUnit.HOURS )
-                                                                       .formats( formats )
+                                                                       .formats( new Formats( outputs ) )
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
@@ -2663,13 +2673,13 @@ class DeclarationFactoryTest
         probabilityThresholds.add( pThreeWrapped );
 
         Threshold vOne = Threshold.newBuilder()
-                                  .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                  .setLeftThresholdValue( DoubleValue.of( 27.0 ) )
                                   .setDataType( Threshold.ThresholdDataType.RIGHT )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
                                   .build();
         Threshold vTwo = Threshold.newBuilder()
-                                  .setLeftThresholdValue( DoubleValue.of( 27.0 ) )
+                                  .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
                                   .setDataType( Threshold.ThresholdDataType.RIGHT )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "MAJOR FLOOD" )
@@ -2677,14 +2687,18 @@ class DeclarationFactoryTest
 
         wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vOne )
-                                                                            .featureName( "DRRC2" )
                                                                             .type( ThresholdType.VALUE )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DOLC2" )
+                                                                                              .build() )
                                                                             .build();
 
         wres.config.yaml.components.Threshold vTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( vTwo )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DRRC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.VALUE )
-                                                                            .featureName( "DOLC2" )
                                                                             .build();
 
         Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
@@ -2692,25 +2706,29 @@ class DeclarationFactoryTest
         valueThresholds.add( vTwoWrapped );
 
         Threshold cOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
         Threshold cTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .setName( "COLONEL DROUGHT" )
                                   .build();
 
         wres.config.yaml.components.Threshold cOneWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cOne )
-                                                                            .featureName( "DRRC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DOLC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
         wres.config.yaml.components.Threshold cTwoWrapped = ThresholdBuilder.builder()
                                                                             .threshold( cTwo )
-                                                                            .featureName( "DOLC2" )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "DRRC2" )
+                                                                                              .build() )
                                                                             .type( ThresholdType.PROBABILITY_CLASSIFIER )
                                                                             .build();
 
@@ -3302,33 +3320,33 @@ class DeclarationFactoryTest
                                                                    .setHeight( 300 )
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
                                                                    .build();
-        Formats formats = FormatsBuilder.builder()
-                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
-                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
-                                        .pairsFormat( Outputs.PairFormat.newBuilder()
-                                                                        .setOptions( numericFormat )
-                                                                        .build() )
-                                        .csv2Format( Outputs.Csv2Format.newBuilder()
-                                                                       .setOptions( numericFormat )
-                                                                       .build() )
-                                        .csvFormat( Outputs.CsvFormat.newBuilder()
-                                                                     .setOptions( numericFormat )
-                                                                     .build() )
-                                        .pngFormat( Outputs.PngFormat.newBuilder()
-                                                                     .setOptions( graphicFormat )
-                                                                     .build() )
-                                        .svgFormat( Outputs.SvgFormat.newBuilder()
-                                                                     .setOptions( graphicFormat )
-                                                                     .build() )
-                                        .protobufFormat( Outputs.ProtobufFormat.getDefaultInstance() )
-                                        .build();
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
+                                 .setPairs( Outputs.PairFormat.newBuilder()
+                                                              .setOptions( numericFormat )
+                                                              .build() )
+                                 .setCsv2( Outputs.Csv2Format.newBuilder()
+                                                             .setOptions( numericFormat )
+                                                             .build() )
+                                 .setCsv( Outputs.CsvFormat.newBuilder()
+                                                           .setOptions( numericFormat )
+                                                           .build() )
+                                 .setPng( Outputs.PngFormat.newBuilder()
+                                                           .setOptions( graphicFormat )
+                                                           .build() )
+                                 .setSvg( Outputs.SvgFormat.newBuilder()
+                                                           .setOptions( graphicFormat )
+                                                           .build() )
+                                 .setProtobuf( Outputs.ProtobufFormat.getDefaultInstance() )
+                                 .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.00" );
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .durationFormat( ChronoUnit.HOURS )
-                                                                     .formats( formats )
+                                                                     .formats( new Formats( formats ) )
                                                                      .decimalFormat( formatter )
                                                                      .build();
 
@@ -3370,11 +3388,11 @@ class DeclarationFactoryTest
                                                                    .setHeight( 300 )
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
                                                                    .build();
-        Formats expectedFormats = FormatsBuilder.builder()
-                                                .pngFormat( Outputs.PngFormat.newBuilder()
-                                                                             .setOptions( graphicFormat )
-                                                                             .build() )
-                                                .build();
+        Outputs expectedFormats = Outputs.newBuilder()
+                                         .setPng( Outputs.PngFormat.newBuilder()
+                                                                   .setOptions( graphicFormat )
+                                                                   .build() )
+                                         .build();
 
         MetricParameters omitParameter = MetricParametersBuilder.builder()
                                                                 .png( false )
@@ -3396,7 +3414,7 @@ class DeclarationFactoryTest
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .metrics( expectedMetrics )
-                                                                     .formats( expectedFormats )
+                                                                     .formats( new Formats( expectedFormats ) )
                                                                      .durationFormat( ChronoUnit.HOURS )
                                                                      .build();
 

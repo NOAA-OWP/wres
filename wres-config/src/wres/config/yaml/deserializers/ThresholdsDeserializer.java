@@ -18,8 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdType;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 
@@ -77,11 +79,11 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
         // Determine the declaration context for the thresholds
         ThresholdType type = ThresholdType.VALUE;
-        if ( "probability_thresholds" .equals( nodeName ) )
+        if ( "probability_thresholds".equals( nodeName ) )
         {
             type = ThresholdType.PROBABILITY;
         }
-        else if ( "classifier_thresholds" .equals( nodeName ) )
+        else if ( "classifier_thresholds".equals( nodeName ) )
         {
             type = ThresholdType.PROBABILITY_CLASSIFIER;
         }
@@ -97,8 +99,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
         {
             // An array of embellished thresholds
-            if( arrayNode.get( 0 )
-                         .has( VALUES ) )
+            if ( arrayNode.get( 0 )
+                          .has( VALUES ) )
             {
                 int setCount = arrayNode.size();
 
@@ -107,7 +109,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                               nodeName );
 
                 // Deserialize all sets of thresholds
-                for( int i = 0; i < setCount; i++ )
+                for ( int i = 0; i < setCount; i++ )
                 {
                     JsonNode innerThresholdsNode = arrayNode.get( i );
                     Set<Threshold> innerThresholds = this.getThresholds( reader, innerThresholdsNode, type );
@@ -168,7 +170,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
-            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null );
+            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null, null );
             thresholds.add( nextWrappedThreshold );
         }
 
@@ -216,7 +218,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             builder.setDataType( dataType );
         }
 
-        if( thresholdNode.has( "unit" ) )
+        if ( thresholdNode.has( "unit" ) )
         {
             JsonNode unitNode = thresholdNode.get( "unit" );
             String unitString = unitNode.asText();
@@ -235,7 +237,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             if ( valuesNode.size() > 0 && valuesNode.get( 0 )
                                                     .has( VALUE ) )
             {
-                Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( valuesNode,
+                Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( reader,
+                                                                                      valuesNode,
                                                                                       type,
                                                                                       builder );
                 thresholds.addAll( embellishedThresholds );
@@ -256,15 +259,19 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
     /**
      * Creates a set of thresholds with attributes.
+     * @param reader the reader
      * @param thresholdNode the threshold node
      * @param type the type of thresholds
      * @param builder the threshold builder
      * @return the thresholds
+     * @throws IOException if the embellished attributes could not be read
      */
 
-    private Set<Threshold> getEmbellishedThresholds( JsonNode thresholdNode,
+    private Set<Threshold> getEmbellishedThresholds( ObjectReader reader,
+                                                     JsonNode thresholdNode,
                                                      ThresholdType type,
                                                      wres.statistics.generated.Threshold.Builder builder )
+            throws IOException
     {
         int thresholdCount = thresholdNode.size();
 
@@ -300,15 +307,26 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             // Feature name
-            String featureName = null;
+            Geometry feature = null;
             if ( nextNode.has( "feature" ) )
             {
                 JsonNode featureNode = nextNode.get( "feature" );
-                featureName = featureNode.asText();
+                String featureName = featureNode.asText();
+                feature = Geometry.newBuilder()
+                                  .setName( featureName )
+                                  .build();
+            }
+
+            DatasetOrientation featureNameFrom = null;
+
+            if ( thresholdNode.has( "feature_name_from" ) )
+            {
+                JsonNode orientationNode = thresholdNode.get( "feature_name_from" );
+                featureNameFrom = reader.readValue( orientationNode, DatasetOrientation.class );
             }
 
             Threshold nextThreshold =
-                    new Threshold( builder.build(), type, featureName );
+                    new Threshold( builder.build(), type, feature, featureNameFrom );
             thresholds.add( nextThreshold );
         }
 

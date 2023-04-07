@@ -40,7 +40,6 @@ import ucar.nc2.NetcdfFiles;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderUtilities;
@@ -448,25 +447,35 @@ public class SourceLoader
         // The key is the distinct source, and the paired value is the context in
         // which the source appears and the set of additional links to create, if any.
         // Note that all project declaration overrides hashCode and equals (~ key in a HashMap)
-        Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
+        Map<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
-        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getLeft() );
+        SourceLoader.mutateSourcesToLoadAndLink( sources,
+                                                 projectConfig,
+                                                 projectConfig.getInputs()
+                                                              .getLeft(),
+                                                 LeftOrRightOrBaseline.LEFT );
 
         // Must have one or more right sources to load and link
-        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getRight() );
+        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs()
+                                                                                      .getRight(),
+                                                 LeftOrRightOrBaseline.RIGHT );
 
         // May have one or more baseline sources to load and link
         if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
         {
-            SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs().getBaseline() );
+            SourceLoader.mutateSourcesToLoadAndLink( sources,
+                                                     projectConfig,
+                                                     projectConfig.getInputs()
+                                                                  .getBaseline(),
+                                                     LeftOrRightOrBaseline.BASELINE );
         }
 
         // Create a simple entry (DataSource) for each complex entry
         Set<DataSource> returnMe = new HashSet<>();
 
         // Expand any file sources that represent directories and filter any that are not required
-        for ( Map.Entry<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
+        for ( Map.Entry<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
         {
             // Allow GC of new empty sets by letting the links ref empty set.
             List<LeftOrRightOrBaseline> links = Collections.emptyList();
@@ -479,10 +488,10 @@ public class SourceLoader
                                   .getRight();
             }
 
-            DataSourceConfig dataSourceConfig = nextSource.getValue()
-                                                          .getLeft();
-
-            LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
+            OrientedDataSource dataSource = nextSource.getValue()
+                                                      .getLeft();
+            DataSourceConfig dataSourceConfig = dataSource.source();
+            LeftOrRightOrBaseline lrb = dataSource.orientation();
 
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
@@ -781,21 +790,20 @@ public class SourceLoader
      * @param sources the map of sources to mutate
      * @param projectConfig the project configuration
      * @param dataSourceConfig the data source configuration for which sources to load or link are required
+     * @param orientation the orientation of the source
      * @throws NullPointerException if any input is null
      */
 
     private static void
-    mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<DataSourceConfig, List<LeftOrRightOrBaseline>>> sources,
+    mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> sources,
                                 ProjectConfig projectConfig,
-                                DataSourceConfig dataSourceConfig )
+                                DataSourceConfig dataSourceConfig,
+                                LeftOrRightOrBaseline orientation )
     {
         Objects.requireNonNull( sources );
-
         Objects.requireNonNull( projectConfig );
-
         Objects.requireNonNull( dataSourceConfig );
-
-        LeftOrRightOrBaseline sourceType = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
+        Objects.requireNonNull( orientation );
 
         // Must have one or more right sources
         for ( DataSourceConfig.Source source : dataSourceConfig.getSource() )
@@ -808,12 +816,17 @@ public class SourceLoader
             // Only create a link if the source is already in the load list/map
             if ( sources.containsKey( source ) )
             {
-                sources.get( source ).getRight().add( sourceType );
+                sources.get( source )
+                       .getRight()
+                       .add( orientation );
             }
             // Load
             else
             {
-                sources.put( source, Pair.of( dataSourceConfig, new ArrayList<>() ) );
+                OrientedDataSource orientedSource = new OrientedDataSource( dataSourceConfig, orientation );
+                Pair<OrientedDataSource, List<LeftOrRightOrBaseline>> sourcePair
+                        = Pair.of( orientedSource, new ArrayList<>() );
+                sources.put( source, sourcePair );
             }
         }
     }
@@ -906,5 +919,13 @@ public class SourceLoader
                                                                    systemSettings,
                                                                    griddedFeatures );
     }
+
+    /**
+     * An oriented data source.
+     *
+     * @param source the data source
+     * @param orientation the orientation
+     */
+    private record OrientedDataSource( DataSourceConfig source, LeftOrRightOrBaseline orientation ) {}
 
 }

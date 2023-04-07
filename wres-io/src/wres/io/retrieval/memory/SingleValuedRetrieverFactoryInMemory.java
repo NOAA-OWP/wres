@@ -206,7 +206,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         // in-memory store. This results from gridded time-series data being read on "ingest" when using in-memory
         // mode versus "retrieval" when using a persistent store and "retrieval" mode allows multiple sources to be
         // collected together and read into a single time-series
-        if ( this.project.usesGriddedData( this.project.getDeclaredDataSource( orientation ) ) )
+        if ( this.project.usesGriddedData( orientation ) )
         {
             Map<Feature, List<TimeSeries<Double>>> outerGrouped =
                     allSeries.collect( Collectors.groupingBy( next -> next.getMetadata().getFeature() ) );

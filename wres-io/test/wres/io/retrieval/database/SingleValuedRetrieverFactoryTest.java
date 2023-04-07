@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieval.database.RetrieverTestConstants.*;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -52,7 +53,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
@@ -98,7 +98,7 @@ public class SingleValuedRetrieverFactoryTest
     }
 
     @Before
-    public void runBeforeEachTest() throws SQLException, LiquibaseException
+    public void runBeforeEachTest() throws SQLException, LiquibaseException, IOException
     {
         MockitoAnnotations.openMocks( this );
 
@@ -225,7 +225,6 @@ public class SingleValuedRetrieverFactoryTest
     @Test
     public void testGetRightRetrieverWithTimeWindowReturnsOneTimeSeriesWithThreeEvents()
     {
-
         // The time window to select events
         TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "2023-03-31T11:00:00Z" ),
                                                          T2023_04_01T00_00_00Z,
@@ -426,22 +425,29 @@ public class SingleValuedRetrieverFactoryTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException
+    private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException, IOException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
                                                                     DatasourceType.OBSERVATIONS );
         DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
                                                                      DatasourceType.SINGLE_VALUED_FORECASTS );
-        LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}", rightData );
+        DataSource baselineData =
+                RetrieverTestData.generateBaselineDataSource( DatasourceType.SINGLE_VALUED_FORECASTS );
+
+        LOGGER.debug( "leftData: {}", leftData );
+        LOGGER.debug( "rightData: {}", rightData );
+        LOGGER.debug( "baselineData: {}", baselineData );
+
         ProjectConfig.Inputs fakeInputs =
-                new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
+                new ProjectConfig.Inputs( leftData.getContext(),
+                                          rightData.getContext(),
+                                          ( DataSourceBaselineConfig ) baselineData.getContext() );
         PairConfig pairConfig = new PairConfig( null,
                                                 null,
                                                 null,
                                                 List.of( new NamedFeature( FEATURE.getName(),
                                                                            FEATURE.getName(),
-                                                                           null ) ),
+                                                                           FEATURE.getName() ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -456,47 +462,74 @@ public class SingleValuedRetrieverFactoryTest
                                                 null,
                                                 null,
                                                 null );
+
+        IngestResult ingestResultOne;
+        IngestResult ingestResultTwo;
+        IngestResult ingestResultThree;
+        IngestResult ingestResultOneBaseline;
+        IngestResult ingestResultTwoBaseline;
+
         ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
-        TimeSeriesIngester ingesterOne =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamOne =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, rightData ) );
-        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
-                                                  .get( 0 );
+        try ( DatabaseTimeSeriesIngester ingesterOne =
+                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                              .setDatabase( this.wresDatabase )
+                                                              .setCaches( this.caches )
+                                                              .setLockManager( this.lockManager )
+                                                              .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamOne =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, rightData ) );
+            ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
+                                         .get( 0 );
+
+
+            Stream<TimeSeriesTuple> tupleStreamOneBaseline =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, baselineData ) );
+            ingestResultOneBaseline = ingesterOne.ingest( tupleStreamOneBaseline, baselineData )
+                                                 .get( 0 );
+        }
+
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
 
-        TimeSeriesIngester ingesterTwo =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamTwo =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
-                                                  .get( 0 );
+        try ( DatabaseTimeSeriesIngester ingesterTwo =
+                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                              .setDatabase( this.wresDatabase )
+                                                              .setCaches( this.caches )
+                                                              .setLockManager( this.lockManager )
+                                                              .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamTwo =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
+            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
+                                         .get( 0 );
+
+            Stream<TimeSeriesTuple> tupleStreamTwoBaseline =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, baselineData ) );
+            ingestResultTwoBaseline = ingesterTwo.ingest( tupleStreamTwoBaseline, baselineData )
+                                                 .get( 0 );
+        }
 
         TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterThree =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamThree =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree, leftData ) );
-        IngestResult ingestResultThree =
-                ingesterThree.ingest( tupleStreamThree, leftData )
-                             .get( 0 );
+        try ( DatabaseTimeSeriesIngester ingesterThree =
+                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                              .setDatabase( this.wresDatabase )
+                                                              .setCaches( this.caches )
+                                                              .setLockManager( this.lockManager )
+                                                              .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamThree =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree, leftData ) );
+            ingestResultThree =
+                    ingesterThree.ingest( tupleStreamThree, leftData )
+                                 .get( 0 );
+        }
 
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
+                                              ingestResultOneBaseline,
+                                              ingestResultTwoBaseline,
                                               ingestResultThree );
 
         try ( Statement statement = this.rawConnection.createStatement() )
@@ -506,17 +539,17 @@ public class SingleValuedRetrieverFactoryTest
 
             while ( sourceData.next() )
             {
-                LOGGER.info( "source_id={} hash={} measurementunit_id={} path={}",
-                             sourceData.getLong( "source_id" ),
-                             sourceData.getString( "hash" ),
-                             sourceData.getShort( "measurementunit_id" ),
-                             sourceData.getString( "path" ) );
+                LOGGER.debug( "source_id={} hash={} measurementunit_id={} path={}",
+                              sourceData.getLong( "source_id" ),
+                              sourceData.getString( "hash" ),
+                              sourceData.getShort( "measurementunit_id" ),
+                              sourceData.getString( "path" ) );
             }
         }
 
-        LOGGER.info( "ingestResultOne: {}", ingestResultOne );
-        LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
-        LOGGER.info( "ingestResultThree: {}", ingestResultThree );
+        LOGGER.debug( "ingestResultOne: {}", ingestResultOne );
+        LOGGER.debug( "ingestResultTwo: {}", ingestResultTwo );
+        LOGGER.debug( "ingestResultThree: {}", ingestResultThree );
         Project project = Projects.getProject( this.wresDatabase,
                                                fakeConfig,
                                                this.caches,

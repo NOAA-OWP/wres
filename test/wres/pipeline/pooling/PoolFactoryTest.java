@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -105,11 +104,7 @@ class PoolFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() )
-               .thenReturn( projectConfig );
-
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         Geometry keyOne = MessageFactory.getGeometry( "DRRC2", null, null, null );
         Geometry keyTwo = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
@@ -194,11 +189,7 @@ class PoolFactoryTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() )
-               .thenReturn( projectConfig );
-
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         Geometry keyOne = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
         Geometry keyTwo = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );

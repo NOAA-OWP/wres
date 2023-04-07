@@ -48,7 +48,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /** The wrapped measurement unit for convenient access. */
     private final MeasurementUnit measurementUnit;
 
-    /** The wrapped time scale for convenient access. */
+    /** The wrapped timescale for convenient access. */
     private final TimeScaleOuter timeScale;
 
     /** The wrapped feature group for convenient access. */

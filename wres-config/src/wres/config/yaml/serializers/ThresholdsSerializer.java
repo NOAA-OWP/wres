@@ -2,6 +2,8 @@ package wres.config.yaml.serializers;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
 
@@ -74,15 +78,20 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                                                           String context,
                                                           JsonGenerator writer ) throws IOException
     {
-        Map<String,Set<Threshold>> grouped = thresholds.stream()
-                                                       .collect( Collectors.groupingBy( next -> next.threshold()
-                                                                                                    .getName(),
-                                                                                        Collectors.toSet() ) );
+
+
+        // Preserve insertion order
+        Map<String, Set<Threshold>> grouped
+                = thresholds.stream()
+                            .collect( Collectors.groupingBy( next -> next.threshold()
+                                                                         .getName(),
+                                                             LinkedHashMap::new,
+                                                             Collectors.toCollection( LinkedHashSet::new ) ) );
         // Write the groups to an array, one set in each position
-        if( grouped.size() > 1 )
+        if ( grouped.size() > 1 )
         {
             writer.writeStartArray();
-            for( Set<Threshold> nextThresholds: grouped.values() )
+            for ( Set<Threshold> nextThresholds : grouped.values() )
             {
                 this.writeThresholdsWithFullMetadata( nextThresholds, context, writer );
             }
@@ -122,25 +131,30 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
 
         // More than one feature?
         if ( thresholds.stream()
-                       .anyMatch( next -> Objects.nonNull( next.featureName() ) ) )
+                       .anyMatch( next -> Objects.nonNull( next.feature() ) ) )
         {
             writer.writeFieldName( "values" );
 
             // Start the array
             writer.writeStartArray();
 
-            Map<String, List<Threshold>> groupedByFeature = thresholds.stream()
-                                                                      .collect( Collectors.groupingBy( Threshold::featureName ) );
-            for ( Map.Entry<String, List<Threshold>> nextGroup : groupedByFeature.entrySet() )
+            // Preserve insertion order
+            Map<Geometry, List<Threshold>> groupedByFeature
+                    = thresholds.stream()
+                                .collect( Collectors.groupingBy( Threshold::feature,
+                                                                 LinkedHashMap::new,
+                                                                 Collectors.toList() ) );
+
+            for ( Map.Entry<Geometry, List<Threshold>> nextGroup : groupedByFeature.entrySet() )
             {
-                String name = nextGroup.getKey();
+                Geometry geometry = nextGroup.getKey();
                 List<Threshold> nextThresholds = nextGroup.getValue();
                 double[] values = this.getThresholdValues( context, nextThresholds );
                 for ( double nextValue : values )
                 {
                     writer.writeStartObject();
                     writer.writeNumberField( "value", nextValue );
-                    writer.writeStringField( "feature", name );
+                    writer.writeStringField( "feature", geometry.getName() );
                     writer.writeEndObject();
                 }
             }
@@ -174,6 +188,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                             .isBlank() )
         {
             writer.writeStringField( "unit", innerThreshold.getThresholdValueUnits() );
+        }
+
+        if ( Objects.nonNull( first.featureNameFrom() )
+             && first.featureNameFrom() != Threshold.DEFAULT_FEATURE_NAME_FROM )
+        {
+            writer.writeStringField( "feature_name_from", first.featureNameFrom()
+                                                               .toString() );
         }
 
         writer.writeEndObject();
@@ -227,10 +248,10 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                                                             .clearRightThresholdValue()
                                                             .build();
 
-            Threshold blankOuter = new Threshold( blank, null, null );
+            Threshold blankOuter = new Threshold( blank, null, null, null );
 
             if ( !blankOuter.equals( DeclarationFactory.DEFAULT_THRESHOLD )
-                 || Objects.nonNull( next.featureName() ) )
+                 || Objects.nonNull( next.feature() ) )
             {
                 return false;
             }

@@ -28,43 +28,46 @@ public class FormatsSerializer extends JsonSerializer<Formats>
     {
         writer.writeStartArray();
 
+        Outputs outputs = formats.formats();
+
         // Write the formats without parameters
-        if ( Objects.nonNull( formats.protobufFormat() ) )
+        if ( outputs.hasProtobuf() )
         {
             writer.writeString( "protobuf" );
         }
-        if ( Objects.nonNull( formats.netcdf2Format() ) )
+        if ( outputs.hasNetcdf2() )
         {
             writer.writeString( "netcdf2" );
         }
 
         // The numeric formats do not have effective parameters because the decimal precision is abstracted away, one
         // for all formats currently and the deprecated netcdf parameters are not modeled
-        if ( Objects.nonNull( formats.csv2Format() ) )
+        if ( outputs.hasCsv2() )
         {
             writer.writeString( "csv2" );
         }
-        if ( Objects.nonNull( formats.csvFormat() ) )
+        if ( outputs.hasCsv() )
         {
             writer.writeString( "csv" );
         }
-        if ( Objects.nonNull( formats.pairsFormat() ) )
+        if ( outputs.hasPairs() )
         {
             writer.writeString( "pairs" );
         }
-        if ( Objects.nonNull( formats.netcdfFormat() ) )
+        if ( outputs.hasNetcdf() )
         {
             writer.writeString( "netcdf" );
         }
 
         // Write the formats that allow parameters
-        if ( Objects.nonNull( formats.pngFormat() ) )
+        if ( outputs.hasPng() )
         {
             // Non-default parameter values
-            if ( !Formats.PNG_FORMAT.equals( formats.pngFormat() ) )
+            if ( !Formats.PNG_FORMAT.equals( outputs.getPng() ) )
             {
                 this.writeNonDefaultGraphicsFormat( "png",
-                                                    formats.pngFormat().getOptions(),
+                                                    outputs.getPng()
+                                                           .getOptions(),
                                                     Formats.PNG_FORMAT.getOptions(),
                                                     writer );
             }
@@ -75,13 +78,14 @@ public class FormatsSerializer extends JsonSerializer<Formats>
             }
         }
 
-        if ( Objects.nonNull( formats.svgFormat() ) )
+        if ( outputs.hasSvg() )
         {
             // Non-default parameter values
-            if ( !Formats.SVG_FORMAT.equals( formats.svgFormat() ) )
+            if ( !Formats.SVG_FORMAT.equals( outputs.getSvg() ) )
             {
                 this.writeNonDefaultGraphicsFormat( "svg",
-                                                    formats.svgFormat().getOptions(),
+                                                    outputs.getSvg()
+                                                           .getOptions(),
                                                     Formats.SVG_FORMAT.getOptions(),
                                                     writer );
             }
