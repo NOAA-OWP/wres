@@ -1,4 +1,4 @@
-package wres.io.geography;
+package wres.io.geography.wrds;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.geography.wrds.WrdsLocation;
 import wres.io.ingesting.PreIngestException;
 
 /**
@@ -44,21 +43,21 @@ import wres.io.ingesting.PreIngestException;
  * <p>TODO: decouple this implementation from a particular feature service,
  * currently {@link WrdsFeatureService}, by injecting a service interface.
  *
- * <p>TODO: there are some implausible long and complicated methods in this
+ * <p>TODO: there are some implausibly long and complicated methods in this
  * class. Fix them.
  */
 
-public class FeatureFinder
+public class WrdsFeatureFinder
 {
     private static final String DELIMITER = "/";
 
     private static final String WRES_NOT_READY_TO_LOOK_UP = "WRES not ready to look up ";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureFinder.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureFinder.class );
 
     private static final int MAX_SAFE_URL_LENGTH = 2000;
 
-    private FeatureFinder()
+    private WrdsFeatureFinder()
     {
         // Do not construct
     }
@@ -113,8 +112,8 @@ public class FeatureFinder
 
         // Determine whether there are any sparse features either in a grouped or singleton context
         if ( !requiresFeatureRequests
-             && FeatureFinder.getSparseFeatures( pairConfig, hasBaseline )
-                             .isEmpty() )
+             && WrdsFeatureFinder.getSparseFeatures( pairConfig, hasBaseline )
+                                 .isEmpty() )
         {
             LOGGER.debug( "No need to fill features, no sparse features and no requests needed, returning the input "
                           + "declaration." );
@@ -124,32 +123,32 @@ public class FeatureFinder
         // Figure out if the same authority is used on multiple sides. If so,
         // consolidate lists.
         FeatureDimension leftDimension =
-                FeatureFinder.determineDimension( projectDeclaration.getInputs().getLeft() );
+                WrdsFeatureFinder.determineDimension( projectDeclaration.getInputs().getLeft() );
         FeatureDimension rightDimension =
-                FeatureFinder.determineDimension( projectDeclaration.getInputs().getRight() );
+                WrdsFeatureFinder.determineDimension( projectDeclaration.getInputs().getRight() );
         FeatureDimension baselineDimension = null;
         
         if ( hasBaseline )
         {
-            baselineDimension = FeatureFinder.determineDimension( projectDeclaration.getInputs().getBaseline() );
+            baselineDimension = WrdsFeatureFinder.determineDimension( projectDeclaration.getInputs().getBaseline() );
         }
 
         PairConfig originalPairDeclaration = projectDeclaration.getPair();
         FeatureService declaredFeatureService = originalPairDeclaration.getFeatureService();
 
         // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
-        List<NamedFeature> filledSingletonFeatures = FeatureFinder.fillSingletonFeatures( projectDeclaration,
-                                                                                     declaredFeatureService,
-                                                                                     leftDimension,
-                                                                                     rightDimension,
-                                                                                     baselineDimension );
+        List<NamedFeature> filledSingletonFeatures = WrdsFeatureFinder.fillSingletonFeatures( projectDeclaration,
+                                                                                              declaredFeatureService,
+                                                                                              leftDimension,
+                                                                                              rightDimension,
+                                                                                              baselineDimension );
 
         // Explicitly declared feature groups
-        List<FeaturePool> filledGroupedFeatures = FeatureFinder.fillGroupedFeatures( projectDeclaration,
-                                                                                     declaredFeatureService,
-                                                                                     leftDimension,
-                                                                                     rightDimension,
-                                                                                     baselineDimension );
+        List<FeaturePool> filledGroupedFeatures = WrdsFeatureFinder.fillGroupedFeatures( projectDeclaration,
+                                                                                         declaredFeatureService,
+                                                                                         leftDimension,
+                                                                                         rightDimension,
+                                                                                         baselineDimension );
 
         if ( filledSingletonFeatures.isEmpty() && filledGroupedFeatures.isEmpty() )
         {
@@ -245,12 +244,12 @@ public class FeatureFinder
                                                    .getFeature();
 
         List<NamedFeature> filledFeatures =
-                FeatureFinder.fillFeatures( projectDeclaration,
-                                            featureService,
-                                            features,
-                                            leftDimension,
-                                            rightDimension,
-                                            baselineDimension );
+                WrdsFeatureFinder.fillFeatures( projectDeclaration,
+                                                featureService,
+                                                features,
+                                                leftDimension,
+                                                rightDimension,
+                                                baselineDimension );
 
         // Add in group requests from the feature service
         List<NamedFeature> consolidatedFeatures = new ArrayList<>( filledFeatures );
@@ -263,12 +262,12 @@ public class FeatureFinder
                     featureService.getGroup()
                                   .stream()
                                   .filter( next -> !next.isPool() )
-                                  .flatMap( nextGroup -> FeatureFinder.getFeatureGroup( featureService,
-                                                                                        nextGroup,
-                                                                                        leftDimension,
-                                                                                        rightDimension,
-                                                                                        baselineDimension )
-                                                                      .stream() )
+                                  .flatMap( nextGroup -> WrdsFeatureFinder.getFeatureGroup( featureService,
+                                                                                            nextGroup,
+                                                                                            leftDimension,
+                                                                                            rightDimension,
+                                                                                            baselineDimension )
+                                                                          .stream() )
                                   .toList();
 
             if ( LOGGER.isDebugEnabled() )
@@ -321,12 +320,12 @@ public class FeatureFinder
             List<NamedFeature> features = nextGroup.getFeature();
 
             List<NamedFeature> filledFeatures =
-                    FeatureFinder.fillFeatures( projectDeclaration,
-                                                featureService,
-                                                features,
-                                                leftDimension,
-                                                rightDimension,
-                                                baselineDimension );
+                    WrdsFeatureFinder.fillFeatures( projectDeclaration,
+                                                    featureService,
+                                                    features,
+                                                    leftDimension,
+                                                    rightDimension,
+                                                    baselineDimension );
 
             LOGGER.debug( "Densified feature group {}.", nextGroup.getName() );
 
@@ -343,11 +342,11 @@ public class FeatureFinder
             {
                 if ( nextGroup.isPool() )
                 {
-                    List<NamedFeature> featuresToGroup = FeatureFinder.getFeatureGroup( featureService,
-                                                                                   nextGroup,
-                                                                                   leftDimension,
-                                                                                   rightDimension,
-                                                                                   baselineDimension );
+                    List<NamedFeature> featuresToGroup = WrdsFeatureFinder.getFeatureGroup( featureService,
+                                                                                            nextGroup,
+                                                                                            leftDimension,
+                                                                                            rightDimension,
+                                                                                            baselineDimension );
 
                     FeaturePool pool = new FeaturePool( featuresToGroup, nextGroup.getValue() );
 
@@ -401,7 +400,7 @@ public class FeatureFinder
         for ( NamedFeature feature : sparseFeatures )
         {
             // Simple case: all elements are present.
-            if ( FeatureFinder.isFullyDeclared( feature, projectHasBaseline ) )
+            if ( WrdsFeatureFinder.isFullyDeclared( feature, projectHasBaseline ) )
             {
                 continue;
             }
@@ -1017,7 +1016,7 @@ public class FeatureFinder
                                               + "'featureDimension' attribute "
                                               + "of left/right/baseline. Valid "
                                               + "values include: "
-                                              + FeatureFinder.getValidFeatureDimensionValues() );
+                                              + WrdsFeatureFinder.getValidFeatureDimensionValues() );
 
         }
 

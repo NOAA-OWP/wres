@@ -414,7 +414,7 @@ public class ConfigHelper
      * <p>Not all readers require declared features, so those projects including
      * solely CSV or PI-XML, for example, will not need this method.
      *
-     * <p>This method is also used by FeatureFinder to get what is available from
+     * <p>This method is also used by WrdsFeatureFinder to get what is available from
      * a sparse declaration. It will give a dense declaration to the rest of the
      * evaluation pipeline so that reader will have a dense declaration.
      *

@@ -1,4 +1,4 @@
-package wres.io.geography;
+package wres.io.geography.wrds;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -30,7 +30,6 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureService;
 import wres.config.generated.ProjectConfig;
-import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.v2.WrdsLocationRootDocument;
 import wres.io.geography.wrds.v3.WrdsLocationRootDocumentV3;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
@@ -43,7 +42,7 @@ import wres.io.reading.web.WebClient;
  * feature dimensions and retrieval of features from a supplied URI.
  * 
  * <p>TODO: abstract an interface from this class if more than one feature service implementation arises. In that case,
- * the {@link FeatureFinder} API should be changed to accept an instance of the abstracted class. The objective would
+ * the {@link WrdsFeatureFinder} API should be changed to accept an instance of the abstracted class. The objective would
  * be an improved separation of two concerns, namely filling out a sparse declaration with dense features on the one 
  * hand and acquiring named features from a feature service using partial or implicit declaration, on the other.
  * 

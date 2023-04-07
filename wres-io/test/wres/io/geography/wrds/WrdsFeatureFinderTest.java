@@ -1,4 +1,4 @@
-package wres.io.geography;
+package wres.io.geography.wrds;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,9 +23,8 @@ import wres.config.generated.FeatureService;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnitAlias;
-import wres.io.geography.wrds.WrdsLocation;
 
-public class FeatureFinderTest
+public class WrdsFeatureFinderTest
 {
     private static final DataSourceConfig BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION =
             new DataSourceConfig( DatasourceType.SIMULATIONS,
@@ -228,7 +227,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null,
                                                          null );
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
         assertEquals( projectConfig, result );
     }
 
@@ -253,7 +252,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null,
                                                          null );
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
         assertEquals( projectConfig, result );
     }
 
@@ -272,9 +271,9 @@ public class FeatureFinderTest
         // Pass in sparsely declared features
         List<NamedFeature> features = List.of( RIGHT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -282,7 +281,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -309,9 +308,9 @@ public class FeatureFinderTest
         // Pass in sparsely declared features
         List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -319,7 +318,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -345,9 +344,9 @@ public class FeatureFinderTest
         // Pass in sparsely declared features
         List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           LEFT_NAME_TWO_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -355,7 +354,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -382,9 +381,9 @@ public class FeatureFinderTest
         // Pass in sparsely declared features
         List<NamedFeature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -392,7 +391,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -418,9 +417,9 @@ public class FeatureFinderTest
         // Pass in sparsely declared features
         List<NamedFeature> features = List.of( BASELINE_NAME_ONE_DECLARED_FEATURE,
                                           BASELINE_NAME_TWO_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -428,7 +427,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -457,9 +456,9 @@ public class FeatureFinderTest
         List<NamedFeature> features = List.of( LEFT_NAME_ONE_DECLARED_FEATURE,
                                           RIGHT_NAME_TWO_DECLARED_FEATURE,
                                           BASELINE_NAME_THREE_DECLARED_FEATURE );
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                null,
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    null,
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -467,7 +466,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<NamedFeature> resultFeatures = result.getPair()
                                              .getFeature();
@@ -497,9 +496,9 @@ public class FeatureFinderTest
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
 
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( null,
-                                                                                List.of( featureGroup ),
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( null,
+                                                                                    List.of( featureGroup ),
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -507,7 +506,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         List<FeaturePool> actual = result.getPair()
                                          .getFeatureGroup();
@@ -539,9 +538,9 @@ public class FeatureFinderTest
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
 
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( features,
-                                                                                List.of( featureGroup ),
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( features,
+                                                                                    List.of( featureGroup ),
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -549,7 +548,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         // Assert against the singleton features
         List<NamedFeature> actualFeatures = result.getPair()
@@ -581,9 +580,9 @@ public class FeatureFinderTest
         FeatureGroup featureGroup = new FeatureGroup( "state", "AL", true );
         FeatureService featureService = new FeatureService( uri, List.of( featureGroup ) );
 
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( null,
-                                                                                null,
-                                                                                featureService );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( null,
+                                                                                    null,
+                                                                                    featureService );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -596,7 +595,7 @@ public class FeatureFinderTest
             utilities.when( () -> WrdsFeatureService.read( Mockito.any() ) )
                      .thenReturn( List.of( new WrdsLocation( "foo", "bar", "baz" ) ) );
 
-            ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+            ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
             List<FeaturePool> actual = result.getPair()
                                              .getFeatureGroup();
@@ -632,9 +631,9 @@ public class FeatureFinderTest
         String groupName = "A GROUP!";
         FeaturePool featureGroup = new FeaturePool( features, groupName );
 
-        PairConfig pairConfig = FeatureFinderTest.getBoilerplatePairConfigWith( singletons,
-                                                                                List.of( featureGroup ),
-                                                                                null );
+        PairConfig pairConfig = WrdsFeatureFinderTest.getBoilerplatePairConfigWith( singletons,
+                                                                                    List.of( featureGroup ),
+                                                                                    null );
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
                                                          null,
@@ -642,7 +641,7 @@ public class FeatureFinderTest
                                                          null,
                                                          null );
 
-        ProjectConfig result = FeatureFinder.fillFeatures( projectConfig );
+        ProjectConfig result = WrdsFeatureFinder.fillFeatures( projectConfig );
 
         // Assert against the singleton features
         List<NamedFeature> actualFeatures = result.getPair()

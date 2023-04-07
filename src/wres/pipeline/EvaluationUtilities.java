@@ -54,7 +54,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
-import wres.io.geography.FeatureFinder;
+import wres.io.geography.wrds.WrdsFeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -405,7 +405,7 @@ class EvaluationUtilities
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
             // Look up any needed feature correlations, generate a new declaration.
-            ProjectConfig featurefulProjectConfig = FeatureFinder.fillFeatures( projectConfig );
+            ProjectConfig featurefulProjectConfig = WrdsFeatureFinder.fillFeatures( projectConfig );
             LOGGER.debug( "Filled out features for project. Before: {} After: {}",
                           projectConfig,
                           featurefulProjectConfig );
