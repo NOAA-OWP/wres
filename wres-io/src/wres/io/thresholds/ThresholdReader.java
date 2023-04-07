@@ -51,13 +51,12 @@ public class ThresholdReader
      */
     public Map<FeatureTuple, ThresholdsByMetric> read()
     {
-        ExternalThresholdReader externalReader = new ExternalThresholdReader(
-                this.systemSettings,
-                this.projectConfig,
-                this.metricsConfig,
-                this.features,
-                this.desiredMeasurementUnitConverter,
-                this.builders );
+        ExternalThresholdReader externalReader = new ExternalThresholdReader( this.systemSettings,
+                                                                              this.projectConfig,
+                                                                              this.metricsConfig,
+                                                                              this.features,
+                                                                              this.desiredMeasurementUnitConverter,
+                                                                              this.builders );
 
         MeasurementUnit units =
                 MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );

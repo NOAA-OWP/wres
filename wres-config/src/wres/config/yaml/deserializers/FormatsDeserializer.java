@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.Format;
 import wres.config.yaml.components.Formats;
 import wres.statistics.generated.Outputs;
@@ -36,7 +35,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
         ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 
-        FormatsBuilder builder = FormatsBuilder.builder();
+        Outputs.Builder builder = Outputs.newBuilder();
 
         int nodeCount = node.size();
 
@@ -52,7 +51,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
             this.addFormat( nextNode, builder );
         }
 
-        return builder.build();
+        return new Formats( builder.build() );
     }
 
     /**
@@ -61,7 +60,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
      * @param builder the builder to mutate
      */
 
-    private void addFormat( JsonNode node, FormatsBuilder builder )
+    private void addFormat( JsonNode node, Outputs.Builder builder )
     {
         // Parameterized format
         if ( node.has( "format" ) )
@@ -82,21 +81,21 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
      * @param formatName the format name
      * @param builder the builder to mutate
      */
-    private void addSimpleFormat( String formatName, FormatsBuilder builder )
+    private void addSimpleFormat( String formatName, Outputs.Builder builder )
     {
         LOGGER.debug( "Encountered a simple format request for {}.", formatName );
 
         Format format = Format.valueOf( formatName.toUpperCase() );
         switch ( format )
         {
-            case PNG -> builder.pngFormat( Formats.PNG_FORMAT );
-            case SVG -> builder.svgFormat( Formats.SVG_FORMAT );
-            case NETCDF -> builder.netcdfFormat( Formats.NETCDF_FORMAT );
-            case NETCDF2 -> builder.netcdf2Format( Formats.NETCDF2_FORMAT );
-            case CSV -> builder.csvFormat( Formats.CSV_FORMAT );
-            case CSV2 -> builder.csv2Format( Formats.CSV2_FORMAT );
-            case PROTOBUF -> builder.protobufFormat( Formats.PROTOBUF_FORMAT );
-            case PAIRS -> builder.pairsFormat( Formats.PAIR_FORMAT );
+            case PNG -> builder.setPng( Formats.PNG_FORMAT );
+            case SVG -> builder.setSvg( Formats.SVG_FORMAT );
+            case NETCDF -> builder.setNetcdf( Formats.NETCDF_FORMAT );
+            case NETCDF2 -> builder.setNetcdf2( Formats.NETCDF2_FORMAT );
+            case CSV -> builder.setCsv( Formats.CSV_FORMAT );
+            case CSV2 -> builder.setCsv2( Formats.CSV2_FORMAT );
+            case PROTOBUF -> builder.setProtobuf( Formats.PROTOBUF_FORMAT );
+            case PAIRS -> builder.setPairs( Formats.PAIR_FORMAT );
             default -> throw new IllegalArgumentException( "Unrecognized format '" + format + "'." );
         }
     }
@@ -107,7 +106,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
      * @param builder the builder to mutate
      * @throws IllegalArgumentException if the format name is unrecognized
      */
-    private void addParameterizedFormat( JsonNode node, FormatsBuilder builder )
+    private void addParameterizedFormat( JsonNode node, Outputs.Builder builder )
     {
         String formatName = node.get( "format" )
                                 .asText()
@@ -126,7 +125,7 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
                 Outputs.PngFormat pngFormat = Formats.PNG_FORMAT.toBuilder()
                                                         .setOptions( graphicFormatBuilder )
                                                         .build();
-                builder.pngFormat( pngFormat );
+                builder.setPng( pngFormat );
             }
             case SVG ->
             {
@@ -136,12 +135,12 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
                 Outputs.SvgFormat svgFormat = Formats.SVG_FORMAT.toBuilder()
                                                         .setOptions( graphicFormatBuilder )
                                                         .build();
-                builder.svgFormat( svgFormat );
+                builder.setSvg( svgFormat );
             }
-            case NETCDF -> builder.netcdfFormat( Formats.NETCDF_FORMAT );
-            case CSV -> builder.csvFormat( Formats.CSV_FORMAT );
-            case CSV2 -> builder.csv2Format( Formats.CSV2_FORMAT );
-            case PROTOBUF -> builder.protobufFormat( Formats.PROTOBUF_FORMAT );
+            case NETCDF -> builder.setNetcdf( Formats.NETCDF_FORMAT );
+            case CSV -> builder.setCsv( Formats.CSV_FORMAT );
+            case CSV2 -> builder.setCsv2( Formats.CSV2_FORMAT );
+            case PROTOBUF -> builder.setProtobuf( Formats.PROTOBUF_FORMAT );
             default -> throw new IllegalArgumentException( "Unrecognized format '" + format + "'." );
         }
     }

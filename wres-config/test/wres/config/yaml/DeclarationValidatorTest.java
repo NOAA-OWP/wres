@@ -27,7 +27,6 @@ import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
-import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.Season;
@@ -810,8 +809,8 @@ class DeclarationValidatorTest
         Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
         Set<Metric> metrics = Set.of( metric );
         TimePools timePool = new TimePools( 3, 1, ChronoUnit.HOURS );
-        Formats formats = FormatsBuilder.builder()
-                                        .csvFormat( Outputs.CsvFormat.getDefaultInstance() )
+        Outputs formats = Outputs.newBuilder()
+                                        .setCsv( Outputs.CsvFormat.getDefaultInstance() )
                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -819,7 +818,7 @@ class DeclarationValidatorTest
                                                                         .validDatePools( timePool )
                                                                         .referenceDatePools( timePool )
                                                                         .metrics( metrics )
-                                                                        .formats( formats )
+                                                                        .formats( new Formats( formats ) )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -869,14 +868,14 @@ class DeclarationValidatorTest
     @Test
     void testOutputFormatsWithDeprecatedOptionsResultsInWarnings()
     {
-        Formats formats = FormatsBuilder.builder()
-                                        .csvFormat( Outputs.CsvFormat.getDefaultInstance() )
-                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
+        Outputs formats = Outputs.newBuilder()
+                                        .setCsv( Outputs.CsvFormat.getDefaultInstance() )
+                                        .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                         .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
-                                                                        .formats( formats )
+                                                                        .formats( new Formats( formats ) )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -895,15 +894,15 @@ class DeclarationValidatorTest
     @Test
     void testInvalidNetcdfDeclarationResultsInErrorsAndWarnings()
     {
-        Formats formats = FormatsBuilder.builder()
-                                        .netcdf2Format( Outputs.Netcdf2Format.getDefaultInstance() )
-                                        .netcdfFormat( Outputs.NetcdfFormat.getDefaultInstance() )
+        Outputs formats = Outputs.newBuilder()
+                                        .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                        .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                         .build();
         FeatureGroups featureGroups = new FeatureGroups( Set.of() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
-                                                                        .formats( formats )
+                                                                        .formats( new Formats( formats ) )
                                                                         .featureGroups( featureGroups )
                                                                         .build();
 

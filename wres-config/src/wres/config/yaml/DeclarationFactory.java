@@ -120,7 +120,6 @@ import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FormatsBuilder;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -202,7 +201,7 @@ public class DeclarationFactory
                                                  .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                  .build();
     /** Default wrapped threshold. */
-    public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null );
+    public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null, null );
 
     /** All data threshold. */
     public static final Threshold ALL_DATA_THRESHOLD =
@@ -212,6 +211,7 @@ public class DeclarationFactory
                                                               .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                               .build(),
                            wres.config.yaml.components.ThresholdType.VALUE,
+                           null,
                            null );
 
     /** To stringify protobufs into presentable JSON. */
@@ -930,43 +930,42 @@ public class DeclarationFactory
             return;
         }
 
-        FormatsBuilder formatsBuilder = FormatsBuilder.builder( builder.formats() );
+        Outputs.Builder formatsBuilder = builder.formats()
+                                                .formats()
+                                                .toBuilder();
 
-        if ( Objects.nonNull( formatsBuilder.csv2Format() ) )
+        if ( formatsBuilder.hasCsv2() )
         {
-            Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.csv2Format()
-                                                                   .toBuilder();
+            Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.getCsv2Builder();
             Outputs.NumericFormat.Builder numericBuilder = csv2Builder.getOptionsBuilder();
             numericBuilder.setDecimalFormat( builder.decimalFormat()
                                                     .toPattern() );
             csv2Builder.setOptions( numericBuilder );
-            formatsBuilder.csv2Format( csv2Builder.build() );
+            formatsBuilder.setCsv2( csv2Builder );
         }
 
-        if ( Objects.nonNull( formatsBuilder.csvFormat() ) )
+        if ( formatsBuilder.hasCsv() )
         {
-            Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.csvFormat()
-                                                                 .toBuilder();
+            Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.getCsvBuilder();
             Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
             numericBuilder.setDecimalFormat( builder.decimalFormat()
                                                     .toPattern() );
             csvBuilder.setOptions( numericBuilder );
-            formatsBuilder.csvFormat( csvBuilder.build() );
+            formatsBuilder.setCsv( csvBuilder );
         }
 
-        if ( Objects.nonNull( formatsBuilder.pairsFormat() ) )
+        if ( formatsBuilder.hasPairs() )
         {
-            Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.pairsFormat()
-                                                                    .toBuilder();
+            Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.getPairsBuilder();
             Outputs.NumericFormat.Builder numericBuilder = pairsBuilder.getOptionsBuilder();
             numericBuilder.setDecimalFormat( builder.decimalFormat()
                                                     .toPattern() );
             pairsBuilder.setOptions( numericBuilder );
-            formatsBuilder.pairsFormat( pairsBuilder.build() );
+            formatsBuilder.setPairs( pairsBuilder );
         }
 
         // Set the new format info
-        builder.formats( formatsBuilder.build() );
+        builder.formats( new Formats( formatsBuilder.build() ) );
     }
 
     /**
@@ -984,9 +983,11 @@ public class DeclarationFactory
             return;
         }
 
-        FormatsBuilder formatsBuilder = FormatsBuilder.builder( builder.formats() );
+        Outputs.Builder formatsBuilder = builder.formats()
+                                                .formats()
+                                                .toBuilder();
 
-        if ( Objects.nonNull( formatsBuilder.pngFormat() ) )
+        if ( formatsBuilder.hasPng() )
         {
             List<MetricName> pngAvoid = builder.metrics()
                                                .stream()
@@ -998,16 +999,15 @@ public class DeclarationFactory
 
             LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",
                           pngAvoid );
-            Outputs.PngFormat.Builder pngBuilder = formatsBuilder.pngFormat()
-                                                                 .toBuilder();
+            Outputs.PngFormat.Builder pngBuilder = formatsBuilder.getPngBuilder();
             Outputs.GraphicFormat.Builder graphicBuilder = pngBuilder.getOptionsBuilder();
             graphicBuilder.clearIgnore()
                           .addAllIgnore( pngAvoid );
             pngBuilder.setOptions( graphicBuilder );
-            formatsBuilder.pngFormat( pngBuilder.build() );
+            formatsBuilder.setPng( pngBuilder );
         }
 
-        if ( Objects.nonNull( formatsBuilder.svgFormat() ) )
+        if ( formatsBuilder.hasSvg() )
         {
             List<MetricName> svgAvoid = builder.metrics()
                                                .stream()
@@ -1016,17 +1016,16 @@ public class DeclarationFactory
                                                .map( Metric::name )
                                                .map( next -> MetricName.valueOf( next.name() ) )
                                                .toList();
-            Outputs.SvgFormat.Builder svgBuilder = formatsBuilder.svgFormat()
-                                                                 .toBuilder();
+            Outputs.SvgFormat.Builder svgBuilder = formatsBuilder.getSvgBuilder();
             Outputs.GraphicFormat.Builder graphicBuilder = svgBuilder.getOptionsBuilder();
             graphicBuilder.clearIgnore()
                           .addAllIgnore( svgAvoid );
             svgBuilder.setOptions( graphicBuilder );
-            formatsBuilder.svgFormat( svgBuilder.build() );
+            formatsBuilder.setSvg( svgBuilder );
         }
 
         // Set the new format info
-        builder.formats( formatsBuilder.build() );
+        builder.formats( new Formats( formatsBuilder.build() ) );
     }
 
     /**
@@ -1036,19 +1035,15 @@ public class DeclarationFactory
      */
     private static void interpolateGraphicsFormatsFromMetricParameters( EvaluationDeclarationBuilder builder )
     {
-        FormatsBuilder formatsBuilder;
-
-        if ( Objects.isNull( builder.formats() ) )
+        Outputs.Builder formatsBuilder = Outputs.newBuilder();
+        if ( Objects.nonNull( builder.formats() ) )
         {
-            formatsBuilder = FormatsBuilder.builder();
-        }
-        else
-        {
-            formatsBuilder = FormatsBuilder.builder( builder.formats() );
+            formatsBuilder.mergeFrom( builder.formats()
+                                             .formats() );
         }
 
         // PNG format required but not declared?
-        if ( Objects.isNull( formatsBuilder.pngFormat() ) )
+        if ( !formatsBuilder.hasPng() )
         {
             boolean png = builder.metrics()
                                  .stream()
@@ -1058,12 +1053,12 @@ public class DeclarationFactory
             {
                 LOGGER.debug( "Discovered metrics that require PNG graphics, but the PNG format was not declared in "
                               + "the list of 'output_formats'. Adding the PNG format." );
-                formatsBuilder.pngFormat( Formats.PNG_FORMAT );
+                formatsBuilder.setPng( Formats.PNG_FORMAT );
             }
         }
 
         // SVG format required but not declared?
-        if ( Objects.isNull( formatsBuilder.svgFormat() ) )
+        if ( !formatsBuilder.hasSvg() )
         {
             boolean svg = builder.metrics()
                                  .stream()
@@ -1073,12 +1068,12 @@ public class DeclarationFactory
             {
                 LOGGER.debug( "Discovered metrics that require SVG graphics, but the SVG format was not declared in "
                               + "the list of 'output_formats'. Adding the SVG format." );
-                formatsBuilder.svgFormat( Formats.SVG_FORMAT );
+                formatsBuilder.setSvg( Formats.SVG_FORMAT );
             }
         }
 
         // Set the new format info
-        builder.formats( formatsBuilder.build() );
+        builder.formats( new Formats( formatsBuilder.build() ) );
     }
 
     /**
@@ -1184,13 +1179,13 @@ public class DeclarationFactory
      */
     private static void interpolateOutputFormats( EvaluationDeclarationBuilder builder )
     {
-        if ( Objects.isNull( builder.formats() ) || builder.formats().equals( FormatsBuilder.builder()
-                                                                                            .build() ) )
+        if ( Objects.isNull( builder.formats() )
+             || Objects.equals( builder.formats().formats(), Outputs.getDefaultInstance() ) )
         {
             LOGGER.debug( "Adding a default output format of CSV2 because no output formats were declared." );
-            FormatsBuilder formatsBuilder = FormatsBuilder.builder();
-            formatsBuilder.csv2Format( Formats.CSV2_FORMAT );
-            builder.formats( formatsBuilder.build() );
+            Outputs.Builder formatsBuilder = Outputs.newBuilder()
+                                                    .setCsv2( Formats.CSV2_FORMAT );
+            builder.formats( new Formats( formatsBuilder.build() ) );
         }
     }
 
@@ -2038,10 +2033,11 @@ public class DeclarationFactory
         }
 
         // Set the basic formats
-        FormatsBuilder formatsBuilder = FormatsBuilder.builder();
+        Outputs.Builder formatsBuilder = Outputs.newBuilder();
         if ( Objects.nonNull( builder.formats() ) )
         {
-            formatsBuilder = FormatsBuilder.builder( builder.formats() );
+            formatsBuilder.mergeFrom( builder.formats()
+                                             .formats() );
         }
 
         // Set the decimal formatter for the individual output options
@@ -2056,24 +2052,24 @@ public class DeclarationFactory
 
         switch ( output.getType() )
         {
-            case CSV, NUMERIC -> formatsBuilder.csvFormat( Formats.CSV_FORMAT.toBuilder()
-                                                                             .setOptions( numericFormat )
-                                                                             .build() );
-            case CSV2 -> formatsBuilder.csv2Format( Formats.CSV2_FORMAT.toBuilder()
-                                                                       .setOptions( numericFormat )
-                                                                       .build() );
+            case CSV, NUMERIC -> formatsBuilder.setCsv( Formats.CSV_FORMAT.toBuilder()
+                                                                          .setOptions( numericFormat )
+                                                                          .build() );
+            case CSV2 -> formatsBuilder.setCsv2( Formats.CSV2_FORMAT.toBuilder()
+                                                                    .setOptions( numericFormat )
+                                                                    .build() );
             case PNG, GRAPHIC -> DeclarationFactory.migratePngFormat( output, formatsBuilder, builder );
             case SVG -> DeclarationFactory.migrateSvgFormat( output, formatsBuilder, builder );
-            case NETCDF -> formatsBuilder.netcdfFormat( Formats.NETCDF_FORMAT );
-            case NETCDF_2 -> formatsBuilder.netcdf2Format( Formats.NETCDF2_FORMAT );
-            case PAIRS -> formatsBuilder.pairsFormat( Formats.PAIR_FORMAT.toBuilder()
-                                                                         .setOptions( numericFormat )
-                                                                         .build() );
-            case PROTOBUF -> formatsBuilder.protobufFormat( Formats.PROTOBUF_FORMAT );
+            case NETCDF -> formatsBuilder.setNetcdf( Formats.NETCDF_FORMAT );
+            case NETCDF_2 -> formatsBuilder.setNetcdf2( Formats.NETCDF2_FORMAT );
+            case PAIRS -> formatsBuilder.setPairs( Formats.PAIR_FORMAT.toBuilder()
+                                                                      .setOptions( numericFormat )
+                                                                      .build() );
+            case PROTOBUF -> formatsBuilder.setProtobuf( Formats.PROTOBUF_FORMAT );
         }
 
         // Migrate the formats
-        builder.formats( formatsBuilder.build() );
+        builder.formats( new Formats( formatsBuilder.build() ) );
     }
 
     /**
@@ -2084,7 +2080,7 @@ public class DeclarationFactory
      */
 
     private static void migratePngFormat( DestinationConfig output,
-                                          FormatsBuilder builder,
+                                          Outputs.Builder builder,
                                           EvaluationDeclarationBuilder evaluationBuilder )
     {
         Outputs.PngFormat.Builder pngBuilder = Formats.PNG_FORMAT.toBuilder();
@@ -2106,7 +2102,7 @@ public class DeclarationFactory
         }
 
         pngBuilder.setOptions( graphicsFormatBuilder );
-        builder.pngFormat( pngBuilder.build() );
+        builder.setPng( pngBuilder );
     }
 
     /**
@@ -2117,7 +2113,7 @@ public class DeclarationFactory
      */
 
     private static void migrateSvgFormat( DestinationConfig output,
-                                          FormatsBuilder builder,
+                                          Outputs.Builder builder,
                                           EvaluationDeclarationBuilder evaluationBuilder )
     {
         Outputs.SvgFormat.Builder svgBuilder = Formats.SVG_FORMAT.toBuilder();
@@ -2139,7 +2135,7 @@ public class DeclarationFactory
         }
 
         svgBuilder.setOptions( graphicsFormatBuilder );
-        builder.svgFormat( svgBuilder.build() );
+        builder.setSvg( svgBuilder );
     }
 
     /**
@@ -3212,17 +3208,25 @@ public class DeclarationFactory
                     unit = thresholdSource.getUnit();
                 }
 
+                // Defaults to left in the old-style declaration schema
+                DatasetOrientation featureNameFrom = DatasetOrientation.valueOf( thresholdSource.getFeatureNameFrom()
+                                                                                                .name() );
+
                 Set<Threshold> migrated = new LinkedHashSet<>();
                 Map<String, Set<wres.statistics.generated.Threshold>> external =
                         CsvThresholdReader.readThresholds( thresholds, unit );
                 for ( Map.Entry<String, Set<wres.statistics.generated.Threshold>> nextEntry : external.entrySet() )
                 {
                     String featureName = nextEntry.getKey();
+                    Geometry feature = Geometry.newBuilder()
+                                               .setName( featureName )
+                                               .build();
                     Set<wres.statistics.generated.Threshold> toMigrate = nextEntry.getValue();
                     Set<Threshold> innerMigrated = toMigrate.stream()
                                                             .map( next -> new Threshold( next,
                                                                                          canonicalType,
-                                                                                         featureName ) )
+                                                                                         feature,
+                                                                                         featureNameFrom ) )
                                                             .collect( Collectors.toCollection( LinkedHashSet::new ) );
                     migrated.addAll( innerMigrated );
                 }

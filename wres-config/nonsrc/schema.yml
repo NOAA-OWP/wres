@@ -710,6 +710,8 @@ definitions:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:
         "$ref": "#/definitions/ThresholdDataTypeEnum"
+      feature_name_from:
+        "$ref": "#/definitions/ObservedPredictedOrBaselineEnum"
       name:
         type: string
         minLength: 1
@@ -778,6 +780,8 @@ definitions:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:
         "$ref": "#/definitions/ThresholdDataTypeEnum"
+      feature_name_from:
+        "$ref": "#/definitions/ObservedPredictedOrBaselineEnum"
       name:
         type: string
         minLength: 1

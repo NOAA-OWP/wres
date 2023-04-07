@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -139,11 +138,7 @@ class PoolsGeneratorTest
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
         Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
 
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() )
-               .thenReturn( projectConfig );
-
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
@@ -253,11 +248,7 @@ class PoolsGeneratorTest
         Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
         Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
 
-        ProjectConfigPlus projectConfigPlus = Mockito.mock( ProjectConfigPlus.class );
-        Mockito.when( projectConfigPlus.getProjectConfig() )
-               .thenReturn( projectConfig );
-
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );

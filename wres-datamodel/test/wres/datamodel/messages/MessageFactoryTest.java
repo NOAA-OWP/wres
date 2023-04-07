@@ -514,7 +514,7 @@ class MessageFactoryTest
                                "</project>\r\n";
 
         ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
-        Evaluation actual = MessageFactory.parse( projectConfigPlus );
+        Evaluation actual = MessageFactory.parse( projectConfigPlus.getProjectConfig() );
 
         // Create the expected evaluation
         Outputs.Builder outputs = Outputs.newBuilder();
@@ -630,7 +630,7 @@ class MessageFactoryTest
 
 
         ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
-        Evaluation actual = MessageFactory.parse( projectConfigPlus );
+        Evaluation actual = MessageFactory.parse( projectConfigPlus.getProjectConfig() );
 
         Outputs.Builder outputs = Outputs.newBuilder()
                                          .setPng( PngFormat.newBuilder()

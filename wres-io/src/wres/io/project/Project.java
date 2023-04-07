@@ -122,23 +122,23 @@ public interface Project
     Duration getLatestAnalysisDuration();
 
     /**
-     * @return The earliest possible day in a season or null
+     * @return The earliest possible monthday in a season or null
      */
 
-    MonthDay getEarliestDayInSeason();
+    MonthDay getStartOfSeason();
 
     /**
-     * @return The latest possible day in a season or null
+     * @return The latest possible monthday in a season or null
      */
 
-    MonthDay getLatestDayInSeason();
+    MonthDay getEndOfSeason();
 
     /**
-     * @param dataSourceConfig the data source configuration
+     * @param orientation the orientation of the data source
      * @return true if the data source uses gridded data, false otherwise
      */
 
-    boolean usesGriddedData( DataSourceConfig dataSourceConfig );
+    boolean usesGriddedData( LeftOrRightOrBaseline orientation );
 
     /**
      * Returns unique identifier for this project data
@@ -148,13 +148,13 @@ public interface Project
     String getHash();
 
     /**
-     * @return whether or not baseline data is involved in the project
+     * @return whether there is a baseline
      */
 
     boolean hasBaseline();
 
     /**
-     * @return whether or not there is a generated baseline
+     * @return whether there is a generated baseline
      */
 
     boolean hasGeneratedBaseline();
@@ -166,7 +166,7 @@ public interface Project
     long getId();
 
     /**
-     * @return whether or not the project uses probability thresholds
+     * @return whether the project uses probability thresholds
      */
 
     boolean hasProbabilityThresholds();

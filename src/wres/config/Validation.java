@@ -3512,9 +3512,13 @@ public class Validation
 
         result = Validation.areDataSourcesValid( projectConfigPlus, right ) && result;
 
-        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, left ) && result;
+        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus,
+                                                                  left,
+                                                                  LeftOrRightOrBaseline.LEFT ) && result;
 
-        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, right ) && result;
+        result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus,
+                                                                  right,
+                                                                  LeftOrRightOrBaseline.RIGHT ) && result;
 
         result = Validation.isExistingTimeScaleValid( projectConfigPlus, left, LeftOrRightOrBaseline.LEFT ) && result;
 
@@ -3528,7 +3532,9 @@ public class Validation
 
             result = Validation.areLeftAndBaselineConsistent( projectConfigPlus, left, baseline ) && result;
 
-            result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus, baseline ) && result;
+            result = Validation.isTypeConsistentWithOtherDeclaration( projectConfigPlus,
+                                                                      baseline,
+                                                                      LeftOrRightOrBaseline.BASELINE ) && result;
 
             result = Validation.isExistingTimeScaleValid( projectConfigPlus, baseline, LeftOrRightOrBaseline.BASELINE )
                      && result;
@@ -3693,8 +3699,8 @@ public class Validation
      *
      *
      * @param projectConfigPlus the evaluation project declaration
-     * @param leftConfig the left data declaration
-     * @param baselineConfig the baseline data declaration
+     * @param left the left data declaration
+     * @param baseline the baseline data declaration
      */
 
     private static boolean areLeftAndBaselineConsistent( ProjectConfigPlus projectConfigPlus,
@@ -3731,16 +3737,15 @@ public class Validation
      *
      * @param projectConfigPlus the evaluation project declaration plus
      * @param dataSourceConfig the data source declaration to validate
+     * @param side the orientation of the data source
      * @return true when valid, false otherwise.
      */
 
     private static boolean isTypeConsistentWithOtherDeclaration( ProjectConfigPlus projectConfigPlus,
-                                                                 DataSourceConfig dataSourceConfig )
+                                                                 DataSourceConfig dataSourceConfig,
+                                                                 LeftOrRightOrBaseline side )
     {
         boolean valid = true;
-
-        LeftOrRightOrBaseline side = ConfigHelper.getLeftOrRightOrBaseline( projectConfigPlus.getProjectConfig(),
-                                                                            dataSourceConfig );
 
         // Ensemble filter not allowed unless type is ENSEMBLE_FORECASTS
         if ( dataSourceConfig.getType() != DatasourceType.ENSEMBLE_FORECASTS
@@ -3761,7 +3766,7 @@ public class Validation
         }
 
         // Type and interface shorthands consistent with each other?
-        return Validation.isTypeConsistentWithEachSourceInterface( projectConfigPlus, dataSourceConfig ) && valid;
+        return Validation.isTypeConsistentWithEachSourceInterface( projectConfigPlus, dataSourceConfig, side ) && valid;
     }
 
     /**
@@ -3899,11 +3904,13 @@ public class Validation
      *
      * @param projectConfigPlus the project declaration
      * @param dataSourceConfig the data source declaration, including the type
+     * @param lrb the data source orientation
      * @return true if the information is consistent, false otherwise
      */
 
     private static boolean isTypeConsistentWithEachSourceInterface( ProjectConfigPlus projectConfigPlus,
-                                                                    DataSourceConfig dataSourceConfig )
+                                                                    DataSourceConfig dataSourceConfig,
+                                                                    LeftOrRightOrBaseline lrb )
     {
         Objects.requireNonNull( projectConfigPlus );
         Objects.requireNonNull( dataSourceConfig );
@@ -3919,6 +3926,7 @@ public class Validation
         {
             isValid = Validation.isTypeConsistentWithSourceInterface( projectConfigPlus,
                                                                       dataSourceConfig,
+                                                                      lrb,
                                                                       nextInterface )
                       && isValid;
         }
@@ -3932,22 +3940,20 @@ public class Validation
      *
      * @param projectConfigPlus the project declaration
      * @param dataSourceConfig the data source declaration, including the type
+     * @param lrb the data source orientation
      * @param anInterface the interface
      * @return true if the information is consistent, false otherwise
      */
 
     private static boolean isTypeConsistentWithSourceInterface( ProjectConfigPlus projectConfigPlus,
                                                                 DataSourceConfig dataSourceConfig,
+                                                                LeftOrRightOrBaseline lrb,
                                                                 InterfaceShortHand anInterface )
     {
         Objects.requireNonNull( projectConfigPlus );
         Objects.requireNonNull( dataSourceConfig );
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         DatasourceType type = dataSourceConfig.getType();
-
-        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( projectConfig, dataSourceConfig );
-
         DatasourceType interfaceType = Validation.getDatasourceTypeFromInterfaceShortHand( anInterface );
 
         boolean isValid = true;

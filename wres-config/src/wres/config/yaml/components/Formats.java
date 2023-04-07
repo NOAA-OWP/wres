@@ -1,10 +1,10 @@
 package wres.config.yaml.components;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.deserializers.FormatsDeserializer;
@@ -12,19 +12,13 @@ import wres.config.yaml.serializers.FormatsSerializer;
 import wres.statistics.generated.Outputs;
 
 /**
+ * Wraps a canonical {@link Outputs} and provides a pretty string representation.
  * @author James Brown
  */
 @RecordBuilder
 @JsonSerialize( using = FormatsSerializer.class )
 @JsonDeserialize( using = FormatsDeserializer.class )
-public record Formats( Outputs.PngFormat pngFormat,
-                       Outputs.SvgFormat svgFormat,
-                       Outputs.CsvFormat csvFormat,
-                       Outputs.Csv2Format csv2Format,
-                       Outputs.NetcdfFormat netcdfFormat,
-                       Outputs.Netcdf2Format netcdf2Format,
-                       Outputs.ProtobufFormat protobufFormat,
-                       Outputs.PairFormat pairsFormat )
+public record Formats( Outputs formats )
 {
     /** A value that is re-used several times. */
     private static final String ZERO = "#0.000000";
@@ -80,19 +74,25 @@ public record Formats( Outputs.PngFormat pngFormat,
                               .setOptions( DEFAULT_NUMERIC_FORMAT )
                               .build();
 
+    /**
+     * Creates an instance, setting a default format if required.
+     * @param formats the formats
+     */
+
+    public Formats
+    {
+        if( Objects.isNull( formats ) )
+        {
+            formats = Outputs.newBuilder()
+                             .setCsv2( Formats.CSV2_FORMAT )
+                             .build();
+        }
+    }
+
     @Override
     public String toString()
     {
         // Remove unnecessary whitespace from the JSON protobuf string
-        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "pngFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( pngFormat ) )
-                .append( "svgFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( svgFormat ) )
-                .append( "csvFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( csvFormat ) )
-                .append( "csv2Format", DeclarationFactory.PROTBUF_STRINGIFIER.apply( csv2Format ) )
-                .append( "netcdfFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( netcdfFormat ) )
-                .append( "netcdf2Format", DeclarationFactory.PROTBUF_STRINGIFIER.apply( netcdf2Format ) )
-                .append( "protobufFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( protobufFormat ) )
-                .append( "pairsFormat", DeclarationFactory.PROTBUF_STRINGIFIER.apply( pairsFormat ) )
-                .build();
+        return DeclarationFactory.PROTBUF_STRINGIFIER.apply( this.formats() );
     }
 }

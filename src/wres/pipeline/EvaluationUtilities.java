@@ -23,7 +23,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.ExecutionResult;
 import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
@@ -160,7 +159,7 @@ class EvaluationUtilities
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfigPlus );
+        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =

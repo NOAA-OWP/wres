@@ -102,7 +102,7 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
                                                                 .clearLeftThresholdProbability()
                                                                 .build();
 
-            Threshold outer = new Threshold( nextInner, next.type(), next.featureName() );
+            Threshold outer = new Threshold( nextInner, next.type(), next.feature(), next.featureNameFrom() );
 
             if ( grouped.containsKey( outer ) )
             {

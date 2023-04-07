@@ -9,7 +9,7 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 import wres.config.yaml.serializers.ValuesSerializer;
 
 /**
- * A values filter.
+ * A values filter. A canonical {@link wres.statistics.generated.ValueFilter} is available from {@link #canonical()}.
  * @param minimum the smallest value permitted
  * @param maximum the largest value permitted
  * @param belowMinimum the value to assign when values are below the minimum
@@ -50,5 +50,18 @@ public record Values( @JsonProperty( "minimum" ) Double minimum,
         {
             aboveMaximum = Double.NaN;
         }
+    }
+
+    /**
+     * Returns a canonical description of the value filter.
+     * @return the canonical value filter
+     */
+
+    public wres.statistics.generated.ValueFilter canonical()
+    {
+        return wres.statistics.generated.ValueFilter.newBuilder()
+                                                    .setMinimumInclusiveValue( this.minimum() )
+                                                    .setMaximumInclusiveValue( this.maximum() )
+                                                    .build();
     }
 }

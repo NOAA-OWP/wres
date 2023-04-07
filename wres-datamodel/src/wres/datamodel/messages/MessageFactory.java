@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
-import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DestinationConfig;
@@ -762,18 +761,16 @@ public class MessageFactory
     /**
      * Creates an evaluation from a project declaration.
      *
-     * @param projectConfigPlus the project declaration plus graphics strings
+     * @param projectConfig the project declaration plus graphics strings
      * @return an evaluation
      * @throws NullPointerException if the project is null
      */
 
-    public static Evaluation parse( ProjectConfigPlus projectConfigPlus )
+    public static Evaluation parse( ProjectConfig projectConfig )
     {
-        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( projectConfig );
 
         Evaluation.Builder builder = Evaluation.newBuilder();
-
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Add the inputs and default baseline, as needed
         MessageFactory.addInputs( projectConfig.getInputs(), builder );
@@ -808,7 +805,7 @@ public class MessageFactory
 
         if ( Objects.nonNull( projectConfig.getOutputs() ) )
         {
-            MessageFactory.addOutputs( projectConfigPlus, builder );
+            MessageFactory.addOutputs( projectConfig, builder );
 
             LOGGER.debug( "Populated the evaluation with outputs of {}.",
                           builder.getOutputs() );
@@ -1723,18 +1720,17 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link wres.statistics.generated.Outputs} from a {@link ProjectConfigPlus}.
+     * Creates a {@link wres.statistics.generated.Outputs} from a {@link ProjectConfig}.
      *
-     * @param projectConfigPlus the project declaration plus graphics string from which to create a message
+     * @param projectConfig the project declaration
      * @param evaluation the evaluation builder
      */
 
-    private static void addOutputs( ProjectConfigPlus projectConfigPlus, Evaluation.Builder evaluation )
+    private static void addOutputs( ProjectConfig projectConfig, Evaluation.Builder evaluation )
     {
-        Objects.requireNonNull( projectConfigPlus );
-        Objects.requireNonNull( projectConfigPlus.getProjectConfig().getOutputs() );
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getOutputs() );
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         ProjectConfig.Outputs outputs = projectConfig.getOutputs();
 
         Outputs.Builder builder = Outputs.newBuilder();

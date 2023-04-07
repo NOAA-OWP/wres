@@ -219,7 +219,7 @@ public class DatabaseProject implements Project
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
      *
-     * @return the desired time scale or null if unknown
+     * @return the desired timescale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained from the database
      */
 
@@ -458,7 +458,7 @@ public class DatabaseProject implements Project
      * @return the earliest possible day in a season. NULL unless specified in the configuration
      */
     @Override
-    public MonthDay getEarliestDayInSeason()
+    public MonthDay getStartOfSeason()
     {
         return ConfigHelper.getEarliestDayInSeason( this.getProjectConfig() );
     }
@@ -467,19 +467,17 @@ public class DatabaseProject implements Project
      * @return the latest possible day in a season. NULL unless specified in the configuration
      */
     @Override
-    public MonthDay getLatestDayInSeason()
+    public MonthDay getEndOfSeason()
     {
         return ConfigHelper.getLatestDayInSeason( this.getProjectConfig() );
     }
 
     @Override
-    public boolean usesGriddedData( DataSourceConfig dataSourceConfig )
+    public boolean usesGriddedData( LeftOrRightOrBaseline orientation )
     {
         Boolean usesGriddedData;
 
-        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
-
-        usesGriddedData = switch ( lrb )
+        usesGriddedData = switch ( orientation )
                 {
                     case LEFT -> this.leftUsesGriddedData;
                     case RIGHT -> this.rightUsesGriddedData;
@@ -497,7 +495,8 @@ public class DatabaseProject implements Project
             script.addLine( "WHERE PS.project_id = ?" );
             script.addArgument( this.getId() );
             script.addTab().addLine( "AND PS.member = ?" );
-            script.addArgument( lrb.toString().toLowerCase() );
+            script.addArgument( orientation.toString()
+                                           .toLowerCase() );
             script.addTab().addLine( "AND S.is_point_data = FALSE" );
             script.setMaxRows( 1 );
 
@@ -510,7 +509,7 @@ public class DatabaseProject implements Project
             {
                 throw new DataAccessException( "While attempting to determine whether gridded data were ingested.", e );
             }
-            switch ( lrb )
+            switch ( orientation )
             {
                 case LEFT -> this.leftUsesGriddedData = usesGriddedData;
                 case RIGHT -> this.rightUsesGriddedData = usesGriddedData;
@@ -780,8 +779,8 @@ public class DatabaseProject implements Project
 
         try
         {
-            isVector = !( this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ||
-                          this.usesGriddedData( this.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) );
+            isVector = !( this.usesGriddedData( LeftOrRightOrBaseline.LEFT ) ||
+                          this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) );
 
             // Validate the variable declaration against the data, when the declaration is present
             if ( isVector )
@@ -1118,7 +1117,7 @@ public class DatabaseProject implements Project
 
         // Gridded features? #74266
         // Yes
-        if ( this.usesGriddedData( this.getRight() ) )
+        if ( this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) )
         {
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
             singletons.addAll( griddedTuples );

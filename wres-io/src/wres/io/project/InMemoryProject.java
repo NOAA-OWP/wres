@@ -397,7 +397,7 @@ public class InMemoryProject implements Project
      * @return the earliest possible day in a season. NULL unless specified in the configuration
      */
     @Override
-    public MonthDay getEarliestDayInSeason()
+    public MonthDay getStartOfSeason()
     {
         return ConfigHelper.getEarliestDayInSeason( this.getProjectConfig() );
     }
@@ -406,17 +406,15 @@ public class InMemoryProject implements Project
      * @return the latest possible day in a season. NULL unless specified in the configuration
      */
     @Override
-    public MonthDay getLatestDayInSeason()
+    public MonthDay getEndOfSeason()
     {
         return ConfigHelper.getLatestDayInSeason( this.getProjectConfig() );
     }
 
     @Override
-    public boolean usesGriddedData( DataSourceConfig dataSourceConfig )
+    public boolean usesGriddedData( LeftOrRightOrBaseline orientation )
     {
-        LeftOrRightOrBaseline lrb = ConfigHelper.getLeftOrRightOrBaseline( this.getProjectConfig(), dataSourceConfig );
-
-        return switch ( lrb )
+        return switch ( orientation )
                 {
                     case LEFT -> this.leftUsesGriddedData;
                     case RIGHT -> this.rightUsesGriddedData;
@@ -804,7 +802,7 @@ public class InMemoryProject implements Project
 
         // Gridded features?
         // Yes
-        if ( this.usesGriddedData( this.getRight() ) )
+        if ( this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) )
         {
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
 

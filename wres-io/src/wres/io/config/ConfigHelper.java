@@ -1,8 +1,5 @@
 package wres.io.config;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
@@ -26,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -63,15 +59,6 @@ public class ConfigHelper
     private static final String AND = " and ";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
-
-    /**
-     * Default exception message when a destination cannot be established.
-     */
-
-    public static final String OUTPUT_CLAUSE_BOILERPLATE = "Please include valid numeric output clause(s) in"
-                                                           + " the project configuration. Example: <destination>"
-                                                           + "<path>c:/Users/myname/wres_output/</path>"
-                                                           + "</destination>";
 
     /**
      * String for null configuration error.
@@ -150,18 +137,6 @@ public class ConfigHelper
 
         return dataSourceConfig.getType() == DatasourceType.SINGLE_VALUED_FORECASTS
                || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
-    }
-
-    /**
-     * @param path the path
-     * @return the project declaration
-     * @throws IOException if the declaration could not be read
-     */
-    public static ProjectConfig read( final String path ) throws IOException
-    {
-        Path actualPath = Paths.get( path );
-        ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
-        return configPlus.getProjectConfig();
     }
 
     /**
@@ -320,52 +295,6 @@ public class ConfigHelper
     }
 
     /**
-     * <p>Given a config and a data source, return which kind the datasource is
-     *
-     * <p>TODO: this method cannot work. Two or more source declarations can be equal and the LRB context
-     * is not part of the declaration. See #67774.
-     * The above comment is one opinion about whether to use a method like this.
-     *
-     * @param projectConfig the project config the source belongs to
-     * @param config the config we wonder about
-     * @return left or right or baseline
-     * @throws IllegalArgumentException when the config doesn't belong to project
-     */
-
-    public static LeftOrRightOrBaseline getLeftOrRightOrBaseline( ProjectConfig projectConfig,
-                                                                  DataSourceConfig config )
-    {
-        DataSourceConfig left = projectConfig.getInputs().getLeft();
-        DataSourceConfig right = projectConfig.getInputs().getRight();
-        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
-
-        if ( config == left )
-        {
-            LOGGER.debug( "Config {} is a left config.", config );
-            return LeftOrRightOrBaseline.LEFT;
-        }
-        else if ( config == right )
-        {
-            LOGGER.debug( "Config {} is a right config.", config );
-            return LeftOrRightOrBaseline.RIGHT;
-        }
-        else if ( config == baseline )
-        {
-            LOGGER.debug( "Config {} is a baseline config.", config );
-            return LeftOrRightOrBaseline.BASELINE;
-        }
-        else
-        {
-            // This means either .equals doesn't work or the caller has a bug.
-            throw new IllegalArgumentException( "The project configuration "
-                                                + projectConfig
-                                                + " doesn't seem to contain the"
-                                                + " source config "
-                                                + config );
-        }
-    }
-
-    /**
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
      *
      * @param destinationConfig the destination configuration
@@ -509,7 +438,8 @@ public class ConfigHelper
         List<NamedFeature> featuresConfigured = new ArrayList<>( pairConfig.getFeature() );
         List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
                                                        .stream()
-                                                       .flatMap( next -> next.getFeature().stream() )
+                                                       .flatMap( next -> next.getFeature()
+                                                                             .stream() )
                                                        .toList();
         featuresConfigured.addAll( groupedFeatures );
 

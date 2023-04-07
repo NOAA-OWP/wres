@@ -18,20 +18,20 @@ value_thresholds:
 metrics:
   - name: time to peak error
     summary_statistics:
-      - minimum
-      - mean absolute
-      - maximum
       - median
-      - standard deviation
+      - minimum
+      - maximum
+      - mean absolute
       - mean
+      - standard deviation
   - name: time to peak relative error
     summary_statistics:
-      - minimum
-      - mean absolute
-      - maximum
       - median
-      - standard deviation
+      - minimum
+      - maximum
       - mean
+      - mean absolute
+      - standard deviation
 output_formats:
   - csv
   - pairs
