@@ -33,6 +33,13 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.SourceTransformationType;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.Values;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.Ensemble;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
@@ -101,6 +108,9 @@ public class MessageFactory
 
     /** Persistence baseline string. */
     private static final String PERSISTENCE = "PERSISTENCE";
+
+    /** Re-used string. */
+    private static final String SET_THE_BASELINE_DATASET_NAME_TO = "Set the baseline dataset name to {}.";
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
@@ -759,9 +769,67 @@ public class MessageFactory
     }
 
     /**
+     * Creates an evaluation for messaging from a declared evaluation.
+     *
+     * @param evaluation the evaluation declaration
+     * @return an evaluation for messaging
+     * @throws NullPointerException if the evaluation is null
+     */
+
+    public static Evaluation parse( EvaluationDeclaration evaluation )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( evaluation.left() );
+        Objects.requireNonNull( evaluation.right() );
+        Objects.requireNonNull( evaluation.formats() );
+
+        Evaluation.Builder builder = Evaluation.newBuilder();
+
+        // Add the dataset information
+        MessageFactory.addDatasets( evaluation, builder );
+
+        // Add the measurement unit
+        String unitString = evaluation.unit();
+        if ( Objects.nonNull( unitString ) )
+        {
+            builder.setMeasurementUnit( unitString );
+            LOGGER.debug( "Set the measurement unit to {}.", unitString );
+        }
+
+        // Set the season
+        wres.config.yaml.components.Season season = evaluation.season();
+        if ( Objects.nonNull( season ) )
+        {
+            Season innerSeason = season.canonical();
+            builder.setSeason( innerSeason );
+            LOGGER.debug( "Set the season to: {}.", season );
+        }
+
+        // Set the value filter
+        Values values = evaluation.values();
+        if ( Objects.nonNull( values ) )
+        {
+            ValueFilter innerValues = values.canonical();
+            builder.setValueFilter( innerValues );
+            LOGGER.debug( "Set the value filter to: {}.", values );
+        }
+
+        // Set the ensemble members to filter
+        MessageFactory.addEnsembleMemberFilters( evaluation, builder );
+
+        // Set the outputs, which are always present
+        wres.config.yaml.components.Formats formats = evaluation.formats();
+        Outputs innerOutputs = formats.outputs();
+        builder.setOutputs( innerOutputs );
+        LOGGER.debug( "Set the outputs to: {}.", formats );
+
+        return builder.build();
+    }
+
+    /**
      * Creates an evaluation from a project declaration.
      *
-     * @param projectConfig the project declaration plus graphics strings
+     * @param projectConfig the project declaration
      * @return an evaluation
      * @throws NullPointerException if the project is null
      */
@@ -1579,6 +1647,160 @@ public class MessageFactory
             Future<List<DurationDiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
             another.addInstantDurationPairStatistics( future );
+        }
+    }
+
+    /**
+     * Copies dataset information from an evaluation declaration to the evaluation builder.
+     * @param evaluation the evaluation declaration
+     * @param builder the messaging evaluation builder
+     */
+    private static void addDatasets( EvaluationDeclaration evaluation, Evaluation.Builder builder )
+    {
+        int metricCount = evaluation.metrics()
+                                    .size();
+
+        Dataset left = evaluation.left();
+        Dataset right = evaluation.right();
+        BaselineDataset baseline = evaluation.baseline();
+
+        builder.setMetricCount( metricCount );
+        LOGGER.debug( "Set the metric count to {}.", metricCount );
+
+        // Dataset names for left/right
+        String leftDataName = left.label();
+        if ( Objects.nonNull( leftDataName ) )
+        {
+            builder.setLeftDataName( leftDataName );
+            LOGGER.debug( "Set the left dataset name to {}.", leftDataName );
+        }
+
+        String rightDataName = right.label();
+        if ( Objects.nonNull( rightDataName ) )
+        {
+            builder.setRightDataName( rightDataName );
+            LOGGER.debug( "Set the right dataset name to {}.", rightDataName );
+        }
+
+        // Variable names for left/right
+        Variable leftVariable = left.variable();
+        if ( Objects.nonNull( leftVariable ) && Objects.nonNull( leftVariable.getPreferredName() ) )
+        {
+            String leftVariableName = leftVariable.getPreferredName();
+            builder.setLeftVariableName( leftVariableName );
+            LOGGER.debug( "Set the left variable name to {}.", leftVariableName );
+        }
+
+        Variable rightVariable = right.variable();
+        if ( Objects.nonNull( rightVariable ) && Objects.nonNull( rightVariable.getPreferredName() ) )
+        {
+            String rightVariableName = rightVariable.getPreferredName();
+            builder.setRightVariableName( rightVariableName );
+            LOGGER.debug( "Set the right variable name to {}.", rightVariableName );
+        }
+
+        // Baselines
+        builder.setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY );
+
+        LOGGER.debug( "Set the default baseline to {}.",
+                      DefaultData.OBSERVED_CLIMATOLOGY );
+
+        // Explicit baseline
+        if ( Objects.nonNull( baseline ) )
+        {
+            Dataset baselineDataset = baseline.dataset();
+            String baselineDataName = baselineDataset.label();
+            if ( Objects.nonNull( baselineDataName ) )
+            {
+                builder.setBaselineDataName( baselineDataName );
+                LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, baselineDataName );
+            }
+            else if ( Objects.nonNull( baseline.persistence() ) )
+            {
+                builder.setBaselineDataName( MessageFactory.PERSISTENCE );
+                LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, MessageFactory.PERSISTENCE );
+            }
+
+            // Variable name
+            Variable baselineVariable = baselineDataset.variable();
+            if ( Objects.nonNull( baselineVariable ) && Objects.nonNull( baselineVariable.getPreferredName() ) )
+            {
+                String baselineVariableName = baselineVariable.getPreferredName();
+                builder.setBaselineVariableName( baselineVariableName );
+                LOGGER.debug( "Set the baseline variable name to {}.", baselineVariableName );
+            }
+        }
+        // No explicit baseline, but possibly implicit baseline via skill metrics
+        // In this case, the default is always climatology
+        else if ( evaluation.metrics()
+                            .stream()
+                            .map( Metric::name )
+                            .anyMatch( MetricConstants::isSkillMetric ) )
+        {
+            String baselineName = DefaultData.OBSERVED_CLIMATOLOGY.toString()
+                                                                  .replace( "_", " " );
+            builder.setBaselineDataName( baselineName );
+
+            LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, baselineName );
+        }
+    }
+
+    /**
+     * Copies the ensemble filters from an evaluation declaration to the evaluation builder.
+     * @param evaluation the evaluation declaration
+     * @param builder the messaging evaluation builder
+     */
+    private static void addEnsembleMemberFilters( EvaluationDeclaration evaluation, Evaluation.Builder builder )
+    {
+        EnsembleFilter leftFilter = evaluation.left()
+                                              .ensembleFilter();
+        Set<String> members = new TreeSet<>();
+
+        // Determine whether any filters exclude members
+        boolean leftExclude = false;
+        boolean rightExclude = false;
+        boolean baselineExclude = false;
+        if ( Objects.nonNull( leftFilter ) )
+        {
+            leftExclude = leftFilter.exclude();
+            if ( !leftFilter.exclude() )
+            {
+                members.addAll( leftFilter.members() );
+            }
+        }
+        EnsembleFilter rightFilter = evaluation.right()
+                                               .ensembleFilter();
+        if ( Objects.nonNull( rightFilter ) )
+        {
+            rightExclude = rightFilter.exclude();
+            if ( !rightFilter.exclude() )
+            {
+                members.addAll( rightFilter.members() );
+            }
+        }
+
+        if ( Objects.nonNull( evaluation.baseline() ) )
+        {
+            EnsembleFilter baselineFilter = evaluation.baseline()
+                                                      .dataset()
+                                                      .ensembleFilter();
+            if ( Objects.nonNull( baselineFilter ) )
+            {
+                baselineExclude = baselineFilter.exclude();
+                if ( !baselineExclude )
+                {
+                    members.addAll( baselineFilter.members() );
+                }
+            }
+        }
+
+        builder.addAllEnsembleMemberSubset( members );
+        LOGGER.debug( "Set the ensemble members to: {}", members );
+
+        if ( LOGGER.isWarnEnabled() && leftExclude || rightExclude || baselineExclude )
+        {
+            LOGGER.warn( "Discovered ensemble members to exclude from the evaluation, but these will not appear in "
+                         + "the statistics metadata, which only records the subset of members to include." );
         }
     }
 

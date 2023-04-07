@@ -1,5 +1,7 @@
 package wres.config.yaml.components;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
@@ -9,4 +11,22 @@ import io.soabase.recordbuilder.core.RecordBuilder;
  * @param label the label
  */
 @RecordBuilder
-public record Variable( @JsonProperty( "name" ) String name, @JsonProperty( "label" ) String label ) {}
+public record Variable( @JsonProperty( "name" ) String name, @JsonProperty( "label" ) String label )
+{
+    /**
+     * Refers the preferred name of the variable, specifically the {@link #label()} if available, otherwise the
+     * {@link #name()}.
+     *
+     * @return the preferred name
+     */
+
+    public String getPreferredName()
+    {
+        if( Objects.nonNull( this.label() ) )
+        {
+            return this.label();
+        }
+
+        return this.name();
+    }
+}

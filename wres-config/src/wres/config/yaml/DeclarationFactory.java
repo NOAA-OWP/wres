@@ -931,7 +931,7 @@ public class DeclarationFactory
         }
 
         Outputs.Builder formatsBuilder = builder.formats()
-                                                .formats()
+                                                .outputs()
                                                 .toBuilder();
 
         if ( formatsBuilder.hasCsv2() )
@@ -978,13 +978,13 @@ public class DeclarationFactory
         // Something to adjust?
         if ( Objects.isNull( builder.formats() ) )
         {
-            LOGGER.debug( "No graphical formats were adjusted for metrics to ignore because no graphics formats were "
+            LOGGER.debug( "No graphical formats were adjusted for metrics to ignore because no graphics outputs were "
                           + "declared." );
             return;
         }
 
         Outputs.Builder formatsBuilder = builder.formats()
-                                                .formats()
+                                                .outputs()
                                                 .toBuilder();
 
         if ( formatsBuilder.hasPng() )
@@ -997,7 +997,7 @@ public class DeclarationFactory
                                                .map( next -> MetricName.valueOf( next.name() ) )
                                                .toList();
 
-            LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics formats: {}.",
+            LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics outputs: {}.",
                           pngAvoid );
             Outputs.PngFormat.Builder pngBuilder = formatsBuilder.getPngBuilder();
             Outputs.GraphicFormat.Builder graphicBuilder = pngBuilder.getOptionsBuilder();
@@ -1039,7 +1039,7 @@ public class DeclarationFactory
         if ( Objects.nonNull( builder.formats() ) )
         {
             formatsBuilder.mergeFrom( builder.formats()
-                                             .formats() );
+                                             .outputs() );
         }
 
         // PNG format required but not declared?
@@ -1180,7 +1180,7 @@ public class DeclarationFactory
     private static void interpolateOutputFormats( EvaluationDeclarationBuilder builder )
     {
         if ( Objects.isNull( builder.formats() )
-             || Objects.equals( builder.formats().formats(), Outputs.getDefaultInstance() ) )
+             || Objects.equals( builder.formats().outputs(), Outputs.getDefaultInstance() ) )
         {
             LOGGER.debug( "Adding a default output format of CSV2 because no output formats were declared." );
             Outputs.Builder formatsBuilder = Outputs.newBuilder()
@@ -2037,7 +2037,7 @@ public class DeclarationFactory
         if ( Objects.nonNull( builder.formats() ) )
         {
             formatsBuilder.mergeFrom( builder.formats()
-                                             .formats() );
+                                             .outputs() );
         }
 
         // Set the decimal formatter for the individual output options

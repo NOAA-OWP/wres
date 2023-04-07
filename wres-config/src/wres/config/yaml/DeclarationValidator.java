@@ -965,7 +965,7 @@ public class DeclarationValidator
         Formats formats = declaration.formats();
         if( Objects.nonNull( formats ) )
         {
-            Outputs outputs = formats.formats();
+            Outputs outputs = formats.outputs();
 
             String start = "The declaration requested '";
             String middle =
@@ -1009,7 +1009,7 @@ public class DeclarationValidator
         Formats formats = declaration.formats();
         if( Objects.nonNull( formats ) )
         {
-            Outputs outputs = formats.formats();
+            Outputs outputs = formats.outputs();
             if ( outputs.hasNetcdf() && outputs.hasNetcdf2() )
             {
                 EvaluationStatusEvent event
@@ -1205,7 +1205,7 @@ public class DeclarationValidator
         // Legacy CSV declared
         if ( Objects.nonNull( declaration.formats() )
              && declaration.formats()
-                           .formats()
+                           .outputs()
                            .hasCsv() )
         {
             // Non-score metrics

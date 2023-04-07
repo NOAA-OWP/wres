@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,14 +24,29 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.Timestamp;
 
+import wres.config.MetricConstants;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.Season;
+import wres.config.yaml.components.SeasonBuilder;
+import wres.config.yaml.components.Values;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
@@ -91,10 +107,11 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.ValueFilter;
 
 /**
  * Tests the {@link MessageFactory}.
- * 
+ *
  * @author James Brown
  */
 
@@ -216,14 +233,14 @@ class MessageFactoryTest
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
         try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             statisticsOut.writeTo( stream );
         }
 
-        Statistics statisticsIn = null;
+        Statistics statisticsIn;
         try ( InputStream stream =
-                Files.newInputStream( path ) )
+                      Files.newInputStream( path ) )
         {
             statisticsIn = Statistics.parseFrom( stream );
         }
@@ -250,17 +267,17 @@ class MessageFactoryTest
         Path path = this.outputDirectory.resolve( "statistics.pb3" );
 
         try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             firstOut.writeDelimitedTo( stream );
             firstOut.writeTo( stream );
         }
 
-        Statistics firstIn = null;
-        Statistics secondIn = null;
+        Statistics firstIn;
+        Statistics secondIn;
 
         try ( InputStream stream =
-                Files.newInputStream( path ) )
+                      Files.newInputStream( path ) )
         {
             firstIn = Statistics.parseDelimitedFrom( stream );
             secondIn = Statistics.parseFrom( stream );
@@ -288,14 +305,14 @@ class MessageFactoryTest
         Path path = this.outputDirectory.resolve( "box_plot_statistics.pb3" );
 
         try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             statisticsOut.writeTo( stream );
         }
 
-        Statistics statisticsIn = null;
+        Statistics statisticsIn;
         try ( InputStream stream =
-                Files.newInputStream( path ) )
+                      Files.newInputStream( path ) )
         {
             statisticsIn = Statistics.parseFrom( stream );
         }
@@ -316,18 +333,19 @@ class MessageFactoryTest
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
+        Assertions.assertNotNull( statisticsOut );
 
         Path path = this.outputDirectory.resolve( "duration_score_statistics.pb3" );
 
         try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             statisticsOut.writeTo( stream );
         }
 
-        Statistics statisticsIn = null;
+        Statistics statisticsIn;
         try ( InputStream stream =
-                Files.newInputStream( path ) )
+                      Files.newInputStream( path ) )
         {
             statisticsIn = Statistics.parseFrom( stream );
         }
@@ -348,18 +366,19 @@ class MessageFactoryTest
 
         // Create a statistics message
         Statistics statisticsOut = MessageFactory.parseOnePool( statistics );
+        Assertions.assertNotNull( statisticsOut );
 
         Path path = this.outputDirectory.resolve( "duration_diagrams_statistics.pb3" );
 
         try ( OutputStream stream =
-                Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
+                      Files.newOutputStream( path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING ) )
         {
             statisticsOut.writeTo( stream );
         }
 
-        Statistics statisticsIn = null;
+        Statistics statisticsIn;
         try ( InputStream stream =
-                Files.newInputStream( path ) )
+                      Files.newInputStream( path ) )
         {
             statisticsIn = Statistics.parseFrom( stream );
         }
@@ -394,6 +413,8 @@ class MessageFactoryTest
 
         Statistics expectedScores = MessageFactory.parseOnePool( scores );
         Statistics expectedDiagrams = MessageFactory.parseOnePool( diagrams );
+        Assertions.assertNotNull( expectedDiagrams );
+        Assertions.assertNotNull( expectedScores );
 
         Collection<Statistics> expected = Set.of( expectedDiagrams, expectedScores );
 
@@ -402,116 +423,61 @@ class MessageFactoryTest
         assertTrue( actual.containsAll( expected ) );
     }
 
-    /**
-     * TODO: make this depend on a ProjectConfig when the factory depends on that. A ProjectConfigPlus is awkward.
-     * 
-     * @throws InterruptedException if the test was interrupted
-     * @throws IOException if the test failed to parse a declaration string
-     */
-
     @Test
-    void testParseProjectToEvaluation() throws InterruptedException, IOException
+    void testParseProjectToEvaluation() throws IOException
     {
-
         // Project from system test scenario007 with simplified override for drawing parameters
-        String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
-                               "\r\n"
-                               +
-                               "<project label=\"ExampleProject\" name=\"scenario007\">\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <inputs>\r\n"
-                               +
-                               "        <left label=\"\">\r\n"
-                               +
-                               "            <type>observations</type>\r\n"
-                               +
-                               "            <source format=\"PI-XML\">data/DRRC2QINE.xml</source>\r\n"
-                               +
-                               "            <variable label=\"discharge1\">QINE</variable>\r\n"
-                               +
-                               "        </left>\r\n"
-                               +
-                               "        <right label=\"HEFS\">\r\n"
-                               +
-                               "            <type>ensemble forecasts</type>\r\n"
-                               +
-                               "            <source format=\"PI-XML\">data/drrc2ForecastsOneMonth/</source>\r\n"
-                               +
-                               "            <variable label=\"discharge2\">SQIN</variable>\r\n"
-                               +
-                               "        </right>\r\n"
-                               +
-                               "    </inputs>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <pair label=\"Pairs by location and lead time\"> \r\n"
-                               +
-                               "        <unit>CMS</unit>\r\n"
-                               +
-                               "        <feature left=\"DRRC2HSF\" right=\"DRRC2HSF\" />\r\n"
-                               +
-                               "        <leadHours minimum=\"1\" maximum=\"24\" />\r\n"
-                               +
-                               "        <issuedDates earliest=\"1985-01-01T00:00:00Z\" latest=\"1985-06-15T00:00:00Z\"/>\r\n"
-                               +
-                               "        <leadTimesPoolingWindow>\r\n"
-                               +
-                               "            <period>0</period>\r\n"
-                               +
-                               "            <frequency>1</frequency>\r\n"
-                               +
-                               "            <unit>hours</unit>\r\n"
-                               +
-                               "        </leadTimesPoolingWindow>\r\n"
-                               +
-                               "    </pair>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <metrics>\r\n"
-                               +
-                               "        <thresholds>\r\n"
-                               +
-                               "            <applyTo>left</applyTo>\r\n"
-                               +
-                               "            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>\r\n"
-                               +
-                               "            <operator>greater than or equal to</operator>\r\n"
-                               +
-                               "        </thresholds>\r\n"
-                               +
-                               "        <metric><name>mean error</name></metric>\r\n"
-                               +
-                               "        <metric><name>sample size</name></metric>\r\n"
-                               +
-                               "    </metrics>\r\n"
-                               +
-                               "    <outputs>\r\n"
-                               +
-                               "        <destination type=\"numeric\" decimalFormat=\"0.000000\" />\r\n"
-                               +
-                               "        <destination type=\"pairs\" decimalFormat=\"0.000000\" />\r\n"
-                               +
-                               "        <destination type=\"graphic\">\r\n"
-                               +
-                               "            <graphical width=\"800\" height=\"600\">\r\n"
-                               +
-                               "                <!-- Test the supression of graphical output for one metric -->\r\n"
-                               +
-                               "                <suppressMetric>sample size</suppressMetric>\r\n"
-                               +
-                               "            </graphical>\r\n"
-                               +
-                               "        </destination>\r\n"
-                               +
-                               "    </outputs>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "</project>\r\n";
+        String projectString = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project label="ExampleProject" name="scenario007">
+                                
+                    <inputs>
+                        <left label="">
+                            <type>observations</type>
+                            <source format="PI-XML">data/DRRC2QINE.xml</source>
+                            <variable label="discharge1">QINE</variable>
+                        </left>
+                        <right label="HEFS">
+                            <type>ensemble forecasts</type>
+                            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
+                            <variable label="discharge2">SQIN</variable>
+                        </right>
+                    </inputs>
+                                
+                    <pair label="Pairs by location and lead time">
+                        <unit>CMS</unit>
+                        <feature left="DRRC2HSF" right="DRRC2HSF" />
+                        <leadHours minimum="1" maximum="24" />
+                        <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-06-15T00:00:00Z"/>
+                        <leadTimesPoolingWindow>
+                            <period>0</period>
+                            <frequency>1</frequency>
+                            <unit>hours</unit>
+                        </leadTimesPoolingWindow>
+                    </pair>
+                                
+                    <metrics>
+                        <thresholds>
+                            <applyTo>left</applyTo>
+                            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+                            <operator>greater than or equal to</operator>
+                        </thresholds>
+                        <metric><name>mean error</name></metric>
+                        <metric><name>sample size</name></metric>
+                    </metrics>
+                    <outputs>
+                        <destination type="numeric" decimalFormat="0.000000" />
+                        <destination type="pairs" decimalFormat="0.000000" />
+                        <destination type="graphic">
+                            <graphical width="800" height="600">
+                                <!-- Test the supression of graphical output for one metric -->
+                                <suppressMetric>sample size</suppressMetric>
+                            </graphical>
+                        </destination>
+                    </outputs>
+                                
+                </project>
+                """;
 
         ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
         Evaluation actual = MessageFactory.parse( projectConfigPlus.getProjectConfig() );
@@ -541,92 +507,213 @@ class MessageFactoryTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testParseEvaluationDeclarationToEvaluationMessage()
+    {
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .variable( new Variable( "foo", "fooest" ) )
+                                                .label( "fooData" )
+                                                .build();
+
+        EnsembleFilter filter = new EnsembleFilter( Set.of( "1923", "1924" ), false );
+
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .variable( new Variable( "bar", "barest" ) )
+                                                 .label( "barData" )
+                                                 .ensembleFilter( filter )
+                                                 .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .variable( new Variable( "baz", "bazest" ) )
+                                                .label( "bazData" )
+                                                .build();
+
+        BaselineDataset baseline = new BaselineDataset( baselineDataset, null, true );
+
+        Season season = SeasonBuilder.builder()
+                                     .minimum( MonthDay.of( 1, 1 ) )
+                                     .maximum( MonthDay.of( 2, 2 ) )
+                                     .build();
+
+        Values values = new Values( 12.1, 23.2, 0.0, 27.0 );
+
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ),
+                                      new Metric( MetricConstants.MEAN_ERROR, null ),
+                                      new Metric( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, null ) );
+
+        Outputs.NumericFormat numericFormat
+                = Outputs.NumericFormat.newBuilder()
+                                       .setDecimalFormat( "#0.00" )
+                                       .build();
+        Outputs.GraphicFormat graphicFormat
+                = Outputs.GraphicFormat.newBuilder()
+                                       .setWidth( 1200 )
+                                       .setHeight( 800 )
+                                       .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
+                                       .build();
+
+        Outputs outputs = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setPairs( Outputs.PairFormat.newBuilder()
+                                                              .setOptions( numericFormat )
+                                                              .build() )
+                                 .setCsv2( Outputs.Csv2Format.newBuilder()
+                                                             .setOptions( numericFormat )
+                                                             .build() )
+                                 .setCsv( Outputs.CsvFormat.newBuilder()
+                                                           .setOptions( numericFormat )
+                                                           .build() )
+                                 .setPng( Outputs.PngFormat.newBuilder()
+                                                           .setOptions( graphicFormat )
+                                                           .build() )
+                                 .build();
+        Formats formats = new Formats( outputs );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( observedDataset )
+                                                                       .right( predictedDataset )
+                                                                       .baseline( baseline )
+                                                                       .unit( "qux" )
+                                                                       .metrics( metrics )
+                                                                       .season( season )
+                                                                       .values( values )
+                                                                       .formats( formats )
+                                                                       .build();
+
+        Evaluation actual = MessageFactory.parse( evaluation );
+
+        // Build the expectation
+        wres.statistics.generated.Season seasonFilter = wres.statistics.generated.Season.newBuilder()
+                                                                                        .setStartDay( 1 )
+                                                                                        .setStartMonth( 1 )
+                                                                                        .setEndDay( 2 )
+                                                                                        .setEndMonth( 2 )
+                                                                                        .build();
+
+        ValueFilter valueFilter = ValueFilter.newBuilder()
+                                             .setMinimumInclusiveValue( 12.1 )
+                                             .setMaximumInclusiveValue( 23.2 )
+                                             .build();
+
+        Evaluation expected = Evaluation.newBuilder()
+                                        .setLeftDataName( "fooData" )
+                                        .setRightDataName( "barData" )
+                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
+                                        .setBaselineDataName( "bazData" )
+                                        .setLeftVariableName( "fooest" )
+                                        .setRightVariableName( "barest" )
+                                        .setBaselineVariableName( "bazest" )
+                                        .setMeasurementUnit( "qux" )
+                                        .setSeason( seasonFilter )
+                                        .setValueFilter( valueFilter )
+                                        .setOutputs( outputs )
+                                        .addAllEnsembleMemberSubset( List.of( "1923", "1924" ) )
+                                        .setMetricCount( 3 )
+                                        .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testParseEvaluationDeclarationWithPersistenceToEvaluationMessage()
+    {
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .build();
+
+        BaselineDataset baseline = new BaselineDataset( baselineDataset, 1, true );
+        Formats formats = new Formats( Outputs.getDefaultInstance() );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( DatasetBuilder.builder()
+                                                                                            .build() )
+                                                                       .right( DatasetBuilder.builder()
+                                                                                             .build() )
+                                                                       .baseline( baseline )
+                                                                       .formats( formats )
+                                                                       .build();
+
+        Evaluation actual = MessageFactory.parse( evaluation );
+
+        Evaluation expected = Evaluation.newBuilder()
+                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
+                                        .setBaselineDataName( "PERSISTENCE" )
+                                        .setOutputs( Outputs.getDefaultInstance() )
+                                        .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testParseEvaluationDeclarationWithImplicitBaselineToEvaluationMessage()
+    {
+        Formats formats = new Formats( Outputs.getDefaultInstance() );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE, null ) );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( DatasetBuilder.builder()
+                                                                                            .build() )
+                                                                       .right( DatasetBuilder.builder()
+                                                                                             .build() )
+                                                                       .metrics( metrics )
+                                                                       .formats( formats )
+                                                                       .build();
+
+        Evaluation actual = MessageFactory.parse( evaluation );
+
+        Evaluation expected = Evaluation.newBuilder()
+                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
+                                        .setBaselineDataName( "OBSERVED CLIMATOLOGY" )
+                                        .setOutputs( Outputs.getDefaultInstance() )
+                                        .setMetricCount( 1 )
+                                        .build();
+
+        assertEquals( expected, actual );
+    }
+
     /**
-     * Redmine issue #97372. 
-     * 
-     * TODO: make this depend on a ProjectConfig when the factory depends on that. A ProjectConfigPlus is awkward.
-     * 
-     * @throws InterruptedException if the test was interrupted
+     * Redmine issue #97372.
      * @throws IOException if the test failed to parse a declaration string
      */
 
     @Test
-    void testParseOutputsCapturesGraphicsShape() throws InterruptedException, IOException
+    void testParseOutputsCapturesGraphicsShape() throws IOException
     {
-        String projectString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
-                               "\r\n"
-                               +
-                               "<project label=\"ExampleProject\" name=\"scenario007\">\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <inputs>\r\n"
-                               +
-                               "        <left label=\"\">\r\n"
-                               +
-                               "            <type>observations</type>\r\n"
-                               +
-                               "            <source format=\"PI-XML\">data/DRRC2QINE.xml</source>\r\n"
-                               +
-                               "            <variable label=\"discharge1\">QINE</variable>\r\n"
-                               +
-                               "        </left>\r\n"
-                               +
-                               "        <right label=\"HEFS\">\r\n"
-                               +
-                               "            <type>ensemble forecasts</type>\r\n"
-                               +
-                               "            <source format=\"PI-XML\">data/drrc2ForecastsOneMonth/</source>\r\n"
-                               +
-                               "            <variable label=\"discharge2\">SQIN</variable>\r\n"
-                               +
-                               "        </right>\r\n"
-                               +
-                               "    </inputs>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <pair label=\"Pairs by location and lead time\"> \r\n"
-                               +
-                               "        <unit>CMS</unit>\r\n"
-                               +
-                               "        <feature left=\"DRRC2HSF\" right=\"DRRC2HSF\" />\r\n"
-                               +
-                               "    </pair>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "    <metrics>\r\n"
-                               +
-                               "        <thresholds>\r\n"
-                               +
-                               "            <applyTo>left</applyTo>\r\n"
-                               +
-                               "            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>\r\n"
-                               +
-                               "            <operator>greater than or equal to</operator>\r\n"
-                               +
-                               "        </thresholds>\r\n"
-                               +
-                               "        <metric><name>mean error</name></metric>\r\n"
-                               +
-                               "        <metric><name>sample size</name></metric>\r\n"
-                               +
-                               "    </metrics>\r\n"
-                               +
-                               "    <outputs>\r\n"
-                               +
-                               "        <destination type=\"graphic\">\r\n"
-                               +
-                               "            <outputType>threshold lead</outputType>\r\n"
-                               +
-                               "        </destination>"
-                               +
-                               "    </outputs>\r\n"
-                               +
-                               "\r\n"
-                               +
-                               "</project>\r\n";
+        String projectString = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project label="ExampleProject" name="scenario007">
+                    <inputs>
+                        <left label="">
+                            <type>observations</type>
+                            <source format="PI-XML">data/DRRC2QINE.xml</source>
+                            <variable label="discharge1">QINE</variable>
+                        </left>
+                        <right label="HEFS">
+                            <type>ensemble forecasts</type>
+                            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
+                            <variable label="discharge2">SQIN</variable>
+                        </right>
+                    </inputs>
+                    
+                    <pair label="Pairs by location and lead time">
+                        <unit>CMS</unit>
+                        <feature left="DRRC2HSF" right="DRRC2HSF" />
+                    </pair>
+                                
+                    <metrics>
+                        <thresholds>
+                            <applyTo>left</applyTo>
+                            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+                            <operator>greater than or equal to</operator>
+                        </thresholds>
+                        <metric><name>mean error</name></metric>
+                        <metric><name>sample size</name></metric>
+                    </metrics>
+                    <outputs>
+                        <destination type="graphic">
+                            <outputType>threshold lead</outputType>
+                        </destination>
+                    </outputs>
+                </project>
+                """;
 
 
         ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
@@ -704,7 +791,7 @@ class MessageFactoryTest
 
     /**
      * Returns a {@link List} containing several {@link DoubleScoreStatisticOuter} for one pool.
-     * 
+     *
      * @return several score statistics for one pool
      */
 
@@ -743,7 +830,8 @@ class MessageFactoryTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -752,7 +840,8 @@ class MessageFactoryTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -762,7 +851,8 @@ class MessageFactoryTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         fakeOutputs.add( DoubleScoreStatisticOuter.of( one, metadata ) );
@@ -775,7 +865,7 @@ class MessageFactoryTest
     /**
      * Returns a {@link List} containing a {@link DiagramStatisticOuter} that 
      * represents the output of a reliability diagram for one pool.
-     * 
+     *
      * @return a reliability diagram for one pool
      */
 
@@ -786,8 +876,10 @@ class MessageFactoryTest
                                                         TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                                                     OneOrTwoDoubles.of( 0.9 ),
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             11.94128 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.9 ),
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
@@ -852,12 +944,12 @@ class MessageFactoryTest
                                                      .build();
 
         // Fake output wrapper.
-        return Collections.unmodifiableList( List.of( DiagramStatisticOuter.of( statistic, metadata ) ) );
+        return List.of( DiagramStatisticOuter.of( statistic, metadata ) );
     }
 
     /**
      * Returns a {@link List} containing a {@link BoxplotStatisticOuter} for one pool.
-     * 
+     *
      * @return the box plot statistics for one pool
      */
 
@@ -868,8 +960,10 @@ class MessageFactoryTest
                                                         TimeScaleFunction.MEAN );
 
         OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
-                                                                                                     OneOrTwoDoubles.of( 0.9 ),
+                OneOrTwoThresholds.of( wres.datamodel.thresholds.ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of(
+                                                                                                             11.94128 ),
+                                                                                                     OneOrTwoDoubles.of(
+                                                                                                             0.9 ),
                                                                                                      Operator.GREATER_EQUAL,
                                                                                                      ThresholdDataType.LEFT ) );
 
@@ -964,22 +1058,20 @@ class MessageFactoryTest
                 new wres.datamodel.pools.Pool.Builder<>();
         SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
-        Instant basisTime = FIRST_TIME;
         values.add( Event.of( SECOND_TIME, Pair.of( 1.0, Ensemble.of( 7.0, 8.0, 9.0 ) ) ) );
         values.add( Event.of( THIRD_TIME, Pair.of( 2.0, Ensemble.of( 10.0, 11.0, 12.0 ) ) ) );
         values.add( Event.of( FOURTH_TIME, Pair.of( 3.0, Ensemble.of( 13.0, 14.0, 15.0 ) ) ) );
         PoolMetadata meta = PoolMetadata.of();
-        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( basisTime, THIRD_TIME );
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( FIRST_TIME, THIRD_TIME );
         TimeSeries<Pair<Double, Ensemble>> timeSeries = TimeSeries.of( metadata,
                                                                        values );
         b.addData( timeSeries ).setMetadata( meta );
 
-        Instant basisTimeTwo = FIFTH_TIME;
         values.clear();
         values.add( Event.of( SIXTH_TIME, Pair.of( 5.0, Ensemble.of( 23.0, 24.0, 25.0 ) ) ) );
         values.add( Event.of( SEVENTH_TIME, Pair.of( 6.0, Ensemble.of( 26.0, 27.0, 28.0 ) ) ) );
         values.add( Event.of( EIGHTH_TIME, Pair.of( 7.0, Ensemble.of( 29.0, 30.0, 31.0 ) ) ) );
-        TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( basisTimeTwo, SEVENTH_TIME );
+        TimeSeriesMetadata metadataTwo = getBoilerplateMetadataWithT0( FIFTH_TIME, SEVENTH_TIME );
         TimeSeries<Pair<Double, Ensemble>> timeSeriesTwo = TimeSeries.of( metadataTwo,
                                                                           values );
 
@@ -1026,20 +1118,29 @@ class MessageFactoryTest
                 DurationScoreStatistic.newBuilder()
                                       .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEAN ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 3_600 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEDIAN ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 7_200 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 10_800 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    10_800 ) ) )
                                       .build();
 
         return Collections.singletonList( DurationScoreStatisticOuter.of( score, fakeMetadata ) );
@@ -1100,7 +1201,8 @@ class MessageFactoryTest
                                                                                     .setSeconds( THIRD_TIME.getEpochSecond() )
                                                                                     .setNanos( THIRD_TIME.getNano() ) )
                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( 0 ) )
+                                                                                                           .setSeconds(
+                                                                                                                   0 ) )
                                                                  .build();
 
         PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
@@ -1108,7 +1210,8 @@ class MessageFactoryTest
                                                                                    .setSeconds( FOURTH_TIME.getEpochSecond() )
                                                                                    .setNanos( FOURTH_TIME.getNano() ) )
                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                          .setSeconds( 3600 ) )
+                                                                                                          .setSeconds(
+                                                                                                                  3600 ) )
                                                                 .build();
 
         PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
@@ -1116,7 +1219,8 @@ class MessageFactoryTest
                                                                                    .setSeconds( FIFTH_TIME.getEpochSecond() )
                                                                                    .setNanos( FIFTH_TIME.getNano() ) )
                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                          .setSeconds( 7200 ) )
+                                                                                                          .setSeconds(
+                                                                                                                  7200 ) )
                                                                 .build();
 
         DurationDiagramStatistic statistic = DurationDiagramStatistic.newBuilder()
