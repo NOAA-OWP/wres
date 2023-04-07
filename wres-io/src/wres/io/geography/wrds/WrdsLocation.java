@@ -6,14 +6,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import java.util.Objects;
-
 /**
  * For WRDS Location API 2.0 and older, this corresponds directly to an element in
  * the list of "locations".  For WRDS Location API 3.0 and later, this corresponds 
  * to the "identifiers" WITHIN an element in the list of "locations".  
- * @author Hank.Herr
- *
+ * @author Hank Herr
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nwsLid )
@@ -24,8 +21,8 @@ public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nws
      * @param usgsSiteCode the USGS site code
      * @param nwsLid the NWS LID
      */
-    @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocation( @JsonProperty( "nwm_feature_id" )
+    @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )  // Redefine default constructor for json creation
+    public WrdsLocation( @JsonProperty( "nwm_feature_id" )  // NOSONAR
                          String nwmFeatureId,
                          @JsonProperty( "usgs_site_code" )
                          String usgsSiteCode,
@@ -45,22 +42,5 @@ public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nws
                 .append( "usgsSiteCode", usgsSiteCode )
                 .append( "nwsLid", nwsLid )
                 .toString();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        WrdsLocation that = ( WrdsLocation ) o;
-        return Objects.equals( nwmFeatureId, that.nwmFeatureId ) &&
-               Objects.equals( usgsSiteCode, that.usgsSiteCode ) &&
-               Objects.equals( nwsLid, that.nwsLid );
     }
 }
