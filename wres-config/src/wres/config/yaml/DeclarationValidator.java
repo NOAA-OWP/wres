@@ -1441,7 +1441,7 @@ public class DeclarationValidator
         }
 
         // Are there sparse features?
-        Set<GeometryTuple> sparse = DeclarationInterpolator.getSparseFeaturesForInterpolation( evaluation );
+        Set<GeometryTuple> sparse = DeclarationInterpolator.getSparseFeaturesToInterpolate( evaluation );
         if ( sparse.isEmpty() )
         {
             LOGGER.debug( "Discovered no sparse features to interpolate." );
