@@ -115,7 +115,7 @@ public class DeclarationInterpolator
      * @return the sparse features, including singletons and grouped features
      */
 
-    public static Set<GeometryTuple> getSparseFeaturesForInterpolation( EvaluationDeclaration evaluation )
+    public static Set<GeometryTuple> getSparseFeaturesToInterpolate( EvaluationDeclaration evaluation )
     {
         if( Objects.isNull( evaluation.features() ) )
         {

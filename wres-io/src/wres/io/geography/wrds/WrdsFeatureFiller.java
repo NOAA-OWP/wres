@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -96,7 +95,7 @@ public class WrdsFeatureFiller
                 return evaluation;
             }
 
-            Set<GeometryTuple> sparse = DeclarationInterpolator.getSparseFeaturesForInterpolation( evaluation );
+            Set<GeometryTuple> sparse = DeclarationInterpolator.getSparseFeaturesToInterpolate( evaluation );
 
             // Determine whether there are any sparse features either in a grouped or singleton context
             if ( sparse.isEmpty() )
