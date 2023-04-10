@@ -22,6 +22,7 @@ import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Season;
@@ -162,9 +163,33 @@ public class DeclarationValidator
     {
         Objects.requireNonNull( declaration );
 
-        // Insertion order
+        // Check that the datasets are valid
         List<EvaluationStatusEvent> datasets = DeclarationValidator.validateDatasets( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( datasets );
+        // Check that the unit aliases are valid
+        List<EvaluationStatusEvent> unitAliases = DeclarationValidator.unitAliasesAreValid( declaration );
+        events.addAll( unitAliases );
+        // Check that all date intervals are valid
+        List<EvaluationStatusEvent> dates = DeclarationValidator.timeIntervalsAreValid( declaration );
+        events.addAll( dates );
+        // Check that the season is valid
+        List<EvaluationStatusEvent> season = DeclarationValidator.seasonIsValid( declaration );
+        events.addAll( season );
+        // Check that the time pools are valid
+        List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
+        events.addAll( pools );
+        // Check that the spatial mask is valid
+        List<EvaluationStatusEvent> mask = DeclarationValidator.spatialMaskIsValid( declaration );
+        events.addAll( mask );
+        // Check that the feature declaration is valid
+        List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
+        events.addAll( features );
+        // Check that the metrics declaration are valid
+        List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
+        events.addAll( metrics );
+        // Check that the output formats declaration is valid
+        List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
+        events.addAll( outputs );
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -208,30 +233,6 @@ public class DeclarationValidator
         // Check that the time scales are valid
         List<EvaluationStatusEvent> timeScales = DeclarationValidator.timeScalesAreValid( declaration );
         events.addAll( timeScales );
-        // Check that the unit aliases are valid
-        List<EvaluationStatusEvent> unitAliases = DeclarationValidator.unitAliasesAreValid( declaration );
-        events.addAll( unitAliases );
-        // Check that all date intervals are valid
-        List<EvaluationStatusEvent> dates = DeclarationValidator.timeIntervalsAreValid( declaration );
-        events.addAll( dates );
-        // Check that the season is valid
-        List<EvaluationStatusEvent> season = DeclarationValidator.seasonIsValid( declaration );
-        events.addAll( season );
-        // Check that the time pools are valid
-        List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
-        events.addAll( pools );
-        // Check that the spatial mask is valid
-        List<EvaluationStatusEvent> mask = DeclarationValidator.spatialMaskIsValid( declaration );
-        events.addAll( mask );
-        // Check that the feature declaration is valid
-        List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
-        events.addAll( features );
-        // Check that the metrics declaration is valid
-        List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
-        events.addAll( metrics );
-        // Check that the output formats declaration is valid
-        List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
-        events.addAll( outputs );
 
         return Collections.unmodifiableList( events );
     }
@@ -904,6 +905,9 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> baseline =
                 DeclarationValidator.checkBaselinePresentWhenFeaturesIncludeBaseline( declaration );
         events.addAll( baseline );
+        // Check that a features service is present when resolving sparse features with different authorities
+        List<EvaluationStatusEvent> featureService = checkFeatureServicePresentIfRequired( declaration );
+        events.addAll( featureService );
 
         return Collections.unmodifiableList( events );
     }
@@ -963,7 +967,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         Formats formats = declaration.formats();
-        if( Objects.nonNull( formats ) )
+        if ( Objects.nonNull( formats ) )
         {
             Outputs outputs = formats.outputs();
 
@@ -1007,7 +1011,7 @@ public class DeclarationValidator
 
         // Do not allow both legacy netcdf and netcdf2 together
         Formats formats = declaration.formats();
-        if( Objects.nonNull( formats ) )
+        if ( Objects.nonNull( formats ) )
         {
             Outputs outputs = formats.outputs();
             if ( outputs.hasNetcdf() && outputs.hasNetcdf2() )
@@ -1417,6 +1421,82 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that a feature service is defined when there are sparse features declared and each side of data contains
+     * different feature authorities.
+     *
+     * @param evaluation the evaluation
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> checkFeatureServicePresentIfRequired( EvaluationDeclaration evaluation )
+    {
+        // Feature service already defined? If so, no problem
+        if ( Objects.nonNull( evaluation.featureService() ) )
+        {
+            LOGGER.debug( "Discovered a feature service, which will resolve feature correlations when required." );
+            return Collections.emptyList();
+        }
+
+        // Are there sparse features?
+        Set<GeometryTuple> sparse = DeclarationInterpolator.getSparseFeaturesForInterpolation( evaluation );
+        if ( sparse.isEmpty() )
+        {
+            LOGGER.debug( "Discovered no sparse features to interpolate." );
+            return Collections.emptyList();
+        }
+
+        // Are there different feature authorities on each side of data?
+        Set<FeatureAuthority> leftAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.left() );
+        Set<FeatureAuthority> rightAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.right() );
+        Set<FeatureAuthority> baselineAuthorities = null;
+
+        String baselineStatement = "";
+        if ( DeclarationValidator.hasBaseline( evaluation ) )
+        {
+            baselineAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.baseline()
+                                                                                      .dataset() );
+            baselineStatement = "The feature authorities detected for the 'baseline' data were '"
+                                + baselineAuthorities
+                                + "'.";
+        }
+
+        if ( Objects.equals( leftAuthorities, rightAuthorities )
+             && ( !DeclarationValidator.hasBaseline( evaluation ) || Objects.equals( leftAuthorities,
+                                                                                     baselineAuthorities ) ) )
+        {
+            LOGGER.debug( "Discovered the same feature authorities for all sides of data." );
+            return Collections.emptyList();
+        }
+
+        // Feature authorities differ across each side of data and there is no feature service to correlate the sparse
+        // features, which is not allowed
+        EvaluationStatusEvent event
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( StatusLevel.ERROR )
+                                       .setEventMessage( "The declaration contains "
+                                                         + sparse.size()
+                                                         + " geospatial "
+                                                         + "feature tuples that are declared sparsely (i.e., where at "
+                                                         + "least one side of the tuple is missing), but different "
+                                                         + "feature authorities were detected for each side of data "
+                                                         + "and no feature service was declared to resolve the "
+                                                         + "feature correlations. Please add a feature service to "
+                                                         + "allow the feature correlations to be determined or fully "
+                                                         + "declare every feature tuple in the evaluation. The "
+                                                         + "feature authorities detected for the 'observed' data "
+                                                         + "were: '"
+                                                         + leftAuthorities
+                                                         + "'. The feature authorities detected for the 'predicted' "
+                                                         + "data were '"
+                                                         + rightAuthorities
+                                                         + "'."
+                                                         + baselineStatement )
+                                       .build();
+
+        return List.of( event );
     }
 
     /**

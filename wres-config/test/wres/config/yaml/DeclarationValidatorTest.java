@@ -24,6 +24,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
@@ -653,7 +654,7 @@ class DeclarationValidatorTest
     @Test
     void testInvalidSpatialMaskResultsInError()
     {
-        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask",0L );
+        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask", 0L );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -763,6 +764,41 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEvaluationIncludesSparseFeaturesFromDifferentFeatureAuthoritiesAndNoFeatureService()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                     .featureAuthority( FeatureAuthority.USGS_SITE_CODE )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .featureAuthority( FeatureAuthority.NWS_LID )
+                                      .build();
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "foo" ) )
+                                                             .build(),
+                                                GeometryTuple.newBuilder()
+                                                             .setRight( Geometry.newBuilder()
+                                                                                .setName( "bar" ) )
+                                                             .build() );
+
+        Features features = new Features( geometries );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .features( features )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "but different feature authorities were "
+                                                               + "detected for each side of data and no feature "
+                                                               + "service was declared",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testTimeSeriesMetricsWithoutSingleValuedForecastsResultsInError()
     {
         Dataset dataset = DatasetBuilder.builder()
@@ -810,8 +846,8 @@ class DeclarationValidatorTest
         Set<Metric> metrics = Set.of( metric );
         TimePools timePool = new TimePools( 3, 1, ChronoUnit.HOURS );
         Outputs formats = Outputs.newBuilder()
-                                        .setCsv( Outputs.CsvFormat.getDefaultInstance() )
-                                        .build();
+                                 .setCsv( Outputs.CsvFormat.getDefaultInstance() )
+                                 .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -869,9 +905,9 @@ class DeclarationValidatorTest
     void testOutputFormatsWithDeprecatedOptionsResultsInWarnings()
     {
         Outputs formats = Outputs.newBuilder()
-                                        .setCsv( Outputs.CsvFormat.getDefaultInstance() )
-                                        .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
-                                        .build();
+                                 .setCsv( Outputs.CsvFormat.getDefaultInstance() )
+                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
+                                 .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -895,9 +931,9 @@ class DeclarationValidatorTest
     void testInvalidNetcdfDeclarationResultsInErrorsAndWarnings()
     {
         Outputs formats = Outputs.newBuilder()
-                                        .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
-                                        .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
-                                        .build();
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
+                                 .build();
         FeatureGroups featureGroups = new FeatureGroups( Set.of() );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )

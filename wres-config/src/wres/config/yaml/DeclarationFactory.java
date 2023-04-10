@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -11,7 +12,6 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -114,7 +114,6 @@ import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
-import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Format;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
@@ -147,7 +146,6 @@ import wres.config.yaml.deserializers.ZoneOffsetDeserializer;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 
@@ -179,15 +177,8 @@ import wres.statistics.generated.Pool;
  * <a href="https://github.com/joelittlejohn/jsonschema2pojo/issues/1405">jsonschema2pojo-issue1405</a>
  *
  * <p>Declaration is processed in at least two stages. First, the raw declaration is read from a YAML string into POJOs
- * using {@link #from(String)}. Second, options that are declared "implicitly" are resolved via interpolation. The
- * interpolation of missing declaration may be performed in stages, depending on when it is required and how it is
- * informed. For example, the {@link #interpolate(EvaluationDeclaration)} performs minimal interpolation that is
- * informed by the declaration alone, such as the interpolation of each time-series data "type" when not declared
- * explicitly and the interpolation of metrics to evaluate when not declared explicitly (which is, in turn, informed by
- * the data "type"). Currently, {@link #interpolate(EvaluationDeclaration)} does not perform any external service
- * calls. For example, features and thresholds may be declared implicitly using a feature service or a threshold
- * service, respectively. The resulting features and thresholds are not resolved into explicit descriptions of the same
- * options. It is assumed that another module (wres-io) resolves these attributes.
+ * using {@link #from(String)}. Second, options that are declared "implicitly" are resolved via interpolation using
+ * the {@link DeclarationInterpolator}.
  *
  * @author James Brown
  */
@@ -202,17 +193,6 @@ public class DeclarationFactory
                                                  .build();
     /** Default wrapped threshold. */
     public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null, null );
-
-    /** All data threshold. */
-    public static final Threshold ALL_DATA_THRESHOLD =
-            new Threshold( wres.statistics.generated.Threshold.newBuilder()
-                                                              .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
-                                                              .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                              .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
-                                                              .build(),
-                           wres.config.yaml.components.ThresholdType.VALUE,
-                           null,
-                           null );
 
     /** To stringify protobufs into presentable JSON. */
     public static final Function<MessageOrBuilder, String> PROTBUF_STRINGIFIER = message -> {
@@ -271,8 +251,8 @@ public class DeclarationFactory
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema. Optionally performs
      * interpolation of missing declaration, followed by validation of the interpolated declaration. Interpolation is
-     * performed with {@link #interpolate(EvaluationDeclaration)} and validation is performed with
-     * {@link DeclarationValidator#validateAndNotify(EvaluationDeclaration)}.
+     * performed with {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)} and validation is performed
+     * with {@link DeclarationValidator#validateAndNotify(EvaluationDeclaration)}.
      *
      * @see #from(String)
      * @param yaml the yaml string
@@ -291,7 +271,7 @@ public class DeclarationFactory
 
         if ( interpolateAndValidate )
         {
-            declaration = DeclarationFactory.interpolate( declaration );
+            declaration = DeclarationInterpolator.interpolate( declaration );
             DeclarationValidator.validateAndNotify( declaration );
         }
 
@@ -301,9 +281,9 @@ public class DeclarationFactory
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema only. Does not "interpolate"
      * any missing declaration options that may be gleaned from other declaration. To perform "interpolation", use
-     * {@link #interpolate(EvaluationDeclaration)}. Also, does not perform any high-level validation of the
-     * declaration for mutual consistency and coherence (aka "business logic"). To perform high-level validation, see
-     * the {@link DeclarationValidator}.
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)}. Also, does not perform any high-level
+     * validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform high-level
+     * validation, see the {@link DeclarationValidator}.
      *
      * @see DeclarationValidator#validateAndNotify(EvaluationDeclaration)
      * @see DeclarationValidator#validate(EvaluationDeclaration)
@@ -465,40 +445,6 @@ public class DeclarationFactory
         return builder.build();
     }
 
-    /**
-     * Interpolates "missing" declaration from the available declaration. Currently, this method does not interpolate
-     * any declaration that requires service calls, such as features that are resolved by a feature service or
-     * thresholds that are resolved by a threshold service. This method can also be viewed as completing or
-     * "densifying" the declaration, based on hints provided by a user.
-     *
-     * @param declaration the raw declaration to interpolate
-     * @return the interpolated declaration
-     */
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
-    {
-        EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
-
-        // Disambiguate the "type" of data when it is not declared
-        DeclarationFactory.interpolateDataTypes( adjustedDeclarationBuilder );
-        // Interpolate geospatial features when required, but without using a feature service
-        DeclarationFactory.interpolateFeaturesWithoutFeatureService( adjustedDeclarationBuilder );
-        // Interpolate evaluation metrics when required
-        DeclarationFactory.interpolateMetrics( adjustedDeclarationBuilder );
-        // interpolate the evaluation-wide decimal format string for each numeric format type
-        DeclarationFactory.interpolateDecimalFormatforNumericFormats( adjustedDeclarationBuilder );
-        // Interpolate the metrics to ignore for each graphics format
-        DeclarationFactory.interpolateMetricsToOmitFromGraphicsFormats( adjustedDeclarationBuilder );
-        // Interpolate the graphics formats from the metric parameters that declare them
-        DeclarationFactory.interpolateGraphicsFormatsFromMetricParameters( adjustedDeclarationBuilder );
-        // Interpolate the measurement units for value thresholds when they have not been declared explicitly
-        DeclarationFactory.interpolateMeasurementUnitForValueThresholds( adjustedDeclarationBuilder );
-        // Interpolate thresholds for individual metrics without thresholds, adding an "all data" threshold as needed
-        DeclarationFactory.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
-        // Interpolate output formats where none exist
-        DeclarationFactory.interpolateOutputFormats( adjustedDeclarationBuilder );
-
-        return adjustedDeclarationBuilder.build();
-    }
 
     /**
      * Gets a human-friendly enum name from an enum string. The reverse of {@link #toEnumName(String)}.
@@ -618,6 +564,17 @@ public class DeclarationFactory
     }
 
     /**
+     * @param builder the builder
+     * @return whether analysis durations have been declared
+     */
+    static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
+    {
+        return Objects.nonNull( builder.analysisDurations() ) && (
+                Objects.nonNull( builder.analysisDurations().minimumExclusive() )
+                || Objects.nonNull( builder.analysisDurations().maximum() ) );
+    }
+
+    /**
      * Returns a string representation of each forecast declaration item discovered.
      * @param declaration the declaration
      * @return the forecast declaration strings, if any
@@ -634,7 +591,7 @@ public class DeclarationFactory
      * @return the ensemble declaration was found
      */
 
-    private static Set<String> getEnsembleDeclaration( EvaluationDeclarationBuilder builder )
+    static Set<String> getEnsembleDeclaration( EvaluationDeclarationBuilder builder )
     {
         Set<String> ensembleDeclaration = new TreeSet<>();
 
@@ -692,22 +649,11 @@ public class DeclarationFactory
     }
 
     /**
-     * @param builder the builder
-     * @return whether analysis durations have been declared
-     */
-    private static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
-    {
-        return Objects.nonNull( builder.analysisDurations() ) && (
-                Objects.nonNull( builder.analysisDurations().minimumExclusive() )
-                || Objects.nonNull( builder.analysisDurations().maximum() ) );
-    }
-
-    /**
      * Returns a string representation of each forecast declaration item discovered.
      * @param builder the builder
      * @return the forecast declaration strings, if any
      */
-    private static Set<String> getForecastDeclaration( EvaluationDeclarationBuilder builder )
+    static Set<String> getForecastDeclaration( EvaluationDeclarationBuilder builder )
     {
         Set<String> forecastDeclaration = new TreeSet<>();
 
@@ -748,422 +694,12 @@ public class DeclarationFactory
     }
 
     /**
-     * Adds autogenerated features to the declaration.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateFeaturesWithoutFeatureService( EvaluationDeclarationBuilder builder )
-    {
-        // Add autogenerated features
-        if ( Objects.isNull( builder.featureService() ) )
-        {
-            LOGGER.debug( "Interpolating geospatial features from the raw declaration." );
-
-            boolean hasBaseline = DeclarationFactory.hasBaseline( builder );
-
-            // Apply to feature context
-            if ( Objects.nonNull( builder.features() ) )
-            {
-                Set<GeometryTuple> geometries = builder.features()
-                                                       .geometries();
-
-                geometries = DeclarationFactory.getAutogeneratedGeometries( geometries, hasBaseline );
-                Features adjustedFeatures = new Features( geometries );
-                builder.features( adjustedFeatures );
-            }
-
-            // Apply to feature group context
-            if ( Objects.nonNull( builder.featureGroups() ) )
-            {
-                Set<GeometryGroup> geoGroups = builder.featureGroups()
-                                                      .geometryGroups();
-
-                // Preserve insertion order
-                Set<GeometryGroup> adjustedGeoGroups = new LinkedHashSet<>();
-
-                for ( GeometryGroup nextGroup : geoGroups )
-                {
-                    List<GeometryTuple> nextTuples = nextGroup.getGeometryTuplesList();
-                    Set<GeometryTuple> adjustedTuples =
-                            DeclarationFactory.getAutogeneratedGeometries( nextTuples, hasBaseline );
-
-                    GeometryGroup nextAdjustedGroup =
-                            nextGroup.toBuilder()
-                                     .clearGeometryTuples()
-                                     .addAllGeometryTuples( adjustedTuples )
-                                     .build();
-                    adjustedGeoGroups.add( nextAdjustedGroup );
-                }
-                FeatureGroups adjustedFeatureGroups = new FeatureGroups( adjustedGeoGroups );
-                builder.featureGroups( adjustedFeatureGroups );
-            }
-        }
-    }
-
-    /**
-     * Fills any geometries that are partially declared, providing there is no feature service declaration, which
-     * serves the same purpose.
-     * @param geometries the geometries to fill
-     * @param hasBaseline whether a baseline has been declared
-     * @return the geometries with any partially declared geometries filled, where applicable
-     */
-
-    private static Set<GeometryTuple> getAutogeneratedGeometries( Collection<GeometryTuple> geometries,
-                                                                  boolean hasBaseline )
-    {
-        // Preserve insertion order
-        Set<GeometryTuple> adjustedGeometries = new LinkedHashSet<>();
-        for ( GeometryTuple next : geometries )
-        {
-            GeometryTuple.Builder adjusted = next.toBuilder();
-            if ( !next.hasRight() )
-            {
-                adjusted.setRight( next.getLeft() );
-            }
-            if ( !next.hasBaseline() && hasBaseline )
-            {
-                adjusted.setBaseline( next.getLeft() );
-            }
-            adjustedGeometries.add( adjusted.build() );
-        }
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            Features features = FeaturesBuilder.builder()
-                                               .geometries( adjustedGeometries )
-                                               .build();
-
-            LOGGER.debug( "Interpolated the following geometries: {}.", features );
-        }
-
-        return Collections.unmodifiableSet( adjustedGeometries );
-    }
-
-    /**
-     * Adds autogenerated metrics to the declaration. Does not add any metrics from the
-     * {@link MetricConstants.SampleDataGroup#SINGLE_VALUED_TIME_SERIES} group because, while strictly valid for all
-     * single-valued time-series, they are niche metrics that have a high computational burden and should be explicitly
-     * added by a user.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateMetrics( EvaluationDeclarationBuilder builder )
-    {
-        DataType rightType = builder.right().type();
-
-        // No metrics defined and the type is known, so interpolate all valid metrics
-        if ( builder.metrics().isEmpty() && Objects.nonNull( rightType ) )
-        {
-            LOGGER.debug( "Interpolating metrics from the raw declaration." );
-
-            Set<MetricConstants> metrics = new LinkedHashSet<>();
-
-            // Ensemble forecast time-series
-            if ( rightType == DataType.ENSEMBLE_FORECASTS )
-            {
-                Set<MetricConstants> ensemble = MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics();
-                Set<MetricConstants> singleValued = MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics();
-                metrics.addAll( singleValued );
-                metrics.addAll( ensemble );
-
-                // Probability or value thresholds? Then add discrete probability metrics and dichotomous metrics
-                if ( !builder.probabilityThresholds().isEmpty() || !builder.valueThresholds().isEmpty() )
-                {
-                    Set<MetricConstants> discreteProbability =
-                            MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY.getMetrics();
-                    Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
-                    metrics.addAll( discreteProbability );
-                    metrics.addAll( dichotomous );
-                }
-            }
-            // Single-valued time-series
-            else
-            {
-                Set<MetricConstants> singleValued = MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics();
-                metrics.addAll( singleValued );
-
-                // Probability or value thresholds? Then add dichotomous metrics
-                if ( !builder.probabilityThresholds().isEmpty() || !builder.valueThresholds().isEmpty() )
-                {
-                    Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
-                    metrics.addAll( dichotomous );
-                }
-            }
-
-            // Remove any metrics that are incompatible with other declaration
-            DeclarationFactory.removeIncompatibleMetrics( builder, metrics );
-
-            // Wrap the metrics and set them
-            Set<Metric> wrapped =
-                    metrics.stream()
-                           .map( next -> new Metric( next, null ) )
-                           .collect( Collectors.toUnmodifiableSet() );
-            builder.metrics( wrapped );
-        }
-    }
-
-    /**
-     * Removes any metrics from the mutable set of auto-generated metrics that are inconsistent with other declaration.
-     * @param builder the builder
-     * @param metrics the metrics
-     */
-    private static void removeIncompatibleMetrics( EvaluationDeclarationBuilder builder, Set<MetricConstants> metrics )
-    {
-        // Remove any skill metrics that require an explicit baseline
-        if ( Objects.isNull( builder.baseline() ) )
-        {
-            metrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-        }
-    }
-
-    /**
-     * Adds the decimal format string to each numeric format type.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateDecimalFormatforNumericFormats( EvaluationDeclarationBuilder builder )
-    {
-        // Something to adjust?
-        if ( Objects.isNull( builder.formats() ) )
-        {
-            LOGGER.debug( "No numerical formats were discovered and, therefore, adjusted for decimal format." );
-            return;
-        }
-
-        Outputs.Builder formatsBuilder = builder.formats()
-                                                .outputs()
-                                                .toBuilder();
-
-        if ( formatsBuilder.hasCsv2() )
-        {
-            Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.getCsv2Builder();
-            Outputs.NumericFormat.Builder numericBuilder = csv2Builder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
-            csv2Builder.setOptions( numericBuilder );
-            formatsBuilder.setCsv2( csv2Builder );
-        }
-
-        if ( formatsBuilder.hasCsv() )
-        {
-            Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.getCsvBuilder();
-            Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
-            csvBuilder.setOptions( numericBuilder );
-            formatsBuilder.setCsv( csvBuilder );
-        }
-
-        if ( formatsBuilder.hasPairs() )
-        {
-            Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.getPairsBuilder();
-            Outputs.NumericFormat.Builder numericBuilder = pairsBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
-            pairsBuilder.setOptions( numericBuilder );
-            formatsBuilder.setPairs( pairsBuilder );
-        }
-
-        // Set the new format info
-        builder.formats( new Formats( formatsBuilder.build() ) );
-    }
-
-    /**
-     * Adds the metrics for which graphics are not required to each geaphics format.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateMetricsToOmitFromGraphicsFormats( EvaluationDeclarationBuilder builder )
-    {
-        // Something to adjust?
-        if ( Objects.isNull( builder.formats() ) )
-        {
-            LOGGER.debug( "No graphical formats were adjusted for metrics to ignore because no graphics outputs were "
-                          + "declared." );
-            return;
-        }
-
-        Outputs.Builder formatsBuilder = builder.formats()
-                                                .outputs()
-                                                .toBuilder();
-
-        if ( formatsBuilder.hasPng() )
-        {
-            List<MetricName> pngAvoid = builder.metrics()
-                                               .stream()
-                                               .filter( next -> Objects.nonNull( next.parameters() )
-                                                                && !next.parameters().png() )
-                                               .map( Metric::name )
-                                               .map( next -> MetricName.valueOf( next.name() ) )
-                                               .toList();
-
-            LOGGER.debug( "Discovered these metrics to avoid, which will be registered with all graphics outputs: {}.",
-                          pngAvoid );
-            Outputs.PngFormat.Builder pngBuilder = formatsBuilder.getPngBuilder();
-            Outputs.GraphicFormat.Builder graphicBuilder = pngBuilder.getOptionsBuilder();
-            graphicBuilder.clearIgnore()
-                          .addAllIgnore( pngAvoid );
-            pngBuilder.setOptions( graphicBuilder );
-            formatsBuilder.setPng( pngBuilder );
-        }
-
-        if ( formatsBuilder.hasSvg() )
-        {
-            List<MetricName> svgAvoid = builder.metrics()
-                                               .stream()
-                                               .filter( next -> Objects.nonNull( next.parameters() )
-                                                                && !next.parameters().png() )
-                                               .map( Metric::name )
-                                               .map( next -> MetricName.valueOf( next.name() ) )
-                                               .toList();
-            Outputs.SvgFormat.Builder svgBuilder = formatsBuilder.getSvgBuilder();
-            Outputs.GraphicFormat.Builder graphicBuilder = svgBuilder.getOptionsBuilder();
-            graphicBuilder.clearIgnore()
-                          .addAllIgnore( svgAvoid );
-            svgBuilder.setOptions( graphicBuilder );
-            formatsBuilder.setSvg( svgBuilder );
-        }
-
-        // Set the new format info
-        builder.formats( new Formats( formatsBuilder.build() ) );
-    }
-
-    /**
-     * Adds the metrics for which graphics are not required to each geaphics format.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateGraphicsFormatsFromMetricParameters( EvaluationDeclarationBuilder builder )
-    {
-        Outputs.Builder formatsBuilder = Outputs.newBuilder();
-        if ( Objects.nonNull( builder.formats() ) )
-        {
-            formatsBuilder.mergeFrom( builder.formats()
-                                             .outputs() );
-        }
-
-        // PNG format required but not declared?
-        if ( !formatsBuilder.hasPng() )
-        {
-            boolean png = builder.metrics()
-                                 .stream()
-                                 .anyMatch( next -> Objects.nonNull( next.parameters() ) && next.parameters()
-                                                                                                .png() );
-            if ( png )
-            {
-                LOGGER.debug( "Discovered metrics that require PNG graphics, but the PNG format was not declared in "
-                              + "the list of 'output_formats'. Adding the PNG format." );
-                formatsBuilder.setPng( Formats.PNG_FORMAT );
-            }
-        }
-
-        // SVG format required but not declared?
-        if ( !formatsBuilder.hasSvg() )
-        {
-            boolean svg = builder.metrics()
-                                 .stream()
-                                 .anyMatch( next -> Objects.nonNull( next.parameters() ) && next.parameters()
-                                                                                                .svg() );
-            if ( svg )
-            {
-                LOGGER.debug( "Discovered metrics that require SVG graphics, but the SVG format was not declared in "
-                              + "the list of 'output_formats'. Adding the SVG format." );
-                formatsBuilder.setSvg( Formats.SVG_FORMAT );
-            }
-        }
-
-        // Set the new format info
-        builder.formats( new Formats( formatsBuilder.build() ) );
-    }
-
-    /**
-     * Copies the evaluation units to the value threshold units when they are not declared explicitly.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateMeasurementUnitForValueThresholds( EvaluationDeclarationBuilder builder )
-    {
-        if ( Objects.nonNull( builder.unit() ) )
-        {
-            LOGGER.debug( "Interpolating measurement units for value thresholds." );
-
-            String unit = builder.unit();
-
-            // Value thresholds
-            Set<Threshold> valueThresholds = builder.valueThresholds();
-            valueThresholds = DeclarationFactory.addUnitToValueThresholds( valueThresholds, unit );
-            builder.valueThresholds( valueThresholds );
-
-            // Threshold sets
-            Set<Threshold> thresholdSets = builder.thresholdSets();
-            thresholdSets = DeclarationFactory.addUnitToValueThresholds( thresholdSets, unit );
-            builder.thresholdSets( thresholdSets );
-
-            // Individual metrics
-            Set<Metric> metrics = builder.metrics();
-            Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
-            for ( Metric next : metrics )
-            {
-                // Adjust?
-                if ( Objects.nonNull( next.parameters() ) && !next.parameters()
-                                                                  .valueThresholds()
-                                                                  .isEmpty() )
-                {
-                    Set<Threshold> adjusted = next.parameters()
-                                                  .valueThresholds();
-                    adjusted = DeclarationFactory.addUnitToValueThresholds( adjusted, unit );
-                    MetricParameters adjustedParameters = MetricParametersBuilder.builder( next.parameters() )
-                                                                                 .valueThresholds( adjusted )
-                                                                                 .build();
-                    Metric adjustedMetric = MetricBuilder.builder( next )
-                                                         .parameters( adjustedParameters )
-                                                         .build();
-                    adjustedMetrics.add( adjustedMetric );
-                }
-                // Retain the existing metric parameters
-                else
-                {
-                    adjustedMetrics.add( next );
-                }
-            }
-
-            builder.metrics( adjustedMetrics );
-        }
-    }
-
-    /**
-     * Interpolates the metric-specific thresholds for metrics without declared thresholds using the thresholds
-     * declared at a higher level.
-     *
-     * @param builder the builder to mutate
-     */
-    private static void interpolateThresholdsForIndividualMetrics( EvaluationDeclarationBuilder builder )
-    {
-        LOGGER.debug( "Interpolating thresholds for metrics." );
-
-        // Assemble the thresholds for each type
-        Set<Threshold> allThresholds = new LinkedHashSet<>();
-        allThresholds.addAll( builder.probabilityThresholds() );
-        allThresholds.addAll( builder.valueThresholds() );
-        allThresholds.addAll( builder.classifierThresholds() );
-        allThresholds.addAll( builder.thresholdSets() );
-
-        // Group by type
-        Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType
-                = DeclarationFactory.groupThresholdsByType( allThresholds );
-        LOGGER.debug( "When interpolating thresholds for metrics, discovered the following thresholds to use: {}.",
-                      thresholdsByType );
-
-        DeclarationFactory.addThresholdsToMetrics( thresholdsByType, builder );
-    }
-
-    /**
      * Groups the thresholds by threshold type.
      * @param thresholds the thresholds
      * @return the thresholds grouped by type
      */
 
-    private static Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> groupThresholdsByType( Set<Threshold> thresholds )
+    static Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> groupThresholdsByType( Set<Threshold> thresholds )
     {
         return thresholds.stream()
                          .collect( Collectors.groupingBy( Threshold::type,
@@ -1173,293 +709,83 @@ public class DeclarationFactory
     }
 
     /**
-     * Adds a default output format of CSV2 where none exists.
+     * Inspects the dataset for an explicitly declared feature authority, else attempts to interpolate the authority
+     * from the other information present.
      *
-     * @param builder the builder to mutate
+     * @param dataset the dataset
+     * @return the set of explicitly declared or implicitly declared feature authorities associated with the dataset
+     * @throws NullPointerException if the input is null
      */
-    private static void interpolateOutputFormats( EvaluationDeclarationBuilder builder )
+
+    static Set<FeatureAuthority> getFeatureAuthorities( Dataset dataset )
     {
-        if ( Objects.isNull( builder.formats() )
-             || Objects.equals( builder.formats().outputs(), Outputs.getDefaultInstance() ) )
+        Objects.requireNonNull( dataset );
+
+        // Explicit authority?
+        if ( Objects.nonNull( dataset.featureAuthority() ) )
         {
-            LOGGER.debug( "Adding a default output format of CSV2 because no output formats were declared." );
-            Outputs.Builder formatsBuilder = Outputs.newBuilder()
-                                                    .setCsv2( Formats.CSV2_FORMAT );
-            builder.formats( new Formats( formatsBuilder.build() ) );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Discovered an explicitly declared feature authority of '{}' for the dataset labelled "
+                              + "'{}'.",
+                              dataset.featureAuthority(), dataset.label() );
+            }
+
+            return Set.of( dataset.featureAuthority() );
         }
+
+        // Try to work out the authority from the sources
+        return dataset.sources()
+                      .stream()
+                      .map( DeclarationFactory::getFeatureAuthorityFromSource )
+                      .filter( Objects::nonNull )
+                      .collect( Collectors.toUnmodifiableSet() );
+
     }
 
     /**
-     * Associates the specified thresholds with the appropriate metrics and adds an "all data" threshold to each
-     * continuous metric.
-     *
-     * @param thresholdsByType the mapped thresholds
-     * @param builder the builder to mutate
+     * Inspects the source and tries to determine the feature authority.
+     * @param source the source
+     * @return the feature authority or null if none could be determined
      */
-
-    private static void addThresholdsToMetrics( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
-                                                EvaluationDeclarationBuilder builder )
+    private static FeatureAuthority getFeatureAuthorityFromSource( Source source )
     {
-        Set<Metric> metrics = builder.metrics();
-        Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
+        // Inspect the source interface
+        FeatureAuthority sourceInterfaceAuthority = null;
+        SourceInterface sourceInterface = source.sourceInterface();
 
-        LOGGER.debug( "Discovered these metrics whose thresholds will be adjusted: {}.", metrics );
-
-        // Adjust the metrics
-        for ( Metric next : metrics )
+        if ( Objects.nonNull( sourceInterface ) )
         {
-            Metric adjustedMetric = DeclarationFactory.addThresholdsToMetric( thresholdsByType, next );
-            adjustedMetrics.add( adjustedMetric );
+            sourceInterfaceAuthority = sourceInterface.getFeatureAuthority();
         }
 
-        builder.metrics( adjustedMetrics );
-    }
-
-    /**
-     * Associates the specified thresholds with the specified metric and adds an "all data" threshold as needed.
-     *
-     * @param thresholdsByType the mapped thresholds
-     * @return the adjusted metric
-     */
-
-    private static Metric addThresholdsToMetric( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
-                                                 Metric metric )
-    {
-        MetricConstants name = metric.name();
-
-        LOGGER.debug( "Adjusting metric {} to include thresholds, as needed.", name );
-
-        MetricParameters nextParameters = metric.parameters();
-        MetricParametersBuilder parametersBuilder = MetricParametersBuilder.builder();
-
-        // Add existing parameters where available
-        if ( Objects.nonNull( nextParameters ) )
+        // Inspect the source URI
+        FeatureAuthority sourceUriAuthority = null;
+        URI uri = source.uri();
+        if ( Objects.nonNull( uri ) && uri.toString()
+                                          .contains( "usgs.gov/nwis" ) )
         {
-            parametersBuilder = MetricParametersBuilder.builder( nextParameters );
+            sourceUriAuthority = FeatureAuthority.USGS_SITE_CODE;
         }
 
-        // Value thresholds
-        if ( Objects.isNull( parametersBuilder.valueThresholds() ) || parametersBuilder.valueThresholds()
-                                                                                       .isEmpty() )
+        // Feature authority from source URI is null or both are equal, return the authority from the interface
+        if ( Objects.isNull( sourceUriAuthority ) || sourceInterfaceAuthority == sourceUriAuthority )
         {
-            Set<Threshold> valueThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.VALUE );
-            parametersBuilder.valueThresholds( valueThresholds );
+            return sourceInterfaceAuthority;
         }
 
-        // Add "all data" thresholds?
-        if ( name.isContinuous() )
+        // Authority from the interface is null, return the authority from the source URI
+        if ( Objects.isNull( sourceInterfaceAuthority ) )
         {
-            Set<Threshold> valueThresholds = new LinkedHashSet<>();
-            if ( Objects.nonNull( parametersBuilder.valueThresholds() ) )
-            {
-                valueThresholds.addAll( parametersBuilder.valueThresholds() );
-            }
-            valueThresholds.add( ALL_DATA_THRESHOLD );
-            parametersBuilder.valueThresholds( valueThresholds );
+            return sourceUriAuthority;
         }
 
-        // Probability thresholds
-        if ( Objects.isNull( parametersBuilder.probabilityThresholds() ) || parametersBuilder.probabilityThresholds()
-                                                                                             .isEmpty() )
-        {
-            Set<Threshold> probThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.PROBABILITY );
-            parametersBuilder.probabilityThresholds( probThresholds );
-        }
+        LOGGER.warn( "Discovered a source whose feature authority implied by the source URI contradicts the "
+                     + "feature authority implied by the source interface. The source interface says {} and the URI "
+                     + "says {}. The feature authority cannot be determined. The source URI is: {}. Please adjust the "
+                     + "source as needed.", sourceInterfaceAuthority, sourceUriAuthority, uri );
 
-        // Classifier thresholds, which only apply to categorical measures
-        if ( ( Objects.isNull( parametersBuilder.classifierThresholds() )
-               || parametersBuilder.classifierThresholds()
-                                   .isEmpty() )
-             && ( name.isInGroup( MetricConstants.SampleDataGroup.DICHOTOMOUS )
-                  || name.isInGroup( MetricConstants.SampleDataGroup.MULTICATEGORY ) ) )
-        {
-            Set<Threshold> classThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
-            parametersBuilder.classifierThresholds( classThresholds );
-        }
-
-        Metric adjustedMetric = metric;
-
-        // Create the adjusted metric
-        MetricParameters newParameters = parametersBuilder.build();
-
-        // Something changed, which resulted in non-default parameters?
-        if ( !newParameters.equals( nextParameters ) &&
-             !newParameters.equals( MetricParametersBuilder.builder().build() ) )
-        {
-            adjustedMetric = MetricBuilder.builder( metric )
-                                          .parameters( newParameters )
-                                          .build();
-
-            LOGGER.debug( "Adjusted a metric to include thresholds. The original metric was: {}. The adjusted metric "
-                          + "is {}.", metric, adjustedMetric );
-        }
-
-        return adjustedMetric;
-    }
-
-    /**
-     * Adds the unit to each value threshold in the set that does not have the unit defined.
-     *
-     * @param thresholds the thresholds
-     * @return the adjusted thresholds
-     */
-    private static Set<Threshold> addUnitToValueThresholds( Set<Threshold> thresholds,
-                                                            String unit )
-    {
-        Set<Threshold> adjustedThresholds = new LinkedHashSet<>( thresholds.size() );
-        for ( Threshold next : thresholds )
-        {
-            // Value threshold without a unit string
-            if ( next.type() == wres.config.yaml.components.ThresholdType.VALUE
-                 && next.threshold()
-                        .getThresholdValueUnits()
-                        .isBlank() )
-            {
-                wres.statistics.generated.Threshold adjusted = next.threshold()
-                                                                   .toBuilder()
-                                                                   .setThresholdValueUnits( unit )
-                                                                   .build();
-                Threshold threshold = ThresholdBuilder.builder( next )
-                                                      .threshold( adjusted )
-                                                      .build();
-                adjustedThresholds.add( threshold );
-                LOGGER.debug( "Adjusted a value threshold to use the evaluation unit of {} because the threshold unit "
-                              + "was not declared explicitly. The adjusted threshold is: {}", unit, threshold );
-            }
-            else
-            {
-                adjustedThresholds.add( next );
-            }
-        }
-
-        return Collections.unmodifiableSet( adjustedThresholds );
-    }
-
-    /**
-     * Resolves the type of time-series data to evaluate when required.
-     *
-     * @param builder the declaration builder to adjust
-     */
-    private static void interpolateDataTypes( EvaluationDeclarationBuilder builder )
-    {
-        // Resolve the left or observed data type, if required
-        DeclarationFactory.resolveObservedDataTypeIfRequired( builder );
-
-        // Resolve the predicted data type, if required
-        DeclarationFactory.resolvePredictedDataTypeIfRequired( builder );
-
-        // Baseline data type has the same as the predicted data type, by default
-        DeclarationFactory.resolveBaselineDataTypeIfRequired( builder );
-    }
-
-    /**
-     * Resolves the observed data type.
-     * @param builder the builder
-     */
-    private static void resolveObservedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
-    {
-        Dataset observed = builder.left();
-
-        // Resolve the left or observed data type
-        if ( Objects.isNull( observed.type() ) )
-        {
-            String defaultMessage = "While reading the project declaration, discovered that the observed dataset had "
-                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
-                                    + "explicitly.";
-
-            // Analysis durations present? If so, assume analyses
-            if ( DeclarationFactory.hasAnalysisDurations( builder ) )
-            {
-                Dataset newLeft = DatasetBuilder.builder( observed )
-                                                .type( DataType.ANALYSES )
-                                                .build();
-                builder.left( newLeft );
-
-                // Log the reason
-                LOGGER.warn( defaultMessage,
-                             "Assuming that the 'type' is 'analyses' because analysis durations "
-                             + "were discovered and analyses are typically used to verify other " + "datasets." );
-            }
-            else
-            {
-                Dataset newLeft = DatasetBuilder.builder( observed )
-                                                .type( DataType.OBSERVATIONS )
-                                                .build();
-                builder.left( newLeft );
-
-                // Log the reason
-                LOGGER.warn( defaultMessage, "Assuming that the 'type' is 'observations'." );
-            }
-        }
-    }
-
-    /**
-     * Resolves the predicted data type.
-     * @param builder the builder
-     */
-    private static void resolvePredictedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
-    {
-        Dataset predicted = builder.right();
-
-        // Resolve the right or predicted data type
-        if ( Objects.isNull( predicted.type() ) )
-        {
-            String defaultMessage = "While reading the project declaration, discovered that the predicted dataset had "
-                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
-                                    + "explicitly.";
-
-            String reasonMessage;
-
-            DataType dataType;
-
-            // Discover hints from the declaration
-            Set<String> ensembleDeclaration = DeclarationFactory.getEnsembleDeclaration( builder );
-            Set<String> forecastDeclaration = DeclarationFactory.getForecastDeclaration( builder );
-
-            // Ensemble declaration?
-            if ( !ensembleDeclaration.isEmpty() )
-            {
-                reasonMessage = "Setting the 'type' to 'ensemble forecasts' because the following ensemble "
-                                + "declaration was discovered: " + ensembleDeclaration + ".";
-                dataType = DataType.ENSEMBLE_FORECASTS;
-            }
-            // Forecast declaration?
-            else if ( !forecastDeclaration.isEmpty() )
-            {
-                reasonMessage = "Setting the 'type' to 'single valued forecasts' because the following forecast "
-                                + "declaration was discovered and no ensemble declaration was discovered to suggest "
-                                + "that the forecasts are 'ensemble forecasts': " + forecastDeclaration + ".";
-                dataType = DataType.SINGLE_VALUED_FORECASTS;
-            }
-            // Source declaration that is a multi-type service? If so, cannot infer the type
-            else if ( predicted.sources()
-                               .stream()
-                               .anyMatch( next -> Objects.nonNull( next.sourceInterface() )
-                                                  && next.sourceInterface().getDataTypes().size() > 1 ) )
-            {
-                reasonMessage = "Could not infer the predicted data type because sources were declared with interfaces "
-                                + "that support multiple data types.";
-                dataType = null;
-            }
-            else
-            {
-                reasonMessage = "Setting the 'type' to 'simulations' because no declaration was discovered to "
-                                + "suggest that any dataset contains 'single valued forecasts' or 'ensemble "
-                                + "forecast'.";
-
-                dataType = DataType.SIMULATIONS;
-            }
-
-            // Set the type
-            Dataset newPredicted = DatasetBuilder.builder( predicted ).type( dataType ).build();
-            builder.right( newPredicted );
-
-            // Log the reason
-            LOGGER.warn( defaultMessage, reasonMessage );
-        }
+        return null;
     }
 
     /**
@@ -1564,54 +890,9 @@ public class DeclarationFactory
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      */
-    private static boolean hasBaseline( EvaluationDeclarationBuilder builder )
+    static boolean hasBaseline( EvaluationDeclarationBuilder builder )
     {
         return Objects.nonNull( builder.baseline() );
-    }
-
-    /**
-     * Sets the baseline data type to match the data type of the predicted dataset.
-     * @param builder the builder
-     */
-    private static void resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
-    {
-        if ( DeclarationFactory.hasBaseline( builder ) )
-        {
-            Dataset predicted = builder.right();
-            BaselineDataset baseline = builder.baseline();
-            Dataset baselineDataset = baseline.dataset();
-
-            // Set the baseline data type, if required
-            if ( Objects.isNull( baselineDataset.type() ) )
-            {
-                // Same as the predicted data type, by default
-                DataType type = predicted.type();
-
-                String reason = "Assuming that the 'type' is '"
-                                + type
-                                + "' to match the 'type' of the predicted dataset.";
-
-                // Persistence defined? If so, observations
-                if ( Objects.nonNull( baseline.persistence() ) )
-                {
-                    type = DataType.OBSERVATIONS;
-                    reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
-                }
-
-                Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
-                                                           .type( type )
-                                                           .build();
-                BaselineDataset newBaseline =
-                        BaselineDatasetBuilder.builder( baseline )
-                                              .dataset( newBaselineDataset )
-                                              .build();
-                builder.baseline( newBaseline );
-
-                LOGGER.warn( "While reading the project declaration, discovered that the baseline dataset had no "
-                             + "declared data 'type'. {} If this is incorrect, please declare the 'type' explicitly.",
-                             reason );
-            }
-        }
     }
 
     /**

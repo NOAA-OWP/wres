@@ -455,16 +455,19 @@ class EvaluationUtilities
             // In memory evaluation
             else
             {
+                // Builder for an in-memory store of time-series
                 TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
 
-                // Ingest the time-series into the timeSeriesStoreBuilder
+                // Ingester that ingests into the in-memory store
                 TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
 
+                // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.getSystemSettings(),
                                                                       featurefulProjectConfig,
                                                                       griddedFeaturesBuilder );
 
+                // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
                 evaluationDetails.setTimeSeriesStore( timeSeriesStore );
                 project = Projects.getProject( featurefulProjectConfig,
@@ -481,15 +484,19 @@ class EvaluationUtilities
             String desiredMeasurementUnit = project.getMeasurementUnit();
             UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                                    projectConfig );
-            // Update the evaluation description with any analyzed units and variable names
+            // Update the evaluation description with any analyzed units and variable names that happen post-ingest
+            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
+            // interpolation include interpolation of missing declaration and service calls to interpolate features and
+            // thresholds. This is the latest step in that process of combining the declaration and data
             wres.statistics.generated.Evaluation evaluationDescription =
                     EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
                                                                           project );
 
-            // Build the evaluation. In future, there may be a desire to build the evaluation prior to ingest, in order 
-            // to message the status of ingest. In order to build an evaluation before ingest, those parts of the 
-            // evaluation description that depend on the data would need to be part of the pool description instead 
-            // (e.g., the measurement units). Indeed, the time scale is part of the pool description for this reason.
+            // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
+            // description prior to ingest, in order to message the status of ingest to client applications. In order
+            // to build an evaluation description before ingest, those parts of the evaluation description that depend
+            // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
+            // the time scale is part of the pool description for this reason.
             evaluation = Evaluation.of( evaluationDescription,
                                         connections,
                                         EvaluationUtilities.CLIENT_ID,

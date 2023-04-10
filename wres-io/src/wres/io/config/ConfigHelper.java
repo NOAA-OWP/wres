@@ -1,7 +1,5 @@
 package wres.io.config;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
@@ -9,7 +7,6 @@ import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -17,17 +14,16 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.xml.ProjectConfigException;
 import wres.config.generated.*;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.ingesting.PreIngestException;
+import wres.io.geography.wrds.WrdsFeatureFiller;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -67,62 +63,25 @@ public class ConfigHelper
     private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
 
     /**
-     * <p>Creates a hash for the indicated project configuration based on its
-     * data ingested.
+     * Resolves any implicit declaration of features and thresholds that require service calls to external web
+     * services. Currently, the only supported web services are those within the umbrella of the Water Resources Data
+     * Service (WRDS), which contains a collection of U.S. National Weather Service APIs. This step may be viewed as
+     * an extension of the {@link wres.config.yaml.DeclarationInterpolator}, which focuses on the interpolation of
+     * implicit declaration that does not require service calls (e.g., deciding on which metrics to compute when none
+     * are declared). Again, this method focuses on the interpolation of declaration that requires external service
+     * calls.
      *
-     * <p>TODO: introduce wres.Dataset table, hash sorted hashes of left, right,
-     * baseline separately, treat each as a dataset. Link dataset to project.
-     *
-     * @param leftHashesIngested A collection of the hashes for the left sided
-     *                           source data
-     * @param rightHashesIngested A collection of the hashes for the right sided
-     *                            source data
-     * @param baselineHashesIngested A collection of hashes representing the baseline
-     *                               source data
-     * @return A unique hash code for the project's circumstances
+     * @param declaration the evaluation declaration
+     * @return the declaration with any implicit features or thresholds rendered explicit
+     * @throws NullPointerException if the input is null
      */
-    public static String hashProject( final String[] leftHashesIngested,
-                                      final String[] rightHashesIngested,
-                                      final String[] baselineHashesIngested )
+
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
     {
-        MessageDigest md5Digest;
+        Objects.requireNonNull( declaration );
 
-        try
-        {
-            md5Digest = MessageDigest.getInstance( "MD5" );
-        }
-        catch ( NoSuchAlgorithmException nsae )
-        {
-            throw new PreIngestException( "Couldn't use MD5 algorithm.",
-                                          nsae );
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( leftHashesIngested );
-
-        for ( String leftHash : leftHashesIngested )
-        {
-            DigestUtils.updateDigest( md5Digest, leftHash );
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( rightHashesIngested );
-
-        for ( String rightHash : rightHashesIngested )
-        {
-            DigestUtils.updateDigest( md5Digest, rightHash );
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( baselineHashesIngested );
-
-        for ( String baselineHash : baselineHashesIngested )
-        {
-            DigestUtils.updateDigest( md5Digest, baselineHash );
-        }
-
-        byte[] digestAsHex = md5Digest.digest();
-        return Hex.encodeHexString( digestAsHex );
+        // Complete the features, if they require a WRDS service call
+        return WrdsFeatureFiller.fillFeatures( declaration );
     }
 
     /**
