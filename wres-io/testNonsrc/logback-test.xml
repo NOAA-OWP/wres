@@ -32,7 +32,7 @@
     <logger name="org.mockserver.mock.HttpStateHandler" level="warn" />
 
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
-    <root level="${wres.logLevel:-info}">
+    <root level="${wres.logLevel:-debug}">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

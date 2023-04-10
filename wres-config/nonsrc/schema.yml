@@ -843,7 +843,6 @@ definitions:
     properties:
       uri:
         type: string
-        format: uri
         minLength: 1
         maxLength: 2083
       provider:

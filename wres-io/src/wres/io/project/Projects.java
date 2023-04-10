@@ -1,8 +1,12 @@
 package wres.io.project;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +15,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.NoDataException;
-import wres.io.config.ConfigHelper;
 import wres.io.data.DataProvider;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
@@ -29,14 +34,16 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 
 /**
- * Factory class for creating a {@link Project}.
+ * Factory class for creating various implementations of a {@link Project}, such as an in-memory project and a project
+ * backed by a database.
  */
 public class Projects
 {
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Projects.class );
 
     /**
-     * Creates an {@link Project} backed by a database.
+     * Creates a {@link Project} backed by a database.
      * @param database The database to use
      * @param projectConfig the projectConfig to ingest
      * @param caches the database caches/ORMs
@@ -60,11 +67,11 @@ public class Projects
 
         try
         {
-            return Projects.getProjectFromIngest( database,
-                                                  caches,
-                                                  griddedFeatures,
-                                                  projectConfig,
-                                                  ingestResults );
+            return Projects.getDatabaseProject( database,
+                                                caches,
+                                                griddedFeatures,
+                                                projectConfig,
+                                                ingestResults );
         }
         catch ( SQLException | IngestException | PreIngestException e )
         {
@@ -73,7 +80,7 @@ public class Projects
     }
 
     /**
-     * Creates an {@link Project} backed by an in-memory {@link TimeSeriesStore}.
+     * Creates a {@link Project} backed by an in-memory {@link TimeSeriesStore}.
      * @param projectConfig the projectConfig
      * @param timeSeriesStore the store of time-series data
      * @param ingestResults the ingest results
@@ -91,11 +98,11 @@ public class Projects
     }
 
     /**
-     * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
+     * Convert a project declaration and a raw list of ingest results into a database project.
      * @param database the database
      * @param caches the database caches
      * @param griddedFeatures the gridded features cache
-     * @param projectConfig the config that produced the ingest results
+     * @param projectConfig the declaration that produced the ingest results
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
@@ -103,11 +110,11 @@ public class Projects
      * @throws PreIngestException if the hashes of the ingested sources cannot be determined
      * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
-    private static Project getProjectFromIngest( Database database,
-                                                 DatabaseCaches caches,
-                                                 GriddedFeatures griddedFeatures,
-                                                 ProjectConfig projectConfig,
-                                                 List<IngestResult> ingestResults )
+    private static Project getDatabaseProject( Database database,
+                                               DatabaseCaches caches,
+                                               GriddedFeatures griddedFeatures,
+                                               ProjectConfig projectConfig,
+                                               List<IngestResult> ingestResults )
             throws SQLException
     {
         long[] leftIds = Projects.getLeftIds( ingestResults );
@@ -136,13 +143,13 @@ public class Projects
 
         // Permit the List<IngestResult> to be garbage collected here, which
         // should leave space on heap for creating collections in the following.
-        DatabaseProject project = Projects.getProjectFromIngestStepTwo( database,
-                                                                        caches,
-                                                                        griddedFeatures,
-                                                                        projectConfig,
-                                                                        leftIds,
-                                                                        rightIds,
-                                                                        baselineIds );
+        DatabaseProject project = Projects.getDatabaseProjectStepTwo( database,
+                                                                      caches,
+                                                                      griddedFeatures,
+                                                                      projectConfig,
+                                                                      leftIds,
+                                                                      rightIds,
+                                                                      baselineIds );
 
 
         // Validate the saved project
@@ -152,7 +159,8 @@ public class Projects
     }
 
     /**
-     * Continue ingest. TODO: refactor this method as it's far too long.
+     * Continue ingest.
+     *
      * @param database the database
      * @param caches the database caches
      * @param griddedFeatures the gridded features cache
@@ -163,13 +171,13 @@ public class Projects
      * @return the project
      * @throws SQLException if the project could not be ingested
      */
-    private static DatabaseProject getProjectFromIngestStepTwo( Database database,
-                                                                DatabaseCaches caches,
-                                                                GriddedFeatures griddedFeatures,
-                                                                ProjectConfig projectConfig,
-                                                                long[] leftIds,
-                                                                long[] rightIds,
-                                                                long[] baselineIds )
+    private static DatabaseProject getDatabaseProjectStepTwo( Database database,
+                                                              DatabaseCaches caches,
+                                                              GriddedFeatures griddedFeatures,
+                                                              ProjectConfig projectConfig,
+                                                              long[] leftIds,
+                                                              long[] rightIds,
+                                                              long[] baselineIds )
             throws SQLException
     {
         // We don't yet know how many unique timeseries there are. For example,
@@ -217,57 +225,9 @@ public class Projects
         Projects.selectIdsAndHashes( database, batchOfIds, idsToHashes );
 
         // "select hash from wres.Source S inner join ( select ... ) I on S.source_id = I.source_id"
-        String[] leftHashes = new String[leftIds.length];
-        String[] rightHashes = new String[rightIds.length];
-        String[] baselineHashes = new String[baselineIds.length];
-
-        for ( int i = 0; i < leftIds.length; i++ )
-        {
-            long id = leftIds[i];
-            String hash = idsToHashes.get( id );
-
-            if ( Objects.nonNull( hash ) )
-            {
-                leftHashes[i] = hash;
-            }
-            else
-            {
-                throw new PreIngestException( "Unexpected null left hash value for id="
-                                              + id );
-            }
-        }
-
-        for ( int i = 0; i < rightIds.length; i++ )
-        {
-            long id = rightIds[i];
-            String hash = idsToHashes.get( id );
-
-            if ( Objects.nonNull( hash ) )
-            {
-                rightHashes[i] = hash;
-            }
-            else
-            {
-                throw new PreIngestException( "Unexpected null right hash value for id="
-                                              + id );
-            }
-        }
-
-        for ( int i = 0; i < baselineHashes.length; i++ )
-        {
-            long id = baselineIds[i];
-            String hash = idsToHashes.get( id );
-
-            if ( Objects.nonNull( hash ) )
-            {
-                baselineHashes[i] = hash;
-            }
-            else
-            {
-                throw new PreIngestException( "Unexpected null baseline hash value for id="
-                                              + id );
-            }
-        }
+        String[] leftHashes = Projects.getHashes( leftIds, idsToHashes );
+        String[] rightHashes = Projects.getHashes( rightIds, idsToHashes );
+        String[] baselineHashes = Projects.getHashes( baselineIds, idsToHashes );
 
         Pair<DatabaseProject, Boolean> detailsResult =
                 Projects.getProject( database,
@@ -278,9 +238,37 @@ public class Projects
                                      rightHashes,
                                      baselineHashes );
         DatabaseProject details = detailsResult.getLeft();
-        long detailsId = details.getId();
 
-        if ( Boolean.TRUE.equals( detailsResult.getRight() ) )
+        return Projects.getDatabaseProjectStepThree( database,
+                                                     details,
+                                                     detailsResult.getRight(),
+                                                     leftIds,
+                                                     rightIds,
+                                                     baselineIds );
+    }
+
+    /**
+     * Continue ingest.
+     *
+     * @param database the database
+     * @param project the database project
+     * @param inserted whether the project caused an insert
+     * @param leftIds the left-sided data identifiers
+     * @param rightIds the right-sided data identifiers
+     * @param baselineIds the baseline-sided data identifiers
+     * @return the project
+     * @throws SQLException if the project could not be ingested
+     */
+    private static DatabaseProject getDatabaseProjectStepThree( Database database,
+                                                                DatabaseProject project,
+                                                                boolean inserted,
+                                                                long[] leftIds,
+                                                                long[] rightIds,
+                                                                long[] baselineIds )
+            throws SQLException
+    {
+        long detailsId = project.getId();
+        if ( Boolean.TRUE.equals( inserted ) )
         {
             String projectId = Long.toString( detailsId );
             LOGGER.debug( "Found that this Thread is responsible for "
@@ -292,36 +280,7 @@ public class Projects
             String tableName = "wres.ProjectSource";
             List<String> columnNames = List.of( "project_id", "source_id", "member" );
 
-            List<String[]> values = new ArrayList<>( leftIds.length
-                                                     + rightIds.length
-                                                     + baselineIds.length );
-
-            for ( long sourceID : leftIds )
-            {
-                String[] row = new String[3];
-                row[0] = projectId;
-                row[1] = Long.toString( sourceID );
-                row[2] = "left";
-                values.add( row );
-            }
-
-            for ( long sourceID : rightIds )
-            {
-                String[] row = new String[3];
-                row[0] = projectId;
-                row[1] = Long.toString( sourceID );
-                row[2] = "right";
-                values.add( row );
-            }
-
-            for ( long sourceID : baselineIds )
-            {
-                String[] row = new String[3];
-                row[0] = projectId;
-                row[1] = Long.toString( sourceID );
-                row[2] = "baseline";
-                values.add( row );
-            }
+            List<String[]> values = Projects.getSourceRowsFromIds( leftIds, rightIds, baselineIds, projectId );
 
             // The first two columns are numbers, last one is char.
             boolean[] charColumns = { false, false, true };
@@ -391,9 +350,96 @@ public class Projects
             }
         }
 
-        return details;
+        return project;
     }
 
+    /**
+     * Converts source IDs into source rows for insertion.
+     * @param leftIds the left IDs
+     * @param rightIds the right IDs
+     * @param baselineIds the baseline IDs
+     * @param projectId the project ID
+     * @return the source rows to insert
+     */
+    private static List<String[]> getSourceRowsFromIds( long[] leftIds,
+                                                        long[] rightIds,
+                                                        long[] baselineIds,
+                                                        String projectId )
+    {
+        List<String[]> values = new ArrayList<>( leftIds.length
+                                                 + rightIds.length
+                                                 + baselineIds.length );
+
+        for ( long sourceID : leftIds )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "left";
+            values.add( row );
+        }
+
+        for ( long sourceID : rightIds )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "right";
+            values.add( row );
+        }
+
+        for ( long sourceID : baselineIds )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "baseline";
+            values.add( row );
+        }
+
+        return Collections.unmodifiableList( values );
+    }
+
+    /**
+     * Converts the supplied IDs to source hashes using the translation map.
+     * @param ids the ids to hash
+     * @param idsToHashes the map of IDs to hashes
+     * @return the hashes
+     */
+    private static String[] getHashes( long[] ids, Map<Long, String> idsToHashes )
+    {
+        String[] hashes = new String[ids.length];
+
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            long id = ids[i];
+            String hash = idsToHashes.get( id );
+
+            if ( Objects.nonNull( hash ) )
+            {
+                hashes[i] = hash;
+            }
+            else
+            {
+                throw new PreIngestException( "Unexpected null left hash value for id="
+                                              + id );
+            }
+        }
+
+        return hashes;
+    }
+
+    /**
+     * Gets a project from the inputs.
+     * @param database the database
+     * @param caches the database ORM
+     * @param griddedFeatures the gridded features, if any
+     * @param projectConfig the project declaration
+     * @param leftHashes the left hashes
+     * @param rightHashes the right hashes
+     * @param baselineHashes the baseline hashes
+     * @return the project declaration and whether this project inserted into the database
+     */
     private static Pair<DatabaseProject, Boolean> getProject( Database database,
                                                               DatabaseCaches caches,
                                                               GriddedFeatures griddedFeatures,
@@ -408,9 +454,9 @@ public class Projects
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
-        String identity = ConfigHelper.hashProject( leftHashes,
-                                                    rightHashes,
-                                                    baselineHashes );
+        String identity = getTopHashOfSources( leftHashes,
+                                               rightHashes,
+                                               baselineHashes );
 
         DatabaseProject details = new DatabaseProject( database,
                                                        caches,
@@ -448,7 +494,7 @@ public class Projects
             idJoiner.add( "?" );
         }
 
-        String query = queryStart + idJoiner.toString();
+        String query = queryStart + idJoiner;
         DataScripter script = new DataScripter( database, query );
 
         for ( Long id : ids )
@@ -482,7 +528,6 @@ public class Projects
             }
         }
     }
-
 
     /**
      * <p>Get the list of left surrogate keys from given ingest results.
@@ -520,7 +565,6 @@ public class Projects
         return leftIds;
     }
 
-
     /**
      * <p>Get the list of right surrogate keys from given ingest results.
      *
@@ -556,7 +600,6 @@ public class Projects
 
         return rightIds;
     }
-
 
     /**
      * <p>Get the list of baseline surrogate keys from given ingest results.
@@ -594,8 +637,66 @@ public class Projects
         return baselineIds;
     }
 
+    /**
+     * <p>Creates a hash for the indicated project configuration based on its
+     * data ingested.
+     *
+     * @param leftHashes A collection of the hashes for the left sided
+     *                           source data
+     * @param rightHashes A collection of the hashes for the right sided
+     *                            source data
+     * @param baselineHashes A collection of hashes representing the baseline
+     *                               source data
+     * @return A unique hash code for the project's circumstances
+     */
+    private static String getTopHashOfSources( final String[] leftHashes,
+                                               final String[] rightHashes,
+                                               final String[] baselineHashes )
+    {
+        MessageDigest md5Digest;
+
+        try
+        {
+            md5Digest = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new PreIngestException( "Couldn't use MD5 algorithm.",
+                                          nsae );
+        }
+
+        // Sort for deterministic hash result for same list of ingested
+        Arrays.sort( leftHashes );
+
+        for ( String leftHash : leftHashes )
+        {
+            DigestUtils.updateDigest( md5Digest, leftHash );
+        }
+
+        // Sort for deterministic hash result for same list of ingested
+        Arrays.sort( rightHashes );
+
+        for ( String rightHash : rightHashes )
+        {
+            DigestUtils.updateDigest( md5Digest, rightHash );
+        }
+
+        // Sort for deterministic hash result for same list of ingested
+        Arrays.sort( baselineHashes );
+
+        for ( String baselineHash : baselineHashes )
+        {
+            DigestUtils.updateDigest( md5Digest, baselineHash );
+        }
+
+        byte[] digestAsHex = md5Digest.digest();
+        return Hex.encodeHexString( digestAsHex );
+    }
+
+    /**
+     * Do not construct.
+     */
     private Projects()
     {
-        // Do not construct
     }
 }

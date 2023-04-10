@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdBuilder;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;

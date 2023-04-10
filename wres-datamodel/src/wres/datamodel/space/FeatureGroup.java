@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryGroup;
 
@@ -168,7 +167,7 @@ public class FeatureGroup implements Comparable<FeatureGroup>
         this.geometryGroup = geometryGroup;
         SortedSet<FeatureTuple> innerFeatures = geometryGroup.getGeometryTuplesList()
                                                              .stream()
-                                                             .map( MessageFactory::parse )
+                                                             .map( FeatureTuple::of )
                                                              .collect( Collectors.toCollection( TreeSet::new ) );
         this.features = Collections.unmodifiableSortedSet( innerFeatures );
 

@@ -27,14 +27,14 @@ import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * A collection of utilities for working with messages.
+ * A collection of utilities that help to add behavior to the dumb-data containers in {@link wres.statistics}, notably
+ * to facilitate implementations of {@link Comparable}.
  * 
  * @author James Brown
  */
 
 public class MessageUtilities
 {
-
     /**
      * Compares the first {@link Evaluation} against the second and returns zero, a positive or negative value as to 
      * whether the first description is equal to, greater than or less than the second description.

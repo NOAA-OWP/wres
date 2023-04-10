@@ -24,6 +24,8 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 import org.mockserver.model.Parameters;
 import org.mockserver.verify.VerificationTimes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
@@ -53,6 +55,8 @@ import wres.system.SystemSettings;
 
 class WrdsNwmReaderTest
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReaderTest.class );
+
     /** Mocker server instance. */
     private ClientAndServer mockServer;
 
@@ -448,8 +452,8 @@ class WrdsNwmReaderTest
                                                 null,
                                                 null,
                                                 List.of( new NamedFeature( null,
-                                                                      Integer.toString( NWM_FEATURE_ID ),
-                                                                      null ) ),
+                                                                           Integer.toString( NWM_FEATURE_ID ),
+                                                                           null ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -476,7 +480,7 @@ class WrdsNwmReaderTest
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
             // Three chunks expected
             assertEquals( 3, actual.size() );
@@ -544,11 +548,11 @@ class WrdsNwmReaderTest
                                                 null,
                                                 null,
                                                 List.of( new NamedFeature( null,
-                                                                      Integer.toString( NWM_FEATURE_ID ),
-                                                                      null ),
+                                                                           Integer.toString( NWM_FEATURE_ID ),
+                                                                           null ),
                                                          new NamedFeature( null,
-                                                                      "234442421",
-                                                                      null ) ),
+                                                                           "234442421",
+                                                                           null ) ),
                                                 null,
                                                 null,
                                                 null,
@@ -574,11 +578,11 @@ class WrdsNwmReaderTest
         WrdsNwmReader reader = WrdsNwmReader.of( pairConfig, systemSettings, 1 );
 
         // Expect a ReadException due to the fake uri, not a ClassCastException as in #109238.
-        assertThrows( ReadException.class, () -> {
+        assertThrows( ReadException.class, () -> {  // NOSONAR
             try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
             {
-                tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                           .collect( Collectors.toList() );
+                long count = tupleStream.count();
+                LOGGER.debug( "Count: {}.", count );
             }
         } );
     }

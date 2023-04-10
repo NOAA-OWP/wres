@@ -6,7 +6,7 @@ package wres.config.yaml;
  * @author James Brown
  */
 
-class DeclarationException extends RuntimeException
+public class DeclarationException extends RuntimeException
 {
     /**
      * Creates an instance.
@@ -14,7 +14,7 @@ class DeclarationException extends RuntimeException
      * @param message the message.
      */
 
-    DeclarationException( String message )
+    public DeclarationException( String message )
     {
         super( message );
     }
@@ -24,7 +24,7 @@ class DeclarationException extends RuntimeException
      * @param message the message
      * @param cause the cause
      */
-    DeclarationException( String message, Throwable cause )
+    public DeclarationException( String message, Throwable cause )
     {
         super( message, cause );
     }
