@@ -102,6 +102,8 @@ public class EmbeddedBroker implements Closeable
 
         String bindingUrl = properties.getProperty( connectionPropertyName );
 
+        LOGGER.info( " Discovered the following binding URL for the embedded broker: {}", bindingUrl );
+
         LOGGER.debug( "Attempting to extract the desired port from the binding URL {}.", bindingUrl );
 
         // Discover the port to which a broker should be bound
@@ -114,7 +116,10 @@ public class EmbeddedBroker implements Closeable
         // Port pattern found?
         if ( m.find() )
         {
-            String portString = m.group().replace( ":", "" );
+            String portString = m.group()
+                                 .replace( ":", "" );
+
+            LOGGER.info( "PORTSTRING: {}", portString );
 
             LOGGER.debug( "While attempting to create an embedded broker, discovered the following port string to "
                           + "parse: {}.",
@@ -210,7 +215,7 @@ public class EmbeddedBroker implements Closeable
             LOGGER.debug( "Starting embedded broker." );
 
             // Record any non-fatal start-up exception identified by the callback that is considered fatal here
-            Exception startupException = null;
+            Exception startupException;
 
             try
             {
@@ -402,9 +407,10 @@ public class EmbeddedBroker implements Closeable
             int finalPort = amqpPort;
 
             // Reserved TCP port 0? Find a free port.
-            // TODO: if possible ask the broker to bind an ephemeral port and then query for that port. This was 
-            // possible but difficult with Qpid, but seems harder with ActiveMQ. The (small) risk of letting the 
-            // application decide is that the port discovered here is already bound when the broker attempts to bind it.
+            // At the time of writing, the ActiveMQ broker will not bind an ephemeral port and then expose the bound
+            // port programmatically. The workaround is to choose an ephemeral port here and then ask the broker to
+            // bind it. Naturally, this creates the risk that the port discovered here is already bound when the broker
+            // attempts to bind it, but that risk is considered small.
             if ( finalPort == 0 )
             {
                 LOGGER.debug( "When instantiating an embedded broker, noticed that the requested TCP port is reserved "

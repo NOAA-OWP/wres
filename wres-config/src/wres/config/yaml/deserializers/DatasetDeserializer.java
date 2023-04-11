@@ -3,6 +3,7 @@ package wres.config.yaml.deserializers;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
     /** Duration deserializer. **/
     private static final DurationDeserializer DURATION_DESERIALIZER = new DurationDeserializer();
 
+    /** Time zone offset deserializer. **/
+    private static final ZoneOffsetDeserializer ZONE_OFFSET_DESERIALIZER = new ZoneOffsetDeserializer();
+
     @Override
     public Dataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
     {
@@ -69,7 +73,17 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             String label = this.getStringValue( reader, node.get( "label" ) );
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
             Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
-            return new Dataset( sources, variable, featureAuthority, dataType, label, ensembleFilter, timeShift );
+            ZoneOffset zoneOffset = this.getTimeZoneOffset( node.get( "time_zone_offset" ), reader, context );
+            return DatasetBuilder.builder()
+                                 .sources( sources )
+                                 .variable( variable )
+                                 .featureAuthority( featureAuthority )
+                                 .type( dataType )
+                                 .label( label )
+                                 .ensembleFilter( ensembleFilter )
+                                 .timeShift( timeShift )
+                                 .timeZoneOffset( zoneOffset )
+                                 .build();
         }
         // Plain array of sources
         else if ( node instanceof ArrayNode arrayNode )
@@ -268,6 +282,24 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         }
 
         return DURATION_DESERIALIZER.deserialize( node.traverse( reader ), context );
+    }
+
+    /**
+     * @param node the node
+     * @param reader the reader
+     * @param context the context
+     * @return the time shift or null
+     */
+
+    private ZoneOffset getTimeZoneOffset( JsonNode node, ObjectReader reader, DeserializationContext context )
+            throws IOException
+    {
+        if ( Objects.isNull( node ) )
+        {
+            return null;
+        }
+
+        return ZONE_OFFSET_DESERIALIZER.deserialize( node.traverse( reader ), context );
     }
 
     /**

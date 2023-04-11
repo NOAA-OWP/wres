@@ -36,1052 +36,1055 @@ public class GeneralWRDSReaderTest
     private static final String TEST = "test";
 
     // This response originates from v1 of the API.  URL unknown.
-    private static final String RESPONSE = "{\r\n"
-                                           + "    \"_documentation\": \"redacted/docs/stage/location/swagger/\",\r\n"
-                                           + "    \"_metrics\": {\r\n"
-                                           + "        \"threshold_count\": 13,\r\n"
-                                           + "        \"total_request_time\": 0.256730318069458\r\n"
-                                           + "    },\r\n"
-                                           + "    \"thresholds\": [\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"PTSA1\",\r\n"
-                                           + "                \"nws_lid\": \"PTSA1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02372250\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2323396\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"0.0\",\r\n"
-                                           + "                \"minor_stage\": \"0.0\",\r\n"
-                                           + "                \"moderate_stage\": \"0.0\",\r\n"
-                                           + "                \"major_stage\": \"0.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"MNTG1\",\r\n"
-                                           + "                \"nws_lid\": \"MNTG1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02349605\",\r\n"
-                                           + "                \"nwm_feature_id\": \"6444276\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"11.0\",\r\n"
-                                           + "                \"minor_stage\": \"20.0\",\r\n"
-                                           + "                \"moderate_stage\": \"28.0\",\r\n"
-                                           + "                \"major_stage\": \"31.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"MNTG1\",\r\n"
-                                           + "                \"nws_lid\": \"MNTG1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02349605\",\r\n"
-                                           + "                \"nwm_feature_id\": \"6444276\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"11.0\",\r\n"
-                                           + "                \"action_stage\": \"11.0\",\r\n"
-                                           + "                \"minor_stage\": \"20.0\",\r\n"
-                                           + "                \"moderate_stage\": \"28.0\",\r\n"
-                                           + "                \"major_stage\": \"31.0\",\r\n"
-                                           + "                \"record_stage\": \"34.11\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"BLOF1\",\r\n"
-                                           + "                \"nws_lid\": \"BLOF1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02358700\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2297254\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"13.0\",\r\n"
-                                           + "                \"minor_stage\": \"17.0\",\r\n"
-                                           + "                \"moderate_stage\": \"23.5\",\r\n"
-                                           + "                \"major_stage\": \"26.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"BLOF1\",\r\n"
-                                           + "                \"nws_lid\": \"BLOF1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02358700\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2297254\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"15.0\",\r\n"
-                                           + "                \"action_stage\": \"13.0\",\r\n"
-                                           + "                \"minor_stage\": \"17.0\",\r\n"
-                                           + "                \"moderate_stage\": \"23.5\",\r\n"
-                                           + "                \"major_stage\": \"26.0\",\r\n"
-                                           + "                \"record_stage\": \"28.6\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"CEDG1\",\r\n"
-                                           + "                \"nws_lid\": \"CEDG1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02343940\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2310009\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"0.0\",\r\n"
-                                           + "                \"minor_stage\": \"0.0\",\r\n"
-                                           + "                \"moderate_stage\": \"0.0\",\r\n"
-                                           + "                \"major_stage\": \"0.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"SMAF1\",\r\n"
-                                           + "                \"nws_lid\": \"SMAF1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02359170\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2298964\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"8.0\",\r\n"
-                                           + "                \"minor_stage\": \"9.5\",\r\n"
-                                           + "                \"moderate_stage\": \"11.5\",\r\n"
-                                           + "                \"major_stage\": \"13.5\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"SMAF1\",\r\n"
-                                           + "                \"nws_lid\": \"SMAF1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02359170\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2298964\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"8.0\",\r\n"
-                                           + "                \"minor_stage\": \"9.5\",\r\n"
-                                           + "                \"moderate_stage\": \"11.5\",\r\n"
-                                           + "                \"major_stage\": \"13.5\",\r\n"
-                                           + "                \"record_stage\": \"15.36\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"CHAF1\",\r\n"
-                                           + "                \"nws_lid\": \"CHAF1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02358000\",\r\n"
-                                           + "                \"nwm_feature_id\": \"2293124\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"56.0\",\r\n"
-                                           + "                \"minor_stage\": \"0.0\",\r\n"
-                                           + "                \"moderate_stage\": \"0.0\",\r\n"
-                                           + "                \"major_stage\": \"0.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"OKFG1\",\r\n"
-                                           + "                \"nws_lid\": \"OKFG1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02350512\",\r\n"
-                                           + "                \"nwm_feature_id\": \"6447636\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"18.0\",\r\n"
-                                           + "                \"minor_stage\": \"23.0\",\r\n"
-                                           + "                \"moderate_stage\": \"0.0\",\r\n"
-                                           + "                \"major_stage\": \"0.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"OKFG1\",\r\n"
-                                           + "                \"nws_lid\": \"OKFG1\",\r\n"
-                                           + "                \"usgs_site_code\": \"02350512\",\r\n"
-                                           + "                \"nwm_feature_id\": \"6447636\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"0.0\",\r\n"
-                                           + "                \"action_stage\": \"18.0\",\r\n"
-                                           + "                \"minor_stage\": \"23.0\",\r\n"
-                                           + "                \"moderate_stage\": \"None\",\r\n"
-                                           + "                \"major_stage\": \"None\",\r\n"
-                                           + "                \"record_stage\": \"40.1\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"TLPT2\",\r\n"
-                                           + "                \"nws_lid\": \"TLPT2\",\r\n"
-                                           + "                \"usgs_site_code\": \"07311630\",\r\n"
-                                           + "                \"nwm_feature_id\": \"13525368\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-CMS\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - CMS\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"None\",\r\n"
-                                           + "                \"action_stage\": \"0.0\",\r\n"
-                                           + "                \"minor_stage\": \"15.0\",\r\n"
-                                           + "                \"moderate_stage\": \"0.0\",\r\n"
-                                           + "                \"major_stage\": \"0.0\",\r\n"
-                                           + "                \"record_stage\": \"None\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        },\r\n"
-                                           + "        {\r\n"
-                                           + "            \"metadata\": {\r\n"
-                                           + "                \"location_id\": \"TLPT2\",\r\n"
-                                           + "                \"nws_lid\": \"TLPT2\",\r\n"
-                                           + "                \"usgs_site_code\": \"07311630\",\r\n"
-                                           + "                \"nwm_feature_id\": \"13525368\",\r\n"
-                                           + "                \"id_type\": \"NWS Station\",\r\n"
-                                           + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                           + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\",\r\n"
-                                           + "                \"rating_source\": \"NRLDB\",\r\n"
-                                           + "                \"rating_source_description\": \"NRLDB\",\r\n"
-                                           + "                \"stage_unit\": \"FT\",\r\n"
-                                           + "                \"flow_unit\": \"CFS\",\r\n"
-                                           + "                \"rating\": {}\r\n"
-                                           + "            },\r\n"
-                                           + "            \"original_values\": {\r\n"
-                                           + "                \"low_stage\": \"None\",\r\n"
-                                           + "                \"bankfull_stage\": \"15.0\",\r\n"
-                                           + "                \"action_stage\": \"None\",\r\n"
-                                           + "                \"minor_stage\": \"15.0\",\r\n"
-                                           + "                \"moderate_stage\": \"None\",\r\n"
-                                           + "                \"major_stage\": \"None\",\r\n"
-                                           + "                \"record_stage\": \"16.02\"\r\n"
-                                           + "            },\r\n"
-                                           + "            \"calculated_values\": {}\r\n"
-                                           + "        }\r\n"
-                                           + "    ]\r\n"
-                                           + "}";
+    private static final String RESPONSE = """
+            {\r
+                "_documentation": "redacted/docs/stage/location/swagger/",\r
+                "_metrics": {\r
+                    "threshold_count": 13,\r
+                    "total_request_time": 0.256730318069458\r
+                },\r
+                "thresholds": [\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "PTSA1",\r
+                            "nws_lid": "PTSA1",\r
+                            "usgs_site_code": "02372250",\r
+                            "nwm_feature_id": "2323396",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "0.0",\r
+                            "minor_stage": "0.0",\r
+                            "moderate_stage": "0.0",\r
+                            "major_stage": "0.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "MNTG1",\r
+                            "nws_lid": "MNTG1",\r
+                            "usgs_site_code": "02349605",\r
+                            "nwm_feature_id": "6444276",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "11.0",\r
+                            "minor_stage": "20.0",\r
+                            "moderate_stage": "28.0",\r
+                            "major_stage": "31.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "MNTG1",\r
+                            "nws_lid": "MNTG1",\r
+                            "usgs_site_code": "02349605",\r
+                            "nwm_feature_id": "6444276",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "11.0",\r
+                            "action_stage": "11.0",\r
+                            "minor_stage": "20.0",\r
+                            "moderate_stage": "28.0",\r
+                            "major_stage": "31.0",\r
+                            "record_stage": "34.11"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "BLOF1",\r
+                            "nws_lid": "BLOF1",\r
+                            "usgs_site_code": "02358700",\r
+                            "nwm_feature_id": "2297254",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "13.0",\r
+                            "minor_stage": "17.0",\r
+                            "moderate_stage": "23.5",\r
+                            "major_stage": "26.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "BLOF1",\r
+                            "nws_lid": "BLOF1",\r
+                            "usgs_site_code": "02358700",\r
+                            "nwm_feature_id": "2297254",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "15.0",\r
+                            "action_stage": "13.0",\r
+                            "minor_stage": "17.0",\r
+                            "moderate_stage": "23.5",\r
+                            "major_stage": "26.0",\r
+                            "record_stage": "28.6"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "CEDG1",\r
+                            "nws_lid": "CEDG1",\r
+                            "usgs_site_code": "02343940",\r
+                            "nwm_feature_id": "2310009",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "0.0",\r
+                            "minor_stage": "0.0",\r
+                            "moderate_stage": "0.0",\r
+                            "major_stage": "0.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "SMAF1",\r
+                            "nws_lid": "SMAF1",\r
+                            "usgs_site_code": "02359170",\r
+                            "nwm_feature_id": "2298964",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "8.0",\r
+                            "minor_stage": "9.5",\r
+                            "moderate_stage": "11.5",\r
+                            "major_stage": "13.5",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "SMAF1",\r
+                            "nws_lid": "SMAF1",\r
+                            "usgs_site_code": "02359170",\r
+                            "nwm_feature_id": "2298964",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "8.0",\r
+                            "minor_stage": "9.5",\r
+                            "moderate_stage": "11.5",\r
+                            "major_stage": "13.5",\r
+                            "record_stage": "15.36"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "CHAF1",\r
+                            "nws_lid": "CHAF1",\r
+                            "usgs_site_code": "02358000",\r
+                            "nwm_feature_id": "2293124",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "56.0",\r
+                            "minor_stage": "0.0",\r
+                            "moderate_stage": "0.0",\r
+                            "major_stage": "0.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "OKFG1",\r
+                            "nws_lid": "OKFG1",\r
+                            "usgs_site_code": "02350512",\r
+                            "nwm_feature_id": "6447636",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "18.0",\r
+                            "minor_stage": "23.0",\r
+                            "moderate_stage": "0.0",\r
+                            "major_stage": "0.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "OKFG1",\r
+                            "nws_lid": "OKFG1",\r
+                            "usgs_site_code": "02350512",\r
+                            "nwm_feature_id": "6447636",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "0.0",\r
+                            "action_stage": "18.0",\r
+                            "minor_stage": "23.0",\r
+                            "moderate_stage": "None",\r
+                            "major_stage": "None",\r
+                            "record_stage": "40.1"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "TLPT2",\r
+                            "nws_lid": "TLPT2",\r
+                            "usgs_site_code": "07311630",\r
+                            "nwm_feature_id": "13525368",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-CMS",\r
+                            "threshold_source_description": "National Weather Service - CMS",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "None",\r
+                            "action_stage": "0.0",\r
+                            "minor_stage": "15.0",\r
+                            "moderate_stage": "0.0",\r
+                            "major_stage": "0.0",\r
+                            "record_stage": "None"\r
+                        },\r
+                        "calculated_values": {}\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "location_id": "TLPT2",\r
+                            "nws_lid": "TLPT2",\r
+                            "usgs_site_code": "07311630",\r
+                            "nwm_feature_id": "13525368",\r
+                            "id_type": "NWS Station",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database",\r
+                            "rating_source": "NRLDB",\r
+                            "rating_source_description": "NRLDB",\r
+                            "stage_unit": "FT",\r
+                            "flow_unit": "CFS",\r
+                            "rating": {}\r
+                        },\r
+                        "original_values": {\r
+                            "low_stage": "None",\r
+                            "bankfull_stage": "15.0",\r
+                            "action_stage": "None",\r
+                            "minor_stage": "15.0",\r
+                            "moderate_stage": "None",\r
+                            "major_stage": "None",\r
+                            "record_stage": "16.02"\r
+                        },\r
+                        "calculated_values": {}\r
+                    }\r
+                ]\r
+            }""";
 
     // The response used is created from this URL:
     //
     // https://redacted/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/
     //
     // executed on 5/20/2021 at 10:15am.
-    private static final String ANOTHER_RESPONSE = "{\r\n"
-                                                   + "    \"_metrics\": {\r\n"
-                                                   + "        \"threshold_count\": 10,\r\n"
-                                                   + "        \"total_request_time\": 0.39240050315856934\r\n"
-                                                   + "    },\r\n"
-                                                   + "    \"_warnings\": [],\r\n"
-                                                   + "    \"_documentation\": {\r\n"
-                                                   + "        \"swagger URL\": \"redacted/docs/location/v3.0/swagger/\"\r\n"
-                                                   + "    },\r\n"
-                                                   + "    \"deployment\": {\r\n"
-                                                   + "        \"api_url\": \"https://redacted/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/\",\r\n"
-                                                   + "        \"stack\": \"prod\",\r\n"
-                                                   + "        \"version\": \"v3.1.0\"\r\n"
-                                                   + "    },\r\n"
-                                                   + "    \"data_sources\": {\r\n"
-                                                   + "        \"metadata_sources\": [\r\n"
-                                                   + "            \"NWS data: NRLDB - Last updated: 2021-05-04 17:44:31 UTC\",\r\n"
-                                                   + "            \"USGS data: USGS NWIS - Last updated: 2021-05-04 17:15:04 UTC\"\r\n"
-                                                   + "        ],\r\n"
-                                                   + "        \"crosswalk_datasets\": {\r\n"
-                                                   + "            \"location_nwm_crosswalk_dataset\": {\r\n"
-                                                   + "                \"location_nwm_crosswalk_dataset_id\": \"1.1\",\r\n"
-                                                   + "                \"name\": \"Location NWM Crosswalk v1.1\",\r\n"
-                                                   + "                \"description\": \"Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"nws_usgs_crosswalk_dataset\": {\r\n"
-                                                   + "                \"nws_usgs_crosswalk_dataset_id\": \"1.0\",\r\n"
-                                                   + "                \"name\": \"NWS Station to USGS Gages 1.0\",\r\n"
-                                                   + "                \"description\": \"Authoritative 1.0 dataset mapping NWS Stations to USGS Gages\"\r\n"
-                                                   + "            }\r\n"
-                                                   + "        }\r\n"
-                                                   + "    },\r\n"
-                                                   + "    \"value_set\": [\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"PTSA1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02372250\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2323396\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"PTSA1\",\r\n"
-                                                   + "                    \"id_type\": \"NWS Station\",\r\n"
-                                                   + "                    \"source\": \"NRLDB\",\r\n"
-                                                   + "                    \"description\": \"National Weather Service - National River Location Database\",\r\n"
-                                                   + "                    \"interpolation_method\": null,\r\n"
-                                                   + "                    \"interpolation_description\": null\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"PTSA1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02372250\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2323396\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"02372250\",\r\n"
-                                                   + "                    \"id_type\": \"USGS Gage\",\r\n"
-                                                   + "                    \"source\": \"USGS Rating Depot\",\r\n"
-                                                   + "                    \"description\": \"The EXSA rating curves provided by USGS\",\r\n"
-                                                   + "                    \"interpolation_method\": \"logarithmic\",\r\n"
-                                                   + "                    \"interpolation_description\": \"logarithmic\"\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"MNTG1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02349605\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"6444276\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": -0.16,\r\n"
-                                                   + "                \"bankfull\": 11.0,\r\n"
-                                                   + "                \"action\": 11.0,\r\n"
-                                                   + "                \"flood\": 20.0,\r\n"
-                                                   + "                \"minor\": 20.0,\r\n"
-                                                   + "                \"moderate\": 28.0,\r\n"
-                                                   + "                \"major\": 31.0,\r\n"
-                                                   + "                \"record\": 34.11\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 11900.0,\r\n"
-                                                   + "                \"flood\": 31500.0,\r\n"
-                                                   + "                \"minor\": 31500.0,\r\n"
-                                                   + "                \"moderate\": 77929.0,\r\n"
-                                                   + "                \"major\": 105100.0,\r\n"
-                                                   + "                \"record\": 136000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": 557.8,\r\n"
-                                                   + "                \"bankfull\": 9379.0,\r\n"
-                                                   + "                \"action\": 9379.0,\r\n"
-                                                   + "                \"flood\": 35331.0,\r\n"
-                                                   + "                \"minor\": 35331.0,\r\n"
-                                                   + "                \"moderate\": 102042.0,\r\n"
-                                                   + "                \"major\": 142870.0,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"MNTG1\",\r\n"
-                                                   + "                    \"id_type\": \"NWS Station\",\r\n"
-                                                   + "                    \"source\": \"NRLDB\",\r\n"
-                                                   + "                    \"description\": \"National Weather Service - National River Location Database\",\r\n"
-                                                   + "                    \"interpolation_method\": null,\r\n"
-                                                   + "                    \"interpolation_description\": null\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"MNTG1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02349605\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"6444276\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": -0.16,\r\n"
-                                                   + "                \"bankfull\": 11.0,\r\n"
-                                                   + "                \"action\": 11.0,\r\n"
-                                                   + "                \"flood\": 20.0,\r\n"
-                                                   + "                \"minor\": 20.0,\r\n"
-                                                   + "                \"moderate\": 28.0,\r\n"
-                                                   + "                \"major\": 31.0,\r\n"
-                                                   + "                \"record\": 34.11\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 11900.0,\r\n"
-                                                   + "                \"flood\": 31500.0,\r\n"
-                                                   + "                \"minor\": 31500.0,\r\n"
-                                                   + "                \"moderate\": 77929.0,\r\n"
-                                                   + "                \"major\": 105100.0,\r\n"
-                                                   + "                \"record\": 136000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": 554.06,\r\n"
-                                                   + "                \"bankfull\": 9390.0,\r\n"
-                                                   + "                \"action\": 9390.0,\r\n"
-                                                   + "                \"flood\": 35329.0,\r\n"
-                                                   + "                \"minor\": 35329.0,\r\n"
-                                                   + "                \"moderate\": 102040.6,\r\n"
-                                                   + "                \"major\": 142867.9,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"02349605\",\r\n"
-                                                   + "                    \"id_type\": \"USGS Gage\",\r\n"
-                                                   + "                    \"source\": \"USGS Rating Depot\",\r\n"
-                                                   + "                    \"description\": \"The EXSA rating curves provided by USGS\",\r\n"
-                                                   + "                    \"interpolation_method\": \"logarithmic\",\r\n"
-                                                   + "                    \"interpolation_description\": \"logarithmic\"\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"BLOF1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02358700\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2297254\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": 15.0,\r\n"
-                                                   + "                \"action\": 13.0,\r\n"
-                                                   + "                \"flood\": 17.0,\r\n"
-                                                   + "                \"minor\": 17.0,\r\n"
-                                                   + "                \"moderate\": 23.5,\r\n"
-                                                   + "                \"major\": 26.0,\r\n"
-                                                   + "                \"record\": 28.6\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": 36900.0,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 209000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": 38633.0,\r\n"
-                                                   + "                \"action\": 31313.0,\r\n"
-                                                   + "                \"flood\": 48628.0,\r\n"
-                                                   + "                \"minor\": 48628.0,\r\n"
-                                                   + "                \"moderate\": 144077.0,\r\n"
-                                                   + "                \"major\": 216266.0,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"BLOF1\",\r\n"
-                                                   + "                    \"id_type\": \"NWS Station\",\r\n"
-                                                   + "                    \"source\": \"NRLDB\",\r\n"
-                                                   + "                    \"description\": \"National Weather Service - National River Location Database\",\r\n"
-                                                   + "                    \"interpolation_method\": null,\r\n"
-                                                   + "                    \"interpolation_description\": null\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"BLOF1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02358700\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2297254\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": 15.0,\r\n"
-                                                   + "                \"action\": 13.0,\r\n"
-                                                   + "                \"flood\": 17.0,\r\n"
-                                                   + "                \"minor\": 17.0,\r\n"
-                                                   + "                \"moderate\": 23.5,\r\n"
-                                                   + "                \"major\": 26.0,\r\n"
-                                                   + "                \"record\": 28.6\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": 36900.0,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 209000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": 36928.1,\r\n"
-                                                   + "                \"action\": 30031.5,\r\n"
-                                                   + "                \"flood\": 46234.6,\r\n"
-                                                   + "                \"minor\": 46234.6,\r\n"
-                                                   + "                \"moderate\": 133995.6,\r\n"
-                                                   + "                \"major\": 205562.6,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"02358700\",\r\n"
-                                                   + "                    \"id_type\": \"USGS Gage\",\r\n"
-                                                   + "                    \"source\": \"USGS Rating Depot\",\r\n"
-                                                   + "                    \"description\": \"The EXSA rating curves provided by USGS\",\r\n"
-                                                   + "                    \"interpolation_method\": \"logarithmic\",\r\n"
-                                                   + "                    \"interpolation_description\": \"logarithmic\"\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"CEDG1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02343940\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2310009\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 14.29\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"CEDG1\",\r\n"
-                                                   + "                    \"id_type\": \"NWS Station\",\r\n"
-                                                   + "                    \"source\": \"NRLDB\",\r\n"
-                                                   + "                    \"description\": \"National Weather Service - National River Location Database\",\r\n"
-                                                   + "                    \"interpolation_method\": null,\r\n"
-                                                   + "                    \"interpolation_description\": null\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"CEDG1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02343940\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2310009\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 14.29\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": null,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"02343940\",\r\n"
-                                                   + "                    \"id_type\": \"USGS Gage\",\r\n"
-                                                   + "                    \"source\": \"USGS Rating Depot\",\r\n"
-                                                   + "                    \"description\": \"The EXSA rating curves provided by USGS\",\r\n"
-                                                   + "                    \"interpolation_method\": \"logarithmic\",\r\n"
-                                                   + "                    \"interpolation_description\": \"logarithmic\"\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"SMAF1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02359170\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2298964\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 8.0,\r\n"
-                                                   + "                \"flood\": 9.5,\r\n"
-                                                   + "                \"minor\": 9.5,\r\n"
-                                                   + "                \"moderate\": 11.5,\r\n"
-                                                   + "                \"major\": 13.5,\r\n"
-                                                   + "                \"record\": 15.36\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 179000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 45700.0,\r\n"
-                                                   + "                \"flood\": 67700.0,\r\n"
-                                                   + "                \"minor\": 67700.0,\r\n"
-                                                   + "                \"moderate\": 107000.0,\r\n"
-                                                   + "                \"major\": 159000.0,\r\n"
-                                                   + "                \"record\": 221000.0,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"SMAF1\",\r\n"
-                                                   + "                    \"id_type\": \"NWS Station\",\r\n"
-                                                   + "                    \"source\": \"NRLDB\",\r\n"
-                                                   + "                    \"description\": \"National Weather Service - National River Location Database\",\r\n"
-                                                   + "                    \"interpolation_method\": null,\r\n"
-                                                   + "                    \"interpolation_description\": null\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        },\r\n"
-                                                   + "        {\r\n"
-                                                   + "            \"metadata\": {\r\n"
-                                                   + "                \"data_type\": \"NWS Stream Thresholds\",\r\n"
-                                                   + "                \"nws_lid\": \"SMAF1\",\r\n"
-                                                   + "                \"usgs_site_code\": \"02359170\",\r\n"
-                                                   + "                \"nwm_feature_id\": \"2298964\",\r\n"
-                                                   + "                \"threshold_type\": \"all (stage,flow)\",\r\n"
-                                                   + "                \"stage_units\": \"FT\",\r\n"
-                                                   + "                \"flow_units\": \"CFS\",\r\n"
-                                                   + "                \"calc_flow_units\": \"CFS\",\r\n"
-                                                   + "                \"threshold_source\": \"NWS-NRLDB\",\r\n"
-                                                   + "                \"threshold_source_description\": \"National Weather Service - National River Location Database\"\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"stage_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 8.0,\r\n"
-                                                   + "                \"flood\": 9.5,\r\n"
-                                                   + "                \"minor\": 9.5,\r\n"
-                                                   + "                \"moderate\": 11.5,\r\n"
-                                                   + "                \"major\": 13.5,\r\n"
-                                                   + "                \"record\": 15.36\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"flow_values\": {\r\n"
-                                                   + "                \"low\": 0.0,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": null,\r\n"
-                                                   + "                \"flood\": null,\r\n"
-                                                   + "                \"minor\": null,\r\n"
-                                                   + "                \"moderate\": null,\r\n"
-                                                   + "                \"major\": null,\r\n"
-                                                   + "                \"record\": 179000.0\r\n"
-                                                   + "            },\r\n"
-                                                   + "            \"calc_flow_values\": {\r\n"
-                                                   + "                \"low\": null,\r\n"
-                                                   + "                \"bankfull\": null,\r\n"
-                                                   + "                \"action\": 47355.4,\r\n"
-                                                   + "                \"flood\": 69570.6,\r\n"
-                                                   + "                \"minor\": 69570.6,\r\n"
-                                                   + "                \"moderate\": 108505.8,\r\n"
-                                                   + "                \"major\": 159463.2,\r\n"
-                                                   + "                \"record\": 218963.05,\r\n"
-                                                   + "                \"rating_curve\": {\r\n"
-                                                   + "                    \"location_id\": \"02359170\",\r\n"
-                                                   + "                    \"id_type\": \"USGS Gage\",\r\n"
-                                                   + "                    \"source\": \"USGS Rating Depot\",\r\n"
-                                                   + "                    \"description\": \"The EXSA rating curves provided by USGS\",\r\n"
-                                                   + "                    \"interpolation_method\": \"logarithmic\",\r\n"
-                                                   + "                    \"interpolation_description\": \"logarithmic\"\r\n"
-                                                   + "                }\r\n"
-                                                   + "            }\r\n"
-                                                   + "        }\r\n"
-                                                   + "    ]\r\n"
-                                                   + "}\r\n"
-                                                   + "";
+    private static final String ANOTHER_RESPONSE = """
+            {\r
+                "_metrics": {\r
+                    "threshold_count": 10,\r
+                    "total_request_time": 0.39240050315856934\r
+                },\r
+                "_warnings": [],\r
+                "_documentation": {\r
+                    "swagger URL": "redacted/docs/location/v3.0/swagger/"\r
+                },\r
+                "deployment": {\r
+                    "api_url": "https://redacted/api/location/v3.0/nws_threshold/nws_lid/PTSA1,MNTG1,BLOF1,CEDG1,SMAF1/",\r
+                    "stack": "prod",\r
+                    "version": "v3.1.0"\r
+                },\r
+                "data_sources": {\r
+                    "metadata_sources": [\r
+                        "NWS data: NRLDB - Last updated: 2021-05-04 17:44:31 UTC",\r
+                        "USGS data: USGS NWIS - Last updated: 2021-05-04 17:15:04 UTC"\r
+                    ],\r
+                    "crosswalk_datasets": {\r
+                        "location_nwm_crosswalk_dataset": {\r
+                            "location_nwm_crosswalk_dataset_id": "1.1",\r
+                            "name": "Location NWM Crosswalk v1.1",\r
+                            "description": "Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID"\r
+                        },\r
+                        "nws_usgs_crosswalk_dataset": {\r
+                            "nws_usgs_crosswalk_dataset_id": "1.0",\r
+                            "name": "NWS Station to USGS Gages 1.0",\r
+                            "description": "Authoritative 1.0 dataset mapping NWS Stations to USGS Gages"\r
+                        }\r
+                    }\r
+                },\r
+                "value_set": [\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "PTSA1",\r
+                            "usgs_site_code": "02372250",\r
+                            "nwm_feature_id": "2323396",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "PTSA1",\r
+                                "id_type": "NWS Station",\r
+                                "source": "NRLDB",\r
+                                "description": "National Weather Service - National River Location Database",\r
+                                "interpolation_method": null,\r
+                                "interpolation_description": null\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "PTSA1",\r
+                            "usgs_site_code": "02372250",\r
+                            "nwm_feature_id": "2323396",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "02372250",\r
+                                "id_type": "USGS Gage",\r
+                                "source": "USGS Rating Depot",\r
+                                "description": "The EXSA rating curves provided by USGS",\r
+                                "interpolation_method": "logarithmic",\r
+                                "interpolation_description": "logarithmic"\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "MNTG1",\r
+                            "usgs_site_code": "02349605",\r
+                            "nwm_feature_id": "6444276",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": -0.16,\r
+                            "bankfull": 11.0,\r
+                            "action": 11.0,\r
+                            "flood": 20.0,\r
+                            "minor": 20.0,\r
+                            "moderate": 28.0,\r
+                            "major": 31.0,\r
+                            "record": 34.11\r
+                        },\r
+                        "flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": 11900.0,\r
+                            "flood": 31500.0,\r
+                            "minor": 31500.0,\r
+                            "moderate": 77929.0,\r
+                            "major": 105100.0,\r
+                            "record": 136000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": 557.8,\r
+                            "bankfull": 9379.0,\r
+                            "action": 9379.0,\r
+                            "flood": 35331.0,\r
+                            "minor": 35331.0,\r
+                            "moderate": 102042.0,\r
+                            "major": 142870.0,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "MNTG1",\r
+                                "id_type": "NWS Station",\r
+                                "source": "NRLDB",\r
+                                "description": "National Weather Service - National River Location Database",\r
+                                "interpolation_method": null,\r
+                                "interpolation_description": null\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "MNTG1",\r
+                            "usgs_site_code": "02349605",\r
+                            "nwm_feature_id": "6444276",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": -0.16,\r
+                            "bankfull": 11.0,\r
+                            "action": 11.0,\r
+                            "flood": 20.0,\r
+                            "minor": 20.0,\r
+                            "moderate": 28.0,\r
+                            "major": 31.0,\r
+                            "record": 34.11\r
+                        },\r
+                        "flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": 11900.0,\r
+                            "flood": 31500.0,\r
+                            "minor": 31500.0,\r
+                            "moderate": 77929.0,\r
+                            "major": 105100.0,\r
+                            "record": 136000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": 554.06,\r
+                            "bankfull": 9390.0,\r
+                            "action": 9390.0,\r
+                            "flood": 35329.0,\r
+                            "minor": 35329.0,\r
+                            "moderate": 102040.6,\r
+                            "major": 142867.9,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "02349605",\r
+                                "id_type": "USGS Gage",\r
+                                "source": "USGS Rating Depot",\r
+                                "description": "The EXSA rating curves provided by USGS",\r
+                                "interpolation_method": "logarithmic",\r
+                                "interpolation_description": "logarithmic"\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "BLOF1",\r
+                            "usgs_site_code": "02358700",\r
+                            "nwm_feature_id": "2297254",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": null,\r
+                            "bankfull": 15.0,\r
+                            "action": 13.0,\r
+                            "flood": 17.0,\r
+                            "minor": 17.0,\r
+                            "moderate": 23.5,\r
+                            "major": 26.0,\r
+                            "record": 28.6\r
+                        },\r
+                        "flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": 36900.0,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 209000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": 38633.0,\r
+                            "action": 31313.0,\r
+                            "flood": 48628.0,\r
+                            "minor": 48628.0,\r
+                            "moderate": 144077.0,\r
+                            "major": 216266.0,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "BLOF1",\r
+                                "id_type": "NWS Station",\r
+                                "source": "NRLDB",\r
+                                "description": "National Weather Service - National River Location Database",\r
+                                "interpolation_method": null,\r
+                                "interpolation_description": null\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "BLOF1",\r
+                            "usgs_site_code": "02358700",\r
+                            "nwm_feature_id": "2297254",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": null,\r
+                            "bankfull": 15.0,\r
+                            "action": 13.0,\r
+                            "flood": 17.0,\r
+                            "minor": 17.0,\r
+                            "moderate": 23.5,\r
+                            "major": 26.0,\r
+                            "record": 28.6\r
+                        },\r
+                        "flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": 36900.0,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 209000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": 36928.1,\r
+                            "action": 30031.5,\r
+                            "flood": 46234.6,\r
+                            "minor": 46234.6,\r
+                            "moderate": 133995.6,\r
+                            "major": 205562.6,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "02358700",\r
+                                "id_type": "USGS Gage",\r
+                                "source": "USGS Rating Depot",\r
+                                "description": "The EXSA rating curves provided by USGS",\r
+                                "interpolation_method": "logarithmic",\r
+                                "interpolation_description": "logarithmic"\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "CEDG1",\r
+                            "usgs_site_code": "02343940",\r
+                            "nwm_feature_id": "2310009",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 14.29\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "CEDG1",\r
+                                "id_type": "NWS Station",\r
+                                "source": "NRLDB",\r
+                                "description": "National Weather Service - National River Location Database",\r
+                                "interpolation_method": null,\r
+                                "interpolation_description": null\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "CEDG1",\r
+                            "usgs_site_code": "02343940",\r
+                            "nwm_feature_id": "2310009",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 14.29\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": null,\r
+                            "rating_curve": {\r
+                                "location_id": "02343940",\r
+                                "id_type": "USGS Gage",\r
+                                "source": "USGS Rating Depot",\r
+                                "description": "The EXSA rating curves provided by USGS",\r
+                                "interpolation_method": "logarithmic",\r
+                                "interpolation_description": "logarithmic"\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "SMAF1",\r
+                            "usgs_site_code": "02359170",\r
+                            "nwm_feature_id": "2298964",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": 8.0,\r
+                            "flood": 9.5,\r
+                            "minor": 9.5,\r
+                            "moderate": 11.5,\r
+                            "major": 13.5,\r
+                            "record": 15.36\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 179000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": 45700.0,\r
+                            "flood": 67700.0,\r
+                            "minor": 67700.0,\r
+                            "moderate": 107000.0,\r
+                            "major": 159000.0,\r
+                            "record": 221000.0,\r
+                            "rating_curve": {\r
+                                "location_id": "SMAF1",\r
+                                "id_type": "NWS Station",\r
+                                "source": "NRLDB",\r
+                                "description": "National Weather Service - National River Location Database",\r
+                                "interpolation_method": null,\r
+                                "interpolation_description": null\r
+                            }\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWS Stream Thresholds",\r
+                            "nws_lid": "SMAF1",\r
+                            "usgs_site_code": "02359170",\r
+                            "nwm_feature_id": "2298964",\r
+                            "threshold_type": "all (stage,flow)",\r
+                            "stage_units": "FT",\r
+                            "flow_units": "CFS",\r
+                            "calc_flow_units": "CFS",\r
+                            "threshold_source": "NWS-NRLDB",\r
+                            "threshold_source_description": "National Weather Service - National River Location Database"\r
+                        },\r
+                        "stage_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": 8.0,\r
+                            "flood": 9.5,\r
+                            "minor": 9.5,\r
+                            "moderate": 11.5,\r
+                            "major": 13.5,\r
+                            "record": 15.36\r
+                        },\r
+                        "flow_values": {\r
+                            "low": 0.0,\r
+                            "bankfull": null,\r
+                            "action": null,\r
+                            "flood": null,\r
+                            "minor": null,\r
+                            "moderate": null,\r
+                            "major": null,\r
+                            "record": 179000.0\r
+                        },\r
+                        "calc_flow_values": {\r
+                            "low": null,\r
+                            "bankfull": null,\r
+                            "action": 47355.4,\r
+                            "flood": 69570.6,\r
+                            "minor": 69570.6,\r
+                            "moderate": 108505.8,\r
+                            "major": 159463.2,\r
+                            "record": 218963.05,\r
+                            "rating_curve": {\r
+                                "location_id": "02359170",\r
+                                "id_type": "USGS Gage",\r
+                                "source": "USGS Rating Depot",\r
+                                "description": "The EXSA rating curves provided by USGS",\r
+                                "interpolation_method": "logarithmic",\r
+                                "interpolation_description": "logarithmic"\r
+                            }\r
+                        }\r
+                    }\r
+                ]\r
+            }\r
+            """;
 
     // The response used is created from this URL:
     //
     // https://redacted/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/
     //
     // executed on 5/22/2021 in the afternoon.
-    private static final String YET_ANOTHER_RESPONSE = "{\r\n"
-                                                       + "    \"_metrics\": {\r\n"
-                                                       + "        \"recurrence_flow_count\": 5,\r\n"
-                                                       + "        \"total_request_time\": 0.30907535552978516\r\n"
-                                                       + "    },\r\n"
-                                                       + "    \"_warnings\": [],\r\n"
-                                                       + "    \"_documentation\": {\r\n"
-                                                       + "        \"swagger URL\": \"redacted/docs/location/v3.0/swagger/\"\r\n"
-                                                       + "    },\r\n"
-                                                       + "    \"deployment\": {\r\n"
-                                                       + "        \"api_url\": \"https://redacted/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/\",\r\n"
-                                                       + "        \"stack\": \"prod\",\r\n"
-                                                       + "        \"version\": \"v3.1.0\"\r\n"
-                                                       + "    },\r\n"
-                                                       + "    \"data_sources\": {\r\n"
-                                                       + "        \"metadata_sources\": [\r\n"
-                                                       + "            \"NWS data: NRLDB - Last updated: 2021-05-04 17:44:31 UTC\",\r\n"
-                                                       + "            \"USGS data: USGS NWIS - Last updated: 2021-05-04 17:15:04 UTC\"\r\n"
-                                                       + "        ],\r\n"
-                                                       + "        \"crosswalk_datasets\": {\r\n"
-                                                       + "            \"location_nwm_crosswalk_dataset\": {\r\n"
-                                                       + "                \"location_nwm_crosswalk_dataset_id\": \"1.1\",\r\n"
-                                                       + "                \"name\": \"Location NWM Crosswalk v1.1\",\r\n"
-                                                       + "                \"description\": \"Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"nws_usgs_crosswalk_dataset\": {\r\n"
-                                                       + "                \"nws_usgs_crosswalk_dataset_id\": \"1.0\",\r\n"
-                                                       + "                \"name\": \"NWS Station to USGS Gages 1.0\",\r\n"
-                                                       + "                \"description\": \"Authoritative 1.0 dataset mapping NWS Stations to USGS Gages\"\r\n"
-                                                       + "            }\r\n"
-                                                       + "        }\r\n"
-                                                       + "    },\r\n"
-                                                       + "    \"value_set\": [\r\n"
-                                                       + "        {\r\n"
-                                                       + "            \"metadata\": {\r\n"
-                                                       + "                \"data_type\": \"NWM Recurrence Flows\",\r\n"
-                                                       + "                \"nws_lid\": \"BLOF1\",\r\n"
-                                                       + "                \"usgs_site_code\": \"02358700\",\r\n"
-                                                       + "                \"nwm_feature_id\": 2297254,\r\n"
-                                                       + "                \"nwm_location_crosswalk_dataset\": \"National Water Model v2.1 Corrected\",\r\n"
-                                                       + "                \"huc12\": \"031300110404\",\r\n"
-                                                       + "                \"units\": \"CFS\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"values\": {\r\n"
-                                                       + "                \"year_1_5\": 58864.26,\r\n"
-                                                       + "                \"year_2_0\": 87362.48,\r\n"
-                                                       + "                \"year_3_0\": 109539.05,\r\n"
-                                                       + "                \"year_4_0\": 128454.64,\r\n"
-                                                       + "                \"year_5_0\": 176406.6,\r\n"
-                                                       + "                \"year_10_0\": 216831.58000000002\r\n"
-                                                       + "            }\r\n"
-                                                       + "        },\r\n"
-                                                       + "        {\r\n"
-                                                       + "            \"metadata\": {\r\n"
-                                                       + "                \"data_type\": \"NWM Recurrence Flows\",\r\n"
-                                                       + "                \"nws_lid\": \"SMAF1\",\r\n"
-                                                       + "                \"usgs_site_code\": \"02359170\",\r\n"
-                                                       + "                \"nwm_feature_id\": 2298964,\r\n"
-                                                       + "                \"nwm_location_crosswalk_dataset\": \"National Water Model v2.1 Corrected\",\r\n"
-                                                       + "                \"huc12\": \"031300110803\",\r\n"
-                                                       + "                \"units\": \"CFS\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"values\": {\r\n"
-                                                       + "                \"year_1_5\": 70810.5,\r\n"
-                                                       + "                \"year_2_0\": 91810.02,\r\n"
-                                                       + "                \"year_3_0\": 111115.84,\r\n"
-                                                       + "                \"year_4_0\": 132437.43,\r\n"
-                                                       + "                \"year_5_0\": 188351.43,\r\n"
-                                                       + "                \"year_10_0\": 231709.0\r\n"
-                                                       + "            }\r\n"
-                                                       + "        },\r\n"
-                                                       + "        {\r\n"
-                                                       + "            \"metadata\": {\r\n"
-                                                       + "                \"data_type\": \"NWM Recurrence Flows\",\r\n"
-                                                       + "                \"nws_lid\": \"CEDG1\",\r\n"
-                                                       + "                \"usgs_site_code\": \"02343940\",\r\n"
-                                                       + "                \"nwm_feature_id\": 2310009,\r\n"
-                                                       + "                \"nwm_location_crosswalk_dataset\": \"National Water Model v2.1 Corrected\",\r\n"
-                                                       + "                \"huc12\": \"031300040707\",\r\n"
-                                                       + "                \"units\": \"CFS\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"values\": {\r\n"
-                                                       + "                \"year_1_5\": 933.72,\r\n"
-                                                       + "                \"year_2_0\": 977.16,\r\n"
-                                                       + "                \"year_3_0\": 1414.0,\r\n"
-                                                       + "                \"year_4_0\": 1459.2,\r\n"
-                                                       + "                \"year_5_0\": 1578.3500000000001,\r\n"
-                                                       + "                \"year_10_0\": 2532.27\r\n"
-                                                       + "            }\r\n"
-                                                       + "        },\r\n"
-                                                       + "        {\r\n"
-                                                       + "            \"metadata\": {\r\n"
-                                                       + "                \"data_type\": \"NWM Recurrence Flows\",\r\n"
-                                                       + "                \"nws_lid\": \"PTSA1\",\r\n"
-                                                       + "                \"usgs_site_code\": \"02372250\",\r\n"
-                                                       + "                \"nwm_feature_id\": 2323396,\r\n"
-                                                       + "                \"nwm_location_crosswalk_dataset\": \"National Water Model v2.1 Corrected\",\r\n"
-                                                       + "                \"huc12\": \"031403020501\",\r\n"
-                                                       + "                \"units\": \"CFS\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"values\": {\r\n"
-                                                       + "                \"year_1_5\": 3165.61,\r\n"
-                                                       + "                \"year_2_0\": 4641.05,\r\n"
-                                                       + "                \"year_3_0\": 6824.56,\r\n"
-                                                       + "                \"year_4_0\": 7885.41,\r\n"
-                                                       + "                \"year_5_0\": 9001.5,\r\n"
-                                                       + "                \"year_10_0\": 11249.98\r\n"
-                                                       + "            }\r\n"
-                                                       + "        },\r\n"
-                                                       + "        {\r\n"
-                                                       + "            \"metadata\": {\r\n"
-                                                       + "                \"data_type\": \"NWM Recurrence Flows\",\r\n"
-                                                       + "                \"nws_lid\": \"MNTG1\",\r\n"
-                                                       + "                \"usgs_site_code\": \"02349605\",\r\n"
-                                                       + "                \"nwm_feature_id\": 6444276,\r\n"
-                                                       + "                \"nwm_location_crosswalk_dataset\": \"National Water Model v2.1 Corrected\",\r\n"
-                                                       + "                \"huc12\": \"031300060207\",\r\n"
-                                                       + "                \"units\": \"CFS\"\r\n"
-                                                       + "            },\r\n"
-                                                       + "            \"values\": {\r\n"
-                                                       + "                \"year_1_5\": 14110.33,\r\n"
-                                                       + "                \"year_2_0\": 18327.25,\r\n"
-                                                       + "                \"year_3_0\": 28842.9,\r\n"
-                                                       + "                \"year_4_0\": 30716.7,\r\n"
-                                                       + "                \"year_5_0\": 32276.83,\r\n"
-                                                       + "                \"year_10_0\": 43859.19\r\n"
-                                                       + "            }\r\n"
-                                                       + "        }\r\n"
-                                                       + "    ]\r\n"
-                                                       + "}\r\n"
-                                                       + "";
+    private static final String YET_ANOTHER_RESPONSE = """
+            {\r
+                "_metrics": {\r
+                    "recurrence_flow_count": 5,\r
+                    "total_request_time": 0.30907535552978516\r
+                },\r
+                "_warnings": [],\r
+                "_documentation": {\r
+                    "swagger URL": "redacted/docs/location/v3.0/swagger/"\r
+                },\r
+                "deployment": {\r
+                    "api_url": "https://redacted/api/location/v3.0/nwm_recurrence_flow/nws_lid/PTSA1,MNTG1,BLOF1,SMAF1,CEDG1/",\r
+                    "stack": "prod",\r
+                    "version": "v3.1.0"\r
+                },\r
+                "data_sources": {\r
+                    "metadata_sources": [\r
+                        "NWS data: NRLDB - Last updated: 2021-05-04 17:44:31 UTC",\r
+                        "USGS data: USGS NWIS - Last updated: 2021-05-04 17:15:04 UTC"\r
+                    ],\r
+                    "crosswalk_datasets": {\r
+                        "location_nwm_crosswalk_dataset": {\r
+                            "location_nwm_crosswalk_dataset_id": "1.1",\r
+                            "name": "Location NWM Crosswalk v1.1",\r
+                            "description": "Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID"\r
+                        },\r
+                        "nws_usgs_crosswalk_dataset": {\r
+                            "nws_usgs_crosswalk_dataset_id": "1.0",\r
+                            "name": "NWS Station to USGS Gages 1.0",\r
+                            "description": "Authoritative 1.0 dataset mapping NWS Stations to USGS Gages"\r
+                        }\r
+                    }\r
+                },\r
+                "value_set": [\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWM Recurrence Flows",\r
+                            "nws_lid": "BLOF1",\r
+                            "usgs_site_code": "02358700",\r
+                            "nwm_feature_id": 2297254,\r
+                            "nwm_location_crosswalk_dataset": "National Water Model v2.1 Corrected",\r
+                            "huc12": "031300110404",\r
+                            "units": "CFS"\r
+                        },\r
+                        "values": {\r
+                            "year_1_5": 58864.26,\r
+                            "year_2_0": 87362.48,\r
+                            "year_3_0": 109539.05,\r
+                            "year_4_0": 128454.64,\r
+                            "year_5_0": 176406.6,\r
+                            "year_10_0": 216831.58000000002\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWM Recurrence Flows",\r
+                            "nws_lid": "SMAF1",\r
+                            "usgs_site_code": "02359170",\r
+                            "nwm_feature_id": 2298964,\r
+                            "nwm_location_crosswalk_dataset": "National Water Model v2.1 Corrected",\r
+                            "huc12": "031300110803",\r
+                            "units": "CFS"\r
+                        },\r
+                        "values": {\r
+                            "year_1_5": 70810.5,\r
+                            "year_2_0": 91810.02,\r
+                            "year_3_0": 111115.84,\r
+                            "year_4_0": 132437.43,\r
+                            "year_5_0": 188351.43,\r
+                            "year_10_0": 231709.0\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWM Recurrence Flows",\r
+                            "nws_lid": "CEDG1",\r
+                            "usgs_site_code": "02343940",\r
+                            "nwm_feature_id": 2310009,\r
+                            "nwm_location_crosswalk_dataset": "National Water Model v2.1 Corrected",\r
+                            "huc12": "031300040707",\r
+                            "units": "CFS"\r
+                        },\r
+                        "values": {\r
+                            "year_1_5": 933.72,\r
+                            "year_2_0": 977.16,\r
+                            "year_3_0": 1414.0,\r
+                            "year_4_0": 1459.2,\r
+                            "year_5_0": 1578.3500000000001,\r
+                            "year_10_0": 2532.27\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWM Recurrence Flows",\r
+                            "nws_lid": "PTSA1",\r
+                            "usgs_site_code": "02372250",\r
+                            "nwm_feature_id": 2323396,\r
+                            "nwm_location_crosswalk_dataset": "National Water Model v2.1 Corrected",\r
+                            "huc12": "031403020501",\r
+                            "units": "CFS"\r
+                        },\r
+                        "values": {\r
+                            "year_1_5": 3165.61,\r
+                            "year_2_0": 4641.05,\r
+                            "year_3_0": 6824.56,\r
+                            "year_4_0": 7885.41,\r
+                            "year_5_0": 9001.5,\r
+                            "year_10_0": 11249.98\r
+                        }\r
+                    },\r
+                    {\r
+                        "metadata": {\r
+                            "data_type": "NWM Recurrence Flows",\r
+                            "nws_lid": "MNTG1",\r
+                            "usgs_site_code": "02349605",\r
+                            "nwm_feature_id": 6444276,\r
+                            "nwm_location_crosswalk_dataset": "National Water Model v2.1 Corrected",\r
+                            "huc12": "031300060207",\r
+                            "units": "CFS"\r
+                        },\r
+                        "values": {\r
+                            "year_1_5": 14110.33,\r
+                            "year_2_0": 18327.25,\r
+                            "year_3_0": 28842.9,\r
+                            "year_4_0": 30716.7,\r
+                            "year_5_0": 32276.83,\r
+                            "year_10_0": 43859.19\r
+                        }\r
+                    }\r
+                ]\r
+            }\r
+            """;
 
     private static final double EPSILON = 0.00001;
 
@@ -1209,7 +1212,7 @@ public class GeneralWRDSReaderTest
         Set<String> desiredFeatures =
                 DESIRED_FEATURES.stream().map( WrdsLocation::nwsLid ).collect( Collectors.toSet() );
         Set<String> groupedLocations = GeneralWRDSReader.groupLocations( desiredFeatures );
-        Assert.assertEquals( groupedLocations.size(), 3 );
+        Assert.assertEquals( 3, groupedLocations.size());
 
         StringJoiner firstGroupBuilder = new StringJoiner( "," );
         StringJoiner secondGroupBuilder = new StringJoiner( "," );
@@ -1296,7 +1299,6 @@ public class GeneralWRDSReaderTest
 
             Set<ThresholdOuter> thresholds = results.values().iterator().next();
             Map<String, Double> expectedThresholdValues = new HashMap<>();
-            expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "low", 0.0 );
 
             for ( ThresholdOuter outerThreshold : thresholds )
@@ -1333,15 +1335,13 @@ public class GeneralWRDSReaderTest
                                  activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getSource() );
 
             //Check the values with calculated flow included.
-            results = activeCheckedThresholds.getThresholds(
-                                                             WRDSThresholdType.FLOW,
+            results = activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
                                                              Operator.GREATER,
                                                              ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
                                                              true,
                                                              this.unitMapper );
 
             thresholds = results.values().iterator().next();
-            expectedThresholdValues = new HashMap<>();
             expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "low", 0.0 );
 
@@ -1352,8 +1352,7 @@ public class GeneralWRDSReaderTest
                 Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
                 Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
+                Assert.assertEquals( expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
                                      outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
@@ -1407,7 +1406,7 @@ public class GeneralWRDSReaderTest
                                      EPSILON );
             }
 
-            activeCheckedThresholds = iterator.next(); //Skip the 4th. 
+            iterator.next(); //Skip the 4th.
             activeCheckedThresholds = iterator.next(); //Frankly, I'm not even sure we need to check the 5th.
 
             //==== BLOF1 is fifth.  On difference: rating info.
@@ -1439,7 +1438,6 @@ public class GeneralWRDSReaderTest
 
             thresholds = results.values().iterator().next();
             expectedThresholdValues = new HashMap<>();
-            expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "bankfull", 15.0 );
             expectedThresholdValues.put( "action", 13.0 );
             expectedThresholdValues.put( "flood", 17.0 );
@@ -1470,7 +1468,6 @@ public class GeneralWRDSReaderTest
                                                              this.unitMapper );
 
             thresholds = results.values().iterator().next();
-            expectedThresholdValues = new HashMap<>();
             expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "flood", 36900.0 );
             expectedThresholdValues.put( "record", 209000.0 );
@@ -1505,9 +1502,7 @@ public class GeneralWRDSReaderTest
 
             thresholds = results.values().iterator().next();
             expectedThresholdValues = new HashMap<>();
-            expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "flood", 36900.0 );
-            ;
             expectedThresholdValues.put( "record", 209000.0 );
 
             for ( ThresholdOuter outerThreshold : thresholds )
@@ -1607,55 +1602,54 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "bankfull":
+                    case "bankfull" ->
+                    {
                         hasBankfull = true;
                         Assert.assertEquals(
-                                             15.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "action":
+                                15.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "action" ->
+                    {
                         hasAction = true;
                         Assert.assertEquals(
-                                             13.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "flood":
+                                13.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "flood", "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             17.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
-                        hasMinor = true;
-                        Assert.assertEquals(
-                                             17.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "moderate":
+                                17.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "moderate" ->
+                    {
                         hasModerate = true;
                         Assert.assertEquals(
-                                             23.5,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "major":
+                                23.5,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "major" ->
+                    {
                         hasMajor = true;
                         Assert.assertEquals(
-                                             26.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                26.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             28.6,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                28.6,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
@@ -1745,48 +1739,54 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "year_1_5":
+                    case "year_1_5" ->
+                    {
                         has1_5 = true;
                         Assert.assertEquals(
-                                             58864.26,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "year_2_0":
+                                58864.26,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "year_2_0" ->
+                    {
                         has2_0 = true;
                         Assert.assertEquals(
-                                             87362.48,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "year_3_0":
+                                87362.48,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "year_3_0" ->
+                    {
                         has3_0 = true;
                         Assert.assertEquals(
-                                             109539.05,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "year_4_0":
+                                109539.05,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "year_4_0" ->
+                    {
                         has4_0 = true;
                         Assert.assertEquals(
-                                             128454.64,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "year_5_0":
+                                128454.64,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "year_5_0" ->
+                    {
                         has5_0 = true;
                         Assert.assertEquals(
-                                             176406.6,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "year_10_0":
+                                176406.6,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "year_10_0" ->
+                    {
                         has10_0 = true;
                         Assert.assertEquals(
-                                             216831.58000000002,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                216831.58000000002,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
@@ -1852,7 +1852,6 @@ public class GeneralWRDSReaderTest
 
             Assert.assertEquals( 6, mntg1Thresholds.size() );
 
-            boolean hasLow = false;
             boolean hasBankfull = false;
             boolean hasAction = false;
             boolean hasMinor = false;
@@ -1876,52 +1875,57 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "bankfull":
+                    case "bankfull" ->
+                    {
                         hasBankfull = true;
                         Assert.assertEquals(
-                                             11.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "action":
+                                11.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "action" ->
+                    {
                         hasAction = true;
                         Assert.assertEquals(
-                                             11.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
+                                11.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             20.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "moderate":
+                                20.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "moderate" ->
+                    {
                         hasModerate = true;
                         Assert.assertEquals(
-                                             28.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "major":
+                                28.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "major" ->
+                    {
                         hasMajor = true;
                         Assert.assertEquals(
-                                             31.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                31.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             34.11,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                34.11,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
-            Assert.assertFalse( hasLow );
             Assert.assertTrue( hasBankfull );
             Assert.assertTrue( hasAction );
             Assert.assertTrue( hasMinor );
@@ -1933,7 +1937,6 @@ public class GeneralWRDSReaderTest
 
             Assert.assertEquals( 6, blof1Thresholds.size() );
 
-            hasLow = false;
             hasBankfull = false;
             hasAction = false;
             hasMinor = false;
@@ -1957,52 +1960,57 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "bankfull":
+                    case "bankfull" ->
+                    {
                         hasBankfull = true;
                         Assert.assertEquals(
-                                             15.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "action":
+                                15.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "action" ->
+                    {
                         hasAction = true;
                         Assert.assertEquals(
-                                             13.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
+                                13.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             17.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "moderate":
+                                17.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "moderate" ->
+                    {
                         hasModerate = true;
                         Assert.assertEquals(
-                                             23.5,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "major":
+                                23.5,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "major" ->
+                    {
                         hasMajor = true;
                         Assert.assertEquals(
-                                             26.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                26.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             28.6,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                28.6,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
-            Assert.assertFalse( hasLow );
             Assert.assertTrue( hasBankfull );
             Assert.assertTrue( hasAction );
             Assert.assertTrue( hasMinor );
@@ -2014,7 +2022,6 @@ public class GeneralWRDSReaderTest
 
             Assert.assertEquals( 5, smaf1Thresholds.size() );
 
-            hasLow = false;
             hasBankfull = false;
             hasAction = false;
             hasMinor = false;
@@ -2022,8 +2029,7 @@ public class GeneralWRDSReaderTest
             hasMajor = false;
             hasRecord = false;
 
-            properThresholds = List.of(
-                                        "action",
+            properThresholds = List.of( "action",
                                         "minor",
                                         "moderate",
                                         "major",
@@ -2037,46 +2043,49 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "action":
+                    case "action" ->
+                    {
                         hasAction = true;
                         Assert.assertEquals(
-                                             8.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
+                                8.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             9.5,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "moderate":
+                                9.5,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "moderate" ->
+                    {
                         hasModerate = true;
                         Assert.assertEquals(
-                                             11.5,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "major":
+                                11.5,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "major" ->
+                    {
                         hasMajor = true;
                         Assert.assertEquals(
-                                             13.5,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                13.5,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             15.36,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                15.36,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
-            Assert.assertFalse( hasLow );
-            Assert.assertFalse( hasBankfull );
             Assert.assertTrue( hasAction );
             Assert.assertTrue( hasMinor );
             Assert.assertTrue( hasModerate );
@@ -2087,12 +2096,8 @@ public class GeneralWRDSReaderTest
 
             Assert.assertEquals( 4, okfg1Thresholds.size() );
 
-            hasLow = false;
-            hasBankfull = false;
             hasAction = false;
             hasMinor = false;
-            hasModerate = false;
-            hasMajor = false;
             hasRecord = false;
 
             properThresholds = List.of(
@@ -2109,55 +2114,52 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "bankfull":
+                    case "bankfull" ->
+                    {
                         hasBankfull = true;
                         Assert.assertEquals(
-                                             0.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "action":
+                                0.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "action" ->
+                    {
                         hasAction = true;
                         Assert.assertEquals(
-                                             18.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
+                                18.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             23.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                23.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             40.1,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                40.1,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
-            Assert.assertFalse( hasLow );
             Assert.assertTrue( hasBankfull );
             Assert.assertTrue( hasAction );
             Assert.assertTrue( hasMinor );
-            Assert.assertFalse( hasModerate );
-            Assert.assertFalse( hasMajor );
             Assert.assertTrue( hasRecord );
 
             Set<ThresholdOuter> tlpt2Thresholds = readThresholds.get( TLPT2 );
 
             Assert.assertEquals( 3, tlpt2Thresholds.size() );
 
-            hasLow = false;
             hasBankfull = false;
-            hasAction = false;
             hasMinor = false;
-            hasModerate = false;
-            hasMajor = false;
             hasRecord = false;
 
             properThresholds = List.of(
@@ -2173,36 +2175,35 @@ public class GeneralWRDSReaderTest
 
                 switch ( thresholdName )
                 {
-                    case "bankfull":
+                    case "bankfull" ->
+                    {
                         hasBankfull = true;
                         Assert.assertEquals(
-                                             15.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "minor":
+                                15.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "minor" ->
+                    {
                         hasMinor = true;
                         Assert.assertEquals(
-                                             15.0,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
-                    case "record":
+                                15.0,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
+                    case "record" ->
+                    {
                         hasRecord = true;
                         Assert.assertEquals(
-                                             16.02,
-                                             thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                             EPSILON );
-                        break;
+                                16.02,
+                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
+                                EPSILON );
+                    }
                 }
             }
 
-            Assert.assertFalse( hasLow );
             Assert.assertTrue( hasBankfull );
-            Assert.assertFalse( hasAction );
             Assert.assertTrue( hasMinor );
-            Assert.assertFalse( hasModerate );
-            Assert.assertFalse( hasMajor );
             Assert.assertTrue( hasRecord );
 
             // Clean up

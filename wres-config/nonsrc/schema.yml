@@ -169,6 +169,15 @@ definitions:
             minItems: 1
       time_shift:
         "$ref": "#/definitions/TimeShift"
+      # Workaround because the networknt validator sometimes sees these 
+      # strings as integers, but both are interpreted properly post-validation.
+      # This property is also defined per source.
+      time_zone_offset:
+        anyOf:        
+          - type: string
+            minLength: 1
+            maxLength: 6
+          - type: integer
     required:
       - sources
     title: ObservedOrPredicted

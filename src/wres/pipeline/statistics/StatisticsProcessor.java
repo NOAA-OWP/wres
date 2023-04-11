@@ -129,8 +129,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     /**
      * Inspects the minimum sample size and, if skill metrics are present and the minimum sample size is not met, 
      * removes the skill metrics from consideration, otherwise leaves them. Also, inspects the threshold and eliminates
-     * any metrics from consideration for which {@link MetricConstants#isAThresholdMetric()} returns false when the 
-     * threshold is not the "all data" threshold.
+     * any metrics from consideration for which {@link MetricConstants#isAThresholdMetric()} indicates that the metric
+     * is not a threshold metric, but only when the threshold is not the "all data" threshold.
      * 
      * @param <U> the type of pooled data
      * @param <T> the type of {@link Statistic}
@@ -194,9 +194,16 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
             if ( LOGGER.isDebugEnabled() && !filteredInner.isEmpty() )
             {
+                Pool<U> baseline = pairs.getBaselineData();
+                PoolMetadata baselineMetadata = null;
+                if( Objects.nonNull( baseline ) )
+                {
+                    baselineMetadata = baseline.getMetadata();
+                }
+
                 LOGGER.debug( "While processing pairs for pool {}, discovered {} metrics that cannot be computed for a "
                               + "threshold of {}. The following metrics will not be computed for this pool: {}.",
-                              pairs.getBaselineData().getMetadata(),
+                              baselineMetadata,
                               filteredInner.size(),
                               pairs.getMetadata().getThresholds(),
                               filteredInner );
@@ -285,7 +292,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
                                   StatisticType outGroup )
     {
         // Create a filter based on input
-        Predicate<MetricConstants> tester = null;
+        Predicate<MetricConstants> tester;
         if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
         {
             tester = a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup );

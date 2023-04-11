@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
@@ -233,6 +235,9 @@ public class DeclarationValidator
         // Check that the time scales are valid
         List<EvaluationStatusEvent> timeScales = DeclarationValidator.timeScalesAreValid( declaration );
         events.addAll( timeScales );
+        // Check that any time-zone offsets are consistent
+        List<EvaluationStatusEvent> timeZoneOffsets = DeclarationValidator.timeZoneOffsetsAreValid( declaration );
+        events.addAll( timeZoneOffsets );
 
         return Collections.unmodifiableList( events );
     }
@@ -700,6 +705,94 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time zone offsets are mutually consistent.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> timeZoneOffsetsAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> leftEvents =
+                DeclarationValidator.timeZoneOffsetsAreValid( declaration.left(),
+                                                              DatasetOrientation.LEFT );
+        List<EvaluationStatusEvent> events = new ArrayList<>( leftEvents );
+        List<EvaluationStatusEvent> rightEvents
+                = DeclarationValidator.timeZoneOffsetsAreValid( declaration.right(),
+                                                                DatasetOrientation.RIGHT );
+        events.addAll( rightEvents );
+
+        if ( DeclarationValidator.hasBaseline( declaration ) )
+        {
+            List<EvaluationStatusEvent> baselineEvents
+                    = DeclarationValidator.timeZoneOffsetsAreValid( declaration.baseline()
+                                                                               .dataset(),
+                                                                    DatasetOrientation.BASELINE );
+            events.addAll( baselineEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time zone offsets are mutually consistent.
+     * @param dataset the dataset
+     * @param orientation the dataset orientation to help with logging
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> timeZoneOffsetsAreValid( Dataset dataset,
+                                                                        DatasetOrientation orientation )
+    {
+        ZoneOffset universalOffset = dataset.timeZoneOffset();
+        if ( Objects.isNull( universalOffset ) )
+        {
+            LOGGER.debug( "The {} dataset did not contain a universal time zone offset for all data sources.",
+                          orientation );
+
+            return Collections.emptyList();
+        }
+
+        // There is a universal time zone offset, so all the sources must have a null offset or the same offset as the
+        // universal one
+        Set<ZoneOffset> offsets = dataset.sources()
+                                         .stream()
+                                         .map( Source::timeZoneOffset )
+                                         .filter( Objects::nonNull )
+                                         .collect( Collectors.toSet() );
+
+        if ( Set.of( universalOffset )
+                .equals( offsets ) )
+        {
+            LOGGER.debug( "The {} dataset contained a universal time zone offset of {}, which is consistent with the "
+                          + "offsets for the individual sources it composes.",
+                          orientation,
+                          universalOffset );
+
+            return Collections.emptyList();
+        }
+
+        EvaluationStatusEvent event
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( StatusLevel.ERROR )
+                                       .setEventMessage( "Discovered a 'time_zone_offset' of "
+                                                         + universalOffset
+                                                         + " for the '"
+                                                         + orientation
+                                                         + "' dataset, which is inconsistent with some of the "
+                                                         + "'time_zone_offset' declared for the individual sources it "
+                                                         + "contains: "
+                                                         + offsets
+                                                         + ". Please address this conflict by removing the "
+                                                         + "'time_zone-offset' for the '"
+                                                         + orientation
+                                                         + "' dataset or its individual "
+                                                         + "sources or ensuring they match." )
+                                       .build();
+
+        return List.of( event );
     }
 
     /**
