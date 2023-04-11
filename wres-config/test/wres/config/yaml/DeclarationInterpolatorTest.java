@@ -2,6 +2,8 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -588,7 +590,110 @@ class DeclarationInterpolatorTest
                                     .geometryGroups()
                                     .stream()
                                     .anyMatch( next -> groupName.equals( next.getRegionName() ) ) );
+    }
 
+    @Test
+    void testInterpolateTimeZoneOffsets()
+    {
+        Dataset left = DatasetBuilder.builder( this.observedDataset )
+                                     .timeZoneOffset( ZoneOffset.ofHours( 3 ) )
+                                     .build();
+
+        // Add a source with an explicit time zone offset, which should not be overwritten
+        List<Source> sources = new ArrayList<>( this.predictedDataset.sources() );
+        sources.add( SourceBuilder.builder()
+                                  .timeZoneOffset( ZoneOffset.ofHours( 2 ) )
+                                  .build() );
+        Dataset innerPredictedDataset = DatasetBuilder.builder( this.predictedDataset )
+                .sources( sources)
+                .build();
+        Dataset right = DatasetBuilder.builder( innerPredictedDataset )
+                                      .timeZoneOffset( ZoneOffset.ofHours( 4 ) )
+                                      .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration );
+
+        Set<ZoneOffset> actualLeft = interpolated.left()
+                                                 .sources()
+                                                 .stream()
+                                                 .map( Source::timeZoneOffset )
+                                                 .collect( Collectors.toSet() );
+
+        Set<ZoneOffset> actualRight = interpolated.right()
+                                                  .sources()
+                                                  .stream()
+                                                  .map( Source::timeZoneOffset )
+                                                  .collect( Collectors.toSet() );
+
+        assertAll( () -> assertEquals( Set.of( ZoneOffset.ofHours( 3 ) ), actualLeft ),
+                   () -> assertEquals( Set.of( ZoneOffset.ofHours( 2 ),
+                                               ZoneOffset.ofHours( 4 ) ), actualRight ) );
+    }
+
+    @Test
+    void testGetSparseFeaturesToInterpolate()
+    {
+        // Singleton features
+        GeometryTuple one = GeometryTuple.newBuilder()
+                                         .setLeft( Geometry.newBuilder()
+                                                           .setName( "foo" ) )
+                                         .build();
+        GeometryTuple two = GeometryTuple.newBuilder()
+                                         .setRight( Geometry.newBuilder()
+                                                            .setName( "bar" ) )
+                                         .build();
+        GeometryTuple three = GeometryTuple.newBuilder()
+                                           .setBaseline( Geometry.newBuilder()
+                                                                 .setName( "baz" ) )
+                                           .build();
+        // Add one dense
+        GeometryTuple four = GeometryTuple.newBuilder()
+                                          .setLeft( Geometry.newBuilder()
+                                                            .setName( "a" ) )
+                                          .setRight( Geometry.newBuilder()
+                                                             .setName( "dense" ) )
+                                          .setBaseline( Geometry.newBuilder()
+                                                                .setName( "feature" ) )
+                                          .build();
+        Set<GeometryTuple> geometries = Set.of( one, two, three, four );
+
+        // Grouped features
+        GeometryTuple five = GeometryTuple.newBuilder()
+                                          .setLeft( Geometry.newBuilder()
+                                                            .setName( "qux" ) )
+                                          .build();
+        // Add one dense
+        GeometryTuple six = GeometryTuple.newBuilder()
+                                         .setLeft( Geometry.newBuilder()
+                                                           .setName( "another" ) )
+                                         .setRight( Geometry.newBuilder()
+                                                            .setName( "dense" ) )
+                                         .setBaseline( Geometry.newBuilder()
+                                                               .setName( "feature" ) )
+                                         .build();
+        Set<GeometryTuple> groupGeometries = Set.of( five, six );
+        GeometryGroup featureGroup = GeometryGroup.newBuilder()
+                                                  .addAllGeometryTuples( groupGeometries )
+                                                  .setRegionName( "A group!" ).build();
+
+        // Create the declaration
+        Features features = new Features( geometries );
+        FeatureGroups featureGroups = new FeatureGroups( Set.of( featureGroup ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .features( features )
+                                                                        .featureGroups( featureGroups )
+                                                                        .build();
+
+        Set<GeometryTuple> actual = DeclarationInterpolator.getSparseFeaturesToInterpolate( declaration );
+
+        Set<GeometryTuple> expected = Set.of( one, two, three, five );
+
+        assertEquals( expected, actual );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation
@@ -985,67 +1090,6 @@ class DeclarationInterpolatorTest
         Set<Metric> expected = new LinkedHashSet<>();
         expected.add( first );
         expected.add( second );
-
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void testGetSparseFeaturesToInterpolate()
-    {
-        // Singleton features
-        GeometryTuple one = GeometryTuple.newBuilder()
-                                         .setLeft( Geometry.newBuilder()
-                                                           .setName( "foo" ) )
-                                         .build();
-        GeometryTuple two = GeometryTuple.newBuilder()
-                                         .setRight( Geometry.newBuilder()
-                                                            .setName( "bar" ) )
-                                         .build();
-        GeometryTuple three = GeometryTuple.newBuilder()
-                                           .setBaseline( Geometry.newBuilder()
-                                                                 .setName( "baz" ) )
-                                           .build();
-        // Add one dense
-        GeometryTuple four = GeometryTuple.newBuilder()
-                                          .setLeft( Geometry.newBuilder()
-                                                            .setName( "a" ) )
-                                          .setRight( Geometry.newBuilder()
-                                                             .setName( "dense" ) )
-                                          .setBaseline( Geometry.newBuilder()
-                                                                .setName( "feature" ) )
-                                          .build();
-        Set<GeometryTuple> geometries = Set.of( one, two, three, four );
-
-        // Grouped features
-        GeometryTuple five = GeometryTuple.newBuilder()
-                                          .setLeft( Geometry.newBuilder()
-                                                            .setName( "qux" ) )
-                                          .build();
-        // Add one dense
-        GeometryTuple six = GeometryTuple.newBuilder()
-                                         .setLeft( Geometry.newBuilder()
-                                                           .setName( "another" ) )
-                                         .setRight( Geometry.newBuilder()
-                                                            .setName( "dense" ) )
-                                         .setBaseline( Geometry.newBuilder()
-                                                               .setName( "feature" ) )
-                                         .build();
-        Set<GeometryTuple> groupGeometries = Set.of( five, six );
-        GeometryGroup featureGroup = GeometryGroup.newBuilder()
-                                                  .addAllGeometryTuples( groupGeometries )
-                                                  .setRegionName( "A group!" ).build();
-
-        // Create the declaration
-        Features features = new Features( geometries );
-        FeatureGroups featureGroups = new FeatureGroups( Set.of( featureGroup ) );
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .features( features )
-                                                                        .featureGroups( featureGroups )
-                                                                        .build();
-
-        Set<GeometryTuple> actual = DeclarationInterpolator.getSparseFeaturesToInterpolate( declaration );
-
-        Set<GeometryTuple> expected = Set.of( one, two, three, five );
 
         assertEquals( expected, actual );
     }

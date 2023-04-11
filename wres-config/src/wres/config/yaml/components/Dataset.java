@@ -1,6 +1,7 @@
 package wres.config.yaml.components;
 
 import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,6 +14,7 @@ import wres.config.yaml.deserializers.DatasetDeserializer;
 import wres.config.yaml.serializers.DurationSerializer;
 import wres.config.yaml.serializers.EnsembleFilterSerializer;
 import wres.config.yaml.serializers.VariableSerializer;
+import wres.config.yaml.serializers.ZoneOffsetSerializer;
 
 /**
  * Observed or predicted dataset.
@@ -35,7 +37,9 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonSerialize( using = EnsembleFilterSerializer.class )
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
                        @JsonSerialize( using = DurationSerializer.class )
-                       @JsonProperty( "time_shift" ) Duration timeShift )
+                       @JsonProperty( "time_shift" ) Duration timeShift,
+                       @JsonSerialize( using = ZoneOffsetSerializer.class )
+                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset )
 {
     /**
      * Set the defaults.

@@ -1,13 +1,10 @@
 observed:
   sources:
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard
-      time_zone_offset: '-0600'
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard
+  time_zone_offset: '-0600'    
   variable: QINE
   label: Observations
 predicted:

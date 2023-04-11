@@ -65,7 +65,7 @@ public class ThresholdExtractor
     }
 
     /**
-     * Whether or not calculated thresholds should be used
+     * Whether calculated thresholds should be used
      *
      * @param useCalculated Whether or not to use calculated thresholds
      * @return The updated extractor

@@ -52,6 +52,7 @@ public final class GeneralWRDSReader
 
     private static final Logger LOGGER = LoggerFactory.getLogger( GeneralWRDSReader.class );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
+    private static final String PATH_DELIM = "/";
 
     static
     {
@@ -73,18 +74,18 @@ public final class GeneralWRDSReader
     private final SystemSettings systemSettings;
 
     /**
-     * The purpose for allowing an instance is to maintain the single-parameter
+     * <p>The purpose for allowing an instance is to maintain the single-parameter
      * functional interface of getResponse to facilitate stream usage ~L110.
      *
-     * The reason SystemSettings is needed is to get the data directory to
+     * <p>The reason SystemSettings is needed is to get the data directory to
      * complete relative paths given, for example "dir/file.csv" is given rather
      * than "file:///path/to/dir/file.csv".
      *
-     * Instantiation not private so that unit tests can access methods.
+     * <p>Instantiation not private so that unit tests can access methods.
      *
-     * The public interface to this class remains as static helper functions.
+     * <p>The public interface to this class remains as static helper functions.
      *
-     * There are likely better ways to achieve these goals. Go for it.
+     * <p>There are likely better ways to achieve these goals. Go for it.
      *
      * @param systemSettings The system settings to use to complete URIs.
      */
@@ -109,9 +110,9 @@ public final class GeneralWRDSReader
         String adjustedPath;
 
         //First, add a slash to make it easy to use endsWith later.
-        if ( !originalPath.endsWith( "/" ) )
+        if ( !originalPath.endsWith( PATH_DELIM ) )
         {
-            adjustedPath = originalPath + "/";
+            adjustedPath = originalPath + PATH_DELIM;
         }
         else
         {
@@ -127,42 +128,42 @@ public final class GeneralWRDSReader
         if ( ( featureDimension == FeatureDimension.NWS_LID )
              || ( featureDimension == FeatureDimension.CUSTOM ) )
         {
-            if ( adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" )
-                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
+            if ( adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + PATH_DELIM )
+                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + PATH_DELIM ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if ( !adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" ) )
+            else if ( !adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + PATH_DELIM ) )
             {
-                adjustedPath += FeatureDimension.NWS_LID + "/";
+                adjustedPath += FeatureDimension.NWS_LID + PATH_DELIM;
             }
         }
 
         //USGS site code
         if ( featureDimension == FeatureDimension.USGS_SITE_CODE )
         {
-            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" )
-                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
+            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + PATH_DELIM )
+                 || adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + PATH_DELIM ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if ( !adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) )
+            else if ( !adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + PATH_DELIM ) )
             {
-                adjustedPath += FeatureDimension.USGS_SITE_CODE + "/";
+                adjustedPath += FeatureDimension.USGS_SITE_CODE + PATH_DELIM;
             }
         }
 
         //NWM feature id
         if ( featureDimension == FeatureDimension.NWM_FEATURE_ID )
         {
-            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + "/" )
-                 || adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + "/" ) )
+            if ( adjustedPath.endsWith( FeatureDimension.NWS_LID.value() + PATH_DELIM )
+                 || adjustedPath.endsWith( FeatureDimension.USGS_SITE_CODE.value() + PATH_DELIM ) )
             {
                 foundUnmatchingSuffixError = true;
             }
-            else if ( !adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + "/" ) )
+            else if ( !adjustedPath.endsWith( FeatureDimension.NWM_FEATURE_ID.value() + PATH_DELIM ) )
             {
-                adjustedPath += FeatureDimension.NWM_FEATURE_ID + "/";
+                adjustedPath += FeatureDimension.NWM_FEATURE_ID + PATH_DELIM;
             }
         }
 
@@ -194,12 +195,11 @@ public final class GeneralWRDSReader
      * @return Map of feature to threshold.
      * @throws IOException At various points, this can be thrown.
      */
-    public static Map<WrdsLocation, Set<ThresholdOuter>> readThresholds(
-            final SystemSettings systemSettings,
-            final ThresholdsConfig threshold,
-            final UnitMapper unitMapper,
-            final FeatureDimension featureDimension,
-            final Set<String> features )
+    public static Map<WrdsLocation, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
+                                                                         ThresholdsConfig threshold,
+                                                                         UnitMapper unitMapper,
+                                                                         FeatureDimension featureDimension,
+                                                                         Set<String> features )
             throws IOException
     {
         //Get the declared source.
@@ -238,8 +238,8 @@ public final class GeneralWRDSReader
             //For each location group String...
             for ( String group : locationGroups )
             {
-                //Appebnd it to the adjustPath.
-                String path = adjustedPath + group + "/";
+                //Append it to the adjustPath.
+                String path = adjustedPath + group + PATH_DELIM;
                 builder.setPath( path );
 
                 //Build the URI and store it in addresses.
@@ -297,7 +297,7 @@ public final class GeneralWRDSReader
 
         if ( thresholdMapping.isEmpty() )
         {
-            throw new IOException( "No thresholds could be retrieved from " + fullSourceAddress.toString() );
+            throw new IOException( "No thresholds could be retrieved from " + fullSourceAddress );
         }
 
         LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );
@@ -312,9 +312,9 @@ public final class GeneralWRDSReader
      * @return A map of WRDS locations to thresholds, parsed using an appropriate version of the response.
      * @throws StreamIOException If an error is encountered while reading threshold data
      */
-    protected static Map<WrdsLocation, Set<ThresholdOuter>> extract( byte[] responseBytes,
-                                                                     ThresholdsConfig config,
-                                                                     UnitMapper desiredUnitMapper )
+    static Map<WrdsLocation, Set<ThresholdOuter>> extract( byte[] responseBytes,
+                                                           ThresholdsConfig config,
+                                                           UnitMapper desiredUnitMapper )
             throws StreamIOException
     {
         //Obtain the source.
@@ -362,7 +362,7 @@ public final class GeneralWRDSReader
                 //works for unified schema thresholds, such as recurrence flows, because the metadata
                 //does not specify the parameter, so that parameterToMeasure is ignored.
                 if ( ( source.getParameterToMeasure() != null )
-                     && ( source.getParameterToMeasure().toLowerCase().equals( "stage" ) ) )
+                     && ( source.getParameterToMeasure().equalsIgnoreCase( "stage" ) ) )
                 {
                     extractor.readStage();
                 }
@@ -394,7 +394,7 @@ public final class GeneralWRDSReader
                 //works for unified schema thresholds, such as recurrence flows, because the metadata
                 //does not specify the parameter, so that parameterToMeasure is ignored.
                 if ( ( source.getParameterToMeasure() != null )
-                     && ( source.getParameterToMeasure().toLowerCase().equals( "stage" ) ) )
+                     && ( source.getParameterToMeasure().equalsIgnoreCase( "stage" ) ) )
                 {
                     extractor.readStage();
                 }
@@ -418,7 +418,7 @@ public final class GeneralWRDSReader
      * @param features Features to group.
      * @return The grouped features as a String.  
      */
-    protected static Set<String> groupLocations( Set<String> features )
+    static Set<String> groupLocations( Set<String> features )
     {
         Set<String> locationGroups = new HashSet<>();
         StringJoiner locationJoiner = new StringJoiner( "," );
@@ -451,7 +451,7 @@ public final class GeneralWRDSReader
      * @param address the address
      * @return The response in byte[], where the URI can point to a file or a website.
      */
-    protected byte[] getResponse( final URI address ) throws StreamIOException
+    byte[] getResponse( final URI address ) throws StreamIOException
     {
         LOGGER.debug( "Opening URI {}", address );
         try
@@ -493,7 +493,7 @@ public final class GeneralWRDSReader
                 LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}",
                              response.getStatusCode(),
                              inputAddress );
-                return null;
+                return new byte[0];
             }
 
             return response.getResponse().readAllBytes();

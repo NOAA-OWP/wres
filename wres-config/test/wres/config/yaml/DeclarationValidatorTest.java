@@ -216,17 +216,21 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testTimeZoneForSourceResultsInWarning()
+    void testConflictingTimeZoneForSourceResultsInWarningsAndError()
     {
         Source source = SourceBuilder.builder()
+                                     // Warning
                                      .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
                                      .build();
         Source anotherSource = SourceBuilder.builder()
+                                            // Warning
                                             .timeZoneOffset( ZoneOffset.of( "-06:00" ) )
                                             .build();
         Dataset left = DatasetBuilder.builder()
                                      .sources( List.of( source ) )
                                      .type( DataType.OBSERVATIONS )
+                                     // Error
+                                     .timeZoneOffset( ZoneOffset.ofHours( -4 ) )
                                      .build();
         Dataset right = DatasetBuilder.builder()
                                       .sources( List.of( anotherSource ) )
@@ -246,7 +250,11 @@ class DeclarationValidatorTest
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "Discovered one or more "
                                                                                 + "'predicted' data sources for which "
                                                                                 + "a time zone was declared",
-                                                                        StatusLevel.WARN ) )
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset, "
+                                                                                + "which is inconsistent with some of "
+                                                                                + "the",
+                                                                        StatusLevel.ERROR ) )
         );
     }
 

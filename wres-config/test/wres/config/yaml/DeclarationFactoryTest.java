@@ -315,6 +315,7 @@ class DeclarationFactoryTest
                         unit: hours
                   type: observations
                   variable: foo
+                  time_zone_offset: CST
                 predicted:
                   sources:
                     - forecasts_with_NWS_feature_authority.csv
@@ -369,6 +370,7 @@ class DeclarationFactoryTest
                                                 .sources( observedSources )
                                                 .type( DataType.OBSERVATIONS )
                                                 .variable( new Variable( "foo", null ) )
+                                                .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
                                                 .build();
 
         URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );

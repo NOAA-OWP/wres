@@ -1587,9 +1587,11 @@ public class DeclarationFactory
             return null;
         }
 
+        ZoneOffset universalZoneOffset = DeclarationFactory.migrateTimeZoneOffset( dataSource.getSource() );
         List<Source> sources = DeclarationFactory.migrateSources( dataSource.getSource(),
                                                                   dataSource.getExistingTimeScale(),
-                                                                  dataSource.getUrlParameter() );
+                                                                  dataSource.getUrlParameter(),
+                                                                  Objects.nonNull( universalZoneOffset ) );
         EnsembleFilter filter = DeclarationFactory.migrateEnsembleFilter( dataSource.getEnsemble() );
         FeatureAuthority featureAuthority =
                 DeclarationFactory.migrateFeatureAuthority( dataSource.getFeatureDimension() );
@@ -1605,7 +1607,41 @@ public class DeclarationFactory
                              .variable( variable )
                              .type( type )
                              .timeShift( timeShift )
+                             .timeZoneOffset( universalZoneOffset )
                              .build();
+    }
+
+    /**
+     * Attempts to discover and return a universal time zone offset that applies across all sources. If there are no
+     * time zone offsets defined, or they vary per-source, returns null.
+     * @param sources the sources to inspect
+     * @return the universal time zone offset or null if no such offset applies
+     */
+
+    private static ZoneOffset migrateTimeZoneOffset( List<DataSourceConfig.Source> sources )
+    {
+        Set<ZoneOffset> offsets = sources.stream()
+                                         .map( DataSourceConfig.Source::getZoneOffset )
+                                         .filter( Objects::nonNull )
+                                         .map( ZoneOffsetDeserializer::getZoneOffset )
+                                         .collect( Collectors.toSet() );
+
+        if ( offsets.size() == 1 )
+        {
+            ZoneOffset offset = offsets.iterator()
+                                       .next();
+            LOGGER.debug( "Identified a universal time zone offset of {} for these data sources: {}.",
+                          offset,
+                          sources );
+            return offset;
+        }
+
+        LOGGER.debug( "Failed to identify a universal time zone offset for the supplied data sources. Discovered "
+                      + "these time zone offsets for the individual sources:  {}. The data sources were: {}.",
+                      offsets,
+                      sources );
+
+        return null;
     }
 
     /**
@@ -1614,14 +1650,21 @@ public class DeclarationFactory
      * @param sources the data sources
      * @param timeScale the timescale
      * @param parameters the optional URL parameters
+     * @param universalTimeZoneOffset whether there is a universal time zone offset. If so, do not migrate per source
      * @return the migrated sources
      */
 
     private static List<Source> migrateSources( List<DataSourceConfig.Source> sources,
                                                 TimeScaleConfig timeScale,
-                                                List<UrlParameter> parameters )
+                                                List<UrlParameter> parameters,
+                                                boolean universalTimeZoneOffset )
     {
-        return sources.stream().map( next -> DeclarationFactory.migrateSource( next, timeScale, parameters ) ).toList();
+        return sources.stream()
+                      .map( next -> DeclarationFactory.migrateSource( next,
+                                                                      timeScale,
+                                                                      parameters,
+                                                                      universalTimeZoneOffset ) )
+                      .toList();
     }
 
     /**
@@ -1630,14 +1673,18 @@ public class DeclarationFactory
      * @param source the data sources
      * @param timeScale the timescale
      * @param parameters the optional URL parameters
+     * @param universalTimeZoneOffset whether there is a universal time zone offset. If so, do not migrate per source
      * @return the migrated source
      */
 
     private static Source migrateSource( DataSourceConfig.Source source,
                                          TimeScaleConfig timeScale,
-                                         List<UrlParameter> parameters )
+                                         List<UrlParameter> parameters,
+                                         boolean universalTimeZoneOffset )
     {
-        SourceBuilder builder = SourceBuilder.builder().uri( source.getValue() ).pattern( source.getPattern() );
+        SourceBuilder builder = SourceBuilder.builder()
+                                             .uri( source.getValue() )
+                                             .pattern( source.getPattern() );
 
         // Do not propagate the default missing value from the old declaration
         if ( Objects.nonNull( source.getMissingValue() )
@@ -1654,7 +1701,7 @@ public class DeclarationFactory
             builder.sourceInterface( sourceInterface );
         }
 
-        if ( Objects.nonNull( source.getZoneOffset() ) )
+        if ( !universalTimeZoneOffset && Objects.nonNull( source.getZoneOffset() ) )
         {
             ZoneOffset offset = ZoneOffsetDeserializer.getZoneOffset( source.getZoneOffset() );
             builder.timeZoneOffset( offset );

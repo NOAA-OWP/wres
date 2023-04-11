@@ -1,5 +1,7 @@
 package wres.config.yaml;
 
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,6 +35,8 @@ import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
@@ -87,6 +91,8 @@ public class DeclarationInterpolator
 
         // Disambiguate the "type" of data when it is not declared
         DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder );
+        // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
+        DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedDeclarationBuilder );
         // Interpolate the feature authorities
         DeclarationInterpolator.interpolateFeatureAuthorities( adjustedDeclarationBuilder );
         // Interpolate geospatial features when required, but without using a feature service
@@ -117,7 +123,7 @@ public class DeclarationInterpolator
 
     public static Set<GeometryTuple> getSparseFeaturesToInterpolate( EvaluationDeclaration evaluation )
     {
-        if( Objects.isNull( evaluation.features() ) )
+        if ( Objects.isNull( evaluation.features() ) )
         {
             LOGGER.debug( "No sparse features were detected because no features were declared." );
             return Set.of();
@@ -634,6 +640,83 @@ public class DeclarationInterpolator
 
         // Baseline data type has the same as the predicted data type, by default
         DeclarationInterpolator.resolveBaselineDataTypeIfRequired( builder );
+    }
+
+    /**
+     * Looks for the time zone offset assigned to a dataset and copies this offset to all corresponding missing entries
+     * for each data source.
+     * @param builder the declaration builder to adjust
+     */
+
+    private static void interpolateTimeZoneOffsets( EvaluationDeclarationBuilder builder )
+    {
+        // Left dataset
+        ZoneOffset leftOffset = builder.left()
+                                       .timeZoneOffset();
+        if ( Objects.nonNull( leftOffset ) )
+        {
+            Dataset left = DeclarationInterpolator.copyTimeZoneToAllSources( leftOffset, builder.left() );
+            builder.left( left );
+        }
+
+        // Right dataset
+        ZoneOffset rightOffset = builder.right()
+                                        .timeZoneOffset();
+        if ( Objects.nonNull( rightOffset ) )
+        {
+            Dataset right = DeclarationInterpolator.copyTimeZoneToAllSources( rightOffset, builder.right() );
+            builder.right( right );
+        }
+
+        // Baseline dataset
+        if ( DeclarationFactory.hasBaseline( builder ) )
+        {
+            ZoneOffset baselineOffset = builder.baseline()
+                                               .dataset()
+                                               .timeZoneOffset();
+            if ( Objects.nonNull( baselineOffset ) )
+            {
+                Dataset baselineDataset =
+                        DeclarationInterpolator.copyTimeZoneToAllSources( baselineOffset, builder.baseline()
+                                                                                                 .dataset() );
+                BaselineDataset baseline = BaselineDatasetBuilder.builder( builder.baseline() )
+                                                                 .dataset( baselineDataset )
+                                                                 .build();
+                builder.baseline( baseline );
+            }
+        }
+    }
+
+    /**
+     * Copies the supplied time zone offset to all sources that are missing one.
+     * @param offset the offset to copy
+     * @param dataset the dataset whose sources without a time zone offset should be updated
+     * @return the possible adjusted dataset
+     */
+
+    private static Dataset copyTimeZoneToAllSources( ZoneOffset offset, Dataset dataset )
+    {
+        DatasetBuilder builder = DatasetBuilder.builder( dataset );
+        List<Source> sources = new ArrayList<>();
+        for ( Source source : dataset.sources() )
+        {
+            if ( Objects.isNull( source.timeZoneOffset() ) )
+            {
+                Source adjusted = SourceBuilder.builder( source )
+                                               .timeZoneOffset( offset )
+                                               .build();
+                sources.add( adjusted );
+            }
+            else
+            {
+                sources.add( source );
+            }
+        }
+
+        // Set the adjusted sources
+        builder.sources( sources );
+
+        return builder.build();
     }
 
     /**
