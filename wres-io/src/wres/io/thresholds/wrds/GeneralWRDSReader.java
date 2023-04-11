@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -26,6 +27,7 @@ import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
+import wres.statistics.generated.Threshold;
 import wres.system.SystemSettings;
 
 import javax.net.ssl.SSLContext;
@@ -195,11 +197,11 @@ public final class GeneralWRDSReader
      * @return Map of feature to threshold.
      * @throws IOException At various points, this can be thrown.
      */
-    public static Map<WrdsLocation, Set<ThresholdOuter>> readThresholds( SystemSettings systemSettings,
-                                                                         ThresholdsConfig threshold,
-                                                                         UnitMapper unitMapper,
-                                                                         FeatureDimension featureDimension,
-                                                                         Set<String> features )
+    public static Map<WrdsLocation, Set<Threshold>> readThresholds( SystemSettings systemSettings,
+                                                                    ThresholdsConfig threshold,
+                                                                    UnitMapper unitMapper,
+                                                                    FeatureDimension featureDimension,
+                                                                    Set<String> features )
             throws IOException
     {
         //Get the declared source.
@@ -265,7 +267,7 @@ public final class GeneralWRDSReader
 
         //construct the reader and the threshold map.  
         GeneralWRDSReader reader = new GeneralWRDSReader( systemSettings );
-        Map<WrdsLocation, Set<ThresholdOuter>> thresholdMapping;
+        Map<WrdsLocation, Set<Threshold>> thresholdMapping;
 
         try
         {
@@ -291,7 +293,8 @@ public final class GeneralWRDSReader
                 .filter(
                         entry -> !entry.getValue()
                                        .stream()
-                                       .allMatch( ThresholdOuter::isAllDataThreshold ) )
+                                       .allMatch( next -> ThresholdOuter.ALL_DATA.getThreshold()
+                                                                                 .equals( next ) ) )
                 .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
                                                         Map.Entry::getValue ) );
 
@@ -312,9 +315,9 @@ public final class GeneralWRDSReader
      * @return A map of WRDS locations to thresholds, parsed using an appropriate version of the response.
      * @throws StreamIOException If an error is encountered while reading threshold data
      */
-    static Map<WrdsLocation, Set<ThresholdOuter>> extract( byte[] responseBytes,
-                                                           ThresholdsConfig config,
-                                                           UnitMapper desiredUnitMapper )
+    static Map<WrdsLocation, Set<Threshold>> extract( byte[] responseBytes,
+                                                      ThresholdsConfig config,
+                                                      UnitMapper desiredUnitMapper )
             throws StreamIOException
     {
         //Obtain the source.
@@ -444,7 +447,6 @@ public final class GeneralWRDSReader
 
         return locationGroups;
     }
-
 
     /**
      * This is protected to support testing.

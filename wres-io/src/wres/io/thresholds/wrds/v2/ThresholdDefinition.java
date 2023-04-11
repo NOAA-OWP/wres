@@ -2,14 +2,14 @@ package wres.io.thresholds.wrds.v2;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.protobuf.DoubleValue;
 
-import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
+import wres.statistics.generated.Threshold;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -547,16 +547,16 @@ public class ThresholdDefinition implements Serializable
      * @return the thresholds
      */
 
-    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds( WRDSThresholdType thresholdType,
-                                                                 ThresholdConstants.Operator thresholdOperator,
-                                                                 ThresholdConstants.ThresholdDataType dataType,
-                                                                 boolean getCalculated,
-                                                                 UnitMapper desiredUnitMapper
+    public Map<WrdsLocation, Set<Threshold>> getThresholds( WRDSThresholdType thresholdType,
+                                                            ThresholdConstants.Operator thresholdOperator,
+                                                            ThresholdConstants.ThresholdDataType dataType,
+                                                            boolean getCalculated,
+                                                            UnitMapper desiredUnitMapper
     )
     {
         WrdsLocation location = this.getLocation();
 
-        Set<ThresholdOuter> thresholds;
+        Set<Threshold> thresholds;
 
         if ( thresholdType.equals( WRDSThresholdType.FLOW ) )
         {
@@ -569,234 +569,229 @@ public class ThresholdDefinition implements Serializable
         return Map.of( location, thresholds );
     }
 
-    private Set<ThresholdOuter> getFlowThresholds( boolean getCalculated,
-                                                   ThresholdConstants.Operator thresholdOperator,
-                                                   ThresholdConstants.ThresholdDataType dataType,
-                                                   UnitMapper desiredUnitMapper
+    private Set<Threshold> getFlowThresholds( boolean getCalculated,
+                                              ThresholdConstants.Operator thresholdOperator,
+                                              ThresholdConstants.ThresholdDataType dataType,
+                                              UnitMapper desiredUnitMapper
     )
     {
-        Set<ThresholdOuter> thresholds = new HashSet<>();
+        Set<Threshold> thresholds = new HashSet<>();
 
         Double low = this.getLowFlow( getCalculated, desiredUnitMapper );
         Double action = this.getActionFlow( getCalculated, desiredUnitMapper );
         Double minor = this.getMinorFlow( getCalculated, desiredUnitMapper );
         Double moderate = this.getModerateFlow( getCalculated, desiredUnitMapper );
         Double major = this.getMajorFlow( getCalculated, desiredUnitMapper );
-        Double bankful = this.getBankfulFlow( getCalculated, desiredUnitMapper );
+        Double bankfull = this.getBankfulFlow( getCalculated, desiredUnitMapper );
         Double recordFlow = this.getRecordFlow( getCalculated, desiredUnitMapper );
 
         if ( low != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( low ),
-                            thresholdOperator,
-                            dataType,
-                            "low",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( low,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "low",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( action != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( action ),
-                            thresholdOperator,
-                            dataType,
-                            "action",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( action,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "action",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( minor != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( minor ),
-                            thresholdOperator,
-                            dataType,
-                            "minor",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( minor,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "minor",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( moderate != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( moderate ),
-                            thresholdOperator,
-                            dataType,
-                            "moderate",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( moderate,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "moderate",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( major != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( major ),
-                            thresholdOperator,
-                            dataType,
-                            "major",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( major,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "major",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
-        if ( bankful != null )
+        if ( bankfull != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( bankful ),
-                            thresholdOperator,
-                            dataType,
-                            "bankfull",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( bankfull,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "bankfull",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( recordFlow != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( recordFlow ),
-                            thresholdOperator,
-                            dataType,
-                            "record",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( recordFlow,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "record",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         return thresholds;
     }
 
-    private Set<ThresholdOuter> getStageThresholds(
+    private Set<Threshold> getStageThresholds(
             boolean getCalculated,
             ThresholdConstants.Operator thresholdOperator,
             ThresholdConstants.ThresholdDataType dataType,
             UnitMapper desiredUnitMapper
     )
     {
-        Set<ThresholdOuter> thresholds = new HashSet<>();
+        Set<Threshold> thresholds = new HashSet<>();
 
         Double low = this.getLowStage( getCalculated, desiredUnitMapper );
         Double action = this.getActionStage( getCalculated, desiredUnitMapper );
         Double minor = this.getMinorStage( getCalculated, desiredUnitMapper );
         Double moderate = this.getModerateStage( getCalculated, desiredUnitMapper );
         Double major = this.getMajorStage( getCalculated, desiredUnitMapper );
-        Double bankful = this.getBankfulStage( getCalculated, desiredUnitMapper );
-        Double recordFlow = this.getRecordStage( getCalculated, desiredUnitMapper );
+        Double bankfull = this.getBankfulStage( getCalculated, desiredUnitMapper );
+        Double recordStage = this.getRecordStage( getCalculated, desiredUnitMapper );
 
         if ( low != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( low ),
-                            thresholdOperator,
-                            dataType,
-                            "low",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( low,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "low",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( action != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( action ),
-                            thresholdOperator,
-                            dataType,
-                            "action",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( action,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "action",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( minor != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( minor ),
-                            thresholdOperator,
-                            dataType,
-                            "minor",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( minor,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "minor",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( moderate != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( moderate ),
-                            thresholdOperator,
-                            dataType,
-                            "moderate",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( moderate,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "moderate",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         if ( major != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( major ),
-                            thresholdOperator,
-                            dataType,
-                            "major",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( major,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "major",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
-        if ( bankful != null )
+        if ( bankfull != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( bankful ),
-                            thresholdOperator,
-                            dataType,
-                            "bankfull",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( bankfull,
+                                                          thresholdOperator,
+                                                          dataType,
+                                                          "bankfull",
+                                                          desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
-        if ( recordFlow != null )
+        if ( recordStage != null )
         {
-            thresholds.add(
-                    ThresholdOuter.of(
-                            OneOrTwoDoubles.of( recordFlow ),
-                            thresholdOperator,
-                            dataType,
-                            "record",
-                            MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() )
-                    )
-            );
+            Threshold threshold = this.getValueThreshold( recordStage,
+                                                                       thresholdOperator,
+                                                                       dataType,
+                                                                       "record",
+                                                                       desiredUnitMapper.getDesiredMeasurementUnitName() );
+            thresholds.add( threshold );
         }
 
         return thresholds;
     }
+
+    /**
+     * Gets a stage unit converter.
+     * @param mapper the mapper
+     * @return the raw converter
+     */
 
     private DoubleUnaryOperator getStageUnitConversion( UnitMapper mapper )
     {
         return mapper.getUnitMapper( this.getStageMeasurementUnit().getUnit() );
     }
 
+    /**
+     * Gets a flow unit converter.
+     * @param mapper the mapper
+     * @return the raw converter
+     */
+
     private DoubleUnaryOperator getFlowUnitConversion( UnitMapper mapper )
     {
         return mapper.getUnitMapper( this.getFlowMeasurementUnit().getUnit() );
+    }
+
+    /**
+     * Creates a value threshold from the inputs.
+     * @param threshold the threshold
+     * @param thresholdOperator the threshold operator
+     * @param dataType the threshold data type
+     * @param name the threshold name
+     * @param unit the threshold unit
+     * @return the threshold
+     */
+
+    private Threshold getValueThreshold( double threshold,
+                                               ThresholdConstants.Operator thresholdOperator,
+                                               ThresholdConstants.ThresholdDataType dataType,
+                                               String name,
+                                               String unit )
+    {
+        return Threshold.newBuilder()
+                        .setLeftThresholdValue( DoubleValue.of( threshold ) )
+                        .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )
+                        .setDataType( Threshold.ThresholdDataType.valueOf( dataType.name() ) )
+                        .setName( name )
+                        .setThresholdValueUnits( unit )
+                        .build();
     }
 }

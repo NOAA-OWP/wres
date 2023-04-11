@@ -15,11 +15,11 @@ import wres.config.generated.*;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
+import wres.statistics.generated.Threshold;
 import wres.system.SystemSettings;
 
 import java.io.BufferedWriter;
@@ -1140,51 +1140,51 @@ public class GeneralWRDSReaderTest
     private static final WrdsLocation BLEO1 = GeneralWRDSReaderTest.createFeature( null, null, "BLEO1" );
 
     private static final List<WrdsLocation> DESIRED_FEATURES = List.of(
-                                                                        PTSA1,
-                                                                        MNTG1,
-                                                                        BLOF1,
-                                                                        CEDG1,
-                                                                        SMAF1,
-                                                                        CHAF1,
-                                                                        OKFG1,
-                                                                        TLPT2,
-                                                                        NUTF1,
-                                                                        CDRA1,
-                                                                        MUCG1,
-                                                                        PRSG1,
-                                                                        LSNO2,
-                                                                        HDGA4,
-                                                                        FAKE3,
-                                                                        CNMP1,
-                                                                        WLLM2,
-                                                                        RCJD2,
-                                                                        MUSM5,
-                                                                        DUMM5,
-                                                                        DMTM5,
-                                                                        PONS2,
-                                                                        MCKG1,
-                                                                        DSNG1,
-                                                                        BVAW2,
-                                                                        CNEO2,
-                                                                        CMKT2,
-                                                                        BDWN6,
-                                                                        CFBN6,
-                                                                        CCSA1,
-                                                                        LGNN8,
-                                                                        BCLN7,
-                                                                        KERV2,
-                                                                        ARDS1,
-                                                                        WINW2,
-                                                                        SRDN5,
-                                                                        MNTN1,
-                                                                        GNSW4,
-                                                                        JAIO1,
-                                                                        INCO1,
-                                                                        PRMO1,
-                                                                        PARO1,
-                                                                        BRCO1,
-                                                                        WRNO1,
-                                                                        BLEO1 );
+            PTSA1,
+            MNTG1,
+            BLOF1,
+            CEDG1,
+            SMAF1,
+            CHAF1,
+            OKFG1,
+            TLPT2,
+            NUTF1,
+            CDRA1,
+            MUCG1,
+            PRSG1,
+            LSNO2,
+            HDGA4,
+            FAKE3,
+            CNMP1,
+            WLLM2,
+            RCJD2,
+            MUSM5,
+            DUMM5,
+            DMTM5,
+            PONS2,
+            MCKG1,
+            DSNG1,
+            BVAW2,
+            CNEO2,
+            CMKT2,
+            BDWN6,
+            CFBN6,
+            CCSA1,
+            LGNN8,
+            BCLN7,
+            KERV2,
+            ARDS1,
+            WINW2,
+            SRDN5,
+            MNTN1,
+            GNSW4,
+            JAIO1,
+            INCO1,
+            PRMO1,
+            PARO1,
+            BRCO1,
+            WRNO1,
+            BLEO1 );
 
     private UnitMapper unitMapper;
     private static final MeasurementUnit units = MeasurementUnit.of( "CMS" );
@@ -1212,7 +1212,7 @@ public class GeneralWRDSReaderTest
         Set<String> desiredFeatures =
                 DESIRED_FEATURES.stream().map( WrdsLocation::nwsLid ).collect( Collectors.toSet() );
         Set<String> groupedLocations = GeneralWRDSReader.groupLocations( desiredFeatures );
-        Assert.assertEquals( 3, groupedLocations.size());
+        Assert.assertEquals( 3, groupedLocations.size() );
 
         StringJoiner firstGroupBuilder = new StringJoiner( "," );
         StringJoiner secondGroupBuilder = new StringJoiner( "," );
@@ -1290,27 +1290,26 @@ public class GeneralWRDSReaderTest
             Assert.assertEquals( "NRLDB", activeCheckedThresholds.getCalcFlowValues().getRatingCurve().getSource() );
 
             //Check the values with calculated flow included.
-            Map<WrdsLocation, Set<ThresholdOuter>> results =
+            Map<WrdsLocation, Set<Threshold>> results =
                     activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
                                                            Operator.GREATER,
                                                            ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
                                                            true,
                                                            this.unitMapper );
 
-            Set<ThresholdOuter> thresholds = results.values().iterator().next();
+            Set<Threshold> thresholds = results.values().iterator().next();
             Map<String, Double> expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "low", 0.0 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
@@ -1345,15 +1344,15 @@ public class GeneralWRDSReaderTest
             expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "low", 0.0 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals( expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
@@ -1370,11 +1369,11 @@ public class GeneralWRDSReaderTest
 
             //Check the values with calculated flow included.
             results = activeCheckedThresholds.getThresholds(
-                                                             WRDSThresholdType.FLOW,
-                                                             Operator.GREATER,
-                                                             ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                                             true,
-                                                             this.unitMapper );
+                    WRDSThresholdType.FLOW,
+                    Operator.GREATER,
+                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    true,
+                    this.unitMapper );
 
             thresholds = results.values().iterator().next();
             expectedThresholdValues = new HashMap<>();
@@ -1393,16 +1392,15 @@ public class GeneralWRDSReaderTest
             expectedThresholdValues.put( "NRLDB moderate", 102042.0 );
             expectedThresholdValues.put( "NRLDB major", 142870.0 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
@@ -1430,11 +1428,11 @@ public class GeneralWRDSReaderTest
 
             //Stage
             results = activeCheckedThresholds.getThresholds(
-                                                             WRDSThresholdType.STAGE,
-                                                             Operator.GREATER,
-                                                             ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                                             true,
-                                                             this.unitMapper );
+                    WRDSThresholdType.STAGE,
+                    Operator.GREATER,
+                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    true,
+                    this.unitMapper );
 
             thresholds = results.values().iterator().next();
             expectedThresholdValues = new HashMap<>();
@@ -1446,22 +1444,20 @@ public class GeneralWRDSReaderTest
             expectedThresholdValues.put( "major", 26.0 );
             expectedThresholdValues.put( "record", 28.6 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
             //Check the values with calculated flow included.
-            results = activeCheckedThresholds.getThresholds(
-                                                             WRDSThresholdType.FLOW,
+            results = activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
                                                              Operator.GREATER,
                                                              ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
                                                              true,
@@ -1479,42 +1475,40 @@ public class GeneralWRDSReaderTest
             expectedThresholdValues.put( "NRLDB moderate", 144077.0 );
             expectedThresholdValues.put( "NRLDB major", 216266.0 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
             //Check the values with raw flow only.
             results = activeCheckedThresholds.getThresholds(
-                                                             WRDSThresholdType.FLOW,
-                                                             Operator.GREATER,
-                                                             ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                                             false,
-                                                             this.unitMapper );
+                    WRDSThresholdType.FLOW,
+                    Operator.GREATER,
+                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    false,
+                    this.unitMapper );
 
             thresholds = results.values().iterator().next();
             expectedThresholdValues = new HashMap<>();
             expectedThresholdValues.put( "flood", 36900.0 );
             expectedThresholdValues.put( "record", 209000.0 );
 
-            for ( ThresholdOuter outerThreshold : thresholds )
+            for ( Threshold threshold : thresholds )
             {
-                Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                     outerThreshold.getDataType() );
-                Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-                Assert.assertTrue( expectedThresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+                Assert.assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                     threshold.getDataType() );
+                Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+                Assert.assertTrue( expectedThresholdValues.containsKey( threshold.getName() ) );
 
-                Assert.assertEquals(
-                                     expectedThresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                     outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+                Assert.assertEquals( expectedThresholdValues.get( threshold.getName() ),
+                                     threshold.getLeftThresholdValue().getValue(),
                                      EPSILON );
             }
 
@@ -1551,18 +1545,21 @@ public class GeneralWRDSReaderTest
                                                                                                         null,
                                                                                                         null,
                                                                                                         "NWS-NRLDB",
-                                                                                                        null, //null ratings provider.
+                                                                                                        null,
+                                                                                                        //null ratings provider.
                                                                                                         "stage",
                                                                                                         LeftOrRightOrBaseline.LEFT ),
                                                                            ThresholdOperator.GREATER_THAN );
 
-            Map<WrdsLocation, Set<ThresholdOuter>> readThresholds = GeneralWRDSReader.readThresholds( systemSettings,
-                                                                                                      normalThresholdConfig,
-                                                                                                      this.unitMapper,
-                                                                                                      FeatureDimension.NWS_LID,
-                                                                                                      DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::nwsLid )
-                                                                                                                      .collect( Collectors.toSet() ) );
+            Map<WrdsLocation, Set<Threshold>> readThresholds =
+                    GeneralWRDSReader.readThresholds( systemSettings,
+                                                      normalThresholdConfig,
+                                                      this.unitMapper,
+                                                      FeatureDimension.NWS_LID,
+                                                      DESIRED_FEATURES.stream()
+                                                                      .map( WrdsLocation::nwsLid )
+                                                                      .collect(
+                                                                              Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( PTSA1 ) );
             Assert.assertTrue( readThresholds.containsKey( MNTG1 ) );
@@ -1571,10 +1568,10 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( readThresholds.containsKey( CEDG1 ) );
 
             //The two low thresholds available are identical in both label and value, so only one is included.
-            Set<ThresholdOuter> ptsa1Thresholds = readThresholds.get( PTSA1 );
+            Set<Threshold> ptsa1Thresholds = readThresholds.get( PTSA1 );
             Assert.assertEquals( 1, ptsa1Thresholds.size() );
 
-            Set<ThresholdOuter> blof1Thresholds = readThresholds.get( BLOF1 );
+            Set<Threshold> blof1Thresholds = readThresholds.get( BLOF1 );
             Assert.assertEquals( 7, blof1Thresholds.size() );
 
             boolean hasLow = false;
@@ -1586,17 +1583,17 @@ public class GeneralWRDSReaderTest
             boolean hasRecord = false;
 
             List<String> properThresholds = List.of(
-                                                     "bankfull",
-                                                     "action",
-                                                     "flood",
-                                                     "minor",
-                                                     "moderate",
-                                                     "major",
-                                                     "record" );
+                    "bankfull",
+                    "action",
+                    "flood",
+                    "minor",
+                    "moderate",
+                    "major",
+                    "record" );
 
-            for ( ThresholdOuter thresholdOuter : blof1Thresholds )
+            for ( Threshold threshold : blof1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -1605,50 +1602,44 @@ public class GeneralWRDSReaderTest
                     case "bankfull" ->
                     {
                         hasBankfull = true;
-                        Assert.assertEquals(
-                                15.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 15.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
-                        Assert.assertEquals(
-                                13.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 13.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "flood", "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                17.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 17.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
-                        Assert.assertEquals(
-                                23.5,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 23.5,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
-                        Assert.assertEquals(
-                                26.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 26.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                28.6,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 28.6,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -1686,25 +1677,28 @@ public class GeneralWRDSReaderTest
             }
 
             ThresholdsConfig normalRecurrenceConfig = new ThresholdsConfig(
-                                                                            ThresholdType.VALUE,
-                                                                            ThresholdDataType.LEFT,
-                                                                            new ThresholdsConfig.Source( jsonPath.toUri(),
-                                                                                                         ThresholdFormat.WRDS,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         null,
-                                                                                                         null, //null ratings provider.
-                                                                                                         null,
-                                                                                                         LeftOrRightOrBaseline.LEFT ),
-                                                                            ThresholdOperator.GREATER_THAN );
+                    ThresholdType.VALUE,
+                    ThresholdDataType.LEFT,
+                    new ThresholdsConfig.Source( jsonPath.toUri(),
+                                                 ThresholdFormat.WRDS,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 //null ratings provider.
+                                                 null,
+                                                 LeftOrRightOrBaseline.LEFT ),
+                    ThresholdOperator.GREATER_THAN );
 
-            Map<WrdsLocation, Set<ThresholdOuter>> readThresholds = GeneralWRDSReader.readThresholds( systemSettings,
-                                                                                                      normalRecurrenceConfig,
-                                                                                                      this.unitMapper,
-                                                                                                      FeatureDimension.NWS_LID,
-                                                                                                      DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::nwsLid )
-                                                                                                                      .collect( Collectors.toSet() ) );
+            Map<WrdsLocation, Set<Threshold>> readThresholds =
+                    GeneralWRDSReader.readThresholds( systemSettings,
+                                                      normalRecurrenceConfig,
+                                                      this.unitMapper,
+                                                      FeatureDimension.NWS_LID,
+                                                      DESIRED_FEATURES.stream()
+                                                                      .map( WrdsLocation::nwsLid )
+                                                                      .collect(
+                                                                              Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( PTSA1 ) );
             Assert.assertTrue( readThresholds.containsKey( MNTG1 ) );
@@ -1713,7 +1707,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( readThresholds.containsKey( CEDG1 ) );
 
 
-            Set<ThresholdOuter> blof1Thresholds = readThresholds.get( BLOF1 );
+            Set<Threshold> blof1Thresholds = readThresholds.get( BLOF1 );
             Assert.assertEquals( 6, blof1Thresholds.size() );
 
             boolean has1_5 = false;
@@ -1724,16 +1718,16 @@ public class GeneralWRDSReaderTest
             boolean has10_0 = false;
 
             List<String> properThresholds = List.of(
-                                                     "year_1_5",
-                                                     "year_2_0",
-                                                     "year_3_0",
-                                                     "year_4_0",
-                                                     "year_5_0",
-                                                     "year_10_0" );
+                    "year_1_5",
+                    "year_2_0",
+                    "year_3_0",
+                    "year_4_0",
+                    "year_5_0",
+                    "year_10_0" );
 
-            for ( ThresholdOuter thresholdOuter : blof1Thresholds )
+            for ( Threshold threshold : blof1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -1742,50 +1736,44 @@ public class GeneralWRDSReaderTest
                     case "year_1_5" ->
                     {
                         has1_5 = true;
-                        Assert.assertEquals(
-                                58864.26,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 58864.26,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "year_2_0" ->
                     {
                         has2_0 = true;
-                        Assert.assertEquals(
-                                87362.48,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 87362.48,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "year_3_0" ->
                     {
                         has3_0 = true;
-                        Assert.assertEquals(
-                                109539.05,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 109539.05,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "year_4_0" ->
                     {
                         has4_0 = true;
-                        Assert.assertEquals(
-                                128454.64,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 128454.64,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "year_5_0" ->
                     {
                         has5_0 = true;
-                        Assert.assertEquals(
-                                176406.6,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 176406.6,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "year_10_0" ->
                     {
                         has10_0 = true;
-                        Assert.assertEquals(
-                                216831.58000000002,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 216831.58000000002,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -1822,25 +1810,27 @@ public class GeneralWRDSReaderTest
             }
 
             ThresholdsConfig oldNormalThresholdConfig = new ThresholdsConfig(
-                                                                              ThresholdType.VALUE,
-                                                                              ThresholdDataType.LEFT,
-                                                                              new ThresholdsConfig.Source( jsonPath.toUri(),
-                                                                                                           ThresholdFormat.WRDS,
-                                                                                                           null,
-                                                                                                           null,
-                                                                                                           "NWS-NRLDB",
-                                                                                                           null,
-                                                                                                           "stage",
-                                                                                                           LeftOrRightOrBaseline.LEFT ),
-                                                                              ThresholdOperator.GREATER_THAN );
+                    ThresholdType.VALUE,
+                    ThresholdDataType.LEFT,
+                    new ThresholdsConfig.Source( jsonPath.toUri(),
+                                                 ThresholdFormat.WRDS,
+                                                 null,
+                                                 null,
+                                                 "NWS-NRLDB",
+                                                 null,
+                                                 "stage",
+                                                 LeftOrRightOrBaseline.LEFT ),
+                    ThresholdOperator.GREATER_THAN );
 
-            Map<WrdsLocation, Set<ThresholdOuter>> readThresholds = GeneralWRDSReader.readThresholds( systemSettings,
-                                                                                                      oldNormalThresholdConfig,
-                                                                                                      this.unitMapper,
-                                                                                                      FeatureDimension.NWS_LID,
-                                                                                                      DESIRED_FEATURES.stream()
-                                                                                                                      .map( WrdsLocation::nwsLid )
-                                                                                                                      .collect( Collectors.toSet() ) );
+            Map<WrdsLocation, Set<Threshold>> readThresholds =
+                    GeneralWRDSReader.readThresholds( systemSettings,
+                                                      oldNormalThresholdConfig,
+                                                      this.unitMapper,
+                                                      FeatureDimension.NWS_LID,
+                                                      DESIRED_FEATURES.stream()
+                                                                      .map( WrdsLocation::nwsLid )
+                                                                      .collect(
+                                                                              Collectors.toSet() ) );
 
             Assert.assertTrue( readThresholds.containsKey( MNTG1 ) );
             Assert.assertTrue( readThresholds.containsKey( BLOF1 ) );
@@ -1848,7 +1838,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( readThresholds.containsKey( OKFG1 ) );
             Assert.assertTrue( readThresholds.containsKey( TLPT2 ) );
 
-            Set<ThresholdOuter> mntg1Thresholds = readThresholds.get( MNTG1 );
+            Set<Threshold> mntg1Thresholds = readThresholds.get( MNTG1 );
 
             Assert.assertEquals( 6, mntg1Thresholds.size() );
 
@@ -1860,16 +1850,16 @@ public class GeneralWRDSReaderTest
             boolean hasRecord = false;
 
             List<String> properThresholds = List.of(
-                                                     "bankfull",
-                                                     "action",
-                                                     "minor",
-                                                     "moderate",
-                                                     "major",
-                                                     "record" );
+                    "bankfull",
+                    "action",
+                    "minor",
+                    "moderate",
+                    "major",
+                    "record" );
 
-            for ( ThresholdOuter thresholdOuter : mntg1Thresholds )
+            for ( Threshold threshold : mntg1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -1878,50 +1868,44 @@ public class GeneralWRDSReaderTest
                     case "bankfull" ->
                     {
                         hasBankfull = true;
-                        Assert.assertEquals(
-                                11.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 11.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
-                        Assert.assertEquals(
-                                11.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 11.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                20.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 20.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
-                        Assert.assertEquals(
-                                28.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 28.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
-                        Assert.assertEquals(
-                                31.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 31.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                34.11,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 34.11,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -1933,7 +1917,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( hasMajor );
             Assert.assertTrue( hasRecord );
 
-            Set<ThresholdOuter> blof1Thresholds = readThresholds.get( BLOF1 );
+            Set<Threshold> blof1Thresholds = readThresholds.get( BLOF1 );
 
             Assert.assertEquals( 6, blof1Thresholds.size() );
 
@@ -1945,16 +1929,16 @@ public class GeneralWRDSReaderTest
             hasRecord = false;
 
             properThresholds = List.of(
-                                        "bankfull",
-                                        "action",
-                                        "minor",
-                                        "moderate",
-                                        "major",
-                                        "record" );
+                    "bankfull",
+                    "action",
+                    "minor",
+                    "moderate",
+                    "major",
+                    "record" );
 
-            for ( ThresholdOuter thresholdOuter : blof1Thresholds )
+            for ( Threshold threshold : blof1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -1963,50 +1947,44 @@ public class GeneralWRDSReaderTest
                     case "bankfull" ->
                     {
                         hasBankfull = true;
-                        Assert.assertEquals(
-                                15.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 15.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
-                        Assert.assertEquals(
-                                13.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 13.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                17.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 17.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
-                        Assert.assertEquals(
-                                23.5,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 23.5,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
-                        Assert.assertEquals(
-                                26.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 26.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                28.6,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 28.6,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -2018,7 +1996,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( hasMajor );
             Assert.assertTrue( hasRecord );
 
-            Set<ThresholdOuter> smaf1Thresholds = readThresholds.get( SMAF1 );
+            Set<Threshold> smaf1Thresholds = readThresholds.get( SMAF1 );
 
             Assert.assertEquals( 5, smaf1Thresholds.size() );
 
@@ -2035,9 +2013,9 @@ public class GeneralWRDSReaderTest
                                         "major",
                                         "record" );
 
-            for ( ThresholdOuter thresholdOuter : smaf1Thresholds )
+            for ( Threshold threshold : smaf1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -2046,42 +2024,37 @@ public class GeneralWRDSReaderTest
                     case "action" ->
                     {
                         hasAction = true;
-                        Assert.assertEquals(
-                                8.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 8.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                9.5,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 9.5,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
-                        Assert.assertEquals(
-                                11.5,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 11.5,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
-                        Assert.assertEquals(
-                                13.5,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 13.5,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                15.36,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 15.36,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -2092,7 +2065,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( hasMajor );
             Assert.assertTrue( hasRecord );
 
-            Set<ThresholdOuter> okfg1Thresholds = readThresholds.get( OKFG1 );
+            Set<Threshold> okfg1Thresholds = readThresholds.get( OKFG1 );
 
             Assert.assertEquals( 4, okfg1Thresholds.size() );
 
@@ -2101,14 +2074,15 @@ public class GeneralWRDSReaderTest
             hasRecord = false;
 
             properThresholds = List.of(
-                                        "bankfull",
-                                        "action",
-                                        "minor",
-                                        "record" );
+                    "bankfull",
+                    "action",
+                    "minor",
+                    "record" );
 
-            for ( ThresholdOuter thresholdOuter : okfg1Thresholds )
+            for ( Threshold threshold : okfg1Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName()
+                                                .toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -2117,34 +2091,31 @@ public class GeneralWRDSReaderTest
                     case "bankfull" ->
                     {
                         hasBankfull = true;
-                        Assert.assertEquals(
-                                0.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 0.0,
+                                             threshold.getLeftThresholdValue()
+                                                      .getValue(),
+                                             EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
-                        Assert.assertEquals(
-                                18.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 18.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                23.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 23.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                40.1,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 40.1,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }
@@ -2154,7 +2125,7 @@ public class GeneralWRDSReaderTest
             Assert.assertTrue( hasMinor );
             Assert.assertTrue( hasRecord );
 
-            Set<ThresholdOuter> tlpt2Thresholds = readThresholds.get( TLPT2 );
+            Set<Threshold> tlpt2Thresholds = readThresholds.get( TLPT2 );
 
             Assert.assertEquals( 3, tlpt2Thresholds.size() );
 
@@ -2163,13 +2134,13 @@ public class GeneralWRDSReaderTest
             hasRecord = false;
 
             properThresholds = List.of(
-                                        "bankfull",
-                                        "minor",
-                                        "record" );
+                    "bankfull",
+                    "minor",
+                    "record" );
 
-            for ( ThresholdOuter thresholdOuter : tlpt2Thresholds )
+            for ( Threshold threshold : tlpt2Thresholds )
             {
-                String thresholdName = thresholdOuter.getThreshold().getName().toLowerCase();
+                String thresholdName = threshold.getName().toLowerCase();
 
                 Assert.assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -2178,26 +2149,23 @@ public class GeneralWRDSReaderTest
                     case "bankfull" ->
                     {
                         hasBankfull = true;
-                        Assert.assertEquals(
-                                15.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 15.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "minor" ->
                     {
                         hasMinor = true;
-                        Assert.assertEquals(
-                                15.0,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 15.0,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
-                        Assert.assertEquals(
-                                16.02,
-                                thresholdOuter.getThreshold().getLeftThresholdValue().getValue(),
-                                EPSILON );
+                        Assert.assertEquals( 16.02,
+                                             threshold.getLeftThresholdValue().getValue(),
+                                             EPSILON );
                     }
                 }
             }

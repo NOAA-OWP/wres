@@ -1,7 +1,9 @@
 package wres.io.thresholds.wrds.v2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,32 +12,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.NoThresholdsFoundException;
+import wres.statistics.generated.Threshold;
 
 /**
  * Tests the {@link ThresholdExtractor}.  This has been modified to include a test that was
  * inappropriately located within another test class.  So, if it looks like a hodgepodge, that's
  * because it reflects two tests in two different files combined into one.  I have not refactored
  * it further.
- * 
  * @author Hank Herr
  * @author James Brown
  */
 
 class ThresholdExtractorTest
 {
-    
     private static final double EPSILON = 0.00001;
 
     private static WrdsLocation createFeature( final String featureId, final String usgsSiteCode, final String lid )
@@ -118,7 +116,7 @@ class ThresholdExtractorTest
 
         this.extractor = new ThresholdExtractor( thresholdResponse );
 
-        
+
         this.unitMapper = Mockito.mock( UnitMapper.class );
         this.oldResponse = this.createOldThresholdResponse();
         Mockito.when( this.unitMapper.getUnitMapper( "FT" ) ).thenReturn( in -> in );
@@ -142,11 +140,11 @@ class ThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        Map<WrdsLocation, Set<ThresholdOuter>> extractedFlowThresholds = extractor.readFlow()
-                                                                                  .from( "NWS-NRLDB" )
-                                                                                  .ratingFrom( "NRLDB" )
-                                                                                  .convertTo( mapper )
-                                                                                  .extract();
+        Map<WrdsLocation, Set<Threshold>> extractedFlowThresholds = extractor.readFlow()
+                                                                             .from( "NWS-NRLDB" )
+                                                                             .ratingFrom( "NRLDB" )
+                                                                             .convertTo( mapper )
+                                                                             .extract();
 
         // Yes, this is a relatively weak assertion. Other tests could be added with stronger assertions or this
         // test could be replaced.
@@ -157,11 +155,11 @@ class ThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "FT" );
 
-        Map<WrdsLocation, Set<ThresholdOuter>> extractedStageThresholds = extractor.readStage()
-                                                                                   .from( "NWS-NRLDB" )
-                                                                                   .ratingFrom( "NRLDB" )
-                                                                                   .convertTo( mapper )
-                                                                                   .extract();
+        Map<WrdsLocation, Set<Threshold>> extractedStageThresholds = extractor.readStage()
+                                                                              .from( "NWS-NRLDB" )
+                                                                              .ratingFrom( "NRLDB" )
+                                                                              .convertTo( mapper )
+                                                                              .extract();
 
         // Yes, this is a relatively weak assertion. Other tests could be added with stronger assertions or this
         // test could be replaced.
@@ -179,7 +177,7 @@ class ThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class,
+        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                                           () -> this.extractor.readFlow()
                                                                               .from( "NWS-NRLDB" )
                                                                               .ratingFrom( "FooBar" )
@@ -205,7 +203,7 @@ class ThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class,
+        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                                           () -> this.extractor.readFlow()
                                                                               .from( "Baz" )
                                                                               .ratingFrom( "NRLDB" )
@@ -296,19 +294,19 @@ class ThresholdExtractorTest
 
 
     @Test
-    public void testExtractOld()
+    void testExtractOld()
     {
         ThresholdExtractor extractor =
                 new ThresholdExtractor( oldResponse ).readStage()
-                                                               .convertTo( unitMapper )
-                                                               .from( "NWS-NRLDB" )
-                                                               .ratingFrom( null )
-                                                               .operatesBy( ThresholdConstants.Operator.GREATER )
-                                                               .onSide( ThresholdConstants.ThresholdDataType.LEFT );
-        Map<WrdsLocation, Set<ThresholdOuter>> normalExtraction = extractor.extract();
-        
-        Assert.assertFalse( normalExtraction.containsKey( PTSA1 ) );
-        Assert.assertTrue( normalExtraction.containsKey( MNTG1 ) );
+                                                     .convertTo( unitMapper )
+                                                     .from( "NWS-NRLDB" )
+                                                     .ratingFrom( null )
+                                                     .operatesBy( ThresholdConstants.Operator.GREATER )
+                                                     .onSide( ThresholdConstants.ThresholdDataType.LEFT );
+        Map<WrdsLocation, Set<Threshold>> normalExtraction = extractor.extract();
+
+        assertFalse( normalExtraction.containsKey( PTSA1 ) );
+        assertTrue( normalExtraction.containsKey( MNTG1 ) );
 
         Map<String, Double> thresholdValues = new HashMap<>();
         thresholdValues.put( "record", 34.11 );
@@ -318,20 +316,20 @@ class ThresholdExtractorTest
         thresholdValues.put( "minor", 20.0 );
         thresholdValues.put( "moderate", 28.0 );
 
-        Set<ThresholdOuter> normalOuterThresholds = normalExtraction.get( MNTG1 );
+        Set<Threshold> normalOuterThresholds = normalExtraction.get( MNTG1 );
 
-        Assert.assertEquals( 6, normalOuterThresholds.size() );
+        assertEquals( 6, normalOuterThresholds.size() );
 
-        for ( ThresholdOuter outerThreshold : normalOuterThresholds )
+        for ( Threshold threshold : normalOuterThresholds )
         {
-            Assert.assertEquals( outerThreshold.getOperator(), Operator.GREATER );
-            Assert.assertEquals( outerThreshold.getDataType(), ThresholdConstants.ThresholdDataType.LEFT );
+            assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            assertEquals(
+                    thresholdValues.get( threshold.getName() ),
+                    threshold.getLeftThresholdValue().getValue(),
+                    EPSILON );
         }
 
     }

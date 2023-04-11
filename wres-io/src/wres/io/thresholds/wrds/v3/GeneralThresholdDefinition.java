@@ -2,14 +2,14 @@ package wres.io.thresholds.wrds.v3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.protobuf.DoubleValue;
 
-import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
+import wres.statistics.generated.Threshold;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -198,14 +198,14 @@ public class GeneralThresholdDefinition implements Serializable
      * @return a map of thresholds by location.  This is a singleton map: only one location will be
      * returned at most.  
      */
-    public Map<WrdsLocation, Set<ThresholdOuter>> getThresholds( WRDSThresholdType thresholdType,
-                                                                 ThresholdConstants.Operator thresholdOperator,
-                                                                 ThresholdConstants.ThresholdDataType dataType,
-                                                                 boolean getCalculated,
-                                                                 UnitMapper desiredUnitMapper )
+    public Map<WrdsLocation, Set<Threshold>> getThresholds( WRDSThresholdType thresholdType,
+                                                            ThresholdConstants.Operator thresholdOperator,
+                                                            ThresholdConstants.ThresholdDataType dataType,
+                                                            boolean getCalculated,
+                                                            UnitMapper desiredUnitMapper )
     {
         WrdsLocation location = this.getLocation();
-        Map<String, ThresholdOuter> thresholdMap = new HashMap<>();
+        Map<String, Threshold> thresholdMap = new HashMap<>();
 
         //If either of these is null, then it is not used. 
         //Be sure to check for null before attempting to use.
@@ -231,7 +231,7 @@ public class GeneralThresholdDefinition implements Serializable
         //based on provided threshold type.
         else if ( thresholdType.equals( WRDSThresholdType.STAGE ) )
         {
-            if ( getStageValues() != null )
+            if ( this.getStageValues() != null )
             {
                 originalThresholds = getStageValues().getThresholdValues();
                 originalUnitConversionOperator =
@@ -241,7 +241,7 @@ public class GeneralThresholdDefinition implements Serializable
         }
         else
         {
-            if ( getFlowValues() != null )
+            if ( this.getFlowValues() != null )
             {
                 originalThresholds = getFlowValues().getThresholdValues();
                 originalUnitConversionOperator =
@@ -251,7 +251,8 @@ public class GeneralThresholdDefinition implements Serializable
 
             if ( getCalculated && this.getCalcFlowValues() != null )
             {
-                calculatedThresholds = getCalcFlowValues().getThresholdValues();
+                calculatedThresholds = this.getCalcFlowValues()
+                                           .getThresholdValues();
                 calculatedUnitConversionOperator =
                         desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
                                                                                  .getCalcFlowUnits() )
@@ -259,6 +260,41 @@ public class GeneralThresholdDefinition implements Serializable
             }
         }
 
+        // First, the original thresholds go into the map.
+        this.addOriginalThresholds( originalThresholds,
+                                    originalUnitConversionOperator,
+                                    thresholdOperator,
+                                    dataType,
+                                    desiredUnitMapper,
+                                    thresholdMap );
+
+        // Then we overwrite the original with calculated.
+        this.addCalculatedThresholds( calculatedThresholds,
+                                      calculatedUnitConversionOperator,
+                                      thresholdOperator,
+                                      dataType,
+                                      desiredUnitMapper,
+                                      thresholdMap );
+
+        return Map.of( location, new HashSet<>( thresholdMap.values() ) );
+    }
+
+    /**
+     * Adds the original thresholds to the prescribed map.
+     * @param originalThresholds the original thresholds
+     * @param originalUnitConversionOperator the original threshold unit conversion operator
+     * @param thresholdOperator the threshold operator
+     * @param dataType the data type
+     * @param desiredUnitMapper the desired unit mapper
+     * @param thresholdMap the threshold map to mutate
+     */
+    private void addOriginalThresholds( Map<String, Double> originalThresholds,
+                                        DoubleUnaryOperator originalUnitConversionOperator,
+                                        ThresholdConstants.Operator thresholdOperator,
+                                        ThresholdConstants.ThresholdDataType dataType,
+                                        UnitMapper desiredUnitMapper,
+                                        Map<String, Threshold> thresholdMap )
+    {
         //First, the original thresholds go into the map.
         if ( originalThresholds != null )
         {
@@ -267,18 +303,33 @@ public class GeneralThresholdDefinition implements Serializable
                 if ( threshold.getValue() != null )
                 {
                     double value = originalUnitConversionOperator.applyAsDouble( threshold.getValue() );
-                    thresholdMap.put( threshold.getKey(),
-                                      ThresholdOuter.of(
-                                              OneOrTwoDoubles.of( value ),
-                                              thresholdOperator,
-                                              dataType,
-                                              threshold.getKey(),
-                                              MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
+                    Threshold next = this.getValueThreshold( value,
+                                                             thresholdOperator,
+                                                             dataType,
+                                                             threshold.getKey(),
+                                                             desiredUnitMapper.getDesiredMeasurementUnitName() );
+                    thresholdMap.put( threshold.getKey(), next );
                 }
             }
         }
+    }
 
-        //Then we overwrite the original with calculated.
+    /**
+     * Adds the original thresholds to the prescribed map.
+     * @param calculatedThresholds the calculated thresholds
+     * @param calculatedUnitConversionOperator the calculated threshold unit conversion operator
+     * @param thresholdOperator the threshold operator
+     * @param dataType the data type
+     * @param desiredUnitMapper the desired unit mapper
+     * @param thresholdMap the threshold map to mutate
+     */
+    private void addCalculatedThresholds( Map<String, Double> calculatedThresholds,
+                                          DoubleUnaryOperator calculatedUnitConversionOperator,
+                                          ThresholdConstants.Operator thresholdOperator,
+                                          ThresholdConstants.ThresholdDataType dataType,
+                                          UnitMapper desiredUnitMapper,
+                                          Map<String, Threshold> thresholdMap )
+    {
         if ( calculatedThresholds != null )
         {
             for ( Entry<String, Double> threshold : calculatedThresholds.entrySet() )
@@ -287,20 +338,45 @@ public class GeneralThresholdDefinition implements Serializable
                 {
                     //Build the label.  It will be the threshold key unless that's already used.
                     //If it is already used, then the rating curve source will be added.
-                    String label =
-                            getCalcFlowValues().getRatingCurve().getSource() + " " + threshold.getKey();
+                    String label = this.getCalcFlowValues()
+                                       .getRatingCurve()
+                                       .getSource()
+                                   + " "
+                                   + threshold.getKey();
                     double value = calculatedUnitConversionOperator.applyAsDouble( threshold.getValue() );
-                    thresholdMap.put( label,
-                                      ThresholdOuter.of(
-                                              OneOrTwoDoubles.of( value ),
-                                              thresholdOperator,
-                                              dataType,
-                                              label,
-                                              MeasurementUnit.of( desiredUnitMapper.getDesiredMeasurementUnitName() ) ) );
+                    Threshold next = this.getValueThreshold( value,
+                                                             thresholdOperator,
+                                                             dataType,
+                                                             label,
+                                                             desiredUnitMapper.getDesiredMeasurementUnitName() );
+                    thresholdMap.put( label, next );
                 }
             }
         }
+    }
 
-        return Map.of( location, new HashSet<>( thresholdMap.values() ) );
+    /**
+     * Creates a value threshold from the inputs.
+     * @param threshold the threshold
+     * @param thresholdOperator the threshold operator
+     * @param dataType the threshold data type
+     * @param name the threshold name
+     * @param unit the threshold unit
+     * @return the threshold
+     */
+
+    private Threshold getValueThreshold( double threshold,
+                                         ThresholdConstants.Operator thresholdOperator,
+                                         ThresholdConstants.ThresholdDataType dataType,
+                                         String name,
+                                         String unit )
+    {
+        return Threshold.newBuilder()
+                        .setLeftThresholdValue( DoubleValue.of( threshold ) )
+                        .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )
+                        .setDataType( Threshold.ThresholdDataType.valueOf( dataType.name() ) )
+                        .setName( name )
+                        .setThresholdValueUnits( unit )
+                        .build();
     }
 }

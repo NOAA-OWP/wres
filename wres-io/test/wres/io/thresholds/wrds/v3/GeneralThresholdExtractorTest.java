@@ -1,7 +1,9 @@
 package wres.io.thresholds.wrds.v3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,26 +12,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.NoThresholdsFoundException;
 import wres.io.thresholds.wrds.v2.ThresholdExtractor;
+import wres.statistics.generated.Threshold;
 
 /**
  * Tests the {@link ThresholdExtractor}.  This has been modified to include a test that was
  * inappropriately located within another test class.  So, if it looks like a hodgepodge, that's
  * because it reflects two tests in two different files combined into one.  I have not refactored
- * it further.
- * 
+ * it further. TODO: reduce the number of assertions - assert against complete thresholds, not individual parts
  * @author Hank Herr
  * @author James Brown
  */
@@ -396,12 +395,12 @@ class GeneralThresholdExtractorTest
         //Put together the response.
         GeneralThresholdResponse response = new GeneralThresholdResponse();
         response.setThresholds(
-                                List.of(
-                                         steakDef,
-                                         grossSteakDef,
-                                         flatIronSteakDef,
-                                         bakedPotatoDef,
-                                         grossBakedPotatoDef ) );
+                List.of(
+                        steakDef,
+                        grossSteakDef,
+                        flatIronSteakDef,
+                        bakedPotatoDef,
+                        grossBakedPotatoDef ) );
         return response;
     }
 
@@ -435,7 +434,7 @@ class GeneralThresholdExtractorTest
         aThresholdMetadata.setCalcFlowUnits( "CFS" );
         aThresholdMetadata.setStageUnits( "FT" );
         aThreshold.setMetadata( aThresholdMetadata );
-        
+
         //Stage thresholds
         GeneralThresholdValues stageValues = new GeneralThresholdValues();
         stageValues.add( "low", 1.5d );
@@ -446,7 +445,7 @@ class GeneralThresholdExtractorTest
         stageValues.add( "major", 43.0d );
         stageValues.add( "record", 50.83d );
         aThreshold.setStageValues( stageValues );
-        
+
         //Calculated flow thresholds with rating curve info.
         GeneralThresholdValues calcFlowValues = new GeneralThresholdValues();
         calcFlowValues.add( "low", 0.0d );
@@ -465,11 +464,9 @@ class GeneralThresholdExtractorTest
         thresholds.add( aThreshold );
 
         thresholdResponse.setThresholds( thresholds );
-        Map<String, Double> metrics = new HashMap<>();
-        metrics.put( "threshold_count", 1.0 );
 
         this.extractor = new GeneralThresholdExtractor( thresholdResponse );
-        
+
         //For the tests that used to be external to this test.
         this.unitMapper = Mockito.mock( UnitMapper.class );
         this.normalResponse = this.createNormalThresholdResponse();
@@ -495,11 +492,11 @@ class GeneralThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        Map<WrdsLocation, Set<ThresholdOuter>> extractedFlowThresholds = extractor.readFlow()
-                                                                                  .from( "NWS-NRLDB" )
-                                                                                  .ratingFrom( "NRLDB" )
-                                                                                  .convertTo( mapper )
-                                                                                  .extract();
+        Map<WrdsLocation, Set<Threshold>> extractedFlowThresholds = extractor.readFlow()
+                                                                             .from( "NWS-NRLDB" )
+                                                                             .ratingFrom( "NRLDB" )
+                                                                             .convertTo( mapper )
+                                                                             .extract();
 
         // Yes, this is a relatively weak assertion. Other tests could be added with stronger assertions or this
         // test could be replaced.
@@ -510,16 +507,19 @@ class GeneralThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "FT" );
 
-        Map<WrdsLocation, Set<ThresholdOuter>> extractedStageThresholds = extractor.readStage()
-                                                                                   .from( "NWS-NRLDB" )
-                                                                                   .ratingFrom( "NRLDB" )
-                                                                                   .convertTo( mapper )
-                                                                                   .extract();
+        Map<WrdsLocation, Set<Threshold>> extractedStageThresholds = extractor.readStage()
+                                                                              .from( "NWS-NRLDB" )
+                                                                              .ratingFrom( "NRLDB" )
+                                                                              .convertTo( mapper )
+                                                                              .extract();
 
         // Yes, this is a relatively weak assertion. Other tests could be added with stronger assertions or this
         // test could be replaced.
         assertEquals( 1, extractedStageThresholds.size() );
-        assertEquals( 7, extractedStageThresholds.get( extractedStageThresholds.keySet().iterator().next() ).size() );
+        assertEquals( 7, extractedStageThresholds.get( extractedStageThresholds.keySet()
+                                                                               .iterator()
+                                                                               .next() )
+                                                 .size() );
     }
 
     @Test
@@ -532,7 +532,7 @@ class GeneralThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class,
+        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                                           () -> this.extractor.readFlow()
                                                                               .from( "NWS-NRLDB" )
                                                                               .ratingFrom( "FooBar" )
@@ -558,7 +558,7 @@ class GeneralThresholdExtractorTest
         Mockito.when( mapper.getDesiredMeasurementUnitName() )
                .thenReturn( "CFS" );
 
-        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class,
+        NoThresholdsFoundException actual = assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                                           () -> this.extractor.readFlow()
                                                                               .from( "Baz" )
                                                                               .ratingFrom( "NRLDB" )
@@ -577,7 +577,7 @@ class GeneralThresholdExtractorTest
      * This test used to be badly located in another file.
      */
     @Test
-    public void testExtract()
+    void testExtract()
     {
         GeneralThresholdExtractor extractor =
                 new GeneralThresholdExtractor( normalResponse ).readStage()
@@ -586,10 +586,10 @@ class GeneralThresholdExtractorTest
                                                                .ratingFrom( null )
                                                                .operatesBy( ThresholdConstants.Operator.GREATER )
                                                                .onSide( ThresholdConstants.ThresholdDataType.LEFT );
-        Map<WrdsLocation, Set<ThresholdOuter>> normalExtraction = extractor.extract();
+        Map<WrdsLocation, Set<Threshold>> normalExtraction = extractor.extract();
 
-        Assert.assertFalse( normalExtraction.containsKey( PTSA1 ) );
-        Assert.assertTrue( normalExtraction.containsKey( MNTG1 ) );
+        assertFalse( normalExtraction.containsKey( PTSA1 ) );
+        assertTrue( normalExtraction.containsKey( MNTG1 ) );
 
         Map<String, Double> thresholdValues = new HashMap<>();
         thresholdValues.put( "record", 34.11 );
@@ -599,38 +599,36 @@ class GeneralThresholdExtractorTest
         thresholdValues.put( "minor", 20.0 );
         thresholdValues.put( "moderate", 28.0 );
 
-        Set<ThresholdOuter> normalOuterThresholds = normalExtraction.get( MNTG1 );
+        Set<Threshold> normalOuterThresholds = normalExtraction.get( MNTG1 );
 
-        Assert.assertEquals( 6, normalOuterThresholds.size() );
+        assertEquals( 6, normalOuterThresholds.size() );
 
-        for ( ThresholdOuter outerThreshold : normalOuterThresholds )
+        for ( Threshold threshold : normalOuterThresholds )
         {
-            Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT, outerThreshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            assertEquals( thresholdValues.get( threshold.getName() ),
+                          threshold.getLeftThresholdValue().getValue(),
+                          EPSILON );
         }
 
 
         //This a test of flow thresholds.  See the funThresholdConfig for more information.
-
         extractor = new GeneralThresholdExtractor( funResponse ).readFlow()
                                                                 .convertTo( unitMapper )
                                                                 .from( "FlavorTown" )
                                                                 .ratingFrom( "DonkeySauce" )
                                                                 .operatesBy( ThresholdConstants.Operator.GREATER )
                                                                 .onSide( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT );
-        Map<WrdsLocation, Set<ThresholdOuter>> funExtraction = extractor.extract();
+        Map<WrdsLocation, Set<Threshold>> funExtraction = extractor.extract();
 
-        Assert.assertTrue( funExtraction.containsKey( STEAK ) );
-        Assert.assertTrue( funExtraction.containsKey( BAKED_POTATO ) );
+        assertTrue( funExtraction.containsKey( STEAK ) );
+        assertTrue( funExtraction.containsKey( BAKED_POTATO ) );
 
-        Assert.assertEquals( 14, funExtraction.get( STEAK ).size() );
-        Assert.assertEquals( 11, funExtraction.get( BAKED_POTATO ).size() );
+        assertEquals( 14, funExtraction.get( STEAK ).size() );
+        assertEquals( 11, funExtraction.get( BAKED_POTATO ).size() );
 
         thresholdValues.put( "bankfull", 14.586 );
         thresholdValues.put( "low", 5.7 );
@@ -648,17 +646,16 @@ class GeneralThresholdExtractorTest
         thresholdValues.put( "DonkeySauce major", -90144.2 );
         thresholdValues.put( "DonkeySauce record", -4846844.5484 );
 
-        for ( ThresholdOuter outerThreshold : funExtraction.get( STEAK ) )
+        for ( Threshold threshold : funExtraction.get( STEAK ) )
         {
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                 outerThreshold.getDataType() );
-            Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+            assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                          threshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertEquals( thresholdValues.get( threshold.getName() ),
+                          threshold.getLeftThresholdValue().getValue(),
+                          EPSILON );
         }
 
         thresholdValues = new HashMap<>();
@@ -676,17 +673,15 @@ class GeneralThresholdExtractorTest
         thresholdValues.put( "DonkeySauce major", 901.2 );
         thresholdValues.put( "DonkeySauce record", 6844.84 );
 
-        for ( ThresholdOuter outerThreshold : funExtraction.get( BAKED_POTATO ) )
+        for ( Threshold threshold : funExtraction.get( BAKED_POTATO ) )
         {
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
-                                 outerThreshold.getDataType() );
-            Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
+            assertEquals( Threshold.ThresholdDataType.LEFT_AND_ANY_RIGHT, threshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertEquals( thresholdValues.get( threshold.getName() ),
+                          threshold.getLeftThresholdValue().getValue(),
+                          EPSILON );
         }
 
         //This is a test of stage thresholds; see alternativeThresholdConfig.
@@ -696,10 +691,10 @@ class GeneralThresholdExtractorTest
                                                                    .ratingFrom( null )
                                                                    .operatesBy( ThresholdConstants.Operator.LESS )
                                                                    .onSide( ThresholdConstants.ThresholdDataType.LEFT );
-        Map<WrdsLocation, Set<ThresholdOuter>> alternativeNormalExtraction = extractor.extract();
+        Map<WrdsLocation, Set<Threshold>> alternativeNormalExtraction = extractor.extract();
 
-        Assert.assertTrue( alternativeNormalExtraction.containsKey( PTSA1 ) );
-        Assert.assertTrue( alternativeNormalExtraction.containsKey( MNTG1 ) );
+        assertTrue( alternativeNormalExtraction.containsKey( PTSA1 ) );
+        assertTrue( alternativeNormalExtraction.containsKey( MNTG1 ) );
 
         thresholdValues = new HashMap<>();
         thresholdValues.put( "action", 11.0 );
@@ -707,21 +702,21 @@ class GeneralThresholdExtractorTest
         thresholdValues.put( "minor", 20.0 );
         thresholdValues.put( "moderate", 28.0 );
 
-        Assert.assertEquals( 4, alternativeNormalExtraction.get( MNTG1 ).size() );
+        assertEquals( 4, alternativeNormalExtraction.get( MNTG1 ).size() );
 
-        for ( ThresholdOuter outerThreshold : alternativeNormalExtraction.get( MNTG1 ) )
+        for ( Threshold threshold : alternativeNormalExtraction.get( MNTG1 ) )
         {
-            Assert.assertEquals( Operator.LESS, outerThreshold.getOperator() );
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT, outerThreshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.LESS, threshold.getOperator() );
+            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            assertEquals(
+                    thresholdValues.get( threshold.getName() ),
+                    threshold.getLeftThresholdValue().getValue(),
+                    EPSILON );
         }
 
-        Assert.assertEquals( 4, alternativeNormalExtraction.get( PTSA1 ).size() );
+        assertEquals( 4, alternativeNormalExtraction.get( PTSA1 ).size() );
 
         thresholdValues = new HashMap<>();
         thresholdValues.put( "action", 0.0 );
@@ -729,16 +724,15 @@ class GeneralThresholdExtractorTest
         thresholdValues.put( "minor", 0.0 );
         thresholdValues.put( "moderate", 0.0 );
 
-        for ( ThresholdOuter outerThreshold : alternativeNormalExtraction.get( PTSA1 ) )
+        for ( Threshold threshold : alternativeNormalExtraction.get( PTSA1 ) )
         {
-            Assert.assertEquals( Operator.LESS, outerThreshold.getOperator() );
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT, outerThreshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.LESS, threshold.getOperator() );
+            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            assertEquals( thresholdValues.get( threshold.getName() ),
+                    threshold.getLeftThresholdValue().getValue(),
+                    EPSILON );
         }
 
         //This is a test of stage thresholds; see the normalThresholdConfig.
@@ -748,31 +742,30 @@ class GeneralThresholdExtractorTest
                                                                 .ratingFrom( null )
                                                                 .operatesBy( ThresholdConstants.Operator.GREATER )
                                                                 .onSide( ThresholdConstants.ThresholdDataType.LEFT );
-        Map<WrdsLocation, Set<ThresholdOuter>> normalButFunExtraction = extractor.extract();
+        Map<WrdsLocation, Set<Threshold>> normalButFunExtraction = extractor.extract();
 
-        Assert.assertTrue( normalButFunExtraction.containsKey( STEAK ) );
-        Assert.assertTrue( normalButFunExtraction.containsKey( BAKED_POTATO ) );
+        assertTrue( normalButFunExtraction.containsKey( STEAK ) );
+        assertTrue( normalButFunExtraction.containsKey( BAKED_POTATO ) );
 
         //Since calculated stages aren't used, and STEAK includes no regular stage thresholds 
         //these counts and expected resultswere updated for API 3.0.
-        Assert.assertEquals( 0, normalButFunExtraction.get( STEAK ).size() );
-        Assert.assertEquals( 3, normalButFunExtraction.get( BAKED_POTATO ).size() );
+        assertEquals( 0, normalButFunExtraction.get( STEAK ).size() );
+        assertEquals( 3, normalButFunExtraction.get( BAKED_POTATO ).size() );
 
         thresholdValues = new HashMap<>();
         thresholdValues.put( "minor", 5.54 );
         thresholdValues.put( "moderate", 4.0 );
         thresholdValues.put( "major", 158.0 );
 
-        for ( ThresholdOuter outerThreshold : normalButFunExtraction.get( BAKED_POTATO ) )
+        for ( Threshold threshold : normalButFunExtraction.get( BAKED_POTATO ) )
         {
-            Assert.assertEquals( Operator.GREATER, outerThreshold.getOperator() );
-            Assert.assertEquals( ThresholdConstants.ThresholdDataType.LEFT, outerThreshold.getDataType() );
+            assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
-                                 EPSILON );
+            assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            assertEquals( thresholdValues.get( threshold.getName() ),
+                    threshold.getLeftThresholdValue().getValue(),
+                    EPSILON );
         }
     }
 
