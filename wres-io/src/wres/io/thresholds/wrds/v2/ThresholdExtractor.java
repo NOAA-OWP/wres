@@ -1,11 +1,11 @@
 package wres.io.thresholds.wrds.v2;
 
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.NoThresholdsFoundException;
 import wres.io.thresholds.wrds.WRDSThresholdType;
+import wres.statistics.generated.Threshold;
 
 import java.util.Collection;
 import java.util.Map;
@@ -126,7 +126,7 @@ public class ThresholdExtractor
      *
      * @return A mapping between feature definitions and all of their thresholds
      */
-    public Map<WrdsLocation, Set<ThresholdOuter>> extract()
+    public Map<WrdsLocation, Set<Threshold>> extract()
     {
         Objects.requireNonNull( this.response, "A valid response was not passed to extract" );
 

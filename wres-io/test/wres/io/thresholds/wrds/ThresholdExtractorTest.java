@@ -12,8 +12,6 @@ import org.mockito.Mockito;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.v2.CalculatedThresholdValues;
@@ -22,6 +20,7 @@ import wres.io.thresholds.wrds.v2.ThresholdDefinition;
 import wres.io.thresholds.wrds.v2.ThresholdExtractor;
 import wres.io.thresholds.wrds.v2.ThresholdMetadata;
 import wres.io.thresholds.wrds.v2.ThresholdResponse;
+import wres.statistics.generated.Threshold;
 
 public class ThresholdExtractorTest
 {
@@ -132,13 +131,13 @@ public class ThresholdExtractorTest
     {
         ThresholdExtractor extractor =
                 new ThresholdExtractor( oldResponse ).readStage()
-                                                               .convertTo( unitMapper )
-                                                               .from( "NWS-NRLDB" )
-                                                               .ratingFrom( null )
-                                                               .operatesBy( ThresholdConstants.Operator.GREATER )
-                                                               .onSide( ThresholdConstants.ThresholdDataType.LEFT );
-        Map<WrdsLocation, Set<ThresholdOuter>> normalExtraction = extractor.extract();
-        
+                                                     .convertTo( unitMapper )
+                                                     .from( "NWS-NRLDB" )
+                                                     .ratingFrom( null )
+                                                     .operatesBy( ThresholdConstants.Operator.GREATER )
+                                                     .onSide( ThresholdConstants.ThresholdDataType.LEFT );
+        Map<WrdsLocation, Set<Threshold>> normalExtraction = extractor.extract();
+
         Assert.assertFalse( normalExtraction.containsKey( PTSA1 ) );
         Assert.assertTrue( normalExtraction.containsKey( MNTG1 ) );
 
@@ -150,19 +149,18 @@ public class ThresholdExtractorTest
         thresholdValues.put( "minor", 20.0 );
         thresholdValues.put( "moderate", 28.0 );
 
-        Set<ThresholdOuter> normalOuterThresholds = normalExtraction.get( MNTG1 );
+        Set<Threshold> normalOuterThresholds = normalExtraction.get( MNTG1 );
 
         Assert.assertEquals( 6, normalOuterThresholds.size() );
 
-        for ( ThresholdOuter outerThreshold : normalOuterThresholds )
+        for ( Threshold threshold : normalOuterThresholds )
         {
-            Assert.assertEquals( outerThreshold.getOperator(), Operator.GREATER );
-            Assert.assertEquals( outerThreshold.getDataType(), ThresholdConstants.ThresholdDataType.LEFT );
+            Assert.assertEquals( Threshold.ThresholdOperator.GREATER, threshold.getOperator() );
+            Assert.assertEquals( Threshold.ThresholdDataType.LEFT, threshold.getDataType() );
 
-            Assert.assertTrue( thresholdValues.containsKey( outerThreshold.getThreshold().getName() ) );
-            Assert.assertEquals(
-                                 thresholdValues.get( outerThreshold.getThreshold().getName() ),
-                                 outerThreshold.getThreshold().getLeftThresholdValue().getValue(),
+            Assert.assertTrue( thresholdValues.containsKey( threshold.getName() ) );
+            Assert.assertEquals( thresholdValues.get( threshold.getName() ),
+                                 threshold.getLeftThresholdValue().getValue(),
                                  EPSILON );
         }
 

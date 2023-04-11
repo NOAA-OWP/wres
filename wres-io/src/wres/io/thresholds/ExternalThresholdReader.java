@@ -91,7 +91,7 @@ public class ExternalThresholdReader
 
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
-            Set<FeatureTuple> readFeatures = null;
+            Set<FeatureTuple> readFeatures;
 
 
             ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
@@ -222,10 +222,8 @@ public class ExternalThresholdReader
         DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide );
         FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
 
-        Set<FeatureTuple> recognized = new HashSet<>();
-
         // Threshold type: default to probability
-        final ThresholdConstants.ThresholdGroup thresholdGroup;
+        ThresholdConstants.ThresholdGroup thresholdGroup;
         if ( Objects.nonNull( thresholdsConfig.getType() ) )
         {
             thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
@@ -256,7 +254,7 @@ public class ExternalThresholdReader
             }
 
             //Obtain the thresholds from WRDS using the feature name.  
-            Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = GeneralWRDSReader.readThresholds(
+            Map<WrdsLocation, Set<Threshold>> wrdsThresholdsUnwrapped = GeneralWRDSReader.readThresholds(
                     this.systemSettings,
                     thresholdsConfig,
                     this.desiredMeasurementUnitConverter,
@@ -265,117 +263,188 @@ public class ExternalThresholdReader
                                  .map( identifyFeatureName )
                                  .collect( Collectors.toSet() ) );
 
-            //Add all of the WrdsLocation keys in the map to the unrecognized list.
-            //As we recognize each one, it will be removed from this list.
-            List<WrdsLocation> unusedWrdsLocations = new ArrayList<>( wrdsThresholds.keySet() );
-
-            //This will record a Map of FeatureTuple to Set<ThresholdOuter>
-            //for the purposes of logging.
-            Map<FeatureTuple, Set<ThresholdOuter>> tupleToThresholds = new HashMap<>();
-
-            //Loop over the feature tuples finding the thresholds for each.
-            for ( FeatureTuple tuple : this.features )
+            // Wrap the thresholds
+            Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = new HashMap<>();
+            for ( Map.Entry<WrdsLocation, Set<Threshold>> nextEntry : wrdsThresholdsUnwrapped.entrySet() )
             {
-
-                //For the given tuple, identify the WRDS locations with thresholds
-                //that match based solely on the input side.
-                List<WrdsLocation> matchingWrdsLocations = new ArrayList<>();
-                for ( Map.Entry<WrdsLocation, Set<ThresholdOuter>> thresholds : wrdsThresholds.entrySet() )
-                {
-                    final WrdsLocation location = thresholds.getKey();
-
-                    if ( doesFeatureNameForSideMatchWRDSLocation( featureDimension,
-                                                                  tuple.getNameFor( tupleSide ),
-                                                                  location ) )
-                    {
-                        matchingWrdsLocations.add( location );
-                    }
-                }
-
-                //Setup a final list.  If no sets or one set were found
-                //above, go with it.  If multiple sets were found, then
-                //use the other sides to help pare down the list further.
-                List<WrdsLocation> finalList = new ArrayList<>();
-                if ( matchingWrdsLocations.size() > 1 )
-                {
-                    LOGGER.warn( "For tuple {}, WRDS returned multiple candidate sets of "
-                                 + "thresholds.  Specifically, thresholds were found for the following "
-                                 + "WRDS locations that could apply: {}. That will be pared down using "
-                                 + "the feature information for other sides of the evaluation.",
-                                 tuple,
-                                 matchingWrdsLocations );
-                    for ( WrdsLocation location : matchingWrdsLocations )
-                    {
-                        if ( isWrdsLocationForFeatureTuple( location, tuple ) )
-                        {
-                            finalList.add( location );
-                        }
-                    }
-
-                    //Error out if multiple sets of thresholds are still found.
-                    if ( finalList.size() > 1 )
-                    {
-                        throw new ThresholdReadingException( "For feature tuple, " + tuple + ", we found "
-                                                             + "multiple threshold sets from WRDS that could match after examining "
-                                                             + "all sides.  That is not allowed. "
-                                                             + "Consider using a different input side of the evaluation to request the "
-                                                             + "thresholds or specifying additional thresholds." );
-                    }
-                    if ( finalList.isEmpty() )
-                    {
-                        LOGGER.warn( "After paring down the thresholds for feature tuple {}"
-                                     + " no thresholds from WRDS were found to match the other sides of the "
-                                     + "evaluation, so no thresholds will be used.  You might want to use "
-                                     + "a different input side to request thresholds from WRDS.", tuple );
-                    }
-                }
-                else
-                {
-                    finalList.addAll( matchingWrdsLocations );
-                }
-
-                //If a single set of thresholds is found for the tuple, then...
-                if ( finalList.size() == 1 )
-                {
-                    //Record it for logging purposes.
-                    tupleToThresholds.put( tuple, wrdsThresholds.get( finalList.get( 0 ) ) );
-
-                    //Add to the recognized tuple list for a later message if necessary.
-                    recognized.add( tuple );
-
-                    //Remove from the unused list of WRDS locations with thresholds.
-                    unusedWrdsLocations.remove( finalList.get( 0 ) );
-
-                    //Add the thresholds to the shared builder.
-                    for ( MetricConstants metricName : metrics )
-                    {
-                        for ( ThresholdOuter threshold : wrdsThresholds.get( finalList.get( 0 ) ) )
-                        {
-                            this.sharedBuilders.addThreshold( tuple,
-                                                              thresholdGroup,
-                                                              metricName,
-                                                              threshold );
-                        }
-                    }
-                }
+                WrdsLocation location = nextEntry.getKey();
+                Set<Threshold> unwrapped = nextEntry.getValue();
+                Set<ThresholdOuter> wrapped = unwrapped.stream()
+                                                       .map( ThresholdOuter::of )
+                                                       .collect( Collectors.toUnmodifiableSet() );
+                wrdsThresholds.put( location, wrapped );
             }
 
-            //Populate the unrecognized (i.e., unused) threshold 
-            //features using the entire WrdsLocation toString.
-            for ( WrdsLocation loc : unusedWrdsLocations )
-            {
-                this.unrecognizedThresholdFeatures.add( loc.toString() );
-            }
-
-            //Output a final log message.
-            LOGGER.info( "These thresholds were added for each of the following feature tuples: {}.",
-                         tupleToThresholds );
-
-            return Collections.unmodifiableSet( recognized );
+            return this.addThresholdsToSharedBuilders( wrdsThresholds,
+                                                       featureDimension,
+                                                       tupleSide,
+                                                       metrics,
+                                                       thresholdGroup );
         }
         catch ( IOException e )
         {
             throw new MetricConfigException( "Failed to read the external thresholds.", e );
+        }
+    }
+
+    /**
+     * Updates the shared builders with thresholds.
+     * @param wrdsThresholds the WRDS thresholds
+     * @param featureDimension the feature dimension
+     * @param tupleSide the side of data
+     * @param metrics the metrics
+     * @param thresholdGroup the threshold group
+     * @return the recognized features
+     */
+
+    private Set<FeatureTuple> addThresholdsToSharedBuilders( Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds,
+                                                             FeatureDimension featureDimension,
+                                                             LeftOrRightOrBaseline tupleSide,
+                                                             Set<MetricConstants> metrics,
+                                                             ThresholdConstants.ThresholdGroup thresholdGroup )
+    {
+        Set<FeatureTuple> recognized = new HashSet<>();
+
+        //Add all of the WrdsLocation keys in the map to the unrecognized list.
+        //As we recognize each one, it will be removed from this list.
+        List<WrdsLocation> unusedWrdsLocations = new ArrayList<>( wrdsThresholds.keySet() );
+
+        //This will record a Map of FeatureTuple to Set<ThresholdOuter>
+        //for the purposes of logging.
+        Map<FeatureTuple, Set<ThresholdOuter>> tupleToThresholds = new HashMap<>();
+
+        //Loop over the feature tuples finding the thresholds for each.
+        for ( FeatureTuple tuple : this.features )
+        {
+            //For the given tuple, identify the WRDS locations with thresholds
+            //that match based solely on the input side.
+            List<WrdsLocation> matchingWrdsLocations = new ArrayList<>();
+            for ( Map.Entry<WrdsLocation, Set<ThresholdOuter>> thresholds : wrdsThresholds.entrySet() )
+            {
+                WrdsLocation location = thresholds.getKey();
+
+                if ( doesFeatureNameForSideMatchWRDSLocation( featureDimension,
+                                                              tuple.getNameFor( tupleSide ),
+                                                              location ) )
+                {
+                    matchingWrdsLocations.add( location );
+                }
+            }
+
+            //Setup a final list.  If no sets or one set were found
+            //above, go with it.  If multiple sets were found, then
+            //use the other sides to help pare down the list further.
+            List<WrdsLocation> finalList = this.getFinalListOfLocations( matchingWrdsLocations, tuple );
+
+            //If a single set of thresholds is found for the tuple, then...
+            if ( finalList.size() == 1 )
+            {
+                //Record it for logging purposes.
+                Set<ThresholdOuter> nextThresholds = wrdsThresholds.get( finalList.get( 0 ) );
+                tupleToThresholds.put( tuple, nextThresholds );
+
+                //Add to the recognized tuple list for a later message if necessary.
+                recognized.add( tuple );
+
+                //Remove from the unused list of WRDS locations with thresholds.
+                unusedWrdsLocations.remove( finalList.get( 0 ) );
+
+                this.addThresholdsToSharedBuilders( metrics, nextThresholds, thresholdGroup, tuple );
+            }
+        }
+
+        //Populate the unrecognized (i.e., unused) threshold
+        //features using the entire WrdsLocation toString.
+        for ( WrdsLocation loc : unusedWrdsLocations )
+        {
+            this.unrecognizedThresholdFeatures.add( loc.toString() );
+        }
+
+        //Output a final log message.
+        LOGGER.info( "These thresholds were added for each of the following feature tuples: {}.",
+                     tupleToThresholds );
+
+        return Collections.unmodifiableSet( recognized );
+    }
+
+    /**
+     * Gets the final list of locations with thresholds.
+     * @param matchingWrdsLocations the matching WRDS locations
+     * @param tuple the tuple to consider
+     * @return the final list of locations
+     */
+
+    private List<WrdsLocation> getFinalListOfLocations( List<WrdsLocation> matchingWrdsLocations,
+                                                        FeatureTuple tuple )
+    {
+        //Setup a final list.  If no sets or one set were found
+        //above, go with it.  If multiple sets were found, then
+        //use the other sides to help pare down the list further.
+        List<WrdsLocation> finalList = new ArrayList<>();
+        if ( matchingWrdsLocations.size() > 1 )
+        {
+            LOGGER.warn( "For tuple {}, WRDS returned multiple candidate sets of "
+                         + "thresholds.  Specifically, thresholds were found for the following "
+                         + "WRDS locations that could apply: {}. That will be pared down using "
+                         + "the feature information for other sides of the evaluation.",
+                         tuple,
+                         matchingWrdsLocations );
+            for ( WrdsLocation location : matchingWrdsLocations )
+            {
+                if ( isWrdsLocationForFeatureTuple( location, tuple ) )
+                {
+                    finalList.add( location );
+                }
+            }
+
+            //Error out if multiple sets of thresholds are still found.
+            if ( finalList.size() > 1 )
+            {
+                throw new ThresholdReadingException( "For feature tuple, " + tuple + ", we found "
+                                                     + "multiple threshold sets from WRDS that could match after examining "
+                                                     + "all sides.  That is not allowed. "
+                                                     + "Consider using a different input side of the evaluation to request the "
+                                                     + "thresholds or specifying additional thresholds." );
+            }
+            if ( finalList.isEmpty() )
+            {
+                LOGGER.warn( "After paring down the thresholds for feature tuple {}"
+                             + " no thresholds from WRDS were found to match the other sides of the "
+                             + "evaluation, so no thresholds will be used.  You might want to use "
+                             + "a different input side to request thresholds from WRDS.", tuple );
+            }
+        }
+        else
+        {
+            finalList.addAll( matchingWrdsLocations );
+        }
+
+        return Collections.unmodifiableList( finalList );
+    }
+
+    /**
+     * Adds the thresholds to the shared builders.
+     * @param metrics the metrics
+     * @param nextThresholds the thresholds to add
+     * @param thresholdGroup the threshold group
+     * @param tuple the feature tuple
+     */
+
+    private void addThresholdsToSharedBuilders( Set<MetricConstants> metrics,
+                                                Set<ThresholdOuter> nextThresholds,
+                                                ThresholdConstants.ThresholdGroup thresholdGroup,
+                                                FeatureTuple tuple )
+    {
+        //Add the thresholds to the shared builder.
+        for ( MetricConstants metricName : metrics )
+        {
+            for ( ThresholdOuter threshold : nextThresholds )
+            {
+                this.sharedBuilders.addThreshold( tuple,
+                                                  thresholdGroup,
+                                                  metricName,
+                                                  threshold );
+            }
         }
     }
 
