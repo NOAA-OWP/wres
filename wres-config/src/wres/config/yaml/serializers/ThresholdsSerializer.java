@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
@@ -179,8 +180,8 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         if ( innerThreshold.getDataType() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getDataType() )
         {
             ThresholdDataType dataType = innerThreshold.getDataType();
-            String sideName = DeclarationFactory.getThresholdDataTypeName( dataType );
-            writer.writeStringField( "apply_to", sideName );
+            ThresholdOrientation orientation = ThresholdOrientation.valueOf( dataType.name() );
+            writer.writeObjectField( "apply_to", orientation );
         }
 
         if ( !innerThreshold.getThresholdValueUnits()

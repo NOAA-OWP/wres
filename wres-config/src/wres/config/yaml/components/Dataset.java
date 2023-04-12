@@ -25,6 +25,7 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
  * @param label the label
  * @param ensembleFilter the ensemble filter
  * @param timeShift the time shift
+ * @param timeZoneOffset the time zone offset
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
@@ -50,6 +51,7 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
      * @param label the label
      * @param ensembleFilter the ensemble filter
      * @param timeShift the time shift
+     * @param timeZoneOffset the time zone offset
      */
     public Dataset
     {

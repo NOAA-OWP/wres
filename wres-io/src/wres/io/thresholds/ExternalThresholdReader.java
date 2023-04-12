@@ -16,7 +16,6 @@ import wres.datamodel.units.UnitMapper;
 import wres.config.xml.CsvThresholdReader;
 import wres.io.thresholds.wrds.GeneralWRDSReader;
 import wres.statistics.generated.Threshold;
-import wres.system.SystemSettings;
 
 import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
@@ -37,7 +36,6 @@ public class ExternalThresholdReader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ExternalThresholdReader.class );
 
-    private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
     private final MetricsConfig metricsConfig;
     private final Set<FeatureTuple> features;
@@ -49,28 +47,24 @@ public class ExternalThresholdReader
 
     /**
      * Creates an instance.
-     * @param systemSettings the system settings
      * @param projectConfig the project declaration
      * @param metricsConfig the metrics declaration
      * @param features the features
      * @param desiredMeasurementUnitConverter the unit converter
      * @param builders the threshold builders
      */
-    public ExternalThresholdReader( final SystemSettings systemSettings,
-                                    final ProjectConfig projectConfig,
-                                    final MetricsConfig metricsConfig,
-                                    final Set<FeatureTuple> features,
-                                    final UnitMapper desiredMeasurementUnitConverter,
-                                    final ThresholdBuilderCollection builders )
+    public ExternalThresholdReader( ProjectConfig projectConfig,
+                                    MetricsConfig metricsConfig,
+                                    Set<FeatureTuple> features,
+                                    UnitMapper desiredMeasurementUnitConverter,
+                                    ThresholdBuilderCollection builders )
     {
-        Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( metricsConfig );
         Objects.requireNonNull( features );
         Objects.requireNonNull( desiredMeasurementUnitConverter );
         Objects.requireNonNull( builders );
 
-        this.systemSettings = systemSettings;
         this.projectConfig = projectConfig;
         this.metricsConfig = metricsConfig;
         this.features = features;
@@ -254,14 +248,13 @@ public class ExternalThresholdReader
             }
 
             //Obtain the thresholds from WRDS using the feature name.  
-            Map<WrdsLocation, Set<Threshold>> wrdsThresholdsUnwrapped = GeneralWRDSReader.readThresholds(
-                    this.systemSettings,
-                    thresholdsConfig,
-                    this.desiredMeasurementUnitConverter,
-                    featureDimension,
-                    this.features.stream()
-                                 .map( identifyFeatureName )
-                                 .collect( Collectors.toSet() ) );
+            Map<WrdsLocation, Set<Threshold>> wrdsThresholdsUnwrapped =
+                    GeneralWRDSReader.readThresholds( thresholdsConfig,
+                                                      this.desiredMeasurementUnitConverter,
+                                                      featureDimension,
+                                                      this.features.stream()
+                                                                   .map( identifyFeatureName )
+                                                                   .collect( Collectors.toSet() ) );
 
             // Wrap the thresholds
             Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds = new HashMap<>();

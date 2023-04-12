@@ -1,6 +1,6 @@
 package wres.config.yaml.components;
 
-import wres.config.yaml.DeclarationFactory;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * The type of threshold.
@@ -9,11 +9,23 @@ import wres.config.yaml.DeclarationFactory;
 public enum ThresholdType
 {
     /** Probability threshold. */
-    PROBABILITY,
+    @JsonProperty( "probability" ) PROBABILITY( "probability" ),
     /** Probability classifier threshold. */
-    PROBABILITY_CLASSIFIER,
+    @JsonProperty( "classifier" ) PROBABILITY_CLASSIFIER( "classifier" ),
     /** Value threshold. */
-    VALUE;
+    @JsonProperty( "value" ) VALUE( "value" );
+
+    /** The string name. */
+    private final String stringName;
+
+    /**
+     * Creates an instance with a name.
+     * @param stringName the name
+     */
+    ThresholdType( String stringName )
+    {
+        this.stringName = stringName;
+    }
 
     /**
      * @return whether the threshold type is a probability
@@ -27,6 +39,6 @@ public enum ThresholdType
     @Override
     public String toString()
     {
-        return DeclarationFactory.fromEnumName( this.name() );
+        return stringName;
     }
 }

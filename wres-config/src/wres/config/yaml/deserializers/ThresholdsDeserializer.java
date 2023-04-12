@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdOperator;
@@ -214,7 +215,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         if ( thresholdNode.has( "apply_to" ) )
         {
             JsonNode dataTypeNode = thresholdNode.get( "apply_to" );
-            ThresholdDataType dataType = DeclarationFactory.getThresholdDataType( dataTypeNode.asText() );
+            ThresholdOrientation orientation = reader.readValue( dataTypeNode, ThresholdOrientation.class );
+            ThresholdDataType dataType = orientation.canonical();
             builder.setDataType( dataType );
         }
 

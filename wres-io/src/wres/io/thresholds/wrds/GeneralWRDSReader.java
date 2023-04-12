@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -28,7 +27,6 @@ import wres.io.thresholds.wrds.v2.ThresholdResponse;
 import wres.io.thresholds.wrds.v3.GeneralThresholdExtractor;
 import wres.io.thresholds.wrds.v3.GeneralThresholdResponse;
 import wres.statistics.generated.Threshold;
-import wres.system.SystemSettings;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
@@ -37,15 +35,14 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This test should be removed in the near future, once I've implemented fully the toggle that detects threshold
- * version.
+ * Reads thresholds from different versions of the WRDS threshold service.
  * @author Hank.Herr
- *
  */
 public final class GeneralWRDSReader
 {
@@ -73,29 +70,20 @@ public final class GeneralWRDSReader
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private final SystemSettings systemSettings;
 
     /**
      * <p>The purpose for allowing an instance is to maintain the single-parameter
      * functional interface of getResponse to facilitate stream usage ~L110.
-     *
-     * <p>The reason SystemSettings is needed is to get the data directory to
-     * complete relative paths given, for example "dir/file.csv" is given rather
-     * than "file:///path/to/dir/file.csv".
      *
      * <p>Instantiation not private so that unit tests can access methods.
      *
      * <p>The public interface to this class remains as static helper functions.
      *
      * <p>There are likely better ways to achieve these goals. Go for it.
-     *
-     * @param systemSettings The system settings to use to complete URIs.
      */
 
-    GeneralWRDSReader( SystemSettings systemSettings )
+    GeneralWRDSReader()
     {
-        Objects.requireNonNull( systemSettings );
-        this.systemSettings = systemSettings;
     }
 
 
@@ -189,7 +177,6 @@ public final class GeneralWRDSReader
 
     /**
      * The top-level method to call to obtain thresholds
-     * @param systemSettings Settings.
      * @param threshold User declaration.
      * @param unitMapper Target unit mapper.
      * @param featureDimension The feature dimension of the provided list of features.
@@ -197,8 +184,7 @@ public final class GeneralWRDSReader
      * @return Map of feature to threshold.
      * @throws IOException At various points, this can be thrown.
      */
-    public static Map<WrdsLocation, Set<Threshold>> readThresholds( SystemSettings systemSettings,
-                                                                    ThresholdsConfig threshold,
+    public static Map<WrdsLocation, Set<Threshold>> readThresholds( ThresholdsConfig threshold,
                                                                     UnitMapper unitMapper,
                                                                     FeatureDimension featureDimension,
                                                                     Set<String> features )
@@ -212,8 +198,7 @@ public final class GeneralWRDSReader
         List<URI> addresses = new ArrayList<>();
 
         //Those address are built from the source address.
-        URI fullSourceAddress = GeneralWRDSReader.getAbsoluteUri( source.getValue(),
-                                                                  systemSettings );
+        URI fullSourceAddress = GeneralWRDSReader.getAbsoluteUri( source.getValue() );
 
         // Web service
         if ( fullSourceAddress.getScheme()
@@ -266,7 +251,7 @@ public final class GeneralWRDSReader
         }
 
         //construct the reader and the threshold map.  
-        GeneralWRDSReader reader = new GeneralWRDSReader( systemSettings );
+        GeneralWRDSReader reader = new GeneralWRDSReader();
         Map<WrdsLocation, Set<Threshold>> thresholdMapping;
 
         try
@@ -318,7 +303,6 @@ public final class GeneralWRDSReader
     static Map<WrdsLocation, Set<Threshold>> extract( byte[] responseBytes,
                                                       ThresholdsConfig config,
                                                       UnitMapper desiredUnitMapper )
-            throws StreamIOException
     {
         //Obtain the source.
         ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) config.getCommaSeparatedValuesOrSource();
@@ -458,8 +442,7 @@ public final class GeneralWRDSReader
         LOGGER.debug( "Opening URI {}", address );
         try
         {
-            URI fullAddress = GeneralWRDSReader.getAbsoluteUri( address,
-                                                                this.systemSettings );
+            URI fullAddress = GeneralWRDSReader.getAbsoluteUri( address );
 
             if ( fullAddress.getScheme()
                             .toLowerCase()
@@ -505,19 +488,18 @@ public final class GeneralWRDSReader
 
     /**
      * Create a complete-with-scheme, absolute URI for the given URI.
-     * @param maybeIncomplete A potentially incomplete URI (relateive path)
-     * @param systemSettings The settings to use to create a complete URI.
+     * @param maybeIncomplete A potentially incomplete URI (relative path)
      * @return The complete URI with guaranteed scheme.
      */
 
-    private static URI getAbsoluteUri( URI maybeIncomplete,
-                                       SystemSettings systemSettings )
+    private static URI getAbsoluteUri( URI maybeIncomplete )
     {
+
         if ( Objects.isNull( maybeIncomplete.getScheme() ) )
         {
-            return systemSettings.getDataDirectory()
-                                 .toUri()
-                                 .resolve( maybeIncomplete.getPath() );
+            Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
+            return dataDirectory.toUri()
+                                .resolve( maybeIncomplete.getPath() );
 
         }
 

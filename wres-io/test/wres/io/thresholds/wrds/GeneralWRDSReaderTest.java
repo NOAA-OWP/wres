@@ -1248,7 +1248,7 @@ public class GeneralWRDSReaderTest
     @Test
     public void testGetResponse() throws IOException
     {
-        GeneralWRDSReader reader = new GeneralWRDSReader( systemSettings );
+        GeneralWRDSReader reader = new GeneralWRDSReader();
 
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -1552,8 +1552,7 @@ public class GeneralWRDSReaderTest
                                                                            ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
-                    GeneralWRDSReader.readThresholds( systemSettings,
-                                                      normalThresholdConfig,
+                    GeneralWRDSReader.readThresholds( normalThresholdConfig,
                                                       this.unitMapper,
                                                       FeatureDimension.NWS_LID,
                                                       DESIRED_FEATURES.stream()
@@ -1691,8 +1690,7 @@ public class GeneralWRDSReaderTest
                     ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
-                    GeneralWRDSReader.readThresholds( systemSettings,
-                                                      normalRecurrenceConfig,
+                    GeneralWRDSReader.readThresholds( normalRecurrenceConfig,
                                                       this.unitMapper,
                                                       FeatureDimension.NWS_LID,
                                                       DESIRED_FEATURES.stream()
@@ -1823,8 +1821,7 @@ public class GeneralWRDSReaderTest
                     ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
-                    GeneralWRDSReader.readThresholds( systemSettings,
-                                                      oldNormalThresholdConfig,
+                    GeneralWRDSReader.readThresholds( oldNormalThresholdConfig,
                                                       this.unitMapper,
                                                       FeatureDimension.NWS_LID,
                                                       DESIRED_FEATURES.stream()
