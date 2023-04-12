@@ -130,6 +130,8 @@ import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.SpatialMaskBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
@@ -185,11 +187,20 @@ import wres.statistics.generated.Pool;
 
 public class DeclarationFactory
 {
+    /** Default threshold operator. */
+    public static final ThresholdOperator DEFAULT_THRESHOLD_OPERATOR = ThresholdOperator.GREATER;
+
+    /** Default threshold data type. */
+    public static final ThresholdOrientation DEFAULT_THRESHOLD_ORIENTATION = ThresholdOrientation.LEFT;
+
+    /** Default threshold type (e.g., for a threshold data service). */
+    public static final ThresholdType DEFAULT_THRESHOLD_TYPE = ThresholdType.VALUE;
+
     /** Default canonical threshold with no values. */
     public static final wres.statistics.generated.Threshold DEFAULT_CANONICAL_THRESHOLD
             = wres.statistics.generated.Threshold.newBuilder()
-                                                 .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
-                                                 .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
+                                                 .setDataType( DEFAULT_THRESHOLD_ORIENTATION.canonical() )
+                                                 .setOperator( DEFAULT_THRESHOLD_OPERATOR.canonical()  )
                                                  .build();
     /** Default wrapped threshold. */
     public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null, null );
@@ -474,44 +485,6 @@ public class DeclarationFactory
 
         return name.toUpperCase()
                    .replace( " ", "_" );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.Threshold.ThresholdDataType} from a string.
-     * @param name the type name
-     * @return the threshold type
-     * @throws NullPointerException if the input is null
-     */
-
-    public static wres.statistics.generated.Threshold.ThresholdDataType getThresholdDataType( String name )
-    {
-        Objects.requireNonNull( name );
-
-        String dataTypeString = name.replace( " ", "_" )
-                                    .toUpperCase()
-                                    .replace( "OBSERVED", "LEFT" )
-                                    .replace( "PREDICTED", "RIGHT" );
-        return wres.statistics.generated.Threshold.ThresholdDataType.valueOf( dataTypeString );
-    }
-
-    /**
-     * Creates a friendly string name from a {@link wres.statistics.generated.Threshold.ThresholdDataType}. The
-     * reverse of {@link DeclarationFactory#getThresholdDataType(String)}.
-     *
-     * @param dataType the data type
-     * @return a friendly string for use in declaration
-     * @throws NullPointerException if the input is null
-     */
-
-    public static String getThresholdDataTypeName( wres.statistics.generated.Threshold.ThresholdDataType dataType )
-    {
-        Objects.requireNonNull( dataType );
-
-        return dataType.name()
-                       .replace( "_", " " )
-                       .toLowerCase()
-                       .replace( "left", "observed" )
-                       .replace( "right", "predicted" );
     }
 
     /**
@@ -2428,8 +2401,8 @@ public class DeclarationFactory
         if ( Objects.nonNull( metadata.getApplyTo() ) )
         {
             ThresholdDataType dataType = metadata.getApplyTo();
-            wres.statistics.generated.Threshold.ThresholdDataType canonicalDataType =
-                    DeclarationFactory.getThresholdDataType( dataType.name() );
+            ThresholdOrientation orientation = ThresholdOrientation.valueOf( dataType.name() );
+            wres.statistics.generated.Threshold.ThresholdDataType canonicalDataType = orientation.canonical();
             builder.setDataType( canonicalDataType );
         }
 

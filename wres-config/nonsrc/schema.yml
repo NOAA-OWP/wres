@@ -854,6 +854,12 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+      operator:
+        "$ref": "#/definitions/ThresholdOperatorEnum"
+      apply_to:
+        "$ref": "#/definitions/ThresholdDataTypeEnum"
+      type:
+        "$ref": "#/definitions/ThresholdTypeEnum"
       provider:
         type: string
         minLength: 1
@@ -1214,6 +1220,14 @@ definitions:
       - predicted mean
       - observed and predicted mean
     title: ThresholdDataTypeEnum
+
+  ThresholdTypeEnum:
+    type: string
+    enum:
+      - probability
+      - value
+      - classifier
+    title: ThresholdTypeEnum
 
   ThresholdOperatorEnum:
     type: string

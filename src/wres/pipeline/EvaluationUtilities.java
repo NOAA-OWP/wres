@@ -512,8 +512,7 @@ class EvaluationUtilities
             Set<FeatureTuple> featuresWithExplicitThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
             {
-                ThresholdReader thresholdReader = new ThresholdReader( evaluationDetails.getSystemSettings(),
-                                                                       projectConfig,
+                ThresholdReader thresholdReader = new ThresholdReader( projectConfig,
                                                                        metricsConfig,
                                                                        unitMapper,
                                                                        features );

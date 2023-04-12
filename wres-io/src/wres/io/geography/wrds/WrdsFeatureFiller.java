@@ -1193,7 +1193,7 @@ public class WrdsFeatureFiller
                                             + "source interface (e.g. WRES knows interface usgs_nwis uses the "
                                             + "usgs_site_code authority) or explicitly declared in the "
                                             + "'feature_authority' attribute of the dataset. Valid values include: "
-                                            + WrdsFeatureFiller.getValidFeatureDimensionValues() );
+                                            + WrdsFeatureFiller.getValidFeatureAuthorityValues() );
 
         }
 
@@ -1202,9 +1202,9 @@ public class WrdsFeatureFiller
 
     /**
      * Convenience method for printing error messages. Displays all valid values of the {@link FeatureAuthority}.
-     * @return The
+     * @return the valid values of a {@link FeatureAuthority}, concatenated for display
      */
-    private static String getValidFeatureDimensionValues()
+    private static String getValidFeatureAuthorityValues()
     {
         StringJoiner joiner = new StringJoiner( "', '", "'", "'" );
 

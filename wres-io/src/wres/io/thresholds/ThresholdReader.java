@@ -6,7 +6,6 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.units.UnitMapper;
-import wres.system.SystemSettings;
 
 import java.util.*;
 
@@ -15,7 +14,6 @@ import java.util.*;
  */
 public class ThresholdReader
 {
-    private final SystemSettings systemSettings;
     private final ProjectConfig projectConfig;
     private final MetricsConfig metricsConfig;
     private final UnitMapper desiredMeasurementUnitConverter;
@@ -25,19 +23,16 @@ public class ThresholdReader
 
     /**
      * Creates an instance.
-     * @param settings the settings
      * @param projectConfig the project declaration
      * @param metricsConfig the metrics declaration
      * @param unitMapper the unit mapper
      * @param features the features
      */
-    public ThresholdReader( final SystemSettings settings,
-                            final ProjectConfig projectConfig,
+    public ThresholdReader( final ProjectConfig projectConfig,
                             final MetricsConfig metricsConfig,
                             final UnitMapper unitMapper,
                             final Set<FeatureTuple> features )
     {
-        this.systemSettings = settings;
         this.projectConfig = projectConfig;
         this.metricsConfig = metricsConfig;
         this.desiredMeasurementUnitConverter = unitMapper;
@@ -51,8 +46,7 @@ public class ThresholdReader
      */
     public Map<FeatureTuple, ThresholdsByMetric> read()
     {
-        ExternalThresholdReader externalReader = new ExternalThresholdReader( this.systemSettings,
-                                                                              this.projectConfig,
+        ExternalThresholdReader externalReader = new ExternalThresholdReader( this.projectConfig,
                                                                               this.metricsConfig,
                                                                               this.features,
                                                                               this.desiredMeasurementUnitConverter,

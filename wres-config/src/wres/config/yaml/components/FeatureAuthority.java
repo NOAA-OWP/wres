@@ -28,4 +28,16 @@ public enum FeatureAuthority
     {
         return DeclarationFactory.fromEnumName( this.name() );
     }
+
+    /**
+     * Convenience method that returns a lower case representation of the enum {@link #name()}.
+     * @return a lower case representation of {@link #name()}
+     */
+
+    public String nameLowerCase()
+    {
+        return this.name()
+                   .toLowerCase();
+    }
+
 }
