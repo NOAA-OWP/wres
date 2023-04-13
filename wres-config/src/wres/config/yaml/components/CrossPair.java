@@ -2,7 +2,7 @@ package wres.config.yaml.components;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 
 /**
  * Enumeration for cross-pairing.
@@ -20,6 +20,6 @@ public enum CrossPair
     @Override
     public String toString()
     {
-        return DeclarationFactory.fromEnumName( this.name() );
+        return DeclarationUtilities.fromEnumName( this.name() );
     }
 }

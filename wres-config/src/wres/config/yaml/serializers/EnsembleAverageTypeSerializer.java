@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.statistics.generated.Pool;
 
 /**
@@ -19,7 +19,7 @@ public class EnsembleAverageTypeSerializer extends JsonSerializer<Pool.EnsembleA
     public void serialize( Pool.EnsembleAverageType type, JsonGenerator writer, SerializerProvider serializers )
             throws IOException
     {
-        String friendlyName = DeclarationFactory.fromEnumName( type.name() );
+        String friendlyName = DeclarationUtilities.fromEnumName( type.name() );
         writer.writeString( friendlyName );
     }
 }

@@ -31,6 +31,7 @@ import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -186,9 +187,12 @@ public class DeclarationValidator
         // Check that the feature declaration is valid
         List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
         events.addAll( features );
-        // Check that the metrics declaration are valid
+        // Check that the metrics declaration is valid
         List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
         events.addAll( metrics );
+        // Check that the threshold service declaration is valid
+        List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdServiceIsValid( declaration );
+        events.addAll( thresholdService );
         // Check that the output formats declaration is valid
         List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
         events.addAll( outputs );
@@ -273,7 +277,7 @@ public class DeclarationValidator
             EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
             events.add( event );
         }
-        if ( DeclarationValidator.hasBaseline( declaration )
+        if ( DeclarationUtilities.hasBaseline( declaration )
              && Objects.isNull( declaration.baseline()
                                            .dataset()
                                            .type() ) )
@@ -300,7 +304,7 @@ public class DeclarationValidator
         // If there is no ensemble data present, there cannot be ensemble-like declaration
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ENSEMBLE_FORECASTS, declaration ) )
         {
-            Set<String> ensembleDeclaration = DeclarationFactory.getEnsembleDeclaration( declaration );
+            Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( declaration );
             if ( !ensembleDeclaration.isEmpty() )
             {
                 EvaluationStatusEvent event
@@ -323,7 +327,7 @@ public class DeclarationValidator
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ENSEMBLE_FORECASTS, declaration )
              && DeclarationValidator.doesNotHaveThisDataType( DataType.SINGLE_VALUED_FORECASTS, declaration ) )
         {
-            Set<String> forecastDeclaration = DeclarationFactory.getForecastDeclaration( declaration );
+            Set<String> forecastDeclaration = DeclarationUtilities.getForecastDeclaration( declaration );
             if ( !forecastDeclaration.isEmpty() )
             {
                 EvaluationStatusEvent event
@@ -347,7 +351,7 @@ public class DeclarationValidator
 
         // If there are no analyses datasets present, there cannot be declaration for analyses
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ANALYSES, declaration )
-             && DeclarationFactory.hasAnalysisDurations( declaration ) )
+             && DeclarationUtilities.hasAnalysisDurations( declaration ) )
         {
             EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
                                                                .setStatusLevel( StatusLevel.ERROR )
@@ -604,7 +608,7 @@ public class DeclarationValidator
                                                       PREDICTED );
         events.addAll( rightEvents );
 
-        if ( DeclarationValidator.hasBaseline( declaration ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             List<EvaluationStatusEvent> baselineEvents =
                     DeclarationValidator.sourcesAreValid( declaration.baseline().dataset().sources(),
@@ -661,7 +665,7 @@ public class DeclarationValidator
         }
 
         // Baseline sources, if needed
-        if ( DeclarationValidator.hasBaseline( declaration ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             for ( Source nextSource : declaration.baseline()
                                                  .dataset()
@@ -724,7 +728,7 @@ public class DeclarationValidator
                                                                 DatasetOrientation.RIGHT );
         events.addAll( rightEvents );
 
-        if ( DeclarationValidator.hasBaseline( declaration ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             List<EvaluationStatusEvent> baselineEvents
                     = DeclarationValidator.timeZoneOffsetsAreValid( declaration.baseline()
@@ -1033,6 +1037,83 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that the threshold service declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> thresholdServiceIsValid( EvaluationDeclaration declaration )
+    {
+        ThresholdService service = declaration.thresholdService();
+
+        if ( Objects.isNull( service ) )
+        {
+            LOGGER.debug( "There is no threshold service declaration to validate." );
+            return Collections.emptyList();
+        }
+
+        DatasetOrientation orientation = service.featureNameFrom();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // If the orientation for service thresholds is 'BASELINE', then a baseline must be present
+        if ( orientation == DatasetOrientation.BASELINE && !DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The 'threshold_service' declaration requested that "
+                                                             + "feature names with an orientation of '"
+                                                             + DatasetOrientation.BASELINE
+                                                             + "' are used to correlate features with thresholds, but "
+                                                             + "no 'baseline' dataset was discovered. Please add a "
+                                                             + "'baseline' dataset or fix the 'feature_name_from' "
+                                                             + "in the 'threshold_service' declaration." )
+                                           .build();
+
+            events.add( event );
+        }
+
+        // Assemble the features that require thresholds
+        Set<GeometryTuple> tuples = DeclarationUtilities.getFeatures( declaration );
+
+        // Baseline orientation and some feature tuples present that are missing a baseline feature?
+        if ( orientation == DatasetOrientation.BASELINE
+             && tuples.stream()
+                      .anyMatch( next -> !next.hasBaseline() ) )
+        {
+            Set<String> missing = tuples.stream()
+                                        .filter( next -> !next.hasBaseline() )
+                                        .map( DeclarationFactory.PROTBUF_STRINGIFIER )
+                                        .collect( Collectors.toSet() );
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered declaration for a 'threshold_service', which "
+                                                             + "requests thresholds whose feature names have an "
+                                                             + "orientation of '"
+                                                             + DatasetOrientation.BASELINE
+                                                             + "'. However, "
+                                                             + missing.size()
+                                                             + " feature(s) were discovered with a missing '"
+                                                             + DatasetOrientation.BASELINE
+                                                             + "' feature name. Please fix the 'feature_name_from' in "
+                                                             + "the 'threshold_service' declaration or supply fully "
+                                                             + "composed feature tuples with an appropriate feature "
+                                                             + "for the '"
+                                                             + DatasetOrientation.BASELINE
+                                                             + "' dataset. The first ten (or fewer) feature tuples "
+                                                             + "with a missing baseline feature were: "
+                                                             + missing.stream()
+                                                                      .limit( 10 )
+                                                                      .collect( Collectors.toSet() ) )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the output formats declaration is valid.
      * @param declaration the evaluation declaration
      * @return the validation events encountered
@@ -1204,7 +1285,7 @@ public class DeclarationValidator
                                                                    == MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
                                                   .collect( Collectors.toSet() );
 
-        if ( !DeclarationValidator.hasBaseline( declaration ) && !metrics.isEmpty() )
+        if ( !DeclarationUtilities.hasBaseline( declaration ) && !metrics.isEmpty() )
 
         {
             EvaluationStatusEvent event
@@ -1457,7 +1538,7 @@ public class DeclarationValidator
             events.add( event );
         }
 
-        if ( DeclarationValidator.hasBaseline( declaration ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             Set<SourceInterface> baselineRequireFeatures =
                     DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.baseline()
@@ -1484,7 +1565,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // No baseline present, then cannot declare baseline features
-        if ( !DeclarationValidator.hasBaseline( declaration ) )
+        if ( !DeclarationUtilities.hasBaseline( declaration ) )
         {
             boolean singletonHasBaseline = Objects.nonNull( declaration.features() )
                                            && declaration.features()
@@ -1542,22 +1623,22 @@ public class DeclarationValidator
         }
 
         // Are there different feature authorities on each side of data?
-        Set<FeatureAuthority> leftAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.left() );
-        Set<FeatureAuthority> rightAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.right() );
+        Set<FeatureAuthority> leftAuthorities = DeclarationUtilities.getFeatureAuthorities( evaluation.left() );
+        Set<FeatureAuthority> rightAuthorities = DeclarationUtilities.getFeatureAuthorities( evaluation.right() );
         Set<FeatureAuthority> baselineAuthorities = null;
 
         String baselineStatement = "";
-        if ( DeclarationValidator.hasBaseline( evaluation ) )
+        if ( DeclarationUtilities.hasBaseline( evaluation ) )
         {
-            baselineAuthorities = DeclarationFactory.getFeatureAuthorities( evaluation.baseline()
-                                                                                      .dataset() );
+            baselineAuthorities = DeclarationUtilities.getFeatureAuthorities( evaluation.baseline()
+                                                                                        .dataset() );
             baselineStatement = "The feature authorities detected for the 'baseline' data were '"
                                 + baselineAuthorities
                                 + "'.";
         }
 
         if ( Objects.equals( leftAuthorities, rightAuthorities )
-             && ( !DeclarationValidator.hasBaseline( evaluation ) || Objects.equals( leftAuthorities,
+             && ( !DeclarationUtilities.hasBaseline( evaluation ) || Objects.equals( leftAuthorities,
                                                                                      baselineAuthorities ) ) )
         {
             LOGGER.debug( "Discovered the same feature authorities for all sides of data." );
@@ -2293,7 +2374,7 @@ public class DeclarationValidator
                                                             SourceInterface.WRDS_AHPS,
                                                             SourceInterface.WRDS_NWM );
         }
-        else if ( DeclarationValidator.hasBaseline( declaration ) && orientation == DatasetOrientation.BASELINE )
+        else if ( DeclarationUtilities.hasBaseline( declaration ) && orientation == DatasetOrientation.BASELINE )
         {
             return DeclarationValidator.hasSourceInterface( declaration.baseline().dataset().sources(),
                                                             SourceInterface.USGS_NWIS,
@@ -2320,7 +2401,7 @@ public class DeclarationValidator
         }
         else
         {
-            return DeclarationValidator.hasBaseline( declaration ) && Objects.isNull( declaration.baseline()
+            return DeclarationUtilities.hasBaseline( declaration ) && Objects.isNull( declaration.baseline()
                                                                                                  .dataset()
                                                                                                  .variable() );
         }
@@ -2351,15 +2432,6 @@ public class DeclarationValidator
     }
 
     /**
-     * @param declaration the declaration
-     * @return whether the declaration contains a baseline dataset
-     */
-    private static boolean hasBaseline( EvaluationDeclaration declaration )
-    {
-        return Objects.nonNull( declaration.baseline() );
-    }
-
-    /**
      * @param type the data type
      * @param declaration the declaration
      * @return whether the declaration has the data type on any side
@@ -2369,7 +2441,7 @@ public class DeclarationValidator
     {
         return declaration.left().type() != type
                && declaration.right().type() != type
-               && ( !DeclarationValidator.hasBaseline( declaration )
+               && ( !DeclarationUtilities.hasBaseline( declaration )
                     || declaration.baseline().dataset().type() != type );
     }
 

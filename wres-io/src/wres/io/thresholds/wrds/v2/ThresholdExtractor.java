@@ -170,21 +170,18 @@ public class ThresholdExtractor
         }
 
         return thresholdDefinitions.stream()
-                                   .filter(
-                                           ( ThresholdDefinition definition ) -> definition.getThresholdProvider()
-                                                                                           .equals( this.provider )
-                                                                                 &&
-                                                                                 ( this.ratingProvider == null
-                                                                                   || definition.getRatingProvider()
-                                                                                                .equals( this.ratingProvider ) ) )
+                                   .filter( ( ThresholdDefinition definition ) -> definition.getThresholdProvider()
+                                                                                            .equals( this.provider )
+                                                                                  &&
+                                                                                  ( this.ratingProvider == null
+                                                                                    || definition.getRatingProvider()
+                                                                                                 .equals( this.ratingProvider ) ) )
                                    .parallel()
-                                   .map(
-                                           definition -> definition.getThresholds(
-                                                   this.thresholdType,
-                                                   this.thresholdOperator,
-                                                   this.sides,
-                                                   this.calculated,
-                                                   this.desiredUnitMapper ) )
+                                   .map( definition -> definition.getThresholds( this.thresholdType,
+                                                                                 this.thresholdOperator,
+                                                                                 this.sides,
+                                                                                 this.calculated,
+                                                                                 this.desiredUnitMapper ) )
                                    .flatMap( locationThresholds -> locationThresholds.entrySet().stream() )
                                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }

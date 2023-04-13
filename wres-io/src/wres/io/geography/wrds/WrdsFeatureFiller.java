@@ -43,13 +43,14 @@ import wres.statistics.generated.GeometryTuple;
 
 public class WrdsFeatureFiller
 {
-    private static final String DELIMITER = "/";
-
-    private static final String WRES_NOT_READY_TO_LOOK_UP = "WRES not ready to look up ";
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureFiller.class );
 
+    /** Maximum URL length. */
     private static final int MAX_SAFE_URL_LENGTH = 2000;
+
+    /** Delimiter. */
+    private static final String DELIMITER = "/";
 
     /**
      * Takes a dense or sparse declaration with regard to features and returns a dense declaration with regard to
@@ -1079,9 +1080,9 @@ public class WrdsFeatureFiller
         List<WrdsLocation> wrdsLocations = WrdsFeatureService.read( uri );
         for ( WrdsLocation wrdsLocation : wrdsLocations )
         {
-            String leftName = WrdsFeatureFiller.getNameForAuthority( leftAuthority, wrdsLocation );
-            String rightName = WrdsFeatureFiller.getNameForAuthority( rightAuthority, wrdsLocation );
-            String baselineName = WrdsFeatureFiller.getNameForAuthority( baselineAuthority, wrdsLocation );
+            String leftName = WrdsLocation.getNameForAuthority( leftAuthority, wrdsLocation );
+            String rightName = WrdsLocation.getNameForAuthority( rightAuthority, wrdsLocation );
+            String baselineName = WrdsLocation.getNameForAuthority( baselineAuthority, wrdsLocation );
 
             // If all three names are present, create a feature
             if ( WrdsFeatureFiller.isValidFeatureName( leftName )
@@ -1115,30 +1116,6 @@ public class WrdsFeatureFiller
     private static boolean isValidFeatureName( String featureName )
     {
         return Objects.nonNull( featureName ) && !featureName.isBlank();
-    }
-
-    /**
-     * Determines the feature name from the prescribed location and feature authority.
-     * @param featureAuthority the feature authority
-     * @param wrdsLocation the collection of names to inspect
-     * @return the correct name for the authority
-     */
-    private static String getNameForAuthority( FeatureAuthority featureAuthority, WrdsLocation wrdsLocation )
-    {
-        if ( Objects.isNull( featureAuthority ) )
-        {
-            LOGGER.debug( "While inspecting WRDS location {}, discovered a null feature authority.", wrdsLocation );
-            return null;
-        }
-
-        return switch ( featureAuthority )
-                {
-                    case NWS_LID -> wrdsLocation.nwsLid();
-                    case USGS_SITE_CODE -> wrdsLocation.usgsSiteCode();
-                    case NWM_FEATURE_ID -> wrdsLocation.nwmFeatureId();
-                    default -> throw new UnsupportedOperationException( WRES_NOT_READY_TO_LOOK_UP
-                                                                        + featureAuthority );
-                };
     }
 
     /**

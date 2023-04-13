@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 
 /**
  * Serializes a {@link ChronoUnit}.
@@ -18,7 +18,7 @@ public class ChronoUnitSerializer extends JsonSerializer<ChronoUnit>
     @Override
     public void serialize( ChronoUnit unit, JsonGenerator writer, SerializerProvider serializers ) throws IOException
     {
-        String friendlyName = DeclarationFactory.fromEnumName( unit.name() );
+        String friendlyName = DeclarationUtilities.fromEnumName( unit.name() );
         writer.writeString( friendlyName );
     }
 

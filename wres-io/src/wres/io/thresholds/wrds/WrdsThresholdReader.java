@@ -108,13 +108,11 @@ public class WrdsThresholdReader
      * @param featureNames the named features for which thresholds are required
      * @param featureAuthority the feature authority associated with the feature names
      * @return the thresholds mapped against features
-     * @throws IOException At various points, this can be thrown.
      */
     public Map<WrdsLocation, Set<Threshold>> readThresholds( ThresholdService thresholdService,
                                                              UnitMapper unitMapper,
                                                              Set<String> featureNames,
                                                              FeatureAuthority featureAuthority )
-            throws IOException
     {
         Objects.requireNonNull( thresholdService );
         Objects.requireNonNull( unitMapper );
@@ -175,7 +173,7 @@ public class WrdsThresholdReader
 
         if ( thresholdMapping.isEmpty() )
         {
-            throw new IOException( "No thresholds could be retrieved from " + uri );
+            throw new ThresholdReadingException( "No thresholds could be retrieved from " + uri );
         }
 
         LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );

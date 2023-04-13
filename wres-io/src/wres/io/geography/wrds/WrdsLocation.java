@@ -1,10 +1,16 @@
 package wres.io.geography.wrds;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.config.yaml.components.FeatureAuthority;
 
 /**
  * For WRDS Location API 2.0 and older, this corresponds directly to an element in
@@ -15,6 +21,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 @JsonIgnoreProperties( ignoreUnknown = true )
 public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nwsLid )
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsLocation.class );
+
     /**
      * Creates an instance.
      * @param nwmFeatureId the NWM feature ID
@@ -32,6 +41,31 @@ public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nws
         this.nwmFeatureId = nwmFeatureId;
         this.usgsSiteCode = usgsSiteCode;
         this.nwsLid = nwsLid;
+    }
+
+    /**
+     * Determines the feature name from the prescribed location and feature authority.
+     * @param featureAuthority the feature authority
+     * @param wrdsLocation the collection of names to inspect
+     * @return the correct name for the authority
+     */
+    public static String getNameForAuthority( FeatureAuthority featureAuthority, WrdsLocation wrdsLocation )
+    {
+        if ( Objects.isNull( featureAuthority ) )
+        {
+            LOGGER.debug( "While inspecting WRDS location {}, discovered a null feature authority.", wrdsLocation );
+            return null;
+        }
+
+        return switch ( featureAuthority )
+                {
+                    case NWS_LID -> wrdsLocation.nwsLid();
+                    case USGS_SITE_CODE -> wrdsLocation.usgsSiteCode();
+                    case NWM_FEATURE_ID -> wrdsLocation.nwmFeatureId();
+                    default -> throw new UnsupportedOperationException( "This feature authority is not supported: "
+                                                                        + featureAuthority
+                                                                        + "." );
+                };
     }
 
     @Override

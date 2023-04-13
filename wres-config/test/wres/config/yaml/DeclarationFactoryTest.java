@@ -2373,7 +2373,6 @@ class DeclarationFactoryTest
                   provider: bar
                   rating_provider: baz
                   missing_value: -9999999.0
-                  feature_name_from: observed
                   """;
 
         ThresholdService thresholdService = ThresholdServiceBuilder.builder()
