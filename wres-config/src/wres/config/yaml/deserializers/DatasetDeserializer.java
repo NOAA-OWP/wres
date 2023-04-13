@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -188,7 +188,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         if ( Objects.nonNull( node.get( "feature_authority" ) ) )
         {
             JsonNode featureAuthorityNode = node.get( "feature_authority" );
-            String featureAuthorityName = DeclarationFactory.toEnumName( featureAuthorityNode.asText() );
+            String featureAuthorityName = DeclarationUtilities.toEnumName( featureAuthorityNode.asText() );
             featureAuthority = FeatureAuthority.valueOf( featureAuthorityName );
         }
 

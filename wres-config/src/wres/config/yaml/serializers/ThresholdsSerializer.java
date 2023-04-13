@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.statistics.generated.Geometry;
@@ -173,7 +174,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         if ( innerThreshold.getOperator() != DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.getOperator() )
         {
             ThresholdOperator operator = innerThreshold.getOperator();
-            String operatorName = DeclarationFactory.fromEnumName( operator.name() );
+            String operatorName = DeclarationUtilities.fromEnumName( operator.name() );
             writer.writeStringField( "operator", operatorName );
         }
         // Write the data orientation

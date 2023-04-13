@@ -10,7 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 
 /**
  * Serializes a {@link Duration}.
@@ -32,7 +32,7 @@ public class DurationSerializer extends JsonSerializer<Duration>
 
         if ( duration.getSeconds() != 0 || duration.getNano() != 0 )
         {
-            Pair<Long,String> serialized = DeclarationFactory.getDurationInPreferredUnits( duration );
+            Pair<Long,String> serialized = DeclarationUtilities.getDurationInPreferredUnits( duration );
 
             // Period
             gen.writeNumberField( "period", serialized.getLeft() );

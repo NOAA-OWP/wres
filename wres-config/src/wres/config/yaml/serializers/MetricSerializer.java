@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -31,7 +31,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
     public void serialize( Metric metric, JsonGenerator writer, SerializerProvider serializers ) throws IOException
     {
         MetricConstants name = metric.name();
-        String friendlyName = DeclarationFactory.fromEnumName( name.name() );
+        String friendlyName = DeclarationUtilities.fromEnumName( name.name() );
 
         // Simple metric
         if ( this.isSimpleMetric( metric.parameters() ) )
@@ -93,7 +93,7 @@ public class MetricSerializer extends JsonSerializer<Metric>
         {
             List<String> mapped = parameters.summaryStatistics().stream()
                                             .map( MetricConstants::name )
-                                            .map( DeclarationFactory::fromEnumName )
+                                            .map( DeclarationUtilities::fromEnumName )
                                             .toList();
             writer.writeObjectField( "summary_statistics", mapped );
         }

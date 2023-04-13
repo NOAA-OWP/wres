@@ -2,7 +2,7 @@ package wres.config.yaml.components;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 
 /**
  * The type or structure of the time-series data to evaluate.
@@ -44,6 +44,6 @@ public enum DataType
     @Override
     public String toString()
     {
-        return DeclarationFactory.fromEnumName( this.name() );
+        return DeclarationUtilities.fromEnumName( this.name() );
     }
 }

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.FormatsBuilder;
 import wres.statistics.generated.Outputs;
@@ -138,7 +138,7 @@ public class FormatsSerializer extends JsonSerializer<Formats>
         if ( parameters.getShape() != defaults.getShape() )
         {
             Outputs.GraphicFormat.GraphicShape shape = parameters.getShape();
-            String friendlyShape = DeclarationFactory.fromEnumName( shape.name() );
+            String friendlyShape = DeclarationUtilities.fromEnumName( shape.name() );
             writer.writeStringField( "orientation", friendlyShape );
         }
 

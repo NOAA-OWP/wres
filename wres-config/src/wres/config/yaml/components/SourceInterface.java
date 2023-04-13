@@ -4,7 +4,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 
 /**
  * An interface to use when reading source data.
@@ -111,7 +111,7 @@ public enum SourceInterface
     @Override
     public String toString()
     {
-        return DeclarationFactory.fromEnumName( this.name() );
+        return DeclarationUtilities.fromEnumName( this.name() );
     }
 
     /**

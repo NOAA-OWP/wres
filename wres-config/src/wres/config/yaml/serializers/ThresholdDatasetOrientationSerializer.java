@@ -7,25 +7,26 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.ThresholdOrientation;
 
 /**
- * Only serializes a {@link ThresholdOrientation} that is not default.
+ * Only serializes a {@link DatasetOrientation} that is not default.
  * @author James Brown
  */
-public class ThresholdOrientationSerializer extends JsonSerializer<ThresholdOrientation>
+public class ThresholdDatasetOrientationSerializer extends JsonSerializer<DatasetOrientation>
 {
     @Override
-    public void serialize( ThresholdOrientation orientation, JsonGenerator writer, SerializerProvider serializers )
+    public void serialize( DatasetOrientation orientation, JsonGenerator writer, SerializerProvider serializers )
             throws IOException
     {
         writer.writeObject( orientation );
     }
 
     @Override
-    public boolean isEmpty( SerializerProvider serializers, ThresholdOrientation orientation )
+    public boolean isEmpty( SerializerProvider serializers, DatasetOrientation orientation )
     {
         // Do not write the default
-        return orientation == DeclarationFactory.DEFAULT_THRESHOLD_ORIENTATION;
+        return orientation == DeclarationFactory.DEFAULT_THRESHOLD_DATASET_ORIENTATION;
     }
 }

@@ -185,7 +185,7 @@ public class DeclarationInterpolator
         {
             LOGGER.debug( "Interpolating geospatial features from the raw declaration." );
 
-            boolean hasBaseline = DeclarationFactory.hasBaseline( builder );
+            boolean hasBaseline = DeclarationUtilities.hasBaseline( builder );
 
             // Apply to feature context
             if ( Objects.nonNull( builder.features() ) )
@@ -523,7 +523,7 @@ public class DeclarationInterpolator
 
         // Group by type
         Map<ThresholdType, Set<Threshold>> thresholdsByType
-                = DeclarationFactory.groupThresholdsByType( allThresholds );
+                = DeclarationUtilities.groupThresholdsByType( allThresholds );
         LOGGER.debug( "When interpolating thresholds for metrics, discovered the following thresholds to use: {}.",
                       thresholdsByType );
 
@@ -669,7 +669,7 @@ public class DeclarationInterpolator
         }
 
         // Baseline dataset
-        if ( DeclarationFactory.hasBaseline( builder ) )
+        if ( DeclarationUtilities.hasBaseline( builder ) )
         {
             ZoneOffset baselineOffset = builder.baseline()
                                                .dataset()
@@ -727,22 +727,22 @@ public class DeclarationInterpolator
      */
     private static void interpolateFeatureAuthorities( EvaluationDeclarationBuilder builder )
     {
-        Set<FeatureAuthority> leftAuthorities = DeclarationFactory.getFeatureAuthorities( builder.left() );
+        Set<FeatureAuthority> leftAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.left() );
         Dataset left = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.left(),
                                                                                 leftAuthorities,
                                                                                 DatasetOrientation.LEFT );
         builder.left( left );
 
-        Set<FeatureAuthority> rightAuthorities = DeclarationFactory.getFeatureAuthorities( builder.right() );
+        Set<FeatureAuthority> rightAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.right() );
         Dataset right = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.right(),
                                                                                  rightAuthorities,
                                                                                  DatasetOrientation.RIGHT );
         builder.right( right );
 
-        if ( DeclarationFactory.hasBaseline( builder ) )
+        if ( DeclarationUtilities.hasBaseline( builder ) )
         {
-            Set<FeatureAuthority> baselineAuthorities = DeclarationFactory.getFeatureAuthorities( builder.baseline()
-                                                                                                         .dataset() );
+            Set<FeatureAuthority> baselineAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.baseline()
+                                                                                                           .dataset() );
             Dataset baseline = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.baseline()
                                                                                                .dataset(),
                                                                                         baselineAuthorities,
@@ -890,7 +890,7 @@ public class DeclarationInterpolator
                                     + "explicitly.";
 
             // Analysis durations present? If so, assume analyses
-            if ( DeclarationFactory.hasAnalysisDurations( builder ) )
+            if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
             {
                 Dataset newLeft = DatasetBuilder.builder( observed )
                                                 .type( DataType.ANALYSES )
@@ -935,8 +935,8 @@ public class DeclarationInterpolator
             DataType dataType;
 
             // Discover hints from the declaration
-            Set<String> ensembleDeclaration = DeclarationFactory.getEnsembleDeclaration( builder );
-            Set<String> forecastDeclaration = DeclarationFactory.getForecastDeclaration( builder );
+            Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( builder );
+            Set<String> forecastDeclaration = DeclarationUtilities.getForecastDeclaration( builder );
 
             // Ensemble declaration?
             if ( !ensembleDeclaration.isEmpty() )
@@ -1054,7 +1054,7 @@ public class DeclarationInterpolator
                                       .featureAuthority(),
                                builder.right()
                                       .featureAuthority() )
-               && ( !DeclarationFactory.hasBaseline( builder )
+               && ( !DeclarationUtilities.hasBaseline( builder )
                     || Objects.equals( builder.left()
                                               .featureAuthority(),
                                        builder.baseline()
@@ -1096,7 +1096,7 @@ public class DeclarationInterpolator
      */
     private static void resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
     {
-        if ( DeclarationFactory.hasBaseline( builder ) )
+        if ( DeclarationUtilities.hasBaseline( builder ) )
         {
             Dataset predicted = builder.right();
             BaselineDataset baseline = builder.baseline();

@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.statistics.generated.DurationScoreMetric;
 
 /**
@@ -38,7 +38,7 @@ public class SummaryStatisticsDeserializer
 
         return StreamSupport.stream( node.spliterator(), false )
                             .map( JsonNode::asText )
-                            .map( DeclarationFactory::toEnumName )
+                            .map( DeclarationUtilities::toEnumName )
                             // Use the canonical list of summary statistic names as a filter
                             .map( DurationScoreMetric.DurationScoreMetricComponent.ComponentName::valueOf )
                             .map( next -> MetricConstants.valueOf( next.name() ) )

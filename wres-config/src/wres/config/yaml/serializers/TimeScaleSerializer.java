@@ -11,7 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.TimeScale;
 
 /**
@@ -35,7 +35,7 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
 
         // Function
         wres.statistics.generated.TimeScale.TimeScaleFunction function = timeScale.getFunction();
-        String functionName = DeclarationFactory.fromEnumName( function.name() );
+        String functionName = DeclarationUtilities.fromEnumName( function.name() );
         gen.writeStringField( "function", functionName );
 
         // Period, if available
@@ -46,7 +46,7 @@ public class TimeScaleSerializer extends JsonSerializer<TimeScale>
                                                     timeScale.getPeriod()
                                                              .getNanos() );
 
-            Pair<Long,String> serialized = DeclarationFactory.getDurationInPreferredUnits( duration );
+            Pair<Long,String> serialized = DeclarationUtilities.getDurationInPreferredUnits( duration );
 
             // Period
             gen.writeNumberField( "period", serialized.getLeft() );

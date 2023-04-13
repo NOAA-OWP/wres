@@ -2,7 +2,7 @@ package wres.config.yaml.components;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -33,6 +33,6 @@ public enum ThresholdOperator
     @Override
     public String toString()
     {
-        return DeclarationFactory.fromEnumName( this.name() );
+        return DeclarationUtilities.fromEnumName( this.name() );
     }
 }

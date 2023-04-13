@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 
@@ -86,7 +86,7 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
             }
             else
             {
-                String nameString = DeclarationFactory.toEnumName( nextNode.asText() );
+                String nameString = DeclarationUtilities.toEnumName( nextNode.asText() );
                 MetricConstants metricName = MetricConstants.valueOf( nameString );
                 nextMetric = new Metric( metricName, null );
                 LOGGER.debug( "Discovered a metric without parameters: {}. ", nextMetric.name() );
@@ -109,7 +109,7 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
     private Metric getMetric( JsonNode node, ObjectReader reader ) throws IOException
     {
         JsonNode nameNode = node.get( "name" );
-        String enumName = DeclarationFactory.toEnumName( nameNode.asText() );
+        String enumName = DeclarationUtilities.toEnumName( nameNode.asText() );
         MetricConstants metricName = MetricConstants.valueOf( enumName );
         MetricParameters parameters = this.getMetricParameters( node, reader );
         return new Metric( metricName, parameters );

@@ -1,5 +1,6 @@
 package wres.config.yaml;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
@@ -21,6 +22,7 @@ import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -35,6 +37,8 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScaleLenience;
@@ -966,6 +970,42 @@ class DeclarationValidatorTest
                                                                         + "'netcdf2', which supports 'feature_groups', "
                                                                         + "but",
                                                                         StatusLevel.WARN ) )
+        );
+    }
+
+    @Test
+    void testInvalidThresholdServiceDeclarationResultsInErrors()
+    {
+        ThresholdService service
+                = ThresholdServiceBuilder.builder()
+                                         .uri( URI.create( "http://foo" ) )
+                                         .featureNameFrom( DatasetOrientation.BASELINE )
+                                         .build();
+
+        // No baseline feature = first error
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "foo" ) )
+                                                             .build() );
+        Features features = new Features( geometries );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        // No baseline = second error
+                                                                        .features( features )
+                                                                        .thresholdService( service )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "correlate features with thresholds, "
+                                                                        + "but no 'baseline' dataset was discovered",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "feature(s) were discovered with a "
+                                                                        + "missing 'baseline' feature name",
+                                                                        StatusLevel.ERROR ) )
         );
     }
 

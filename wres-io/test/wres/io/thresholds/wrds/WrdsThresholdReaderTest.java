@@ -17,7 +17,6 @@ import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
@@ -30,7 +29,6 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.units.UnitMapper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.statistics.generated.Threshold;
@@ -1108,8 +1106,8 @@ class WrdsThresholdReaderTest
     /** Epsilon for matching doubles. */
     private static final double EPSILON = 0.00001;
 
-    /** Unit string. */
-    private static final String CMS = "CMS";
+    /** Stage unit string. */
+    private static final String FT = "FT";
 
     // Various locations to test
     private static final WrdsLocation PTSA1 = WrdsThresholdReaderTest.createFeature( "2323396", "02372250", "PTSA1" );
@@ -1158,58 +1156,57 @@ class WrdsThresholdReaderTest
     private static final WrdsLocation WRNO1 = WrdsThresholdReaderTest.createFeature( null, null, "WRNO1" );
     private static final WrdsLocation BLEO1 = WrdsThresholdReaderTest.createFeature( null, null, "BLEO1" );
 
-    private static final List<WrdsLocation> DESIRED_FEATURES = List.of(
-            PTSA1,
-            MNTG1,
-            BLOF1,
-            CEDG1,
-            SMAF1,
-            CHAF1,
-            OKFG1,
-            TLPT2,
-            NUTF1,
-            CDRA1,
-            MUCG1,
-            PRSG1,
-            LSNO2,
-            HDGA4,
-            FAKE3,
-            CNMP1,
-            WLLM2,
-            RCJD2,
-            MUSM5,
-            DUMM5,
-            DMTM5,
-            PONS2,
-            MCKG1,
-            DSNG1,
-            BVAW2,
-            CNEO2,
-            CMKT2,
-            BDWN6,
-            CFBN6,
-            CCSA1,
-            LGNN8,
-            BCLN7,
-            KERV2,
-            ARDS1,
-            WINW2,
-            SRDN5,
-            MNTN1,
-            GNSW4,
-            JAIO1,
-            INCO1,
-            PRMO1,
-            PARO1,
-            BRCO1,
-            WRNO1,
-            BLEO1 );
+    private static final List<WrdsLocation> DESIRED_FEATURES = List.of( PTSA1,
+                                                                        MNTG1,
+                                                                        BLOF1,
+                                                                        CEDG1,
+                                                                        SMAF1,
+                                                                        CHAF1,
+                                                                        OKFG1,
+                                                                        TLPT2,
+                                                                        NUTF1,
+                                                                        CDRA1,
+                                                                        MUCG1,
+                                                                        PRSG1,
+                                                                        LSNO2,
+                                                                        HDGA4,
+                                                                        FAKE3,
+                                                                        CNMP1,
+                                                                        WLLM2,
+                                                                        RCJD2,
+                                                                        MUSM5,
+                                                                        DUMM5,
+                                                                        DMTM5,
+                                                                        PONS2,
+                                                                        MCKG1,
+                                                                        DSNG1,
+                                                                        BVAW2,
+                                                                        CNEO2,
+                                                                        CMKT2,
+                                                                        BDWN6,
+                                                                        CFBN6,
+                                                                        CCSA1,
+                                                                        LGNN8,
+                                                                        BCLN7,
+                                                                        KERV2,
+                                                                        ARDS1,
+                                                                        WINW2,
+                                                                        SRDN5,
+                                                                        MNTN1,
+                                                                        GNSW4,
+                                                                        JAIO1,
+                                                                        INCO1,
+                                                                        PRMO1,
+                                                                        PARO1,
+                                                                        BRCO1,
+                                                                        WRNO1,
+                                                                        BLEO1 );
 
-    /** A measurement unit. */
-    private static final MeasurementUnit units = MeasurementUnit.of( "CMS" );
+    /** A unit mapper for stage. */
+    private UnitMapper stageMapper;
 
-    /** A unit mapper. */
-    private UnitMapper unitMapper;
+    /** A unit mapper for flow. */
+    private UnitMapper flowMapper;
 
     /** A reader to test. */
     private WrdsThresholdReader reader;
@@ -1218,11 +1215,8 @@ class WrdsThresholdReaderTest
     void runBeforeEachTest()
     {
         this.reader = WrdsThresholdReader.of();
-        this.unitMapper = Mockito.mock( UnitMapper.class );
-        Mockito.when( this.unitMapper.getUnitMapper( "FT" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getUnitMapper( "CFS" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getUnitMapper( "MM" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getDesiredMeasurementUnitName() ).thenReturn( units.toString() );
+        this.stageMapper = UnitMapper.of( "FT" );
+        this.flowMapper = UnitMapper.of( "CFS" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -1233,7 +1227,7 @@ class WrdsThresholdReaderTest
     }
 
     @Test
-    void testReadThresholdsFromMockedService() throws IOException
+    void testReadThresholdsFromMockedService()
     {
         URI fakeUri = URI.create( "http://localhost:"
                                   + this.mockServer.getLocalPort()
@@ -1257,51 +1251,50 @@ class WrdsThresholdReaderTest
 
         Map<WrdsLocation, Set<Threshold>> actual =
                 this.reader.readThresholds( service,
-                                            this.unitMapper,
+                                            this.stageMapper,
                                             Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
                                             FeatureAuthority.NWS_LID );
 
-        WrdsLocation first = new WrdsLocation( "2298964", "02359170", "SMAF1" );
         Threshold firstOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
         Threshold firstTwo = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 8.0 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "action" )
                                       .build();
         Threshold firstThree = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 9.5 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "flood" )
                                         .build();
         Threshold firstFour = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 9.5 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "minor" )
                                        .build();
         Threshold firstFive = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 11.5 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "moderate" )
                                        .build();
         Threshold firstSix = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 13.5 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "major" )
                                       .build();
         Threshold firstSeven = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 15.36 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "record" )
                                         .build();
 
@@ -1313,80 +1306,77 @@ class WrdsThresholdReaderTest
                                                firstSix,
                                                firstSeven );
 
-        assertEquals( firstExpected, actual.get( first ) );
+        assertEquals( firstExpected, actual.get( SMAF1 ) );
 
-        WrdsLocation second = new WrdsLocation( "2310009", "02343940", "CEDG1" );
         Threshold secondOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "low" )
                                        .build();
         Threshold secondTwo = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 14.29 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "record" )
                                        .build();
 
         Set<Threshold> secondExpected = Set.of( secondOne,
                                                 secondTwo );
 
-        assertEquals( secondExpected, actual.get( second ) );
+        assertEquals( secondExpected, actual.get( CEDG1 ) );
 
-        WrdsLocation third = new WrdsLocation( "2323396", "02372250", "PTSA1" );
         Threshold thirdOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
 
         Set<Threshold> thirdExpected = Set.of( thirdOne );
 
-        assertEquals( thirdExpected, actual.get( third ) );
+        assertEquals( thirdExpected, actual.get( PTSA1 ) );
 
-        WrdsLocation fourth = new WrdsLocation( "2297254", "02358700", "BLOF1" );
         Threshold fourthOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 13.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "action" )
                                        .build();
         Threshold fourthTwo = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "bankfull" )
                                        .build();
         Threshold fourthThree = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
                                          .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
-                                         .setThresholdValueUnits( CMS )
+                                         .setThresholdValueUnits( FT )
                                          .setName( "flood" )
                                          .build();
         Threshold fourthFour = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "minor" )
                                         .build();
         Threshold fourthFive = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 23.5 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "moderate" )
                                         .build();
         Threshold fourthSix = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 26.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "major" )
                                        .build();
         Threshold fourthSeven = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
                                          .setLeftThresholdValue( DoubleValue.of( 28.6 ) )
-                                         .setThresholdValueUnits( CMS )
+                                         .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
 
@@ -1398,55 +1388,54 @@ class WrdsThresholdReaderTest
                                                 fourthSix,
                                                 fourthSeven );
 
-        assertEquals( fourthExpected, actual.get( fourth ) );
+        assertEquals( fourthExpected, actual.get( BLOF1 ) );
 
-        WrdsLocation fifth = new WrdsLocation( "6444276", "02349605", "MNTG1" );
         Threshold fifthOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( -0.16 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "low" )
                                       .build();
         Threshold fifthTwo = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "action" )
                                       .build();
         Threshold fifthThree = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "bankfull" )
                                         .build();
         Threshold fifthFour = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 20.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "flood" )
                                        .build();
         Threshold fifthFive = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setLeftThresholdValue( DoubleValue.of( 20.0 ) )
-                                       .setThresholdValueUnits( CMS )
+                                       .setThresholdValueUnits( FT )
                                        .setName( "minor" )
                                        .build();
         Threshold fifthSix = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setLeftThresholdValue( DoubleValue.of( 28.0 ) )
-                                      .setThresholdValueUnits( CMS )
+                                      .setThresholdValueUnits( FT )
                                       .setName( "moderate" )
                                       .build();
         Threshold fifthSeven = Threshold.newBuilder()
                                         .setOperator( Threshold.ThresholdOperator.GREATER )
                                         .setLeftThresholdValue( DoubleValue.of( 31.0 ) )
-                                        .setThresholdValueUnits( CMS )
+                                        .setThresholdValueUnits( FT )
                                         .setName( "major" )
                                         .build();
         Threshold fifthEighth = Threshold.newBuilder()
                                          .setOperator( Threshold.ThresholdOperator.GREATER )
                                          .setLeftThresholdValue( DoubleValue.of( 34.11 ) )
-                                         .setThresholdValueUnits( CMS )
+                                         .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
         Set<Threshold> fifthExpected = Set.of( fifthOne,
@@ -1458,7 +1447,7 @@ class WrdsThresholdReaderTest
                                                fifthSeven,
                                                fifthEighth );
 
-        assertEquals( fifthExpected, actual.get( fifth ) );
+        assertEquals( fifthExpected, actual.get( MNTG1 ) );
     }
 
     @Test
@@ -1489,7 +1478,7 @@ class WrdsThresholdReaderTest
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     this.reader.readThresholds( service,
-                                                this.unitMapper,
+                                                this.stageMapper,
                                                 DESIRED_FEATURES.stream()
                                                                 .map( WrdsLocation::nwsLid )
                                                                 .collect( Collectors.toSet() ),
@@ -1516,14 +1505,13 @@ class WrdsThresholdReaderTest
             boolean hasMajor = false;
             boolean hasRecord = false;
 
-            List<String> properThresholds = List.of(
-                    "bankfull",
-                    "action",
-                    "flood",
-                    "minor",
-                    "moderate",
-                    "major",
-                    "record" );
+            List<String> properThresholds = List.of( "bankfull",
+                                                     "action",
+                                                     "flood",
+                                                     "minor",
+                                                     "moderate",
+                                                     "major",
+                                                     "record" );
 
             for ( Threshold threshold : blof1Thresholds )
             {
@@ -1620,7 +1608,7 @@ class WrdsThresholdReaderTest
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     this.reader.readThresholds( service,
-                                                this.unitMapper,
+                                                this.flowMapper,
                                                 DESIRED_FEATURES.stream()
                                                                 .map( WrdsLocation::nwsLid )
                                                                 .collect( Collectors.toSet() ),
@@ -1747,7 +1735,7 @@ class WrdsThresholdReaderTest
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     this.reader.readThresholds( service,
-                                                this.unitMapper,
+                                                this.stageMapper,
                                                 DESIRED_FEATURES.stream()
                                                                 .map( WrdsLocation::nwsLid )
                                                                 .collect( Collectors.toSet() ),
@@ -1758,19 +1746,19 @@ class WrdsThresholdReaderTest
             Threshold firstOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "bankfull" )
                                           .build();
             Threshold firstTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "minor" )
                                           .build();
             Threshold firstThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 16.02 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "record" )
                                             .build();
 
@@ -1782,31 +1770,31 @@ class WrdsThresholdReaderTest
             Threshold secondOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 8.0 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "action" )
                                            .build();
             Threshold secondTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 9.5 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "minor" )
                                            .build();
             Threshold secondThree = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .setLeftThresholdValue( DoubleValue.of( 11.5 ) )
-                                             .setThresholdValueUnits( CMS )
+                                             .setThresholdValueUnits( FT )
                                              .setName( "moderate" )
                                              .build();
             Threshold secondFour = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 13.5 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "major" )
                                             .build();
             Threshold secondFive = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 15.36 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "record" )
                                             .build();
 
@@ -1818,37 +1806,37 @@ class WrdsThresholdReaderTest
             Threshold thirdOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold thirdTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "bankfull" )
                                           .build();
             Threshold thirdThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 20.0 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "minor" )
                                             .build();
             Threshold thirdFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 28.0 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "moderate" )
                                            .build();
             Threshold thirdFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 31.0 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "major" )
                                            .build();
             Threshold thirdSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 34.11 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "record" )
                                           .build();
 
@@ -1860,12 +1848,12 @@ class WrdsThresholdReaderTest
             Threshold fourthOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 18.0 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "action" )
                                            .build();
             Threshold fourthTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            // Obviously an error, but nevertheless actual
                                            .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
                                            .setName( "bankfull" )
@@ -1873,13 +1861,13 @@ class WrdsThresholdReaderTest
             Threshold fourthThree = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
-                                             .setThresholdValueUnits( CMS )
+                                             .setThresholdValueUnits( FT )
                                              .setName( "minor" )
                                              .build();
             Threshold fourthFour = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 40.1 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "record" )
                                             .build();
 
@@ -1891,37 +1879,37 @@ class WrdsThresholdReaderTest
             Threshold fifthOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 13.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold fifthTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "bankfull" )
                                           .build();
             Threshold fifthThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
-                                            .setThresholdValueUnits( CMS )
+                                            .setThresholdValueUnits( FT )
                                             .setName( "minor" )
                                             .build();
             Threshold fifthFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 23.5 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "moderate" )
                                            .build();
             Threshold fifthFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setLeftThresholdValue( DoubleValue.of( 26.0 ) )
-                                           .setThresholdValueUnits( CMS )
+                                           .setThresholdValueUnits( FT )
                                            .setName( "major" )
                                            .build();
             Threshold fifthSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
                                           .setLeftThresholdValue( DoubleValue.of( 28.6 ) )
-                                          .setThresholdValueUnits( CMS )
+                                          .setThresholdValueUnits( FT )
                                           .setName( "record" )
                                           .build();
 

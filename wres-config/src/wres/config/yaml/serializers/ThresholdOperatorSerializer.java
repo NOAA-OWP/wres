@@ -16,7 +16,8 @@ import wres.config.yaml.components.ThresholdOperator;
 public class ThresholdOperatorSerializer extends JsonSerializer<ThresholdOperator>
 {
     @Override
-    public void serialize( ThresholdOperator operator, JsonGenerator writer, SerializerProvider serializers ) throws IOException
+    public void serialize( ThresholdOperator operator, JsonGenerator writer, SerializerProvider serializers )
+            throws IOException
     {
         writer.writeObject( operator );
     }

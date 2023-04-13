@@ -23,7 +23,9 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.units.UnitMapper;
 import wres.io.geography.wrds.WrdsFeatureFiller;
+import wres.io.thresholds.wrds.WrdsThresholdFiller;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -72,16 +74,20 @@ public class ConfigHelper
      * calls.
      *
      * @param declaration the evaluation declaration
+     * @param unitMapper the unit mapper
      * @return the declaration with any implicit features or thresholds rendered explicit
      * @throws NullPointerException if the input is null
      */
 
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration, UnitMapper unitMapper )
     {
         Objects.requireNonNull( declaration );
 
         // Complete the features, if they require a WRDS service call
-        return WrdsFeatureFiller.fillFeatures( declaration );
+        EvaluationDeclaration featureful = WrdsFeatureFiller.fillFeatures( declaration );
+
+        // Next, complete the thresholds if they require a WRDS service call
+        return WrdsThresholdFiller.fillThresholds( featureful, unitMapper );
     }
 
     /**

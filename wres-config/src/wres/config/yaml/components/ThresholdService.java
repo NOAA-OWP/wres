@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.serializers.ThresholdDatasetOrientationSerializer;
 import wres.config.yaml.serializers.ThresholdOperatorSerializer;
 import wres.config.yaml.serializers.ThresholdOrientationSerializer;
 import wres.config.yaml.serializers.ThresholdTypeSerializer;
@@ -33,12 +34,13 @@ public record ThresholdService( @JsonProperty( "uri" ) URI uri,
                                 @JsonProperty( "apply_to" ) ThresholdOrientation applyTo,
                                 @JsonSerialize( using = ThresholdTypeSerializer.class )
                                 @JsonProperty( "type" ) ThresholdType type,
+                                @JsonSerialize( using = ThresholdDatasetOrientationSerializer.class )
+                                @JsonProperty( "feature_name_from" ) DatasetOrientation featureNameFrom,
                                 @JsonProperty( "parameter" ) String parameter,
                                 @JsonProperty( "unit" ) String unit,
                                 @JsonProperty( "provider" ) String provider,
                                 @JsonProperty( "rating_provider" ) String ratingProvider,
-                                @JsonProperty( "missing_value" ) Double missingValue,
-                                @JsonProperty( "feature_name_from" ) DatasetOrientation featureNameFrom )
+                                @JsonProperty( "missing_value" ) Double missingValue)
 {
     /**
      * Create an instance and set the defaults.
@@ -68,6 +70,11 @@ public record ThresholdService( @JsonProperty( "uri" ) URI uri,
         if ( Objects.isNull( type ) )
         {
             type = DeclarationFactory.DEFAULT_THRESHOLD_TYPE;
+        }
+
+        if ( Objects.isNull( featureNameFrom ) )
+        {
+            featureNameFrom = DeclarationFactory.DEFAULT_THRESHOLD_DATASET_ORIENTATION;
         }
     }
 }
