@@ -33,7 +33,6 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdService;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.units.UnitMapper;
 import wres.io.geography.wrds.WrdsLocation;
@@ -243,8 +242,8 @@ public class WrdsThresholdReader
         ThresholdOperator rawOperator = thresholdService.operator();
 
         // TODO: remove these duplicate enumerations
-        ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.valueOf( rawSide.name() );
-        ThresholdConstants.Operator operator = ThresholdConstants.Operator.valueOf( rawOperator.name() );
+        ThresholdOrientation side = ThresholdOrientation.valueOf( rawSide.name() );
+        ThresholdOperator operator = ThresholdOperator.valueOf( rawOperator.name() );
 
         try
         {

@@ -159,7 +159,7 @@ class MetricVariable
         this.measurementUnit = builder.units;
 
         this.firstCondition = this.getThreshold().first().getOperator().name();
-        this.firstDataType = this.getThreshold().first().getDataType().name();
+        this.firstDataType = this.getThreshold().first().getOrientation().name();
 
         if ( this.thresholds.first().hasLabel() )
         {
@@ -174,7 +174,7 @@ class MetricVariable
         if ( this.thresholds.hasTwo() )
         {
             this.secondCondition = this.getThreshold().second().getOperator().name();
-            this.secondDataType = this.getThreshold().second().getDataType().name();
+            this.secondDataType = this.getThreshold().second().getOrientation().name();
         }
         else
         {

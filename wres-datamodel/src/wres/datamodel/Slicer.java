@@ -37,11 +37,12 @@ import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.Feature;
+
+import wres.config.yaml.components.ThresholdType;
 
 /**
  * A utility class for slicing/dicing and transforming datasets.
@@ -660,7 +661,7 @@ public final class Slicer
 
         Objects.requireNonNull( sorted, "Specify a non-null array of sorted values." );
 
-        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
+        if ( threshold.getType() != ThresholdType.PROBABILITY )
         {
             throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
         }
@@ -674,7 +675,7 @@ public final class Slicer
             return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( Double.NaN ),
                                                        threshold.getProbabilities(),
                                                        threshold.getOperator(),
-                                                       threshold.getDataType(),
+                                                       threshold.getOrientation(),
                                                        threshold.getLabel(),
                                                        threshold.getUnits() );
         }
@@ -701,7 +702,7 @@ public final class Slicer
         return ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( first, second ),
                                                    threshold.getProbabilities(),
                                                    threshold.getOperator(),
-                                                   threshold.getDataType(),
+                                                   threshold.getOrientation(),
                                                    threshold.getLabel(),
                                                    threshold.getUnits() );
     }

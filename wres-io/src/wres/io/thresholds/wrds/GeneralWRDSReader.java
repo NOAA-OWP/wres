@@ -12,9 +12,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.geography.wrds.version.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
@@ -308,14 +309,14 @@ public final class GeneralWRDSReader
         ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) config.getCommaSeparatedValuesOrSource();
 
         //Get the applyTo side.
-        ThresholdConstants.ThresholdDataType side = ThresholdConstants.ThresholdDataType.LEFT;
+        ThresholdOrientation side = ThresholdOrientation.LEFT;
         if ( Objects.nonNull( config.getApplyTo() ) )
         {
-            side = ThresholdConstants.ThresholdDataType.valueOf( config.getApplyTo().name() );
+            side = ThresholdOrientation.valueOf( config.getApplyTo().name() );
         }
 
         //Get the operator.
-        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
+        ThresholdOperator operator = ThresholdOperator.GREATER;
         if ( Objects.nonNull( config.getOperator() ) )
         {
             operator = ThresholdsGenerator.getThresholdOperator( config );

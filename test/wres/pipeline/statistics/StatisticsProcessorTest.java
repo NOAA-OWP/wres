@@ -16,6 +16,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
@@ -29,8 +31,6 @@ import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricParameterException;
 import wres.statistics.generated.GeometryTuple;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Tests the {@link StatisticsProcessor}.
@@ -103,8 +103,8 @@ public final class StatisticsProcessorTest
                 StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                     Operator.GREATER,
-                                                     ThresholdDataType.LEFT_AND_RIGHT );
+                                                     ThresholdOperator.GREATER,
+                                                     ThresholdOrientation.LEFT_AND_RIGHT );
 
         assertEquals( expected, processor.getAllDataThreshold() );
     }

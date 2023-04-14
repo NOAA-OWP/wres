@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 import wres.config.MetricConstants;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.config.yaml.components.ThresholdType;
 
 /**
  * <p>A container of {@link ThresholdOuter} by {@link MetricConstants} that supports slicing and dicing by threshold and
@@ -39,16 +39,16 @@ public class ThresholdsByMetric
     /** Null threshold type error string. */
     private static final String NULL_THRESHOLD_TYPE_ERROR = "Specify a non-null threshold group type.";
 
-    /** Thresholds by {@link ThresholdGroup#PROBABILITY}. */
+    /** Thresholds by {@link ThresholdType#PROBABILITY}. */
     private final Map<MetricConstants, Set<ThresholdOuter>> probabilities;
 
-    /** Thresholds by {@link ThresholdGroup#VALUE}. */
+    /** Thresholds by {@link ThresholdType#VALUE}. */
     private final Map<MetricConstants, Set<ThresholdOuter>> values;
 
-    /** Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}. */
+    /** Thresholds by {@link ThresholdType#PROBABILITY_CLASSIFIER}. */
     private final Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers;
 
-    /** Thresholds by {@link ThresholdGroup#QUANTILE}. */
+    /** Thresholds by {@link ThresholdType#QUANTILE}. */
     private final Map<MetricConstants, Set<ThresholdOuter>> quantiles;
 
     /** Union of all metrics. */
@@ -92,7 +92,7 @@ public class ThresholdsByMetric
      * @throws NullPointerException if the metric is null
      */
 
-    public boolean hasThresholdsForThisMetricAndTheseTypes( MetricConstants metric, ThresholdGroup... types )
+    public boolean hasThresholdsForThisMetricAndTheseTypes( MetricConstants metric, ThresholdType... types )
     {
         if ( Objects.isNull( types ) || types.length == 0 )
         {
@@ -111,7 +111,7 @@ public class ThresholdsByMetric
      * @throws IllegalArgumentException if the type is unexpected
      */
 
-    public Map<MetricConstants, Set<ThresholdOuter>> getThresholds( ThresholdGroup type )
+    public Map<MetricConstants, Set<ThresholdOuter>> getThresholds( ThresholdType type )
     {
         Objects.requireNonNull( type, NULL_THRESHOLD_TYPE_ERROR );
 
@@ -132,7 +132,7 @@ public class ThresholdsByMetric
      * @throws NullPointerException if the input is null
      */
 
-    public boolean hasGroup( ThresholdGroup group )
+    public boolean hasGroup( ThresholdType group )
     {
         Objects.requireNonNull( group, NULL_THRESHOLD_TYPE_ERROR );
 
@@ -142,7 +142,7 @@ public class ThresholdsByMetric
 
     /**
      * <p>Returns the union of all thresholds in the store. Note that thresholds of type 
-     * {@link ThresholdGroup#PROBABILITY} and {@link ThresholdGroup#PROBABILITY_CLASSIFIER} may contain exactly the same 
+     * {@link ThresholdType#PROBABILITY} and {@link ThresholdType#PROBABILITY_CLASSIFIER} may contain exactly the same
      * parameter values and hence may overlap. In general, this method should not be used for stores that contain 
      * both of these types.</p> 
      * 
@@ -165,7 +165,7 @@ public class ThresholdsByMetric
      * @throws NullPointerException if the metric is null
      */
 
-    public Set<ThresholdOuter> union( MetricConstants metric, ThresholdGroup... group )
+    public Set<ThresholdOuter> union( MetricConstants metric, ThresholdType... group )
     {
         Objects.requireNonNull( metric, NULL_METRIC_ERROR );
 
@@ -174,7 +174,7 @@ public class ThresholdsByMetric
         // Iterate the types if non-null
         if ( Objects.nonNull( group ) )
         {
-            for ( ThresholdGroup nextType : group )
+            for ( ThresholdType nextType : group )
             {
                 Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = this.getThresholds( nextType );
                 if ( nextThresholds.containsKey( metric ) )
@@ -195,14 +195,14 @@ public class ThresholdsByMetric
      * @return the union of all thresholds for the specified groups
      */
 
-    public Set<ThresholdOuter> union( ThresholdGroup... group )
+    public Set<ThresholdOuter> union( ThresholdType... group )
     {
         Set<ThresholdOuter> union = new HashSet<>();
 
         // Iterate the types if non-null
         if ( Objects.nonNull( group ) )
         {
-            for ( ThresholdGroup nextType : group )
+            for ( ThresholdType nextType : group )
             {
                 this.getThresholds( nextType )
                     .values()
@@ -223,14 +223,14 @@ public class ThresholdsByMetric
      * @throws NullPointerException if the input is null
      */
 
-    public Set<ThresholdGroup> getThresholdTypesForThisMetric( MetricConstants metric )
+    public Set<ThresholdType> getThresholdTypesForThisMetric( MetricConstants metric )
     {
         Objects.requireNonNull( metric, NULL_METRIC_ERROR );
 
-        Set<ThresholdGroup> types = new HashSet<>();
+        Set<ThresholdType> types = new HashSet<>();
 
         // Iterate the types
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
+        for ( ThresholdType nextType : ThresholdType.values() )
         {
             Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = this.getThresholds( nextType );
             if ( nextThresholds.containsKey( metric ) )
@@ -274,26 +274,26 @@ public class ThresholdsByMetric
     public static class Builder
     {
         /**
-         * Thresholds by {@link ThresholdGroup#PROBABILITY}.
+         * Thresholds by {@link ThresholdType#PROBABILITY}.
          */
 
         private final Map<MetricConstants, Set<ThresholdOuter>> probabilities = new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdGroup#VALUE}.
+         * Thresholds by {@link ThresholdType#VALUE}.
          */
 
         private final Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
+         * Thresholds by {@link ThresholdType#PROBABILITY_CLASSIFIER}.
          */
 
         private final Map<MetricConstants, Set<ThresholdOuter>> probabilityClassifiers =
                 new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdGroup#QUANTILE}.
+         * Thresholds by {@link ThresholdType#QUANTILE}.
          */
 
         private final Map<MetricConstants, Set<ThresholdOuter>> quantiles = new EnumMap<>( MetricConstants.class );
@@ -345,7 +345,7 @@ public class ThresholdsByMetric
          */
 
         public Builder addThresholds( Map<MetricConstants, Set<ThresholdOuter>> thresholds,
-                                      ThresholdGroup group )
+                                      ThresholdType group )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -369,7 +369,7 @@ public class ThresholdsByMetric
          * @return the builder
          */
 
-        public Builder addThreshold( ThresholdGroup group,
+        public Builder addThreshold( ThresholdType group,
                                      MetricConstants metric,
                                      ThresholdOuter threshold )
         {
@@ -392,7 +392,7 @@ public class ThresholdsByMetric
          * @throws NullPointerException if any input is null
          */
 
-        public Builder addThresholds( ThresholdGroup group,
+        public Builder addThresholds( ThresholdType group,
                                       MetricConstants metric,
                                       Set<ThresholdOuter> thresholds )
         {
@@ -403,19 +403,19 @@ public class ThresholdsByMetric
             Map<MetricConstants, Set<ThresholdOuter>> container;
 
             // Determine type of container
-            if ( group == ThresholdGroup.PROBABILITY )
+            if ( group == ThresholdType.PROBABILITY )
             {
                 container = this.probabilities;
             }
-            else if ( group == ThresholdGroup.PROBABILITY_CLASSIFIER )
+            else if ( group == ThresholdType.PROBABILITY_CLASSIFIER )
             {
                 container = this.probabilityClassifiers;
             }
-            else if ( group == ThresholdGroup.QUANTILE )
+            else if ( group == ThresholdType.QUANTILE )
             {
                 container = this.quantiles;
             }
-            else if ( group == ThresholdGroup.VALUE )
+            else if ( group == ThresholdType.VALUE )
             {
                 container = this.values;
             }
@@ -469,20 +469,20 @@ public class ThresholdsByMetric
 
             if ( thresholds.hasTwo() )
             {
-                this.addThreshold( ThresholdGroup.PROBABILITY_CLASSIFIER, metric, thresholds.second() );
+                this.addThreshold( ThresholdType.PROBABILITY_CLASSIFIER, metric, thresholds.second() );
             }
 
             if ( thresholds.first().isQuantile() )
             {
-                this.addThreshold( ThresholdGroup.QUANTILE, metric, thresholds.first() );
+                this.addThreshold( ThresholdType.QUANTILE, metric, thresholds.first() );
             }
             else if ( thresholds.first().hasProbabilities() )
             {
-                this.addThreshold( ThresholdGroup.PROBABILITY, metric, thresholds.first() );
+                this.addThreshold( ThresholdType.PROBABILITY, metric, thresholds.first() );
             }
             else
             {
-                this.addThreshold( ThresholdGroup.VALUE, metric, thresholds.first() );
+                this.addThreshold( ThresholdType.VALUE, metric, thresholds.first() );
             }
 
             return this;

@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.protobuf.DoubleValue;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.WRDSThresholdType;
@@ -199,8 +200,8 @@ public class GeneralThresholdDefinition implements Serializable
      * returned at most.  
      */
     public Map<WrdsLocation, Set<Threshold>> getThresholds( WRDSThresholdType thresholdType,
-                                                            ThresholdConstants.Operator thresholdOperator,
-                                                            ThresholdConstants.ThresholdDataType dataType,
+                                                            ThresholdOperator thresholdOperator,
+                                                            ThresholdOrientation dataType,
                                                             boolean getCalculated,
                                                             UnitMapper desiredUnitMapper )
     {
@@ -290,8 +291,8 @@ public class GeneralThresholdDefinition implements Serializable
      */
     private void addOriginalThresholds( Map<String, Double> originalThresholds,
                                         DoubleUnaryOperator originalUnitConversionOperator,
-                                        ThresholdConstants.Operator thresholdOperator,
-                                        ThresholdConstants.ThresholdDataType dataType,
+                                        ThresholdOperator thresholdOperator,
+                                        ThresholdOrientation dataType,
                                         UnitMapper desiredUnitMapper,
                                         Map<String, Threshold> thresholdMap )
     {
@@ -325,8 +326,8 @@ public class GeneralThresholdDefinition implements Serializable
      */
     private void addCalculatedThresholds( Map<String, Double> calculatedThresholds,
                                           DoubleUnaryOperator calculatedUnitConversionOperator,
-                                          ThresholdConstants.Operator thresholdOperator,
-                                          ThresholdConstants.ThresholdDataType dataType,
+                                          ThresholdOperator thresholdOperator,
+                                          ThresholdOrientation dataType,
                                           UnitMapper desiredUnitMapper,
                                           Map<String, Threshold> thresholdMap )
     {
@@ -366,8 +367,8 @@ public class GeneralThresholdDefinition implements Serializable
      */
 
     private Threshold getValueThreshold( double threshold,
-                                         ThresholdConstants.Operator thresholdOperator,
-                                         ThresholdConstants.ThresholdDataType dataType,
+                                         ThresholdOperator thresholdOperator,
+                                         ThresholdOrientation dataType,
                                          String name,
                                          String unit )
     {

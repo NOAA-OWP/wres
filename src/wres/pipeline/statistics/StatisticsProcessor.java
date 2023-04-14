@@ -28,8 +28,8 @@ import wres.datamodel.statistics.ScoreStatistic;
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.metrics.Metric;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
@@ -453,8 +453,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         this.thresholdExecutor = thresholdExecutor;
 
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                   Operator.GREATER,
-                                                   ThresholdDataType.LEFT_AND_RIGHT );
+                                                   ThresholdOperator.GREATER,
+                                                   ThresholdOrientation.LEFT_AND_RIGHT );
     }
 
 }

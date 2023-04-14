@@ -20,7 +20,9 @@ public enum ThresholdOperator
     /** Less than or equal to. */
     @JsonProperty( "less equal" ) LESS_EQUAL,
     /** Equal to. */
-    @JsonProperty( "equal" ) EQUAL;
+    @JsonProperty( "equal" ) EQUAL,
+    /** Not yet fully supported. */
+    BETWEEN;
 
     /**
      * @return the canonical representation

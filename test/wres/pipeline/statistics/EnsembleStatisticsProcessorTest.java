@@ -31,6 +31,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -48,8 +49,6 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -72,34 +71,34 @@ public final class EnsembleStatisticsProcessorTest
     public void testGetFilterForEnsemblePairs()
     {
         OneOrTwoDoubles doubles = OneOrTwoDoubles.of( 1.0 );
-        Operator condition = Operator.GREATER;
+        wres.config.yaml.components.ThresholdOperator condition = wres.config.yaml.components.ThresholdOperator.GREATER;
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.LEFT ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.LEFT ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.RIGHT ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.RIGHT ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.LEFT_AND_RIGHT ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.LEFT_AND_ANY_RIGHT ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.LEFT_AND_ANY_RIGHT ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.LEFT_AND_RIGHT_MEAN ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.LEFT_AND_RIGHT_MEAN ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.ANY_RIGHT ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.ANY_RIGHT ) ) );
         assertNotNull( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                        condition,
-                                                                                                        ThresholdDataType.RIGHT_MEAN ) ) );
+                                                                                                 condition,
+                                                                                                 ThresholdOrientation.RIGHT_MEAN ) ) );
         // Check that average works        
         Pair<Double, Ensemble> pair = Pair.of( 1.0, Ensemble.of( 1.5, 2.0 ) );
 
         assertTrue( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
-                                                                                                     condition,
-                                                                                                     ThresholdDataType.RIGHT_MEAN ) )
+                                                                                              condition,
+                                                                                              ThresholdOrientation.RIGHT_MEAN ) )
                                                       .test( pair ) );
     }
 
@@ -810,11 +809,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                             Operator.GREATER,
-                                                                             ThresholdDataType.LEFT ),
+                                                                             wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                             ThresholdOrientation.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
-                                                                                                 Operator.GREATER,
-                                                                                                 ThresholdDataType.LEFT ) );
+                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                 ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaFirst = PoolMetadata.of( expectedSampleMeta, first );
 
@@ -846,11 +845,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ),
+                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                              ThresholdOrientation.LEFT ),
                                                            ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
-                                                                                                  Operator.GREATER,
-                                                                                                  ThresholdDataType.LEFT ) );
+                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                  ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaSecond = PoolMetadata.of( expectedSampleMeta, second );
 
@@ -882,11 +881,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds third = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                             Operator.GREATER,
-                                                                             ThresholdDataType.LEFT ),
+                                                                             wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                             ThresholdOrientation.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                                                 Operator.GREATER,
-                                                                                                 ThresholdDataType.LEFT ) );
+                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                 ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaThird = PoolMetadata.of( expectedSampleMeta, third );
 
@@ -918,11 +917,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                              Operator.GREATER,
-                                                                              ThresholdDataType.LEFT ),
+                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                              ThresholdOrientation.LEFT ),
                                                            ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
-                                                                                                  Operator.GREATER,
-                                                                                                  ThresholdDataType.LEFT ) );
+                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                  ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaFourth = PoolMetadata.of( expectedSampleMeta, fourth );
 
@@ -953,11 +952,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds fifth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                             Operator.GREATER,
-                                                                             ThresholdDataType.LEFT ),
+                                                                             wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                             ThresholdOrientation.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                                                 Operator.GREATER,
-                                                                                                 ThresholdDataType.LEFT ) );
+                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                 ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaFifth = PoolMetadata.of( expectedSampleMeta, fifth );
 
@@ -989,11 +988,11 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         OneOrTwoThresholds sixth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
-                                                                             Operator.GREATER,
-                                                                             ThresholdDataType.LEFT ),
+                                                                             wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                             ThresholdOrientation.LEFT ),
                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
-                                                                                                 Operator.GREATER,
-                                                                                                 ThresholdDataType.LEFT ) );
+                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                                 ThresholdOrientation.LEFT ) );
 
         PoolMetadata expectedMetaSixth = PoolMetadata.of( expectedSampleMeta, sixth );
 

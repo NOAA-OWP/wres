@@ -32,14 +32,14 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
 /**
  * Tests the {@link ThresholdsGenerator}.
- * 
+ *
  * @author James Brown
  */
 class ThresholdsGeneratorTest
@@ -94,17 +94,17 @@ class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                        wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                        ThresholdOrientation.LEFT_AND_RIGHT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
 
         expected.put( MetricConstants.BIAS_FRACTION, atomicThresholds );
         expected.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, atomicThresholds );
@@ -209,14 +209,14 @@ class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.3 ),
-                                                                                            Operator.GREATER,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT ) ) );
+                                                                                            wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                            ThresholdOrientation.LEFT ) ) );
 
         Set<OneOrTwoThresholds> atomicThresholdsWithAllData = new HashSet<>( atomicThresholds );
         atomicThresholdsWithAllData.add( OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA ) );
@@ -329,8 +329,8 @@ class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicExpected = new HashSet<>();
 
         atomicExpected.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                      wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                      ThresholdOrientation.LEFT_AND_RIGHT ) ) );
         expected.put( MetricConstants.BIAS_FRACTION, atomicExpected );
 
         assertEquals( expected, actual );
@@ -343,34 +343,35 @@ class ThresholdsGeneratorTest
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN );
-        assertSame( Operator.GREATER, ThresholdsGenerator.getThresholdOperator( first ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER, ThresholdsGenerator.getThresholdOperator( first ) );
 
         ThresholdsConfig second = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN );
-        assertSame( Operator.LESS, ThresholdsGenerator.getThresholdOperator( second ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.LESS, ThresholdsGenerator.getThresholdOperator( second ) );
 
         ThresholdsConfig third = new ThresholdsConfig( null,
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
-        assertSame( Operator.GREATER_EQUAL, ThresholdsGenerator.getThresholdOperator( third ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL, ThresholdsGenerator.getThresholdOperator( third ) );
 
         ThresholdsConfig fourth = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
-        assertSame( Operator.LESS_EQUAL, ThresholdsGenerator.getThresholdOperator( fourth ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.LESS_EQUAL, ThresholdsGenerator.getThresholdOperator( fourth ) );
 
         //Test exception cases
         assertThrows( NullPointerException.class,
                       () -> ThresholdsGenerator.getThresholdOperator( null ) );
+        ThresholdsConfig thresholdConfig = new ThresholdsConfig( null,
+                                                                 null,
+                                                                 null,
+                                                                 null );
         assertThrows( NullPointerException.class,
-                      () -> ThresholdsGenerator.getThresholdOperator( new ThresholdsConfig( null,
-                                                                                            null,
-                                                                                            null,
-                                                                                            null ) ) );
+                      () -> ThresholdsGenerator.getThresholdOperator( thresholdConfig ) );
     }
 
     /**
@@ -484,14 +485,15 @@ class ThresholdsGeneratorTest
         Map<MetricConstants, Set<ThresholdOuter>> mockExternal = new EnumMap<>( MetricConstants.class );
         Set<ThresholdOuter> atomicExternal = new HashSet<>();
         atomicExternal.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
-                                               Operator.GREATER,
-                                               ThresholdConstants.ThresholdDataType.LEFT,
+                                               wres.config.yaml.components.ThresholdOperator.GREATER,
+                                               ThresholdOrientation.LEFT,
                                                dimension ) );
         mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
 
         ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
-        builder.addThresholds( mockExternal, ThresholdConstants.ThresholdGroup.VALUE );
-        builder.addThresholds( ThresholdSlicer.getOneOrTwoThresholds( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig ) ) );
+        builder.addThresholds( mockExternal, wres.config.yaml.components.ThresholdType.VALUE );
+        builder.addThresholds( ThresholdSlicer.getOneOrTwoThresholds( ThresholdsGenerator.getThresholdsFromConfig(
+                mockedConfig ) ) );
 
         ThresholdsByMetric actualByMetric = builder.build();
 
@@ -503,19 +505,19 @@ class ThresholdsGeneratorTest
         Set<OneOrTwoThresholds> atomicThresholds = new HashSet<>();
 
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT ) ) );
+                                                                        wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                        ThresholdOrientation.LEFT_AND_RIGHT ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                        ThresholdOrientation.LEFT,
                                                                         dimension ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                        ThresholdOrientation.LEFT,
                                                                         dimension ) ) );
         atomicThresholds.add( OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
-                                                                        Operator.GREATER,
-                                                                        ThresholdConstants.ThresholdDataType.LEFT,
+                                                                        wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                        ThresholdOrientation.LEFT,
                                                                         dimension ) ) );
 
         expected.put( MetricConstants.BIAS_FRACTION, atomicThresholds );
@@ -525,7 +527,7 @@ class ThresholdsGeneratorTest
 
     /**
      * Tests a method with private scope in {@link MetricConstantsFactory} using thresholds with a
-     * {@link Operator#BETWEEN} condition.
+     * {@link wres.config.yaml.components.ThresholdOperator#BETWEEN} condition.
      * @throws MetricConfigException if an unexpected exception is encountered
      * @throws SecurityException if the reflection fails via a security manager
      * @throws NoSuchMethodException if a matching method is not found
@@ -543,58 +545,58 @@ class ThresholdsGeneratorTest
         Method method =
                 ThresholdsGenerator.class.getDeclaredMethod( "getThresholdsFromCommaSeparatedValues",
                                                              String.class,
-                                                             Operator.class,
-                                                             ThresholdConstants.ThresholdDataType.class,
+                                                             wres.config.yaml.components.ThresholdOperator.class,
+                                                             ThresholdOrientation.class,
                                                              boolean.class,
                                                              MeasurementUnit.class );
         method.setAccessible( true );
 
         // Test with probability thresholds
         @SuppressWarnings( "unchecked" )
-        Set<ThresholdOuter> actual = (Set<ThresholdOuter>) method.invoke( null,
-                                                                          TEST_THRESHOLDS,
-                                                                          Operator.BETWEEN,
-                                                                          ThresholdConstants.ThresholdDataType.LEFT,
-                                                                          true,
-                                                                          null );
+        Set<ThresholdOuter> actual = ( Set<ThresholdOuter> ) method.invoke( null,
+                                                                            TEST_THRESHOLDS,
+                                                                            wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                                                            ThresholdOrientation.LEFT,
+                                                                            true,
+                                                                            null );
 
         Set<ThresholdOuter> expected = new HashSet<>();
         expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.1, 0.2 ),
-                                                             Operator.BETWEEN,
-                                                             ThresholdConstants.ThresholdDataType.LEFT ) );
+                                                             wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                                             ThresholdOrientation.LEFT ) );
         expected.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.2, 0.3 ),
-                                                             Operator.BETWEEN,
-                                                             ThresholdConstants.ThresholdDataType.LEFT ) );
+                                                             wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                                             ThresholdOrientation.LEFT ) );
         assertEquals( expected, actual );
 
         // Test with value thresholds
         @SuppressWarnings( "unchecked" )
-        Set<ThresholdOuter> actualValue = (Set<ThresholdOuter>) method.invoke( null,
-                                                                               TEST_THRESHOLDS,
-                                                                               Operator.BETWEEN,
-                                                                               ThresholdConstants.ThresholdDataType.LEFT,
-                                                                               false,
-                                                                               null );
+        Set<ThresholdOuter> actualValue = ( Set<ThresholdOuter> ) method.invoke( null,
+                                                                                 TEST_THRESHOLDS,
+                                                                                 wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                                                                 ThresholdOrientation.LEFT,
+                                                                                 false,
+                                                                                 null );
 
         Set<ThresholdOuter> expectedValue = new HashSet<>();
         expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.1, 0.2 ),
-                                              Operator.BETWEEN,
-                                              ThresholdConstants.ThresholdDataType.LEFT ) );
+                                              wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                              ThresholdOrientation.LEFT ) );
         expectedValue.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2, 0.3 ),
-                                              Operator.BETWEEN,
-                                              ThresholdConstants.ThresholdDataType.LEFT ) );
+                                              wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                              ThresholdOrientation.LEFT ) );
 
 
         assertEquals( expectedValue, actualValue );
 
         // Test exception
         InvocationTargetException exception = assertThrows( InvocationTargetException.class,
-                                                                       () -> method.invoke( null,
-                                                                                            "0.1",
-                                                                                            Operator.BETWEEN,
-                                                                                            ThresholdConstants.ThresholdDataType.LEFT,
-                                                                                            false,
-                                                                                            null ) );
+                                                            () -> method.invoke( null,
+                                                                                 "0.1",
+                                                                                 wres.config.yaml.components.ThresholdOperator.BETWEEN,
+                                                                                 ThresholdOrientation.LEFT,
+                                                                                 false,
+                                                                                 null ) );
         assertEquals( exception.getCause().getClass(), MetricConfigException.class );
     }
 }

@@ -24,8 +24,8 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 import wres.statistics.generated.BoxplotMetric;
@@ -98,8 +98,8 @@ public final class StatisticsFuturesTest
                                                               Instant.parse( "1985-05-03T12:00:00Z" ) );
         this.key = Pair.of( TimeWindowOuter.of( timeWindow ),
                             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                      Operator.GREATER,
-                                                                      ThresholdDataType.LEFT ) ) );
+                                                                      ThresholdOperator.GREATER,
+                                                                      ThresholdOrientation.LEFT ) ) );
 
         MetricFuturesByTimeBuilder builder = new MetricFuturesByTimeBuilder();
 

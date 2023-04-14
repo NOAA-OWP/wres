@@ -1,6 +1,7 @@
 package wres.io.thresholds.wrds.v3;
 
-import wres.datamodel.thresholds.ThresholdConstants;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.NoThresholdsFoundException;
@@ -59,7 +60,7 @@ public class GeneralThresholdExtractor
      * @param side The side of the data that the threshold will apply to
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor onSide( ThresholdConstants.ThresholdDataType side )
+    public GeneralThresholdExtractor onSide( ThresholdOrientation side )
     {
         this.sides = side;
         return this;
@@ -83,7 +84,7 @@ public class GeneralThresholdExtractor
      * @param thresholdOperator The operator
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor operatesBy( ThresholdConstants.Operator thresholdOperator )
+    public GeneralThresholdExtractor operatesBy( ThresholdOperator thresholdOperator )
     {
         this.thresholdOperator = thresholdOperator;
         return this;
@@ -232,12 +233,12 @@ public class GeneralThresholdExtractor
     /**
      * The boolean operator to apply to loaded values
      */
-    private ThresholdConstants.Operator thresholdOperator = ThresholdConstants.Operator.GREATER_EQUAL;
+    private ThresholdOperator thresholdOperator = ThresholdOperator.GREATER_EQUAL;
 
     /**
      * The side of the data to apply the threshold to
      */
-    private ThresholdConstants.ThresholdDataType sides = ThresholdConstants.ThresholdDataType.LEFT;
+    private ThresholdOrientation sides = ThresholdOrientation.LEFT;
 
     private UnitMapper desiredUnitMapper;
 
