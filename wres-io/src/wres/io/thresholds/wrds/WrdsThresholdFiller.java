@@ -1,19 +1,24 @@
 package wres.io.thresholds.wrds;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
@@ -25,6 +30,7 @@ import wres.datamodel.units.UnitMapper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.io.thresholds.ThresholdReadingException;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Threshold;
 
@@ -145,6 +151,7 @@ public class WrdsThresholdFiller
      * @param evaluation the evaluation declaration to adjust
      * @param thresholds the thresholds
      * @param featureAuthority the feature authority to help with feature naming
+     * @param orientation the orientation of the dataset to which the feature names apply
      * @return the adjusted declaration
      */
     private static EvaluationDeclaration getAdjustedDeclaration( EvaluationDeclaration evaluation,
@@ -155,14 +162,17 @@ public class WrdsThresholdFiller
         // Ordered, mapped thresholds
         Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
 
+        Set<Geometry> featuresWithThresholds = new HashSet<>();
         for ( Map.Entry<WrdsLocation, Set<Threshold>> nextEntry : thresholds.entrySet() )
         {
             WrdsLocation location = nextEntry.getKey();
             Set<Threshold> nextThresholds = nextEntry.getValue();
 
             String featureName = WrdsLocation.getNameForAuthority( featureAuthority, location );
-            Geometry feature = Geometry.newBuilder().setName( featureName )
+            Geometry feature = Geometry.newBuilder()
+                                       .setName( featureName )
                                        .build();
+            featuresWithThresholds.add( feature );
             Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
                     nextThresholds.stream()
                                   .map( next -> ThresholdBuilder.builder()
@@ -213,7 +223,117 @@ public class WrdsThresholdFiller
 
         adjusted.metrics( adjustedMetrics );
 
-        return adjusted.build();
+        // Remove any features for which the threshold service returned no thresholds
+        return WrdsThresholdFiller.removeFeaturesWithoutThresholds( adjusted, featuresWithThresholds, orientation );
+    }
+
+    /**
+     * Removes any features from the declaration for which no thresholds were returned from the threshold service. Warn
+     * when this occurs.
+     *
+     * @param builder the declaration builder
+     * @param featuresWithThresholds the features that have thresholds
+     * @param orientation the orientation of the dataset to which the feature names apply
+     * @return the adjusted declaration
+     */
+
+    private static EvaluationDeclaration removeFeaturesWithoutThresholds( EvaluationDeclarationBuilder builder,
+                                                                          Set<Geometry> featuresWithThresholds,
+                                                                          DatasetOrientation orientation )
+    {
+        // Start with the singletons
+        Set<GeometryTuple> singletons = builder.features()
+                                               .geometries();
+
+        Predicate<GeometryTuple> filter =
+                next -> featuresWithThresholds.contains( WrdsThresholdFiller.getFeatureFor( next,
+                                                                                            orientation ) );
+        Set<GeometryTuple> adjustedSingletons
+                = singletons.stream()
+                            .filter( filter )
+                            .collect( Collectors.toSet() );
+
+        if ( LOGGER.isWarnEnabled() && adjustedSingletons.size() != singletons.size() )
+        {
+            Set<GeometryTuple> copy = new HashSet<>( singletons );
+            copy.removeAll( adjustedSingletons );
+
+            LOGGER.warn( "Discovered {} feature(s) for which thresholds were not available from WRDS. These features "
+                         + "have been removed from the evaluation. The features are: {}.", copy.size(),
+                         copy.stream()
+                             .map( DeclarationFactory.PROTBUF_STRINGIFIER )
+                             .toList() );
+        }
+
+        Features adjustedFeatures = new Features( adjustedSingletons );
+        builder.features( adjustedFeatures );
+
+        // Adjust the feature groups, if any
+        if ( Objects.nonNull( builder.featureGroups() ) )
+        {
+            Set<GeometryGroup> originalGroups = builder.featureGroups()
+                                                       .geometryGroups();
+            Set<GeometryGroup> adjustedGroups = new HashSet<>();
+
+            // Iterate the groups and adjust as needed
+            for ( GeometryGroup nextGroup : originalGroups )
+            {
+                List<GeometryTuple> nextTuples = nextGroup.getGeometryTuplesList();
+                List<GeometryTuple> adjusted = nextTuples.stream()
+                                                         .filter( filter )
+                                                         .toList();
+
+                // Adjustments made?
+                if ( adjusted.size() != nextTuples.size() )
+                {
+                    GeometryGroup adjustedGroup = nextGroup.toBuilder()
+                                                           .clearGeometryTuples()
+                                                           .addAllGeometryTuples( adjusted )
+                                                           .build();
+                    adjustedGroups.add( adjustedGroup );
+                }
+                else
+                {
+                    adjustedGroups.add( nextGroup );
+                }
+            }
+
+            if ( LOGGER.isWarnEnabled() && !adjustedGroups.isEmpty() )
+            {
+                Set<GeometryGroup> copy = new HashSet<>( originalGroups );
+                copy.removeAll( adjustedGroups );
+
+                LOGGER.warn( "Discovered {} feature group(s) for which thresholds were not available from the WRDS for "
+                             + "one or more of their component features. These features have been removed from the "
+                             + "evaluation. Features were removed from the following feature groups: {}.",
+                             copy.size(),
+                             copy.stream()
+                                 .map( GeometryGroup::getRegionName )
+                                 .toList() );
+            }
+
+            FeatureGroups finalFeatureGroups = new FeatureGroups( adjustedGroups );
+            builder.featureGroups( finalFeatureGroups );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Acquires the feature for the specified  data orientation.
+     * @param featureTuple the feature tuple
+     * @param orientation the data orientation
+     * @return the feature
+     */
+
+    public static Geometry getFeatureFor( GeometryTuple featureTuple, DatasetOrientation orientation )
+    {
+        return switch ( orientation )
+                {
+                    case LEFT -> featureTuple.getLeft();
+                    case RIGHT -> featureTuple.getRight();
+                    case BASELINE -> featureTuple.getBaseline();
+                };
     }
 
     /**

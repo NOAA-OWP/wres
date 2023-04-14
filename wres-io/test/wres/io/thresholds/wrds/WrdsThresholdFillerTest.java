@@ -13,6 +13,7 @@ import com.google.common.jimfs.Jimfs;
 import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
@@ -22,6 +23,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
@@ -32,6 +34,7 @@ import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Threshold;
 
@@ -825,8 +828,8 @@ class WrdsThresholdFillerTest
             expectedThresholds.add( secondTwoW );
 
             Geometry thirdGeometry = Geometry.newBuilder()
-                                              .setName( "PTSA1" )
-                                              .build();
+                                             .setName( "PTSA1" )
+                                             .build();
 
             Threshold thirdOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -843,11 +846,11 @@ class WrdsThresholdFillerTest
                                       .feature( thirdGeometry )
                                       .build();
 
-            expectedThresholds.add(thirdOneW );
+            expectedThresholds.add( thirdOneW );
 
             Geometry fourthGeometry = Geometry.newBuilder()
-                                             .setName( "BLOF1" )
-                                             .build();
+                                              .setName( "BLOF1" )
+                                              .build();
 
             Threshold fourthOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -951,8 +954,8 @@ class WrdsThresholdFillerTest
             expectedThresholds.add( fourthSevenW );
 
             Geometry fifthGeometry = Geometry.newBuilder()
-                                              .setName( "MNTG1" )
-                                              .build();
+                                             .setName( "MNTG1" )
+                                             .build();
 
             Threshold fifthOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -1088,6 +1091,107 @@ class WrdsThresholdFillerTest
                                                                          .build();
             // Assert equality
             assertEquals( expected, actual );
+
+            // Clean up
+            if ( Files.exists( jsonPath ) )
+            {
+                Files.delete( jsonPath );
+            }
+        }
+    }
+
+    @Test
+    void testFillThresholdsRemovesFeaturesWithoutThresholds() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new WRDS JSON service response to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_JSON );
+            Path jsonPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( jsonPath ) )
+            {
+                writer.append( RESPONSE );
+            }
+
+            ThresholdService service
+                    = ThresholdServiceBuilder.builder()
+                                             .uri( jsonPath.toUri() )
+                                             .featureNameFrom( DatasetOrientation.LEFT )
+                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                             .parameter( "stage" )
+                                             .provider( "NWS-NRLDB" )
+                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                             .build();
+
+            Dataset left = DatasetBuilder.builder()
+                                         .featureAuthority( FeatureAuthority.NWS_LID )
+                                         .build();
+
+            GeometryTuple first = GeometryTuple.newBuilder()
+                                               .setLeft( Geometry.newBuilder()
+                                                                 .setName( "PTSA1" ) )
+                                               .build();
+            GeometryTuple second = GeometryTuple.newBuilder()
+                                                .setLeft( Geometry.newBuilder()
+                                                                  .setName( "MNTG1" ) )
+                                                .build();
+            GeometryTuple third = GeometryTuple.newBuilder()
+                                               .setLeft( Geometry.newBuilder()
+                                                                 .setName( "BLOF1" ) )
+                                               .build();
+            GeometryTuple fourth = GeometryTuple.newBuilder()
+                                                .setLeft( Geometry.newBuilder()
+                                                                  .setName( "CEDG1" ) )
+                                                .build();
+            GeometryTuple fifth = GeometryTuple.newBuilder()
+                                               .setLeft( Geometry.newBuilder()
+                                                                 .setName( "SMAF1" ) )
+                                               .build();
+            GeometryTuple sixth = GeometryTuple.newBuilder()
+                                               .setLeft( Geometry.newBuilder()
+                                                                 .setName( "FAKE FOO" ) )
+                                               .build();
+
+            Set<GeometryTuple> geometries = Set.of( first, second, third, fourth, fifth, sixth );
+            Features features = new Features( geometries );
+            GeometryGroup group = GeometryGroup.newBuilder()
+                                               .addAllGeometryTuples( geometries )
+                                               .setRegionName( "FOO REGION" )
+                                               .build();
+            FeatureGroups featureGroups = new FeatureGroups( Set.of( group ) );
+            Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ) );
+
+            EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                            .left( left )
+                                                                            .features( features )
+                                                                            .featureGroups( featureGroups )
+                                                                            .thresholdService( service )
+                                                                            .metrics( metrics )
+                                                                            .build();
+
+            UnitMapper unitMapper = UnitMapper.of( FT );
+
+            EvaluationDeclaration actual = WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+
+            Set<GeometryTuple> actualSingletons = actual.features()
+                                                        .geometries();
+
+            Set<GeometryTuple> actualGroup = actual.featureGroups()
+                                                   .geometryGroups()
+                                                   .stream()
+                                                   .map( GeometryGroup::getGeometryTuplesList )
+                                                   .map( Set::copyOf )
+                                                   .findFirst()
+                                                   .orElse( Set.of() );
+
+            Set<GeometryTuple> expected = Set.of( first, second, third, fourth, fifth );
+
+            // Assert equality
+            assertAll( () -> assertEquals( expected, actualSingletons ),
+                       () -> assertEquals( expected, actualGroup ) );
 
             // Clean up
             if ( Files.exists( jsonPath ) )

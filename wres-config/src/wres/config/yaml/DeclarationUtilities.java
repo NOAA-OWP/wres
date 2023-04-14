@@ -228,6 +228,13 @@ public class DeclarationUtilities
             return Set.of( dataset.featureAuthority() );
         }
 
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Found no explicitly declared feature authority for the dataset labelled '{}' Will attempt "
+                          + "to infer the authority from the other information present.",
+                          dataset.label() );
+        }
+
         // Try to work out the authority from the sources
         return dataset.sources()
                       .stream()
@@ -235,18 +242,6 @@ public class DeclarationUtilities
                       .filter( Objects::nonNull )
                       .collect( Collectors.toUnmodifiableSet() );
 
-    }
-
-    /**
-     * Returns a string representation of each ensemble declaration item discovered.
-     * @param declaration the declaration
-     * @return the ensemble declaration was found
-     */
-
-    static Set<String> getEnsembleDeclaration( EvaluationDeclaration declaration )
-    {
-        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
-        return getEnsembleDeclaration( builder );
     }
 
     /**
@@ -270,6 +265,33 @@ public class DeclarationUtilities
         return Objects.nonNull( builder.analysisDurations() ) && (
                 Objects.nonNull( builder.analysisDurations().minimumExclusive() )
                 || Objects.nonNull( builder.analysisDurations().maximum() ) );
+    }
+
+    /**
+     * Groups the thresholds by threshold type.
+     * @param thresholds the thresholds
+     * @return the thresholds grouped by type
+     */
+
+    static Map<ThresholdType, Set<Threshold>> groupThresholdsByType( Set<Threshold> thresholds )
+    {
+        return thresholds.stream()
+                         .collect( Collectors.groupingBy( Threshold::type,
+                                                          Collectors.mapping( Function.identity(),
+                                                                              Collectors.toCollection(
+                                                                                      LinkedHashSet::new ) ) ) );
+    }
+
+    /**
+     * Returns a string representation of each ensemble declaration item discovered.
+     * @param declaration the declaration
+     * @return the ensemble declaration was found
+     */
+
+    static Set<String> getEnsembleDeclaration( EvaluationDeclaration declaration )
+    {
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+        return getEnsembleDeclaration( builder );
     }
 
     /**
@@ -391,21 +413,6 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( forecastDeclaration );
-    }
-
-    /**
-     * Groups the thresholds by threshold type.
-     * @param thresholds the thresholds
-     * @return the thresholds grouped by type
-     */
-
-    static Map<ThresholdType, Set<Threshold>> groupThresholdsByType( Set<Threshold> thresholds )
-    {
-        return thresholds.stream()
-                         .collect( Collectors.groupingBy( Threshold::type,
-                                                          Collectors.mapping( Function.identity(),
-                                                                              Collectors.toCollection(
-                                                                                      LinkedHashSet::new ) ) ) );
     }
 
     /**
