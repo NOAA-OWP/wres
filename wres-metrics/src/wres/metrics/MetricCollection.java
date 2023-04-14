@@ -29,25 +29,19 @@ import wres.datamodel.statistics.Statistic;
 import wres.metrics.categorical.ContingencyTable;
 
 /**
- * <p>
- * An immutable collection of {@link Metric} that consume a common class of {@link Pool} and return a common
- * class of {@link Statistic}. Multiple instances of the same metric are allowed (e.g. with different parameter
- * values).
- * </p>
- * <p>
- * For metrics that implement {@link Collectable} and whose method {@link Collectable#getCollectionOf()} returns a
+ * <p>An immutable collection of {@link Metric} that consume a common class of {@link Pool} and return a common
+ * class of {@link Statistic}.
+ *
+ * <p>For metrics that implement {@link Collectable} and whose method {@link Collectable#getCollectionOf()} returns a
  * common superclass (by {@link Metric#getMetricName()}), the intermediate output is computed once and applied to all 
  * subclasses within the collection. For example, if the {@link MetricCollection} contains several {@link Score} that 
  * extend {@link ContingencyTable} and implement {@link Collectable}, the contingency table will be computed once, 
  * with all dependent scores using this result.
- * </p>
- * <p>
- * Build a collection with a {@link Builder#of()}.
- * </p>
- * <p>
- * When a group contains a collection of metrics that do not need to be computed for all inputs, a non-empty set of
+ *
+ * <p>Build a collection with a {@link Builder#of()}.
+ *
+ * <p>When a group contains a collection of metrics that do not need to be computed for all inputs, a non-empty set of
  * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
- * </p>
  * 
  * @author James Brown
  * @param <S> the input type
