@@ -6,14 +6,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -96,11 +96,11 @@ public final class DataModelTestDataFactory
             OneOrTwoThresholds first =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1.0 ),
                                                                                OneOrTwoDoubles.of( 0.1 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ),
+                                                                               ThresholdOperator.GREATER,
+                                                                               ThresholdOrientation.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ) );
+                                                              ThresholdOperator.GREATER,
+                                                              ThresholdOrientation.LEFT ) );
 
             DoubleScoreStatistic one =
                     DoubleScoreStatistic.newBuilder()
@@ -122,11 +122,11 @@ public final class DataModelTestDataFactory
             OneOrTwoThresholds second =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 2.0 ),
                                                                                OneOrTwoDoubles.of( 0.2 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ),
+                                                                               ThresholdOperator.GREATER,
+                                                                               ThresholdOrientation.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ) );
+                                                              ThresholdOperator.GREATER,
+                                                              ThresholdOrientation.LEFT ) );
 
             DoubleScoreStatistic two =
                     DoubleScoreStatistic.newBuilder()
@@ -148,11 +148,11 @@ public final class DataModelTestDataFactory
             OneOrTwoThresholds third =
                     OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 3.0 ),
                                                                                OneOrTwoDoubles.of( 0.3 ),
-                                                                               Operator.GREATER,
-                                                                               ThresholdDataType.LEFT ),
+                                                                               ThresholdOperator.GREATER,
+                                                                               ThresholdOrientation.LEFT ),
                                            ThresholdOuter.of( OneOrTwoDoubles.of( 6.0 ),
-                                                              Operator.GREATER,
-                                                              ThresholdDataType.LEFT ) );
+                                                              ThresholdOperator.GREATER,
+                                                              ThresholdOrientation.LEFT ) );
 
             DoubleScoreStatistic three =
                     DoubleScoreStatistic.newBuilder()

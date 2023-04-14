@@ -13,7 +13,9 @@ public enum ThresholdType
     /** Probability classifier threshold. */
     @JsonProperty( "classifier" ) PROBABILITY_CLASSIFIER( "classifier" ),
     /** Value threshold. */
-    @JsonProperty( "value" ) VALUE( "value" );
+    @JsonProperty( "value" ) VALUE( "value" ),
+    /** Quantile threshold, used internally. */
+    QUANTILE( "quantile" );
 
     /** The string name. */
     private final String stringName;

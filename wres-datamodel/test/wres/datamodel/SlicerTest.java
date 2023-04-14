@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.config.yaml.components.ThresholdOperator;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -35,8 +36,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -106,8 +106,8 @@ public final class SlicerTest
         Pair<Double, Ensemble> e = Pair.of( 0.0, Ensemble.of( 1, 2, 3, 4, 5 ) );
         Pair<Double, Ensemble> f = Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) );
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT );
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );
@@ -375,16 +375,16 @@ public final class SlicerTest
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -475,16 +475,16 @@ public final class SlicerTest
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
@@ -635,16 +635,16 @@ public final class SlicerTest
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
         OneOrTwoThresholds thresholdThree =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()

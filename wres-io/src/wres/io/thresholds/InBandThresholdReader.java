@@ -2,13 +2,13 @@ package wres.io.thresholds;
 
 import wres.config.xml.MetricConfigException;
 import wres.config.generated.*;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdConstants;
 
 import java.util.*;
 
@@ -91,7 +91,7 @@ public class InBandThresholdReader
 
     private static Set<ThresholdOuter> includeAllDataThreshold( MetricConstants metric,
                                                                 Set<ThresholdOuter> thresholds,
-                                                                ThresholdConstants.ThresholdGroup group )
+                                                                wres.config.yaml.components.ThresholdType group )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
 
@@ -99,15 +99,15 @@ public class InBandThresholdReader
 
         Objects.requireNonNull( group, "Specify a non-null threshold type." );
 
-        if ( group == ThresholdConstants.ThresholdGroup.PROBABILITY_CLASSIFIER )
+        if ( group == wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
         {
             return thresholds;
         }
 
         ThresholdOuter allData = ThresholdOuter.of(
                 OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                ThresholdConstants.Operator.GREATER,
-                ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT
+                wres.config.yaml.components.ThresholdOperator.GREATER,
+                ThresholdOrientation.LEFT_AND_RIGHT
         );
 
         // All data only
@@ -149,7 +149,7 @@ public class InBandThresholdReader
         {
 
             // Type of thresholds
-            ThresholdConstants.ThresholdGroup thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
+            wres.config.yaml.components.ThresholdType thresholdGroup = wres.config.yaml.components.ThresholdType.PROBABILITY;
             if ( Objects.nonNull( thresholdsConfig.getType() ) )
             {
                 thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
@@ -178,7 +178,7 @@ public class InBandThresholdReader
     {
         Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
-        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
+        wres.config.yaml.components.ThresholdOperator operator = wres.config.yaml.components.ThresholdOperator.GREATER;
 
         // Operator specified
         if ( Objects.nonNull( thresholds.getOperator() ) )
@@ -186,7 +186,7 @@ public class InBandThresholdReader
             operator = ThresholdsGenerator.getThresholdOperator( thresholds );
         }
 
-        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
+        ThresholdOrientation dataType = ThresholdOrientation.LEFT;
 
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
@@ -234,8 +234,8 @@ public class InBandThresholdReader
      */
 
     public static Set<ThresholdOuter> readCommaSeparatedValues( String inputString,
-                                                                ThresholdConstants.Operator operator,
-                                                                ThresholdConstants.ThresholdDataType dataType,
+                                                                wres.config.yaml.components.ThresholdOperator operator,
+                                                                ThresholdOrientation dataType,
                                                                 boolean valuesAreProbabilistic,
                                                                 MeasurementUnit units )
     {
@@ -253,7 +253,7 @@ public class InBandThresholdReader
         Set<ThresholdOuter> commaSeparatedThresholds = new TreeSet<>();
 
         //Between operator
-        if ( operator == ThresholdConstants.Operator.BETWEEN )
+        if ( operator == wres.config.yaml.components.ThresholdOperator.BETWEEN )
         {
             return InBandThresholdReader.readBetweenThresholds( valuesToAdd,
                                                                 dataType,
@@ -303,7 +303,7 @@ public class InBandThresholdReader
      * @return the thresholds
      */
     public static Set<ThresholdOuter> readBetweenThresholds( List<Double> valuesToAdd,
-                                                             ThresholdConstants.ThresholdDataType dataType,
+                                                             ThresholdOrientation dataType,
                                                              boolean valuesAreProbabilistic,
                                                              MeasurementUnit units
     )
@@ -322,7 +322,7 @@ public class InBandThresholdReader
             {
                 newThreshold = ThresholdOuter.ofProbabilityThreshold(
                         OneOrTwoDoubles.of( valuesToAdd.get( i ), valuesToAdd.get( i + 1 ) ),
-                        ThresholdConstants.Operator.BETWEEN,
+                        wres.config.yaml.components.ThresholdOperator.BETWEEN,
                         dataType,
                         units
                 );
@@ -331,7 +331,7 @@ public class InBandThresholdReader
             {
                 newThreshold = ThresholdOuter.of(
                         OneOrTwoDoubles.of( valuesToAdd.get( i ), valuesToAdd.get( i + 1 ) ),
-                        ThresholdConstants.Operator.BETWEEN,
+                        wres.config.yaml.components.ThresholdOperator.BETWEEN,
                         dataType,
                         units
                 );

@@ -4,10 +4,9 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConstantsFactory;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
@@ -67,7 +66,7 @@ public class ThresholdBuilderCollection
      * @param metric the metric
      * @param threshold the threshold
      */
-    public void addThresholdToAll( ThresholdGroup group, MetricConstants metric, ThresholdOuter threshold )
+    public void addThresholdToAll( ThresholdType group, MetricConstants metric, ThresholdOuter threshold )
     {
         synchronized ( BUILDER_ACCESS_LOCK )
         {
@@ -84,7 +83,7 @@ public class ThresholdBuilderCollection
      * @param metric the metric
      * @param thresholds the thresholds
      */
-    public void addThresholdsToAll( ThresholdGroup group, MetricConstants metric, Set<ThresholdOuter> thresholds )
+    public void addThresholdsToAll( ThresholdType group, MetricConstants metric, Set<ThresholdOuter> thresholds )
     {
         synchronized ( BUILDER_ACCESS_LOCK )
         {
@@ -103,7 +102,7 @@ public class ThresholdBuilderCollection
      * @param threshold the threshold
      */
     public void addThreshold( FeatureTuple feature,
-                              ThresholdGroup group,
+                              ThresholdType group,
                               MetricConstants metric,
                               ThresholdOuter threshold )
     {
@@ -122,7 +121,7 @@ public class ThresholdBuilderCollection
      * @param thresholds the thresholds
      */
     public void addThresholds( FeatureTuple feature,
-                               ThresholdGroup group,
+                               ThresholdType group,
                                MetricConstants metric,
                                Set<ThresholdOuter> thresholds )
     {
@@ -154,7 +153,7 @@ public class ThresholdBuilderCollection
             if ( metricName.isContinuous() )
             {
                 this.addThresholdToAll(
-                        ThresholdConstants.ThresholdGroup.VALUE,
+                        ThresholdType.VALUE,
                         metricName,
                         ThresholdOuter.ALL_DATA );
             }

@@ -15,6 +15,8 @@ import wres.config.generated.NamedFeature;
 import wres.config.generated.GraphicalType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -26,8 +28,6 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.DiagramMetric;
@@ -155,8 +155,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -247,8 +247,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -327,8 +327,8 @@ public class WriterTestHelper
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 11.94128 ),
                                                                            OneOrTwoDoubles.of( 0.9 ),
-                                                                           Operator.GREATER_EQUAL,
-                                                                           ThresholdDataType.LEFT ) );
+                                                                           ThresholdOperator.GREATER_EQUAL,
+                                                                           ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -422,8 +422,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -514,8 +514,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -605,8 +605,8 @@ public class WriterTestHelper
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "HEFS" )
@@ -714,8 +714,8 @@ public class WriterTestHelper
         // Add the data for another threshold at the same time
         OneOrTwoThresholds thresholdTwo =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,
                                                timeOne,

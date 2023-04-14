@@ -34,6 +34,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
@@ -51,8 +52,6 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.*;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.MetricParameterException;
@@ -232,8 +231,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT,
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( TestDataFactory.getFeatureGroup(),
@@ -347,8 +346,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -465,11 +464,11 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds firstThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT_AND_RIGHT ) );
         OneOrTwoThresholds secondThreshold = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
-                                                                                       Operator.GREATER,
-                                                                                       ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                                                       wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                                                       ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -585,8 +584,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -699,8 +698,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         Set<ThresholdOuter> thresholds =
                 new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                 Operator.GREATER_EQUAL,
-                                                                 ThresholdDataType.LEFT ) ) );
+                                                                 wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
+                                                                 ThresholdOrientation.LEFT ) ) );
 
         ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
 
@@ -716,7 +715,7 @@ public final class SingleValuedStatisticsProcessorTest
         canonical.put( MetricConstants.CONTINGENCY_TABLE, thresholds );
         canonical.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, thresholds );
 
-        builder.addThresholds( canonical, ThresholdConstants.ThresholdGroup.PROBABILITY );
+        builder.addThresholds( canonical, wres.config.yaml.components.ThresholdType.PROBABILITY );
 
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
 
@@ -791,8 +790,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                          Operator.GREATER_EQUAL,
-                                                          ThresholdDataType.LEFT ) );
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
@@ -910,8 +909,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT_AND_RIGHT ) );
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT_AND_RIGHT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
@@ -1179,8 +1178,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         OneOrTwoThresholds expectedThreshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT,
+                                                          wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
         FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2, false );

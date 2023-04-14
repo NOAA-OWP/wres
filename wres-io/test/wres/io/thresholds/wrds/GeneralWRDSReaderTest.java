@@ -12,9 +12,9 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import wres.config.generated.*;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.config.yaml.components.ThresholdOperator;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.v3.GeneralThresholdDefinition;
@@ -1292,8 +1292,8 @@ public class GeneralWRDSReaderTest
             //Check the values with calculated flow included.
             Map<WrdsLocation, Set<Threshold>> results =
                     activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
-                                                           Operator.GREATER,
-                                                           ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                                           ThresholdOperator.GREATER,
+                                                           ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                                                            true,
                                                            this.unitMapper );
 
@@ -1335,8 +1335,8 @@ public class GeneralWRDSReaderTest
 
             //Check the values with calculated flow included.
             results = activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
-                                                             Operator.GREATER,
-                                                             ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                                             wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                             ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                                                              true,
                                                              this.unitMapper );
 
@@ -1370,8 +1370,8 @@ public class GeneralWRDSReaderTest
             //Check the values with calculated flow included.
             results = activeCheckedThresholds.getThresholds(
                     WRDSThresholdType.FLOW,
-                    Operator.GREATER,
-                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    wres.config.yaml.components.ThresholdOperator.GREATER,
+                    ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                     true,
                     this.unitMapper );
 
@@ -1429,8 +1429,8 @@ public class GeneralWRDSReaderTest
             //Stage
             results = activeCheckedThresholds.getThresholds(
                     WRDSThresholdType.STAGE,
-                    Operator.GREATER,
-                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    ThresholdOperator.GREATER,
+                    ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                     true,
                     this.unitMapper );
 
@@ -1458,8 +1458,8 @@ public class GeneralWRDSReaderTest
 
             //Check the values with calculated flow included.
             results = activeCheckedThresholds.getThresholds( WRDSThresholdType.FLOW,
-                                                             Operator.GREATER,
-                                                             ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                                                             ThresholdOperator.GREATER,
+                                                             ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                                                              true,
                                                              this.unitMapper );
 
@@ -1490,8 +1490,8 @@ public class GeneralWRDSReaderTest
             //Check the values with raw flow only.
             results = activeCheckedThresholds.getThresholds(
                     WRDSThresholdType.FLOW,
-                    Operator.GREATER,
-                    ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT,
+                    wres.config.yaml.components.ThresholdOperator.GREATER,
+                    ThresholdOrientation.LEFT_AND_ANY_RIGHT,
                     false,
                     this.unitMapper );
 
@@ -1538,18 +1538,19 @@ public class GeneralWRDSReaderTest
                 writer.append( ANOTHER_RESPONSE );
             }
 
-            ThresholdsConfig normalThresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
-                                                                           ThresholdDataType.LEFT,
-                                                                           new ThresholdsConfig.Source( jsonPath.toUri(),
-                                                                                                        ThresholdFormat.WRDS,
-                                                                                                        null,
-                                                                                                        null,
-                                                                                                        "NWS-NRLDB",
-                                                                                                        null,
-                                                                                                        //null ratings provider.
-                                                                                                        "stage",
-                                                                                                        LeftOrRightOrBaseline.LEFT ),
-                                                                           ThresholdOperator.GREATER_THAN );
+            ThresholdsConfig normalThresholdConfig
+                    = new ThresholdsConfig( ThresholdType.VALUE,
+                                            ThresholdDataType.LEFT,
+                                            new ThresholdsConfig.Source( jsonPath.toUri(),
+                                                                         ThresholdFormat.WRDS,
+                                                                         null,
+                                                                         null,
+                                                                         "NWS-NRLDB",
+                                                                         null,
+                                                                         //null ratings provider.
+                                                                         "stage",
+                                                                         LeftOrRightOrBaseline.LEFT ),
+                                            wres.config.generated.ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     GeneralWRDSReader.readThresholds( normalThresholdConfig,
@@ -1687,7 +1688,7 @@ public class GeneralWRDSReaderTest
                                                  //null ratings provider.
                                                  null,
                                                  LeftOrRightOrBaseline.LEFT ),
-                    ThresholdOperator.GREATER_THAN );
+                    wres.config.generated.ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     GeneralWRDSReader.readThresholds( normalRecurrenceConfig,
@@ -1818,7 +1819,7 @@ public class GeneralWRDSReaderTest
                                                  null,
                                                  "stage",
                                                  LeftOrRightOrBaseline.LEFT ),
-                    ThresholdOperator.GREATER_THAN );
+                    wres.config.generated.ThresholdOperator.GREATER_THAN );
 
             Map<WrdsLocation, Set<Threshold>> readThresholds =
                     GeneralWRDSReader.readThresholds( oldNormalThresholdConfig,

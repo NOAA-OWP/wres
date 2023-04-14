@@ -15,8 +15,8 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.TimeWindow;
@@ -62,11 +62,11 @@ class ScoreByThresholdAndLeadTest
                                           .build();
 
         ThresholdOuter first = ThresholdOuter.of( OneOrTwoDoubles.of( 23.0 ),
-                                                  Operator.GREATER,
-                                                  ThresholdDataType.LEFT );
+                                                  ThresholdOperator.GREATER,
+                                                  ThresholdOrientation.LEFT );
         ThresholdOuter second = ThresholdOuter.of( OneOrTwoDoubles.of( 29.0 ),
-                                                   Operator.GREATER,
-                                                   ThresholdDataType.LEFT );
+                                                   ThresholdOperator.GREATER,
+                                                   ThresholdOrientation.LEFT );
         PoolMetadata metaOne =
                 PoolMetadata.of( PoolMetadata.of(), TimeWindowOuter.of( timeWindow ), OneOrTwoThresholds.of( first ) );
         PoolMetadata metaTwo =

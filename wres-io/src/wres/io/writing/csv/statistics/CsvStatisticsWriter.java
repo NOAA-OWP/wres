@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
+
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
@@ -76,7 +77,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * Writes statistics to a file that contains comma separated values (CSV). There is one CSV file per evaluation and  
  * there should be one instance of this writer per evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -147,7 +148,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     /**
      * Returns an instance, which writes to the prescribed path. Uses default value formatting, which means durations in
      * units of seconds and {@link String#valueOf(double)} for real values.
-     * 
+     *
      * @param evaluation the evaluation description
      * @param path the path to write
      * @param gzip is true to gzip the output
@@ -166,7 +167,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     /**
      * Returns an instance, which writes to the prescribed path. Uses default value formatting, which means durations in
      * units of seconds and {@link String#valueOf(double)} for real values.
-     * 
+     *
      * @param evaluation the evaluation description
      * @param path the path to write
      * @param gzip is true to gzip the output
@@ -188,7 +189,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a blob of statistics to a CSV file.
-     * 
+     *
      * @throws CommaSeparatedWriteException if the statistics could not be written
      * @throws NullPointerException if the statistics are null
      */
@@ -240,7 +241,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns the path to the CSV file.
-     * 
+     *
      * @return the path to write.
      */
 
@@ -251,7 +252,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns the lock to use when writing CSV.
-     * 
+     *
      * @return the write lock
      */
 
@@ -262,7 +263,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a pool description from the pool definitions.
-     * 
+     *
      * @return a pool description
      */
 
@@ -334,7 +335,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a geometry description from the input.
-     * 
+     *
      * @param geometries the geometries
      * @param featureGroupName the feature group name
      * @return the geometry description
@@ -399,7 +400,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a geometry description from the list of geometries.
-     * 
+     *
      * @param geometries the geometries
      * @param lrb the left or right or baseline context to help with messaging
      * @param groupName to help with messaging
@@ -487,7 +488,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      * currently support geometry collections, only multi-part geometries. If they ever do, consider upgrading this 
      * method as JTS and WKT both support a geometry collection and it is a much better modeling choice. Currently, 
      * if this method receives multiple polygons, for example, it will form the union of their point geometries.
-     * 
+     *
      * @param wkts the wkts
      * @return the multi-part geometry
      * @throws IllegalArgumentException if the multi-part geometry could not be constructed for whatever reason
@@ -535,7 +536,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a time window description from the input.
-     * 
+     *
      * @param timeWindow the time window
      * @return the time window description
      */
@@ -559,7 +560,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a time scale description from the input.
-     * 
+     *
      * @param timeScale the time scale
      * @return the time scale description
      */
@@ -609,7 +610,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a threshold description from the input.
-     * 
+     *
      * @param threshold the threshold
      * @return the threshold description
      */
@@ -684,17 +685,23 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
         }
 
         // Threshold side
-        this.append( joiner, outer.getDataType().toString(), false );
+        this.append( joiner, outer.getOrientation()
+                                  .name()
+                                  .replace( "_", " " ),
+                     false );
 
         // Threshold operator
-        this.append( joiner, outer.getOperator().toString(), false );
+        this.append( joiner, outer.getOperator()
+                                  .toString()
+                                  .toUpperCase(),
+                     false );
 
         return joiner;
     }
 
     /**
      * Writes a blob of statistics to the CSV file.
-     * 
+     *
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
@@ -794,7 +801,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a list of double scores to the CSV file.
-     * 
+     *
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
@@ -812,7 +819,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         // Sort in metric name order
         Comparator<DoubleScoreStatistic> comparator =
-                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric().getName() );
 
         List<DoubleScoreStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -825,7 +832,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a list of duration scores to the CSV file.
-     * 
+     *
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
@@ -843,7 +850,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         // Sort in metric name order
         Comparator<DurationScoreStatistic> comparator =
-                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric().getName() );
 
         List<DurationScoreStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -856,7 +863,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a list of diagrams to the CSV file.
-     * 
+     *
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
@@ -874,7 +881,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         // Sort in metric name order
         Comparator<DiagramStatistic> comparator =
-                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric().getName() );
 
         List<DiagramStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -887,7 +894,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a list of box plots scores to the CSV file.
-     * 
+     *
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
@@ -905,7 +912,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         // Sort in metric name order
         Comparator<BoxplotStatistic> comparator =
-                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric().getName() );
 
         List<BoxplotStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -918,7 +925,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a list of duration diagrams to the CSV file.
-     * 
+     *
      * @param poolDescription the pool description
      * @param statistics the statistics
      * @param writer a shared writer, not to be closed
@@ -936,7 +943,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     {
         // Sort in metric name order
         Comparator<DurationDiagramStatistic> comparator =
-                ( a, b ) -> a.getMetric().getName().compareTo( b.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric().getName() );
 
         List<DurationDiagramStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -949,7 +956,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a double score.
-     * 
+     *
      * @param poolDescription the pool description
      * @param score the score
      * @param writer a shared writer, not to be closed
@@ -1039,7 +1046,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Returns a metric component qualifier for single-valued metrics based on the type of ensemble average used.
-     * 
+     *
      * @param metricName the metric name to test whether it is a single-valued metric
      * @param ensembleAverageType the ensemble average type
      * @return a qualifier
@@ -1063,7 +1070,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a duration score.
-     * 
+     *
      * @param poolDescription the pool description
      * @param score the score
      * @param writer a shared writer, not to be closed
@@ -1202,7 +1209,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a diagram.
-     * 
+     *
      * @param poolDescription the pool description
      * @param diagram the diagram
      * @param writer a shared writer, not to be closed
@@ -1293,7 +1300,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a duration diagram.
-     * 
+     *
      * @param poolDescription the pool description
      * @param diagram the diagram
      * @param writer a shared writer, not to be closed
@@ -1384,7 +1391,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a box plot.
-     * 
+     *
      * @param poolDescription the pool description
      * @param boxplot the box plot
      * @param writer a shared writer, not to be closed
@@ -1468,7 +1475,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a box plot statistic.
-     * 
+     *
      * @param poolDescription the pool descriptions
      * @param metric the metric
      * @param metricComponentName the metric component name
@@ -1541,7 +1548,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     /**
      * Appends the string to the joiner and adds an empty value if the input string is null or blank. Optionally, quotes 
      * the input.
-     * 
+     *
      * @param append the string to add
      * @param quote is true to add quotations, false otherwise
      */
@@ -1585,7 +1592,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param evaluation the evaluation description
      * @param path the path to the csv file to write
      * @param gzip is true to gzip the output
@@ -1681,7 +1688,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Creates the evaluation description from the evaluation.
-     * 
+     *
      * @param evaluation the evaluation
      * @return the evaluation description
      */
@@ -1708,7 +1715,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Adds a number of empty values inline.
-     * 
+     *
      * @param joiner the string joiner
      * @param count the number of empty values required
      */
@@ -1723,7 +1730,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
     /**
      * Writes a small CSVT file that aids import into GDAL-enabled tools, such as QGIS.
-     * 
+     *
      * @param path the base path, which will be adjusted
      * @throws IOException if the file could not be written
      */

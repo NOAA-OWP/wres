@@ -3,11 +3,10 @@ package wres.datamodel.pools;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
 import wres.config.generated.DataSourceConfig;
@@ -19,14 +18,14 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOperator;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
@@ -87,8 +86,8 @@ public class PoolMetadataTest
         assertNotNull( PoolMetadata.of( evaluation, poolOne ) );
 
         OneOrTwoThresholds thresholds = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                  Operator.EQUAL,
-                                                                                  ThresholdDataType.LEFT ) );
+                                                                                  ThresholdOperator.EQUAL,
+                                                                                  ThresholdOrientation.LEFT ) );
 
         assertNotNull( PoolMetadata.of( PoolMetadata.of(), thresholds ) );
 
@@ -214,7 +213,7 @@ public class PoolMetadataTest
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( m1.equals( m2 ) );
+            assertEquals( m1, m2 );
         }
         // Add a time window
         TimeWindowOuter firstWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
@@ -264,8 +263,8 @@ public class PoolMetadataTest
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
@@ -315,12 +314,12 @@ public class PoolMetadataTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     Arrays.asList( new MetricConfig( null,
-                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               List.of( new MetricConfig( null,
+                                                                                          MetricConfigName.BIAS_FRACTION ) ),
+                                                               null,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -357,38 +356,33 @@ public class PoolMetadataTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     Arrays.asList( new MetricConfig( null,
-                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               List.of( new MetricConfig( null,
+                                                                                          MetricConfigName.BIAS_FRACTION ) ),
+                                                               null,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
-        TimeWindowOuter timeWindow = thirdWindow;
-        OneOrTwoThresholds thresholds1 = thresholds;
 
         Evaluation evaluationSix = MessageFactory.parse( mockConfigOne );
 
         Pool poolEleven = MessageFactory.getPool( featureGroupTwo,
-                                                  timeWindow,
+                                                  thirdWindow,
                                                   null,
-                                                  thresholds1,
+                                                  thresholds,
                                                   false,
                                                   1 );
 
         PoolMetadata m11 = PoolMetadata.of( evaluationSix, poolEleven );
 
-        TimeWindowOuter timeWindow1 = thirdWindow;
-        OneOrTwoThresholds thresholds2 = thresholds;
-
         Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwo );
 
         Pool poolTwelve = MessageFactory.getPool( featureGroupTwo,
-                                                  timeWindow1,
+                                                  thirdWindow,
                                                   null,
-                                                  thresholds2,
+                                                  thresholds,
                                                   false,
                                                   1 );
 
@@ -398,9 +392,9 @@ public class PoolMetadataTest
 
         // Add a time scale
         Pool poolThirteen = MessageFactory.getPool( featureGroupTwo,
-                                                    timeWindow1,
+                                                    thirdWindow,
                                                     TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ),
-                                                    thresholds2,
+                                                    thresholds,
                                                     false,
                                                     1 );
 
@@ -410,9 +404,9 @@ public class PoolMetadataTest
         PoolMetadata m14 = PoolMetadata.of( evaluationSeven, poolThirteen );
 
         Pool poolFourteen = MessageFactory.getPool( featureGroupTwo,
-                                                    timeWindow1,
+                                                    thirdWindow,
                                                     TimeScaleOuter.of( Duration.ofDays( 2 ), TimeScaleFunction.MEAN ),
-                                                    thresholds2,
+                                                    thresholds,
                                                     false,
                                                     1 );
 
@@ -427,7 +421,7 @@ public class PoolMetadataTest
         assertNotEquals( null, m6 );
 
         // Other type check
-        assertNotEquals( m6, Double.valueOf( 2 ) );
+        assertNotEquals( m6, 2.0 );
     }
 
     /**
@@ -501,7 +495,7 @@ public class PoolMetadataTest
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( m1.hashCode() == m2.hashCode() );
+            assertEquals( m1.hashCode(), m2.hashCode() );
         }
 
         // Add a time window
@@ -545,8 +539,8 @@ public class PoolMetadataTest
         // Add a threshold
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Pool poolEight = MessageFactory.getPool( featureGroupTwo,
                                                  thirdWindow,
@@ -594,12 +588,12 @@ public class PoolMetadataTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     Arrays.asList( new MetricConfig( null,
-                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               List.of( new MetricConfig( null,
+                                                                                          MetricConfigName.BIAS_FRACTION ) ),
+                                                               null,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -636,24 +630,22 @@ public class PoolMetadataTest
                                                    null,
                                                    null,
                                                    null ),
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     Arrays.asList( new MetricConfig( null,
-                                                                                                      MetricConfigName.BIAS_FRACTION ) ),
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               List.of( new MetricConfig( null,
+                                                                                          MetricConfigName.BIAS_FRACTION ) ),
+                                                               null,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
-        TimeWindowOuter timeWindow = thirdWindow;
-        OneOrTwoThresholds thresholds1 = thresholds;
 
         Evaluation evaluationFour = MessageFactory.parse( mockConfigOne );
 
         Pool poolNine = MessageFactory.getPool( featureGroupTwo,
-                                                timeWindow,
+                                                thirdWindow,
                                                 null,
-                                                thresholds1,
+                                                thresholds,
                                                 false,
                                                 1 );
 

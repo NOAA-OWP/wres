@@ -22,6 +22,8 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Probability;
@@ -34,8 +36,6 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -73,8 +73,8 @@ class PoolSlicerTest
         values.add( Pair.of( 1.0, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT );
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT );
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Double>> sliced =
@@ -100,8 +100,8 @@ class PoolSlicerTest
         values.add( Pair.of( 1.0, Ensemble.of( 1, 2, 3 ) ) );
         double[] expected = new double[] { 1, 1, 1 };
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 0.0 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT );
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT );
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Ensemble>> sliced =
@@ -195,8 +195,8 @@ class PoolSlicerTest
         values.add( Pair.of( 5.0, Ensemble.of( 1, 1, 6, 6, 50 ) ) );
         PoolMetadata meta = PoolMetadata.of();
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT );
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT );
 
         List<Pair<Probability, Probability>> expectedPairs = new ArrayList<>();
         expectedPairs.add( Pair.of( Probability.ZERO, Probability.of( 2.0 / 5.0 ) ) );
@@ -550,8 +550,8 @@ class PoolSlicerTest
                                                                                           Instant.parse( SECOND_TIME ) ) ),
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ),
+                                                                                  ThresholdOperator.GREATER,
+                                                                                  ThresholdOrientation.LEFT ) ),
                                         false,
                                         1 );
 
@@ -561,8 +561,8 @@ class PoolSlicerTest
                                                                                           Instant.parse( FIRST_TIME ) ) ),
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
-                                                                                  Operator.GREATER,
-                                                                                  ThresholdDataType.LEFT ) ),
+                                                                                  ThresholdOperator.GREATER,
+                                                                                  ThresholdOrientation.LEFT ) ),
                                         false,
                                         1 );
 
@@ -632,11 +632,11 @@ class PoolSlicerTest
 
         Map<FeatureTuple, Predicate<Pair<Double, Double>>> predicates = new HashMap<>();
         ThresholdOuter thresholdOne = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                         Operator.GREATER_EQUAL,
-                                                         ThresholdDataType.LEFT );
+                                                         ThresholdOperator.GREATER_EQUAL,
+                                                         ThresholdOrientation.LEFT );
         ThresholdOuter thresholdTwo = ThresholdOuter.of( OneOrTwoDoubles.of( 9.0 ),
-                                                         Operator.GREATER_EQUAL,
-                                                         ThresholdDataType.LEFT );
+                                                         ThresholdOperator.GREATER_EQUAL,
+                                                         ThresholdOrientation.LEFT );
         Predicate<Pair<Double, Double>> predicateOne = Slicer.left( thresholdOne );
         Predicate<Pair<Double, Double>> predicateTwo = Slicer.left( thresholdTwo );
 

@@ -11,14 +11,14 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -45,10 +45,10 @@ class ThresholdsByMetricAndFeatureTest
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.MEAN_ERROR,
                     new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ) ) ) );
+                                                                     ThresholdOperator.GREATER,
+                                                                     ThresholdOrientation.LEFT ) ) ) );
 
-        ThresholdsByMetric thresholdsByMetric = new Builder().addThresholds( values, ThresholdGroup.VALUE )
+        ThresholdsByMetric thresholdsByMetric = new Builder().addThresholds( values, ThresholdType.VALUE )
                                                              .build();
 
         Geometry geometry = MessageFactory.getGeometry( "a" );
@@ -81,10 +81,10 @@ class ThresholdsByMetricAndFeatureTest
         Map<MetricConstants, Set<ThresholdOuter>> values = new EnumMap<>( MetricConstants.class );
         values.put( MetricConstants.MEAN_ERROR,
                     new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.2 ),
-                                                                     Operator.GREATER,
-                                                                     ThresholdDataType.LEFT ) ) ) );
+                                                                     ThresholdOperator.GREATER,
+                                                                     ThresholdOrientation.LEFT ) ) ) );
 
-        ThresholdsByMetric thresholdsByMetric = new Builder().addThresholds( values, ThresholdGroup.VALUE )
+        ThresholdsByMetric thresholdsByMetric = new Builder().addThresholds( values, ThresholdType.VALUE )
                                                              .build();
 
         Map<FeatureTuple, ThresholdsByMetric> expected =

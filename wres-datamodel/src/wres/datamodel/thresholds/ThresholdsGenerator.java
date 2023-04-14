@@ -17,12 +17,12 @@ import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
 /**
@@ -72,7 +72,7 @@ public class ThresholdsGenerator
     }
 
     /**
-     * <p>Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
+     * <p>Maps between threshold operators in {@link ThresholdOperator} and those in {@link wres.config.yaml.components.ThresholdOperator}.
      * 
      * <p>TODO: make these enumerations match on name to reduce brittleness.
      * 
@@ -82,23 +82,23 @@ public class ThresholdsGenerator
      * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getOperator()} returns null
      */
 
-    public static Operator getThresholdOperator( ThresholdsConfig thresholdsConfig )
+    public static wres.config.yaml.components.ThresholdOperator getThresholdOperator( ThresholdsConfig thresholdsConfig )
     {
         Objects.requireNonNull( thresholdsConfig );
         Objects.requireNonNull( thresholdsConfig.getOperator() );
 
         return switch ( thresholdsConfig.getOperator() )
                 {
-                    case EQUAL_TO -> Operator.EQUAL;
-                    case LESS_THAN -> Operator.LESS;
-                    case GREATER_THAN -> Operator.GREATER;
-                    case LESS_THAN_OR_EQUAL_TO -> Operator.LESS_EQUAL;
-                    case GREATER_THAN_OR_EQUAL_TO -> Operator.GREATER_EQUAL;
+                    case EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.EQUAL;
+                    case LESS_THAN -> wres.config.yaml.components.ThresholdOperator.LESS;
+                    case GREATER_THAN -> wres.config.yaml.components.ThresholdOperator.GREATER;
+                    case LESS_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.LESS_EQUAL;
+                    case GREATER_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL;
                 };
     }
 
     /**
-     * Returns the {@link ThresholdConstants.ThresholdGroup} that corresponds to the {@link ThresholdType}
+     * Returns the {@link wres.config.yaml.components.ThresholdType} that corresponds to the {@link ThresholdType}
      * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
      * 
      * @param thresholdType the threshold type
@@ -107,15 +107,15 @@ public class ThresholdsGenerator
      * @throws NullPointerException if the input is null
      */
 
-    public static ThresholdConstants.ThresholdGroup getThresholdGroup( ThresholdType thresholdType )
+    public static wres.config.yaml.components.ThresholdType getThresholdGroup( ThresholdType thresholdType )
     {
         Objects.requireNonNull( thresholdType );
 
-        return ThresholdConstants.ThresholdGroup.valueOf( thresholdType.name() );
+        return wres.config.yaml.components.ThresholdType.valueOf( thresholdType.name() );
     }
 
     /**
-     * Returns the {@link ThresholdConstants.ThresholdDataType} that corresponds to the {@link ThresholdDataType}
+     * Returns the {@link ThresholdOrientation} that corresponds to the {@link ThresholdDataType}
      * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
      * 
      * @param thresholdDataType the threshold data type
@@ -124,11 +124,11 @@ public class ThresholdsGenerator
      * @throws NullPointerException if the input is null
      */
 
-    public static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdDataType thresholdDataType )
+    public static ThresholdOrientation getThresholdDataType( ThresholdDataType thresholdDataType )
     {
         Objects.requireNonNull( thresholdDataType );
 
-        return ThresholdConstants.ThresholdDataType.valueOf( thresholdDataType.name() );
+        return ThresholdOrientation.valueOf( thresholdDataType.name() );
     }
 
     /**
@@ -157,10 +157,10 @@ public class ThresholdsGenerator
             {
                 Set<ThresholdOuter> allData = ThresholdsGenerator.getAdjustedThresholds( next,
                                                                                          Collections.emptySet(),
-                                                                                         ThresholdConstants.ThresholdGroup.VALUE );
+                                                                                         wres.config.yaml.components.ThresholdType.VALUE );
 
                 builder.addThresholds( Collections.singletonMap( next, allData ),
-                                       ThresholdConstants.ThresholdGroup.VALUE );
+                                       wres.config.yaml.components.ThresholdType.VALUE );
             }
         }
 
@@ -175,7 +175,7 @@ public class ThresholdsGenerator
             Map<MetricConstants, Set<ThresholdOuter>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
             // Type of thresholds
-            ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
+            wres.config.yaml.components.ThresholdType thresholdType = wres.config.yaml.components.ThresholdType.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
                 thresholdType = ThresholdsGenerator.getThresholdGroup( nextThresholds.getType() );
@@ -209,7 +209,7 @@ public class ThresholdsGenerator
 
     private static Set<ThresholdOuter> getAdjustedThresholds( MetricConstants metric,
                                                               Set<ThresholdOuter> thresholds,
-                                                              ThresholdConstants.ThresholdGroup type )
+                                                              wres.config.yaml.components.ThresholdType type )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
 
@@ -217,7 +217,7 @@ public class ThresholdsGenerator
 
         Objects.requireNonNull( type, "Specify a non-null threshold type." );
 
-        if ( type == ThresholdConstants.ThresholdGroup.PROBABILITY_CLASSIFIER )
+        if ( type == wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER )
         {
             return thresholds;
         }
@@ -260,7 +260,7 @@ public class ThresholdsGenerator
 
         Set<ThresholdOuter> returnMe = new HashSet<>();
 
-        Operator operator = Operator.GREATER;
+        wres.config.yaml.components.ThresholdOperator operator = wres.config.yaml.components.ThresholdOperator.GREATER;
 
         // Operator specified
         if ( Objects.nonNull( thresholds.getOperator() ) )
@@ -268,7 +268,7 @@ public class ThresholdsGenerator
             operator = ThresholdsGenerator.getThresholdOperator( thresholds );
         }
 
-        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
+        ThresholdOrientation dataType = ThresholdOrientation.LEFT;
 
         // Operator specified
         if ( Objects.nonNull( thresholds.getApplyTo() ) )
@@ -314,8 +314,8 @@ public class ThresholdsGenerator
      */
 
     private static Set<ThresholdOuter> getThresholdsFromCommaSeparatedValues( String inputString,
-                                                                              Operator oper,
-                                                                              ThresholdConstants.ThresholdDataType dataType,
+                                                                              wres.config.yaml.components.ThresholdOperator oper,
+                                                                              ThresholdOrientation dataType,
                                                                               boolean areProbs,
                                                                               MeasurementUnit units )
     {
@@ -331,7 +331,7 @@ public class ThresholdsGenerator
         Set<ThresholdOuter> returnMe = new TreeSet<>();
 
         //Between operator
-        if ( oper == Operator.BETWEEN )
+        if ( oper == wres.config.yaml.components.ThresholdOperator.BETWEEN )
         {
             if ( addMe.size() < 2 )
             {

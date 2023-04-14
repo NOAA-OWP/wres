@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.xml.MetricConfigException;
 import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Probability;
@@ -45,7 +46,6 @@ import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
@@ -435,18 +435,18 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     }
 
     /**
-     * Helper that returns a predicate for filtering pairs based on the {@link ThresholdOuter#getDataType()}
+     * Helper that returns a predicate for filtering pairs based on the {@link ThresholdOuter#getOrientation()}
      * of the input threshold.
      * 
      * @param input the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
-     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getOrientation()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getOrientation()} is not recognized
      */
 
     static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( ThresholdOuter input )
     {
-        return switch ( input.getDataType() )
+        return switch ( input.getOrientation() )
                 {
                     case LEFT -> Slicer.leftVector( input );
                     case RIGHT -> Slicer.allOfRight( input );
@@ -509,8 +509,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.ENSEMBLE,
                                                   outGroup,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -661,8 +661,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DISCRETE_PROBABILITY,
                                                   outGroup,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -854,8 +854,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DICHOTOMOUS,
                                                   StatisticType.DOUBLE_SCORE,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -879,7 +879,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         classifiers = ThresholdSlicer.filterByGroup( classifiers,
                                                      SampleDataGroup.DICHOTOMOUS,
                                                      StatisticType.DOUBLE_SCORE,
-                                                     ThresholdGroup.PROBABILITY_CLASSIFIER );
+                                                     ThresholdType.PROBABILITY_CLASSIFIER );
 
         // Iterate the thresholds
         for ( Map<FeatureTuple, ThresholdOuter> thresholds : decomposedThresholds )
@@ -952,8 +952,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         return classifiers.values()
                           .stream()
                           .anyMatch( next -> ThresholdSlicer.filterByGroup( next,
-                                                                            ThresholdGroup.PROBABILITY_CLASSIFIER )
-                                                            .hasGroup( ThresholdGroup.PROBABILITY_CLASSIFIER ) );
+                                                                            ThresholdType.PROBABILITY_CLASSIFIER )
+                                                            .hasGroup( ThresholdType.PROBABILITY_CLASSIFIER ) );
     }
 
     /**
@@ -1054,8 +1054,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                           .values()
                                           .stream()
                                           .noneMatch( thresholds -> thresholds.hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                                                        ThresholdGroup.PROBABILITY,
-                                                                                                                        ThresholdGroup.VALUE ) ) )
+                                                                                                                        ThresholdType.PROBABILITY,
+                                                                                                                        ThresholdType.VALUE ) ) )
                 {
                     throw new MetricConfigException( "Cannot configure '" + next
                                                      + "' without thresholds to define the events: "

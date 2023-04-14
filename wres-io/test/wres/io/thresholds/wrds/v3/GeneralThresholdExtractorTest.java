@@ -16,8 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.io.thresholds.wrds.NoThresholdsFoundException;
@@ -584,8 +585,8 @@ class GeneralThresholdExtractorTest
                                                                .convertTo( unitMapper )
                                                                .from( "NWS-NRLDB" )
                                                                .ratingFrom( null )
-                                                               .operatesBy( ThresholdConstants.Operator.GREATER )
-                                                               .onSide( ThresholdConstants.ThresholdDataType.LEFT );
+                                                               .operatesBy( ThresholdOperator.GREATER )
+                                                               .onSide( ThresholdOrientation.LEFT );
         Map<WrdsLocation, Set<Threshold>> normalExtraction = extractor.extract();
 
         assertFalse( normalExtraction.containsKey( PTSA1 ) );
@@ -620,8 +621,8 @@ class GeneralThresholdExtractorTest
                                                                 .convertTo( unitMapper )
                                                                 .from( "FlavorTown" )
                                                                 .ratingFrom( "DonkeySauce" )
-                                                                .operatesBy( ThresholdConstants.Operator.GREATER )
-                                                                .onSide( ThresholdConstants.ThresholdDataType.LEFT_AND_ANY_RIGHT );
+                                                                .operatesBy( ThresholdOperator.GREATER )
+                                                                .onSide( ThresholdOrientation.LEFT_AND_ANY_RIGHT );
         Map<WrdsLocation, Set<Threshold>> funExtraction = extractor.extract();
 
         assertTrue( funExtraction.containsKey( STEAK ) );
@@ -689,8 +690,8 @@ class GeneralThresholdExtractorTest
                                                                    .convertTo( unitMapper )
                                                                    .from( "NWS-CMS" )
                                                                    .ratingFrom( null )
-                                                                   .operatesBy( ThresholdConstants.Operator.LESS )
-                                                                   .onSide( ThresholdConstants.ThresholdDataType.LEFT );
+                                                                   .operatesBy( ThresholdOperator.LESS )
+                                                                   .onSide( ThresholdOrientation.LEFT );
         Map<WrdsLocation, Set<Threshold>> alternativeNormalExtraction = extractor.extract();
 
         assertTrue( alternativeNormalExtraction.containsKey( PTSA1 ) );
@@ -740,8 +741,8 @@ class GeneralThresholdExtractorTest
                                                                 .convertTo( unitMapper )
                                                                 .from( "NWS-NRLDB" )
                                                                 .ratingFrom( null )
-                                                                .operatesBy( ThresholdConstants.Operator.GREATER )
-                                                                .onSide( ThresholdConstants.ThresholdDataType.LEFT );
+                                                                .operatesBy( ThresholdOperator.GREATER )
+                                                                .onSide( ThresholdOrientation.LEFT );
         Map<WrdsLocation, Set<Threshold>> normalButFunExtraction = extractor.extract();
 
         assertTrue( normalButFunExtraction.containsKey( STEAK ) );

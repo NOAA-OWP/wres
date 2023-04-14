@@ -5,11 +5,11 @@ import wres.config.xml.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConstantsFactory;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;
-import wres.datamodel.thresholds.ThresholdConstants;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
@@ -217,14 +217,14 @@ public class ExternalThresholdReader
         FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
 
         // Threshold type: default to probability
-        ThresholdConstants.ThresholdGroup thresholdGroup;
+        ThresholdType thresholdGroup;
         if ( Objects.nonNull( thresholdsConfig.getType() ) )
         {
             thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
         }
         else
         {
-            thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
+            thresholdGroup = ThresholdType.PROBABILITY;
         }
 
         try
@@ -294,7 +294,7 @@ public class ExternalThresholdReader
                                                              FeatureDimension featureDimension,
                                                              LeftOrRightOrBaseline tupleSide,
                                                              Set<MetricConstants> metrics,
-                                                             ThresholdConstants.ThresholdGroup thresholdGroup )
+                                                             ThresholdType thresholdGroup )
     {
         Set<FeatureTuple> recognized = new HashSet<>();
 
@@ -425,7 +425,7 @@ public class ExternalThresholdReader
 
     private void addThresholdsToSharedBuilders( Set<MetricConstants> metrics,
                                                 Set<ThresholdOuter> nextThresholds,
-                                                ThresholdConstants.ThresholdGroup thresholdGroup,
+                                                ThresholdType thresholdGroup,
                                                 FeatureTuple tuple )
     {
         //Add the thresholds to the shared builder.
@@ -460,14 +460,14 @@ public class ExternalThresholdReader
         Set<FeatureTuple> recognized = new HashSet<>();
 
         // Threshold type: default to probability
-        final ThresholdConstants.ThresholdGroup thresholdGroup;
+        final ThresholdType thresholdGroup;
         if ( Objects.nonNull( thresholdsConfig.getType() ) )
         {
             thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
         }
         else
         {
-            thresholdGroup = ThresholdConstants.ThresholdGroup.PROBABILITY;
+            thresholdGroup = ThresholdType.PROBABILITY;
         }
 
         try

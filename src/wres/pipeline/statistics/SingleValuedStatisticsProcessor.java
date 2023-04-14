@@ -22,6 +22,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
@@ -40,7 +41,6 @@ import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeSeries;
@@ -234,17 +234,17 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
     /**
      * Helper that returns a predicate for filtering single-valued pairs based on the 
-     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * {@link ThresholdOuter#getOrientation()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
-     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getOrientation()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getOrientation()} is not recognized
      */
 
     private static Predicate<Pair<Double, Double>> getFilterForSingleValuedPairs( ThresholdOuter threshold )
     {
-        return switch ( threshold.getDataType() )
+        return switch ( threshold.getOrientation() )
                 {
                     case LEFT -> Slicer.left( threshold );
                     case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( threshold );
@@ -254,18 +254,18 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
     /**
      * Helper that returns a predicate for filtering time-series of single-valued pairs based on the
-     * {@link ThresholdOuter#getDataType()} of the input threshold.
+     * {@link ThresholdOuter#getOrientation()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
-     * @throws NullPointerException if the {@link ThresholdOuter#getDataType()} is null
-     * @throws IllegalStateException if the {@link ThresholdOuter#getDataType()} is not recognized
+     * @throws NullPointerException if the {@link ThresholdOuter#getOrientation()} is null
+     * @throws IllegalStateException if the {@link ThresholdOuter#getOrientation()} is not recognized
      */
 
     private static Predicate<TimeSeries<Pair<Double, Double>>>
             getFilterForTimeSeriesOfSingleValuedPairs( ThresholdOuter threshold )
     {
-        return switch ( threshold.getDataType() )
+        return switch ( threshold.getOrientation() )
                 {
                     case LEFT -> TimeSeriesSlicer.anyOfLeftInTimeSeries( threshold::test );
                     case LEFT_AND_RIGHT, LEFT_AND_ANY_RIGHT, LEFT_AND_RIGHT_MEAN ->
@@ -328,8 +328,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED,
                                                   outGroup,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles, if needed
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -500,8 +500,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.DICHOTOMOUS,
                                                   StatisticType.DOUBLE_SCORE,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -571,8 +571,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         filtered = ThresholdSlicer.filterByGroup( filtered,
                                                   SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                   StatisticType.DURATION_DIAGRAM,
-                                                  ThresholdGroup.PROBABILITY,
-                                                  ThresholdGroup.VALUE );
+                                                  ThresholdType.PROBABILITY,
+                                                  ThresholdType.VALUE );
 
         // Unpack the thresholds and add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> unpacked = ThresholdSlicer.unpack( filtered );
@@ -760,8 +760,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                       .values()
                                       .stream()
                                       .noneMatch( thresholds -> thresholds.hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                                                    ThresholdGroup.PROBABILITY,
-                                                                                                                    ThresholdGroup.VALUE ) ) )
+                                                                                                                    ThresholdType.PROBABILITY,
+                                                                                                                    ThresholdType.VALUE ) ) )
             {
                 throw new MetricConfigException( "Cannot configure '"
                                                  + next

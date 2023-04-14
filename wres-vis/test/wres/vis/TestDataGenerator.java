@@ -11,6 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.protobuf.Timestamp;
 
+import wres.config.yaml.components.ThresholdOperator;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -25,8 +26,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
@@ -88,14 +88,14 @@ public class TestDataGenerator
 
     private static final OneOrTwoThresholds THRESHOLD_ONE =
             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 4.9 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT,
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT,
                                                       MeasurementUnit.of( CMS ) ) );
 
     private static final OneOrTwoThresholds THRESHOLD_TWO =
             OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 7.8 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT,
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT,
                                                       MeasurementUnit.of( CMS ) ) );
 
     private static final OneOrTwoThresholds ALL_DATA_THRESHOLD = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
@@ -662,8 +662,8 @@ public class TestDataGenerator
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "Streamflow" )
@@ -844,8 +844,8 @@ public class TestDataGenerator
 
         OneOrTwoThresholds threshold =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          Operator.GREATER,
-                                                          ThresholdDataType.LEFT ) );
+                                                          ThresholdOperator.GREATER,
+                                                          ThresholdOrientation.LEFT ) );
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
         GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );

@@ -28,8 +28,8 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -311,8 +311,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         Pool<Pair<Double, Ensemble>> pairs = MetricTestDataFactory.getEnsemblePairsOne();
 
         ThresholdOuter threshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
-                                                      Operator.GREATER,
-                                                      ThresholdDataType.LEFT );
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT );
 
         Function<Pair<Double, Ensemble>, Pair<Probability, Probability>> mapper =
                 pair -> Slicer.toDiscreteProbabilityPair( pair, threshold );

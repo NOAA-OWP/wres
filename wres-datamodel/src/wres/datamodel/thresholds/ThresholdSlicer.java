@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Climatology;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
@@ -32,9 +34,7 @@ import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdConstants.Operator;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 import wres.statistics.generated.Threshold;
 
@@ -272,8 +272,8 @@ public class ThresholdSlicer
         Set<OneOrTwoDoubles> values = new HashSet<>();
         Set<OneOrTwoDoubles> probabilities = new HashSet<>();
         Set<String> names = new HashSet<>();
-        Set<Operator> operators = new HashSet<>();
-        Set<ThresholdDataType> thresholdDataTypes = new HashSet<>();
+        Set<ThresholdOperator> operators = new HashSet<>();
+        Set<ThresholdOrientation> thresholdDataTypes = new HashSet<>();
         Set<MeasurementUnit> measurementUnits = new HashSet<>();
 
         for ( ThresholdOuter next : thresholds )
@@ -283,7 +283,7 @@ public class ThresholdSlicer
             values.add( next.getValues() );
             measurementUnits.add( next.getUnits() );
             operators.add( next.getOperator() );
-            thresholdDataTypes.add( next.getDataType() );
+            thresholdDataTypes.add( next.getOrientation() );
         }
 
         // Remove any nullable attributes that had nulls
@@ -356,7 +356,7 @@ public class ThresholdSlicer
 
     /**
      * Applies {@link ThresholdSlicer#filterByGroup(ThresholdsByMetric, SampleDataGroup, StatisticType)}, followed by 
-     * {@link ThresholdSlicer#filterByGroup(ThresholdsByMetric, ThresholdGroup...)} to each element in the input and 
+     * {@link ThresholdSlicer#filterByGroup(ThresholdsByMetric, ThresholdType...)} to each element in the input and
      * returns the result.
      * 
      * @param <T> the type of key
@@ -371,7 +371,7 @@ public class ThresholdSlicer
     public static <T> Map<T, ThresholdsByMetric> filterByGroup( Map<T, ThresholdsByMetric> thresholds,
                                                                 SampleDataGroup sampleDataGroup,
                                                                 StatisticType statisticType,
-                                                                ThresholdGroup... thresholdGroups )
+                                                                ThresholdType... thresholdGroups )
     {
         Objects.requireNonNull( thresholds );
         Objects.requireNonNull( sampleDataGroup );
@@ -416,11 +416,11 @@ public class ThresholdSlicer
      * @throws NullPointerException if the thresholdsByMetric is null
      */
 
-    public static ThresholdsByMetric filterByGroup( ThresholdsByMetric thresholdsByMetric, ThresholdGroup... group )
+    public static ThresholdsByMetric filterByGroup( ThresholdsByMetric thresholdsByMetric, ThresholdType... group )
     {
         Objects.requireNonNull( thresholdsByMetric );
 
-        if ( Objects.nonNull( group ) && Arrays.equals( group, ThresholdGroup.values() ) )
+        if ( Objects.nonNull( group ) && Arrays.equals( group, ThresholdType.values() ) )
         {
             return thresholdsByMetric;
         }
@@ -432,10 +432,10 @@ public class ThresholdSlicer
             return builder.build();
         }
 
-        List<ThresholdGroup> groupList = Arrays.asList( group );
+        List<ThresholdType> groupList = Arrays.asList( group );
 
         // Add the stored types within the input array
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
+        for ( ThresholdType nextType : ThresholdType.values() )
         {
             // Filter by type
             if ( groupList.contains( nextType ) )
@@ -486,7 +486,7 @@ public class ThresholdSlicer
         Builder builder = new Builder();
 
         // Add the filtered thresholds for each type
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
+        for ( ThresholdType nextType : ThresholdType.values() )
         {
             Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = thresholdsByMetric.getThresholds( nextType );
             ThresholdSlicer.addFilteredThresholdsByGroup( builder, nextType, nextThresholds, test );
@@ -524,7 +524,7 @@ public class ThresholdSlicer
         Builder builder = new Builder();
 
         // Add the filtered thresholds for each type
-        for ( ThresholdGroup nextType : ThresholdGroup.values() )
+        for ( ThresholdType nextType : ThresholdType.values() )
         {
             Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = thresholdsByMetric.getThresholds( nextType );
             ThresholdSlicer.addFilteredThresholdsByGroup( builder, nextType, nextThresholds, test );
@@ -672,7 +672,7 @@ public class ThresholdSlicer
     /**
      * <p>Returns the composed thresholds associated with each metric in the input container. A composed threshold is a 
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
-     * {@link SampleDataGroup#DICHOTOMOUS} and has {@link ThresholdGroup#PROBABILITY_CLASSIFIER},
+     * {@link SampleDataGroup#DICHOTOMOUS} and has {@link ThresholdType#PROBABILITY_CLASSIFIER},
      * otherwise one threshold. The thresholds are stored in natural order.
      * 
      * <p>Also see: {@link #unionOfOneOrTwoThresholds(ThresholdsByMetric)}.</p>
@@ -696,10 +696,10 @@ public class ThresholdSlicer
         for ( MetricConstants next : union )
         {
             //Non-classifiers
-            Set<ThresholdGroup> nextGroup = thresholds.getThresholdTypesForThisMetric( next );
-            Set<ThresholdGroup> types = new HashSet<>( nextGroup );
-            types.removeIf( type -> type == ThresholdGroup.PROBABILITY_CLASSIFIER );
-            ThresholdGroup[] nextArray = types.toArray( new ThresholdGroup[0] );
+            Set<ThresholdType> nextGroup = thresholds.getThresholdTypesForThisMetric( next );
+            Set<ThresholdType> types = new HashSet<>( nextGroup );
+            types.removeIf( type -> type == ThresholdType.PROBABILITY_CLASSIFIER );
+            ThresholdType[] nextArray = types.toArray( new ThresholdType[0] );
             Set<ThresholdOuter> nonClassifiers = thresholds.union( next, nextArray );
 
             // Thresholds to add
@@ -707,11 +707,11 @@ public class ThresholdSlicer
 
             // Dichotomous metrics with classifiers
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && thresholds.hasGroup( ThresholdGroup.PROBABILITY_CLASSIFIER ) )
+                 && thresholds.hasGroup( ThresholdType.PROBABILITY_CLASSIFIER ) )
             {
                 // Classifiers
                 Set<ThresholdOuter> classifiers =
-                        thresholds.union( next, ThresholdGroup.PROBABILITY_CLASSIFIER );
+                        thresholds.union( next, ThresholdType.PROBABILITY_CLASSIFIER );
 
                 // One composed threshold for each event threshold and combination of event and decision threshold, 
                 // as dichotomous metrics can be computed for both
@@ -812,7 +812,7 @@ public class ThresholdSlicer
      */
 
     private static void addFilteredThresholdsByGroup( Builder builder,
-                                                      ThresholdGroup type,
+                                                      ThresholdType type,
                                                       Map<MetricConstants, Set<ThresholdOuter>> thresholds,
                                                       Predicate<MetricConstants> test )
     {
