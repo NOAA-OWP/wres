@@ -24,6 +24,9 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.Threshold;
@@ -188,6 +191,47 @@ public class DeclarationUtilities
                                                .dataset()
                                                .featureAuthority();
                 };
+    }
+
+    /**
+     * Groups the metrics by their common parameters. Only considers parameters that are involved in slicing or
+     * transforming pairs, such as thresholds or the type of ensemble average to calculate. In short, the metrics
+     * that belong to a single group represent an atomic set for processing because they require common pairs.
+     *
+     * @param metrics the metrics to group
+     * @return the metrics grouped by common parameters (that are used for slicing or transforming)
+     */
+
+    public static Set<Set<Metric>> getMetricGroupsForProcessing( Set<Metric> metrics )
+    {
+        Objects.requireNonNull( metrics );
+
+        // Create the grouping function
+        Function<Metric, MetricParameters> classifier = metric ->
+        {
+            MetricParametersBuilder builder = MetricParametersBuilder.builder();
+            if( Objects.nonNull( metric.parameters() ) )
+            {
+                MetricParameters existing = metric.parameters();
+                builder.valueThresholds( existing.valueThresholds() );
+                builder.probabilityThresholds( existing.probabilityThresholds() );
+                builder.classifierThresholds( existing.classifierThresholds() );
+                builder.ensembleAverageType( existing.ensembleAverageType() );
+            }
+            return builder.build();
+        };
+
+        // Group the metrics
+        Map<MetricParameters, Set<Metric>> grouped = metrics.stream()
+                                                            .collect( Collectors.groupingBy( classifier,
+                                                                                             Collectors.toSet() ) );
+
+        LOGGER.debug( "Grouped the metrics into {} groups whose data transformation parameters are consistent. Each "
+                      + "of these groups is an atomic set for processing. The metric groups are: {}.",
+                      grouped.size(),
+                      grouped );
+
+        return Set.copyOf( grouped.values() );
     }
 
     /**

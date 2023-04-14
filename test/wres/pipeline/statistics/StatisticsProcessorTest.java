@@ -80,7 +80,7 @@ public final class StatisticsProcessorTest
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
                 StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
         //Check for existence of metrics
-        assertTrue( processor.hasMetrics( StatisticType.DOUBLE_SCORE ) );
+        assertTrue( processor.hasDoubleScoreMetrics() );
     }
 
     @Test

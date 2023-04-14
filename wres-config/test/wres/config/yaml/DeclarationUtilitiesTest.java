@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisDurationsBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
@@ -25,12 +27,17 @@ import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricBuilder;
+import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -340,6 +347,59 @@ class DeclarationUtilitiesTest
                 Map.of( ThresholdType.PROBABILITY, Set.of( probabilityWrapped ),
                         ThresholdType.VALUE, Set.of( valueWrapped ),
                         ThresholdType.PROBABILITY_CLASSIFIER, Set.of( classifierWrapped ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetMetricGroupsForProcessing()
+    {
+        Set<wres.config.yaml.components.Threshold> thresholdsOne
+                = Set.of( ThresholdBuilder.builder()
+                                          .threshold( Threshold.newBuilder()
+                                                               .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                               .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                               .build() )
+                                          .type( ThresholdType.VALUE )
+                                          .featureNameFrom( DatasetOrientation.LEFT )
+                                          .build() );
+        Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                           MetricParametersBuilder.builder()
+                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                  .valueThresholds( thresholdsOne )
+                                                                  .build() );
+        Metric two = MetricBuilder.Metric( MetricConstants.MEAN_ERROR,
+                                           MetricParametersBuilder.builder()
+                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                  .valueThresholds( thresholdsOne )
+                                                                  .build() );
+
+        Set<wres.config.yaml.components.Threshold> thresholdsTwo
+                = Set.of( ThresholdBuilder.builder()
+                                          .threshold( Threshold.newBuilder()
+                                                               .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                                               .setOperator( Threshold.ThresholdOperator.LESS )
+                                                               .build() )
+                                          .type( ThresholdType.PROBABILITY )
+                                          .featureNameFrom( DatasetOrientation.RIGHT )
+                                          .build() );
+
+        Metric three = MetricBuilder.Metric( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                             MetricParametersBuilder.builder()
+                                                                    .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                    .probabilityThresholds( thresholdsTwo )
+                                                                    .build() );
+        Metric four = MetricBuilder.Metric( MetricConstants.MEAN_SQUARE_ERROR,
+                                            MetricParametersBuilder.builder()
+                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                   .probabilityThresholds( thresholdsTwo )
+                                                                   .build() );
+
+        Set<Metric> metrics = Set.of( one, two, three, four );
+
+        Set<Set<Metric>> actual = DeclarationUtilities.getMetricGroupsForProcessing( metrics );
+
+        Set<Set<Metric>> expected = Set.of( Set.of( three, four ), Set.of( one, two ) );
 
         assertEquals( expected, actual );
     }

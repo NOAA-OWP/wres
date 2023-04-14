@@ -419,6 +419,7 @@ class DeclarationFactoryTest
                   - some_file.csv
                 predicted:
                   - another_file.csv
+                minimum_sample_size: 23
                 metrics:
                   - name: mean square error skill score
                     value_thresholds: [0.3]
@@ -449,7 +450,6 @@ class DeclarationFactoryTest
         Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( valueThreshold );
         MetricParameters firstParameters =
                 MetricParametersBuilder.builder()
-                                       .minimumSampleSize( 23 )
                                        .valueThresholds( valueThresholds )
                                        .build();
         Metric first = MetricBuilder.builder()
@@ -1541,10 +1541,10 @@ class DeclarationFactoryTest
                 predicted:
                   sources:
                     - another_file.csv
+                minimum_sample_size: 23
                 metrics:
                   - name: mean square error skill score
                     value_thresholds: [0.3]
-                    minimum_sample_size: 23
                   - name: pearson correlation coefficient
                     probability_thresholds:
                       values: [0.1]
@@ -1568,7 +1568,6 @@ class DeclarationFactoryTest
         Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( valueThreshold );
         MetricParameters firstParameters =
                 MetricParametersBuilder.builder()
-                                       .minimumSampleSize( 23 )
                                        .valueThresholds( valueThresholds )
                                        .build();
         Metric first = MetricBuilder.builder()
@@ -1621,6 +1620,7 @@ class DeclarationFactoryTest
                                                                        .left( this.observedDataset )
                                                                        .right( this.predictedDataset )
                                                                        .metrics( metrics )
+                                                                       .minimumSampleSize( 23 )
                                                                        .build();
 
         String actual = DeclarationFactory.from( evaluation );
@@ -2942,5 +2942,25 @@ class DeclarationFactoryTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithSampleSize()
+    {
+        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ) );
+        MetricsConfig someMetricsWrapped = new MetricsConfig( null, 14, someMetrics, null, null );
+        MetricsConfig moreMetricsWrapped = new MetricsConfig( null, 11, someMetrics, null, null );
+
+        List<MetricsConfig> innerMetrics = List.of( someMetricsWrapped, moreMetricsWrapped );
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   innerMetrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        assertEquals( 14, actual.minimumSampleSize() );
     }
 }

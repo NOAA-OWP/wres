@@ -424,14 +424,13 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
     /**
      * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
-     * 
-     * @param outGroup the {@link StatisticType}
+     *
      * @return true if metrics are available for the input {@link StatisticType} false otherwise
      */
     @Override
-    boolean hasMetrics( StatisticType outGroup )
+    boolean hasDoubleScoreMetrics( )
     {
-        return this.getMetrics( null, outGroup ).length > 0;
+        return this.getMetrics( null, StatisticType.DOUBLE_SCORE ).length > 0;
     }
 
     /**

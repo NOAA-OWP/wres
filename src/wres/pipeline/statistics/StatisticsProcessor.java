@@ -246,16 +246,15 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     }
 
     /**
-     * Returns true if metrics are available for the input {@link StatisticType}, false otherwise.
-     * 
-     * @param outGroup the {@link StatisticType}
-     * @return true if metrics are available for the input {@link StatisticType} false otherwise
+     * Returns true if metrics are available for the {@link StatisticType#DOUBLE_SCORE}, false otherwise.
+     *
+     * @return true if metrics are available for the {@link StatisticType#DOUBLE_SCORE} false otherwise
      */
 
-    boolean hasMetrics( StatisticType outGroup )
+    boolean hasDoubleScoreMetrics()
     {
         return this.rawMetrics.stream()
-                              .anyMatch( next -> next.isInGroup( outGroup ) );
+                              .anyMatch( next -> next.isInGroup( StatisticType.DOUBLE_SCORE ) );
     }
 
     /**

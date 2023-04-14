@@ -24,6 +24,7 @@ import wres.config.yaml.serializers.ChronoUnitSerializer;
 import wres.config.yaml.serializers.DecimalFormatSerializer;
 import wres.config.yaml.serializers.DurationSerializer;
 import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
+import wres.config.yaml.serializers.PositiveIntegerSerializer;
 import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
 import wres.statistics.generated.Pool;
@@ -56,6 +57,7 @@ import wres.statistics.generated.Pool;
  * @param thresholdSets a collection of thresholds sets
  * @param thresholdService the threshold service
  * @param ensembleAverageType the type of ensemble average to use
+ * @param minimumSampleSize the minimum sample size for which metrics should be computed
  * @param season the season
  * @param values the valid values
  * @param metrics the metrics
@@ -102,6 +104,8 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "threshold_service") ThresholdService thresholdService,
                                      @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
+                                     @JsonSerialize( using = PositiveIntegerSerializer.class )
+                                     @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
                                      @JsonProperty( "season" ) Season season,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
@@ -144,6 +148,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
      * @param thresholdSets a collection of thresholds sets
      * @param thresholdService the threshold service
      * @param ensembleAverageType the type of ensemble average to use
+     * @param minimumSampleSize the minimum sample size for which metrics should be computed
      * @param season the season
      * @param values the valid values
      * @param metrics the metrics
@@ -218,6 +223,11 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
         if ( Objects.isNull( durationFormat ) )
         {
             durationFormat = ChronoUnit.SECONDS;
+        }
+
+        if( Objects.isNull( minimumSampleSize ) )
+        {
+            minimumSampleSize = 0;
         }
     }
 }

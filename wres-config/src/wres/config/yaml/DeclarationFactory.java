@@ -201,7 +201,7 @@ public class DeclarationFactory
     public static final wres.statistics.generated.Threshold DEFAULT_CANONICAL_THRESHOLD
             = wres.statistics.generated.Threshold.newBuilder()
                                                  .setDataType( DEFAULT_THRESHOLD_ORIENTATION.canonical() )
-                                                 .setOperator( DEFAULT_THRESHOLD_OPERATOR.canonical()  )
+                                                 .setOperator( DEFAULT_THRESHOLD_OPERATOR.canonical() )
                                                  .build();
     /** Default wrapped threshold. */
     public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null, null );
@@ -1908,7 +1908,22 @@ public class DeclarationFactory
         }
 
         // Set the minimum sample size
-        parametersBuilder.minimumSampleSize( metric.getMinimumSampleSize() );
+        if ( Objects.nonNull( builder.minimumSampleSize() )
+             && Objects.nonNull( metric.getMinimumSampleSize() )
+             && !Objects.equals( builder.minimumSampleSize(),
+                                 metric.getMinimumSampleSize() ) )
+        {
+            int sampleSize = Math.max( builder.minimumSampleSize(), metric.getMinimumSampleSize() );
+
+            // Warn if there is a different sample size for each of several metric groups: migrate the largest
+            LOGGER.warn( "Discovered more than one minimum sample size to migrate. Choosing the larger of the "
+                         + "minimum sample sizes, which is {}.", sampleSize );
+            builder.minimumSampleSize( sampleSize );
+        }
+        else
+        {
+            builder.minimumSampleSize( metric.getMinimumSampleSize() );
+        }
 
         // Set the ensemble average
         if ( Objects.nonNull( metric.getEnsembleAverage() ) )

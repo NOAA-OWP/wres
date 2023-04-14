@@ -97,11 +97,6 @@ public class MetricSerializer extends JsonSerializer<Metric>
                                             .toList();
             writer.writeObjectField( "summary_statistics", mapped );
         }
-        // Minimum sample size, if not default
-        if ( parameters.minimumSampleSize() > 0 )
-        {
-            writer.writeObjectField( "minimum_sample_size", parameters.minimumSampleSize() );
-        }
         // PNG graphics, if not default
         if ( Boolean.FALSE.equals( parameters.png() ) )
         {
