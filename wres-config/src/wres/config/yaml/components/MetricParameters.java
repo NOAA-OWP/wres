@@ -25,7 +25,6 @@ import wres.statistics.generated.Pool;
  * @param valueThresholds value thresholds
  * @param classifierThresholds probability classifier thresholds
  * @param summaryStatistics summary statistics
- * @param minimumSampleSize the minimum sample size
  * @param ensembleAverageType the ensemble average type
  * @param png whether PNG graphics should be created for this metric
  * @param svg whether SVG graphics should be created for this metric
@@ -40,7 +39,6 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
                                 @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                 @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
                                 @JsonProperty( "summary_statistics" ) Set<MetricConstants> summaryStatistics,
-                                @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
                                 @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                 @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                 @JsonProperty( "png" ) Boolean png,
@@ -52,7 +50,6 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
      * @param valueThresholds the value thresholds
      * @param classifierThresholds the probability classifier thresholds
      * @param summaryStatistics the summary statistics
-     * @param minimumSampleSize the minimum sample size
      * @param ensembleAverageType the ensemble average type
      * @param png whether PNG graphics should be created for this metric
      * @param svg whether SVG graphics should be created for this metric
@@ -87,11 +84,6 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
         {
             // Immutable copy, preserving insertion order
             classifierThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( classifierThresholds ) );
-        }
-
-        if ( Objects.isNull( minimumSampleSize ) )
-        {
-            minimumSampleSize = 0;
         }
 
         if ( Objects.isNull( summaryStatistics ) )

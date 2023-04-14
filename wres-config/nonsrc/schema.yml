@@ -99,6 +99,9 @@ definitions:
         items:
           "$ref": "#/definitions/ThresholdSet"
         minItems: 1
+      minimum_sample_size:
+        type: integer
+        minimum: 1
       metrics:
         type: array
         items:
@@ -895,9 +898,6 @@ definitions:
         "$ref": "#/definitions/ProbabilityThresholds"
       value_thresholds:
         "$ref": "#/definitions/ValueThresholds"
-      minimum_sample_size:
-        type: integer
-        minimum: 1
       svg:
         type: boolean
       png:
