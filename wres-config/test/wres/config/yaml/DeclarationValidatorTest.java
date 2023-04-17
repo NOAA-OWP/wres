@@ -32,6 +32,8 @@ import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricBuilder;
+import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
@@ -1007,6 +1009,37 @@ class DeclarationValidatorTest
                                                                         + "missing 'baseline' feature name",
                                                                         StatusLevel.ERROR ) )
         );
+    }
+
+    @Test
+    void testInconsistentEnsembleAverageTypesResultsInAWarning()
+    {
+        Metric first =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 // Results in a warning
+                                                                 .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> metrics = Set.of( first );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            // Results in a warning
+                                            .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                            .metrics( metrics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "but all of the metrics that declare their own type "
+                                                       + "will retain that type. The following metrics will not be "
+                                                       + "adjusted: [MEAN SQUARE ERROR SKILL SCORE]",
+                                                       StatusLevel.WARN ) );
     }
 
     /**

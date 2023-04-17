@@ -46,6 +46,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -605,8 +606,8 @@ class DeclarationInterpolatorTest
                                   .timeZoneOffset( ZoneOffset.ofHours( 2 ) )
                                   .build() );
         Dataset innerPredictedDataset = DatasetBuilder.builder( this.predictedDataset )
-                .sources( sources)
-                .build();
+                                                      .sources( sources )
+                                                      .build();
         Dataset right = DatasetBuilder.builder( innerPredictedDataset )
                                       .timeZoneOffset( ZoneOffset.ofHours( 4 ) )
                                       .build();
@@ -692,6 +693,52 @@ class DeclarationInterpolatorTest
         Set<GeometryTuple> actual = DeclarationInterpolator.getSparseFeaturesToInterpolate( declaration );
 
         Set<GeometryTuple> expected = Set.of( one, two, three, five );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateEnsembleAverageType()
+    {
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .parameters( MetricParametersBuilder.builder()
+                                                                        .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                        .build() )
+                                    .build();
+        Metric second = MetricBuilder.builder()
+                                     .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                     .build();
+
+        Set<Metric> metrics = Set.of( first, second );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                            .metrics( metrics )
+                                            .build();
+        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( declaration );
+        Set<Metric> actual = actualDeclaration.metrics();
+
+        Metric firstExpected =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                 .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) )
+                                                                 .build() )
+                             .build();
+        Metric secondExpected =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                 .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> expected = Set.of( firstExpected, secondExpected );
 
         assertEquals( expected, actual );
     }

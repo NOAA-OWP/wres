@@ -45,6 +45,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool;
 
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
@@ -109,6 +110,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedDeclarationBuilder );
         // Interpolate thresholds for individual metrics without thresholds, adding an "all data" threshold as needed
         DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
+        // Interpolate metric parameters
+        DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormats( adjustedDeclarationBuilder );
 
@@ -239,7 +242,9 @@ public class DeclarationInterpolator
         DataType rightType = builder.right().type();
 
         // No metrics defined and the type is known, so interpolate all valid metrics
-        if ( builder.metrics().isEmpty() && Objects.nonNull( rightType ) )
+        if ( builder.metrics()
+                    .isEmpty()
+             && Objects.nonNull( rightType ) )
         {
             LOGGER.debug( "Interpolating metrics from the raw declaration." );
 
@@ -528,6 +533,43 @@ public class DeclarationInterpolator
                       thresholdsByType );
 
         DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder );
+    }
+
+    /**
+     * Interpolates low-level metric parameters from corresponding parameter values that can be set for all metrics.
+     * The general rule with overrides is to interpolate the parameter value when it is missing and to warn when a
+     * different value is already set. In other words, the high-level parameter value is treated as a default that
+     * cannot override an existing low-level setting. The warning should be user-facing and, therefore, handled during
+     * declaration validation.
+     *
+     * @param builder the builder
+     */
+    private static void interpolateMetricParameters( EvaluationDeclarationBuilder builder )
+    {
+        wres.statistics.generated.Pool.EnsembleAverageType topType = builder.ensembleAverageType();
+        if( Objects.nonNull( topType ) )
+        {
+            Set<Metric> adjusted = new HashSet<>();
+            for( Metric next : builder.metrics() )
+            {
+                MetricBuilder metricBuilder = MetricBuilder.builder( next );
+                MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
+                if( Objects.nonNull( next.parameters() ) )
+                {
+                    parBuilder = MetricParametersBuilder.builder( next.parameters() );
+                }
+                Pool.EnsembleAverageType parType = parBuilder.ensembleAverageType();
+                if( Objects.isNull( parType ) )
+                {
+                    parBuilder.ensembleAverageType( topType );
+                }
+                metricBuilder.parameters( parBuilder.build() );
+                adjusted.add( metricBuilder.build() );
+            }
+
+            // Set the adjusted metrics
+            builder.metrics( adjusted );
+        }
     }
 
     /**

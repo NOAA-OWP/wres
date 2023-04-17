@@ -12,10 +12,21 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricBuilder;
+import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
@@ -29,6 +40,8 @@ import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Pool;
+import wres.statistics.generated.Threshold;
 
 /**
  * Tests the {@link ThresholdSlicer}.
@@ -394,6 +407,149 @@ class ThresholdSlicerTest
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> expected =
                 Map.of( MetricConstants.PROBABILITY_OF_DETECTION, expectedThresholds );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetMetricsAndThresholdsForProcessing()
+    {
+        Geometry oneLeft = Geometry.newBuilder()
+                                   .setName( "foo" )
+                                   .build();
+        Geometry twoLeft = Geometry.newBuilder()
+                                   .setName( "bar" )
+                                   .build();
+        Geometry oneRight = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+        Geometry twoRight = Geometry.newBuilder()
+                                    .setName( "qux" )
+                                    .build();
+
+        wres.config.yaml.components.Threshold thresholdOne
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                       .build() )
+                                  .type( ThresholdType.VALUE )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( oneLeft )
+                                  .build();
+        wres.config.yaml.components.Threshold thresholdTwo
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 25.0 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                       .build() )
+                                  .type( ThresholdType.VALUE )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( twoLeft )
+                                  .build();
+
+        wres.config.yaml.components.Threshold thresholdThree
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.LESS )
+                                                       .build() )
+                                  .type( ThresholdType.PROBABILITY )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( oneLeft )
+                                  .build();
+        wres.config.yaml.components.Threshold thresholdFour
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 0.5 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.LESS )
+                                                       .build() )
+                                  .type( ThresholdType.PROBABILITY )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( twoLeft )
+                                  .build();
+
+        Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                           MetricParametersBuilder.builder()
+                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .probabilityThresholds( Set.of( thresholdThree ) )
+                                                                  .build() );
+        Metric two = MetricBuilder.Metric( MetricConstants.MEAN_ERROR,
+                                           MetricParametersBuilder.builder()
+                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .probabilityThresholds( Set.of( thresholdThree ) )
+                                                                  .build() );
+
+        Metric three = MetricBuilder.Metric( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                             MetricParametersBuilder.builder()
+                                                                    .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                    .valueThresholds( Set.of( thresholdTwo ) )
+                                                                    .probabilityThresholds( Set.of( thresholdFour ) )
+                                                                    .build() );
+        Metric four = MetricBuilder.Metric( MetricConstants.MEAN_SQUARE_ERROR,
+                                            MetricParametersBuilder.builder()
+                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                   .valueThresholds( Set.of( thresholdTwo ) )
+                                                                   .probabilityThresholds( Set.of( thresholdFour ) )
+                                                                   .build() );
+
+        Set<Metric> metrics = Set.of( one, two, three, four );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .build();
+
+        GeometryTuple singletonOne = GeometryTuple.newBuilder()
+                                                  .setLeft( oneLeft )
+                                                  .setRight( oneRight )
+                                                  .build();
+        GeometryTuple singletonTwo = GeometryTuple.newBuilder()
+                                                  .setLeft( twoLeft )
+                                                  .setRight( twoRight )
+                                                  .build();
+
+        Features features = new Features( Set.of( singletonOne, singletonTwo ) );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( dataset )
+                                                                       .right( dataset )
+                                                                       .metrics( metrics )
+                                                                       .features( features )
+                                                                       .build();
+
+        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation );
+
+        FeatureTuple tupleOne = FeatureTuple.of( singletonOne );
+        FeatureTuple tupleTwo = FeatureTuple.of( singletonTwo );
+
+        ThresholdOuter expectedThresholdOne = ThresholdOuter.of( thresholdOne.threshold(), ThresholdType.VALUE );
+        ThresholdOuter expectedThresholdTwo = ThresholdOuter.of( thresholdTwo.threshold(), ThresholdType.VALUE );
+        ThresholdOuter expectedThresholdThree = ThresholdOuter.of( thresholdThree.threshold(),
+                                                                   ThresholdType.PROBABILITY );
+        ThresholdOuter expectedThresholdFour = ThresholdOuter.of( thresholdFour.threshold(),
+                                                                  ThresholdType.PROBABILITY );
+
+        Map<FeatureTuple, Set<ThresholdOuter>> expectedThresholdsOne = Map.of( tupleOne,
+                                                                               Set.of( expectedThresholdOne,
+                                                                                       expectedThresholdThree ) );
+        Map<FeatureTuple, Set<ThresholdOuter>> expectedThresholdsTwo = Map.of( tupleTwo,
+                                                                               Set.of( expectedThresholdTwo,
+                                                                                       expectedThresholdFour ) );
+
+
+        MetricsAndThresholds firstExpected = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                               MetricConstants.MEAN_ERROR ),
+                                                                       expectedThresholdsOne,
+                                                                       0,
+                                                                       Pool.EnsembleAverageType.MEDIAN );
+        MetricsAndThresholds secondExpected =
+                new MetricsAndThresholds( Set.of( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                  MetricConstants.MEAN_SQUARE_ERROR ),
+                                          expectedThresholdsTwo,
+                                          0,
+                                          Pool.EnsembleAverageType.MEAN );
+
+        Set<MetricsAndThresholds> expected = Set.of( firstExpected, secondExpected );
 
         assertEquals( expected, actual );
     }
