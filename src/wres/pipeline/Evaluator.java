@@ -86,7 +86,7 @@ public class Evaluator
      * @throws InternalWresException when WRES detects problem not with project
      */
 
-    public ExecutionResult evaluate( final List<String> args )
+    public ExecutionResult evaluate( List<String> args )
     {
         // Create a record of failure, but only commit if a failure actually occurs
         EvaluationEvent failure = EvaluationEvent.of();
@@ -460,8 +460,7 @@ public class Evaluator
     }
 
     /**
-     * A value object that a) reduces count of args for some methods and
-     * b) provides names for those objects.
+     * A value object that reduces count of args for some methods and provides names for those objects.
      */
 
     record Executors( ExecutorService poolExecutor, ExecutorService thresholdExecutor,

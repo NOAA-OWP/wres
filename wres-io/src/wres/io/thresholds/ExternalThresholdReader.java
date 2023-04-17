@@ -5,11 +5,9 @@ import wres.config.xml.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConstantsFactory;
-import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.geography.wrds.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
@@ -40,7 +38,6 @@ public class ExternalThresholdReader
     private final MetricsConfig metricsConfig;
     private final Set<FeatureTuple> features;
     private final UnitMapper desiredMeasurementUnitConverter;
-    private final ThresholdBuilderCollection sharedBuilders;
     private final Set<FeatureTuple> recognizedFeatures = new HashSet<>();
     private final MeasurementUnit desiredMeasurementUnit;
     private final Set<String> unrecognizedThresholdFeatures = new TreeSet<>(); // Ordered
@@ -51,62 +48,64 @@ public class ExternalThresholdReader
      * @param metricsConfig the metrics declaration
      * @param features the features
      * @param desiredMeasurementUnitConverter the unit converter
-     * @param builders the threshold builders
      */
     public ExternalThresholdReader( ProjectConfig projectConfig,
                                     MetricsConfig metricsConfig,
                                     Set<FeatureTuple> features,
-                                    UnitMapper desiredMeasurementUnitConverter,
-                                    ThresholdBuilderCollection builders )
+                                    UnitMapper desiredMeasurementUnitConverter )
     {
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( metricsConfig );
         Objects.requireNonNull( features );
         Objects.requireNonNull( desiredMeasurementUnitConverter );
-        Objects.requireNonNull( builders );
 
         this.projectConfig = projectConfig;
         this.metricsConfig = metricsConfig;
         this.features = features;
         this.desiredMeasurementUnitConverter = desiredMeasurementUnitConverter;
-        this.sharedBuilders = builders;
         this.desiredMeasurementUnit =
                 MeasurementUnit.of( this.desiredMeasurementUnitConverter.getDesiredMeasurementUnitName() );
     }
 
     /**
      * Reads the thresholds.
+     * @return the thresholds
      */
 
-    public void read()
+    public Map<FeatureTuple, Set<ThresholdOuter>> read()
     {
         Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig,
                                                                                     this.projectConfig );
 
+        Map<FeatureTuple,Set<ThresholdOuter>> thresholds = new HashMap<>();
+
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
-            Set<FeatureTuple> readFeatures;
-
-
             ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
             if ( format == ThresholdFormat.CSV )
             {
-                readFeatures = readCSVThresholds( thresholdsConfig, metrics );
+                Map<FeatureTuple,Set<ThresholdOuter>> csvThresholds = this.readCSVThresholds( thresholdsConfig,
+                                                                                              metrics );
+                thresholds.putAll( csvThresholds );
             }
             else if ( format == ThresholdFormat.WRDS )
             {
-                readFeatures = readWRDSThresholds( thresholdsConfig, metrics );
+                Map<FeatureTuple,Set<ThresholdOuter>> wrdsThresholds = this.readWRDSThresholds( thresholdsConfig,
+                                                                                                metrics );
+                thresholds.putAll( wrdsThresholds );
             }
             else
             {
                 String message = "The threshold format of " + format.toString() + " is not supported.";
                 throw new IllegalArgumentException( message );
             }
-
-            this.recognizedFeatures.addAll( readFeatures );
         }
 
+        this.recognizedFeatures.addAll( thresholds.keySet() );
+
         this.validate();
+
+        return Collections.unmodifiableMap( thresholds );
     }
 
     /**
@@ -204,9 +203,10 @@ public class ExternalThresholdReader
      * In addition to return the set, this also populates sharedBuilders with thresholds.
      * @param thresholdsConfig The declaration for the thresholds.
      * @param metrics The metric constants.
-     * @return Set of feature tuples for which WRDS thresholds were found.
+     * @return a map of feature tuples and thresholds
      */
-    private Set<FeatureTuple> readWRDSThresholds( ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics )
+    private Map<FeatureTuple, Set<ThresholdOuter>> readWRDSThresholds( ThresholdsConfig thresholdsConfig,
+                                                                       Set<MetricConstants> metrics )
     {
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
@@ -215,17 +215,6 @@ public class ExternalThresholdReader
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
         DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide );
         FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
-
-        // Threshold type: default to probability
-        ThresholdType thresholdGroup;
-        if ( Objects.nonNull( thresholdsConfig.getType() ) )
-        {
-            thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
-        }
-        else
-        {
-            thresholdGroup = ThresholdType.PROBABILITY;
-        }
 
         try
         {
@@ -236,11 +225,9 @@ public class ExternalThresholdReader
             if ( featureDimension == FeatureDimension.NWS_LID )
             {
                 identifyFeatureName = tuple -> tuple.getNameFor( tupleSide )
-                                                    .substring(
-                                                            0,
-                                                            Math.min( tuple.getNameFor( tupleSide )
-                                                                           .length(),
-                                                                      5 ) );
+                                                    .substring( 0, Math.min( tuple.getNameFor( tupleSide )
+                                                                                  .length(),
+                                                                             5 ) );
             }
             else
             {
@@ -268,11 +255,9 @@ public class ExternalThresholdReader
                 wrdsThresholds.put( location, wrapped );
             }
 
-            return this.addThresholdsToSharedBuilders( wrdsThresholds,
-                                                       featureDimension,
-                                                       tupleSide,
-                                                       metrics,
-                                                       thresholdGroup );
+            return this.getThresholds( wrdsThresholds,
+                                       featureDimension,
+                                       tupleSide );
         }
         catch ( IOException e )
         {
@@ -285,21 +270,15 @@ public class ExternalThresholdReader
      * @param wrdsThresholds the WRDS thresholds
      * @param featureDimension the feature dimension
      * @param tupleSide the side of data
-     * @param metrics the metrics
-     * @param thresholdGroup the threshold group
      * @return the recognized features
      */
 
-    private Set<FeatureTuple> addThresholdsToSharedBuilders( Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds,
-                                                             FeatureDimension featureDimension,
-                                                             LeftOrRightOrBaseline tupleSide,
-                                                             Set<MetricConstants> metrics,
-                                                             ThresholdType thresholdGroup )
+    private Map<FeatureTuple, Set<ThresholdOuter>> getThresholds( Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds,
+                                                                  FeatureDimension featureDimension,
+                                                                  LeftOrRightOrBaseline tupleSide )
     {
-        Set<FeatureTuple> recognized = new HashSet<>();
-
-        //Add all of the WrdsLocation keys in the map to the unrecognized list.
-        //As we recognize each one, it will be removed from this list.
+        // Add all of the WrdsLocation keys in the map to the unrecognized list.
+        // As we recognize each one, it will be removed from this list.
         List<WrdsLocation> unusedWrdsLocations = new ArrayList<>( wrdsThresholds.keySet() );
 
         //This will record a Map of FeatureTuple to Set<ThresholdOuter>
@@ -332,17 +311,11 @@ public class ExternalThresholdReader
             //If a single set of thresholds is found for the tuple, then...
             if ( finalList.size() == 1 )
             {
-                //Record it for logging purposes.
                 Set<ThresholdOuter> nextThresholds = wrdsThresholds.get( finalList.get( 0 ) );
                 tupleToThresholds.put( tuple, nextThresholds );
 
-                //Add to the recognized tuple list for a later message if necessary.
-                recognized.add( tuple );
-
                 //Remove from the unused list of WRDS locations with thresholds.
                 unusedWrdsLocations.remove( finalList.get( 0 ) );
-
-                this.addThresholdsToSharedBuilders( metrics, nextThresholds, thresholdGroup, tuple );
             }
         }
 
@@ -357,7 +330,7 @@ public class ExternalThresholdReader
         LOGGER.info( "These thresholds were added for each of the following feature tuples: {}.",
                      tupleToThresholds );
 
-        return Collections.unmodifiableSet( recognized );
+        return Collections.unmodifiableMap( tupleToThresholds );
     }
 
     /**
@@ -416,38 +389,13 @@ public class ExternalThresholdReader
     }
 
     /**
-     * Adds the thresholds to the shared builders.
-     * @param metrics the metrics
-     * @param nextThresholds the thresholds to add
-     * @param thresholdGroup the threshold group
-     * @param tuple the feature tuple
-     */
-
-    private void addThresholdsToSharedBuilders( Set<MetricConstants> metrics,
-                                                Set<ThresholdOuter> nextThresholds,
-                                                ThresholdType thresholdGroup,
-                                                FeatureTuple tuple )
-    {
-        //Add the thresholds to the shared builder.
-        for ( MetricConstants metricName : metrics )
-        {
-            for ( ThresholdOuter threshold : nextThresholds )
-            {
-                this.sharedBuilders.addThreshold( tuple,
-                                                  thresholdGroup,
-                                                  metricName,
-                                                  threshold );
-            }
-        }
-    }
-
-    /**
      * Reads thresholds from a CSV file.
      * @param thresholdsConfig The threshold declaration.
      * @param metrics The metric constants.
-     * @return Set of feature tuples with thresholds, those thresholds stored in this.sharedBuilders.
+     * @return the thresholds
      */
-    private Set<FeatureTuple> readCSVThresholds( ThresholdsConfig thresholdsConfig, Set<MetricConstants> metrics )
+    private Map<FeatureTuple,Set<ThresholdOuter>> readCSVThresholds( ThresholdsConfig thresholdsConfig,
+                                                                     Set<MetricConstants> metrics )
     {
 
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
@@ -457,18 +405,7 @@ public class ExternalThresholdReader
         ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) thresholdsConfig.getCommaSeparatedValuesOrSource();
         LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
 
-        Set<FeatureTuple> recognized = new HashSet<>();
-
-        // Threshold type: default to probability
-        final ThresholdType thresholdGroup;
-        if ( Objects.nonNull( thresholdsConfig.getType() ) )
-        {
-            thresholdGroup = ThresholdsGenerator.getThresholdGroup( thresholdsConfig.getType() );
-        }
-        else
-        {
-            thresholdGroup = ThresholdType.PROBABILITY;
-        }
+        Map<FeatureTuple,Set<ThresholdOuter>> thresholds = new HashMap<>();
 
         try
         {
@@ -485,9 +422,10 @@ public class ExternalThresholdReader
 
             // Now that we have mappings between location identifiers and their thresholds,
             // try to match those up with our features
-            for ( Map.Entry<String, Set<ThresholdOuter>> thresholds : readThresholds.entrySet() )
+            for ( Map.Entry<String, Set<ThresholdOuter>> nextThresholds : readThresholds.entrySet() )
             {
-                final String locationIdentifier = thresholds.getKey();
+                final String locationIdentifier = nextThresholds.getKey();
+                Set<ThresholdOuter> innerThresholds = nextThresholds.getValue();
 
                 // Try to find one of our configured features whose side matches what we were able to pluck out
                 // from our threshold requests
@@ -507,24 +445,11 @@ public class ExternalThresholdReader
 
                 // Now that we know we have a match, add the feature to the list of features we know can be evaluated
                 FeatureTuple feature = possibleFeature.get();
-                recognized.add( feature );
 
-                // Now that we have the feature, the metrics, and the thresholds, we can now add them to a
-                // greater collection for use later
-                for ( MetricConstants metricName : metrics )
-                {
-                    for ( ThresholdOuter threshold : thresholds.getValue() )
-                    {
-                        this.sharedBuilders.addThreshold(
-                                feature,
-                                thresholdGroup,
-                                metricName,
-                                threshold );
-                    }
-                }
+                thresholds.put( feature, innerThresholds );
             }
 
-            return Collections.unmodifiableSet( recognized );
+            return Collections.unmodifiableMap( thresholds );
         }
         catch ( IOException e )
         {

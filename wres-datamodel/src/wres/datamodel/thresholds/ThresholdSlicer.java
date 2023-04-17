@@ -1,7 +1,6 @@
 package wres.datamodel.thresholds;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -15,6 +14,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Climatology;
@@ -30,23 +35,23 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
-import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
 
 /**
  * Class for slicing and dicing thresholds.
- * 
+ *
  * @author James Brown
  */
 
 public class ThresholdSlicer
 {
-
     /**
      * Logger.
      */
@@ -65,7 +70,7 @@ public class ThresholdSlicer
      * time. For example, with precipitation and other mixed probability distributions, many probabilities will map to 
      * the same (zero) quantiles and including these duplicates is wasteful. Among the equal thresholds, retains the
      * one with the largest probability value.
-     * 
+     *
      * @param thresholds the thresholds to de-duplicate
      * @return the thresholds whose real values and/or names are different
      */
@@ -141,14 +146,14 @@ public class ThresholdSlicer
      * Compares thresholds for logical similarity. Logical similarity is weaker than content equivalence or identity 
      * equivalence and considers only some attributes of the threshold, where appropriate. A logical comparison looks 
      * at:
-     * 
+     *
      * <ol>
      * <li>The threshold names for thresholds that are named, i.e., {@link ThresholdOuter#hasLabel()} returns 
      * {@code true} and {@link ThresholdOuter#getLabel()} match (e.g., "flood"), else;</li>
      * <li>The threshold probabilities for probability thresholds, else;</li>
      * <li>All of the threshold components.</li>
      * </ol>
-     * 
+     *
      * @return a threshold comparator that examines the logical similarity of two thresholds
      */
 
@@ -196,7 +201,7 @@ public class ThresholdSlicer
      * <p>Decomposes a map of thresholds into N collections, each of which contains one logical threshold for each of 
      * the available keys. Thresholds are logically equivalent if they are equal according to 
      * {@link #getLogicalThresholdComparator()}.
-     * 
+     *
      * @param <T> the type of key
      * @param thresholds the thresholds to decompose
      * @return the decomposed thresholds, one (map) for each logical threshold across all keys
@@ -247,7 +252,7 @@ public class ThresholdSlicer
 
     /**
      * Finds the common attributes among the input thresholds and returns a threshold that contains them.
-     * 
+     *
      * @param thresholds the input thresholds
      * @return the composed threshold
      * @throws NullPointerException if the thresholds is null or any threshold is null
@@ -309,7 +314,7 @@ public class ThresholdSlicer
 
         if ( thresholdDataTypes.size() == 1 )
         {
-            builder.setDataType( thresholdDataTypes.iterator().next() );
+            builder.setOrientation( thresholdDataTypes.iterator().next() );
         }
         else
         {
@@ -336,216 +341,17 @@ public class ThresholdSlicer
     }
 
     /**
-     * <p>Unpacks a map of {@link ThresholdsByMetric} into a collection organized by a single attribute, forming the 
-     * union of thresholds across metrics.
-     * 
-     * @param <T> the type of key
-     * @param thresholds the thresholds to decompose
-     * @return the decomposed thresholds
-     */
-
-    public static <T> Map<T, Set<ThresholdOuter>> unpack( Map<T, ThresholdsByMetric> thresholds )
-    {
-        Objects.requireNonNull( thresholds );
-
-        return thresholds.entrySet()
-                         .stream()
-                         .map( next -> Map.entry( next.getKey(), next.getValue().union() ) )
-                         .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey, Map.Entry::getValue ) );
-    }
-
-    /**
-     * Applies {@link ThresholdSlicer#filterByGroup(ThresholdsByMetric, SampleDataGroup, StatisticType)}, followed by 
-     * {@link ThresholdSlicer#filterByGroup(ThresholdsByMetric, ThresholdType...)} to each element in the input and
-     * returns the result.
-     * 
-     * @param <T> the type of key
-     * @param thresholds the thresholds
-     * @param sampleDataGroup the sample data group filter
-     * @param statisticType the statistic type filter
-     * @param thresholdGroups the threshold group filters
-     * @return the filtered thresholds
-     * @throws NullPointerException if any input is null
-     */
-
-    public static <T> Map<T, ThresholdsByMetric> filterByGroup( Map<T, ThresholdsByMetric> thresholds,
-                                                                SampleDataGroup sampleDataGroup,
-                                                                StatisticType statisticType,
-                                                                ThresholdType... thresholdGroups )
-    {
-        Objects.requireNonNull( thresholds );
-        Objects.requireNonNull( sampleDataGroup );
-        Objects.requireNonNull( statisticType );
-        Objects.requireNonNull( thresholdGroups );
-
-        Map<T, ThresholdsByMetric> returnMe = new HashMap<>();
-
-        for ( Map.Entry<T, ThresholdsByMetric> nextEntry : thresholds.entrySet() )
-        {
-            T nextKey = nextEntry.getKey();
-            ThresholdsByMetric nextThresholds = nextEntry.getValue();
-
-            if ( Objects.nonNull( nextThresholds ) )
-            {
-                ThresholdsByMetric filtered = ThresholdSlicer.filterByGroup( nextThresholds,
-                                                                             sampleDataGroup,
-                                                                             statisticType );
-                filtered = ThresholdSlicer.filterByGroup( filtered, thresholdGroups );
-
-                returnMe.put( nextKey, filtered );
-            }
-            else if ( LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "When filtering thresholds by group, the thresholds associated with key {} "
-                              + "were null and will not be included in the result.",
-                              nextKey );
-            }
-        }
-
-        return Collections.unmodifiableMap( returnMe );
-    }
-
-
-    /**
-     * Returns a filtered view that contains the union of thresholds for the given input types. If no types are 
-     * defined, returns the empty set. If all types are defined, returns the input thresholds.
-     * 
-     * @param thresholdsByMetric the thresholds to filter
-     * @param group the groups
-     * @return a filtered view by group
-     * @throws NullPointerException if the thresholdsByMetric is null
-     */
-
-    public static ThresholdsByMetric filterByGroup( ThresholdsByMetric thresholdsByMetric, ThresholdType... group )
-    {
-        Objects.requireNonNull( thresholdsByMetric );
-
-        if ( Objects.nonNull( group ) && Arrays.equals( group, ThresholdType.values() ) )
-        {
-            return thresholdsByMetric;
-        }
-
-        Builder builder = new Builder();
-
-        if ( Objects.isNull( group ) || group.length == 0 )
-        {
-            return builder.build();
-        }
-
-        List<ThresholdType> groupList = Arrays.asList( group );
-
-        // Add the stored types within the input array
-        for ( ThresholdType nextType : ThresholdType.values() )
-        {
-            // Filter by type
-            if ( groupList.contains( nextType ) )
-            {
-                Map<MetricConstants, Set<ThresholdOuter>> thresholds = thresholdsByMetric.getThresholds( nextType );
-                builder.addThresholds( thresholds, nextType );
-            }
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
-     * specified groups. If both filters are null, returns the input thresholds.
-     * 
-     * @param thresholdsByMetric the thresholds to filter
-     * @param inGroup the optional input group
-     * @param outGroup the optional output group
-     * @return a filtered view by group
-     * @throws NullPointerException if the thresholdsByMetric is null
-     */
-
-    public static ThresholdsByMetric filterByGroup( ThresholdsByMetric thresholdsByMetric,
-                                                    SampleDataGroup inGroup,
-                                                    StatisticType outGroup )
-    {
-        Objects.requireNonNull( thresholdsByMetric );
-
-        if ( Objects.isNull( inGroup ) && Objects.isNull( outGroup ) )
-        {
-            return thresholdsByMetric;
-        }
-
-        // Test the metric for membership of the groups
-        Predicate<MetricConstants> test = metric -> {
-            if ( Objects.nonNull( inGroup ) && Objects.nonNull( outGroup ) )
-            {
-                return metric.isInGroup( inGroup, outGroup );
-            }
-            else if ( Objects.nonNull( inGroup ) )
-            {
-                return metric.isInGroup( inGroup );
-            }
-            return metric.isInGroup( outGroup );
-        };
-
-        Builder builder = new Builder();
-
-        // Add the filtered thresholds for each type
-        for ( ThresholdType nextType : ThresholdType.values() )
-        {
-            Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = thresholdsByMetric.getThresholds( nextType );
-            ThresholdSlicer.addFilteredThresholdsByGroup( builder, nextType, nextThresholds, test );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
-     * specified groups. If both filters are null, returns the input thresholds.
-     * 
-     * @param thresholdsByMetric the thresholds to filter
-     * @param inclusive is true to consider inclusion, false to consider exclusion
-     * @param inGroup the optional input group
-     * @return a filtered view by group
-     * @throws NullPointerException if the thresholdsByMetric is null
-     */
-
-    public static ThresholdsByMetric filterByGroup( ThresholdsByMetric thresholdsByMetric,
-                                                    boolean inclusive,
-                                                    SampleDataGroup... inGroup )
-    {
-        Objects.requireNonNull( thresholdsByMetric );
-
-        if ( Objects.nonNull( inGroup ) && Arrays.equals( inGroup, SampleDataGroup.values() ) )
-        {
-            return thresholdsByMetric;
-        }
-
-        // Test the metric for membership of the groups
-        Predicate<MetricConstants> test = metric -> Arrays.stream( inGroup )
-                                                          .anyMatch( metric::isInGroup ) == inclusive;
-
-        Builder builder = new Builder();
-
-        // Add the filtered thresholds for each type
-        for ( ThresholdType nextType : ThresholdType.values() )
-        {
-            Map<MetricConstants, Set<ThresholdOuter>> nextThresholds = thresholdsByMetric.getThresholds( nextType );
-            ThresholdSlicer.addFilteredThresholdsByGroup( builder, nextType, nextThresholds, test );
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Adds a quantile to each probability threshold in the input using the climatological data. Preserves any 
      * thresholds that do not require quantiles. Uses the left-ish feature to correlate with the climatological data.
-     * 
+     *
      * @param thresholds the thresholds
      * @param climatology the climatology
      * @return the thresholds with quantiles added
      * @throws ThresholdException if the climatology is required but null
      */
 
-    public static Map<FeatureTuple, Set<ThresholdOuter>>
-            addQuantiles( Map<FeatureTuple, Set<ThresholdOuter>> thresholds,
-                          Climatology climatology )
+    public static Map<FeatureTuple, Set<ThresholdOuter>> addQuantiles( Map<FeatureTuple, Set<ThresholdOuter>> thresholds,
+                                                                       Climatology climatology )
     {
         Objects.requireNonNull( thresholds );
 
@@ -674,48 +480,43 @@ public class ThresholdSlicer
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
      * {@link SampleDataGroup#DICHOTOMOUS} and has {@link ThresholdType#PROBABILITY_CLASSIFIER},
      * otherwise one threshold. The thresholds are stored in natural order.
-     * 
-     * <p>Also see: {@link #unionOfOneOrTwoThresholds(ThresholdsByMetric)}.</p>
-     * 
-     * @param thresholds the thresholds to compose
+     *
+     * @param metrics the metrics
+     * @param thresholds the thresholds
      * @return the composed thresholds
      * @throws NullPointerException if the thresholds is null
      */
 
-    public static Map<MetricConstants, SortedSet<OneOrTwoThresholds>>
-            getOneOrTwoThresholds( ThresholdsByMetric thresholds )
+    public static Map<MetricConstants, SortedSet<OneOrTwoThresholds>> getOneOrTwoThresholds( Set<MetricConstants> metrics,
+                                                                                             Set<ThresholdOuter> thresholds )
     {
+        Objects.requireNonNull( metrics );
         Objects.requireNonNull( thresholds );
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> returnMe = new EnumMap<>( MetricConstants.class );
 
-        // Find all stored metrics
-        Set<MetricConstants> union = thresholds.getMetrics();
-
         // Iterate the metrics
-        for ( MetricConstants next : union )
+        for ( MetricConstants next : metrics )
         {
             //Non-classifiers
-            Set<ThresholdType> nextGroup = thresholds.getThresholdTypesForThisMetric( next );
-            Set<ThresholdType> types = new HashSet<>( nextGroup );
-            types.removeIf( type -> type == ThresholdType.PROBABILITY_CLASSIFIER );
-            ThresholdType[] nextArray = types.toArray( new ThresholdType[0] );
-            Set<ThresholdOuter> nonClassifiers = thresholds.union( next, nextArray );
+            Set<ThresholdOuter> eventThresholds = getBasicEventThresholdsForMetric( next, thresholds );
 
             // Thresholds to add
             SortedSet<OneOrTwoThresholds> oneOrTwo = new TreeSet<>();
 
             // Dichotomous metrics with classifiers
             if ( next.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                 && thresholds.hasGroup( ThresholdType.PROBABILITY_CLASSIFIER ) )
+                 && eventThresholds.size() < thresholds.size() )
             {
                 // Classifiers
-                Set<ThresholdOuter> classifiers =
-                        thresholds.union( next, ThresholdType.PROBABILITY_CLASSIFIER );
+                Set<ThresholdOuter> classifiers = thresholds.stream()
+                                                            .filter( n -> n.getType()
+                                                                          == ThresholdType.PROBABILITY_CLASSIFIER )
+                                                            .collect( Collectors.toSet() );
 
-                // One composed threshold for each event threshold and combination of event and decision threshold, 
+                // One composed threshold for each event threshold and combination of event and decision threshold,
                 // as dichotomous metrics can be computed for both
-                for ( ThresholdOuter first : nonClassifiers )
+                for ( ThresholdOuter first : eventThresholds )
                 {
                     OneOrTwoThresholds nextOuter = OneOrTwoThresholds.of( first );
                     oneOrTwo.add( nextOuter );
@@ -729,7 +530,7 @@ public class ThresholdSlicer
             // All other metrics
             else
             {
-                for ( ThresholdOuter first : nonClassifiers )
+                for ( ThresholdOuter first : eventThresholds )
                 {
                     oneOrTwo.add( OneOrTwoThresholds.of( first ) );
                 }
@@ -744,24 +545,146 @@ public class ThresholdSlicer
     }
 
     /**
-     * Returns the union of all thresholds returned by {@link #getOneOrTwoThresholds(ThresholdsByMetric)}.
-     * 
-     * @param thresholds the thresholds to compose
-     * @return the union of all composed thresholds
-     * @throws NullPointerException if the thresholds is null
+     * Creates one {@link MetricsAndThresholds} for each group of {@link Metric} in the supplied declaration that can
+     * be processed together as an atomic unit (i.e., they all consume the same pool of pairs).
+     *
+     * @param evaluation the evaluation declaration
+     * @return one {@link MetricsAndThresholds} for each atomic group of metrics
      */
 
-    public static Set<OneOrTwoThresholds> unionOfOneOrTwoThresholds( ThresholdsByMetric thresholds )
+    public static List<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )
     {
-        Objects.requireNonNull( thresholds );
+        Objects.requireNonNull( evaluation );
 
-        Set<OneOrTwoThresholds> returnMe = new HashSet<>();
-        // Add all thresholds to the set
-        ThresholdSlicer.getOneOrTwoThresholds( thresholds )
-                       .values()
-                       .forEach( returnMe::addAll );
+        // Get the atomic groups
+        Set<Set<Metric>> atomicGroups = DeclarationUtilities.getMetricGroupsForProcessing( evaluation.metrics() );
 
-        return Collections.unmodifiableSet( returnMe );
+        // Obtain the minimum sample size
+        int minimumSampleSize = evaluation.minimumSampleSize();
+
+        // Obtain the ensemble averaging method, if applicable
+        Pool.EnsembleAverageType ensembleAverageType = evaluation.ensembleAverageType();
+
+        // Iterate the groups
+        List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
+        for ( Set<Metric> nextGroup : atomicGroups )
+        {
+            // Gather the metric names
+            Set<MetricConstants> names = nextGroup.stream().map( Metric::name )
+                                                  .collect( Collectors.toUnmodifiableSet() );
+
+            // Gather/wrap the thresholds and correlate them with feature tuples
+            Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
+            Set<GeometryTuple> features = DeclarationUtilities.getFeatures( evaluation );
+            for ( Metric nextMetric : nextGroup )
+            {
+                MetricParameters nextParameters = nextMetric.parameters();
+
+                if ( Objects.nonNull( nextParameters ) )
+                {
+                    ThresholdSlicer.addThresholds( nextParameters.valueThresholds(),
+                                                   ThresholdType.VALUE,
+                                                   thresholds,
+                                                   features );
+                    ThresholdSlicer.addThresholds( nextParameters.probabilityThresholds(),
+                                                   ThresholdType.PROBABILITY,
+                                                   thresholds,
+                                                   features );
+                    ThresholdSlicer.addThresholds( nextParameters.classifierThresholds(),
+                                                   ThresholdType.PROBABILITY_CLASSIFIER,
+                                                   thresholds,
+                                                   features );
+                }
+            }
+
+            MetricsAndThresholds nextMetricsAndThresholds = new MetricsAndThresholds( names,
+                                                                                      thresholds,
+                                                                                      minimumSampleSize,
+                                                                                      ensembleAverageType );
+            metricsAndThresholds.add( nextMetricsAndThresholds );
+        }
+
+        return Collections.unmodifiableList( metricsAndThresholds );
+    }
+
+    /**
+     * Adds the supplied thresholds to the map, correlating the features as needed.
+     * @param thresholds the thresholds
+     * @param type the threshold type
+     * @param thresholdsToIncrement the threshold map to update
+     * @param geometries the geometries to assist with feature correlation
+     */
+    private static void addThresholds( Set<wres.config.yaml.components.Threshold> thresholds,
+                                       ThresholdType type,
+                                       Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement,
+                                       Set<GeometryTuple> geometries )
+    {
+        Map<Geometry, GeometryTuple> leftGeometries = geometries.stream()
+                                                                .collect( Collectors.toMap( GeometryTuple::getLeft,
+                                                                                            Function.identity() ) );
+        Map<Geometry, GeometryTuple> rightGeometries = geometries.stream()
+                                                                 .collect( Collectors.toMap( GeometryTuple::getRight,
+                                                                                             Function.identity() ) );
+        Map<Geometry, GeometryTuple> baselineGeometries = geometries.stream()
+                                                                    .collect( Collectors.toMap( GeometryTuple::getBaseline,
+                                                                                                Function.identity() ) );
+
+        BiFunction<Geometry, DatasetOrientation, GeometryTuple> mapper = ( g, d ) ->
+                switch ( d )
+                        {
+                            case LEFT -> leftGeometries.get( g );
+                            case RIGHT -> rightGeometries.get( g );
+                            case BASELINE -> baselineGeometries.get( g );
+                        };
+
+        // Increment the thresholds
+        for ( wres.config.yaml.components.Threshold nextThreshold : thresholds )
+        {
+            Geometry nextGeometry = nextThreshold.feature();
+            DatasetOrientation orientation = nextThreshold.featureNameFrom();
+            GeometryTuple nextTuple = mapper.apply( nextGeometry, orientation );
+            if ( Objects.nonNull( nextTuple ) )
+            {
+                FeatureTuple nextFeatureTuple = FeatureTuple.of( nextTuple );
+                ThresholdOuter threshold = ThresholdOuter.of( nextThreshold.threshold(), type );
+                if ( thresholdsToIncrement.containsKey( nextFeatureTuple ) )
+                {
+                    thresholdsToIncrement.get( nextFeatureTuple )
+                                         .add( threshold );
+                }
+                else
+                {
+                    Set<ThresholdOuter> newSet = new HashSet<>();
+                    newSet.add( threshold );
+                    thresholdsToIncrement.put( nextFeatureTuple, newSet );
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the basic event thresholds associated with a specified metric, eliminating the "all data" threshold
+     * where appropriate.
+     * @param metric the metric
+     * @param thresholds the thresholds
+     * @return the basic event thresholds
+     */
+    private static Set<ThresholdOuter> getBasicEventThresholdsForMetric( MetricConstants metric,
+                                                                         Set<ThresholdOuter> thresholds )
+    {
+        Set<ThresholdOuter> nonClassifiers = thresholds.stream()
+                                                       .filter( n -> n.getType()
+                                                                     != ThresholdType.PROBABILITY_CLASSIFIER )
+                                                       .collect( Collectors.toSet() );
+
+        // Remove an all data threshold for a metric that does not require it
+        if ( metric.isInGroup( SampleDataGroup.DISCRETE_PROBABILITY )
+             || metric.isInGroup( SampleDataGroup.DICHOTOMOUS ) )
+        {
+            nonClassifiers.remove( ThresholdOuter.ALL_DATA );
+        }
+
+        return Collections.unmodifiableSet( nonClassifiers );
     }
 
     /**
@@ -799,31 +722,6 @@ public class ThresholdSlicer
                 builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
             }
         }
-    }
-
-
-    /**
-     * Mutates the builder, adding a new set of threshold results filtered for the input predicate.
-     * 
-     * @param builder the builder
-     * @param type the type of threshold
-     * @param thresholds the thresholds
-     * @param test the predicate to indicate whether thresholds should be included
-     */
-
-    private static void addFilteredThresholdsByGroup( Builder builder,
-                                                      ThresholdType type,
-                                                      Map<MetricConstants, Set<ThresholdOuter>> thresholds,
-                                                      Predicate<MetricConstants> test )
-    {
-
-        Map<MetricConstants, Set<ThresholdOuter>> filtered = thresholds.entrySet()
-                                                                       .stream()
-                                                                       .filter( entry -> test.test( entry.getKey() ) )
-                                                                       .collect( Collectors.toMap( Map.Entry::getKey,
-                                                                                                   Map.Entry::getValue ) );
-
-        builder.addThresholds( filtered, type );
     }
 
     /**

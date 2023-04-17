@@ -2,13 +2,12 @@ package wres.datamodel.thresholds;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import wres.config.xml.MetricConfigException;
 import wres.config.generated.MetricsConfig;
@@ -21,13 +20,11 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
-import wres.config.xml.MetricConstantsFactory;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.datamodel.thresholds.ThresholdsByMetric.Builder;
 
 /**
  * Reads thresholds from project declaration.
- * 
+ *
  * @author James Brown
  */
 
@@ -35,14 +32,14 @@ public class ThresholdsGenerator
 {
     /**
      * Reads the internally configured thresholds within a project declaration, if any.
-     * 
+     *
      * @param projectConfig the project configuration
      * @return the thresholds, if any
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if the projectConfig is null
      */
 
-    public static ThresholdsByMetric getThresholdsFromConfig( ProjectConfig projectConfig )
+    public static Set<ThresholdOuter> getThresholdsFromConfig( ProjectConfig projectConfig )
     {
 
         Objects.requireNonNull( projectConfig, "Specify a non-null project configuration." );
@@ -55,151 +52,95 @@ public class ThresholdsGenerator
                                                      .getUnit() );
         }
 
-        // Builder 
-        Builder builder = new Builder();
+        Set<ThresholdOuter> thresholds = new TreeSet<>();
+
+        // Add an all data threshold by default
+        thresholds.add( ThresholdOuter.ALL_DATA );
 
         // Iterate through the metric groups
+        MeasurementUnit finalUnits = units;
         for ( MetricsConfig nextGroup : projectConfig.getMetrics() )
         {
-
-            ThresholdsGenerator.addThresholdsToBuilderForOneMetricGroup( projectConfig,
-                                                                         nextGroup,
-                                                                         builder,
-                                                                         units );
+            Set<ThresholdOuter> nextThresholds
+                    = nextGroup.getThresholds()
+                               .stream()
+                               .flatMap( next -> ThresholdsGenerator.getThresholdsFromThresholdsConfig( next,
+                                                                                                        finalUnits )
+                                                                    .stream() )
+                               .collect( Collectors.toSet() );
+            thresholds.addAll( nextThresholds );
         }
 
-        return builder.build();
+        return Collections.unmodifiableSet( thresholds );
     }
 
     /**
-     * <p>Maps between threshold operators in {@link ThresholdOperator} and those in {@link wres.config.yaml.components.ThresholdOperator}.
-     * 
-     * <p>TODO: make these enumerations match on name to reduce brittleness.
-     * 
-     * @param thresholdsConfig the threshold configuration
-     * @return the mapped operator
-     * @throws MetricConfigException if the operator is not mapped
-     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getOperator()} returns null
+     * Obtains a set of {@link ThresholdOuter} from a {@link ThresholdsConfig} for thresholds that are configured
+     * internally and not sourced externally. In other words,
+     * {@link ThresholdsConfig#getCommaSeparatedValuesOrSource()} must return a string of thresholds and not a
+     * {@link ThresholdsConfig.Source}.
+     *
+     * @param thresholds the thresholds configuration
+     * @param units optional units for non-probability thresholds
+     * @return a set of thresholds (possibly empty)
+     * @throws MetricConfigException if the metric configuration is invalid
+     * @throws NullPointerException if either input is null
      */
 
-    public static wres.config.yaml.components.ThresholdOperator getThresholdOperator( ThresholdsConfig thresholdsConfig )
+    public static Set<ThresholdOuter> getThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
+                                                                         MeasurementUnit units )
     {
-        Objects.requireNonNull( thresholdsConfig );
-        Objects.requireNonNull( thresholdsConfig.getOperator() );
+        Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
 
-        return switch ( thresholdsConfig.getOperator() )
-                {
-                    case EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.EQUAL;
-                    case LESS_THAN -> wres.config.yaml.components.ThresholdOperator.LESS;
-                    case GREATER_THAN -> wres.config.yaml.components.ThresholdOperator.GREATER;
-                    case LESS_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.LESS_EQUAL;
-                    case GREATER_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL;
-                };
-    }
+        Set<ThresholdOuter> returnMe = new HashSet<>();
 
-    /**
-     * Returns the {@link wres.config.yaml.components.ThresholdType} that corresponds to the {@link ThresholdType}
-     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
-     * 
-     * @param thresholdType the threshold type
-     * @return the mapped threshold group
-     * @throws IllegalArgumentException if the threshold group is not mapped
-     * @throws NullPointerException if the input is null
-     */
+        // Add an all data threshold by default
+        returnMe.add( ThresholdOuter.ALL_DATA );
 
-    public static wres.config.yaml.components.ThresholdType getThresholdGroup( ThresholdType thresholdType )
-    {
-        Objects.requireNonNull( thresholdType );
+        wres.config.yaml.components.ThresholdOperator operator = wres.config.yaml.components.ThresholdOperator.GREATER;
 
-        return wres.config.yaml.components.ThresholdType.valueOf( thresholdType.name() );
-    }
-
-    /**
-     * Returns the {@link ThresholdOrientation} that corresponds to the {@link ThresholdDataType}
-     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
-     * 
-     * @param thresholdDataType the threshold data type
-     * @return the mapped threshold data type
-     * @throws IllegalArgumentException if the data type is not mapped
-     * @throws NullPointerException if the input is null
-     */
-
-    public static ThresholdOrientation getThresholdDataType( ThresholdDataType thresholdDataType )
-    {
-        Objects.requireNonNull( thresholdDataType );
-
-        return ThresholdOrientation.valueOf( thresholdDataType.name() );
-    }
-
-    /**
-     * Adds thresholds to the input builder for one metric group.
-     * 
-     * @param projectConfig the project configuration
-     * @param metricsConfig the metrics configuration
-     * @param builder the builder
-     * @param units the optional units for value thresholds
-     * @throws MetricConfigException if the threshold configuration is incorrect
-     */
-
-    private static void addThresholdsToBuilderForOneMetricGroup( ProjectConfig projectConfig,
-                                                                 MetricsConfig metricsConfig,
-                                                                 Builder builder,
-                                                                 MeasurementUnit units )
-    {
-
-        // Find the metrics
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( metricsConfig, projectConfig );
-
-        // No explicit thresholds, add an "all data" threshold
-        if ( metricsConfig.getThresholds().isEmpty() )
+        // Operator specified
+        if ( Objects.nonNull( thresholds.getOperator() ) )
         {
-            for ( MetricConstants next : metrics )
-            {
-                Set<ThresholdOuter> allData = ThresholdsGenerator.getAdjustedThresholds( next,
-                                                                                         Collections.emptySet(),
-                                                                                         wres.config.yaml.components.ThresholdType.VALUE );
-
-                builder.addThresholds( Collections.singletonMap( next, allData ),
-                                       wres.config.yaml.components.ThresholdType.VALUE );
-            }
+            operator = ThresholdsGenerator.getThresholdOperator( thresholds );
         }
 
-        // Iterate through any explicit thresholds
-        for ( ThresholdsConfig nextThresholds : metricsConfig.getThresholds() )
+        ThresholdOrientation dataType = ThresholdOrientation.LEFT;
+
+        // Operator specified
+        if ( Objects.nonNull( thresholds.getApplyTo() ) )
         {
-            // Thresholds
-            Set<ThresholdOuter> thresholds =
-                    ThresholdsGenerator.getInternalThresholdsFromThresholdsConfig( nextThresholds, units );
-
-            // Build the thresholds map per metric
-            Map<MetricConstants, Set<ThresholdOuter>> thresholdsMap = new EnumMap<>( MetricConstants.class );
-
-            // Type of thresholds
-            wres.config.yaml.components.ThresholdType thresholdType = wres.config.yaml.components.ThresholdType.PROBABILITY;
-            if ( Objects.nonNull( nextThresholds.getType() ) )
-            {
-                thresholdType = ThresholdsGenerator.getThresholdGroup( nextThresholds.getType() );
-            }
-
-            // Adjust the thresholds, adding "all data" where required, then append
-            for ( MetricConstants next : metrics )
-            {
-                thresholdsMap.put( next,
-                                   ThresholdsGenerator.getAdjustedThresholds( next,
-                                                                              thresholds,
-                                                                              thresholdType ) );
-            }
-
-            // Add the thresholds
-            builder.addThresholds( thresholdsMap, thresholdType );
+            dataType = ThresholdsGenerator.getThresholdDataType( thresholds.getApplyTo() );
         }
+
+        // Must be internally sourced: thresholds with global scope should be provided directly
+        Object values = thresholds.getCommaSeparatedValuesOrSource();
+
+        // Default to ThresholdType.PROBABILITY
+        ThresholdType type = ThresholdType.PROBABILITY;
+        if ( Objects.nonNull( thresholds.getType() ) )
+        {
+            type = thresholds.getType();
+        }
+
+        // String = internal source
+        if ( values instanceof String )
+        {
+            returnMe.addAll( ThresholdsGenerator.getThresholdsFromCommaSeparatedValues( values.toString(),
+                                                                                        operator,
+                                                                                        dataType,
+                                                                                        type,
+                                                                                        units ) );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
      * Returns an adjusted set of thresholds for the input thresholds. Adjustments are made for the specific metric.
      * Notably, an "all data" threshold is added for metrics that support this, and thresholds are removed for metrics
      * that do not support them.
-     * 
+     *
      * @param metric the metric
      * @param thresholds the raw thresholds
      * @param type the threshold type
@@ -207,9 +148,9 @@ public class ThresholdsGenerator
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<ThresholdOuter> getAdjustedThresholds( MetricConstants metric,
-                                                              Set<ThresholdOuter> thresholds,
-                                                              wres.config.yaml.components.ThresholdType type )
+    public static Set<ThresholdOuter> getAdjustedThresholds( MetricConstants metric,
+                                                             Set<ThresholdOuter> thresholds,
+                                                             wres.config.yaml.components.ThresholdType type )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
 
@@ -242,71 +183,73 @@ public class ThresholdsGenerator
     }
 
     /**
-     * Obtains a set of {@link ThresholdOuter} from a {@link ThresholdsConfig} for thresholds that are configured internally
-     * and not sourced externally. In other words, {@link ThresholdsConfig#getCommaSeparatedValuesOrSource()} must 
-     * return a string of thresholds and not a {@link ThresholdsConfig.Source}.
-     * 
-     * @param thresholds the thresholds configuration
-     * @param units optional units for non-probability thresholds
-     * @return a set of thresholds (possibly empty)
-     * @throws MetricConfigException if the metric configuration is invalid
-     * @throws NullPointerException if either input is null
+     * <p>Maps between threshold operators in {@link ThresholdOperator} and those in {@link wres.config.yaml.components.ThresholdOperator}.
+     *
+     * <p>TODO: make these enumerations match on name to reduce brittleness.
+     *
+     * @param thresholdsConfig the threshold configuration
+     * @return the mapped operator
+     * @throws MetricConfigException if the operator is not mapped
+     * @throws NullPointerException if the input is null or the {@link ThresholdsConfig#getOperator()} returns null
      */
 
-    private static Set<ThresholdOuter> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
-                                                                                  MeasurementUnit units )
+    public static wres.config.yaml.components.ThresholdOperator getThresholdOperator( ThresholdsConfig thresholdsConfig )
     {
-        Objects.requireNonNull( thresholds, "Specify non-null thresholds configuration." );
+        Objects.requireNonNull( thresholdsConfig );
+        Objects.requireNonNull( thresholdsConfig.getOperator() );
 
-        Set<ThresholdOuter> returnMe = new HashSet<>();
+        return switch ( thresholdsConfig.getOperator() )
+                {
+                    case EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.EQUAL;
+                    case LESS_THAN -> wres.config.yaml.components.ThresholdOperator.LESS;
+                    case GREATER_THAN -> wres.config.yaml.components.ThresholdOperator.GREATER;
+                    case LESS_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.LESS_EQUAL;
+                    case GREATER_THAN_OR_EQUAL_TO -> wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL;
+                };
+    }
 
-        wres.config.yaml.components.ThresholdOperator operator = wres.config.yaml.components.ThresholdOperator.GREATER;
+    /**
+     * Returns the {@link wres.config.yaml.components.ThresholdType} that corresponds to the {@link ThresholdType}
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
+     *
+     * @param thresholdType the threshold type
+     * @return the mapped threshold group
+     * @throws IllegalArgumentException if the threshold group is not mapped
+     * @throws NullPointerException if the input is null
+     */
 
-        // Operator specified
-        if ( Objects.nonNull( thresholds.getOperator() ) )
-        {
-            operator = ThresholdsGenerator.getThresholdOperator( thresholds );
-        }
+    public static wres.config.yaml.components.ThresholdType getThresholdGroup( ThresholdType thresholdType )
+    {
+        Objects.requireNonNull( thresholdType );
 
-        ThresholdOrientation dataType = ThresholdOrientation.LEFT;
+        return wres.config.yaml.components.ThresholdType.valueOf( thresholdType.name() );
+    }
 
-        // Operator specified
-        if ( Objects.nonNull( thresholds.getApplyTo() ) )
-        {
-            dataType = ThresholdsGenerator.getThresholdDataType( thresholds.getApplyTo() );
-        }
+    /**
+     * Returns the {@link ThresholdOrientation} that corresponds to the {@link ThresholdDataType}
+     * associated with the input configuration. Matches the enumerations by {@link Enum#name()}.
+     *
+     * @param thresholdDataType the threshold data type
+     * @return the mapped threshold data type
+     * @throws IllegalArgumentException if the data type is not mapped
+     * @throws NullPointerException if the input is null
+     */
 
-        // Must be internally sourced: thresholds with global scope should be provided directly 
-        Object values = thresholds.getCommaSeparatedValuesOrSource();
+    public static ThresholdOrientation getThresholdDataType( ThresholdDataType thresholdDataType )
+    {
+        Objects.requireNonNull( thresholdDataType );
 
-        // Default to ThresholdType.PROBABILITY
-        ThresholdType type = ThresholdType.PROBABILITY;
-        if ( Objects.nonNull( thresholds.getType() ) )
-        {
-            type = thresholds.getType();
-        }
-
-        // String = internal source
-        if ( values instanceof String )
-        {
-            returnMe.addAll( ThresholdsGenerator.getThresholdsFromCommaSeparatedValues( values.toString(),
-                                                                                        operator,
-                                                                                        dataType,
-                                                                                        type != ThresholdType.VALUE,
-                                                                                        units ) );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
+        return ThresholdOrientation.valueOf( thresholdDataType.name() );
     }
 
     /**
      * Returns a list of {@link ThresholdOuter} from a comma-separated string. Specify the type of {@link ThresholdOuter}
      * required.
-     * 
+     *
      * @param inputString the comma-separated input string
      * @param oper the operator
      * @param dataType the data type to which the threshold applies
-     * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
+     * @param thresholdType the threshold type
      * @param units the optional units in which non-probability thresholds are expressed
      * @return the thresholds
      * @throws MetricConfigException if the thresholds are configured incorrectly
@@ -316,70 +259,116 @@ public class ThresholdsGenerator
     private static Set<ThresholdOuter> getThresholdsFromCommaSeparatedValues( String inputString,
                                                                               wres.config.yaml.components.ThresholdOperator oper,
                                                                               ThresholdOrientation dataType,
-                                                                              boolean areProbs,
+                                                                              ThresholdType thresholdType,
                                                                               MeasurementUnit units )
     {
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
         Objects.requireNonNull( oper, "Specify a non-null operator." );
         Objects.requireNonNull( dataType, "Specify a non-null data type." );
 
-        //Parse the double values
+        // Parse the double values
         List<Double> addMe =
                 Arrays.stream( inputString.split( "," ) )
                       .map( Double::parseDouble )
                       .toList();
-        Set<ThresholdOuter> returnMe = new TreeSet<>();
 
-        //Between operator
+        // Between operator
         if ( oper == wres.config.yaml.components.ThresholdOperator.BETWEEN )
         {
-            if ( addMe.size() < 2 )
-            {
-                throw new MetricConfigException( "At least two values are required to compose a "
-                                                 + "threshold that operates between a lower and an upper bound." );
-            }
-            for ( int i = 0; i < addMe.size() - 1; i++ )
-            {
-                if ( areProbs )
-                {
-                    returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( addMe.get( i ),
-                                                                                             addMe.get( i
-                                                                                                        + 1 ) ),
-                                                                         oper,
-                                                                         dataType,
-                                                                         units ) );
-                }
-                else
-                {
-                    returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( addMe.get( i ),
-                                                                         addMe.get( i + 1 ) ),
-                                                     oper,
-                                                     dataType,
-                                                     units ) );
-                }
-            }
+            return ThresholdsGenerator.getBetweenThresholds( addMe, oper, dataType, thresholdType, units );
         }
-        //Other operators
+        // Other operators
         else
         {
-            if ( areProbs )
+            return ThresholdsGenerator.getThresholds( addMe, oper, dataType, thresholdType, units );
+        }
+    }
+
+    /**
+     * Creates a set of thresholds with a between condition from the inputs.
+     * @param values the threshold values
+     * @param oper the operator
+     * @param dataType the data type to which the threshold applies
+     * @param thresholdType the threshold type
+     * @param units the optional units in which non-probability thresholds are expressed
+     * @return the thresholds
+     */
+
+    private static Set<ThresholdOuter> getBetweenThresholds( List<Double> values,
+                                                             wres.config.yaml.components.ThresholdOperator oper,
+                                                             ThresholdOrientation dataType,
+                                                             ThresholdType thresholdType,
+                                                             MeasurementUnit units )
+    {
+        Set<ThresholdOuter> returnMe = new TreeSet<>();
+        if ( values.size() < 2 )
+        {
+            throw new MetricConfigException( "At least two values are required to compose a "
+                                             + "threshold that operates between a lower and an upper bound." );
+        }
+        for ( int i = 0; i < values.size() - 1; i++ )
+        {
+            ThresholdOuter.Builder builder = new ThresholdOuter.Builder()
+                    .setOperator( oper )
+                    .setOrientation( dataType )
+                    .setUnits( units )
+                    .setThresholdType( wres.config.yaml.components.ThresholdType.valueOf( thresholdType.name() ) );
+            if ( thresholdType == ThresholdType.VALUE )
             {
-                addMe.forEach( threshold -> returnMe.add( ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( threshold ),
-                                                                                                 oper,
-                                                                                                 dataType,
-                                                                                                 units ) ) );
+                builder.setValues( OneOrTwoDoubles.of( values.get( i ),
+                                                       values.get( i
+                                                                   + 1 ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( ThresholdOuter.of( OneOrTwoDoubles.of( threshold ),
-                                                                             oper,
-                                                                             dataType,
-                                                                             units ) ) );
+                builder.setProbabilities( OneOrTwoDoubles.of( values.get( i ),
+                                                              values.get( i
+                                                                          + 1 ) ) );
             }
+            returnMe.add( builder.build() );
         }
 
         return Collections.unmodifiableSet( returnMe );
     }
+
+    /**
+     * Creates a set of thresholds from the inputs.
+     * @param values the threshold values
+     * @param oper the operator
+     * @param dataType the data type to which the threshold applies
+     * @param thresholdType the threshold type
+     * @param units the optional units in which non-probability thresholds are expressed
+     * @return the thresholds
+     */
+
+    private static Set<ThresholdOuter> getThresholds( List<Double> values,
+                                                      wres.config.yaml.components.ThresholdOperator oper,
+                                                      ThresholdOrientation dataType,
+                                                      ThresholdType thresholdType,
+                                                      MeasurementUnit units )
+    {
+        Set<ThresholdOuter> returnMe = new TreeSet<>();
+        for ( Double value : values )
+        {
+            ThresholdOuter.Builder builder = new ThresholdOuter.Builder()
+                    .setOperator( oper )
+                    .setOrientation( dataType )
+                    .setUnits( units )
+                    .setThresholdType( wres.config.yaml.components.ThresholdType.valueOf( thresholdType.name() ) );
+
+            if ( thresholdType == ThresholdType.VALUE )
+            {
+                builder.setValues( OneOrTwoDoubles.of( value ) );
+            }
+            else
+            {
+                builder.setProbabilities( OneOrTwoDoubles.of( value ) );
+            }
+            returnMe.add( builder.build() );
+        }
+        return Collections.unmodifiableSet( returnMe );
+    }
+
 
     /**
      * Do not construct.

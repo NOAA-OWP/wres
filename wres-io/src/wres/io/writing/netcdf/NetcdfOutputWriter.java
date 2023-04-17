@@ -54,7 +54,6 @@ import ucar.nc2.write.NetcdfFormatWriter;
 
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.NetcdfType;
 import wres.config.generated.PairConfig;
@@ -69,12 +68,13 @@ import wres.config.MetricConstants.MetricGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.NoDataException;
@@ -83,6 +83,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.system.SystemSettings;
 
 /**
@@ -233,16 +234,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Creates the blobs into which outputs will be written.
      *
      * @param featureGroups The super-set of feature groups used in the evaluation.
-     * @param thresholdsByMetricAndFeature Thresholds imposed upon input data
+     * @param metricsAndThresholds Thresholds imposed upon input data
      * @throws NetcdfWriteException if the blobs have already been created
      * @throws IOException if the blobs could not be created for any reason
      */
 
     public void createBlobsForWriting( Set<FeatureGroup> featureGroups,
-                                       List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
+                                       List<MetricsAndThresholds> metricsAndThresholds )
             throws IOException
     {
-        Objects.requireNonNull( thresholdsByMetricAndFeature );
+        Objects.requireNonNull( metricsAndThresholds );
 
         if ( this.getIsReadyToWrite().get() )
         {
@@ -256,35 +257,34 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Find the thresholds-by-metric for which blobs should be created
 
-        // Create a map of these with one ThresholdsByMetric for each ensemble average type? Will that create only
-        // the variables needed or more than needed? For example, what happens if the mean error is requested for the 
-        // ensemble median and not for the ensemble mean - will that produce a variable for the ensemble median only?
-        // Use the default averaging type if the evaluation does not contain ensemble forecasts
+        // Create a map of these with for each ensemble average type? Will that create only the variables needed or
+        // more than needed? For example, what happens if the mean error is requested for the ensemble median and not
+        // for the ensemble mean - will that produce a variable for the ensemble median only? Use the default averaging
+        // type if the evaluation does not contain ensemble forecasts
         boolean hasEnsembles = ConfigHelper.hasEnsembleForecasts( this.getProjectConfig() );
-        Function<ThresholdsByMetricAndFeature, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
+        Function<MetricsAndThresholds, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
             if ( hasEnsembles )
             {
-                return thresholds.getEnsembleAverageType();
+                return thresholds.ensembleAverageType();
             }
 
             return EnsembleAverageType.MEAN;
         };
 
-        Map<EnsembleAverageType, List<ThresholdsByMetricAndFeature>> byType =
-                thresholdsByMetricAndFeature.stream()
-                                            .collect( Collectors.groupingBy( ensembleTypeCalculator ) );
+        Map<EnsembleAverageType, List<MetricsAndThresholds>> byType =
+                metricsAndThresholds.stream()
+                                    .collect( Collectors.groupingBy( ensembleTypeCalculator ) );
 
-        Map<EnsembleAverageType, ThresholdsByMetric> thresholds = byType.entrySet()
-                                                                        .stream()
-                                                                        .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
-                                                                                                                e -> this.getUniqueThresholdsForScoreMetrics(
-                                                                                                                        e.getValue() ) ) );
+        Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds =
+                byType.entrySet()
+                      .stream()
+                      .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
+                                                              e -> this.getUniqueThresholdsForScoreMetrics( e.getValue() ) ) );
 
         // Should be at least one metric with at least one threshold
         if ( thresholds.values()
                        .stream()
-                       .allMatch( next -> next.getMetrics()
-                                              .isEmpty() ) )
+                       .allMatch( Map::isEmpty ) )
         {
             throw new IOException( "Could not identify any thresholds from which to create blobs." );
         }
@@ -374,7 +374,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
                                                  Set<FeatureGroup> featureGroups,
                                                  Set<TimeWindowOuter> timeWindows,
-                                                 Map<EnsembleAverageType, ThresholdsByMetric> thresholds,
+                                                 Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds,
                                                  String units,
                                                  TimeScaleOuter desiredTimeScale,
                                                  boolean deprecatedVersion )
@@ -453,12 +453,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     private Map<String, Map<OneOrTwoThresholds, String>>
-    createStandardThresholdNames( Map<EnsembleAverageType, ThresholdsByMetric> thresholds, boolean hasBaseline )
+    createStandardThresholdNames( Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds,
+                                  boolean hasBaseline )
     {
         // Create the standard threshold names, sequenced by natural order of the threshold
         SortedSet<OneOrTwoThresholds> union = thresholds.values()
                                                         .stream()
-                                                        .map( ThresholdSlicer::getOneOrTwoThresholds )
                                                         .flatMap( next -> next.values().stream() )
                                                         .flatMap( SortedSet::stream )
                                                         .collect( Collectors.toCollection( TreeSet::new ) );
@@ -475,11 +475,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Map the thresholds to metric names
         Map<String, Map<OneOrTwoThresholds, String>> returnMe = new TreeMap<>();
-        for ( ThresholdsByMetric nextThresholds : thresholds.values() )
+        for ( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMetrics : thresholds.values() )
         {
-            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMetrics =
-                    ThresholdSlicer.getOneOrTwoThresholds( nextThresholds );
-
             Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
                     this.decomposeThresholdsByMetricForBlobCreation( nextMetrics, hasBaseline );
 
@@ -661,7 +658,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( Inputs inputs,
                                                                            TimeWindowOuter timeWindow,
-                                                                           Map<EnsembleAverageType, ThresholdsByMetric> thresholds,
+                                                                           Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds,
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale )
     {
@@ -672,10 +669,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                       thresholds );
 
         // Iterate through the ensemble average types
-        for ( Map.Entry<EnsembleAverageType, ThresholdsByMetric> next : thresholds.entrySet() )
+        for ( Map.Entry<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> next : thresholds.entrySet() )
         {
             EnsembleAverageType nextType = next.getKey();
-            ThresholdsByMetric nextThresholdsByMetric = next.getValue();
+            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextThresholdsByMetric = next.getValue();
 
             // Statistics for a separate baseline? If no, there's a single set of variables
             if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
@@ -731,18 +728,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindowOuter timeWindow,
-                                                                           ThresholdsByMetric thresholds,
+                                                                           Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholds,
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale,
                                                                            LeftOrRightOrBaseline context,
                                                                            boolean hasBaseline,
                                                                            EnsembleAverageType ensembleAverageType )
     {
-        Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdMap =
-                ThresholdSlicer.getOneOrTwoThresholds( thresholds );
-
         Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
-                this.decomposeThresholdsByMetricForBlobCreation( thresholdMap, hasBaseline );
+                this.decomposeThresholdsByMetricForBlobCreation( thresholds, hasBaseline );
 
         LOGGER.debug( "Discovered these thresholds by metric for blob creation and ensemble average type {}: {}.",
                       ensembleAverageType,
@@ -963,10 +957,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
-     * <p>Returns a {@link ThresholdsByMetric} that contains the union of thresholds across all features and metrics for 
-     * which blobs should be created. The goal is to identify the thresholds whose statistics should be recorded in the 
-     * same blob versus different blobs when the blob includes multiple features. The attribute of a threshold that 
-     * determines whether it is distinct from other thresholds is (in this order):
+     * <p>Returns a map that contains the union of thresholds across all features and metrics for which blobs should be
+     * created. The goal is to identify the thresholds whose statistics should be recorded in the same blob versus
+     * different blobs when the blob includes multiple features. The attribute of a threshold that determines whether
+     * it is distinct from other thresholds is (in this order):
      *
      * <ol>
      * <li>The label, if the threshold contains a label. This is the column header in a csv or the threshold name 
@@ -980,28 +974,29 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * <p>Removes any metrics that do not produce {@link MetricConstants.StatisticType#DOUBLE_SCORE} because this writer
      * currently only handles scores.
      *
-     * @param thresholdsByMetricAndFeature the thresholds to search
+     * @param metricsAndThresholds the thresholds to search
      * @return the unique thresholds for which blobs should be created
      */
 
-    private ThresholdsByMetric
-    getUniqueThresholdsForScoreMetrics( List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
+    private Map<MetricConstants, SortedSet<OneOrTwoThresholds>> getUniqueThresholdsForScoreMetrics( List<MetricsAndThresholds> metricsAndThresholds )
     {
-        Objects.requireNonNull( thresholdsByMetricAndFeature );
+        Objects.requireNonNull( metricsAndThresholds );
 
         Comparator<OneOrTwoThresholds> thresholdComparator = ThresholdSlicer.getLogicalThresholdComparator();
 
         // Create a set of thresholds for each metric in a map.        
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
-        for ( ThresholdsByMetricAndFeature thresholds : thresholdsByMetricAndFeature )
+        for ( MetricsAndThresholds thresholds : metricsAndThresholds )
         {
-            for ( ThresholdsByMetric next : thresholds.getThresholdsByMetricAndFeature().values() )
+            Set<MetricConstants> metrics = thresholds.metrics();
+            Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = thresholds.thresholds();
+            for ( Map.Entry<FeatureTuple, Set<ThresholdOuter>> next : thresholdsByFeature.entrySet() )
             {
-                Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMapping =
-                        ThresholdSlicer.getOneOrTwoThresholds( next );
-
-                for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : nextMapping.entrySet() )
+                Set<ThresholdOuter> nextThresholds = next.getValue();
+                Map<MetricConstants, SortedSet<OneOrTwoThresholds>> composed =
+                        ThresholdSlicer.getOneOrTwoThresholds( metrics, nextThresholds );
+                for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : composed.entrySet() )
                 {
                     MetricConstants nextMetric = nextEntry.getKey();
 
@@ -1022,8 +1017,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
         }
 
-        return new ThresholdsByMetric.Builder().addThresholds( thresholdsMap )
-                                               .build();
+        return Collections.unmodifiableMap( thresholdsMap );
     }
 
     /**
@@ -1853,9 +1847,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                     }
                     catch ( IllegalArgumentException | InvalidRangeException e )
                     {
-                        throw new IOException(
-                                "Lingering Netcdf results could not be written to disk.",
-                                e );
+                        throw new IOException( "Lingering Netcdf results could not be written to disk.", e );
                     }
 
                     // Compressing the output results in around a 95.33%

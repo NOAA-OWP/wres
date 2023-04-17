@@ -42,7 +42,7 @@ import wres.metrics.categorical.ContingencyTable;
  *
  * <p>When a group contains a collection of metrics that do not need to be computed for all inputs, a non-empty set of
  * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
- * 
+ *
  * @author James Brown
  * @param <S> the input type
  * @param <T> the intermediate output type for {@link Collectable} metrics in this collection
@@ -85,7 +85,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Computes all metrics.
-     * 
+     *
      * @param pool the pool
      * @return statistics the statistics
      * @throws NullPointerException if the input is null
@@ -104,7 +104,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Computes a subset of metrics.
-     * 
+     *
      * @param pool the input
      * @param metrics the metrics
      * @return the statistics
@@ -118,10 +118,17 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
         Objects.requireNonNull( pool, "Specify non-null input to the metric collection." );
         Objects.requireNonNull( pool, "Specify some metrics to calculate." );
 
+        if ( metrics.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Supply a valid subset of metrics to compute. No metrics were "
+                                                + "supplied." );
+        }
+
         LOGGER.debug( "Received a request to compute the following metrics within the collection: {}.", metrics );
 
         // None match?
-        if ( this.collected.stream().noneMatch( metrics::contains ) )
+        if ( this.collected.stream()
+                           .noneMatch( metrics::contains ) )
         {
             throw new IllegalArgumentException( "This metric collection did not contain any of " + metrics
                                                 + ". The available metrics are: "
@@ -185,7 +192,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * A builder to build the immutable collection.
-     * 
+     *
      * @param <S> the input type
      * @param <T> the intermediate output type for {@link Collectable} metrics in this collection
      * @param <U> the output type
@@ -215,7 +222,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
         /**
          * Returns a builder.
-         * 
+         *
          * @param <P> the type of metric input
          * @param <Q> the type of intermediate output for a {@link Collectable} metric
          * @param <R> the type of metric output
@@ -223,14 +230,14 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
          */
 
         protected static <P extends Pool<?>, Q extends Statistic<?>, R extends Statistic<?>>
-                Builder<P, Q, R> of()
+        Builder<P, Q, R> of()
         {
             return new Builder<>();
         }
 
         /**
          * Add a {@link Metric} to the collection.
-         * 
+         *
          * @param metric the metric
          * @return the builder
          */
@@ -243,7 +250,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
         /**
          * Add a {@link Collectable} metric to the collection.
-         * 
+         *
          * @param metric the metric
          * @return the builder
          */
@@ -256,7 +263,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
         /**
          * Sets the {@link ExecutorService} for parallel computations.
-         * 
+         *
          * @param metricPool the executor service
          * @return the builder
          */
@@ -269,7 +276,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
         /**
          * Build the metric collection.
-         * 
+         *
          * @return the metric
          * @throws MetricParameterException if one or more parameters is invalid
          */
@@ -283,7 +290,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Computes the results for the prescribed metrics.
-     * 
+     *
      * @param input the metric input
      * @param metrics the metrics to compute
      * @param collectableMetrics the collectable metrics to compute
@@ -316,7 +323,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Computes the results for the prescribed metrics.
-     * 
+     *
      * @param input the metric input
      * @param metrics the metrics to compute
      * @param collectableMetrics the collectable metrics to compute
@@ -349,8 +356,9 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                                                        this.metricPool );
                 // Compute a final statistic for each statistic that depends on the intermediate one
                 next.forEach( ( id,
-                                metric ) -> metricFutures.add( baseFuture.thenApplyAsync( statistic -> metric.aggregate( statistic,
-                                                                                                                         input ),
+                                metric ) -> metricFutures.add( baseFuture.thenApplyAsync( statistic -> metric.aggregate(
+                                                                                                  statistic,
+                                                                                                  input ),
                                                                                           this.metricPool ) ) );
             }
         }
@@ -377,7 +385,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param builder the builder
      * @throws MetricParameterException if one or more parameters is invalid
      */
@@ -422,7 +430,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
     /**
      * Validates the copied collection parameters on construction.
-     * 
+     *
      * @throws MetricParameterException if one or more parameters is invalid
      */
 

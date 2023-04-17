@@ -10,11 +10,11 @@ import java.util.TreeMap;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import wres.config.generated.EnsembleAverageType;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Pool;
 
 class MetricVariable
 {
@@ -43,7 +43,7 @@ class MetricVariable
     private final Number earliestLead;
     private final Number latestLead;
 
-    private final EnsembleAverageType ensembleAverageType;
+    private final Pool.EnsembleAverageType ensembleAverageType;
 
     /**
      * Builder.
@@ -57,7 +57,7 @@ class MetricVariable
         private String units;
         private TimeScaleOuter desiredTimeScale;
         private ChronoUnit durationUnits;
-        private EnsembleAverageType ensembleAverageType;
+        private Pool.EnsembleAverageType ensembleAverageType;
 
         Builder setVariableName( String variableName )
         {
@@ -101,7 +101,7 @@ class MetricVariable
             return this;
         }
 
-        Builder setEnsembleAverageType( EnsembleAverageType ensembleAverageType )
+        Builder setEnsembleAverageType( Pool.EnsembleAverageType ensembleAverageType )
         {
             this.ensembleAverageType = ensembleAverageType;
             return this;
