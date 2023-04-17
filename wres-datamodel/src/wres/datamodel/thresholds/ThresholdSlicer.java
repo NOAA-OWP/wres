@@ -552,7 +552,7 @@ public class ThresholdSlicer
      * @return one {@link MetricsAndThresholds} for each atomic group of metrics
      */
 
-    public static List<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )
+    public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )
     {
         Objects.requireNonNull( evaluation );
 
@@ -562,11 +562,8 @@ public class ThresholdSlicer
         // Obtain the minimum sample size
         int minimumSampleSize = evaluation.minimumSampleSize();
 
-        // Obtain the ensemble averaging method, if applicable
-        Pool.EnsembleAverageType ensembleAverageType = evaluation.ensembleAverageType();
-
         // Iterate the groups
-        List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
+        Set<MetricsAndThresholds> metricsAndThresholds = new HashSet<>();
         for ( Set<Metric> nextGroup : atomicGroups )
         {
             // Gather the metric names
@@ -576,6 +573,10 @@ public class ThresholdSlicer
             // Gather/wrap the thresholds and correlate them with feature tuples
             Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
             Set<GeometryTuple> features = DeclarationUtilities.getFeatures( evaluation );
+
+            // Default to the evaluation type, but override by metric group setting
+            Pool.EnsembleAverageType ensembleAverageType = evaluation.ensembleAverageType();
+
             for ( Metric nextMetric : nextGroup )
             {
                 MetricParameters nextParameters = nextMetric.parameters();
@@ -594,6 +595,12 @@ public class ThresholdSlicer
                                                    ThresholdType.PROBABILITY_CLASSIFIER,
                                                    thresholds,
                                                    features );
+
+                    // Metric-specific ensemble average type?
+                    if( Objects.nonNull( nextParameters.ensembleAverageType() ) )
+                    {
+                        ensembleAverageType = nextParameters.ensembleAverageType();
+                    }
                 }
             }
 
@@ -604,7 +611,7 @@ public class ThresholdSlicer
             metricsAndThresholds.add( nextMetricsAndThresholds );
         }
 
-        return Collections.unmodifiableList( metricsAndThresholds );
+        return Collections.unmodifiableSet( metricsAndThresholds );
     }
 
     /**
@@ -620,12 +627,15 @@ public class ThresholdSlicer
                                        Set<GeometryTuple> geometries )
     {
         Map<Geometry, GeometryTuple> leftGeometries = geometries.stream()
+                                                                .filter( GeometryTuple::hasLeft )
                                                                 .collect( Collectors.toMap( GeometryTuple::getLeft,
                                                                                             Function.identity() ) );
         Map<Geometry, GeometryTuple> rightGeometries = geometries.stream()
+                                                                 .filter( GeometryTuple::hasRight )
                                                                  .collect( Collectors.toMap( GeometryTuple::getRight,
                                                                                              Function.identity() ) );
         Map<Geometry, GeometryTuple> baselineGeometries = geometries.stream()
+                                                                    .filter( GeometryTuple::hasBaseline )
                                                                     .collect( Collectors.toMap( GeometryTuple::getBaseline,
                                                                                                 Function.identity() ) );
 

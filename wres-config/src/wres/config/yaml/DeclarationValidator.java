@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +28,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
@@ -1028,6 +1030,11 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> categoricalMetrics =
                 DeclarationValidator.checkEventThresholdsForCategoricalMetrics( declaration );
         events.addAll( categoricalMetrics );
+        // Check that low-level parameters do not disagree with top-level ones
+        List<EvaluationStatusEvent> parameters =
+                DeclarationValidator.checkMetricParametersAreConsistent( declaration );
+        events.addAll( parameters );
+
         // Warning when non-score metrics are combined with date pools for legacy CSV
         List<EvaluationStatusEvent> legacyCsv =
                 DeclarationValidator.checkMetricsForLegacyCsvAndDatePools( declaration );
@@ -1372,8 +1379,75 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that all metric parameters are consistent with corresponding top-level declaration.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> checkMetricParametersAreConsistent( EvaluationDeclaration declaration )
+    {
+        // Ensemble average type
+        List<EvaluationStatusEvent> ensembleAverageType =
+                DeclarationValidator.checkEnsembleAverageTypeIsConsistent( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( ensembleAverageType );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the ensemble average type is declared consistently.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> checkEnsembleAverageTypeIsConsistent( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        wres.statistics.generated.Pool.EnsembleAverageType topType = declaration.ensembleAverageType();
+        if ( Objects.nonNull( topType ) )
+        {
+            Set<MetricConstants> warnAboutMe = new HashSet<>();
+            for ( Metric next : declaration.metrics() )
+            {
+                MetricParameters pars = next.parameters();
+                if ( Objects.nonNull( pars )
+                     && Objects.nonNull( pars.ensembleAverageType() )
+                     && pars.ensembleAverageType() != topType )
+                {
+                    warnAboutMe.add( next.name() );
+                }
+            }
+
+            // Warn because some low-level metric parameters have an ensemble average type that conflicts with the top-
+            // level type. This is allowed (e.g., the top-level type could be used to fill in the gaps), but is
+            // potentially unintended.
+            if ( !warnAboutMe.isEmpty() )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The declaration included an ensemble average type of "
+                                                                 + "'"
+                                                                 + topType
+                                                                 + "' for all metrics, but also included some metrics "
+                                                                 + "with their own ensemble average type that differs "
+                                                                 + "from the overall type. This is allowed, but all of "
+                                                                 + "the metrics that declare their own type will "
+                                                                 + "retain that type. The following metrics will not "
+                                                                 + "be adjusted: "
+                                                                 + warnAboutMe
+                                                                 + "." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Warns if non-score metrics are required alongside the legacy CSV statistics format and pooling windows.
-     * @param declaration the evaluation declaration
+     * @param declaration the declaration
      * @return the validation events encountered
      */
     private static List<EvaluationStatusEvent> checkMetricsForLegacyCsvAndDatePools( EvaluationDeclaration declaration )
