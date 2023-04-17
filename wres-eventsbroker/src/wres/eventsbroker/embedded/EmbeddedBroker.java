@@ -119,8 +119,6 @@ public class EmbeddedBroker implements Closeable
             String portString = m.group()
                                  .replace( ":", "" );
 
-            LOGGER.info( "PORTSTRING: {}", portString );
-
             LOGGER.debug( "While attempting to create an embedded broker, discovered the following port string to "
                           + "parse: {}.",
                           portString );

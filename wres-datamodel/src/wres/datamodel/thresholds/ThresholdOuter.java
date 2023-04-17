@@ -1,5 +1,6 @@
 package wres.datamodel.thresholds;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 
@@ -8,6 +9,7 @@ import net.jcip.annotations.Immutable;
 
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdType;
@@ -51,6 +53,15 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     private final Threshold threshold;
 
     /**
+     * The type of threshold or context in which it was declared. Note: In principle, it would be simpler to add this
+     * to the canonical type, but the application or intention of the threshold is not really relevant in that context.
+     * Specifically, it would only help to distinguish between a probability threshold and a probability classifier,
+     * which is a probability threshold whose application context is to classify.
+     */
+
+    private final ThresholdType thresholdType;
+
+    /**
      * Returns {@link ThresholdOuter} from the specified input.
      *
      * @param threshold the threshold
@@ -65,13 +76,29 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     /**
      * Returns {@link ThresholdOuter} from the specified input.
      *
+     * @param threshold the threshold
+     * @param type the threshold type
+     * @return a threshold
+     */
+
+    public static ThresholdOuter of( Threshold threshold, ThresholdType type )
+    {
+        return new ThresholdOuter.Builder( threshold ).setThresholdType( type )
+                                                      .build();
+    }
+
+    /**
+     * Returns {@link ThresholdOuter} from the specified input.
+     *
      * @param values the values
      * @param condition the threshold condition
      * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    public static ThresholdOuter of( OneOrTwoDoubles values, wres.config.yaml.components.ThresholdOperator condition, ThresholdOrientation dataType )
+    public static ThresholdOuter of( OneOrTwoDoubles values,
+                                     wres.config.yaml.components.ThresholdOperator condition,
+                                     ThresholdOrientation dataType )
     {
         return ThresholdOuter.of( values, condition, dataType, null, null );
     }
@@ -113,9 +140,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         return new Builder().setValues( values )
                             .setOperator( condition )
-                            .setDataType( dataType )
+                            .setOrientation( dataType )
                             .setLabel( label )
                             .setUnits( units )
+                            .setThresholdType( ThresholdType.VALUE )
                             .build();
     }
 
@@ -159,9 +187,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         return new Builder().setValues( values )
                             .setProbabilities( probabilities )
                             .setOperator( condition )
-                            .setDataType( dataType )
+                            .setOrientation( dataType )
                             .setLabel( label )
                             .setUnits( units )
+                            .setThresholdType( ThresholdType.QUANTILE )
                             .build();
     }
 
@@ -236,9 +265,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     {
         return new Builder().setProbabilities( probabilities )
                             .setOperator( condition )
-                            .setDataType( dataType )
+                            .setOrientation( dataType )
                             .setLabel( label )
                             .setUnits( units )
+                            .setThresholdType( ThresholdType.PROBABILITY )
                             .build();
     }
 
@@ -309,15 +339,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     public ThresholdType getType()
     {
-        if ( this.isQuantile() )
-        {
-            return ThresholdType.QUANTILE;
-        }
-        if ( this.hasProbabilities() )
-        {
-            return ThresholdType.PROBABILITY;
-        }
-        return ThresholdType.VALUE;
+        return this.thresholdType;
     }
 
     /**
@@ -503,13 +525,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             return false;
         }
 
-        return in.getThreshold().equals( this.getThreshold() );
+        return in.getThreshold().equals( this.getThreshold() )
+               && Objects.equals( in.getType(), this.getType() );
     }
 
     @Override
     public int hashCode()
     {
-        return this.threshold.hashCode();
+        return Objects.hash( this.getThreshold(), this.getType() );
     }
 
     @Override
@@ -553,73 +576,17 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
     }
 
     @Override
-    public int compareTo( final ThresholdOuter o )
+    public int compareTo( ThresholdOuter o )
     {
-        //Compare condition
-        int returnMe = this.getOperator()
-                           .compareTo( o.getOperator() );
-        if ( returnMe != 0 )
+        int result = MessageUtilities.compare( this.getThreshold(), o.getThreshold() );
+
+        if ( result != 0 )
         {
-            return returnMe;
+            return result;
         }
 
-        //Check for status of optional elements
-        returnMe = comparePresenceAbsence( o );
-
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        //Compare ordinary values
-        if ( hasValues() )
-        {
-            returnMe = this.getValues()
-                           .compareTo( o.getValues() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-
-        //Compare probability values
-        if ( hasProbabilities() )
-        {
-            returnMe = this.getProbabilities()
-                           .compareTo( o.getProbabilities() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-
-        //Compare data type
-        returnMe = this.getOrientation()
-                       .compareTo( o.getOrientation() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        //Compare labels
-        if ( hasLabel() )
-        {
-            returnMe = this.getLabel()
-                           .compareTo( o.getLabel() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-
-        //Compare units
-        if ( hasUnits() )
-        {
-            return this.getUnits()
-                       .compareTo( o.getUnits() );
-        }
-
-        return 0;
+        return Comparator.nullsFirst( Comparator.comparing( ThresholdOuter::getType ) )
+                         .compare( this, o );
     }
 
     @Override
@@ -666,6 +633,12 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         private Threshold.Builder innerBuilder = Threshold.newBuilder();
 
         /**
+         * The threshold type or context in which it was declared.
+         */
+
+        private ThresholdType thresholdType;
+
+        /**
          * Sets the {@link wres.config.yaml.components.ThresholdOperator} associated with the threshold.
          *
          * @param operator the threshold operator
@@ -674,7 +647,7 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         public Builder setOperator( wres.config.yaml.components.ThresholdOperator operator )
         {
-            if( Objects.nonNull( operator ) )
+            if ( Objects.nonNull( operator ) )
             {
                 wres.statistics.generated.Threshold.ThresholdOperator anOperator = operator.canonical();
                 innerBuilder.setOperator( anOperator );
@@ -689,13 +662,24 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
          * @return the builder
          */
 
-        public Builder setDataType( ThresholdOrientation dataType )
+        public Builder setOrientation( ThresholdOrientation dataType )
         {
-            if( Objects.nonNull( dataType ) )
+            if ( Objects.nonNull( dataType ) )
             {
                 Threshold.ThresholdDataType aDataType = Threshold.ThresholdDataType.valueOf( dataType.name() );
                 innerBuilder.setDataType( aDataType );
             }
+            return this;
+        }
+
+        /**
+         * Sets the type of threshold or context in which it was declared.
+         * @param thresholdType the threshold type
+         * @return the builder
+         */
+        public Builder setThresholdType( ThresholdType thresholdType )
+        {
+            this.thresholdType = thresholdType;
             return this;
         }
 
@@ -811,8 +795,31 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     private ThresholdOuter( Builder builder )
     {
-        //Set, then validate
+        // Set, then validate
         this.threshold = builder.innerBuilder.build();
+
+        // Defined?
+        if ( Objects.nonNull( builder.thresholdType ) )
+        {
+            this.thresholdType = builder.thresholdType;
+        }
+        // Guess it
+        else
+        {
+            if ( this.isQuantile() )
+            {
+                this.thresholdType = ThresholdType.QUANTILE;
+            }
+            else if ( this.hasProbabilities() )
+            {
+                this.thresholdType = ThresholdType.PROBABILITY;
+            }
+            else
+            {
+                this.thresholdType = ThresholdType.VALUE;
+            }
+        }
+
         this.validate();
     }
 
@@ -871,7 +878,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
             }
 
             // Cannot have LESS_THAN on the lower bound
-            if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001 && this.getOperator() == wres.config.yaml.components.ThresholdOperator.LESS )
+            if ( Math.abs( this.getProbabilities().first() - 0.0 ) < .00000001
+                 && this.getOperator() == wres.config.yaml.components.ThresholdOperator.LESS )
             {
                 throw new ThresholdException( "Cannot apply a threshold operator of '<' to the lower bound "
                                               + "probability of 0.0." );
@@ -977,46 +985,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                     default -> "";
                 };
     }
-
-    /**
-     * Compares the input against the current threshold for equivalence in terms of:
-     *
-     * <ol>
-     * <li>{@link #hasValues()}</li>
-     * <li>{@link #hasProbabilities()}</li>
-     * <li>{@link #hasLabel()}</li>
-     * <li>{@link #hasUnits()}</li>
-     * </ol>
-     *
-     * @param o the threshold
-     * @return a negative, zero, or positive integer if this threshold is less than, equal to, or greater than the 
-     *            input, respectively
-     */
-
-    private int comparePresenceAbsence( final ThresholdOuter o )
-    {
-        Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
-
-        //Check for equal status of the values available        
-        int returnMe = Boolean.compare( this.hasValues(), o.hasValues() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        returnMe = Boolean.compare( this.hasProbabilities(), o.hasProbabilities() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        returnMe = Boolean.compare( this.hasLabel(), o.hasLabel() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-
-        return Boolean.compare( this.hasUnits(), o.hasUnits() );
-    }
-
 
     /**
      * @param conditionString the condition string

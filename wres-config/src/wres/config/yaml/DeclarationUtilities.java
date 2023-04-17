@@ -227,7 +227,7 @@ public class DeclarationUtilities
                                                                                              Collectors.toSet() ) );
 
         LOGGER.debug( "Grouped the metrics into {} groups whose data transformation parameters are consistent. Each "
-                      + "of these groups is an atomic set for processing. The metric groups are: {}.",
+                      + "of these groups is an atomic collection of metrics for processing. The metric groups are: {}.",
                       grouped.size(),
                       grouped );
 

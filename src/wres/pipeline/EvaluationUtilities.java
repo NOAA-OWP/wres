@@ -23,6 +23,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
+import wres.config.xml.MetricConstantsFactory;
 import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
@@ -39,8 +41,8 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
+import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
@@ -83,6 +85,7 @@ import wres.pipeline.statistics.StatisticsProcessor;
 import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.system.SystemSettings;
 
 /**
@@ -326,54 +329,6 @@ class EvaluationUtilities
     }
 
     /**
-     * Forcibly stops an evaluation on encountering an error, if already created.
-     * @param evaluation the evaluation
-     * @param error the error
-     * @param evaluationId the evaluation identifier
-     */
-    private static void forceStop( Evaluation evaluation, RuntimeException error, String evaluationId )
-    {
-        if ( Objects.nonNull( evaluation ) )
-        {
-            // Stop forcibly
-            LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
-
-            evaluation.stop( error );
-        }
-    }
-
-    /**
-     * Closes the netcdf writers.
-     * @param netcdfWriters the writers to close
-     * @param evaluation the evaluation
-     * @param evaluationId the evaluation identifier
-     */
-
-    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
-                                            Evaluation evaluation,
-                                            String evaluationId )
-    {
-        for ( NetcdfOutputWriter writer : netcdfWriters )
-        {
-            try
-            {
-                writer.close();
-            }
-            catch ( IOException we )
-            {
-                if ( Objects.nonNull( evaluation ) )
-                {
-                    LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
-                                  evaluationId );
-
-                    evaluation.stop( we );
-                }
-                LOGGER.warn( "Failed to close a netcdf writer.", we );
-            }
-        }
-    }
-
-    /**
      * <p>Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs,
      * thresholds and metrics.
      *
@@ -508,7 +463,7 @@ class EvaluationUtilities
             Set<FeatureTuple> features = project.getFeatures();
 
             // Read external thresholds from the configuration, per feature
-            List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature = new ArrayList<>();
+            List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
             Set<FeatureTuple> featuresWithExplicitThresholds = new TreeSet<>();
             for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
             {
@@ -517,20 +472,30 @@ class EvaluationUtilities
                                                                        unitMapper,
                                                                        features );
 
-                Map<FeatureTuple, ThresholdsByMetric> nextThresholds = thresholdReader.read();
+                Map<FeatureTuple, Set<ThresholdOuter>> nextThresholds = thresholdReader.read();
+                Set<MetricConstants> metrics =
+                        MetricConstantsFactory.getMetricsFromConfig( metricsConfig, projectConfig );
+
                 Set<FeatureTuple> innerFeaturesWithExplicitThresholds = thresholdReader.getEvaluatableFeatures();
 
                 int minimumSampleSize =
                         EvaluationUtilities.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
-                ThresholdsByMetricAndFeature nextMetrics = ThresholdsByMetricAndFeature.of( nextThresholds,
-                                                                                            minimumSampleSize,
-                                                                                            metricsConfig.getEnsembleAverage() );
-                thresholdsByMetricAndFeature.add( nextMetrics );
+                EnsembleAverageType averageType = EnsembleAverageType.MEAN;
+                if ( Objects.nonNull( metricsConfig.getEnsembleAverage() ) )
+                {
+                    averageType = EnsembleAverageType.valueOf( metricsConfig.getEnsembleAverage()
+                                                                            .name() );
+                }
+                MetricsAndThresholds nextMetricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                                          nextThresholds,
+                                                                                          minimumSampleSize,
+                                                                                          averageType );
+                metricsAndThresholds.add( nextMetricsAndThresholds );
                 featuresWithExplicitThresholds.addAll( innerFeaturesWithExplicitThresholds );
             }
 
             // Render the bags of thresholds and features immutable
-            thresholdsByMetricAndFeature = Collections.unmodifiableList( thresholdsByMetricAndFeature );
+            metricsAndThresholds = Collections.unmodifiableList( metricsAndThresholds );
             featuresWithExplicitThresholds = Collections.unmodifiableSet( featuresWithExplicitThresholds );
 
             // Create the feature groups
@@ -546,13 +511,13 @@ class EvaluationUtilities
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
                     writer.createBlobsForWriting( featureGroups,
-                                                  thresholdsByMetricAndFeature );
+                                                  metricsAndThresholds );
                 }
 
                 LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
             }
 
-            evaluationDetails.setThresholdsByMetricAndFeature( thresholdsByMetricAndFeature );
+            evaluationDetails.setMetricsAndThresholds( metricsAndThresholds );
 
             PoolFactory poolFactory = PoolFactory.of( project );
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
@@ -605,6 +570,54 @@ class EvaluationUtilities
             if ( Objects.nonNull( evaluation ) && evaluation.isFailed() )
             {
                 evaluation.close();
+            }
+        }
+    }
+
+    /**
+     * Forcibly stops an evaluation on encountering an error, if already created.
+     * @param evaluation the evaluation
+     * @param error the error
+     * @param evaluationId the evaluation identifier
+     */
+    private static void forceStop( Evaluation evaluation, RuntimeException error, String evaluationId )
+    {
+        if ( Objects.nonNull( evaluation ) )
+        {
+            // Stop forcibly
+            LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
+
+            evaluation.stop( error );
+        }
+    }
+
+    /**
+     * Closes the netcdf writers.
+     * @param netcdfWriters the writers to close
+     * @param evaluation the evaluation
+     * @param evaluationId the evaluation identifier
+     */
+
+    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
+                                            Evaluation evaluation,
+                                            String evaluationId )
+    {
+        for ( NetcdfOutputWriter writer : netcdfWriters )
+        {
+            try
+            {
+                writer.close();
+            }
+            catch ( IOException we )
+            {
+                if ( Objects.nonNull( evaluation ) )
+                {
+                    LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
+                                  evaluationId );
+
+                    evaluation.stop( we );
+                }
+                LOGGER.warn( "Failed to close a netcdf writer.", we );
             }
         }
     }
@@ -913,7 +926,7 @@ class EvaluationUtilities
     }
 
     /**
-     * Obtain the minimum sample size from a possible null input. If null, return zero.
+     * Obtain the minimum sample size from a possibly null input. If null, return zero.
      *
      * @param minimumSampleSize the minimum sample size, which is nullable and defaults to zero
      */
@@ -1115,19 +1128,18 @@ class EvaluationUtilities
      * @return the single-valued processors
      */
 
-    private static List<PoolProcessor<Double, Double>>
-    getSingleValuedPoolProcessors( PoolFactory poolFactory,
-                                   EvaluationDetails evaluationDetails,
-                                   List<PoolRequest> poolRequests,
-                                   SharedWriters sharedWriters,
-                                   Executors executors,
-                                   PoolGroupTracker groupPublicationTracker,
-                                   PoolParameters poolParameters )
+    private static List<PoolProcessor<Double, Double>> getSingleValuedPoolProcessors( PoolFactory poolFactory,
+                                                                                      EvaluationDetails evaluationDetails,
+                                                                                      List<PoolRequest> poolRequests,
+                                                                                      SharedWriters sharedWriters,
+                                                                                      Executors executors,
+                                                                                      PoolGroupTracker groupPublicationTracker,
+                                                                                      PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
-                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
+                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getMetricsAndThresholds(),
                                                                executors.thresholdExecutor(),
                                                                executors.metricExecutor() );
 
@@ -1204,19 +1216,18 @@ class EvaluationUtilities
      * @return the ensemble processors
      */
 
-    private static List<PoolProcessor<Double, Ensemble>>
-    getEnsemblePoolProcessors( PoolFactory poolFactory,
-                               EvaluationDetails evaluationDetails,
-                               List<PoolRequest> poolRequests,
-                               SharedWriters sharedWriters,
-                               Executors executors,
-                               PoolGroupTracker groupPublicationTracker,
-                               PoolParameters poolParameters )
+    private static List<PoolProcessor<Double, Ensemble>> getEnsemblePoolProcessors( PoolFactory poolFactory,
+                                                                                    EvaluationDetails evaluationDetails,
+                                                                                    List<PoolRequest> poolRequests,
+                                                                                    SharedWriters sharedWriters,
+                                                                                    Executors executors,
+                                                                                    PoolGroupTracker groupPublicationTracker,
+                                                                                    PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
-                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getThresholdsByMetricAndFeature(),
+                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getMetricsAndThresholds(),
                                                            executors.thresholdExecutor(),
                                                            executors.metricExecutor() );
 
@@ -1325,20 +1336,20 @@ class EvaluationUtilities
     }
 
     /**
-     * @param metrics the metrics
+     * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
      * @param thresholdExecutor the threshold executor
      * @param metricExecutor the metric executor
      * @return the single-valued processors
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
-    getSingleValuedProcessors( List<ThresholdsByMetricAndFeature> metrics,
+    getSingleValuedProcessors( List<MetricsAndThresholds> metricsAndThresholds,
                                ExecutorService thresholdExecutor,
                                ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
 
-        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
+        for ( MetricsAndThresholds nextMetrics : metricsAndThresholds )
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
                     new SingleValuedStatisticsProcessor( nextMetrics,
@@ -1351,20 +1362,20 @@ class EvaluationUtilities
     }
 
     /**
-     * @param metrics the metrics
+     * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
      * @param thresholdExecutor the threshold executor
      * @param metricExecutor the metric executor
      * @return the single-valued processors
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-    getEnsembleProcessors( List<ThresholdsByMetricAndFeature> metrics,
+    getEnsembleProcessors( List<MetricsAndThresholds> metricsAndThresholds,
                            ExecutorService thresholdExecutor,
                            ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
 
-        for ( ThresholdsByMetricAndFeature nextMetrics : metrics )
+        for ( MetricsAndThresholds nextMetrics : metricsAndThresholds )
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
                     new EnsembleStatisticsProcessor( nextMetrics,
@@ -1451,8 +1462,8 @@ class EvaluationUtilities
         private final Database database;
         /** The caches.*/
         private DatabaseCaches caches;
-        /** The thresholds by metric and feature, possibly null. */
-        private List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature;
+        /** The metrics and thresholds, possibly null. */
+        private List<MetricsAndThresholds> metricsAndThresholds;
         /** The project, possibly null. */
         private Project project;
         /** The messaging component of an evaluation, possibly null. */
@@ -1523,9 +1534,9 @@ class EvaluationUtilities
          * @return the thresholds by metric and feature
          */
 
-        private List<ThresholdsByMetricAndFeature> getThresholdsByMetricAndFeature()
+        private List<MetricsAndThresholds> getMetricsAndThresholds()
         {
-            return this.thresholdsByMetricAndFeature;
+            return this.metricsAndThresholds;
         }
 
         /**
@@ -1579,15 +1590,15 @@ class EvaluationUtilities
 
         /**
          * Set the thresholds, not null.
-         * @param thresholdsByMetricAndFeature the thresholds
+         * @param metricsAndThresholds the thresholds
          * @throws NullPointerException if the input is null
          */
 
-        private void setThresholdsByMetricAndFeature( List<ThresholdsByMetricAndFeature> thresholdsByMetricAndFeature )
+        private void setMetricsAndThresholds( List<MetricsAndThresholds> metricsAndThresholds )
         {
-            Objects.requireNonNull( thresholdsByMetricAndFeature );
+            Objects.requireNonNull( metricsAndThresholds );
 
-            this.thresholdsByMetricAndFeature = thresholdsByMetricAndFeature;
+            this.metricsAndThresholds = metricsAndThresholds;
         }
 
         /**

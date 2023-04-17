@@ -454,9 +454,9 @@ public class Projects
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
-        String identity = getTopHashOfSources( leftHashes,
-                                               rightHashes,
-                                               baselineHashes );
+        String identity = Projects.getTopHashOfSources( leftHashes,
+                                                        rightHashes,
+                                                        baselineHashes );
 
         DatabaseProject details = new DatabaseProject( database,
                                                        caches,

@@ -4,12 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +32,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
+import wres.config.xml.MetricConstantsFactory;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
@@ -76,7 +75,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link SingleValuedStatisticsProcessor}.
- * 
+ *
  * @author James Brown
  */
 public final class SingleValuedStatisticsProcessorTest
@@ -110,16 +109,20 @@ public final class SingleValuedStatisticsProcessorTest
     private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
 
     @Test
-    public void testApplyWithoutThresholds() throws IOException, MetricParameterException, InterruptedException
+    public void testApplyWithoutThresholds() throws MetricParameterException, InterruptedException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithoutThresholds();
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetricAndFeature = Map.of( featureTuple, thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholdsByMetricAndFeature, 0 );
+        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
 
+        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                              thresholdsByFeature,
+                                                                              0,
+                                                                              null );
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor( metrics,
+                new SingleValuedStatisticsProcessor( metricsAndThresholds,
                                                      Executors.newSingleThreadExecutor(),
                                                      Executors.newSingleThreadExecutor() );
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
@@ -172,7 +175,7 @@ public final class SingleValuedStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithThresholds() throws IOException, MetricParameterException, InterruptedException
+    public void testApplyWithThresholds() throws MetricParameterException, InterruptedException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
@@ -269,14 +272,15 @@ public final class SingleValuedStatisticsProcessorTest
                                                                   && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName()
+                                                                     == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
     }
 
     @Test
-    public void testForExpectedMetricsWhenAllValidConfigured() throws IOException, MetricParameterException
+    public void testForExpectedMetricsWhenAllValidConfigured() throws MetricParameterException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetrics();
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
@@ -287,7 +291,6 @@ public final class SingleValuedStatisticsProcessorTest
                        + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
                        - MetricConstants.CONTINGENCY_TABLE.getAllComponents().size();
         int actual = processor.getMetrics()
-                              .getMetrics()
                               .size();
 
         assertEquals( expected, actual );
@@ -304,11 +307,11 @@ public final class SingleValuedStatisticsProcessorTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     null,
-                                                                     metrics,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               null,
+                                                               metrics,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -389,7 +392,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                   .setSeconds( SECOND_DATE.getEpochSecond() )
                                                                                   .setNanos( SECOND_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 43200 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 43200 ) )
                                                                .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
@@ -423,11 +427,11 @@ public final class SingleValuedStatisticsProcessorTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
-                                                                     0,
-                                                                     null,
-                                                                     metrics,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( thresholds,
+                                                               0,
+                                                               null,
+                                                               metrics,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -504,7 +508,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                   .setSeconds( SECOND_DATE.getEpochSecond() )
                                                                                   .setNanos( SECOND_DATE.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 43200 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 43200 ) )
                                                                .setReferenceTimeType( ReferenceTimeType.T0 )
                                                                .build();
 
@@ -540,7 +545,7 @@ public final class SingleValuedStatisticsProcessorTest
 
     @Test
     public void testApplyTimeSeriesSummaryStats()
-            throws IOException, MetricParameterException, InterruptedException
+            throws MetricParameterException, InterruptedException
     {
         ProjectConfig config =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithTimeSeriesSummaryStatistics();
@@ -566,21 +571,12 @@ public final class SingleValuedStatisticsProcessorTest
         //Compare the errors against the benchmark
         List<DurationScoreStatisticOuter> actualScores = project.getDurationScoreStatistics();
 
-        //Build the expected statistics
-        Map<MetricConstants, Duration> expectedSource = new EnumMap<>( MetricConstants.class );
-        expectedSource.put( MetricConstants.MEAN, Duration.ofHours( 3 ) );
-        expectedSource.put( MetricConstants.MEDIAN, Duration.ofHours( 3 ) );
-        expectedSource.put( MetricConstants.MINIMUM, Duration.ofHours( -6 ) );
-        expectedSource.put( MetricConstants.MAXIMUM, Duration.ofHours( 12 ) );
-        expectedSource.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofHours( 9 ) );
-
         //Metadata
         TimeWindow inner = MessageFactory.getTimeWindow( FIRST_DATE,
                                                          SECOND_DATE,
                                                          Duration.ofHours( 6 ),
                                                          Duration.ofHours( 18 ) );
-        TimeWindowOuter combinedWindow = TimeWindowOuter.of( inner );
-        final TimeWindowOuter timeWindow = combinedWindow;
+        final TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -636,12 +632,16 @@ public final class SingleValuedStatisticsProcessorTest
         DurationScoreMetricComponent meanAbsMetricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                           .setName( ComponentName.MEAN_ABSOLUTE )
                                                                                           .setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( 0 ) )
+                                                                                                                                   .setSeconds(
+                                                                                                                                           0 ) )
                                                                                           .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( Long.MAX_VALUE )
-                                                                                                                                   .setNanos( 999_999_999 ) )
+                                                                                                                                   .setSeconds(
+                                                                                                                                           Long.MAX_VALUE )
+                                                                                                                                   .setNanos(
+                                                                                                                                           999_999_999 ) )
                                                                                           .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                                   .setSeconds( 0 ) )
+                                                                                                                                   .setSeconds(
+                                                                                                                                           0 ) )
                                                                                           .build();
 
 
@@ -651,7 +651,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                        .build();
 
         DurationScoreStatisticComponent medianComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                         .setMetric( medianMetricComponent )
+                                                                                         .setMetric(
+                                                                                                 medianMetricComponent )
                                                                                          .setValue( expectedMedian )
                                                                                          .build();
 
@@ -666,7 +667,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                       .build();
 
         DurationScoreStatisticComponent meanAbsComponent = DurationScoreStatisticComponent.newBuilder()
-                                                                                          .setMetric( meanAbsMetricComponent )
+                                                                                          .setMetric(
+                                                                                                  meanAbsMetricComponent )
                                                                                           .setValue( expectedMeanAbs )
                                                                                           .build();
         DurationScoreMetric metric = DurationScoreMetric.newBuilder()
@@ -691,44 +693,30 @@ public final class SingleValuedStatisticsProcessorTest
 
     @Test
     public void testApplyWithThresholdsFromSource()
-            throws IOException, MetricParameterException, InterruptedException
+            throws MetricParameterException, InterruptedException
     {
-        // Define the external thresholds to use
-        Map<MetricConstants, Set<ThresholdOuter>> canonical = new EnumMap<>( MetricConstants.class );
-
         Set<ThresholdOuter> thresholds =
-                new HashSet<>( Arrays.asList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                 wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
-                                                                 ThresholdOrientation.LEFT ) ) );
-
-        ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
-
-        canonical.put( MetricConstants.MEAN_ERROR, thresholds );
-        canonical.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, thresholds );
-        canonical.put( MetricConstants.MEAN_ABSOLUTE_ERROR, thresholds );
-        canonical.put( MetricConstants.MEAN_SQUARE_ERROR, thresholds );
-        canonical.put( MetricConstants.BIAS_FRACTION, thresholds );
-        canonical.put( MetricConstants.COEFFICIENT_OF_DETERMINATION, thresholds );
-        canonical.put( MetricConstants.ROOT_MEAN_SQUARE_ERROR, thresholds );
-        canonical.put( MetricConstants.THREAT_SCORE, thresholds );
-        canonical.put( MetricConstants.SAMPLE_SIZE, thresholds );
-        canonical.put( MetricConstants.CONTINGENCY_TABLE, thresholds );
-        canonical.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, thresholds );
-
-        builder.addThresholds( canonical, wres.config.yaml.components.ThresholdType.PROBABILITY );
+                new HashSet<>( Collections.singletonList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
+                                                                             wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
+                                                                             ThresholdOrientation.LEFT ) ) );
 
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
 
         // Ensure that the entire set of thresholds is assembled to be passed to the processor
-        builder.addThresholds( ThresholdSlicer.getOneOrTwoThresholds( ThresholdsGenerator.getThresholdsFromConfig( config ) ) );
+        Set<ThresholdOuter> thresholdsFromConfig = ThresholdsGenerator.getThresholdsFromConfig( config );
 
-        ThresholdsByMetric thresholdsByMetric = builder.build();
+        Set<ThresholdOuter> combinedThresholds = new HashSet<>( thresholds );
+        combinedThresholds.addAll( thresholdsFromConfig );
+
         FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, ThresholdsByMetric> thresholdsByMetricAndFeature = Map.of( featureTuple, thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholdsByMetricAndFeature, 0 );
-
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, combinedThresholds );
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                              thresholdsByFeature,
+                                                                              0,
+                                                                              null );
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor( metrics,
+                new SingleValuedStatisticsProcessor( metricsAndThresholds,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool() );
 
@@ -834,14 +822,15 @@ public final class SingleValuedStatisticsProcessorTest
                                                                   && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName()
+                                                                     == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
     }
 
     @Test
-    public void testApplyWithThresholdsAndNoData() throws IOException, MetricParameterException, InterruptedException
+    public void testApplyWithThresholdsAndNoData() throws MetricParameterException, InterruptedException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
@@ -884,7 +873,7 @@ public final class SingleValuedStatisticsProcessorTest
 
     @Test
     public void testApplyTimeSeriesSummaryStatsWithNoData()
-            throws IOException, MetricParameterException, InterruptedException
+            throws MetricParameterException, InterruptedException
     {
         ProjectConfig config =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithTimeSeriesSummaryStatistics();
@@ -904,8 +893,7 @@ public final class SingleValuedStatisticsProcessorTest
         //Metadata
         TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
                                                          Instant.MAX );
-        TimeWindowOuter combinedWindow = TimeWindowOuter.of( inner );
-        TimeWindowOuter timeWindow = combinedWindow;
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -940,7 +928,7 @@ public final class SingleValuedStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithMissingPairsForRemoval() throws IOException, MetricParameterException, InterruptedException
+    public void testApplyWithMissingPairsForRemoval() throws MetricParameterException, InterruptedException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
@@ -1014,13 +1002,13 @@ public final class SingleValuedStatisticsProcessorTest
         MetricsConfig metrics =
                 new MetricsConfig( null,
                                    0,
-                                   Arrays.asList( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
+                                   List.of( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
                                    null,
                                    EnsembleAverageType.MEAN );
 
         ProjectConfig config = new ProjectConfig( null,
                                                   null,
-                                                  Arrays.asList( metrics ),
+                                                  List.of( metrics ),
                                                   null,
                                                   null,
                                                   null );
@@ -1055,11 +1043,11 @@ public final class SingleValuedStatisticsProcessorTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
-                                                                     0,
-                                                                     metrics,
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( thresholds,
+                                                               0,
+                                                               metrics,
+                                                               null,
+                                                               EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -1078,7 +1066,7 @@ public final class SingleValuedStatisticsProcessorTest
 
     @Test
     public void testApplyWithThresholdsAndFeatureGroupWithTwoFeatures()
-            throws IOException, MetricParameterException, InterruptedException
+            throws MetricParameterException, InterruptedException
     {
         ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
 
@@ -1092,17 +1080,21 @@ public final class SingleValuedStatisticsProcessorTest
                                            .setRight( Geometry.newBuilder().setName( DRRC3 ) )
                                            .build();
 
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( FeatureTuple.of( drrc2 ),
-                                                                   thresholdsByMetric,
-                                                                   FeatureTuple.of( drrc3 ),
-                                                                   thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
-
+        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( FeatureTuple.of( drrc2 ),
+                                                                             thresholds,
+                                                                             FeatureTuple.of( drrc3 ),
+                                                                             thresholds );
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                              thresholdsByFeature,
+                                                                              0,
+                                                                              null );
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor( metrics,
-                                                     ForkJoinPool.commonPool(),
-                                                     ForkJoinPool.commonPool() );
+                new SingleValuedStatisticsProcessor(
+                        metricsAndThresholds,
+                        ForkJoinPool.commonPool(),
+                        ForkJoinPool.commonPool() );
 
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsEleven();
 
@@ -1113,7 +1105,6 @@ public final class SingleValuedStatisticsProcessorTest
                                           .build();
 
         // Add results for 1 nominal lead time of PT3H
-        List<DoubleScoreStatisticOuter> scores = new ArrayList<>();
 
         TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
                                                          Instant.MAX,
@@ -1124,7 +1115,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                  .getPool()
                                                                  .toBuilder()
                                                                  .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                                                 .addGeometryTuples( drrc2 ) )
+                                                                                                 .addGeometryTuples(
+                                                                                                         drrc2 ) )
                                                                  .setTimeWindow( window.getTimeWindow() )
                                                                  .build();
 
@@ -1139,7 +1131,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                  .getPool()
                                                                  .toBuilder()
                                                                  .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                                                 .addGeometryTuples( drrc3 ) )
+                                                                                                 .addGeometryTuples(
+                                                                                                         drrc3 ) )
                                                                  .setTimeWindow( window.getTimeWindow() )
                                                                  .build();
 
@@ -1157,7 +1150,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                     .build();
 
         StatisticsStore statistics = processor.apply( combinedPool );
-        scores.addAll( statistics.getDoubleScoreStatistics() );
+        List<DoubleScoreStatisticOuter> scores = new ArrayList<>( statistics.getDoubleScoreStatistics() );
 
         // Validate a subset of the data 
         assertEquals( 1, Slicer.filter( scores, MetricConstants.THREAT_SCORE ).size() );
@@ -1224,7 +1217,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                                   && meta.getMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
-                                                                  && meta.getMetricName() == MetricConstants.CONTINGENCY_TABLE )
+                                                                  && meta.getMetricName()
+                                                                     == MetricConstants.CONTINGENCY_TABLE )
                                                  .get( 0 );
 
         assertEquals( expected, actual );
@@ -1236,14 +1230,17 @@ public final class SingleValuedStatisticsProcessorTest
      */
 
     private static StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-            ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
+    ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
     {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
+        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
         FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
-
-        return new SingleValuedStatisticsProcessor( metrics,
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                              thresholdsByFeature,
+                                                                              0,
+                                                                              null );
+        return new SingleValuedStatisticsProcessor( metricsAndThresholds,
                                                     ForkJoinPool.commonPool(),
                                                     ForkJoinPool.commonPool() );
     }

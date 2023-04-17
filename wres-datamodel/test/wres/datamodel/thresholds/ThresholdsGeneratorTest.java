@@ -44,7 +44,6 @@ import wres.datamodel.pools.MeasurementUnit;
  */
 class ThresholdsGeneratorTest
 {
-
     /**
      * Test thresholds.
      */
@@ -84,10 +83,11 @@ class ThresholdsGeneratorTest
                                    null );
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
-
+        Set<ThresholdOuter> thresholdsFromConfig = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
+        Set<MetricConstants> metricConstants =
+                MetricConstantsFactory.getMetricsFromConfig( mockedConfig );
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
-                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstants, thresholdsFromConfig );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
@@ -156,11 +156,12 @@ class ThresholdsGeneratorTest
                                    null );
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetricNullDimension =
+        Set<ThresholdOuter> actualByMetricNullDimension =
                 ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithNullDimension );
-
+        Set<MetricConstants> metricConstantsFromNull =
+                MetricConstantsFactory.getMetricsFromConfig( mockedConfigWithNullDimension );
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actualWithNullDim =
-                ThresholdSlicer.getOneOrTwoThresholds( actualByMetricNullDimension );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstantsFromNull, actualByMetricNullDimension );
 
         assertEquals( expected, actualWithNullDim );
     }
@@ -199,10 +200,11 @@ class ThresholdsGeneratorTest
                                    null );
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetric = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
-
+        Set<ThresholdOuter> thresholdsFromConfig = ThresholdsGenerator.getThresholdsFromConfig( mockedConfig );
+        Set<MetricConstants> metricConstants =
+                MetricConstantsFactory.getMetricsFromConfig( mockedConfig );
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
-                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstants, thresholdsFromConfig );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
@@ -273,11 +275,12 @@ class ThresholdsGeneratorTest
                                    null );
 
         // Compute combined thresholds
-        ThresholdsByMetric actualByMetricNullDimension =
+        Set<ThresholdOuter> actualByMetricNullDimension =
                 ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithNullDimension );
-
+        Set<MetricConstants> metricConstantsFromNull =
+                MetricConstantsFactory.getMetricsFromConfig( mockedConfigWithNullDimension );
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actualWithNullDim =
-                ThresholdSlicer.getOneOrTwoThresholds( actualByMetricNullDimension );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstantsFromNull, actualByMetricNullDimension );
 
         assertEquals( expected, actualWithNullDim );
     }
@@ -318,11 +321,12 @@ class ThresholdsGeneratorTest
                                    null );
 
         // All data threshold only
-        ThresholdsByMetric actualWrapped =
+        Set<ThresholdOuter> actualWrapped =
                 ThresholdsGenerator.getThresholdsFromConfig( mockedConfigWithoutThresholds );
-
+        Set<MetricConstants> metricConstants =
+                MetricConstantsFactory.getMetricsFromConfig( mockedConfigWithoutThresholds );
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
-                ThresholdSlicer.getOneOrTwoThresholds( actualWrapped );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstants, actualWrapped );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
@@ -343,25 +347,29 @@ class ThresholdsGeneratorTest
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN );
-        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER, ThresholdsGenerator.getThresholdOperator( first ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER,
+                    ThresholdsGenerator.getThresholdOperator( first ) );
 
         ThresholdsConfig second = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN );
-        assertSame( wres.config.yaml.components.ThresholdOperator.LESS, ThresholdsGenerator.getThresholdOperator( second ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.LESS,
+                    ThresholdsGenerator.getThresholdOperator( second ) );
 
         ThresholdsConfig third = new ThresholdsConfig( null,
                                                        null,
                                                        null,
                                                        ThresholdOperator.GREATER_THAN_OR_EQUAL_TO );
-        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL, ThresholdsGenerator.getThresholdOperator( third ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
+                    ThresholdsGenerator.getThresholdOperator( third ) );
 
         ThresholdsConfig fourth = new ThresholdsConfig( null,
                                                         null,
                                                         null,
                                                         ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
-        assertSame( wres.config.yaml.components.ThresholdOperator.LESS_EQUAL, ThresholdsGenerator.getThresholdOperator( fourth ) );
+        assertSame( wres.config.yaml.components.ThresholdOperator.LESS_EQUAL,
+                    ThresholdsGenerator.getThresholdOperator( fourth ) );
 
         //Test exception cases
         assertThrows( NullPointerException.class,
@@ -434,7 +442,7 @@ class ThresholdsGeneratorTest
      * @throws MetricConfigException if an unexpected exception is encountered
      */
 
-    @org.junit.jupiter.api.Test
+    @Test
     void testGetThresholdsFromConfigWithExternalThresholdsAndDimension()
     {
 
@@ -482,23 +490,18 @@ class ThresholdsGeneratorTest
                                    null );
 
         // Mock external thresholds
-        Map<MetricConstants, Set<ThresholdOuter>> mockExternal = new EnumMap<>( MetricConstants.class );
-        Set<ThresholdOuter> atomicExternal = new HashSet<>();
-        atomicExternal.add( ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
-                                               wres.config.yaml.components.ThresholdOperator.GREATER,
-                                               ThresholdOrientation.LEFT,
-                                               dimension ) );
-        mockExternal.put( MetricConstants.BIAS_FRACTION, atomicExternal );
+        ThresholdOuter external = ThresholdOuter.of( OneOrTwoDoubles.of( 0.3 ),
+                                                     wres.config.yaml.components.ThresholdOperator.GREATER,
+                                                     ThresholdOrientation.LEFT,
+                                                     dimension );
 
-        ThresholdsByMetric.Builder builder = new ThresholdsByMetric.Builder();
-        builder.addThresholds( mockExternal, wres.config.yaml.components.ThresholdType.VALUE );
-        builder.addThresholds( ThresholdSlicer.getOneOrTwoThresholds( ThresholdsGenerator.getThresholdsFromConfig(
-                mockedConfig ) ) );
-
-        ThresholdsByMetric actualByMetric = builder.build();
+        Set<ThresholdOuter> thresholdsFromConfig =
+                new HashSet<>( ThresholdsGenerator.getThresholdsFromConfig( mockedConfig ) );
+        thresholdsFromConfig.add( external );
+        Set<MetricConstants> metricConstants = MetricConstantsFactory.getMetricsFromConfig( mockedConfig );
 
         Map<MetricConstants, SortedSet<OneOrTwoThresholds>> actual =
-                ThresholdSlicer.getOneOrTwoThresholds( actualByMetric );
+                ThresholdSlicer.getOneOrTwoThresholds( metricConstants, thresholdsFromConfig );
 
         // Derive expected thresholds
         Map<MetricConstants, Set<OneOrTwoThresholds>> expected = new EnumMap<>( MetricConstants.class );
@@ -527,7 +530,9 @@ class ThresholdsGeneratorTest
 
     /**
      * Tests a method with private scope in {@link MetricConstantsFactory} using thresholds with a
-     * {@link wres.config.yaml.components.ThresholdOperator#BETWEEN} condition.
+     * {@link wres.config.yaml.components.ThresholdOperator#BETWEEN} condition. TODO: if it's important to test this
+     * implementation detail, then it should probably be exposed, else tested indirectly.
+     *
      * @throws MetricConfigException if an unexpected exception is encountered
      * @throws SecurityException if the reflection fails via a security manager
      * @throws NoSuchMethodException if a matching method is not found
@@ -537,7 +542,7 @@ class ThresholdsGeneratorTest
      *            underlying method is inaccessible.
      */
 
-    @org.junit.jupiter.api.Test
+    @Test
     void testGetThresholdsFromConfigWithBetweenCondition() throws NoSuchMethodException,
             IllegalAccessException, InvocationTargetException
     {
@@ -547,7 +552,7 @@ class ThresholdsGeneratorTest
                                                              String.class,
                                                              wres.config.yaml.components.ThresholdOperator.class,
                                                              ThresholdOrientation.class,
-                                                             boolean.class,
+                                                             ThresholdType.class,
                                                              MeasurementUnit.class );
         method.setAccessible( true );
 
@@ -557,7 +562,7 @@ class ThresholdsGeneratorTest
                                                                             TEST_THRESHOLDS,
                                                                             wres.config.yaml.components.ThresholdOperator.BETWEEN,
                                                                             ThresholdOrientation.LEFT,
-                                                                            true,
+                                                                            ThresholdType.PROBABILITY,
                                                                             null );
 
         Set<ThresholdOuter> expected = new HashSet<>();
@@ -575,7 +580,7 @@ class ThresholdsGeneratorTest
                                                                                  TEST_THRESHOLDS,
                                                                                  wres.config.yaml.components.ThresholdOperator.BETWEEN,
                                                                                  ThresholdOrientation.LEFT,
-                                                                                 false,
+                                                                                 ThresholdType.VALUE,
                                                                                  null );
 
         Set<ThresholdOuter> expectedValue = new HashSet<>();
@@ -595,7 +600,7 @@ class ThresholdsGeneratorTest
                                                                                  "0.1",
                                                                                  wres.config.yaml.components.ThresholdOperator.BETWEEN,
                                                                                  ThresholdOrientation.LEFT,
-                                                                                 false,
+                                                                                 ThresholdType.VALUE,
                                                                                  null ) );
         assertEquals( exception.getCause().getClass(), MetricConfigException.class );
     }

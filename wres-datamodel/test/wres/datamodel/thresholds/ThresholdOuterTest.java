@@ -34,11 +34,11 @@ final class ThresholdOuterTest
         // One threshold
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
         ThresholdOuter second = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                              .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                             .setDataType( ThresholdOrientation.LEFT )
+                                             .setOrientation( ThresholdOrientation.LEFT )
                                              .build();
 
         assertEquals( first.hashCode(), second.hashCode() );
@@ -47,12 +47,12 @@ final class ThresholdOuterTest
         ThresholdOuter third =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER_EQUAL )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter fourth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER_EQUAL )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( third.hashCode(), fourth.hashCode() );
@@ -62,13 +62,13 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER_EQUAL )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter sixth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER_EQUAL )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( fifth.hashCode(), sixth.hashCode() );
@@ -78,13 +78,13 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
                              .setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter eighth =
                 new Builder().setValues( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
                              .setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( seventh.hashCode(), eighth.hashCode() );
@@ -93,12 +93,12 @@ final class ThresholdOuterTest
         ThresholdOuter ninth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter tenth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( ninth.hashCode(), tenth.hashCode() );
@@ -108,13 +108,13 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.2 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter twelfth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.2 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( eleventh.hashCode(), twelfth.hashCode() );
@@ -123,7 +123,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.2 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "a label" )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
@@ -131,7 +131,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.1 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.2 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "a label" )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
@@ -150,11 +150,11 @@ final class ThresholdOuterTest
         // Same conditions
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setOperator( ThresholdOperator.GREATER )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
         ThresholdOuter second = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                              .setOperator( ThresholdOperator.GREATER )
-                                             .setDataType( ThresholdOrientation.LEFT )
+                                             .setOrientation( ThresholdOrientation.LEFT )
                                              .build();
 
         assertEquals( 0, first.compareTo( second ) );
@@ -162,7 +162,7 @@ final class ThresholdOuterTest
         // Different conditions
         ThresholdOuter third = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setOperator( ThresholdOperator.LESS )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
 
         assertNotEquals( 0, first.compareTo( third ) );
@@ -171,12 +171,12 @@ final class ThresholdOuterTest
         ThresholdOuter fourth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter fifth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, fourth.compareTo( fifth ) );
@@ -187,7 +187,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, fourth.compareTo( sixth ) );
@@ -197,7 +197,7 @@ final class ThresholdOuterTest
         ThresholdOuter seventh =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, fourth.compareTo( seventh ) );
@@ -209,7 +209,7 @@ final class ThresholdOuterTest
         ThresholdOuter eighth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, fifth.compareTo( eighth ) );
@@ -218,7 +218,7 @@ final class ThresholdOuterTest
         ThresholdOuter ninth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "A" )
                              .build();
 
@@ -229,7 +229,7 @@ final class ThresholdOuterTest
         ThresholdOuter tenth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "B" )
                              .build();
 
@@ -251,13 +251,13 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter twelfth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.9 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertTrue( twelfth.compareTo( eleventh ) > 0 && eleventh.compareTo( first ) > 0
@@ -267,12 +267,12 @@ final class ThresholdOuterTest
         ThresholdOuter thirteenth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter fourteenth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( 0, thirteenth.compareTo( fourteenth ) );
@@ -281,7 +281,7 @@ final class ThresholdOuterTest
         ThresholdOuter fifteenth =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, thirteenth.compareTo( fifteenth ) );
@@ -290,12 +290,12 @@ final class ThresholdOuterTest
         ThresholdOuter sixteenth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         ThresholdOuter seventeenth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertEquals( 0, sixteenth.compareTo( seventeenth ) );
@@ -304,7 +304,7 @@ final class ThresholdOuterTest
         ThresholdOuter eighteenth =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( 0, sixteenth.compareTo( eighteenth ) );
@@ -313,7 +313,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
 
@@ -321,7 +321,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
 
@@ -333,7 +333,7 @@ final class ThresholdOuterTest
         ThresholdOuter twentyFirst =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
 
@@ -344,7 +344,7 @@ final class ThresholdOuterTest
         ThresholdOuter twentySecond =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CFS" ) )
                              .build();
 
@@ -354,7 +354,7 @@ final class ThresholdOuterTest
         ThresholdOuter twentyThird =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.RIGHT )
+                             .setOrientation( ThresholdOrientation.RIGHT )
                              .setUnits( MeasurementUnit.of( "CFS" ) )
                              .build();
 
@@ -370,20 +370,20 @@ final class ThresholdOuterTest
     {
         ThresholdOuter left = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                            .setOperator( ThresholdOperator.GREATER )
-                                           .setDataType( ThresholdOrientation.LEFT )
+                                           .setOrientation( ThresholdOrientation.LEFT )
                                            .build();
         ThresholdOuter otherLeft = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .build();
         ThresholdOuter right = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setOperator( ThresholdOperator.GREATER )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
         ThresholdOuter full = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                            .setProbabilities( OneOrTwoDoubles.of( 0.1, 0.7 ) )
                                            .setOperator( ThresholdOperator.BETWEEN )
-                                           .setDataType( ThresholdOrientation.LEFT )
+                                           .setOrientation( ThresholdOrientation.LEFT )
                                            .setLabel( "A" )
                                            .build();
         //Equal
@@ -403,13 +403,13 @@ final class ThresholdOuterTest
         ThresholdOuter leftPlusLabel =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "A" )
                              .build();
         ThresholdOuter rightPlusLabel =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "A" )
                              .build();
         assertEquals( leftPlusLabel, rightPlusLabel );
@@ -420,7 +420,7 @@ final class ThresholdOuterTest
         ThresholdOuter fullDiffLower = new Builder().setValues( OneOrTwoDoubles.of( 0.05, 0.5 ) )
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1, 0.7 ) )
                                                     .setOperator( ThresholdOperator.BETWEEN )
-                                                    .setDataType( ThresholdOrientation.LEFT )
+                                                    .setOrientation( ThresholdOrientation.LEFT )
                                                     .setLabel( "A" )
                                                     .build();
         // Unequal lower probability
@@ -428,14 +428,14 @@ final class ThresholdOuterTest
                                                         .setProbabilities( OneOrTwoDoubles.of( 0.15,
                                                                                                0.7 ) )
                                                         .setOperator( ThresholdOperator.BETWEEN )
-                                                        .setDataType( ThresholdOrientation.LEFT )
+                                                        .setOrientation( ThresholdOrientation.LEFT )
                                                         .setLabel( "A" )
                                                         .build();
         // Unequal upper threshold
         ThresholdOuter fullDiffUpper = new Builder().setValues( OneOrTwoDoubles.of( 0.00, 0.55 ) )
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1, 0.7 ) )
                                                     .setOperator( ThresholdOperator.BETWEEN )
-                                                    .setDataType( ThresholdOrientation.LEFT )
+                                                    .setOrientation( ThresholdOrientation.LEFT )
                                                     .setLabel( "A" )
                                                     .build();
         // Unequal upper probability
@@ -443,14 +443,14 @@ final class ThresholdOuterTest
                                                         .setProbabilities( OneOrTwoDoubles.of( 0.1,
                                                                                                0.77 ) )
                                                         .setOperator( ThresholdOperator.BETWEEN )
-                                                        .setDataType( ThresholdOrientation.LEFT )
+                                                        .setOrientation( ThresholdOrientation.LEFT )
                                                         .setLabel( "A" )
                                                         .build();
         // Unequal condition
         ThresholdOuter fullDiffCondition = new Builder().setValues( OneOrTwoDoubles.of( 0.00 ) )
                                                         .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                         .setOperator( ThresholdOperator.GREATER )
-                                                        .setDataType( ThresholdOrientation.LEFT )
+                                                        .setOrientation( ThresholdOrientation.LEFT )
                                                         .setLabel( "A" )
                                                         .build();
 
@@ -458,7 +458,7 @@ final class ThresholdOuterTest
         ThresholdOuter fullDiffLabel = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.55 ) )
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.1, 0.7 ) )
                                                     .setOperator( ThresholdOperator.BETWEEN )
-                                                    .setDataType( ThresholdOrientation.LEFT )
+                                                    .setOrientation( ThresholdOrientation.LEFT )
                                                     .setLabel( "B" )
                                                     .build();
         assertNotEquals( full, fullDiffLower );
@@ -471,19 +471,19 @@ final class ThresholdOuterTest
         // Differences based on real vs. probability thresholds
         ThresholdOuter noProbs = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                               .setOperator( ThresholdOperator.GREATER )
-                                              .setDataType( ThresholdOrientation.LEFT )
+                                              .setOrientation( ThresholdOrientation.LEFT )
                                               .build();
         ThresholdOuter withProbs =
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
         assertNotEquals( noProbs, withProbs );
         assertNotEquals( withProbs, noProbs );
 
         ThresholdOuter bothRealNoProbs = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                       .setOperator( ThresholdOperator.BETWEEN )
-                                                      .setDataType( ThresholdOrientation.LEFT )
+                                                      .setOrientation( ThresholdOrientation.LEFT )
                                                       .setLabel( "A" )
                                                       .build();
 
@@ -491,7 +491,7 @@ final class ThresholdOuterTest
                                                         .setProbabilities( OneOrTwoDoubles.of( 0.1,
                                                                                                0.7 ) )
                                                         .setOperator( ThresholdOperator.BETWEEN )
-                                                        .setDataType( ThresholdOrientation.LEFT )
+                                                        .setOrientation( ThresholdOrientation.LEFT )
                                                         .setLabel( "A" )
                                                         .build();
 
@@ -501,7 +501,7 @@ final class ThresholdOuterTest
         ThresholdOuter withLabel =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                              .setOperator( ThresholdOperator.GREATER )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setLabel( "B" )
                              .build();
         assertNotEquals( noProbs, withProbs );
@@ -512,7 +512,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CFS" ) )
                              .build();
 
@@ -520,7 +520,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .setUnits( MeasurementUnit.of( "CMS" ) )
                              .build();
 
@@ -528,7 +528,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertNotEquals( cfs, cms );
@@ -540,7 +540,7 @@ final class ThresholdOuterTest
                 new Builder().setValues( OneOrTwoDoubles.of( 23.0, 57.0 ) )
                              .setProbabilities( OneOrTwoDoubles.of( 0.2, 0.8 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.RIGHT )
+                             .setOrientation( ThresholdOrientation.RIGHT )
                              .build();
         assertNotEquals( noUnits, noUnitsRightData );
 
@@ -556,7 +556,7 @@ final class ThresholdOuterTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .build();
 
@@ -585,7 +585,7 @@ final class ThresholdOuterTest
         // One value threshold, no label
         ThresholdOuter oneValPlusLabel = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                       .setOperator( ThresholdOperator.GREATER )
-                                                      .setDataType( ThresholdOrientation.LEFT )
+                                                      .setOrientation( ThresholdOrientation.LEFT )
                                                       .setUnits( MeasurementUnit.of( "CMS" ) )
                                                       .build();
 
@@ -595,7 +595,7 @@ final class ThresholdOuterTest
         ThresholdOuter oneValOneProb = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                     .setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                                     .setOperator( ThresholdOperator.GREATER )
-                                                    .setDataType( ThresholdOrientation.LEFT )
+                                                    .setOrientation( ThresholdOrientation.LEFT )
                                                     .build();
 
         assertEquals( "> 0.0 [Pr = 0.0]", oneValOneProb.toString() );
@@ -603,7 +603,7 @@ final class ThresholdOuterTest
         // One probability threshold
         ThresholdOuter oneProb = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                               .setOperator( ThresholdOperator.GREATER )
-                                              .setDataType( ThresholdOrientation.LEFT )
+                                              .setOrientation( ThresholdOrientation.LEFT )
                                               .build();
 
         assertEquals( "Pr > 0.0", oneProb.toString() );
@@ -612,7 +612,7 @@ final class ThresholdOuterTest
         ThresholdOuter twoProb = new Builder()
                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                 .setOperator( ThresholdOperator.BETWEEN )
-                .setDataType( ThresholdOrientation.LEFT )
+                .setOrientation( ThresholdOrientation.LEFT )
                 .build();
 
         assertEquals( "Pr >= 0.0 AND < 0.5", twoProb.toString() );
@@ -621,7 +621,7 @@ final class ThresholdOuterTest
         ThresholdOuter twoVal = new Builder()
                 .setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                 .setOperator( ThresholdOperator.BETWEEN )
-                .setDataType( ThresholdOrientation.LEFT )
+                .setOrientation( ThresholdOrientation.LEFT )
                 .build();
 
         assertEquals( ">= 0.0 AND < 0.5", twoVal.toString() );
@@ -630,7 +630,7 @@ final class ThresholdOuterTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
@@ -640,35 +640,35 @@ final class ThresholdOuterTest
         // Test additional conditions
         ThresholdOuter less = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                            .setOperator( ThresholdOperator.LESS )
-                                           .setDataType( ThresholdOrientation.LEFT )
+                                           .setOrientation( ThresholdOrientation.LEFT )
                                            .build();
 
         assertEquals( "Pr < 0.5", less.toString() );
 
         ThresholdOuter lessEqual = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                                 .setOperator( ThresholdOperator.LESS_EQUAL )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .build();
 
         assertEquals( "Pr <= 0.5", lessEqual.toString() );
 
         ThresholdOuter greaterEqual = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                                    .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                   .setDataType( ThresholdOrientation.LEFT )
+                                                   .setOrientation( ThresholdOrientation.LEFT )
                                                    .build();
 
         assertEquals( "Pr >= 0.5", greaterEqual.toString() );
 
         ThresholdOuter equal = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.5 ) )
                                             .setOperator( ThresholdOperator.EQUAL )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
 
         assertEquals( "Pr = 0.5", equal.toString() );
 
         ThresholdOuter greaterEqualNaN = new Builder().setValues( OneOrTwoDoubles.of( Double.NaN ) )
                                                       .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                      .setDataType( ThresholdOrientation.LEFT )
+                                                      .setOrientation( ThresholdOrientation.LEFT )
                                                       .setLabel( "FOO" )
                                                       .build();
 
@@ -676,7 +676,7 @@ final class ThresholdOuterTest
 
         ThresholdOuter betweenNaN = new Builder().setValues( OneOrTwoDoubles.of( Double.NaN, 1.0 ) )
                                                  .setOperator( ThresholdOperator.BETWEEN )
-                                                 .setDataType( ThresholdOrientation.LEFT )
+                                                 .setOrientation( ThresholdOrientation.LEFT )
                                                  .setLabel( "FOO" )
                                                  .build();
 
@@ -685,7 +685,7 @@ final class ThresholdOuterTest
         ThresholdOuter quantileBetweenNaN = new Builder().setValues( OneOrTwoDoubles.of( Double.NaN, 1.0 ) )
                                                          .setProbabilities( OneOrTwoDoubles.of( 0.1, 0.3 ) )
                                                          .setOperator( ThresholdOperator.BETWEEN )
-                                                         .setDataType( ThresholdOrientation.LEFT )
+                                                         .setOrientation( ThresholdOrientation.LEFT )
                                                          .setLabel( "FOO" )
                                                          .build();
 
@@ -694,7 +694,7 @@ final class ThresholdOuterTest
         ThresholdOuter quantileNaN = new Builder().setValues( OneOrTwoDoubles.of( Double.NaN ) )
                                                   .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                   .setOperator( ThresholdOperator.LESS )
-                                                  .setDataType( ThresholdOrientation.LEFT )
+                                                  .setOrientation( ThresholdOrientation.LEFT )
                                                   .setLabel( "FOO" )
                                                   .build();
 
@@ -711,7 +711,7 @@ final class ThresholdOuterTest
         // BETWEEN real values
         ThresholdOuter realVals = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                .setOperator( ThresholdOperator.BETWEEN )
-                                               .setDataType( ThresholdOrientation.LEFT )
+                                               .setOrientation( ThresholdOrientation.LEFT )
                                                .build();
 
         assertTrue( realVals.test( 0.25 ) );
@@ -721,7 +721,7 @@ final class ThresholdOuterTest
         // BETWEEN probabilities
         ThresholdOuter probs = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                             .setOperator( ThresholdOperator.BETWEEN )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
 
         assertTrue( probs.test( 0.25 ) );
@@ -731,7 +731,7 @@ final class ThresholdOuterTest
         // GREATER
         ThresholdOuter greater = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                               .setOperator( ThresholdOperator.GREATER )
-                                              .setDataType( ThresholdOrientation.LEFT )
+                                              .setOrientation( ThresholdOrientation.LEFT )
                                               .build();
 
         assertTrue( greater.test( 0.25 ) );
@@ -740,7 +740,7 @@ final class ThresholdOuterTest
         // LESS
         ThresholdOuter less = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                            .setOperator( ThresholdOperator.LESS )
-                                           .setDataType( ThresholdOrientation.LEFT )
+                                           .setOrientation( ThresholdOrientation.LEFT )
                                            .build();
 
         assertFalse( less.test( 0.25 ) );
@@ -749,7 +749,7 @@ final class ThresholdOuterTest
         // LESS_EQUAL
         ThresholdOuter lessEqual = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                 .setOperator( ThresholdOperator.LESS_EQUAL )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .build();
 
         assertFalse( lessEqual.test( 0.25 ) );
@@ -758,8 +758,8 @@ final class ThresholdOuterTest
         // GREATER_EQUAL
         ThresholdOuter greaterEqual = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                    .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                                   .setDataType( ThresholdOrientation.LEFT )
-                                                   .setDataType( ThresholdOrientation.LEFT )
+                                                   .setOrientation( ThresholdOrientation.LEFT )
+                                                   .setOrientation( ThresholdOrientation.LEFT )
                                                    .build();
 
         assertTrue( greaterEqual.test( -0.0 ) );
@@ -768,7 +768,7 @@ final class ThresholdOuterTest
         // EQUAL
         ThresholdOuter equal = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setOperator( ThresholdOperator.EQUAL )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
 
         assertTrue( equal.test( -0.0 ) );
@@ -786,7 +786,7 @@ final class ThresholdOuterTest
         // Finite threshold
         ThresholdOuter realVals = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                .setOperator( ThresholdOperator.BETWEEN )
-                                               .setDataType( ThresholdOrientation.LEFT )
+                                               .setOrientation( ThresholdOrientation.LEFT )
                                                .build();
 
         assertTrue( realVals.isFinite() );
@@ -795,7 +795,7 @@ final class ThresholdOuterTest
         ThresholdOuter infiniteLower =
                 new Builder().setValues( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY, 0.5 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertFalse( infiniteLower.isFinite() );
@@ -804,7 +804,7 @@ final class ThresholdOuterTest
         ThresholdOuter infiniteUpper =
                 new Builder().setValues( OneOrTwoDoubles.of( 0.0, Double.POSITIVE_INFINITY ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertFalse( infiniteUpper.isFinite() );
@@ -814,7 +814,7 @@ final class ThresholdOuterTest
                 new Builder().setProbabilities( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY,
                                                                     0.5 ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertFalse( infiniteLowerprob.isFinite() );
@@ -824,7 +824,7 @@ final class ThresholdOuterTest
                 new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0,
                                                                     Double.POSITIVE_INFINITY ) )
                              .setOperator( ThresholdOperator.BETWEEN )
-                             .setDataType( ThresholdOrientation.LEFT )
+                             .setOrientation( ThresholdOrientation.LEFT )
                              .build();
 
         assertFalse( infiniteUpperProb.isFinite() );
@@ -837,7 +837,7 @@ final class ThresholdOuterTest
         ThresholdOuter first = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                             .setProbabilities( OneOrTwoDoubles.of( 0.3 ) )
                                             .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                            .setDataType( ThresholdOrientation.LEFT )
+                                            .setOrientation( ThresholdOrientation.LEFT )
                                             .build();
 
         ThresholdOuter actual = new Builder( first.getThreshold() ).setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
@@ -846,7 +846,7 @@ final class ThresholdOuterTest
         ThresholdOuter expected = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                                .setProbabilities( OneOrTwoDoubles.of( 0.1 ) )
                                                .setOperator( ThresholdOperator.GREATER_EQUAL )
-                                               .setDataType( ThresholdOrientation.LEFT )
+                                               .setOrientation( ThresholdOrientation.LEFT )
                                                .build();
 
         assertEquals( expected, actual );
@@ -856,7 +856,7 @@ final class ThresholdOuterTest
     void testExceptionOnConstructionWithNullThresholds()
     {
         Builder builder = new Builder().setOperator( ThresholdOperator.GREATER )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "Specify one or more values" ) );
@@ -867,7 +867,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( -1.0 ) )
                                        .setOperator( ThresholdOperator.GREATER )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "out of bounds" ) );
@@ -878,7 +878,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 2.0 ) )
                                        .setOperator( ThresholdOperator.GREATER )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "out of bounds" ) );
@@ -889,7 +889,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 1.1 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "out of bounds" ) );
@@ -900,7 +900,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 1.0 ) )
                                        .setOperator( ThresholdOperator.GREATER )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class,
                                              builder::build );
@@ -912,7 +912,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "thresholds must be defined in pairs" ) );
@@ -923,7 +923,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "thresholds must be defined in pairs" ) );
@@ -934,7 +934,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setValues( OneOrTwoDoubles.of( 1.0, 0.0 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "must be greater than" ) );
@@ -945,7 +945,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 1.0, 0.0 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "must be greater than" ) );
@@ -956,7 +956,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0, 2.0 ) )
                                        .setOperator( ThresholdOperator.BETWEEN )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "out of bounds" ) );
@@ -967,7 +967,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 0.0 ) )
                                        .setOperator( ThresholdOperator.LESS )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e = assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "Cannot apply a threshold operator of '<'") );
@@ -978,7 +978,7 @@ final class ThresholdOuterTest
     {
         Builder builder = new Builder().setProbabilities( OneOrTwoDoubles.of( 1.0 ) )
                                        .setOperator( ThresholdOperator.GREATER )
-                                       .setDataType( ThresholdOrientation.LEFT );
+                                       .setOrientation( ThresholdOrientation.LEFT );
 
         ThresholdException e =assertThrows( ThresholdException.class, builder::build );
         assertTrue( e.getMessage().contains( "Cannot apply a threshold operator of '>'") );

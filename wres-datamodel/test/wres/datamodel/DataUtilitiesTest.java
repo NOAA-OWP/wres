@@ -241,7 +241,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .build();
 
@@ -258,7 +258,7 @@ final class DataUtilitiesTest
     {
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 23.0 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setUnits( MeasurementUnit.of( "ft3/s" ) )
                                                 .build();
 
@@ -272,7 +272,7 @@ final class DataUtilitiesTest
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.0, 0.5 ) )
                                                 .setProbabilities( OneOrTwoDoubles.of( 0.0, 0.7 ) )
                                                 .setOperator( ThresholdOperator.BETWEEN )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "CMS" ) )
                                                 .build();
@@ -294,7 +294,7 @@ final class DataUtilitiesTest
         // All components
         ThresholdOuter threshold = new Builder().setValues( OneOrTwoDoubles.of( 0.5 ) )
                                                 .setOperator( ThresholdOperator.GREATER )
-                                                .setDataType( ThresholdOrientation.LEFT )
+                                                .setOrientation( ThresholdOrientation.LEFT )
                                                 .setLabel( THRESHOLD_LABEL )
                                                 .setUnits( MeasurementUnit.of( "[ft_i]3/s" ) )
                                                 .build();

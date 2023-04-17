@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +21,6 @@ import org.junit.Test;
 import wres.config.xml.MetricConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
-import wres.config.generated.EnsembleAverageType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -31,6 +29,7 @@ import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
+import wres.config.xml.MetricConstantsFactory;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
@@ -44,10 +43,9 @@ import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticsStore;
+import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsByMetric;
-import wres.datamodel.thresholds.ThresholdsByMetricAndFeature;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.thresholds.ThresholdException;
 import wres.datamodel.time.TimeSeries;
@@ -58,10 +56,11 @@ import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * Tests the {@link EnsembleStatisticsProcessor}.
- * 
+ *
  * @author James Brown
  */
 public final class EnsembleStatisticsProcessorTest
@@ -99,7 +98,7 @@ public final class EnsembleStatisticsProcessorTest
         assertTrue( EnsembleStatisticsProcessor.getFilterForEnsemblePairs( ThresholdOuter.of( doubles,
                                                                                               condition,
                                                                                               ThresholdOrientation.RIGHT_MEAN ) )
-                                                      .test( pair ) );
+                                               .test( pair ) );
     }
 
     @Test
@@ -324,11 +323,11 @@ public final class EnsembleStatisticsProcessorTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( new Inputs( null, null, null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
-                                                                     0,
-                                                                     metrics,
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( thresholds,
+                                                               0,
+                                                               metrics,
+                                                               null,
+                                                               wres.config.generated.EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -507,11 +506,11 @@ public final class EnsembleStatisticsProcessorTest
     {
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( new ProjectConfig( null,
-                                                                                                             null,
-                                                                                                             null,
-                                                                                                             null,
-                                                                                                             null,
-                                                                                                             null ) );
+                                                                                                      null,
+                                                                                                      null,
+                                                                                                      null,
+                                                                                                      null,
+                                                                                                      null ) );
 
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> processor.apply( null ) );
@@ -521,24 +520,25 @@ public final class EnsembleStatisticsProcessorTest
 
     @Test
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
-            throws MetricParameterException, IOException
+            throws MetricParameterException
     {
         MetricsConfig metrics =
                 new MetricsConfig( null,
                                    0,
-                                   Arrays.asList( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
+                                   List.of( new MetricConfig( null, MetricConfigName.BRIER_SCORE ) ),
                                    null,
-                                   EnsembleAverageType.MEAN );
+                                   wres.config.generated.EnsembleAverageType.MEAN );
 
         ProjectConfig config = new ProjectConfig( null,
                                                   null,
-                                                  Arrays.asList( metrics ),
+                                                  List.of( metrics ),
                                                   null,
                                                   null,
                                                   null );
 
         MetricConfigException actual = assertThrows( MetricConfigException.class,
-                                                     () -> EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( config ) );
+                                                     () -> EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs(
+                                                             config ) );
 
         assertEquals( "Cannot configure 'BRIER SCORE' without thresholds to define the events: "
                       + "add one or more thresholds to the configuration for each instance of 'BRIER SCORE'.",
@@ -564,11 +564,11 @@ public final class EnsembleStatisticsProcessorTest
         ProjectConfig mockedConfig =
                 new ProjectConfig( null,
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
-                                                                     0,
-                                                                     metrics,
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( thresholds,
+                                                               0,
+                                                               metrics,
+                                                               null,
+                                                               wres.config.generated.EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -586,7 +586,7 @@ public final class EnsembleStatisticsProcessorTest
     }
 
     @Test
-    public void testApplyWithAllValidMetrics() throws IOException, MetricParameterException
+    public void testApplyWithAllValidMetrics() throws MetricParameterException
     {
         ProjectConfig config =
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetrics();
@@ -600,7 +600,6 @@ public final class EnsembleStatisticsProcessorTest
                       + SampleDataGroup.SINGLE_VALUED.getMetrics().size()
                       - 1,
                       processor.getMetrics()
-                               .getMetrics()
                                .size() );
     }
 
@@ -758,6 +757,7 @@ public final class EnsembleStatisticsProcessorTest
     {
         ProjectConfig config =
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithContingencyTableAndValueThresholds();
+
         StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> processor =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( config );
         StatisticsStore statistics = processor.apply( TestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
@@ -811,7 +811,8 @@ public final class EnsembleStatisticsProcessorTest
         OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.05 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
+                                                                                                         0.05 ),
                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                                                  ThresholdOrientation.LEFT ) );
 
@@ -821,7 +822,9 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( firstTable, expectedMetaFirst );
 
         DoubleScoreStatisticOuter actualFirst =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( first ) )
+                Slicer.filter( results, meta -> meta.getMetadata()
+                                                    .getThresholds()
+                                                    .equals( first ) )
                       .get( 0 );
 
         assertEquals( expectedFirst, actualFirst );
@@ -847,7 +850,8 @@ public final class EnsembleStatisticsProcessorTest
         OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                               wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                               ThresholdOrientation.LEFT ),
-                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.25 ),
+                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
+                                                                                                          0.25 ),
                                                                                                   wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                                                   ThresholdOrientation.LEFT ) );
 
@@ -919,7 +923,8 @@ public final class EnsembleStatisticsProcessorTest
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                               wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                               ThresholdOrientation.LEFT ),
-                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.75 ),
+                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
+                                                                                                          0.75 ),
                                                                                                   wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                                                   ThresholdOrientation.LEFT ) );
 
@@ -990,7 +995,8 @@ public final class EnsembleStatisticsProcessorTest
         OneOrTwoThresholds sixth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.95 ),
+                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
+                                                                                                         0.95 ),
                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                                                  ThresholdOrientation.LEFT ) );
 
@@ -1009,7 +1015,7 @@ public final class EnsembleStatisticsProcessorTest
 
     @Test
     public void testApplyWithValueThresholdsAndNoData()
-            throws IOException, MetricParameterException, InterruptedException
+            throws MetricParameterException, InterruptedException
     {
         ProjectConfig config =
                 TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndValueThresholds();
@@ -1054,11 +1060,11 @@ public final class EnsembleStatisticsProcessorTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( null,
-                                                                     0,
-                                                                     metrics,
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( null,
+                                                               0,
+                                                               metrics,
+                                                               null,
+                                                               wres.config.generated.EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -1115,11 +1121,11 @@ public final class EnsembleStatisticsProcessorTest
                                                                      null ),
                                                null ),
                                    null,
-                                   Arrays.asList( new MetricsConfig( thresholds,
-                                                                     0,
-                                                                     metrics,
-                                                                     null,
-                                                                     EnsembleAverageType.MEAN ) ),
+                                   List.of( new MetricsConfig( thresholds,
+                                                               0,
+                                                               metrics,
+                                                               null,
+                                                               wres.config.generated.EnsembleAverageType.MEAN ) ),
                                    null,
                                    null,
                                    null );
@@ -1155,16 +1161,20 @@ public final class EnsembleStatisticsProcessorTest
      */
 
     private static StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>
-            ofMetricProcessorForEnsemblePairs( ProjectConfig config )
+    ofMetricProcessorForEnsemblePairs( ProjectConfig config )
     {
-        ThresholdsByMetric thresholdsByMetric = ThresholdsGenerator.getThresholdsFromConfig( config );
-        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, ThresholdsByMetric> thresholds = Map.of( featureTuple, thresholdsByMetric );
-        ThresholdsByMetricAndFeature metrics = ThresholdsByMetricAndFeature.of( thresholds, 0 );
+        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
+        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
 
-        return new EnsembleStatisticsProcessor( metrics,
-                                                       ForkJoinPool.commonPool(),
-                                                       ForkJoinPool.commonPool() );
+        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple,thresholds );
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
+                                                                              thresholdsByFeature,
+                                                                              0,
+                                                                              EnsembleAverageType.MEAN );
+        return new EnsembleStatisticsProcessor( metricsAndThresholds,
+                                                ForkJoinPool.commonPool(),
+                                                ForkJoinPool.commonPool() );
     }
 
 }
