@@ -253,12 +253,6 @@ project(':wres-system')
     {
         implementation 'org.slf4j:slf4j-api:2.0.7'
 
-        implementation( 'com.google.guava:guava:31.1-jre' )
-        {
-            // Not used at runtime, bloat
-            exclude group: 'org.checkerframework', module: 'checker-qual'
-        }
-
         implementation 'org.apache.commons:commons-lang3:3.12.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
@@ -284,9 +278,6 @@ project(':wres-system')
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
-
-        // Update vulnerable snakeyaml that Liquibase uses
-        implementation group: 'org.yaml', name: 'snakeyaml', version: '1.33'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -417,9 +408,6 @@ project(':wres-io')
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.20'
         implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.20'
         implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20'
-
-        // Update vulnerable snakeyaml that Liquibase uses
-        implementation group: 'org.yaml', name: 'snakeyaml', version: '1.33'
 
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:2.7.0'
@@ -749,11 +737,6 @@ project(':wres-vis')
 
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.0'
-        implementation( 'com.google.guava:guava:31.1-jre' )
-        {
-            // Not used at runtime, bloat
-            exclude group: 'org.checkerframework', module: 'checker-qual'
-        }
 
         implementation 'org.slf4j:slf4j-api:2.0.7'
 
