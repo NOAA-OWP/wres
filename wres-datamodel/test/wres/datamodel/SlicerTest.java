@@ -1,11 +1,5 @@
 package wres.datamodel;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,7 +15,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.datamodel.Ensemble.Labels;
@@ -54,11 +54,11 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  *
  * @author James Brown
  */
-public final class SlicerTest
+class SlicerTest
 {
 
     @Test
-    public void testGetLeftSideSingleValued()
+    void testGetLeftSideSingleValued()
     {
         final List<Pair<Double, Double>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, 3.0 / 5.0 ) );
@@ -74,7 +74,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testGetRightSide()
+    void testGetRightSide()
     {
         final List<Pair<Double, Double>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, 3.0 / 5.0 ) );
@@ -90,14 +90,14 @@ public final class SlicerTest
     }
 
     @Test
-    public void testRound()
+    void testRound()
     {
         DoubleUnaryOperator rounder = Slicer.rounder( 1 );
         assertEquals( 2.0, rounder.applyAsDouble( 2.04 ), 0.001 );
     }
 
     @Test
-    public void testTransformEnsemblePairToDiscreteProbabilityPair()
+    void testTransformEnsemblePairToDiscreteProbabilityPair()
     {
         Pair<Double, Ensemble> a = Pair.of( 3.0, Ensemble.of( 1, 2, 3, 4, 5 ) );
         Pair<Double, Ensemble> b = Pair.of( 0.0, Ensemble.of( 1, 2, 2, 3, 3 ) );
@@ -121,7 +121,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testGetQuantileFromProbability()
+    void testGetQuantileFromProbability()
     {
         double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
         double[] sortedB = new double[] { -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50 };
@@ -156,7 +156,7 @@ public final class SlicerTest
      */
 
     @Test
-    public void testFilterByRight()
+    void testFilterByRight()
     {
         List<Pair<Double, Ensemble>> input = new ArrayList<>();
         input.add( Pair.of( 1.0, Ensemble.of( 1, 2, 3 ) ) );
@@ -176,14 +176,14 @@ public final class SlicerTest
         Map<Integer, List<Pair<Double, Ensemble>>> sliced = Slicer.filterByRightSize( input );
 
         //Check the results
-        assertEquals( "Expected three slices of data.", 3, sliced.size() );
-        assertEquals( "Expected the first slice to contain three pairs.", 3, sliced.get( 3 ).size() );
-        assertEquals( "Expected the second slice to contain five pairs.", 5, sliced.get( 5 ).size() );
-        assertEquals( "Expected the third slice to contain four pairs.", 4, sliced.get( 6 ).size() );
+        assertEquals( 3, sliced.size(), "Expected three slices of data." );
+        assertEquals( 3, sliced.get( 3 ).size(), "Expected the first slice to contain three pairs." );
+        assertEquals( 5, sliced.get( 5 ).size(), "Expected the second slice to contain five pairs." );
+        assertEquals( 4, sliced.get( 6 ).size(), "Expected the third slice to contain four pairs." );
     }
 
     @Test
-    public void testFilterByMetricComponent()
+    void testFilterByMetricComponent()
     {
         //Obtain input and slice
         List<DoubleScoreStatisticOuter> toSlice = new ArrayList<>();
@@ -253,7 +253,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterSingleValuedPairs()
+    void testFilterSingleValuedPairs()
     {
         List<Pair<Double, Double>> values = new ArrayList<>();
         values.add( Pair.of( 1.0, 2.0 / 5.0 ) );
@@ -312,7 +312,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testTransformEnsemblePairs()
+    void testTransformEnsemblePairs()
     {
         final List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3 ) ) );
@@ -356,7 +356,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterListOfMetricOutputs()
+    void testFilterListOfMetricOutputs()
     {
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
@@ -456,7 +456,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testDiscoverListOfMetricOutputs()
+    void testDiscoverListOfMetricOutputs()
     {
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
@@ -577,7 +577,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilter()
+    void testFilter()
     {
         Geometry geometry = Geometry.newBuilder()
                                     .setName( "feature" )
@@ -597,7 +597,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testConcatenate()
+    void testConcatenate()
     {
         assertEquals( VectorOfDoubles.of(), Slicer.concatenate() );
 
@@ -616,7 +616,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testSortStatisticsByTimeWindowAndThreshold()
+    void testSortStatisticsByTimeWindowAndThreshold()
     {
         // Populate a list of outputs
         PoolMetadata metadata = PoolMetadata.of();
@@ -701,7 +701,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterEnsemble()
+    void testFilterEnsemble()
     {
         double[] members = new double[] { 1, 2, 3, 4, 5 };
         Labels labels = Labels.of( "6", "7", "8", "9", "10" );
@@ -714,7 +714,7 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterEnsembleThrowsIllegalArgumentExceptionWhenLabelsAreMissing()
+    void testFilterEnsembleThrowsIllegalArgumentExceptionWhenLabelsAreMissing()
     {
         Ensemble ensemble = Ensemble.of( 1.0 );
         assertThrows( IllegalArgumentException.class,
@@ -722,14 +722,14 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterThrowsNullPointerExceptionWhenEnsembleIsNull()
+    void testFilterThrowsNullPointerExceptionWhenEnsembleIsNull()
     {
         assertThrows( NullPointerException.class,
                       () -> Slicer.filter( null, "aLabel" ) );
     }
 
     @Test
-    public void testFilterThrowsNullPointerExceptionWhenLabelsIsNull()
+    void testFilterThrowsNullPointerExceptionWhenLabelsIsNull()
     {
         Ensemble ensemble = Ensemble.of( 1.0 );
         assertThrows( NullPointerException.class,
@@ -737,14 +737,14 @@ public final class SlicerTest
     }
 
     @Test
-    public void testFilterListOfMetricOutputsWithNullListProducesNPE()
+    void testFilterListOfMetricOutputsWithNullListProducesNPE()
     {
         assertThrows( NullPointerException.class,
                       () -> Slicer.filter( null, ( Predicate<Statistic<?>> ) null ) );
     }
 
     @Test
-    public void testFilterListOfMetricOutputsWithNullPredicateProducesNPE()
+    void testFilterListOfMetricOutputsWithNullPredicateProducesNPE()
     {
         List<Statistic<?>> list = List.of();
         assertThrows( NullPointerException.class,
@@ -752,18 +752,26 @@ public final class SlicerTest
     }
 
     @Test
-    public void testDiscoverListOfMetricOutputsWithNullListProducesNPE()
+    void testDiscoverListOfMetricOutputsWithNullListProducesNPE()
     {
         assertThrows( NullPointerException.class,
                       () -> Slicer.discover( null, ( Function<Statistic<?>, ?> ) null ) );
     }
 
     @Test
-    public void testDiscoverListOfMetricOutputsWithNullFunctionProducesNPE()
+    void testDiscoverListOfMetricOutputsWithNullFunctionProducesNPE()
     {
         List<Statistic<?>> list = List.of();
         assertThrows( NullPointerException.class,
                       () -> Slicer.discover( list, ( Function<Statistic<?>, ?> ) null ) );
     }
+    
+    @Test
+    void testRounderProducesInputValueWhenInputIsNotFinite()
+    {
+        // See issue #115230
+        DoubleUnaryOperator slicer = Slicer.rounder( 5 );
 
+        assertEquals( Double.NaN, slicer.applyAsDouble( Double.NaN ) );
+    }
 }

@@ -816,6 +816,11 @@ public final class Slicer
     private static BiFunction<Double, Integer, Double> rounder()
     {
         return ( input, digits ) -> {
+            // #115230
+            if( !Double.isFinite( input ) )
+            {
+                return input;
+            }
             BigDecimal bd = new BigDecimal( Double.toString( input ) ); //Always use String constructor
             bd = bd.setScale( digits, RoundingMode.HALF_UP );
             return bd.doubleValue();
