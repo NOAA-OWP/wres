@@ -399,7 +399,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Create the blob path
             Path targetPath = this.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
-                                                                         this.getProjectConfig().getPair(),
+                                                                         this.getProjectConfig()
+                                                                             .getPair(),
                                                                          this.getDestinationConfig(),
                                                                          this.getScenarioNameForBlobOrNull( inputs ),
                                                                          nextWindow,
@@ -1396,7 +1397,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                           append,
                                                           secondThresholdIsEqual );
 
-                //Name discovered? return it
+                // Name discovered? return it
                 if ( Objects.nonNull( name ) )
                 {
                     return name;
@@ -1440,7 +1441,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // First threshold needs to be compared more selectively. First look for a label.
             if ( thresholdFromScore.first().hasLabel() && thresholdFromArchive.first().hasLabel() )
             {
-
                 // Label associated with event threshold is equal, and any decision threshold is equal
                 String thresholdWithValuesOne = thresholdFromArchive.first()
                                                                     .getLabel();

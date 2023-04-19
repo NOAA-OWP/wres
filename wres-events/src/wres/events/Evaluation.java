@@ -59,7 +59,7 @@ import wres.statistics.generated.Statistics;
  * <p>An evaluation is assigned a unique identifier on construction. This identifier is used to correlate messages that
  * belong to the same evaluation.
  *
- * <p> The lifecycle for an evaluation is composed of three parts:
+ * <p> The messaging lifecycle for an evaluation is composed of three parts:
  * <ol>
  * <li>Opening, which corresponds to 
  * {@link #of(wres.statistics.generated.Evaluation, BrokerConnectionFactory, String)} or an overloaded version;</li>
@@ -71,7 +71,7 @@ import wres.statistics.generated.Statistics;
  * future, it is envisaged that an "advanced" API will be exposed to external clients that can post evaluations and 
  * register consumers to consume all types of evaluation messages. This advanced API would provide developers of 
  * microservices an alternative route, alongside the RESTful API, to publish and subscribe to evaluations, adding more
- * advanced possibilities, such as asynchronous messaging and streaming. This API will probably leverage a 
+ * advanced possibilities, such as asynchronous messaging and streaming. Service discovery could involve a
  * request-response pattern, such as gRPC (www.grpc.io), in order to register an evaluation and obtain the evaluation 
  * identifier and connection details for brokered (i.e., non request-response) communication. Alternatively, the broker
  * could broadcast its existence to listening consumers.

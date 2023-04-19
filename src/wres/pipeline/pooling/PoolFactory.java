@@ -1,6 +1,8 @@
 package wres.pipeline.pooling;
 
+import java.time.Duration;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -428,6 +430,13 @@ public class PoolFactory
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( pairConfig.getSeason() );
 
+        // Get the time shifts
+        Duration leftTimeShift = this.getTimeShift( inputsConfig.getLeft() );
+        Duration rightTimeShift = this.getTimeShift( inputsConfig.getRight() );
+        Duration baselineTimeShift = this.getTimeShift( inputsConfig.getBaseline() );
+
+        Duration pairFrequency = this.getPairFrequency( pairConfig );
+
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
                 new PoolsGenerator.Builder<Double, Double>().setProject( project )
@@ -443,7 +452,11 @@ public class PoolFactory
                                                             .setLeftUpscaler( leftUpscaler )
                                                             .setRightUpscaler( rightUpscaler )
                                                             .setBaselineUpscaler( baselineUpscaler )
+                                                            .setLeftTimeShift( leftTimeShift )
+                                                            .setRightTimeShift( rightTimeShift )
+                                                            .setBaselineTimeShift( baselineTimeShift )
                                                             .setPairer( pairer )
+                                                            .setPairFrequency( pairFrequency )
                                                             .setCrossPairer( crossPairer )
                                                             .setClimateMapper( Double::doubleValue )
                                                             .setClimateAdmissibleValue( Double::isFinite )
@@ -542,6 +555,13 @@ public class PoolFactory
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( pairConfig.getSeason() );
         Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( pairConfig.getSeason() );
 
+        // Get the time shifts
+        Duration leftTimeShift = this.getTimeShift( inputsConfig.getLeft() );
+        Duration rightTimeShift = this.getTimeShift( inputsConfig.getRight() );
+        Duration baselineTimeShift = this.getTimeShift( inputsConfig.getBaseline() );
+
+        Duration pairFrequency = this.getPairFrequency( pairConfig );
+
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
                 new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
@@ -556,7 +576,11 @@ public class PoolFactory
                                                               .setLeftFilter( singleValuedFilter )
                                                               .setRightFilter( ensembleFilter )
                                                               .setBaselineFilter( ensembleFilter )
+                                                              .setLeftTimeShift( leftTimeShift )
+                                                              .setRightTimeShift( rightTimeShift )
+                                                              .setBaselineTimeShift( baselineTimeShift )
                                                               .setPairer( pairer )
+                                                              .setPairFrequency( pairFrequency )
                                                               .setCrossPairer( crossPairer )
                                                               .setClimateMapper( Double::doubleValue )
                                                               .setClimateAdmissibleValue( Double::isFinite )
@@ -1765,6 +1789,55 @@ public class PoolFactory
             GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, features );
             return FeatureGroup.of( geoGroup );
         }
+    }
+
+    /**
+     * @param dataSourceConfig the data source declaration
+     * @return the declared time shift or null if no time shift is declared
+     */
+    private Duration getTimeShift( final DataSourceConfig dataSourceConfig )
+    {
+        Duration timeShift = Duration.ZERO; // Benign time shift
+
+        if ( Objects.nonNull( dataSourceConfig )
+             && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
+        {
+            ChronoUnit chronoUnit = ChronoUnit.valueOf( dataSourceConfig.getTimeShift()
+                                                                        .getUnit()
+                                                                        .toString()
+                                                                        .toUpperCase() );
+            timeShift = Duration.of( dataSourceConfig.getTimeShift().getWidth(),
+                                     chronoUnit );
+        }
+
+        return timeShift;
+    }
+
+    /**
+     * Gets the frequency of the pairs, if declared.
+     *
+     * @param pairConfig the pair declaration
+     * @return the pair frequency or null
+     */
+
+    private Duration getPairFrequency( PairConfig pairConfig )
+    {
+        Duration frequency = null;
+
+        // Obtain from the declaration if available
+        if ( Objects.nonNull( pairConfig )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale() )
+             && Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
+        {
+            ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
+                                                            .getUnit()
+                                                            .value()
+                                                            .toUpperCase() );
+
+            frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
+        }
+
+        return frequency;
     }
 
     /**

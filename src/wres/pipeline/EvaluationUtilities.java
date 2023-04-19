@@ -1138,6 +1138,9 @@ class EvaluationUtilities
     {
         Project project = evaluationDetails.getProject();
 
+        // Separate metrics for a baseline?
+        boolean separateMetrics = EvaluationUtilities.hasSeparateMetricsForBaseline( project );
+
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getMetricsAndThresholds(),
                                                                executors.thresholdExecutor(),
@@ -1194,7 +1197,7 @@ class EvaluationUtilities
                                                                .setMonitor( evaluationDetails.getMonitor() )
                                                                .setTraceCountEstimator(
                                                                        SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
-                                                               .setProjectConfig( project.getProjectConfig() )
+                                                               .setSeparateMetricsForBaseline( separateMetrics )
                                                                .setPoolGroupTracker( groupPublicationTracker )
                                                                .build();
 
@@ -1225,6 +1228,9 @@ class EvaluationUtilities
                                                                                     PoolParameters poolParameters )
     {
         Project project = evaluationDetails.getProject();
+
+        // Separate metrics for a baseline?
+        boolean separateMetrics = EvaluationUtilities.hasSeparateMetricsForBaseline( project );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getMetricsAndThresholds(),
@@ -1282,7 +1288,7 @@ class EvaluationUtilities
                                                                  .setEvaluation( evaluationDetails.getEvaluation() )
                                                                  .setMonitor( evaluationDetails.getMonitor() )
                                                                  .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
-                                                                 .setProjectConfig( project.getProjectConfig() )
+                                                                 .setSeparateMetricsForBaseline( separateMetrics )
                                                                  .setPoolGroupTracker( groupPublicationTracker )
                                                                  .build();
 
@@ -1385,6 +1391,19 @@ class EvaluationUtilities
         }
 
         return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @param project the project to inspect
+     * @return whether the evaluation should contain separate metrics for a baseline.
+     */
+
+    private static boolean hasSeparateMetricsForBaseline( Project project )
+    {
+        return project.hasBaseline() && project.getProjectConfig()
+                                               .getInputs()
+                                               .getBaseline()
+                                               .isSeparateMetrics();
     }
 
     /**

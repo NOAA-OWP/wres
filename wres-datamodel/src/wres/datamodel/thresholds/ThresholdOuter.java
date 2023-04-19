@@ -143,7 +143,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                             .setOrientation( dataType )
                             .setLabel( label )
                             .setUnits( units )
-                            .setThresholdType( ThresholdType.VALUE )
                             .build();
     }
 
@@ -208,24 +207,6 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
                                                          ThresholdOrientation dataType )
     {
         return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
-    }
-
-    /**
-     * Returns {@link ThresholdOuter} from the specified input.
-     *
-     * @param probabilities the probabilities
-     * @param condition the threshold condition
-     * @param dataType the data to which the threshold applies
-     * @param units the optional units for the threshold values
-     * @return a threshold
-     */
-
-    public static ThresholdOuter ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                                         wres.config.yaml.components.ThresholdOperator condition,
-                                                         ThresholdOrientation dataType,
-                                                         MeasurementUnit units )
-    {
-        return ThresholdOuter.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
     }
 
     /**
