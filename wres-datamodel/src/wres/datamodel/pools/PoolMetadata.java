@@ -9,6 +9,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
+
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -635,14 +637,15 @@ public class PoolMetadata implements Comparable<PoolMetadata>
         {
             wres.statistics.generated.Threshold event = this.getPool()
                                                             .getEventThreshold();
-            ThresholdOuter eventOuter = new ThresholdOuter.Builder( event ).build();
+
+            ThresholdOuter eventOuter = ThresholdOuter.of( event );
             ThresholdOuter decisionOuter = null;
 
             if ( this.getPool().hasDecisionThreshold() )
             {
                 wres.statistics.generated.Threshold decision = this.getPool()
                                                                    .getDecisionThreshold();
-                decisionOuter = ThresholdOuter.of( decision );
+                decisionOuter = ThresholdOuter.of( decision, ThresholdType.PROBABILITY_CLASSIFIER );
             }
 
             thresholdsInner = OneOrTwoThresholds.of( eventOuter, decisionOuter );

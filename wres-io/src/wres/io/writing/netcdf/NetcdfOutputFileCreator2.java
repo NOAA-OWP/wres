@@ -1,6 +1,7 @@
 package wres.io.writing.netcdf;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -75,7 +76,7 @@ class NetcdfOutputFileCreator2
                           ZonedDateTime analysisTime,
                           Collection<MetricVariable> metricVariables )
     {
-        if ( targetPath.toFile().exists() )
+        if ( Files.exists( targetPath ) )
         {
             throw new IllegalStateException( "Cannot write to "
                                              + targetPath
@@ -85,46 +86,51 @@ class NetcdfOutputFileCreator2
         LOGGER.debug( "About to create a new file at {}. Variables count={}",
                       targetPath,
                       metricVariables.size() );
-        NetcdfFileWriter writer =
+        try( NetcdfFileWriter writer =
                 NetcdfOutputFileCreator2.initializeBlob( projectDeclaration,
                                                          targetPath,
                                                          featureGroups,
                                                          window,
                                                          analysisTime,
-                                                         metricVariables );
-        ArrayInt.D1 duration = new ArrayInt.D1( 1,false );
-        duration.set( 0, ( int ) window.getLatestLeadDuration().toMinutes() );
-
-        try
+                                                         metricVariables ) )
         {
-            writer.write( "time", duration );
-            writer.flush();
-        }
-        catch ( InvalidRangeException | IOException e )
-        {
-            throw new WriteException( "The lead time could not be written to "
-                                      + targetPath, e );
-        }
+            ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
+            duration.set( 0, ( int ) window.getLatestLeadDuration().toMinutes() );
 
-        ArrayInt.D1 analysisMinutes = new ArrayInt.D1( 1, false );
-        analysisMinutes.set( 0, ( int ) Duration.between( Instant.ofEpochSecond( 0 ),
-                                                          analysisTime.toInstant() )
-                                                .toMinutes() );
+            try
+            {
+                writer.write( "time", duration );
+                writer.flush();
+            }
+            catch ( InvalidRangeException | IOException e )
+            {
+                throw new WriteException( "The lead time could not be written to "
+                                          + targetPath, e );
+            }
 
-        try
-        {
-            writer.write( "analysis_time", analysisMinutes );
-            writer.flush();
-        }
-        catch ( InvalidRangeException | IOException e )
-        {
-            throw new WriteException( "The analysis time could not be written to "
-                                      + targetPath, e );
-        }
+            ArrayInt.D1 analysisMinutes = new ArrayInt.D1( 1, false );
+            analysisMinutes.set( 0, ( int ) Duration.between( Instant.ofEpochSecond( 0 ),
+                                                              analysisTime.toInstant() )
+                                                    .toMinutes() );
 
-        return writer.getNetcdfFile().getLocation();
+            try
+            {
+                writer.write( "analysis_time", analysisMinutes );
+                writer.flush();
+            }
+            catch ( InvalidRangeException | IOException e )
+            {
+                throw new WriteException( "The analysis time could not be written to "
+                                          + targetPath, e );
+            }
+
+            return writer.getNetcdfFile().getLocation();
+        }
+        catch ( IOException e )
+        {
+            throw new WriteException( "While writing a NetCDF blob to " + targetPath, e );
+        }
     }
-
 
     /**
      * Create and set up dimensions of the Netcdf files for a given project.

@@ -14,7 +14,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -41,9 +40,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolProcessor.class );
-
-    /** The project declaration. */
-    private final ProjectConfig projectConfig;
 
     /** The evaluation. */
     private final Evaluation evaluation;
@@ -72,6 +68,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** A group publication tracker. */
     private final PoolGroupTracker poolGroupTracker;
 
+    /** Are separate metrics required for the baseline? */
+    private final boolean separateMetrics;
+
     /** The pool supplier. */
     private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
 
@@ -84,9 +83,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      */
     public static class Builder<L, R>
     {
-        /** The project declaration. */
-        private ProjectConfig projectConfig;
-
         /** The evaluation. */
         private Evaluation evaluation;
 
@@ -114,15 +110,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         /** Group publication tracker. */
         private PoolGroupTracker poolGroupTracker;
 
-        /**
-         * @param projectConfig the projectConfig to set
-         * @return this builder
-         */
-        public Builder<L, R> setProjectConfig( ProjectConfig projectConfig )
-        {
-            this.projectConfig = projectConfig;
-            return this;
-        }
+        /** Are separate metrics required for the baseline? */
+        private boolean separateMetrics;
 
         /**
          * @param evaluation the evaluation to set
@@ -215,6 +204,16 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         /**
+         * @param separateMetrics whether separate metrics are required for the baseline
+         * @return this builder
+         */
+        public Builder<L, R> setSeparateMetricsForBaseline( boolean separateMetrics )
+        {
+            this.separateMetrics = separateMetrics;
+            return this;
+        }
+
+        /**
          * @return an instance of a pool processor
          */
 
@@ -257,7 +256,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         // Compute the statistics
         List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
-                                                                             this.projectConfig,
                                                                              this.traceCountEstimator )
                                                .apply( pool );
 
@@ -399,14 +397,12 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * contains one blob of statistics for each metrics declaration.
      *
      * @param processors the metric processors
-     * @param projectConfig the project declaration
      * @param traceCountEstimator a function that estimates trace count, in order to help with monitoring
      * @return a function that consumes a pool and produces one blob of statistics for each processor
      */
 
     private Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>>
     getStatisticsProcessingTask( List<StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>>> processors,
-                                 ProjectConfig projectConfig,
                                  ToIntFunction<Pool<TimeSeries<Pair<L, R>>>> traceCountEstimator )
     {
         return pool -> {
@@ -430,7 +426,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             // One blob of statistics for each processor, one processor for each metrics declaration
             for ( StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
             {
-                StatisticsStore nextStatistics = this.getStatistics( projectConfig, processor, pool );
+                StatisticsStore nextStatistics = this.getStatistics( processor, pool );
                 returnMe.add( nextStatistics );
 
                 int baselineTraceCount = 0;
@@ -448,15 +444,21 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     }
 
     /**
+     * @return whether separate metrics are required for the baseline
+     */
+    private boolean hasSeparateMetricsForBaseline()
+    {
+        return this.separateMetrics;
+    }
+
+    /**
      * Returns the statistics from a processor and pool.
-     * @param projectConfig the project declaration
      * @param processor the metrics processor
      * @param pool the pool
      * @return the statistics
      */
 
-    private StatisticsStore getStatistics( ProjectConfig projectConfig,
-                                           StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>> processor,
+    private StatisticsStore getStatistics( StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>> processor,
                                            Pool<TimeSeries<Pair<L, R>>> pool )
     {
         StatisticsStore statistics = processor.apply( pool );
@@ -466,9 +468,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         {
             Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
 
-            if ( projectConfig.getInputs()
-                              .getBaseline()
-                              .isSeparateMetrics() )
+            if ( this.hasSeparateMetricsForBaseline() )
             {
                 LOGGER.debug( "Computing separate statistics for the baseline pairs associated with pool {}.",
                               baseline.getMetadata() );
@@ -490,7 +490,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     private PoolProcessor( Builder<L, R> builder )
     {
-        this.projectConfig = builder.projectConfig;
         this.pairsWriter = builder.pairsWriter;
         this.basePairsWriter = builder.basePairsWriter;
         this.evaluation = builder.evaluation;
@@ -500,8 +499,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.metricProcessors = List.copyOf( builder.metricProcessors ); // Validates nullity
         this.traceCountEstimator = builder.traceCountEstimator;
         this.poolGroupTracker = builder.poolGroupTracker;
+        this.separateMetrics = builder.separateMetrics;
 
-        Objects.requireNonNull( this.projectConfig );
         Objects.requireNonNull( this.evaluation );
         Objects.requireNonNull( this.monitor );
         Objects.requireNonNull( this.poolSupplier );

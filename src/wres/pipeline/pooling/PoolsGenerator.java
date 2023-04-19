@@ -1,7 +1,6 @@
 package wres.pipeline.pooling;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.datamodel.Climatology;
@@ -52,7 +50,7 @@ import wres.io.retrieval.RetrieverFactory;
 
 /**
  * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -102,6 +100,18 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /** A function that filters baseline-ish time-series. */
     private final Predicate<TimeSeries<R>> baselineFilter;
+
+    /** The time shift for left-ish valid times. */
+    private final Duration leftTimeShift;
+
+    /** The time shift for right-ish valid times. */
+    private final Duration rightTimeShift;
+
+    /** The time shift for baseline-ish valid times. */
+    private final Duration baselineTimeShift;
+
+    /** The pair frequency. */
+    private final Duration pairFrequency;
 
     /** A mapper to map between left-ish climate values and double values. TODO: propagate left-ish data for 
      * climatology, rather than transforming it upfront. */
@@ -166,6 +176,18 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
         /** A function that filters baseline-ish time-series. */
         private Predicate<TimeSeries<R>> baselineFilter = in -> true;
+
+        /** The time offset to apply to the left-ish valid times. */
+        private Duration leftTimeShift = Duration.ZERO;
+
+        /** The time offset to apply to the right-ish valid times. */
+        private Duration rightTimeShift = Duration.ZERO;
+
+        /** The time offset to apply to the baseline-ish valid times. */
+        private Duration baselineTimeShift = Duration.ZERO;
+
+        /** The pair frequency. */
+        private Duration pairFrequency = null;
 
         /** A mapper to map between left-ish climate values and double values. */
         private ToDoubleFunction<L> climateMapper;
@@ -345,6 +367,59 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         }
 
         /**
+         * @param leftTimeShift the time shift for left-ish valid times
+         * @return the builder
+         */
+        Builder<L, R> setLeftTimeShift( Duration leftTimeShift )
+        {
+            if ( Objects.nonNull( leftTimeShift ) )
+            {
+                this.leftTimeShift = leftTimeShift;
+            }
+
+            return this;
+        }
+
+        /**
+         * @param rightTimeShift the time shift for right-ish valid times
+         * @return the builder
+         */
+        Builder<L, R> setRightTimeShift( Duration rightTimeShift )
+        {
+            if ( Objects.nonNull( rightTimeShift ) )
+            {
+                this.rightTimeShift = rightTimeShift;
+            }
+
+            return this;
+        }
+
+        /**
+         * @param baselineTimeShift the time shift for baseline-ish valid times
+         * @return the builder
+         */
+        Builder<L, R> setBaselineTimeShift( Duration baselineTimeShift )
+        {
+            if ( Objects.nonNull( baselineTimeShift ) )
+            {
+                this.baselineTimeShift = baselineTimeShift;
+            }
+
+            return this;
+        }
+
+        /**
+         * @param pairFrequency the pair frequency
+         * @return the builder
+         */
+        Builder<L, R> setPairFrequency( Duration pairFrequency )
+        {
+            this.pairFrequency = pairFrequency;
+
+            return this;
+        }
+
+        /**
          * @param climateMapper the climateMapper to set
          * @return the builder
          */
@@ -368,7 +443,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
         /**
          * Builds an instance.
-         * 
+         *
          * @return an instance
          */
 
@@ -379,69 +454,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Hidden constructor.
-     * 
-     * @param builder a builder
-     * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
-     */
-
-    private PoolsGenerator( Builder<L, R> builder )
-    {
-        // Set then validate
-        this.project = builder.project;
-        this.retrieverFactory = builder.retrieverFactory;
-        this.poolRequests = List.copyOf( builder.poolRequests );
-        this.baselineGenerator = builder.baselineGenerator;
-        this.pairer = builder.pairer;
-        this.leftUpscaler = builder.leftUpscaler;
-        this.rightUpscaler = builder.rightUpscaler;
-        this.baselineUpscaler = builder.baselineUpscaler;
-        this.climateAdmissibleValue = builder.climateAdmissibleValue;
-        this.leftTransformer = builder.leftTransformer;
-        this.rightTransformer = builder.rightTransformer;
-        this.baselineTransformer = builder.baselineTransformer;
-        this.leftFilter = builder.leftFilter;
-        this.rightFilter = builder.rightFilter;
-        this.baselineFilter = builder.baselineFilter;
-        this.climateMapper = builder.climateMapper;
-        this.crossPairer = builder.crossPairer;
-
-        String messageStart = "Cannot build the pool generator: ";
-
-        Objects.requireNonNull( this.project, messageStart + "the project is missing." );
-        Objects.requireNonNull( this.retrieverFactory, messageStart + "the retriever factory is missing." );
-
-        Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
-        Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
-        Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
-        Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is missing." );
-        Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
-        Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
-        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
-        Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
-        Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
-        Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
-
-        // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
-        if ( this.getPoolRequests().isEmpty() )
-        {
-            throw new IllegalArgumentException( messageStart + "cannot create pools with zero pool requests. Add one "
-                                                + "or more pool requests and try again." );
-        }
-
-        // A baseline generator should be supplied if there is a baseline to generate, otherwise not
-        if ( Objects.nonNull( this.baselineGenerator ) != this.project.hasGeneratedBaseline() )
-        {
-            throw new IllegalArgumentException( messageStart
-                                                + " a baseline generator should be supplied when required, "
-                                                + "otherwise it should not be supplied." );
-        }
-    }
-
-    /**
      * Produces a collection of pools.
-     * 
+     *
      * @return a collection of pools
      * @throws NullPointerException if any input is null
      * @throws PoolCreationException if the pools cannot be created for any other reason
@@ -455,31 +469,30 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
         ProjectConfig projectConfig = this.getProject()
                                           .getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
         Inputs inputsConfig = projectConfig.getInputs();
 
-        // Create the common builder
-        PoolSupplier.Builder<L, R> builder = new PoolSupplier.Builder<>();
-        builder.setLeftUpscaler( this.getLeftUpscaler() )
-               .setRightUpscaler( this.getRightUpscaler() )
-               .setBaselineUpscaler( this.getBaselineUpscaler() )
-               .setPairer( this.getPairer() )
-               .setCrossPairer( this.getCrossPairer() )
-               .setProjectDeclaration( projectConfig )
-               .setLeftTransformer( this.getLeftTransformer() )
-               .setRightTransformer( this.getRightTransformer() )
-               .setBaselineTransformer( this.getBaselineTransformer() )
-               .setLeftFilter( this.getLeftFilter() )
-               .setRightFilter( this.getRightFilter() )
-               .setBaselineFilter( this.getBaselineFilter() );
-
-        // Obtain the desired time scale and set it
         TimeScaleOuter desiredTimeScale = this.getProject()
                                               .getDesiredTimeScale();
-        builder.setDesiredTimeScale( desiredTimeScale );
 
-        // Set the frequency associated with the pairs, if declared
-        this.setFrequency( pairConfig, builder );
+        // Create the common builder
+        PoolSupplier.Builder<L, R> builder =
+                new PoolSupplier.Builder<L, R>()
+                        .setLeftUpscaler( this.getLeftUpscaler() )
+                        .setRightUpscaler( this.getRightUpscaler() )
+                        .setBaselineUpscaler( this.getBaselineUpscaler() )
+                        .setPairer( this.getPairer() )
+                        .setCrossPairer( this.getCrossPairer() )
+                        .setLeftTimeShift( this.getLeftTimeShift() )
+                        .setRightTimeShift( this.getRightTimeShift() )
+                        .setBaselineTimeShift( this.getBaselineTimeShift() )
+                        .setLeftTransformer( this.getLeftTransformer() )
+                        .setRightTransformer( this.getRightTransformer() )
+                        .setBaselineTransformer( this.getBaselineTransformer() )
+                        .setLeftFilter( this.getLeftFilter() )
+                        .setRightFilter( this.getRightFilter() )
+                        .setBaselineFilter( this.getBaselineFilter() )
+                        .setPairFrequency( this.getPairFrequency() )
+                        .setDesiredTimeScale( desiredTimeScale );
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
         // doing this for other sides of data in future, but left-ish data is the priority because this is very 
@@ -604,7 +617,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * ignores the lead duration bounds, which allows for transparent use by the caller against the original time 
      * windows. De-duplication only happens for datasets that are {@link DatasourceType#OBSERVATIONS} or 
      * {@link DatasourceType#SIMULATIONS}.
-     * 
+     *
      * @param poolRequests the pool requests
      * @param type the type of data
      * @return a left-ish retriever for each time-window
@@ -640,13 +653,14 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
             // Log any de-duplication that was achieved
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
-                              + "using the union of time windows across all pools, which is {}.",
-                              this.getPoolRequests().size(),
-                              LeftOrRightOrBaseline.LEFT,
-                              timeWindows.size(),
-                              1,
-                              unionWindow );
+                LOGGER.debug(
+                        "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
+                        + "using the union of time windows across all pools, which is {}.",
+                        this.getPoolRequests().size(),
+                        LeftOrRightOrBaseline.LEFT,
+                        timeWindows.size(),
+                        1,
+                        unionWindow );
             }
 
             return Collections.unmodifiableMap( returnMe );
@@ -664,7 +678,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the upscaler for left-ish data.
-     * 
+     *
      * @return the upscaler
      */
 
@@ -675,7 +689,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the upscaler for right-ish data.
-     * 
+     *
      * @return the upscaler
      */
 
@@ -686,7 +700,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the upscaler for baseline-ish data.
-     * 
+     *
      * @return the upscaler
      */
 
@@ -697,7 +711,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the pairer.
-     * 
+     *
      * @return the pairer
      */
 
@@ -708,7 +722,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the cross pairer.
-     * 
+     *
      * @return the cross pairer
      */
 
@@ -719,7 +733,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the project.
-     * 
+     *
      * @return the project
      */
 
@@ -783,8 +797,44 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
+     * @return the left time shift
+     */
+
+    private Duration getLeftTimeShift()
+    {
+        return this.leftTimeShift;
+    }
+
+    /**
+     * @return the right time shift
+     */
+
+    private Duration getRightTimeShift()
+    {
+        return this.rightTimeShift;
+    }
+
+    /**
+     * @return the baseline time shift
+     */
+
+    private Duration getBaselineTimeShift()
+    {
+        return this.baselineTimeShift;
+    }
+
+    /**
+     * @return the pair frequency
+     */
+
+    private Duration getPairFrequency()
+    {
+        return this.pairFrequency;
+    }
+
+    /**
      * Returns the retriever factory.
-     * 
+     *
      * @return the retriever factory
      */
 
@@ -795,7 +845,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the pool requests.
-     * 
+     *
      * @return the pool requests
      */
 
@@ -806,7 +856,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns a feature-specific baseline generator, if any.
-     * 
+     *
      * @return the baseline generator
      */
 
@@ -817,7 +867,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the admissible value guard for climatology.
-     * 
+     *
      * @return the admissible value guard for climatology
      */
 
@@ -828,7 +878,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Returns the mapper from left-ish climate values to double values.
-     * 
+     *
      * @return the climate mapper
      */
 
@@ -874,34 +924,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
-     * Sets the frequency of the pairs, if declared.
-     * 
-     * @param pairConfig the pair declaration
-     * @param builder the builder whose frequency should be set
-     */
-
-    private void setFrequency( PairConfig pairConfig,
-                               PoolSupplier.Builder<L, R> builder )
-    {
-        // Obtain from the declaration if available
-        if ( Objects.nonNull( pairConfig )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale() )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
-        {
-            ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
-                                                            .getUnit()
-                                                            .value()
-                                                            .toUpperCase() );
-
-            Duration frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
-
-            builder.setFrequencyOfPairs( frequency );
-        }
-    }
-
-    /**
      * Returns a climatological data supply at the desired time scale.
-     * 
+     *
      * @param climatologySupplier the raw data supplier
      * @param upscaler the upscaler
      * @param desiredTimeScale the desired time scale
@@ -911,11 +935,11 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      */
 
     private Supplier<Stream<TimeSeries<L>>>
-            getClimatologyAtDesiredTimeScale( Supplier<Stream<TimeSeries<L>>> climatologySupplier,
-                                              TimeSeriesUpscaler<L> upscaler,
-                                              TimeScaleOuter desiredTimeScale,
-                                              UnaryOperator<TimeSeries<L>> transformer,
-                                              Predicate<L> admissibleValue )
+    getClimatologyAtDesiredTimeScale( Supplier<Stream<TimeSeries<L>>> climatologySupplier,
+                                      TimeSeriesUpscaler<L> upscaler,
+                                      TimeScaleOuter desiredTimeScale,
+                                      UnaryOperator<TimeSeries<L>> transformer,
+                                      Predicate<L> admissibleValue )
     {
         // Defer rescaling until retrieval time
         return () -> {
@@ -1002,7 +1026,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     /**
      * Verifies that one or more event values was produced when upscaling the climatology, given one or more event 
      * values prior to upscaling, and throws an exception if upscaling failed to produce any values.
-     * 
+     *
      * @param upscaled the upscaled time-series to check for events
      * @param unscaled the unscaled time-series to check for events
      * @param desiredTimeScale the desired time scale
@@ -1052,7 +1076,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * Creates the climatological data as needed.
-     * 
+     *
      * @param climatology the time-series supplier for the climatological data
      * @param climatologyMapper the mapper to transform the climatology from left-ish data to double values
      * @return the climatological data or null if no climatology is defined
@@ -1088,4 +1112,68 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         };
     }
 
+    /**
+     * Hidden constructor.
+     *
+     * @param builder a builder
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
+     */
+
+    private PoolsGenerator( Builder<L, R> builder )
+    {
+        // Set then validate
+        this.project = builder.project;
+        this.retrieverFactory = builder.retrieverFactory;
+        this.poolRequests = List.copyOf( builder.poolRequests );
+        this.baselineGenerator = builder.baselineGenerator;
+        this.pairer = builder.pairer;
+        this.leftUpscaler = builder.leftUpscaler;
+        this.rightUpscaler = builder.rightUpscaler;
+        this.baselineUpscaler = builder.baselineUpscaler;
+        this.climateAdmissibleValue = builder.climateAdmissibleValue;
+        this.leftTransformer = builder.leftTransformer;
+        this.rightTransformer = builder.rightTransformer;
+        this.baselineTransformer = builder.baselineTransformer;
+        this.leftFilter = builder.leftFilter;
+        this.rightFilter = builder.rightFilter;
+        this.baselineFilter = builder.baselineFilter;
+        this.climateMapper = builder.climateMapper;
+        this.crossPairer = builder.crossPairer;
+        this.leftTimeShift = builder.leftTimeShift;
+        this.rightTimeShift = builder.rightTimeShift;
+        this.baselineTimeShift = builder.baselineTimeShift;
+        this.pairFrequency = builder.pairFrequency;
+
+        String messageStart = "Cannot build the pool generator: ";
+
+        Objects.requireNonNull( this.project, messageStart + "the project is missing." );
+        Objects.requireNonNull( this.retrieverFactory, messageStart + "the retriever factory is missing." );
+
+        Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
+        Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
+        Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
+        Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is missing." );
+        Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
+        Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
+        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
+        Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
+        Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
+        Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
+
+        // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
+        if ( this.getPoolRequests().isEmpty() )
+        {
+            throw new IllegalArgumentException( messageStart + "cannot create pools with zero pool requests. Add one "
+                                                + "or more pool requests and try again." );
+        }
+
+        // A baseline generator should be supplied if there is a baseline to generate, otherwise not
+        if ( Objects.nonNull( this.baselineGenerator ) != this.project.hasGeneratedBaseline() )
+        {
+            throw new IllegalArgumentException( messageStart
+                                                + " a baseline generator should be supplied when required, "
+                                                + "otherwise it should not be supplied." );
+        }
+    }
 }

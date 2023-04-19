@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -54,6 +55,7 @@ import wres.metrics.MetricParameterException;
 import wres.metrics.categorical.ContingencyTable;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -784,7 +786,7 @@ public final class EnsembleStatisticsProcessorTest
 
         PoolMetadata expectedSampleMeta = PoolMetadata.of( evaluation, pool );
 
-        //Obtain the results
+        // Obtain the results
         List<DoubleScoreStatisticOuter> results =
                 Slicer.filter( statistics.getDoubleScoreStatistics(),
                                meta -> meta.getMetricName().equals( MetricConstants.CONTINGENCY_TABLE )
@@ -808,13 +810,18 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 91 ) )
                                     .build();
 
+        Threshold classifierOne = Threshold.newBuilder()
+                                           .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                           .setOperator( Threshold.ThresholdOperator.GREATER )
+                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .build();
+        ThresholdOuter classifierOneWrapped =
+                ThresholdOuter.of( classifierOne, wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
         OneOrTwoThresholds first = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
-                                                                                                         0.05 ),
-                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                 ThresholdOrientation.LEFT ) );
+                                                          classifierOneWrapped );
 
         PoolMetadata expectedMetaFirst = PoolMetadata.of( expectedSampleMeta, first );
 
@@ -847,13 +854,19 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 106 ) )
                                     .build();
 
+        Threshold classifierTwo = Threshold.newBuilder()
+                                           .setLeftThresholdProbability( DoubleValue.of( 0.25 ) )
+                                           .setOperator( Threshold.ThresholdOperator.GREATER )
+                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .build();
+        ThresholdOuter classifierTwoWrapped =
+                ThresholdOuter.of( classifierTwo, wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
+
         OneOrTwoThresholds second = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                               wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                               ThresholdOrientation.LEFT ),
-                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
-                                                                                                          0.25 ),
-                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                  ThresholdOrientation.LEFT ) );
+                                                           classifierTwoWrapped );
 
         PoolMetadata expectedMetaSecond = PoolMetadata.of( expectedSampleMeta, second );
 
@@ -884,12 +897,19 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 108 ) )
                                     .build();
 
+        Threshold classifierThree = Threshold.newBuilder()
+                                             .setLeftThresholdProbability( DoubleValue.of( 0.5 ) )
+                                             .setOperator( Threshold.ThresholdOperator.GREATER )
+                                             .setDataType( Threshold.ThresholdDataType.LEFT )
+                                             .build();
+        ThresholdOuter classifierThreeWrapped =
+                ThresholdOuter.of( classifierThree, wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
+
         OneOrTwoThresholds third = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.5 ),
-                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                 ThresholdOrientation.LEFT ) );
+                                                          classifierThreeWrapped );
 
         PoolMetadata expectedMetaThird = PoolMetadata.of( expectedSampleMeta, third );
 
@@ -920,13 +940,19 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 109 ) )
                                     .build();
 
+        Threshold classifierFour = Threshold.newBuilder()
+                                            .setLeftThresholdProbability( DoubleValue.of( 0.75 ) )
+                                            .setOperator( Threshold.ThresholdOperator.GREATER )
+                                            .setDataType( Threshold.ThresholdDataType.LEFT )
+                                            .build();
+        ThresholdOuter classifierFourWrapped =
+                ThresholdOuter.of( classifierFour, wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
+
         OneOrTwoThresholds fourth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                               wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                               ThresholdOrientation.LEFT ),
-                                                           ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
-                                                                                                          0.75 ),
-                                                                                                  wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                  ThresholdOrientation.LEFT ) );
+                                                           classifierFourWrapped );
 
         PoolMetadata expectedMetaFourth = PoolMetadata.of( expectedSampleMeta, fourth );
 
@@ -956,12 +982,20 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 112 ) )
                                     .build();
 
+        Threshold classifierFive = Threshold.newBuilder()
+                                            .setLeftThresholdProbability( DoubleValue.of( 0.9 ) )
+                                            .setOperator( Threshold.ThresholdOperator.GREATER )
+                                            .setDataType( Threshold.ThresholdDataType.LEFT )
+                                            .build();
+        ThresholdOuter classifierFiveWrapped =
+                ThresholdOuter.of( classifierFive
+                        , wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
+
         OneOrTwoThresholds fifth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of( 0.9 ),
-                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                 ThresholdOrientation.LEFT ) );
+                                                          classifierFiveWrapped );
 
         PoolMetadata expectedMetaFifth = PoolMetadata.of( expectedSampleMeta, fifth );
 
@@ -992,13 +1026,18 @@ public final class EnsembleStatisticsProcessorTest
                                                                                  .setValue( 113 ) )
                                     .build();
 
+        Threshold classifierSix = Threshold.newBuilder()
+                                           .setLeftThresholdProbability( DoubleValue.of( 0.95 ) )
+                                           .setOperator( Threshold.ThresholdOperator.GREATER )
+                                           .setDataType( Threshold.ThresholdDataType.LEFT )
+                                           .build();
+        ThresholdOuter classifierSixWrapped =
+                ThresholdOuter.of( classifierSix, wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
+
         OneOrTwoThresholds sixth = OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 50.0 ),
                                                                              wres.config.yaml.components.ThresholdOperator.GREATER,
                                                                              ThresholdOrientation.LEFT ),
-                                                          ThresholdOuter.ofProbabilityThreshold( OneOrTwoDoubles.of(
-                                                                                                         0.95 ),
-                                                                                                 wres.config.yaml.components.ThresholdOperator.GREATER,
-                                                                                                 ThresholdOrientation.LEFT ) );
+                                                          classifierSixWrapped );
 
         PoolMetadata expectedMetaSixth = PoolMetadata.of( expectedSampleMeta, sixth );
 
@@ -1167,7 +1206,7 @@ public final class EnsembleStatisticsProcessorTest
         Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
 
         FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple,thresholds );
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
         MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
                                                                               thresholdsByFeature,
                                                                               0,

@@ -934,6 +934,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
                 // Add the threshold to the metadata
                 ThresholdOuter composedInner = ThresholdSlicer.compose( Set.copyOf( innerThresholds.values() ) );
+
                 OneOrTwoThresholds composed = OneOrTwoThresholds.of( composedOuter, composedInner );
                 UnaryOperator<PoolMetadata> metaTransformer =
                         untransformed -> PoolMetadata.of( untransformed, composed );
@@ -1021,14 +1022,16 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         Objects.requireNonNull( ensembleAverageType );
 
-        return switch ( ensembleAverageType )
-                {
-                    case MEDIAN -> ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
-                    // Default to mean for all other cases
-                    default -> ensemble -> Arrays.stream( ensemble.getMembers() )
-                                                 .average()
-                                                 .orElse( MissingValues.DOUBLE );
-                };
+        if( ensembleAverageType == EnsembleAverageType.MEDIAN )
+        {
+            return ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
+        }
+        else
+        {
+            return ensemble -> Arrays.stream( ensemble.getMembers() )
+                                     .average()
+                                     .orElse( MissingValues.DOUBLE );
+        }
     }
 
     /**
