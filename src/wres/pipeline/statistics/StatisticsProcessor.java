@@ -44,7 +44,7 @@ import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
 
 /**
- * Creates statistics by computing {@link Metric} with {@link Pool} and stores them in a {@link StatisticsStore}.
+ * Creates statistics by applying a {@link Metric} to a {@link Pool} and stores them in a {@link StatisticsStore}.
  *
  * @author James Brown
  */

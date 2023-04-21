@@ -113,9 +113,13 @@ public class FeatureTuple implements Comparable<FeatureTuple>
         String separator = "-";
 
         // Other sides likely to use similar naming convention, such as coordinate pairs, which may be negative, '-'
-        if ( Objects.nonNull( this.getLeft().getName() ) && this.getLeft().getName().contains( "-" ) )
+        if ( Objects.nonNull( this.getLeft()
+                                  .getName() )
+             && this.getLeft()
+                    .getName()
+                    .contains( "-" ) )
         {
-            separator = ", ";
+            separator = "_";
         }
 
         StringJoiner joiner = new StringJoiner( separator );

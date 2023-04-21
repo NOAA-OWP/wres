@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -18,8 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -28,6 +32,7 @@ import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdType;
@@ -210,7 +215,7 @@ public class DeclarationUtilities
         Function<Metric, MetricParameters> classifier = metric ->
         {
             MetricParametersBuilder builder = MetricParametersBuilder.builder();
-            if( Objects.nonNull( metric.parameters() ) )
+            if ( Objects.nonNull( metric.parameters() ) )
             {
                 MetricParameters existing = metric.parameters();
                 builder.valueThresholds( existing.valueThresholds() );
@@ -232,6 +237,59 @@ public class DeclarationUtilities
                       grouped );
 
         return Set.copyOf( grouped.values() );
+    }
+
+    /**
+     * Adds the URIs to the supplied declaration, correlating the source names with any existing sources, as needed.
+     * Correlation of sources is based on the presence of the path element of a declared source URI within a supplied
+     * URI.
+     *
+     * @param evaluation the existing evaluation declaration, required
+     * @param leftSources the left sources, required
+     * @param rightSources the right sources, required
+     * @param baselineSources the baseline sources, optional
+     * @throws IllegalArgumentException if baseline sources are provided and there is no baseline dataset
+     * @throws NullPointerException if any required input is null
+     * @return the adjusted declaration
+     */
+
+    public static EvaluationDeclaration addDataSources( EvaluationDeclaration evaluation,
+                                                        List<URI> leftSources,
+                                                        List<URI> rightSources,
+                                                        List<URI> baselineSources )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( leftSources );
+        Objects.requireNonNull( rightSources );
+        Objects.requireNonNull( baselineSources );
+        Objects.requireNonNull( evaluation.left() );
+        Objects.requireNonNull( evaluation.right() );
+
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( evaluation );
+        DatasetBuilder leftBuilder = DatasetBuilder.builder( evaluation.left() );
+        DatasetBuilder rightBuilder = DatasetBuilder.builder( evaluation.right() );
+
+        // Adjust the left and right datasets
+        DeclarationUtilities.addDataSources( leftBuilder, leftSources, DatasetOrientation.LEFT );
+        DeclarationUtilities.addDataSources( rightBuilder, rightSources, DatasetOrientation.RIGHT );
+
+        // Add them
+        builder.left( leftBuilder.build() )
+               .right( rightBuilder.build() );
+
+        // Baseline?
+        if ( DeclarationUtilities.hasBaseline( evaluation ) )
+        {
+            BaselineDataset baseline = evaluation.baseline();
+            DatasetBuilder baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+            DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
+            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
+                                                                     .dataset( baselineBuilder.build() )
+                                                                     .build();
+            builder.baseline( adjustedBaseline );
+        }
+
+        return builder.build();
     }
 
     /**
@@ -602,6 +660,90 @@ public class DeclarationUtilities
                      + "source as needed.", sourceInterfaceAuthority, sourceUriAuthority, uri );
 
         return null;
+    }
+
+    /**
+     * Adds the data sources to the supplied builder, correlating them with existing sources as needed.
+     * @param builder the builder
+     * @param sources the sources
+     * @param orientation the orientation to help with logging
+     */
+
+    private static void addDataSources( DatasetBuilder builder, List<URI> sources, DatasetOrientation orientation )
+    {
+        if ( Objects.isNull( sources ) || sources.isEmpty() )
+        {
+            LOGGER.debug( "No {} data sources were added to the evaluation.", orientation );
+            return;
+        }
+
+        // No existing sources to correlate
+        if ( builder.sources()
+                    .isEmpty() )
+        {
+            List<Source> newSources = sources.stream()
+                                             .map( uri -> SourceBuilder.builder()
+                                                                       .uri( uri )
+                                                                       .build() )
+                                             .toList();
+            builder.sources( newSources );
+
+            LOGGER.debug( "Added the following new sources to an empty list of existing sources for the {} data: {}.",
+                          orientation,
+                          newSources );
+
+            return;
+        }
+
+        // Existing sources to correlate
+        // A URI is correlated if the path element of a supplied URI ends with the path element of a declared URI
+        // If there are no correlations, the declared URIs are simply added
+        List<Source> existingSources = builder.sources();
+        List<Source> newSources = new ArrayList<>();
+        for ( URI uri : sources )
+        {
+            // Any correlated sources?
+            List<Source> matched = existingSources.stream()
+                                                  .filter( next -> uri.getPath()
+                                                                      .endsWith( next.uri()
+                                                                                     .getPath() ) )
+                                                  .toList();
+
+            // If there are matches, add them, preserving the existing source information
+            if ( !matched.isEmpty() )
+            {
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "While inspecting URI {}, discovered the following correlated URIs among the "
+                                  + "existing sources: {}", uri, matched );
+                }
+
+                matched.forEach( next -> newSources.add( SourceBuilder.builder( next )
+                                                                      .uri( uri )
+                                                                      .build() ) );
+            }
+            // Otherwise add the new source with the unmatched URI
+            else
+            {
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "While inspecting URI {}, discovered no correlated URIs among the existing "
+                                  + "sources.", uri );
+                }
+
+                Source newSource = SourceBuilder.builder()
+                                                .uri( uri )
+                                                .build();
+                newSources.add( newSource );
+            }
+        }
+        LOGGER.debug( "Added the following new sources for the {} data: {}. The new sources were added to the "
+                      + "following existing sources {}.",
+                      orientation,
+                      newSources,
+                      existingSources );
+
+        builder.sources( newSources );
     }
 
     /**

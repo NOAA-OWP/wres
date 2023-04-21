@@ -409,8 +409,9 @@ public final class DataUtilities
         }
 
         // Derive a sanitized name
-        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ),
-                                             StandardCharsets.UTF_8 );
+        String rawString = joinElements.toString();
+        String sanitized = rawString.replace( " ", "_" );
+        String safeName = URLEncoder.encode( sanitized, StandardCharsets.UTF_8 );
 
         return Paths.get( outputDirectory.toUri() )
                     .resolve( safeName );
@@ -585,7 +586,6 @@ public final class DataUtilities
         if ( pool.getIsBaselinePool() && !evaluation.getBaselineDataName().isBlank() )
         {
             name = evaluation.getBaselineDataName();
-
         }
 
         // Use the right name, which may be blank
