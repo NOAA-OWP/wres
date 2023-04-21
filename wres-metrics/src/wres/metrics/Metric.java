@@ -8,17 +8,15 @@ import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;
 
 /**
- * <p>
- * Abstract base class for an immutable metric. The metric calculation is implemented in {@link #apply(Pool)}.
- * The metric may operate on paired or unpaired inputs, and inputs that comprise one or more individual datasets. The
- * structure of the input and output is prescribed by a particular subclass.
- * </p>
- * <p>
- * A metric cannot conduct any pre-processing of the input, such as rescaling, changing measurement units, conditioning,
+ * <p>A metric, which is a function that consumes a pool of data and produces a statistic (one or more). The metric
+ * calculation is implemented in {@link #apply(Pool)}. The metric may operate on paired or unpaired inputs, and inputs
+ * that comprise one or more individual datasets. The structure of the input and output is prescribed by a particular
+ * subclass.
+ *
+ * <p>A metric cannot conduct any pre-processing of the input, such as rescaling, changing measurement units, conditioning,
  * or removing missing values. However, for metrics that rely on ordered input, such as a time index or spatial 
  * coordinate, missing values may be used to retain (relative) position. Such metrics are uniquely aware of missing 
  * values. In other cases, missing values should be removed upfront.
- * </p>
  * 
  * @author James Brown
  */

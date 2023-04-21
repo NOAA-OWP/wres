@@ -1,6 +1,8 @@
 package wres.config.yaml;
 
+import java.net.URI;
 import java.time.Duration;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,7 @@ import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
@@ -267,8 +270,7 @@ class DeclarationUtilitiesTest
                               .build();
         List<wres.config.yaml.components.Source> baselineSources =
                 List.of( SourceBuilder.builder()
-                                      .sourceInterface(
-                                              SourceInterface.WRDS_AHPS )
+                                      .sourceInterface( SourceInterface.WRDS_AHPS )
                                       .build() );
         BaselineDataset baseline =
                 BaselineDatasetBuilder.builder()
@@ -401,6 +403,107 @@ class DeclarationUtilitiesTest
 
         Set<Set<Metric>> expected = Set.of( Set.of( three, four ), Set.of( one, two ) );
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void addDataSources()
+    {
+        // Create some sources with parameters to correlate
+        Source leftOne = SourceBuilder.builder()
+                                      .uri( URI.create( "foo.csv" ) )
+                                      .timeZoneOffset( ZoneOffset.ofHours( 3 ) )
+                                      .build();
+        List<wres.config.yaml.components.Source> leftSources = List.of( leftOne );
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( leftSources )
+                                     .build();
+        Source rightOne = SourceBuilder.builder()
+                                       .uri( URI.create( "bar.csv" ) )
+                                       .sourceInterface( SourceInterface.NWM_LONG_RANGE_CHANNEL_RT_CONUS )
+                                       .build();
+        List<wres.config.yaml.components.Source> rightSources = List.of( rightOne );
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( rightSources )
+                                      .build();
+        Source baselineOne = SourceBuilder.builder()
+                                          .uri( URI.create( "baz.csv" ) )
+                                          .missingValue( -999.0 )
+                                          .build();
+        List<wres.config.yaml.components.Source> baselineSources = List.of( baselineOne );
+        BaselineDataset baseline =
+                BaselineDatasetBuilder.builder()
+                                      .dataset( DatasetBuilder.builder()
+                                                              .sources( baselineSources )
+                                                              .build() )
+                                      .build();
+
+        EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                  .left( left )
+                                                                                  .right( right )
+                                                                                  .baseline( baseline )
+                                                                                  .build();
+
+        // Create some correlated and some uncorrelated URIs
+        URI leftCorrelated = URI.create( "foopath/foo.csv" );
+        URI leftUncorrelated = URI.create( "foopath/fooest.csv" );
+
+        URI rightCorrelated = URI.create( "barpath/bar.csv" );
+        URI rightUncorrelated = URI.create( "barpath/barest.csv" );
+
+        URI baselineCorrelated = URI.create( "bazpath/baz.csv" );
+        URI baselineUncorrelated = URI.create( "bazpath/bazest.csv" );
+
+        List<URI> newLeftSources = List.of( leftCorrelated, leftUncorrelated );
+        List<URI> newRightSources = List.of( rightCorrelated, rightUncorrelated );
+        List<URI> newBaselineSources = List.of( baselineCorrelated, baselineUncorrelated );
+
+        EvaluationDeclaration actual = DeclarationUtilities.addDataSources( evaluationDeclaration,
+                                                                            newLeftSources,
+                                                                            newRightSources,
+                                                                            newBaselineSources );
+
+        // Create the expectation
+        Source leftSourceExpectedOne = SourceBuilder.builder( leftOne )
+                                                    .uri( leftCorrelated )
+                                                    .build();
+        Source leftSourceExpectedTwo = SourceBuilder.builder()
+                                                    .uri( leftUncorrelated )
+                                                    .build();
+        Source rightSourceExpectedOne = SourceBuilder.builder( rightOne )
+                                                     .uri( rightCorrelated )
+                                                     .build();
+        Source rightSourceExpectedTwo = SourceBuilder.builder()
+                                                     .uri( rightUncorrelated )
+                                                     .build();
+        Source baselineSourceExpectedOne = SourceBuilder.builder( baselineOne )
+                                                        .uri( baselineCorrelated )
+                                                        .build();
+        Source baselineSourceExpectedTwo = SourceBuilder.builder()
+                                                        .uri( baselineUncorrelated )
+                                                        .build();
+        List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne, leftSourceExpectedTwo );
+        Dataset leftExpected = DatasetBuilder.builder()
+                                             .sources( leftSourcesExpected )
+                                             .build();
+        List<Source> rightSourcesExpected = List.of( rightSourceExpectedOne, rightSourceExpectedTwo );
+        Dataset rightExpected = DatasetBuilder.builder()
+                                              .sources( rightSourcesExpected )
+                                              .build();
+        List<Source> baselineSourcesExpected = List.of( baselineSourceExpectedOne, baselineSourceExpectedTwo );
+        Dataset baselineDatasetExpected = DatasetBuilder.builder()
+                                                        .sources( baselineSourcesExpected )
+                                                        .build();
+        BaselineDataset baselineExpected =
+                BaselineDatasetBuilder.builder()
+                                      .dataset( baselineDatasetExpected )
+                                      .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( leftExpected )
+                                                                     .right( rightExpected )
+                                                                     .baseline( baselineExpected )
+                                                                     .build();
         assertEquals( expected, actual );
     }
 }

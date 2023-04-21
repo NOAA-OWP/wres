@@ -1195,8 +1195,7 @@ class EvaluationUtilities
                                                                .setPoolSupplier( poolSupplier )
                                                                .setEvaluation( evaluationDetails.getEvaluation() )
                                                                .setMonitor( evaluationDetails.getMonitor() )
-                                                               .setTraceCountEstimator(
-                                                                       SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
+                                                               .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                                                                .setSeparateMetricsForBaseline( separateMetrics )
                                                                .setPoolGroupTracker( groupPublicationTracker )
                                                                .build();
