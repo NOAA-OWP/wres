@@ -1,4 +1,4 @@
-package wres.config;
+package wres.config.xml;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.xml.bind.Locatable;
 import org.xml.sax.Locator;
 
+import wres.config.MetricConstants;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Source;
@@ -68,19 +69,10 @@ import wres.config.generated.UnitAlias;
 import wres.config.generated.UnnamedFeature;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
-import wres.config.xml.MetricConfigException;
-import wres.config.xml.MetricConstantsFactory;
-import wres.config.xml.ProjectConfigPlus;
-import wres.config.xml.ProjectConfigs;
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.io.config.ConfigHelper;
-import wres.system.SystemSettings;
 
 /**
  * Helps validate project declarations at a higher level than parser, with
  * detailed messaging.
- *
- * TODO: formal interface for validation text rather than log messages
  */
 
 public class Validation
@@ -127,12 +119,12 @@ public class Validation
             + "latest=\"2019-01-01T00:00:00Z\" />) when using a web API as a "
             + "source for observations (see source near line {} and column {}";
 
+    /** Instantaneous duration is anything smaller than or equal to this. */
+    private static final Duration INSTANTANEOUS = Duration.ofSeconds( 60 );
 
-    private Validation()
-    {
-        // prevent construction.
-    }
-
+    /** The maximum length of a feature group name: 32 characters for each name in a feature tuple, plus two separator
+     * characters. */
+    private static final int MAXIMUM_FEATURE_GROUP_NAME_LENGTH = 98;
 
     /**
      * Quick validation of the project declaration, will return detailed
@@ -140,14 +132,17 @@ public class Validation
      * for now, i.e. return false even on minor xml problems. Does not return on
      * first issue, tries to inform the user of all issues before returning.
      *
-     * @param systemSettings The system settings to use.
+     * @param defaultPath The default path to use when reading files from relative paths.
      * @param projectConfigPlus the project declaration
      * @return true if no issues were detected, false otherwise
      */
 
-    public static boolean isProjectValid( SystemSettings systemSettings,
+    public static boolean isProjectValid( Path defaultPath,
                                           ProjectConfigPlus projectConfigPlus )
     {
+        Objects.requireNonNull( defaultPath );
+        Objects.requireNonNull( projectConfigPlus );
+
         // Assume valid until demonstrated otherwise
         boolean result = true;
 
@@ -216,7 +211,7 @@ public class Validation
                  && result;
 
         // Validate metrics section
-        result = Validation.isMetricsConfigValid( systemSettings,
+        result = Validation.isMetricsConfigValid( defaultPath,
                                                   projectConfigPlus )
                  && result;
 
@@ -382,7 +377,7 @@ public class Validation
         boolean valid = true;
 
         // If there are no ensemble forecasts, there should be no ensemble declaration
-        if ( !ConfigHelper.hasEnsembleForecasts( projectConfig )
+        if ( !ProjectConfigs.hasEnsembleForecasts( projectConfig )
              && projectConfig.getMetrics()
                              .stream()
                              .anyMatch( next -> Objects.nonNull( next.getEnsembleAverage() ) ) )
@@ -627,9 +622,10 @@ public class Validation
         PairConfig pair = projectConfig.getPair();
 
         // None of the data sources/sides contains forecasts...
-        if ( !ConfigHelper.isForecast( inputsConfig.getLeft() ) && !ConfigHelper.isForecast( inputsConfig.getRight() )
-             && ( !ConfigHelper.hasBaseline( projectConfig )
-                  || !ConfigHelper.isForecast( inputsConfig.getBaseline() ) ) )
+        if ( !ProjectConfigs.isForecast( inputsConfig.getLeft() )
+             && !ProjectConfigs.isForecast( inputsConfig.getRight() )
+             && ( !ProjectConfigs.hasBaseline( projectConfig )
+                  || !ProjectConfigs.isForecast( inputsConfig.getBaseline() ) ) )
         {
             // ...but there are constraints on lead hours, which is not allowed
             if ( Objects.nonNull( pair.getLeadHours() ) )
@@ -748,12 +744,12 @@ public class Validation
     /**
      * Validates the metrics portion of the project config.
      *
-     * @param projectConfigPlus the project declaration
+     * @param defaultPath the default path to use when reading declared files from relative paths
      * @return true if the output declaration is valid, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean isMetricsConfigValid( SystemSettings systemSettings,
+    private static boolean isMetricsConfigValid( Path defaultPath,
                                                  ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
@@ -765,7 +761,7 @@ public class Validation
         result = Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus ) && result;
 
         // Check that any external thresholds refer to readable files
-        return Validation.areAllPathsToThresholdsReadable( systemSettings, projectConfigPlus ) && result;
+        return Validation.areAllPathsToThresholdsReadable( defaultPath, projectConfigPlus ) && result;
     }
 
 
@@ -1434,12 +1430,12 @@ public class Validation
     /**
      * Validates the paths to external thresholds.
      *
-     * @param projectConfigPlus the project declaration
+     * @param defaultPath the default path to use when reading declared files from relative paths
      * @return true if all have readable files, false otherwise
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean areAllPathsToThresholdsReadable( SystemSettings systemSettings,
+    private static boolean areAllPathsToThresholdsReadable( Path defaultPath,
                                                             ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
@@ -1469,8 +1465,7 @@ public class Validation
                     {
                         if ( !thresholdData.isAbsolute() )
                         {
-                            destinationPath = systemSettings.getDataDirectory()
-                                                            .resolve( thresholdData.getPath() );
+                            destinationPath = defaultPath.resolve( thresholdData.getPath() );
                         }
                         else if ( thresholdData.getScheme().toLowerCase().startsWith( "http" ) )
                         {
@@ -1832,7 +1827,7 @@ public class Validation
                                          .filter( next -> Objects.nonNull( next.getName() )
                                                           && next.getName()
                                                                  .length()
-                                                             > wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH )
+                                                             > MAXIMUM_FEATURE_GROUP_NAME_LENGTH )
                                          .map( FeaturePool::getName )
                                          .collect( Collectors.toSet() );
 
@@ -1849,7 +1844,7 @@ public class Validation
                           projectConfigPlus.getOrigin(),
                           pairConfig.sourceLocation().getLineNumber(),
                           pairConfig.sourceLocation().getColumnNumber(),
-                          wres.datamodel.space.FeatureGroup.MAXIMUM_NAME_LENGTH,
+                          MAXIMUM_FEATURE_GROUP_NAME_LENGTH,
                           tooLongNames.size(),
                           tooLongNames );
         }
@@ -2478,7 +2473,7 @@ public class Validation
         {
             Duration period = ProjectConfigs.getDurationFromTimeScale( timeScaleConfig );
 
-            if ( TimeScaleOuter.INSTANTANEOUS_DURATION.compareTo( period ) >= 0 )
+            if ( Validation.isInstantaneous( period ) )
             {
                 result = false;
 
@@ -2850,11 +2845,11 @@ public class Validation
     {
         boolean returnMe = true;
 
-        TimeScaleOuter timeScale = TimeScaleOuter.of( inputConfig );
+        Duration period = ProjectConfigs.getDurationFromTimeScale( inputConfig );
 
         // If not instantaneous, the existing function must be a total or mean
-        if ( !timeScale.isInstantaneous() && !( inputConfig.getFunction() == TimeScaleFunction.MEAN
-                                                || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
+        if ( !Validation.isInstantaneous( period ) && !( inputConfig.getFunction() == TimeScaleFunction.MEAN
+                                                         || inputConfig.getFunction() == TimeScaleFunction.TOTAL ) )
         {
             returnMe = false;
 
@@ -2871,6 +2866,16 @@ public class Validation
         }
 
         return returnMe;
+    }
+
+    /**
+     * @param duration the duration to test
+     * @return true if the specified duration is "instantaneous", otherwise false
+     */
+
+    private static boolean isInstantaneous( Duration duration )
+    {
+        return INSTANTANEOUS.compareTo( duration ) >= 0;
     }
 
     /**
@@ -2920,11 +2925,9 @@ public class Validation
             return true;
         }
 
-        TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( desiredTimeScaleDeclaration );
-
         // Currently checks the period only. If/when an existing time scale can include month-days, then update this
         // validation to consider the month-days
-        if ( !desiredTimeScale.hasPeriod() )
+        if ( Objects.isNull( desiredTimeScaleDeclaration.getPeriod() ) )
         {
             LOGGER.debug( "The desired time scale does not have a declared period, so the period cannot be "
                           + "inconsistent with the period associated with any existing time scale." );
@@ -2933,18 +2936,18 @@ public class Validation
         }
 
         boolean returnMe = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( left,
-                                                                                          desiredTimeScale,
+                                                                                          desiredTimeScaleDeclaration,
                                                                                           LeftOrRightOrBaseline.LEFT,
                                                                                           projectConfigPlus );
 
         returnMe = Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( right,
-                                                                                  desiredTimeScale,
+                                                                                  desiredTimeScaleDeclaration,
                                                                                   LeftOrRightOrBaseline.RIGHT,
                                                                                   projectConfigPlus )
                    && returnMe;
 
         return Validation.isDesiredTimeScaleConsistentWithExistingTimeScales( baseline,
-                                                                              desiredTimeScale,
+                                                                              desiredTimeScaleDeclaration,
                                                                               LeftOrRightOrBaseline.BASELINE,
                                                                               projectConfigPlus )
                && returnMe;
@@ -2953,14 +2956,14 @@ public class Validation
     /**
      * Returns true if the desired time scale is consistent with the existing time scale.
      * @param existingConfig the existing time scale configuration
-     * @param desired the desired time scale
+     * @param desiredConfig the desired time scale configuration
      * @param lrb the data orientation
      * @param projectConfigPlus the project configuration
      * @return true if the time scales are consistent, false otherwise
      */
 
     private static boolean isDesiredTimeScaleConsistentWithExistingTimeScales( TimeScaleConfig existingConfig,
-                                                                               TimeScaleOuter desired,
+                                                                               TimeScaleConfig desiredConfig,
                                                                                LeftOrRightOrBaseline lrb,
                                                                                ProjectConfigPlus projectConfigPlus )
     {
@@ -2968,13 +2971,14 @@ public class Validation
 
         if ( Objects.nonNull( existingConfig ) )
         {
-            TimeScaleOuter existing = TimeScaleOuter.of( existingConfig );
+            Duration existing = ProjectConfigs.getDurationFromTimeScale( existingConfig );
 
-            if ( !existing.isInstantaneous() )
+            if ( !Validation.isInstantaneous( existing ) )
             {
+                Duration desired = ProjectConfigs.getDurationFromTimeScale( desiredConfig );
                 returnMe = Validation.isDesiredTimeScalePeriodConsistent( projectConfigPlus,
-                                                                          desired.getPeriod(),
-                                                                          existing.getPeriod(),
+                                                                          desired,
+                                                                          existing,
                                                                           existingConfig,
                                                                           lrb.toString() );
             }
@@ -4076,5 +4080,10 @@ public class Validation
                 return false;
 
         }
+    }
+
+    private Validation()
+    {
+        // prevent construction.
     }
 }

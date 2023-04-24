@@ -199,7 +199,7 @@ public class WresJob
         }
 
         //If the redis client was created, set it up for recovering/storing
-        //database information.  It might be possible to turn the below into 
+        //database information.  It might be possible to turn the below into
         //three calls of a generic static method.
         if ( REDISSON_CLIENT != null )
         {
@@ -413,8 +413,7 @@ public class WresJob
             {
                 String projectConfigFirstChars =
                         projectConfig.substring( 0, 1000 );
-                LOGGER.warn(
-                             "Received a project declaration of length {} starting with {}",
+                LOGGER.warn( "Received a project declaration of length {} starting with {}",
                              lengthOfProjectDeclaration,
                              projectConfigFirstChars );
                 return WresJob.badRequest( "The project declaration has "
@@ -426,8 +425,7 @@ public class WresJob
             }
             else if ( lengthOfProjectDeclaration < MINIMUM_PROJECT_DECLARATION_LENGTH )
             {
-                LOGGER.warn(
-                             "Received a project declaration of length {} (smaller than {}).",
+                LOGGER.warn( "Received a project declaration of length {} (smaller than {}).",
                              lengthOfProjectDeclaration,
                              MINIMUM_PROJECT_DECLARATION_LENGTH );
                 return WresJob.badRequest( "The project declaration has "
@@ -542,7 +540,7 @@ public class WresJob
 
         Job.job jobMessage;
 
-        // For comamnds EXECUTE, INGEST, VALIDATE...
+        // For commands EXECUTE, INGEST, VALIDATE...
         if ( usingDeclaration )
         {
             jobMessage = Job.job.newBuilder()

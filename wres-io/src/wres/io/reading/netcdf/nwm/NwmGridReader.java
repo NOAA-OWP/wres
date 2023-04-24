@@ -19,6 +19,7 @@ import ucar.nc2.NetcdfFiles;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.PairConfig;
+import wres.config.xml.ProjectConfigs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -26,7 +27,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.reading.netcdf.grid.GridRequest;
 import wres.io.reading.netcdf.grid.GridReader;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
@@ -185,7 +185,7 @@ public class NwmGridReader implements TimeSeriesReader
                                                dataSource.getVariable()
                                                          .getValue(),
                                                timeWindow,
-                                               ConfigHelper.isForecast( dataSourceConfig ),
+                                               ProjectConfigs.isForecast( dataSourceConfig ),
                                                timeScale );
 
         // Acquire the time-series

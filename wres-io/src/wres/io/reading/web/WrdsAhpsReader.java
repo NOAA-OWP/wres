@@ -39,6 +39,7 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DateCondition;
 import wres.config.generated.PairConfig;
 import wres.config.generated.UrlParameter;
+import wres.config.xml.ProjectConfigs;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
@@ -453,7 +454,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource.getContext() );
 
         // Forecast data?
-        boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
+        boolean isForecast = ProjectConfigs.isForecast( dataSource.getContext() );
 
         if ( ( isForecast && Objects.isNull( pairConfig.getIssuedDates() ) ) )
         {

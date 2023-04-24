@@ -415,7 +415,7 @@ public class WrdsThresholdReader
     {
         if ( Objects.isNull( maybeIncomplete.getScheme() ) )
         {
-            Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
+            Path dataDirectory = Path.of( System.getProperty( "user.dir" ) );
             return dataDirectory.toUri()
                                 .resolve( maybeIncomplete.getPath() );
 

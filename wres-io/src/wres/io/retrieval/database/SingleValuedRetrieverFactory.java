@@ -16,6 +16,7 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.ProjectConfigs;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -177,7 +178,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                       timeWindow );
         TimeSeriesRetriever.Builder<Double> builder;
 
-        boolean isConfiguredAsForecast = ConfigHelper.isForecast( dataSourceConfig );
+        boolean isConfiguredAsForecast = ProjectConfigs.isForecast( dataSourceConfig );
         String variableName = this.getProject()
                                   .getVariableName( lrb );
         TimeScaleOuter declaredExistingTimeScale =

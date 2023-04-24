@@ -1,9 +1,14 @@
 package wres.config.yaml;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
@@ -261,30 +266,74 @@ public class DeclarationFactory
                                                                                              .build();
 
     /**
-     * Deserializes a YAML string into a POJO and performs validation against the schema. Optionally performs
-     * interpolation of missing declaration, followed by validation of the interpolated declaration. Interpolation is
-     * performed with {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)} and validation is performed
-     * with {@link DeclarationValidator#validateAndNotify(EvaluationDeclaration)}.
+     * Deserializes a YAML string or path containing a YAML string into a POJO and performs validation against the
+     * schema. Optionally performs interpolation of missing declaration, followed by validation of the interpolated
+     * declaration. Interpolation is performed with
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, boolean)} and validation is performed with
+     * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}, both with notifications on.
      *
      * @see #from(String)
-     * @param yaml the yaml string
+     * @param yamlOrPath the YAML string or a path to a readable file that contains a YAML string
+     * @param fileSystem a file system to use when reading a path, optional
      * @param interpolateAndValidate is true to interpolate any missing declaration and then validate the declaration
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
+     * @throws FileNotFoundException if the input string is a path, but the path points to a missing file
      * @throws DeclarationSchemaException if the project declaration could not be validated against the schema
      * @throws DeclarationException if the declaration is invalid
-     * @throws NullPointerException if the yaml string is null
+     * @throws NullPointerException if the input string is null
      */
 
-    public static EvaluationDeclaration from( String yaml, boolean interpolateAndValidate ) throws IOException
+    public static EvaluationDeclaration from( String yamlOrPath,
+                                              FileSystem fileSystem,
+                                              boolean interpolateAndValidate ) throws IOException
     {
-        EvaluationDeclaration declaration = DeclarationFactory.from( yaml );
+        Objects.requireNonNull( yamlOrPath );
 
+        String declarationString = yamlOrPath;
+
+        // Use the default file system when none was supplied
+        if ( Objects.isNull( fileSystem ) )
+        {
+            fileSystem = FileSystems.getDefault();
+        }
+
+        // Does the path point to a readable file?
+        if ( DeclarationUtilities.isReadableFile( fileSystem, yamlOrPath ) )
+        {
+            Path path = fileSystem.getPath( yamlOrPath );
+            declarationString = Files.readString( path );
+            LOGGER.info( "Discovered a path to a declaration string: {}", path );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Discovered a declaration string to read:{}{}", System.lineSeparator(), declarationString );
+        }
+
+        EvaluationDeclaration declaration;
+        try
+        {
+            declaration = DeclarationFactory.from( declarationString );
+        }
+        catch ( DeclarationSchemaException s )
+        {
+            throw new DeclarationException( "Encountered an error when attempting to read a declaration string "
+                                            + "or a path to a file that contains a declaration string. If a path "
+                                            + "was supplied, please check that the path identifies a readable file "
+                                            + "that contains a declaration string. Otherwise, please fix the "
+                                            + "declaration string. The first line of the supplied string was: "
+                                            + DeclarationUtilities.getFirstLine( yamlOrPath ), s );
+        }
+
+        // Interpolate and validate?
         if ( interpolateAndValidate )
         {
-            declaration = DeclarationInterpolator.interpolate( declaration );
-            DeclarationValidator.validateAndNotify( declaration );
+            // Interpolate any missing declaration first because this simplifies validation
+            declaration = DeclarationInterpolator.interpolate( declaration, true );
+            // Validate
+            DeclarationValidator.validate( declaration, true );
         }
 
         return declaration;
@@ -293,11 +342,11 @@ public class DeclarationFactory
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema only. Does not "interpolate"
      * any missing declaration options that may be gleaned from other declaration. To perform "interpolation", use
-     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)}. Also, does not perform any high-level
-     * validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform high-level
-     * validation, see the {@link DeclarationValidator}.
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration,boolean)}. Also, does not perform any
+     * high-level validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform
+     * high-level validation, see the {@link DeclarationValidator}.
      *
-     * @see DeclarationValidator#validateAndNotify(EvaluationDeclaration)
+     * @see DeclarationValidator#validate(EvaluationDeclaration,boolean)
      * @see DeclarationValidator#validate(EvaluationDeclaration)
      * @param yaml the yaml string
      * @return an evaluation declaration
@@ -310,6 +359,15 @@ public class DeclarationFactory
     public static EvaluationDeclaration from( String yaml ) throws IOException
     {
         Objects.requireNonNull( yaml );
+
+        if( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Encountered the following declaration string:{}{}{}{}",
+                         System.lineSeparator(),
+                         "---",
+                         System.lineSeparator(),
+                         yaml.trim() );
+        }
 
         // Get the schema from the classpath
         URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
@@ -340,8 +398,6 @@ public class DeclarationFactory
             Object resolvedYaml = snakeYaml.load( yaml );
             String resolvedYamlString =
                     DESERIALIZER.writerWithDefaultPrettyPrinter().writeValueAsString( resolvedYaml );
-
-            LOGGER.info( "Resolved a YAML declaration string: {}.", resolvedYaml );
 
             // Use Jackson to (re-)read the declaration string once any anchors/references are resolved
             JsonNode declaration = DESERIALIZER.readTree( resolvedYamlString );
@@ -676,10 +732,10 @@ public class DeclarationFactory
     {
         TimeScale timeScaleMigrated = DeclarationFactory.migrateTimeScale( timeScale );
 
-        LOGGER.debug( "Encountered a desired time scale to migrate: {}.", timeScale );
-
         if ( Objects.nonNull( timeScaleMigrated ) )
         {
+            LOGGER.debug( "Encountered a desired time scale to migrate: {}.", timeScale );
+
             wres.statistics.generated.TimeScale.Builder scaleBuilder = timeScaleMigrated.timeScale()
                                                                                         .toBuilder();
 

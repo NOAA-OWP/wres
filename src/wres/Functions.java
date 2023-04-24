@@ -26,7 +26,7 @@ import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
 import wres.config.xml.ProjectConfigPlus;
-import wres.config.Validation;
+import wres.config.xml.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.config.xml.ProjectConfigs;
@@ -487,8 +487,8 @@ final class Functions
             SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
 
             // Validate unmarshalled configurations
-            final boolean validated =
-                    Validation.isProjectValid( systemSettings, projectConfigPlus );
+            final boolean validated = Validation.isProjectValid( systemSettings.getDataDirectory(),
+                                                                 projectConfigPlus );
 
             if ( validated )
             {

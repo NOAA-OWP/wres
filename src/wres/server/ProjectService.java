@@ -129,25 +129,22 @@ public class ProjectService
         catch ( IOException | UserInputException e )
         {
             return Response.status( Response.Status.BAD_REQUEST )
-                           .entity(
-                                   "I received something I could not parse. The top-level exception was: "
-                                   + e.getMessage() )
+                           .entity( "I received something I could not parse. The top-level exception was: "
+                                    + e.getMessage() )
                            .build();
         }
         catch ( InternalWresException iwe )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity(
-                                   "WRES experienced an internal issue. The top-level exception was: "
-                                   + iwe.getMessage() )
+                           .entity( "WRES experienced an internal issue. The top-level exception was: "
+                                    + iwe.getMessage() )
                            .build();
         }
         catch ( Exception e )
         {
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity(
-                                   "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                   + e.getMessage() )
+                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
+                                    + e.getMessage() )
                            .build();
         }
         finally
@@ -209,7 +206,6 @@ public class ProjectService
                                         @PathParam( "resourceName" ) String resourceName )
     {
         Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
-
         String type = MediaType.TEXT_PLAIN_TYPE.getType();
 
         if ( paths == null )
@@ -243,21 +239,7 @@ public class ProjectService
                                    .build();
                 }
 
-                try
-                {
-                    // Successfully translates .nc to application/x-netcdf
-                    // Successfully translates .csv to text/csv
-                    String probedType = Files.probeContentType( path );
-
-                    if ( probedType != null )
-                    {
-                        type = probedType;
-                    }
-                }
-                catch ( IOException ioe )
-                {
-                    LOGGER.warn( "Could not probe content type of {}", path, ioe );
-                }
+                type = ProjectService.getContentType( path );
 
                 return Response.ok( actualFile )
                                .type( type )
@@ -273,6 +255,42 @@ public class ProjectService
                        .build();
     }
 
+    /**
+     * Examines the content type of the resource at the path.
+     * @param path the path
+     * @return the content type
+     */
+
+    private static String getContentType( java.nio.file.Path path )
+    {
+        String type = MediaType.TEXT_PLAIN_TYPE.getType();
+
+        try
+        {
+            // Successfully translates .nc to application/x-netcdf
+            // Successfully translates .csv to text/csv
+            String probedType = Files.probeContentType( path );
+
+            if ( probedType != null )
+            {
+                type = probedType;
+            }
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.warn( "Could not probe content type of {}", path, ioe );
+        }
+
+        return type;
+    }
+
+    /**
+     * Get a set of resources connected to a project.
+     * @param projectId the project identifier
+     * @param pathSet the paths
+     * @return the resources
+     */
+
     private static Set<String> getSetOfResources( long projectId,
                                                   Set<java.nio.file.Path> pathSet )
     {
@@ -280,7 +298,8 @@ public class ProjectService
 
         for ( java.nio.file.Path path : pathSet )
         {
-            resources.add( "project/" + Long.toString( projectId )
+            resources.add( "project/"
+                           + projectId
                            + "/"
                            + path.getFileName() );
         }

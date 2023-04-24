@@ -18,17 +18,13 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import wres.config.generated.ProjectConfig;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.database.TestDatabase;
-import wres.io.database.details.SourceDetails;
-import wres.io.project.DatabaseProject;
-import wres.io.project.Project;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
-public class DetailsTest
+public class SourceDetailsTest
 {
     private static final Random random = new Random( 5 );
     private TestDatabase testDatabase;
@@ -43,7 +39,7 @@ public class DetailsTest
     public void setup() throws Exception
     {
         MockitoAnnotations.openMocks( this );
-        this.testDatabase = new TestDatabase( "DetailsTest" + random.nextLong() );
+        this.testDatabase = new TestDatabase( "SourceDetailsTest" + random.nextLong() );
         this.rawConnection = DriverManager.getConnection( this.testDatabase.getJdbcString() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
 
@@ -86,27 +82,6 @@ public class DetailsTest
 
         // Remove the source table now that assertions have finished.
         this.testDatabase.dropSourceTable( this.rawConnection );
-        this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
-    }
-
-    @Test
-    public void saveProjectDetails() throws SQLException, LiquibaseException
-    {
-        // Add the project table
-        this.testDatabase.createProjectTable( this.liquibaseDatabase );
-
-        Project project = new DatabaseProject( this.wresDatabase,
-                                               this.mockCaches,
-                                               null,
-                                               new ProjectConfig( null, null, null, null, null, null ),
-                                               "321" );
-        boolean saved = project.save();
-        assertTrue( "Expected project details to have performed insert.", saved );
-        assertNotNull( "Expected the id of the source to be non-null",
-                       project.getId() );
-
-        // Remove the project table and liquibase tables
-        this.testDatabase.dropProjectTable( this.rawConnection );
         this.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
 

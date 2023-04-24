@@ -1,6 +1,10 @@
 package wres.config.yaml;
 
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -293,6 +297,39 @@ public class DeclarationUtilities
     }
 
     /**
+     * Determines whether the input is a valid path to a readable file.
+     *
+     * @param fileSystem the file system
+     * @param possibleFile a possible path to a readable file
+     * @return whether the input is a valid path to a readable file
+     */
+
+    public static boolean isReadableFile( FileSystem fileSystem, String possibleFile )
+    {
+        if ( Objects.isNull( fileSystem ) || Objects.isNull( possibleFile ) )
+        {
+            return false;
+        }
+
+        try
+        {
+            Path path = fileSystem.getPath( possibleFile );
+            LOGGER.debug( "Inspecting path {} for a readable file.", path );
+            return Files.isReadable( path );
+        }
+        catch ( InvalidPathException | SecurityException e )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                String line = DeclarationUtilities.getFirstLine( possibleFile );
+                LOGGER.debug( "The supplied string is not a valid path to a readable file. The first line is: {}",
+                              line );
+            }
+            return false;
+        }
+    }
+
+    /**
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      * @throws NullPointerException if the input is null
@@ -515,6 +552,22 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( forecastDeclaration );
+    }
+
+    /**
+     * Looks for the first line in the input and returns it.
+     * @param lines the lines
+     * @return the first line
+     */
+    static String getFirstLine( String lines )
+    {
+        String line = lines;
+        String[] split = lines.split( "\\R" );
+        if ( split.length > 0 )
+        {
+            line = split[0];
+        }
+        return line;
     }
 
     /**

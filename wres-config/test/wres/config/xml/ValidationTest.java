@@ -1,13 +1,13 @@
-package wres.config;
+package wres.config.xml;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +28,8 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.ProjectConfig.Outputs;
-import wres.config.xml.ProjectConfigPlus;
-import wres.system.SystemSettings;
 
-public class ValidationTest
+class ValidationTest
 {
     private static final String FOO_TEST_PROJECT = "foo test project";
     private Locator fakeSourceLocator;
@@ -83,7 +81,7 @@ public class ValidationTest
 
 
     @Test
-    public void fullFeaturePassesValidation()
+    void fullFeaturePassesValidation()
     {
         NamedFeature fullySpecifiedFeature = new NamedFeature( "Chicken", "Cheese", "Tuna" );
         List<NamedFeature> features = List.of( fullySpecifiedFeature );
@@ -92,7 +90,7 @@ public class ValidationTest
     }
 
     @Test
-    public void featureWithLeftValuePassesValidation()
+    void featureWithLeftValuePassesValidation()
     {
         NamedFeature featureWithLeftValue = new NamedFeature( "Cheese", null, null );
         List<NamedFeature> features = List.of( featureWithLeftValue );
@@ -101,7 +99,7 @@ public class ValidationTest
     }
 
     @Test
-    public void allNullFeatureFailsValidation()
+    void allNullFeatureFailsValidation()
     {
         NamedFeature featureWithNothing = new NamedFeature( null, null, null );
         List<NamedFeature> features = List.of( featureWithNothing );
@@ -110,7 +108,7 @@ public class ValidationTest
     }
 
     @Test
-    public void moreThanOneDestinationPerDestinationTypeFailsValidation()
+    void moreThanOneDestinationPerDestinationTypeFailsValidation()
     {
         List<DestinationConfig> destinations = new ArrayList<>();
 
@@ -136,7 +134,7 @@ public class ValidationTest
     }
 
     @Test
-    public void testDesiredTimeScaleWithPeriodAndBothMonthDaysFailsValidation()
+    void testDesiredTimeScaleWithPeriodAndBothMonthDaysFailsValidation()
     {
         // Define a minimal declaration that passes validation and a desiredTimeScale that should not
         DesiredTimeScaleConfig desiredTimeScale = new DesiredTimeScaleConfig( null,
@@ -182,17 +180,17 @@ public class ValidationTest
         Mockito.when( mockProjectConfigPlus.getOrigin() )
                .thenReturn( FOO_TEST_PROJECT );
 
-        SystemSettings mockSystemSettings = Mockito.mock( SystemSettings.class );
+        Path fakePath = Path.of( "fakePath.fake" );
 
         // Not interested in XML validation events, just extra validation
         Mockito.when( mockProjectConfigPlus.getValidationEvents() )
                .thenReturn( List.of() );
 
-        assertFalse( Validation.isProjectValid( mockSystemSettings, mockProjectConfigPlus ) );
+        assertFalse( Validation.isProjectValid( fakePath, mockProjectConfigPlus ) );
     }
     
     @Test
-    public void testDesiredTimeScaleWithEarliestDayMissingFailsValidation()
+    void testDesiredTimeScaleWithEarliestDayMissingFailsValidation()
     {
         // Define a minimal declaration that passes validation and a desiredTimeScale that should not
         DesiredTimeScaleConfig desiredTimeScale = new DesiredTimeScaleConfig( null,
@@ -238,17 +236,17 @@ public class ValidationTest
         Mockito.when( mockProjectConfigPlus.getOrigin() )
                .thenReturn( FOO_TEST_PROJECT );
 
-        SystemSettings mockSystemSettings = Mockito.mock( SystemSettings.class );
+        Path fakePath = Path.of( "fakePath.fake" );
 
         // Not interested in XML validation events, just extra validation
         Mockito.when( mockProjectConfigPlus.getValidationEvents() )
                .thenReturn( List.of() );
 
-        assertFalse( Validation.isProjectValid( mockSystemSettings, mockProjectConfigPlus ) );
+        assertFalse( Validation.isProjectValid( fakePath, mockProjectConfigPlus ) );
     }
     
     @Test
-    public void testDesiredTimeScaleWithLatestMonthMissingFailsValidation()
+    void testDesiredTimeScaleWithLatestMonthMissingFailsValidation()
     {
         // Define a minimal declaration that passes validation and a desiredTimeScale that should not
         DesiredTimeScaleConfig desiredTimeScale = new DesiredTimeScaleConfig( null,
@@ -294,17 +292,17 @@ public class ValidationTest
         Mockito.when( mockProjectConfigPlus.getOrigin() )
                .thenReturn( FOO_TEST_PROJECT );
 
-        SystemSettings mockSystemSettings = Mockito.mock( SystemSettings.class );
+        Path fakePath = Path.of( "fakePath.fake" );
 
         // Not interested in XML validation events, just extra validation
         Mockito.when( mockProjectConfigPlus.getValidationEvents() )
                .thenReturn( List.of() );
 
-        assertFalse( Validation.isProjectValid( mockSystemSettings, mockProjectConfigPlus ) );
+        assertFalse( Validation.isProjectValid( fakePath, mockProjectConfigPlus ) );
     }   
 
     @Test
-    public void testDesiredTimeScaleWithInvalidEarliestMonthDayFailsValidation()
+    void testDesiredTimeScaleWithInvalidEarliestMonthDayFailsValidation()
     {
         // Define a minimal declaration that passes validation and a desiredTimeScale that should not
         DesiredTimeScaleConfig desiredTimeScale = new DesiredTimeScaleConfig( null,
@@ -350,22 +348,20 @@ public class ValidationTest
         Mockito.when( mockProjectConfigPlus.getOrigin() )
                .thenReturn( FOO_TEST_PROJECT );
 
-        SystemSettings mockSystemSettings = Mockito.mock( SystemSettings.class );
+        Path fakePath = Path.of( "fakePath.fake" );
 
         // Not interested in XML validation events, just extra validation
         Mockito.when( mockProjectConfigPlus.getValidationEvents() )
                .thenReturn( List.of() );
 
-        assertFalse( Validation.isProjectValid( mockSystemSettings, mockProjectConfigPlus ) );
+        assertFalse( Validation.isProjectValid( fakePath, mockProjectConfigPlus ) );
     }
     
 
     @Test
-    public void testUsgsNwisSourceWithoutVariableFailsValidation() throws URISyntaxException
+    void testUsgsNwisSourceWithoutVariableFailsValidation() throws URISyntaxException
     {
-        List<DestinationConfig> destinations = new ArrayList<>();
-
-        DataSourceConfig.Source nwisSource = null;
+        DataSourceConfig.Source nwisSource;
         nwisSource = new DataSourceConfig.Source( new URI( "https://nwis.waterservices.usgs.gov/nwis/iv" ),
                                                   InterfaceShortHand.USGS_NWIS,
                                                   null,
@@ -397,11 +393,9 @@ public class ValidationTest
     }
 
     @Test
-    public void testWrdsNwmSourceWithVariablePassesValidation() throws URISyntaxException
+    void testWrdsNwmSourceWithVariablePassesValidation() throws URISyntaxException
     {
-        List<DestinationConfig> destinations = new ArrayList<>();
-
-        DataSourceConfig.Source wrdsNwmSource = null;
+        DataSourceConfig.Source wrdsNwmSource;
        
         wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/medium_range" ),
                                                      InterfaceShortHand.WRDS_NWM,

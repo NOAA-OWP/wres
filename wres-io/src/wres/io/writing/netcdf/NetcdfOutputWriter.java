@@ -59,6 +59,7 @@ import wres.config.generated.NetcdfType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.ProjectConfigs;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
@@ -78,7 +79,6 @@ import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.NoDataException;
-import wres.io.config.ConfigHelper;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -261,7 +261,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // more than needed? For example, what happens if the mean error is requested for the ensemble median and not
         // for the ensemble mean - will that produce a variable for the ensemble median only? Use the default averaging
         // type if the evaluation does not contain ensemble forecasts
-        boolean hasEnsembles = ConfigHelper.hasEnsembleForecasts( this.getProjectConfig() );
+        boolean hasEnsembles = ProjectConfigs.hasEnsembleForecasts( this.getProjectConfig() );
         Function<MetricsAndThresholds, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
             if ( hasEnsembles )
             {

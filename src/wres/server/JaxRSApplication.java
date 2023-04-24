@@ -1,10 +1,10 @@
 package wres.server;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import jakarta.ws.rs.ApplicationPath;
-import jakarta.ws.rs.core.Application;
+import org.glassfish.jersey.message.DeflateEncoder;
+import org.glassfish.jersey.message.GZipEncoder;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.filter.EncodingFilter;
 
 /**
  * This is where JAX-RS meets the servlet specification or something.
@@ -13,13 +13,17 @@ import jakarta.ws.rs.core.Application;
  */
 
 @ApplicationPath( "/" )
-public class JaxRSApplication extends Application
+public class JaxRSApplication extends ResourceConfig
 {
-    @Override
-    public Set<Class<?>> getClasses()
+    /**
+     * Create an application instance.
+     */
+    public JaxRSApplication()
     {
-        Set<Class<?>> s = new HashSet<>( 1 );
-        s.add( ProjectService.class );
-        return Collections.unmodifiableSet( s );
+        this.register( ProjectService.class );
+        this.register( GZipEncoder.class );
+        this.register( DeflateEncoder.class );
+
+        EncodingFilter.enableFor( this, GZipEncoder.class );
     }
 }

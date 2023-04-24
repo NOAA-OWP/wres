@@ -187,8 +187,7 @@ public class Tasker
         alpn.setDefaultProtocol( httpOneOne.getProtocol() );
 
         // Use TLS
-        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory(
-                                                                               PATH_TO_SERVER_P12 );
+        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory( PATH_TO_SERVER_P12 );
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );

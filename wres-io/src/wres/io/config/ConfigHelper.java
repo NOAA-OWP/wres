@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.xml.ProjectConfigException;
 import wres.config.generated.*;
-import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
@@ -88,20 +87,6 @@ public class ConfigHelper
 
         // Next, complete the thresholds if they require a WRDS service call
         return WrdsThresholdFiller.fillThresholds( featureful, unitMapper );
-    }
-
-    /**
-     * Returns whether the declared {@link DatasourceType} matches one of the forecast types, currently 
-     * {@link DatasourceType#SINGLE_VALUED_FORECASTS} and {@link DatasourceType#ENSEMBLE_FORECASTS}.
-     * @param dataSourceConfig the configuration
-     * @return true when the type of data is a forecast type
-     */
-    public static boolean isForecast( DataSourceConfig dataSourceConfig )
-    {
-        Objects.requireNonNull( dataSourceConfig );
-
-        return dataSourceConfig.getType() == DatasourceType.SINGLE_VALUED_FORECASTS
-               || dataSourceConfig.getType() == DatasourceType.ENSEMBLE_FORECASTS;
     }
 
     /**
@@ -199,36 +184,6 @@ public class ConfigHelper
         return false;
     }
 
-    /**
-     * Return <code>true</code> if the project contains ensemble forecasts, otherwise <code>false</code>.
-     *
-     * @param projectConfig the project declaration
-     * @return whether or not the project contains ensemble forecasts
-     * @throws NullPointerException if the projectConfig is null or the inputs declaration is null
-     */
-    public static boolean hasEnsembleForecasts( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getInputs() );
-
-        Inputs inputs = projectConfig.getInputs();
-        DataSourceConfig left = inputs.getLeft();
-        DataSourceConfig right = inputs.getRight();
-        DataSourceConfig baseline = inputs.getBaseline();
-
-        if ( Objects.nonNull( left ) && left.getType() == DatasourceType.ENSEMBLE_FORECASTS )
-        {
-            return true;
-        }
-
-        if ( Objects.nonNull( right ) && right.getType() == DatasourceType.ENSEMBLE_FORECASTS )
-        {
-            return true;
-        }
-
-        return Objects.nonNull( baseline ) && baseline.getType() == DatasourceType.ENSEMBLE_FORECASTS;
-    }
-
     private enum ConusZoneId
     {
         UTC( "+0000" ),
@@ -321,22 +276,6 @@ public class ConfigHelper
         return Objects.nonNull( baselineConfig )
                && ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE ||
                     Objects.nonNull( baselineConfig.getPersistence() ) );
-    }
-
-    /**
-     * Returns <code>true</code> if a baseline is present, otherwise <code>false</code>.
-     *
-     * @param projectConfig the declaration to inspect
-     * @return true if a baseline is present
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasBaseline( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-
-        return Objects.nonNull( projectConfig.getInputs() )
-               && Objects.nonNull( projectConfig.getInputs().getBaseline() );
     }
 
     /**

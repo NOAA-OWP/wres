@@ -56,10 +56,10 @@ abstract class CommaSeparatedStatisticsWriter
      * Earliest possible time window to index the header.
      */
 
-    static final TimeWindowOuter HEADER_INDEX = TimeWindowOuter.of(
-                                                                    MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                                  Instant.MIN,
-                                                                                                  Duration.ofSeconds( Long.MIN_VALUE ) ) );
+    static final TimeWindowOuter HEADER_INDEX =
+            TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
+                                                              Instant.MIN,
+                                                              Duration.ofSeconds( Long.MIN_VALUE ) ) );
 
     /**
      * Resolution for writing duration outputs.
@@ -167,7 +167,7 @@ abstract class CommaSeparatedStatisticsWriter
 
     /**
      * Validates that the file object represented by the path does not already exist.
-     * 
+     *
      * @throws CommaSeparatedWriteException if the path exists
      * @return true if the path is valid to write, false if it exists and is, therefore, invalid
      */
@@ -192,7 +192,7 @@ abstract class CommaSeparatedStatisticsWriter
 
     /**
      * Attempts to delete a path on encountering an error.
-     * 
+     *
      * @param pathToDelete the path to delete
      */
 
@@ -308,7 +308,7 @@ abstract class CommaSeparatedStatisticsWriter
 
     /**
      * Returns the first instance of {@link PoolMetadata} discovered in the input or <code>null</code>.
-     * 
+     *
      * @param <T> the type of statistic
      * @param statistic the list of statistics
      * @return the first sample metadata or null
@@ -451,12 +451,12 @@ abstract class CommaSeparatedStatisticsWriter
         @Override
         public boolean equals( Object o )
         {
-            if ( ! ( o instanceof RowCompareByLeft ) )
+            if ( !( o instanceof RowCompareByLeft ) )
             {
                 return false;
             }
 
-            RowCompareByLeft in = (RowCompareByLeft) o;
+            RowCompareByLeft in = ( RowCompareByLeft ) o;
 
             return Objects.equals( in.getLeft(), this.getLeft() )
                    && Arrays.equals( in.getLeftOptions(), this.getLeftOptions() );
@@ -487,7 +487,7 @@ abstract class CommaSeparatedStatisticsWriter
 
     /**
      * Returns the name of a geographic feature from an instance of {@link PoolMetadata}.
-     * 
+     *
      * @param metadata the metadata
      * @return name the feature name
      * @throws NullPointerException if the input is null

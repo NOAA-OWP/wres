@@ -861,6 +861,12 @@ project(':wres-config')
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.6'
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
 
+        // To accurately detect mime types of files.
+        implementation 'org.apache.tika:tika-core:2.7.0'
+
+        // Mocking help
+        testImplementation 'org.mockito:mockito-core:5.3.0'
+
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.9.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
@@ -1679,9 +1685,15 @@ dependencies
     // For Java 9+ compatibility:
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
-    implementation 'org.eclipse.jetty:jetty-server:11.0.15'
+    // Servlet container library to run a web application with:
     implementation 'org.eclipse.jetty:jetty-webapp:11.0.15'
+
+    // Needed at compile-time to reference ServletContainer.class and
+    // DefaultServlet.class
     implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.1'
+
+    // Jetty server
+    implementation 'org.eclipse.jetty:jetty-server:11.0.15'
 
     implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.6' )
     {
@@ -1705,6 +1717,12 @@ dependencies
     runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.1'
     runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.1'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.1'
+
+    // Support HTTP/2
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.15'
+
+    // Support ALPN
+    implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.15'
 
     runtimeOnly( 'ch.qos.logback:logback-classic:1.4.6' )
     {
