@@ -39,7 +39,7 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.wrds.TimeScaleFromParameterCodes;
+import wres.io.reading.wrds.ahps.TimeScaleFromParameterCodes;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

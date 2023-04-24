@@ -1,4 +1,4 @@
-package wres.io.reading.web;
+package wres.io.reading.nwis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
@@ -37,6 +37,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.nwis.NwisReader;
 import wres.system.SystemSettings;
 
 /**

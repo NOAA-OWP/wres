@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.ingesting.PreIngestException;
-import wres.io.reading.wrds.ForecastResponse;
+import wres.io.reading.wrds.ahps.ForecastResponse;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 

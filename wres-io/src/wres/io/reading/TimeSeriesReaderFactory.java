@@ -13,10 +13,10 @@ import wres.io.reading.fews.PublishedInterfaceXmlReader;
 import wres.io.reading.netcdf.nwm.NwmGridReader;
 import wres.io.reading.netcdf.nwm.NwmVectorReader;
 import wres.io.reading.waterml.WatermlReader;
-import wres.io.reading.web.NwisReader;
-import wres.io.reading.web.WrdsAhpsReader;
-import wres.io.reading.web.WrdsNwmReader;
-import wres.io.reading.wrds.WrdsAhpsJsonReader;
+import wres.io.reading.nwis.NwisReader;
+import wres.io.reading.wrds.ahps.WrdsAhpsReader;
+import wres.io.reading.wrds.nwm.WrdsNwmReader;
+import wres.io.reading.wrds.ahps.WrdsAhpsJsonReader;
 import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
 import wres.system.SystemSettings;
 

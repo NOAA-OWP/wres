@@ -1,4 +1,4 @@
-package wres.io.reading.wrds;
+package wres.io.reading.wrds.ahps;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -9,6 +9,8 @@ import org.junit.Test;
 
 import wres.datamodel.scale.TimeScaleOuter;
 
+import wres.io.reading.wrds.ahps.ParameterCodes;
+import wres.io.reading.wrds.ahps.TimeScaleFromParameterCodes;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**

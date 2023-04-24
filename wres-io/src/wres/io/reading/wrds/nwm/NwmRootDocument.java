@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import wres.io.reading.wrds.ParameterCodes;
+import wres.io.reading.wrds.ahps.ParameterCodes;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 

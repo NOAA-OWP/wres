@@ -1,4 +1,4 @@
-package wres.io.reading.wrds;
+package wres.io.reading.wrds.ahps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -29,6 +29,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.wrds.ahps.WrdsAhpsJsonReader;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

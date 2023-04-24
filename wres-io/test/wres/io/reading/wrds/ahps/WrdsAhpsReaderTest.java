@@ -1,4 +1,4 @@
-package wres.io.reading.web;
+package wres.io.reading.wrds.ahps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
@@ -39,6 +39,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.wrds.ahps.WrdsAhpsReader;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
