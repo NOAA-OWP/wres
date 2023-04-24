@@ -41,7 +41,7 @@ import wres.io.database.caching.Variables;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.project.ProjectUtilities.VariableNames;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;

@@ -76,8 +76,8 @@ import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
-import wres.io.retrieval.CachingSupplier;
-import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieving.CachingSupplier;
+import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 

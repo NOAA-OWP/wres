@@ -43,10 +43,10 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.project.Project;
-import wres.io.retrieval.CachingRetriever;
-import wres.io.retrieval.CachingSupplier;
-import wres.io.retrieval.DataAccessException;
-import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieving.CachingRetriever;
+import wres.io.retrieving.CachingSupplier;
+import wres.io.retrieving.DataAccessException;
+import wres.io.retrieving.RetrieverFactory;
 
 /**
  * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.

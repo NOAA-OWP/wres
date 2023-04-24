@@ -10,7 +10,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
