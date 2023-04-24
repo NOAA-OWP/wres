@@ -56,7 +56,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.database.Database;
-import wres.io.geography.wrds.WrdsFeatureFinder;
+import wres.io.reading.wrds.geography.WrdsFeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;

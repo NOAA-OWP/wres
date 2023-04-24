@@ -23,8 +23,8 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.UnitMapper;
-import wres.io.geography.wrds.WrdsFeatureFiller;
-import wres.io.thresholds.wrds.WrdsThresholdFiller;
+import wres.io.reading.wrds.geography.WrdsFeatureFiller;
+import wres.io.reading.wrds.thresholds.WrdsThresholdFiller;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**

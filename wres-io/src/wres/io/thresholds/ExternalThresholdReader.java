@@ -9,10 +9,11 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.io.config.ConfigHelper;
-import wres.io.geography.wrds.WrdsLocation;
+import wres.io.reading.wrds.geography.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
 import wres.config.xml.CsvThresholdReader;
-import wres.io.thresholds.wrds.GeneralWRDSReader;
+import wres.io.reading.wrds.thresholds.GeneralWRDSReader;
+import wres.io.reading.wrds.thresholds.ThresholdReadingException;
 import wres.statistics.generated.Threshold;
 
 import com.google.protobuf.DoubleValue;
