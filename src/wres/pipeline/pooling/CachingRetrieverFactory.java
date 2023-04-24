@@ -16,8 +16,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.retrieval.CachingRetriever;
-import wres.io.retrieval.RetrieverFactory;
+import wres.io.retrieving.CachingRetriever;
+import wres.io.retrieving.RetrieverFactory;
 
 /**
  * Implementation of a {@link RetrieverFactory} that delegates all calls to a factory supplied on construction, but 

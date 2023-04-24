@@ -42,7 +42,7 @@ import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
-import wres.io.retrieval.CachingRetriever;
+import wres.io.retrieving.CachingRetriever;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;

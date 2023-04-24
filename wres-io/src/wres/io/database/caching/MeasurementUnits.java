@@ -12,7 +12,7 @@ import wres.io.data.DataProvider;
 import wres.io.database.details.MeasurementDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 
 /**
  * Caches details mapping units of measurements to their IDs

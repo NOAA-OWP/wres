@@ -36,7 +36,7 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;

@@ -42,7 +42,7 @@ import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 import wres.io.project.ProjectUtilities.VariableNames;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 

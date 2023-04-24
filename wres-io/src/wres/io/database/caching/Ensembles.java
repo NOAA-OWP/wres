@@ -13,7 +13,7 @@ import wres.io.data.DataProvider;
 import wres.io.database.details.EnsembleDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.io.retrieval.DataAccessException;
+import wres.io.retrieving.DataAccessException;
 
 /**
  * Cached details about Ensembles from the database
