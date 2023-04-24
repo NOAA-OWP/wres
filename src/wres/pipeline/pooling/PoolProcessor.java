@@ -20,7 +20,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.time.TimeSeries;
-import wres.events.Evaluation;
+import wres.events.EvaluationMessager;
 import wres.io.writing.csv.pairs.PairsWriter;
 import wres.pipeline.EvaluationEvent;
 import wres.pipeline.WresProcessingException;
@@ -42,7 +42,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolProcessor.class );
 
     /** The evaluation. */
-    private final Evaluation evaluation;
+    private final EvaluationMessager evaluation;
 
     /** The pairs writer. */
     private final PairsWriter<L, R> pairsWriter;
@@ -84,7 +84,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     public static class Builder<L, R>
     {
         /** The evaluation. */
-        private Evaluation evaluation;
+        private EvaluationMessager evaluation;
 
         /** The pairs writer. */
         private PairsWriter<L, R> pairsWriter;
@@ -117,7 +117,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param evaluation the evaluation to set
          * @return this builder
          */
-        public Builder<L, R> setEvaluation( Evaluation evaluation )
+        public Builder<L, R> setEvaluation( EvaluationMessager evaluation )
         {
             this.evaluation = evaluation;
             return this;
@@ -298,7 +298,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * @return the status
      */
 
-    private Status publish( Evaluation evaluation,
+    private Status publish( EvaluationMessager evaluation,
                             List<StatisticsStore> statistics,
                             String groupId )
     {

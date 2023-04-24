@@ -25,13 +25,13 @@ import wres.statistics.generated.Consumer.Format;
 class SubscriberNegotiatorTest
 {
     // Fake evaluation to help with testing
-    private Evaluation fakeEvaluation;
+    private EvaluationMessager fakeEvaluation;
 
     @BeforeEach
     void runBeforeEachTest()
     {
         // Create a fake evaluation for testing
-        this.fakeEvaluation = Mockito.mock( Evaluation.class );
+        this.fakeEvaluation = Mockito.mock( EvaluationMessager.class );
         Mockito.when( this.fakeEvaluation.getEvaluationId() )
                .thenReturn( "aFakeEvaluation" );
     }

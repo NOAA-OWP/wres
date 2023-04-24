@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
-import wres.events.Evaluation;
+import wres.events.EvaluationMessager;
 import wres.events.EvaluationEventUtilities;
 
 /**
@@ -24,7 +24,7 @@ import wres.events.EvaluationEventUtilities;
  * so that consumers can be notified that all expected statistics are ready for some grouped operation, such as the 
  * creation of a graphic from a group of pools (e.g., all lead durations). The grouping logic is embedded within this
  * class and is currently based on feature groups. The API itself is more general and allows for this implementation 
- * logic to change by adding a new static constructor, akin to {@link #ofFeatureGroupTracker(Evaluation, List)}.
+ * logic to change by adding a new static constructor, akin to {@link #ofFeatureGroupTracker(EvaluationMessager, List)}.
  *
  * @author James Brown
  */
@@ -48,7 +48,7 @@ public class PoolGroupTracker
      * @throws NullPointerException if either input is null
      */
 
-    public static PoolGroupTracker ofFeatureGroupTracker( Evaluation evaluation, List<PoolRequest> poolRequests )
+    public static PoolGroupTracker ofFeatureGroupTracker( EvaluationMessager evaluation, List<PoolRequest> poolRequests )
     {
         // Group the requests by feature group and then identify each group
         Map<FeatureGroup, List<PoolRequest>> groups =
@@ -119,7 +119,7 @@ public class PoolGroupTracker
      * @param groupIdentities the group identities
      */
 
-    private PoolGroupTracker( Evaluation evaluation, Map<PoolRequest, String> groupIdentities )
+    private PoolGroupTracker( EvaluationMessager evaluation, Map<PoolRequest, String> groupIdentities )
     {
         this.groups = new HashMap<>();
         this.groupIdentities = new HashMap<>( groupIdentities );
@@ -152,7 +152,7 @@ public class PoolGroupTracker
         private static final Logger LOGGER = LoggerFactory.getLogger( CompletionTracker.class );
 
         /** The evaluation whose group should be completed. */
-        private final Evaluation evaluation;
+        private final EvaluationMessager evaluation;
 
         /** The group identifier. */
         private final String groupId;
@@ -171,7 +171,7 @@ public class PoolGroupTracker
          * @param groupSize the number of messages in the group
          */
 
-        private CompletionTracker( Evaluation evaluation,
+        private CompletionTracker( EvaluationMessager evaluation,
                                    String groupId,
                                    long groupSize )
         {

@@ -423,7 +423,7 @@ public class EvaluationSubscriber implements Closeable
         Map<String, EvaluationConsumer> cache = this.evaluations.asMap();
         for ( EvaluationConsumer nextEvaluation : cache.values() )
         {
-            // Evaluation completed
+            // EvaluationMessager completed
             if ( nextEvaluation.isClosed() )
             {
                 // Unbook the subscriber if booked
@@ -433,7 +433,7 @@ public class EvaluationSubscriber implements Closeable
                         .unbook( nextEvaluation.getEvaluationId() );
                 }
             }
-            // Evaluation is ongoing, but it has now timed out and should be stopped
+            // EvaluationMessager is ongoing, but it has now timed out and should be stopped
             else if ( this.hasTimedOut( nextEvaluation ) )
             {
                 // Flag timed out.
@@ -972,7 +972,7 @@ public class EvaluationSubscriber implements Closeable
             return false;
         }
 
-        // Evaluation failed?
+        // EvaluationMessager failed?
         if ( this.isEvaluationFailed( correlationId ) )
         {
             LOGGER.debug( "A message was received from a {} queue, but evaluation {} has been marked failed. The "
@@ -1062,7 +1062,7 @@ public class EvaluationSubscriber implements Closeable
                 this.markEvaluationFailed( evaluationId, exception );
             }
         }
-        // Evaluation has failed unrecoverably or all evaluations on this subscriber have failed unrecoverably
+        // EvaluationMessager has failed unrecoverably or all evaluations on this subscriber have failed unrecoverably
         else if ( this.isEvaluationFailed( evaluationId ) || this.isSubscriberFailed() && LOGGER.isDebugEnabled() )
         {
             String logMessage = "While attempting to consume a message with identifier " + messageId
@@ -1533,7 +1533,7 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            // Evaluation is a consumption failure, because this subscriber decided to end it
+            // EvaluationMessager is a consumption failure, because this subscriber decided to end it
             // It will be swept away on the next iteration
             evaluationConsumer.markEvaluationFailedOnConsumption( exception );
         }

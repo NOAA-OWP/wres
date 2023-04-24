@@ -50,8 +50,8 @@ import wres.statistics.generated.Statistics;
  * types of messages that map to evaluation events:
  *
  * <ol>
- * <li>Evaluation messages contained in {@link wres.statistics.generated.Evaluation};</li>
- * <li>Evaluation status messages contained in {@link wres.statistics.generated.EvaluationStatus}; and</li>
+ * <li>EvaluationMessager messages contained in {@link wres.statistics.generated.Evaluation};</li>
+ * <li>EvaluationMessager status messages contained in {@link wres.statistics.generated.EvaluationStatus}; and</li>
  * <li>Statistics messages contained in {@link wres.statistics.generated.Statistics}.</li>
  * <li>Pairs messages contained in {@link wres.statistics.generated.Pairs}.</li>
  * </ol>
@@ -80,7 +80,7 @@ import wres.statistics.generated.Statistics;
  */
 
 @ThreadSafe
-public class Evaluation implements Closeable
+public class EvaluationMessager implements Closeable
 {
     /**
      * Default name for the queue on the amq.topic that accepts evaluation messages.
@@ -110,9 +110,9 @@ public class Evaluation implements Closeable
      * Logger. 
      */
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Evaluation.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationMessager.class );
 
-    private static final String EVALUATION_STRING = "Evaluation ";
+    private static final String EVALUATION_STRING = "EvaluationMessager ";
 
     private static final String ENCOUNTERED_AN_ERROR = ", encountered an error: ";
 
@@ -271,9 +271,9 @@ public class Evaluation implements Closeable
      * @throws IllegalArgumentException if any input is invalid
      */
 
-    public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
-                                 BrokerConnectionFactory broker,
-                                 String clientId )
+    public static EvaluationMessager of( wres.statistics.generated.Evaluation evaluationDescription,
+                                         BrokerConnectionFactory broker,
+                                         String clientId )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
@@ -294,10 +294,10 @@ public class Evaluation implements Closeable
      * @throws IllegalArgumentException if any input is invalid
      */
 
-    public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
-                                 BrokerConnectionFactory broker,
-                                 String clientId,
-                                 String evaluationId )
+    public static EvaluationMessager of( wres.statistics.generated.Evaluation evaluationDescription,
+                                         BrokerConnectionFactory broker,
+                                         String clientId,
+                                         String evaluationId )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
@@ -320,11 +320,11 @@ public class Evaluation implements Closeable
      * @throws IllegalArgumentException if any input is invalid
      */
 
-    public static Evaluation of( wres.statistics.generated.Evaluation evaluationDescription,
-                                 BrokerConnectionFactory broker,
-                                 String clientId,
-                                 String evaluationId,
-                                 SubscriberApprover subscriberApprover )
+    public static EvaluationMessager of( wres.statistics.generated.Evaluation evaluationDescription,
+                                         BrokerConnectionFactory broker,
+                                         String clientId,
+                                         String evaluationId,
+                                         SubscriberApprover subscriberApprover )
     {
         return new Builder().setBroker( broker )
                             .setEvaluationDescription( evaluationDescription )
@@ -376,7 +376,7 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( pairs.toByteArray() );
 
-        this.internalPublish( body, this.pairsPublisher, Evaluation.PAIRS_QUEUE, null );
+        this.internalPublish( body, this.pairsPublisher, EvaluationMessager.PAIRS_QUEUE, null );
 
         this.pairsMessageCount.getAndIncrement();
     }
@@ -401,7 +401,7 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
 
-        this.internalPublish( body, this.evaluationStatusPublisher, Evaluation.EVALUATION_STATUS_QUEUE, groupId );
+        this.internalPublish( body, this.evaluationStatusPublisher, EvaluationMessager.EVALUATION_STATUS_QUEUE, groupId );
 
         this.statusMessageCount.getAndIncrement();
 
@@ -427,7 +427,7 @@ public class Evaluation implements Closeable
         Objects.requireNonNull( statistics );
 
         this.validateRequestToPublish();
-        this.validateGroupId( groupId, Evaluation.STATISTICS_QUEUE );
+        this.validateGroupId( groupId, EvaluationMessager.STATISTICS_QUEUE );
 
         // Acquire a publication lock when producer flow control is engaged
         if ( Objects.nonNull( groupId ) )
@@ -440,7 +440,7 @@ public class Evaluation implements Closeable
 
             ByteBuffer body = ByteBuffer.wrap( statistics.toByteArray() );
 
-            this.internalPublish( body, this.statisticsPublisher, Evaluation.STATISTICS_QUEUE, groupId );
+            this.internalPublish( body, this.statisticsPublisher, EvaluationMessager.STATISTICS_QUEUE, groupId );
 
             this.messageCount.getAndIncrement();
 
@@ -505,7 +505,7 @@ public class Evaluation implements Closeable
         ByteBuffer completeBuffer = ByteBuffer.wrap( complete.toByteArray() );
         this.internalPublish( completeBuffer,
                               this.evaluationStatusPublisher,
-                              Evaluation.EVALUATION_STATUS_QUEUE,
+                              EvaluationMessager.EVALUATION_STATUS_QUEUE,
                               null );
         this.statusMessageCount.getAndIncrement();
 
@@ -584,7 +584,7 @@ public class Evaluation implements Closeable
     @Override
     public String toString()
     {
-        return "Evaluation with unique identifier: " + this.getEvaluationId();
+        return "EvaluationMessager with unique identifier: " + this.getEvaluationId();
     }
 
     /**
@@ -634,7 +634,7 @@ public class Evaluation implements Closeable
     {
         if ( this.isClosed.getAndSet( true ) )
         {
-            LOGGER.debug( "Evaluation {} has already been closed.", this.getEvaluationId() );
+            LOGGER.debug( "EvaluationMessager {} has already been closed.", this.getEvaluationId() );
 
             return;
         }
@@ -721,7 +721,7 @@ public class Evaluation implements Closeable
     {
         if ( this.isStopped() || this.isClosed() )
         {
-            LOGGER.debug( "Evaluation {} has already completed.", this.getEvaluationId() );
+            LOGGER.debug( "EvaluationMessager {} has already completed.", this.getEvaluationId() );
 
             return this.getExitCode();
         }
@@ -830,13 +830,13 @@ public class Evaluation implements Closeable
         private BrokerConnectionFactory broker;
 
         /**
-         * Evaluation message.
+         * EvaluationMessager message.
          */
 
         private wres.statistics.generated.Evaluation evaluationDescription;
 
         /**
-         * Evaluation identifier.
+         * EvaluationMessager identifier.
          */
 
         private String evaluationId;
@@ -929,9 +929,9 @@ public class Evaluation implements Closeable
          * @return an evaluation
          */
 
-        public Evaluation build()
+        public EvaluationMessager build()
         {
-            return new Evaluation( this );
+            return new EvaluationMessager( this );
         }
     }
 
@@ -997,7 +997,7 @@ public class Evaluation implements Closeable
             // Internal publish in case publication has already been completed for this instance      
             this.internalPublish( body,
                                   this.evaluationStatusPublisher,
-                                  Evaluation.EVALUATION_STATUS_QUEUE,
+                                  EvaluationMessager.EVALUATION_STATUS_QUEUE,
                                   null );
         }
         catch ( EvaluationEventException e )
@@ -1050,7 +1050,7 @@ public class Evaluation implements Closeable
         ByteBuffer status = ByteBuffer.wrap( this.statusOngoing.toByteArray() );
         this.internalPublish( status,
                               this.evaluationStatusPublisher,
-                              Evaluation.EVALUATION_STATUS_QUEUE,
+                              EvaluationMessager.EVALUATION_STATUS_QUEUE,
                               null );
 
         this.statusMessageCount.getAndIncrement();
@@ -1165,7 +1165,7 @@ public class Evaluation implements Closeable
         // Group identifier required in some cases
         if ( message.getCompletionStatus() == CompletionStatus.GROUP_PUBLICATION_COMPLETE )
         {
-            this.validateGroupId( groupId, Evaluation.EVALUATION_STATUS_QUEUE );
+            this.validateGroupId( groupId, EvaluationMessager.EVALUATION_STATUS_QUEUE );
 
             // Can happen in a no data scenario
             if ( message.getMessageCount() == 0 && LOGGER.isWarnEnabled() )
@@ -1242,7 +1242,7 @@ public class Evaluation implements Closeable
      *            no formats
      */
 
-    private Evaluation( Builder builder )
+    private EvaluationMessager( Builder builder )
     {
         String internalId = builder.evaluationId;
 
@@ -1311,17 +1311,17 @@ public class Evaluation implements Closeable
                                                               subscriberApprover,
                                                               this.flowController );
 
-            Topic status = ( Topic ) broker.getDestination( Evaluation.EVALUATION_STATUS_QUEUE );
+            Topic status = ( Topic ) broker.getDestination( EvaluationMessager.EVALUATION_STATUS_QUEUE );
 
             this.evaluationStatusPublisher = MessagePublisher.of( broker, status );
 
-            Topic evaluation = ( Topic ) broker.getDestination( Evaluation.EVALUATION_QUEUE );
+            Topic evaluation = ( Topic ) broker.getDestination( EvaluationMessager.EVALUATION_QUEUE );
             this.evaluationPublisher = MessagePublisher.of( broker, evaluation );
 
-            Topic statistics = ( Topic ) broker.getDestination( Evaluation.STATISTICS_QUEUE );
+            Topic statistics = ( Topic ) broker.getDestination( EvaluationMessager.STATISTICS_QUEUE );
             this.statisticsPublisher = MessagePublisher.of( broker, statistics );
 
-            Topic pairs = ( Topic ) broker.getDestination( Evaluation.PAIRS_QUEUE );
+            Topic pairs = ( Topic ) broker.getDestination( EvaluationMessager.PAIRS_QUEUE );
             this.pairsPublisher = MessagePublisher.of( broker, pairs );
         }
         catch ( JMSException | NamingException e )
@@ -1454,20 +1454,20 @@ public class Evaluation implements Closeable
 
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
 
-        this.internalPublish( body, this.evaluationPublisher, Evaluation.EVALUATION_QUEUE, null );
+        this.internalPublish( body, this.evaluationPublisher, EvaluationMessager.EVALUATION_QUEUE, null );
 
         this.messageCount.getAndIncrement();
     }
 
     /**
      * Notifies all clients that depend on this evaluation that it is still alive. The notification happens at a fixed
-     * time interval of {@link Evaluation#NOTIFY_ALIVE_MILLISECONDS}.
+     * time interval of {@link EvaluationMessager#NOTIFY_ALIVE_MILLISECONDS}.
      *
      * @param evaluation the evaluation
      * @param timer the timer
      */
 
-    private void checkAndNotifyStatusAtFixedInterval( Evaluation evaluation, Timer timer )
+    private void checkAndNotifyStatusAtFixedInterval( EvaluationMessager evaluation, Timer timer )
     {
         // Create a timer task to update any listening clients that the evaluation is alive in case of long-running 
         // statistics tasks
@@ -1483,7 +1483,7 @@ public class Evaluation implements Closeable
             }
         };
 
-        timer.schedule( updater, 0, Evaluation.NOTIFY_ALIVE_MILLISECONDS );
+        timer.schedule( updater, 0, EvaluationMessager.NOTIFY_ALIVE_MILLISECONDS );
     }
 
     /**

@@ -109,13 +109,13 @@ class EvaluationStatusTrackerTest
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
-              Evaluation evaluation =
-                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
-                                                                         .setOutputs( Outputs.newBuilder()
+              EvaluationMessager evaluation =
+                      EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                                 .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
-                                                                         .build(),
-                                     EvaluationStatusTrackerTest.connections,
-                                     "aClient" );
+                                                                                 .build(),
+                                             EvaluationStatusTrackerTest.connections,
+                                             "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG, Format.CSV ),
@@ -210,13 +210,13 @@ class EvaluationStatusTrackerTest
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
-              Evaluation evaluation =
-                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
-                                                                         .setOutputs( Outputs.newBuilder()
+              EvaluationMessager evaluation =
+                      EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                                 .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
-                                                                         .build(),
-                                     EvaluationStatusTrackerTest.connections,
-                                     "aClient" );
+                                                                                 .build(),
+                                             EvaluationStatusTrackerTest.connections,
+                                             "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG ),
@@ -326,13 +326,13 @@ class EvaluationStatusTrackerTest
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
                                                                          EvaluationStatusTrackerTest.connections );
-              Evaluation evaluation =
-                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
-                                                                         .setOutputs( Outputs.newBuilder()
+              EvaluationMessager evaluation =
+                      EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                                 .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
-                                                                         .build(),
-                                     EvaluationStatusTrackerTest.connections,
-                                     "aClient" );
+                                                                                 .build(),
+                                             EvaluationStatusTrackerTest.connections,
+                                             "aClient" );
               EvaluationStatusTracker tracker = new EvaluationStatusTracker( evaluation,
                                                                              EvaluationStatusTrackerTest.connections,
                                                                              Set.of( Format.PNG ),

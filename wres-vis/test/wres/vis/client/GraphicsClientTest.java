@@ -23,7 +23,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.events.Evaluation;
+import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
@@ -136,9 +136,9 @@ class GraphicsClientTest
         graphics.start();
 
         try ( // This is the evaluation instance that declares png output
-              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     GraphicsClientTest.connections,
-                                                     "aClient" ); )
+              EvaluationMessager evaluation = EvaluationMessager.of( this.oneEvaluation,
+                                                                     GraphicsClientTest.connections,
+                                                                     "aClient" ); )
         {
 
             // Publish the statistics to a "feature" group

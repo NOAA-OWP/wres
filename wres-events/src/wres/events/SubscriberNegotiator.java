@@ -98,7 +98,7 @@ class SubscriberNegotiator
      * The evaluation.
      */
 
-    private final Evaluation evaluation;
+    private final EvaluationMessager evaluation;
 
     /**
      * Determines whether subscription offers from format writers are viable. 
@@ -550,7 +550,7 @@ class SubscriberNegotiator
      * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
      */
 
-    SubscriberNegotiator( Evaluation evaluation,
+    SubscriberNegotiator( EvaluationMessager evaluation,
                           Set<Format> formatsRequired,
                           SubscriberApprover subscriberApprover )
     {

@@ -46,7 +46,7 @@ import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.events.Evaluation;
+import wres.events.EvaluationMessager;
 import wres.events.EvaluationEventUtilities;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.subscribe.ConsumerFactory;
@@ -187,7 +187,7 @@ class EvaluationUtilities
 
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
-        Evaluation evaluation = null;
+        EvaluationMessager evaluation = null;
 
         try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( projectConfig,
                                                                                   outputDirectory );
@@ -225,7 +225,7 @@ class EvaluationUtilities
                                                                          databaseServices );
 
             // Open an evaluation, to be closed on completion or stopped on exception
-            Pair<Evaluation, String> evaluationAndProjectHash =
+            Pair<EvaluationMessager, String> evaluationAndProjectHash =
                     EvaluationUtilities.evaluate( evaluationDetails,
                                                   databaseServices,
                                                   executors,
@@ -241,12 +241,12 @@ class EvaluationUtilities
             // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
             // close the netcdf writers before the finally block because these writers employ a delayed write, which 
             // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
-            // context see #81790-21 and the detailed description in Evaluation.await(), which clarifies that awaiting 
+            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that awaiting
             // for an evaluation to complete does not mean that all consumers have finished their work, only that they 
             // have received all expected messages. If this contract is insufficient (e.g., because of a delayed write
             // implementation), then it may be necessary to promote the underlying consumer/s to an external/outer 
             // subscriber that is responsible for messaging its own lifecycle, rather than delegating that to the 
-            // Evaluation instance (which adopts the limited contract described here). An external subscriber within 
+            // EvaluationMessager instance (which adopts the limited contract described here). An external subscriber within
             // this jvm/process has the same contract as an external subscriber running in another process/jvm. It 
             // should only report completion when consumption is "done done".
             for ( NetcdfOutputWriter writer : netcdfWriters )
@@ -344,15 +344,15 @@ class EvaluationUtilities
      * @throws IOException if an attempt was made to close the evaluation and it failed
      */
 
-    private static Pair<Evaluation, String> evaluate( EvaluationDetails evaluationDetails,
-                                                      DatabaseServices databaseServices,
-                                                      Executors executors,
-                                                      BrokerConnectionFactory connections,
-                                                      SharedWriters sharedWriters,
-                                                      List<NetcdfOutputWriter> netcdfWriters )
+    private static Pair<EvaluationMessager, String> evaluate( EvaluationDetails evaluationDetails,
+                                                              DatabaseServices databaseServices,
+                                                              Executors executors,
+                                                              BrokerConnectionFactory connections,
+                                                              SharedWriters sharedWriters,
+                                                              List<NetcdfOutputWriter> netcdfWriters )
             throws IOException
     {
-        Evaluation evaluation = null;
+        EvaluationMessager evaluation = null;
         String projectHash;
         try
         {
@@ -452,11 +452,11 @@ class EvaluationUtilities
             // to build an evaluation description before ingest, those parts of the evaluation description that depend
             // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
             // the time scale is part of the pool description for this reason.
-            evaluation = Evaluation.of( evaluationDescription,
-                                        connections,
-                                        EvaluationUtilities.CLIENT_ID,
-                                        evaluationDetails.getEvaluationId(),
-                                        evaluationDetails.getSubscriberApprover() );
+            evaluation = EvaluationMessager.of( evaluationDescription,
+                                                connections,
+                                                EvaluationUtilities.CLIENT_ID,
+                                                evaluationDetails.getEvaluationId(),
+                                                evaluationDetails.getSubscriberApprover() );
             evaluationDetails.setEvaluation( evaluation );
 
             // Acquire the individual feature tuples to correlate with thresholds
@@ -580,7 +580,7 @@ class EvaluationUtilities
      * @param error the error
      * @param evaluationId the evaluation identifier
      */
-    private static void forceStop( Evaluation evaluation, RuntimeException error, String evaluationId )
+    private static void forceStop( EvaluationMessager evaluation, RuntimeException error, String evaluationId )
     {
         if ( Objects.nonNull( evaluation ) )
         {
@@ -599,7 +599,7 @@ class EvaluationUtilities
      */
 
     private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
-                                            Evaluation evaluation,
+                                            EvaluationMessager evaluation,
                                             String evaluationId )
     {
         for ( NetcdfOutputWriter writer : netcdfWriters )
@@ -1195,7 +1195,8 @@ class EvaluationUtilities
                                                                .setPoolSupplier( poolSupplier )
                                                                .setEvaluation( evaluationDetails.getEvaluation() )
                                                                .setMonitor( evaluationDetails.getMonitor() )
-                                                               .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
+                                                               .setTraceCountEstimator(
+                                                                       SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                                                                .setSeparateMetricsForBaseline( separateMetrics )
                                                                .setPoolGroupTracker( groupPublicationTracker )
                                                                .build();
@@ -1468,7 +1469,7 @@ class EvaluationUtilities
         private final SystemSettings systemSettings;
         /** Project configuration. */
         private final ProjectConfigPlus projectConfigPlus;
-        /** Evaluation description. */
+        /** EvaluationMessager description. */
         private final wres.statistics.generated.Evaluation evaluationDescription;
         /** Unique evaluation identifier. */
         private final String evaluationId;
@@ -1485,7 +1486,7 @@ class EvaluationUtilities
         /** The project, possibly null. */
         private Project project;
         /** The messaging component of an evaluation, possibly null. */
-        private Evaluation evaluation;
+        private EvaluationMessager evaluation;
         /** An in-memory store of time-series data, possibly null. */
         private TimeSeriesStore timeSeriesStore;
 
@@ -1561,7 +1562,7 @@ class EvaluationUtilities
          * @return the evaluation, possibly null
          */
 
-        private Evaluation getEvaluation()
+        private EvaluationMessager getEvaluation()
         {
             return this.evaluation;
         }
@@ -1634,7 +1635,7 @@ class EvaluationUtilities
          * @throws NullPointerException if the evaluation is null
          */
 
-        private void setEvaluation( Evaluation evaluation )
+        private void setEvaluation( EvaluationMessager evaluation )
         {
             Objects.requireNonNull( evaluation );
 
