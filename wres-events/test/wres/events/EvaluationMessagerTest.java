@@ -43,12 +43,12 @@ import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 import wres.statistics.generated.Pairs;
 
 /**
- * Tests the {@link Evaluation}.
+ * Tests the {@link EvaluationMessager}.
  *
  * @author James Brown
  */
 
-class EvaluationTest
+class EvaluationMessagerTest
 {
     /**
      * Embedded broker.
@@ -103,11 +103,11 @@ class EvaluationTest
     {
         // Create and start and embedded broker
         Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
-        EvaluationTest.broker = EmbeddedBroker.of( properties, true );
-        EvaluationTest.broker.start();
+        EvaluationMessagerTest.broker = EmbeddedBroker.of( properties, true );
+        EvaluationMessagerTest.broker.start();
 
         // Create a connection factory to supply broker connections
-        EvaluationTest.connections = BrokerConnectionFactory.of( properties, 2 );
+        EvaluationMessagerTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @BeforeEach
@@ -261,21 +261,21 @@ class EvaluationTest
         try ( EvaluationSubscriber ignoredOne =
                       EvaluationSubscriber.of( consumer,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections );
+                                               EvaluationMessagerTest.connections );
               EvaluationSubscriber ignoredTwo =
                       EvaluationSubscriber.of( consumerTwo,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections );
-              Evaluation evaluationOne =
-                      Evaluation.of( this.oneEvaluation,
-                                     EvaluationTest.connections,
-                                     A_CLIENT,
-                                     "evaluationOne" );
-              Evaluation evaluationTwo =
-                      Evaluation.of( this.anotherEvaluation,
-                                     EvaluationTest.connections,
-                                     A_CLIENT,
-                                     "evaluationTwo" ) )
+                                               EvaluationMessagerTest.connections );
+              EvaluationMessager evaluationOne =
+                      EvaluationMessager.of( this.oneEvaluation,
+                                             EvaluationMessagerTest.connections,
+                                             A_CLIENT,
+                                             "evaluationOne" );
+              EvaluationMessager evaluationTwo =
+                      EvaluationMessager.of( this.anotherEvaluation,
+                                             EvaluationMessagerTest.connections,
+                                             A_CLIENT,
+                                             "evaluationTwo" ) )
         {
             // First evaluation
             for ( Statistics next : this.oneStatistics )
@@ -342,14 +342,14 @@ class EvaluationTest
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                       Executors.newSingleThreadExecutor(),
-                                                                      EvaluationTest.connections );
-              Evaluation evaluation =
-                      Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
-                                                                         .setOutputs( Outputs.newBuilder()
+                                                                      EvaluationMessagerTest.connections );
+              EvaluationMessager evaluation =
+                      EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                                 .setOutputs( Outputs.newBuilder()
                                                                                              .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
-                                                                         .build(),
-                                     EvaluationTest.connections,
-                                     A_CLIENT ) )
+                                                                                 .build(),
+                                             EvaluationMessagerTest.connections,
+                                             A_CLIENT ) )
         {
             // Stop the evaluation
             evaluation.stop( new Exception( "an exception" ) );
@@ -387,8 +387,8 @@ class EvaluationTest
             getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
                 return statisticsMessages -> {
-                    actualAggregatedStatistics.add( EvaluationTest.getStatisticsAggregator()
-                                                                  .apply( statisticsMessages ) );
+                    actualAggregatedStatistics.add( EvaluationMessagerTest.getStatisticsAggregator()
+                                                                          .apply( statisticsMessages ) );
                     return Collections.emptySet();
                 };
             }
@@ -413,10 +413,10 @@ class EvaluationTest
         try ( EvaluationSubscriber ignored =
                       EvaluationSubscriber.of( consumer,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections );
-              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections,
-                                                     A_CLIENT ) )
+                                               EvaluationMessagerTest.connections );
+              EvaluationMessager evaluation = EvaluationMessager.of( this.oneEvaluation,
+                                                                     EvaluationMessagerTest.connections,
+                                                                     A_CLIENT ) )
         {
             // First group
             for ( Statistics next : this.oneStatistics )
@@ -476,7 +476,7 @@ class EvaluationTest
     void testEmptyEvaluation() throws IOException
     {
         // Create and start a broker and open an evaluation, closing on completion
-        Evaluation evaluation = null;
+        EvaluationMessager evaluation = null;
         Integer exitCode = null;
 
         ConsumerFactory consumer = new ConsumerFactory()
@@ -513,15 +513,15 @@ class EvaluationTest
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored = EvaluationSubscriber.of( consumer,
                                                                       Executors.newSingleThreadExecutor(),
-                                                                      EvaluationTest.connections ) )
+                                                                      EvaluationMessagerTest.connections ) )
         {
             evaluation =
-                    Evaluation.of( wres.statistics.generated.Evaluation.newBuilder()
-                                                                       .setOutputs( Outputs.newBuilder()
+                    EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
+                                                                               .setOutputs( Outputs.newBuilder()
                                                                                            .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
-                                                                       .build(),
-                                   EvaluationTest.connections,
-                                   A_CLIENT );
+                                                                               .build(),
+                                           EvaluationMessagerTest.connections,
+                                           A_CLIENT );
 
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
@@ -582,16 +582,16 @@ class EvaluationTest
         };
 
         // Open an evaluation, closing on completion
-        Evaluation evaluation = null;
+        EvaluationMessager evaluation = null;
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
         try ( EvaluationSubscriber ignored =
                       EvaluationSubscriber.of( consumer,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections ) )
+                                               EvaluationMessagerTest.connections ) )
         {
-            evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections,
-                                        A_CLIENT );
+            evaluation = EvaluationMessager.of( this.oneEvaluation,
+                                                EvaluationMessagerTest.connections,
+                                                A_CLIENT );
 
             // Publish a statistics message, which fails to be consumed after retries
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -600,7 +600,7 @@ class EvaluationTest
             evaluation.markPublicationCompleteReportedSuccess();
 
             // Wait for the evaluation to complete
-            Evaluation finalEvaluation = evaluation;
+            EvaluationMessager finalEvaluation = evaluation;
             assertThrows( EvaluationFailedToCompleteException.class, finalEvaluation::await );
         }
         finally
@@ -663,10 +663,10 @@ class EvaluationTest
         try ( EvaluationSubscriber ignored =
                       EvaluationSubscriber.of( consumer,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections );
-              Evaluation evaluation = Evaluation.of( this.oneEvaluation,
-                                                     EvaluationTest.connections,
-                                                     A_CLIENT ) )
+                                               EvaluationMessagerTest.connections );
+              EvaluationMessager evaluation = EvaluationMessager.of( this.oneEvaluation,
+                                                                     EvaluationMessagerTest.connections,
+                                                                     A_CLIENT ) )
         {
             // Publish a statistics message, triggering one failed consumption followed by recovery
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -686,7 +686,7 @@ class EvaluationTest
     void testEvaluationWithUnrecoverablePublisherException() throws IOException
     {
         // Open an evaluation, closing on completion
-        Evaluation evaluation = null;
+        EvaluationMessager evaluation = null;
 
         ConsumerFactory consumer = new ConsumerFactory()
         {
@@ -723,11 +723,11 @@ class EvaluationTest
         try ( EvaluationSubscriber ignored =
                       EvaluationSubscriber.of( consumer,
                                                Executors.newSingleThreadExecutor(),
-                                               EvaluationTest.connections ) )
+                                               EvaluationMessagerTest.connections ) )
         {
-            evaluation = Evaluation.of( this.oneEvaluation,
-                                        EvaluationTest.connections,
-                                        A_CLIENT );
+            evaluation = EvaluationMessager.of( this.oneEvaluation,
+                                                EvaluationMessagerTest.connections,
+                                                A_CLIENT );
 
             Statistics mockedStatistics = Mockito.mock( Statistics.class );
             Mockito.when( mockedStatistics.toByteArray() )
@@ -737,7 +737,7 @@ class EvaluationTest
             evaluation.publish( Statistics.getDefaultInstance() );
 
             // Publish one bad message
-            Evaluation finalEvaluation = evaluation;
+            EvaluationMessager finalEvaluation = evaluation;
             assertThrows( IllegalArgumentException.class, () -> finalEvaluation.publish( mockedStatistics ) );
 
             // Notify publication done
@@ -791,14 +791,14 @@ class EvaluationTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( EvaluationTest.connections ) )
+        if ( Objects.nonNull( EvaluationMessagerTest.connections ) )
         {
-            EvaluationTest.connections.close();
+            EvaluationMessagerTest.connections.close();
         }
 
-        if ( Objects.nonNull( EvaluationTest.broker ) )
+        if ( Objects.nonNull( EvaluationMessagerTest.broker ) )
         {
-            EvaluationTest.broker.close();
+            EvaluationMessagerTest.broker.close();
         }
     }
 

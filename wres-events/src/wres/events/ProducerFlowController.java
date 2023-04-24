@@ -33,7 +33,7 @@ class ProducerFlowController
      * The evaluation whose production should be controlled.
      */
 
-    private final Evaluation evaluation;
+    private final EvaluationMessager evaluation;
     
     /**
      * A lock to control the flow of producers and thereby avoid overwhelming the broker when consumers a much slower
@@ -64,7 +64,7 @@ class ProducerFlowController
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the set of consumers is empty
      */
-    ProducerFlowController( Evaluation evaluation )
+    ProducerFlowController( EvaluationMessager evaluation )
     {
         Objects.requireNonNull( evaluation );
 

@@ -94,7 +94,7 @@ class EvaluationConsumer
     private static final long CONSUMER_TIMEOUT = 600_000;
 
     /**
-     * Evaluation identifier.
+     * EvaluationMessager identifier.
      */
 
     private final String evaluationId;
@@ -406,7 +406,7 @@ class EvaluationConsumer
 
         if ( LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "Evaluation consumer {} accepted a statistics message with message identifier {} and "
+            LOGGER.debug( "EvaluationMessager consumer {} accepted a statistics message with message identifier {} and "
                           + "group identifier {}. The message was routed to a waiting format consumer.",
                           this.getClientId(),
                           messageId,
@@ -669,7 +669,7 @@ class EvaluationConsumer
     private void markEvaluationTimedOutAwaitingConsumers() throws JMSException
     {
         SubscriberTimedOutException timeOut =
-                new SubscriberTimedOutException( "Evaluation " + this.getEvaluationId()
+                new SubscriberTimedOutException( "EvaluationMessager " + this.getEvaluationId()
                                                  + " failed to receive the evaluation description message "
                                                  + "within the timeout period of "
                                                  + CONSUMER_TIMEOUT

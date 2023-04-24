@@ -79,7 +79,7 @@ public class SubscriberStatus
 
         if ( !this.complete.isEmpty() )
         {
-            addComplete = " Evaluation subscriber "
+            addComplete = " EvaluationMessager subscriber "
                           + this.clientId
                           + " completed "
                           + this.complete.size()
@@ -98,7 +98,7 @@ public class SubscriberStatus
             addUnderway = " The " + this.underway.size() + " evaluations underway are " + this.underway + ".";
         }
 
-        return "Evaluation subscriber "
+        return "EvaluationMessager subscriber "
                + this.clientId
                + " is waiting for work. Until now, received "
                + this.statisticsCount.get()

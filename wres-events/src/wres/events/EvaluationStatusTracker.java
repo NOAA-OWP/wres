@@ -127,7 +127,7 @@ class EvaluationStatusTracker implements Closeable
      * The evaluation.
      */
 
-    private final Evaluation evaluation;
+    private final EvaluationMessager evaluation;
 
     /**
      * The connection.
@@ -955,7 +955,7 @@ class EvaluationStatusTracker implements Closeable
      * @throws EvaluationEventException if the status tracker could not be created for any other reason
      */
 
-    EvaluationStatusTracker( Evaluation evaluation,
+    EvaluationStatusTracker( EvaluationMessager evaluation,
                              BrokerConnectionFactory broker,
                              Set<Format> formatsRequired,
                              int maximumRetries,
@@ -1257,7 +1257,7 @@ class EvaluationStatusTracker implements Closeable
             // Stop if the maximum number of retries has been reached
             if ( retryCount == this.getMaximumRetries() )
             {
-                LOGGER.error( "Evaluation status tracker {} encountered a consumption failure for evaluation {}. "
+                LOGGER.error( "EvaluationMessager status tracker {} encountered a consumption failure for evaluation {}. "
                               + "Recovery failed after {} attempts.",
                               this.getTrackerId(),
                               correlationId,
@@ -1335,7 +1335,7 @@ class EvaluationStatusTracker implements Closeable
      * @return the evaluation being tracked.
      */
 
-    private Evaluation getEvaluation()
+    private EvaluationMessager getEvaluation()
     {
         return this.evaluation;
     }

@@ -55,7 +55,7 @@ public class MessagePublisher implements Closeable
         JMS_MESSAGE_ID,
         /** Consumer ID. */
         CONSUMER_ID,
-        /** Evaluation job ID. */
+        /** EvaluationMessager job ID. */
         EVALUATION_JOB_ID,
         /** PNG format. */
         PNG,

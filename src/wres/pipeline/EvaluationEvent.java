@@ -27,11 +27,11 @@ import wres.datamodel.time.TimeSeries;
  */
 
 @Name( "wres.control.EvaluationEvent" )
-@Label( "Evaluation Event" )
+@Label( "EvaluationMessager Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core" } )
 public class EvaluationEvent extends Event
 {
-    @Label( "Evaluation Identifier" )
+    @Label( "EvaluationMessager Identifier" )
     @Description( "The unique identifier of the evaluation." )
     private String evaluationId;
 
