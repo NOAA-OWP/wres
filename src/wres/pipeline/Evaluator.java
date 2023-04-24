@@ -202,38 +202,37 @@ public class Evaluator
 
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
-        // Create some unbounded work queues. For evaluations that produce faster than they consume, production is flow 
-        // controlled explicitly via the statistics messaging. See #95867.
+        // Create some unbounded work queues. For evaluations that produce statistics faster than subscribers (e.g.,
+        // statistics format writers) can consume them, production is flow controlled explicitly via the statistics
+        // messaging. See #95867.
         BlockingQueue<Runnable> poolQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> productQueue = new LinkedBlockingQueue<>();
 
-        // Processes pools
+        // Create some thread pools to perform the work required by different parts of the evaluation pipeline
+        // Thread pool that processes pools of pairs
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
                                                                   innerSystemSettings.getMaximumPoolThreads(),
                                                                   innerSystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   poolQueue,
                                                                   poolFactory );
-
-        // Dispatches thresholds
+        // Thread pool that dispatches thresholds
         ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
                                                                        innerSystemSettings.getMaximumThresholdThreads(),
                                                                        0,
                                                                        TimeUnit.SECONDS,
                                                                        thresholdQueue,
                                                                        thresholdFactory );
-
-        // Processes metrics
+        // Thread pool that processes metrics
         ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
                                                                     innerSystemSettings.getMaximumMetricThreads(),
                                                                     innerSystemSettings.poolObjectLifespan(),
                                                                     TimeUnit.MILLISECONDS,
                                                                     metricQueue,
                                                                     metricFactory );
-
-        // Processes products
+        // Thread pool that generates products, such as statistics formats
         ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumProductThreads(),
                                                                      innerSystemSettings.getMaximumProductThreads(),
                                                                      innerSystemSettings.poolObjectLifespan(),
@@ -276,7 +275,6 @@ public class Evaluator
             // Monitor the task queues if required
             if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
             {
-
                 monitoringService = new ScheduledThreadPoolExecutor( 1 );
                 QueueMonitor queueMonitor = new QueueMonitor( this.getDatabase(),
                                                               poolQueue,
@@ -290,13 +288,14 @@ public class Evaluator
                                                        TimeUnit.MILLISECONDS );
             }
 
-            // Process the configuration
-            Pair<Set<Path>, String> innerPathsAndProjectHash = EvaluationUtilities.evaluate( innerSystemSettings,
-                                                                                             databaseServices,
-                                                                                             projectConfigPlus,
-                                                                                             executors,
-                                                                                             this.getBrokerConnectionFactory(),
-                                                                                             monitor );
+            // Perform the evaluation
+            Pair<Set<Path>, String> innerPathsAndProjectHash =
+                    EvaluationUtilities.evaluate( innerSystemSettings,
+                                                  databaseServices,
+                                                  projectConfigPlus,
+                                                  executors,
+                                                  this.getBrokerConnectionFactory(),
+                                                  monitor );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );

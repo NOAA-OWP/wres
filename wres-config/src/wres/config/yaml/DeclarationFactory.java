@@ -342,11 +342,11 @@ public class DeclarationFactory
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema only. Does not "interpolate"
      * any missing declaration options that may be gleaned from other declaration. To perform "interpolation", use
-     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration,boolean)}. Also, does not perform any
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, boolean)}. Also, does not perform any
      * high-level validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform
      * high-level validation, see the {@link DeclarationValidator}.
      *
-     * @see DeclarationValidator#validate(EvaluationDeclaration,boolean)
+     * @see DeclarationValidator#validate(EvaluationDeclaration, boolean)
      * @see DeclarationValidator#validate(EvaluationDeclaration)
      * @param yaml the yaml string
      * @return an evaluation declaration
@@ -360,7 +360,7 @@ public class DeclarationFactory
     {
         Objects.requireNonNull( yaml );
 
-        if( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "Encountered the following declaration string:{}{}{}{}",
                          System.lineSeparator(),
@@ -474,6 +474,8 @@ public class DeclarationFactory
 
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder();
 
+        // Migrate the project name
+        DeclarationFactory.migrateName( projectConfig, builder );
         // Migrate the datasets
         DeclarationFactory.migrateDatasets( projectConfig.getInputs(), builder );
         // Migrate the features
@@ -511,6 +513,23 @@ public class DeclarationFactory
         DeclarationFactory.migrateOutputFormats( projectConfig.getOutputs(), builder );
 
         return builder.build();
+    }
+
+    /**
+     * Migrate the project name.
+     *
+     * @param projectConfig the project declaration
+     * @param builder the new declaration builder
+     */
+
+    private static void migrateName( ProjectConfig projectConfig, EvaluationDeclarationBuilder builder )
+    {
+        String name = projectConfig.getName();
+        // Set a non-null name that does not match the default in the old language
+        if ( Objects.nonNull( name ) && !name.equals( "unnamed project" ) )
+        {
+            builder.label( projectConfig.getName() );
+        }
     }
 
     /**

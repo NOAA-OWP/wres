@@ -134,6 +134,11 @@ definitions:
             - "$ref": "#/definitions/GraphicFormatWithParameters"
         minItems: 1
         uniqueItems: true
+      # An optional label or name for the evaluation
+      label:
+        type: string
+        minLength: 1
+        maxLength: 2083
     required:
       - observed
       - predicted

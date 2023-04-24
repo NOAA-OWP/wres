@@ -64,6 +64,7 @@ import wres.statistics.generated.Pool;
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
+ * @param label an optional label or name for the evaluation
  */
 
 @RecordBuilder
@@ -115,7 +116,8 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
                                      @JsonDeserialize( using = DecimalFormatDeserializer.class )
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
-                                     @JsonProperty( "output_formats" ) Formats formats )
+                                     @JsonProperty( "output_formats" ) Formats formats,
+                                     @JsonProperty( "label" ) String label )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -155,6 +157,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
      * @param durationFormat the duration format
      * @param decimalFormat the decimal format
      * @param formats the statistics formats to write
+     * @param label an optional label or name for the evaluation
      */
     public EvaluationDeclaration
     {
