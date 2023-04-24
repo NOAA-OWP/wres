@@ -117,7 +117,6 @@ public class ScenarioHelper
     {
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
         Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
-        List<String> args = List.of( config.toString() );
         Set<Path> paths = Collections.emptySet();
 
         // Create the broker connections for statistics messaging
@@ -137,7 +136,7 @@ public class ScenarioHelper
                                                       DATABASE,
                                                       brokerConnectionFactory );
 
-            ExecutionResult result = wresEvaluation.evaluate( args );
+            ExecutionResult result = wresEvaluation.evaluate( config.toString() );
 
             if ( result.failed() )
             {
