@@ -79,39 +79,28 @@ public class Evaluator
     }
 
     /**
-     * Processes one or more projects whose paths are provided in the input arguments.
-     * @param args the paths to one or more project configurations
+     * Processes a declaration string or a path to a file that contains a declaration string.
+     * @param declarationOrPath the declaration or path to a declaration string
      * @return the result of the execution
-     * @throws UserInputException when WRES detects problem with project config
-     * @throws InternalWresException when WRES detects problem not with project
+     * @throws UserInputException when WRES detects a problem with the declaration
+     * @throws InternalWresException when WRES encounters an internal error, unrelated to the declaration
      */
 
-    public ExecutionResult evaluate( List<String> args )
+    public ExecutionResult evaluate( String declarationOrPath )
     {
+        if( Objects.isNull( declarationOrPath ) )
+        {
+            throw new InternalWresException( "Expected a non-null declaration string or path." );
+        }
+
         // Create a record of failure, but only commit if a failure actually occurs
         EvaluationEvent failure = EvaluationEvent.of();
         failure.begin();
 
-        if ( args.size() != 1 )
-        {
-            String message = "Please correct project configuration file name and "
-                             + "pass it like this: "
-                             + "bin/wres.bat execute c:/path/to/config1.xml";
-            LOGGER.error( message );
-            UserInputException e = new UserInputException( message );
-            failure.setFailed();
-            failure.commit();
-            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
-        }
-
-        // Attempt to read the declaration
-        String evaluationConfigArgument = args.get( 0 )
-                                              .trim();
-
         ProjectConfigPlus projectConfigPlus;
         try
         {
-            projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
+            projectConfigPlus = ProjectConfigs.readDeclaration( declarationOrPath );
         }
         catch ( IOException e )
         {

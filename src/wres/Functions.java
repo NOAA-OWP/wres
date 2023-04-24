@@ -114,7 +114,7 @@ final class Functions
     static ExecutionResult call( String operation, SharedResources sharedResources )
     {
         // Log the operation
-        if( LOGGER.isInfoEnabled() )
+        if ( LOGGER.isInfoEnabled() )
         {
             StringJoiner joiner = new StringJoiner( " " );
             if ( !sharedResources.arguments().contains( operation ) )
@@ -206,7 +206,21 @@ final class Functions
                                              sharedResources.database(),
                                              sharedResources.brokerConnectionFactory() );
 
-        return evaluator.evaluate( sharedResources.arguments() );
+        List<String> args = sharedResources.arguments();
+        if ( args.size() != 1 )
+        {
+            String message = "Please supply a (single) path to a project declaration file to evaluate, like this: "
+                             + "bin/wres.bat execute c:/path/to/project_config.xml";
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
+        }
+
+        // Attempt to read the declaration
+        String declarationOrPath = args.get( 0 )
+                                       .trim();
+
+        return evaluator.evaluate( declarationOrPath );
     }
 
     /**
