@@ -112,6 +112,7 @@ class MultiDeclarationFactoryTest
                                                                      .metrics( Set.of( metric ) )
                                                                      .unit( "CMS" )
                                                                      .formats( formats )
+                                                                     .label( "scenario50x" )
                                                                      .build();
 
         assertEquals( expected, actual );

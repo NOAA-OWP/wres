@@ -85,6 +85,7 @@ import wres.pipeline.statistics.StatisticsProcessor;
 import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
+import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.system.SystemSettings;
 
@@ -162,7 +163,7 @@ class EvaluationUtilities
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         // Create a description of the evaluation
-        wres.statistics.generated.Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =
@@ -205,11 +206,11 @@ class EvaluationUtilities
                                                                                        connections,
                                                                                        evaluationId ) )
         {
-            // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format writing
-            // work from each other. This is expected insofar as all subscribers are par. However, core clients currently 
-            // run in short-running processes, we want to estimate resources for core clients effectively, and some format
-            // writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place all format writers in
-            // long running processes instead. See #88262 and #88267.
+            // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format
+            // writing work from each other. This is expected insofar as all subscribers are par. However, core clients
+            // currently run in short-running processes, we want to estimate resources for core clients effectively,
+            // and some format writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place
+            // all format writers in long running processes instead. See #88262 and #88267.
             SubscriberApprover subscriberApprover =
                     new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
                                                                             consumerId )
@@ -241,14 +242,14 @@ class EvaluationUtilities
             // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
             // close the netcdf writers before the finally block because these writers employ a delayed write, which 
             // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
-            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that awaiting
-            // for an evaluation to complete does not mean that all consumers have finished their work, only that they 
-            // have received all expected messages. If this contract is insufficient (e.g., because of a delayed write
-            // implementation), then it may be necessary to promote the underlying consumer/s to an external/outer 
-            // subscriber that is responsible for messaging its own lifecycle, rather than delegating that to the 
-            // EvaluationMessager instance (which adopts the limited contract described here). An external subscriber within
-            // this jvm/process has the same contract as an external subscriber running in another process/jvm. It 
-            // should only report completion when consumption is "done done".
+            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
+            // awaiting for an evaluation to complete does not mean that all consumers have finished their work, only
+            // that they have received all expected messages. If this contract is insufficient (e.g., because of a
+            // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
+            // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
+            // that to the EvaluationMessager instance (which adopts the limited contract described here). An external
+            // subscriber within this jvm/process has the same contract as an external subscriber running in another
+            // process/jvm. It should only report completion when consumption is "really done".
             for ( NetcdfOutputWriter writer : netcdfWriters )
             {
                 writer.close();
@@ -407,7 +408,7 @@ class EvaluationUtilities
                                                    ingestResults );
                 }
             }
-            // In memory evaluation
+            // In-memory evaluation
             else
             {
                 // Builder for an in-memory store of time-series
@@ -443,7 +444,7 @@ class EvaluationUtilities
             // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
             // interpolation include interpolation of missing declaration and service calls to interpolate features and
             // thresholds. This is the latest step in that process of combining the declaration and data
-            wres.statistics.generated.Evaluation evaluationDescription =
+            Evaluation evaluationDescription =
                     EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
                                                                           project );
 
@@ -575,8 +576,8 @@ class EvaluationUtilities
     }
 
     /**
-     * Forcibly stops an evaluation on encountering an error, if already created.
-     * @param evaluation the evaluation
+     * Forcibly stops an evaluation messager on encountering an error, if already created.
+     * @param evaluation the evaluation messager
      * @param error the error
      * @param evaluationId the evaluation identifier
      */
@@ -594,7 +595,7 @@ class EvaluationUtilities
     /**
      * Closes the netcdf writers.
      * @param netcdfWriters the writers to close
-     * @param evaluation the evaluation
+     * @param evaluation the evaluation messager
      * @param evaluationId the evaluation identifier
      */
 
@@ -761,13 +762,12 @@ class EvaluationUtilities
         if ( Objects.nonNull( firstDeprecatedNetcdf ) )
         {
             // Use the template-based netcdf writer.
-            NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of(
-                    systemSettings,
-                    projectConfig,
-                    firstDeprecatedNetcdf,
-                    durationUnits,
-                    outputDirectory,
-                    true );
+            NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of( systemSettings,
+                                                                               projectConfig,
+                                                                               firstDeprecatedNetcdf,
+                                                                               durationUnits,
+                                                                               outputDirectory,
+                                                                               true );
             writers.add( netcdfWriterDeprecated );
             LOGGER.warn(
                     "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
@@ -776,13 +776,12 @@ class EvaluationUtilities
         if ( Objects.nonNull( firstNetcdf2 ) )
         {
             // Use the newer from-scratch netcdf writer.
-            NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of(
-                    systemSettings,
-                    projectConfig,
-                    firstNetcdf2,
-                    durationUnits,
-                    outputDirectory,
-                    false );
+            NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of( systemSettings,
+                                                                     projectConfig,
+                                                                     firstNetcdf2,
+                                                                     durationUnits,
+                                                                     outputDirectory,
+                                                                     false );
             writers.add( netcdfWriter );
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }
@@ -950,13 +949,12 @@ class EvaluationUtilities
      * @return an evaluation description with analyzed measurement units and variables, as needed
      */
 
-    private static wres.statistics.generated.Evaluation
-    setAnalyzedUnitsAndVariableNames( wres.statistics.generated.Evaluation evaluation,
-                                      Project project )
+    private static Evaluation setAnalyzedUnitsAndVariableNames( Evaluation evaluation,
+                                                                Project project )
     {
         String desiredMeasurementUnit = project.getMeasurementUnit();
-        wres.statistics.generated.Evaluation.Builder builder = evaluation.toBuilder()
-                                                                         .setMeasurementUnit( desiredMeasurementUnit );
+        Evaluation.Builder builder = evaluation.toBuilder()
+                                               .setMeasurementUnit( desiredMeasurementUnit );
 
         // Only set the names with analyzed names if the existing names are empty
         if ( "".equals( evaluation.getLeftVariableName() ) )
@@ -984,7 +982,7 @@ class EvaluationUtilities
      */
 
     private static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
-                                                      wres.statistics.generated.Evaluation evaluationDescription )
+                                                      Evaluation evaluationDescription )
     {
         List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
 
@@ -1470,7 +1468,7 @@ class EvaluationUtilities
         /** Project configuration. */
         private final ProjectConfigPlus projectConfigPlus;
         /** EvaluationMessager description. */
-        private final wres.statistics.generated.Evaluation evaluationDescription;
+        private final Evaluation evaluationDescription;
         /** Unique evaluation identifier. */
         private final String evaluationId;
         /** Approves format writer subscriptions that attempt to serve an evaluation. */
@@ -1501,7 +1499,7 @@ class EvaluationUtilities
         /**
          * @return the evaluation description
          */
-        private wres.statistics.generated.Evaluation getEvaluationDescription()
+        private Evaluation getEvaluationDescription()
         {
             return evaluationDescription;
         }
@@ -1678,7 +1676,7 @@ class EvaluationUtilities
 
         private EvaluationDetails( SystemSettings systemSettings,
                                    ProjectConfigPlus projectConfigPlus,
-                                   wres.statistics.generated.Evaluation evaluationDescription,
+                                   Evaluation evaluationDescription,
                                    String evaluationId,
                                    SubscriberApprover subscriberApprover,
                                    EvaluationEvent monitor,
