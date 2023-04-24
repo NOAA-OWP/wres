@@ -25,7 +25,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
- * A fully in-memory tabular dataset that doesn't require an active connection to a database. Mimics the behavior of
+ * A fully in-memory tabular dataset that does not require an active connection to a database. Mimics the behavior of
  * the {@link ResultSet} data structure used for sql queries.
  */
 public class TabularDataset implements DataProvider

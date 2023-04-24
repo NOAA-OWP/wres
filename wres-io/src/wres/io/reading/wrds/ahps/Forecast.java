@@ -1,4 +1,4 @@
-package wres.io.reading.wrds;
+package wres.io.reading.wrds.ahps;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;

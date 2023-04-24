@@ -24,7 +24,7 @@ import wres.io.database.Database;
 import wres.io.reading.csv.CsvDataProvider;
 
 /**
- * <p>Provides access and operations on tabular data.
+ * <p>Provides access to, and operations upon, tabular data.
  *
  * <p>Column names used as input to getter methods are case-insensitive, much like a {@link ResultSet}.
  */

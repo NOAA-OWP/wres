@@ -1,4 +1,4 @@
-package wres.io.reading.web;
+package wres.io.reading.wrds.nwm;
 
 import static java.time.DayOfWeek.SUNDAY;
 import static java.time.temporal.TemporalAdjusters.next;
@@ -60,14 +60,13 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
-import wres.io.reading.wrds.nwm.NwmRootDocumentWithError;
-import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
+import wres.io.reading.web.WebClient;
 import wres.system.SystemSettings;
 
 /**
  * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the National Water 
  * Model (NWM). Time-series requests are chunked by feature and date range into 25-feature blocks and weekly date 
- * ranges, respectively.
+ * ranges, respectively. The underlying format reader is a {@link WrdsNwmJsonReader}.
  *
  * @author James Brown
  */
