@@ -1,6 +1,11 @@
 package wres.config.yaml;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -8,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -505,5 +512,32 @@ class DeclarationUtilitiesTest
                                                                      .baseline( baselineExpected )
                                                                      .build();
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testIsReadableFileReturnsFalseForInvalidPath()
+    {
+        String path = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                  """;
+
+        FileSystem fileSystem = FileSystems.getDefault();
+        assertFalse( DeclarationUtilities.isReadableFile( fileSystem, path ) );
+    }
+
+    @Test
+    void testIsReadableFileReturnsTrueForReadableFile() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path path = fileSystem.getPath( "foo.file" );
+            Files.createFile( path );
+            String pathString = path.toString();
+
+            assertTrue( DeclarationUtilities.isReadableFile( fileSystem, pathString ) );
+        }
     }
 }

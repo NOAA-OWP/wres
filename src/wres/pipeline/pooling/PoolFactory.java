@@ -44,6 +44,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PairConfig.Season;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.ProjectConfigs;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
@@ -708,7 +709,7 @@ public class PoolFactory
 
             // Create the basic metadata
             PoolMetadata baselineMetadata = null;
-            if ( ConfigHelper.hasBaseline( projectConfig ) )
+            if ( ProjectConfigs.hasBaseline( projectConfig ) )
             {
                 baselineMetadata = this.createMetadata( evaluation,
                                                         featureGroup,
@@ -1293,7 +1294,7 @@ public class PoolFactory
 
         TimePairingType returnMe = TimePairingType.REFERENCE_TIME_AND_VALID_TIME;
 
-        if ( !ConfigHelper.isForecast( inputsConfig.getLeft() ) || !ConfigHelper.isForecast( inputsConfig.getRight() ) )
+        if ( !ProjectConfigs.isForecast( inputsConfig.getLeft() ) || !ProjectConfigs.isForecast( inputsConfig.getRight() ) )
         {
             returnMe = TimePairingType.VALID_TIME_ONLY;
         }

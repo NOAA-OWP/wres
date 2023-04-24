@@ -99,17 +99,24 @@ public class DeclarationValidator
     private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
 
     /**
-     * Validates the declaration and additionally notifies any events discovered by logging warnings and aggregating
+     * Validates the declaration and, optionally, notifies any events discovered by logging warnings and aggregating
      * errors into an exception. For raw validation, see {@link #validate(EvaluationDeclaration)}.
      *
      * @see #validate(EvaluationDeclaration)
      * @param declaration the declaration to validate
+     * @param notify is true to notify of any events encountered, false to remain silent
      * @throws DeclarationException if validation errors were encountered
      * @return the valid declaration
      */
-    public static EvaluationDeclaration validateAndNotify( EvaluationDeclaration declaration )
+    public static List<EvaluationStatusEvent> validate( EvaluationDeclaration declaration, boolean notify )
     {
         List<EvaluationStatus.EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        if( ! notify )
+        {
+            LOGGER.debug( "Encountered {} validation events, which will not be notified.", events.size() );
+            return events;
+        }
 
         // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( LOGGER.isWarnEnabled() )
@@ -151,15 +158,15 @@ public class DeclarationValidator
                                             message );
         }
 
-        return declaration;
+        return events;
     }
 
     /**
      * Validates the declaration. The validation events are returned in the order they were discovered, reading from
      * the top of the declaration to the bottom. Delegates to the caller to notify about any validation events
-     * encountered. For default notification handling, see {@link #validateAndNotify(EvaluationDeclaration)}.
+     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration,boolean)}.
      *
-     * @see #validateAndNotify(EvaluationDeclaration)
+     * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration
      * @return the validation events in the order they were discovered
      * @throws NullPointerException if the declaration is null
@@ -1154,7 +1161,7 @@ public class DeclarationValidator
 
             String start = "The declaration requested '";
             String middle =
-                    "' format, which has been marked deprecated and will be removed from a future version of the "
+                    "' format, which has been marked deprecated and may be removed from a future version of the "
                     + "software without warning. It is recommended that you substitute this format with the '";
             String end = "' format.";
             if ( outputs.hasCsv() )

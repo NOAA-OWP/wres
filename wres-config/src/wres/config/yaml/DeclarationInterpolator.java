@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -40,6 +41,8 @@ import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.statistics.generated.EvaluationStatus;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -50,14 +53,14 @@ import wres.statistics.generated.Pool;
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
  * be performed in stages, depending on when it is required and how it is informed. For example, the
- * {@link #interpolate(EvaluationDeclaration)} performs minimal interpolation that is informed by the declaration
- * alone, such as the interpolation of each time-series data "type" when not declared explicitly and the interpolation
- * of metrics to evaluate when not declared explicitly (which is, in turn, informed by the data "type").
+ * {@link #interpolate(EvaluationDeclaration, boolean)} performs minimal interpolation that is informed by the
+ * declaration alone, such as the interpolation of each time-series data "type" when not declared explicitly and the
+ * interpolation of metrics to evaluate when not declared explicitly (which is, in turn, informed by the data "type").
  *
- * <p>Currently, {@link #interpolate(EvaluationDeclaration)} does not perform any external service calls. For example,
- * features and thresholds may be declared implicitly using a feature service or a threshold service, respectively. The
- * resulting features and thresholds are not resolved into explicit descriptions of the same options. It is assumed
- * that another module (wres-io) resolves these attributes.
+ * <p>Currently, {@link #interpolate(EvaluationDeclaration, boolean)} does not perform any external service calls. For
+ * example, features and thresholds may be declared implicitly using a feature service or a threshold service,
+ * respectively. The resulting features and thresholds are not resolved into explicit descriptions of the same options.
+ * It is assumed that another module (wres-io) resolves these attributes.
  *
  * @author James Brown
  */
@@ -84,14 +87,16 @@ public class DeclarationInterpolator
      * "densifying" the declaration, based on hints provided by a user.
      *
      * @param declaration the raw declaration to interpolate
+     * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
      */
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration, boolean notify )
     {
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Disambiguate the "type" of data when it is not declared
-        DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder );
+        // Only this interpolation produces warnings, currently
+        List<EvaluationStatusEvent> events = DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder );
         // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
         DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedDeclarationBuilder );
         // Interpolate the feature authorities
@@ -114,6 +119,27 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormats( adjustedDeclarationBuilder );
+
+        // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
+        if ( notify && LOGGER.isWarnEnabled() )
+        {
+            List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
+                    events.stream()
+                          .filter( a -> a.getStatusLevel()
+                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
+                          .toList();
+            if ( !warnEvents.isEmpty() )
+            {
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+                String spacer = "    - ";
+                warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+                LOGGER.warn( "Encountered {} warnings when interpolating missing declaration: {}{}",
+                             warnEvents.size(),
+                             System.lineSeparator(),
+                             message );
+            }
+        }
 
         return adjustedDeclarationBuilder.build();
     }
@@ -547,19 +573,19 @@ public class DeclarationInterpolator
     private static void interpolateMetricParameters( EvaluationDeclarationBuilder builder )
     {
         wres.statistics.generated.Pool.EnsembleAverageType topType = builder.ensembleAverageType();
-        if( Objects.nonNull( topType ) )
+        if ( Objects.nonNull( topType ) )
         {
             Set<Metric> adjusted = new HashSet<>();
-            for( Metric next : builder.metrics() )
+            for ( Metric next : builder.metrics() )
             {
                 MetricBuilder metricBuilder = MetricBuilder.builder( next );
                 MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
-                if( Objects.nonNull( next.parameters() ) )
+                if ( Objects.nonNull( next.parameters() ) )
                 {
                     parBuilder = MetricParametersBuilder.builder( next.parameters() );
                 }
                 Pool.EnsembleAverageType parType = parBuilder.ensembleAverageType();
-                if( Objects.isNull( parType ) )
+                if ( Objects.isNull( parType ) )
                 {
                     parBuilder.ensembleAverageType( topType );
                 }
@@ -671,17 +697,21 @@ public class DeclarationInterpolator
      * Resolves the type of time-series data to evaluate when required.
      *
      * @param builder the declaration builder to adjust
+     * @return any interpolation events encountered
      */
-    private static void interpolateDataTypes( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder )
     {
         // Resolve the left or observed data type, if required
-        DeclarationInterpolator.resolveObservedDataTypeIfRequired( builder );
-
+        List<EvaluationStatusEvent> leftTypes = DeclarationInterpolator.resolveObservedDataTypeIfRequired( builder );
+        List<EvaluationStatusEvent> events = new ArrayList<>( leftTypes );
         // Resolve the predicted data type, if required
-        DeclarationInterpolator.resolvePredictedDataTypeIfRequired( builder );
-
+        List<EvaluationStatusEvent> rightTypes = DeclarationInterpolator.resolvePredictedDataTypeIfRequired( builder );
+        events.addAll( rightTypes );
         // Baseline data type has the same as the predicted data type, by default
-        DeclarationInterpolator.resolveBaselineDataTypeIfRequired( builder );
+        List<EvaluationStatusEvent> baseTypes = DeclarationInterpolator.resolveBaselineDataTypeIfRequired( builder );
+        events.addAll( baseTypes );
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -919,17 +949,20 @@ public class DeclarationInterpolator
     /**
      * Resolves the observed data type.
      * @param builder the builder
+     * @return any interpolation events encountered
      */
-    private static void resolveObservedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> resolveObservedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
     {
         Dataset observed = builder.left();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Resolve the left or observed data type
         if ( Objects.isNull( observed.type() ) )
         {
-            String defaultMessage = "While reading the project declaration, discovered that the observed dataset had "
-                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
-                                    + "explicitly.";
+            String defaultStartMessage = "While reading the project declaration, discovered that the 'observed' "
+                                         + "dataset had no declared data 'type'.";
+            String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
 
             // Analysis durations present? If so, assume analyses
             if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
@@ -939,10 +972,17 @@ public class DeclarationInterpolator
                                                 .build();
                 builder.left( newLeft );
 
-                // Log the reason
-                LOGGER.warn( defaultMessage,
-                             "Assuming that the 'type' is 'analyses' because analysis durations "
-                             + "were discovered and analyses are typically used to verify other " + "datasets." );
+                // Warn
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( defaultStartMessage
+                                                                 + " Assuming that the 'type' is 'analyses' because "
+                                                                 + "analysis durations were discovered and analyses "
+                                                                 + "are typically used to verify other datasets. "
+                                                                 + defaultEndMessage )
+                                               .build();
+                events.add( event );
             }
             else
             {
@@ -951,26 +991,38 @@ public class DeclarationInterpolator
                                                 .build();
                 builder.left( newLeft );
 
-                // Log the reason
-                LOGGER.warn( defaultMessage, "Assuming that the 'type' is 'observations'." );
+                // Warn
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( defaultStartMessage
+                                                                 + " Assuming that the 'type' is 'observations'. "
+                                                                 + defaultEndMessage )
+                                               .build();
+                events.add( event );
             }
         }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
      * Resolves the predicted data type.
      * @param builder the builder
+     * @return any interpolation events encountered
      */
-    private static void resolvePredictedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> resolvePredictedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
     {
         Dataset predicted = builder.right();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Resolve the right or predicted data type
         if ( Objects.isNull( predicted.type() ) )
         {
-            String defaultMessage = "While reading the project declaration, discovered that the predicted dataset had "
-                                    + "no declared data 'type'. {} If this is incorrect, please declare the 'type' "
-                                    + "explicitly.";
+            String defaultStartMessage = "While reading the project declaration, discovered that the 'predicted' "
+                                         + "dataset had no declared data 'type'. ";
+            String defaultEndMessage = " If this is incorrect, please declare the 'type' explicitly.";
 
             String reasonMessage;
 
@@ -1018,9 +1070,77 @@ public class DeclarationInterpolator
             Dataset newPredicted = DatasetBuilder.builder( predicted ).type( dataType ).build();
             builder.right( newPredicted );
 
-            // Log the reason
-            LOGGER.warn( defaultMessage, reasonMessage );
+            // Warn
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( defaultStartMessage
+                                                             + reasonMessage
+                                                             + defaultEndMessage )
+                                           .build();
+            events.add( event );
         }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Sets the baseline data type to match the data type of the predicted dataset.
+     * @param builder the builder
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( DeclarationUtilities.hasBaseline( builder ) )
+        {
+            Dataset predicted = builder.right();
+            BaselineDataset baseline = builder.baseline();
+            Dataset baselineDataset = baseline.dataset();
+
+            // Set the baseline data type, if required
+            if ( Objects.isNull( baselineDataset.type() ) )
+            {
+                // Same as the predicted data type, by default
+                DataType type = predicted.type();
+
+                String reason = "Assuming that the 'type' is '"
+                                + type
+                                + "' to match the 'type' of the 'predicted' dataset.";
+
+                // Persistence defined? If so, observations
+                if ( Objects.nonNull( baseline.persistence() ) )
+                {
+                    type = DataType.OBSERVATIONS;
+                    reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
+                }
+
+                Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
+                                                           .type( type )
+                                                           .build();
+                BaselineDataset newBaseline =
+                        BaselineDatasetBuilder.builder( baseline )
+                                              .dataset( newBaselineDataset )
+                                              .build();
+                builder.baseline( newBaseline );
+
+                // Warn
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( "While reading the project declaration, discovered "
+                                                                 + "that the 'baseline' dataset had no declared data "
+                                                                 + "'type'. "
+                                                                 + reason
+                                                                 + " If this is incorrect, please declare the 'type'"
+                                                                 + "explicitly." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -1129,51 +1249,6 @@ public class DeclarationInterpolator
         if ( !sparse.hasBaseline() && hasBaseline )
         {
             sparse.setBaseline( dense );
-        }
-    }
-
-    /**
-     * Sets the baseline data type to match the data type of the predicted dataset.
-     * @param builder the builder
-     */
-    private static void resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
-    {
-        if ( DeclarationUtilities.hasBaseline( builder ) )
-        {
-            Dataset predicted = builder.right();
-            BaselineDataset baseline = builder.baseline();
-            Dataset baselineDataset = baseline.dataset();
-
-            // Set the baseline data type, if required
-            if ( Objects.isNull( baselineDataset.type() ) )
-            {
-                // Same as the predicted data type, by default
-                DataType type = predicted.type();
-
-                String reason = "Assuming that the 'type' is '"
-                                + type
-                                + "' to match the 'type' of the predicted dataset.";
-
-                // Persistence defined? If so, observations
-                if ( Objects.nonNull( baseline.persistence() ) )
-                {
-                    type = DataType.OBSERVATIONS;
-                    reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
-                }
-
-                Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
-                                                           .type( type )
-                                                           .build();
-                BaselineDataset newBaseline =
-                        BaselineDatasetBuilder.builder( baseline )
-                                              .dataset( newBaselineDataset )
-                                              .build();
-                builder.baseline( newBaseline );
-
-                LOGGER.warn( "While reading the project declaration, discovered that the baseline dataset had no "
-                             + "declared data 'type'. {} If this is incorrect, please declare the 'type' explicitly.",
-                             reason );
-            }
         }
     }
 

@@ -1,5 +1,11 @@
 package wres.server;
 
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -12,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Runs a web server.
+ * Runs the core application as a long-running instance or web server that accepts evaluation requests.
  */
 public class WebServer
 {
@@ -30,39 +36,83 @@ public class WebServer
     private static final int MAX_SERVER_THREADS = 20;
 
     /**
+     * Ensure that the X-Frame-Options header element is included in the response.
+     * If not already set, then it will be set to DENY. If it is already set when this
+     * is called, then it will be left unchanged (there is no check for DENY).
+     */
+    private static final HttpChannel.Listener HTTP_CHANNEL_LISTENER = new HttpChannel.Listener()
+    {
+        @Override
+        public void onResponseBegin( Request request )
+        {
+            if ( request.getResponse().getHeader( "X-Frame-Options" ) == null )
+            {
+                request.getResponse().addHeader( "X-Frame-Options", "DENY" );
+            }
+        }
+    };
+
+    /**
      * @param args the arguments
      * @throws Exception if the web server could not be created for any reason
      */
 
     public static void main( String[] args ) throws Exception
     {
-        // See comments etc. in wres-tasker/src/wres/tasker/Tasker.java
-        // for explanation on steps below.
-
         ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
-        ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
-                                                          "/*" );
+        ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,"/*" );
+
+        // Multiple ways of binding using jersey, but Application is standard,
+        // see here:
+        // https://stackoverflow.com/questions/22994690/which-init-param-to-use-jersey-config-server-provider-packages-or-javax-ws-rs-a#23041643
         dynamicHolder.setInitParameter( "javax.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
+
+        LOGGER.debug( "Setting dynamic holder initialization to {}", JaxRSApplication.class.getCanonicalName() );
+
+        // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource( Resource.newClassPathResource( "index.html" ) );
+        Resource resource = Resource.newClassPathResource( "html" );
+        resourceHandler.setBaseResource( resource );
+
+        // Have to chain/wrap the handler this way to get both static/dynamic:
         resourceHandler.setHandler( context );
+
+        LOGGER.debug( "Setting the base resource to: {}", resource );
+
+        // Fix the max server threads for better stack memory predictability,
+        // 1 thread = 1000KiB of stack by default.
         QueuedThreadPool threadPool = new QueuedThreadPool( MAX_SERVER_THREADS );
+
         Server jettyServer = new Server( threadPool );
+
         jettyServer.setHandler( resourceHandler );
 
-        try ( ServerConnector serverConnector = new ServerConnector( jettyServer ) )
+        HttpConfiguration httpConfig = new HttpConfiguration();
+
+        // Support HTTP/1.1
+        HttpConnectionFactory httpOne = new HttpConnectionFactory( httpConfig );
+
+        // Support HTTP/2
+        HTTP2ServerConnectionFactory httpTwo = new HTTP2ServerConnectionFactory( httpConfig );
+
+        // Support ALPN
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol( httpOne.getProtocol() );
+
+        try ( ServerConnector serverConnector = new ServerConnector( jettyServer, httpOne, httpTwo, alpn ) )
         {
             // Only listen on localhost, this process is intended to be managed
             // by other processes running locally, e.g. a shim or a UI.
             serverConnector.setHost( "127.0.0.1" );
             serverConnector.setPort( WebServer.SERVER_PORT );
+            serverConnector.addBean( HTTP_CHANNEL_LISTENER );
             ServerConnector[] serverConnectors = { serverConnector };
             jettyServer.setConnectors( serverConnectors );
 
             jettyServer.start();
-            jettyServer.dump( System.err );
+            jettyServer.dump( System.err );  // NOSONAR
             jettyServer.join();
         }
         catch ( InterruptedException ie )

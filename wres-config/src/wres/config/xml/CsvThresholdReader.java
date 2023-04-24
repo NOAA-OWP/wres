@@ -44,7 +44,7 @@ public class CsvThresholdReader
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvThresholdReader.class );
 
     /** Directory to use when building relative paths. */
-    private static final Path DATA_DIRECTORY = Paths.get( System.getProperty( "user.dir" ) );
+    private static final Path DATA_DIRECTORY = Path.of( System.getProperty( "user.dir" ) );
 
     /**
      * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into

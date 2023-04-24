@@ -51,6 +51,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.PairConfig;
 import wres.config.generated.UrlParameter;
+import wres.config.xml.ProjectConfigs;
 import wres.io.config.ConfigHelper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
@@ -453,7 +454,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getContext() );
 
-        boolean isForecast = ConfigHelper.isForecast( dataSource.getContext() );
+        boolean isForecast = ProjectConfigs.isForecast( dataSource.getContext() );
 
         DateCondition dates = pairConfig.getDates();
 

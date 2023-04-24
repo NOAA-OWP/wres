@@ -27,6 +27,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
+
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.NamedFeature;
@@ -58,16 +59,16 @@ import wres.system.SystemSettings;
 
 /**
  * Tests the {@link DatabaseProject}.
- * 
+ *
  * @author James Brown
  */
 
 class DatabaseProjectTest
 {
     private static final Feature FEATURE = Feature.of(
-                                                             MessageFactory.getGeometry( "F" ) );
+            MessageFactory.getGeometry( "F" ) );
     private static final Feature ANOTHER_FEATURE = Feature.of(
-                                                                     MessageFactory.getGeometry( "G" ) );
+            MessageFactory.getGeometry( "G" ) );
     private static final String PROJECT_HASH = "881hfEaffja267";
     private static final String UNITS = "[ft_i]3/s";
     private static final String VARIABLE_NAME = "V";
@@ -82,6 +83,7 @@ class DatabaseProjectTest
     private HikariDataSource dataSource;
     private Connection rawConnection;
     private DatabaseProject project;
+    private Database liquibaseDatabase;
 
     @BeforeAll
     static void oneTimeSetup()
@@ -114,6 +116,10 @@ class DatabaseProjectTest
                .thenReturn( 10 );
 
         this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
+
+        // Set up a liquibase database to run migrations against.
+        this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
+
         Features featuresCache = new Features( this.wresDatabase );
 
         Mockito.when( this.mockCaches.getFeaturesCache() )
@@ -139,7 +145,7 @@ class DatabaseProjectTest
     }
 
     @Test
-    void testGetFeatures() throws SQLException
+    void testGetFeatures()
     {
         this.project.prepareAndValidate();
 
@@ -156,7 +162,7 @@ class DatabaseProjectTest
     }
 
     @Test
-    void testGetFeatureGroups() throws SQLException
+    void testGetFeatureGroups()
     {
         this.project.prepareAndValidate();
 
@@ -369,7 +375,8 @@ class DatabaseProjectTest
         String featureName = FEATURE.getName();
         String anotherName = ANOTHER_FEATURE.getName();
         List<NamedFeature> features =
-                List.of( new NamedFeature( featureName, featureName, null ), new NamedFeature( anotherName, anotherName, null ) );
+                List.of( new NamedFeature( featureName, featureName, null ),
+                         new NamedFeature( anotherName, anotherName, null ) );
         List<FeaturePool> featureGroups = List.of( new FeaturePool( features, "A feature group!" ) );
 
         Inputs inputs = new Inputs( new DataSourceConfig( DatasourceType.OBSERVATIONS,
@@ -419,6 +426,21 @@ class DatabaseProjectTest
                                   null,
                                   null,
                                   "test_project" );
+    }
+
+    @Test
+    void saveProject() throws LiquibaseException
+    {
+        // Add the project table
+        this.testDatabase.createProjectTable( this.liquibaseDatabase );
+
+        Project project = new DatabaseProject( this.wresDatabase,
+                                               this.mockCaches,
+                                               null,
+                                               new ProjectConfig( null, null, null, null, null, null ),
+                                               "321" );
+        boolean saved = project.save();
+        assertTrue( saved, "Expected project details to have performed insert." );
     }
 
 }

@@ -27,7 +27,7 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
 import wres.events.broker.BrokerConnectionFactory;
-import wres.config.Validation;
+import wres.config.xml.Validation;
 import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -136,8 +136,8 @@ public class Evaluator
         }
 
         // Validate unmarshalled configurations
-        final boolean validated =
-                Validation.isProjectValid( innerSystemSettings, projectConfigPlus );
+        final boolean validated = Validation.isProjectValid( innerSystemSettings.getDataDirectory(),
+                                                             projectConfigPlus );
 
         if ( validated )
         {

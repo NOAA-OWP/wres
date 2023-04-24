@@ -3,6 +3,9 @@ package wres.config.yaml;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.MonthDay;
@@ -14,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -1341,6 +1346,34 @@ class DeclarationFactoryTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeUsingPathToFile() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path path = fileSystem.getPath( "foo.file" );
+            Files.createFile( path );
+            String pathString = path.toString();
+
+            String yaml = """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      - another_file.csv
+                      """;
+
+            Files.writeString( path, yaml );
+
+            EvaluationDeclaration actual = DeclarationFactory.from( pathString, fileSystem, false );
+
+            EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                         .left( this.observedDataset )
+                                                                         .right( this.predictedDataset )
+                                                                         .build();
+            assertEquals( expected, actual );
+        }
     }
 
     @Test
