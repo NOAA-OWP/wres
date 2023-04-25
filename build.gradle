@@ -1732,6 +1732,10 @@ dependencies
 
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
+    // To auto-generate builders for Java records through annotation processing
+    annotationProcessor 'io.soabase.record-builder:record-builder-processor:36'
+    compileOnly 'io.soabase.record-builder:record-builder-core:36'
+
     // JUnit 5 API and runtime
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'

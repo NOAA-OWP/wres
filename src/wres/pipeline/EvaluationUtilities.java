@@ -19,6 +19,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,6 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
-import wres.io.database.Database;
 import wres.io.reading.wrds.geography.WrdsFeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
@@ -217,13 +217,16 @@ class EvaluationUtilities
                                                     .build();
 
             // Package the details needed to build the evaluation
-            EvaluationDetails evaluationDetails = new EvaluationDetails( systemSettings,
-                                                                         projectConfigPlus,
-                                                                         evaluationDescription,
-                                                                         evaluationId,
-                                                                         subscriberApprover,
-                                                                         monitor,
-                                                                         databaseServices );
+            EvaluationDetails evaluationDetails =
+                    EvaluationUtilitiesEvaluationDetailsBuilder.builder()
+                                                               .systemSettings( systemSettings )
+                                                               .projectConfigPlus( projectConfigPlus )
+                                                               .evaluationDescription( evaluationDescription )
+                                                               .evaluationId( evaluationId )
+                                                               .subscriberApprover( subscriberApprover )
+                                                               .monitor( monitor )
+                                                               .databaseServices( databaseServices )
+                                                               .build();
 
             // Open an evaluation, to be closed on completion or stopped on exception
             Pair<EvaluationMessager, String> evaluationAndProjectHash =
@@ -357,7 +360,7 @@ class EvaluationUtilities
         String projectHash;
         try
         {
-            ProjectConfigPlus projectConfigPlus = evaluationDetails.getProjectConfigPlus();
+            ProjectConfigPlus projectConfigPlus = evaluationDetails.projectConfigPlus();
             ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
             // Look up any needed feature correlations, generate a new declaration.
@@ -369,7 +372,7 @@ class EvaluationUtilities
             LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
             Project project;
-            SystemSettings systemSettings = evaluationDetails.getSystemSettings();
+            SystemSettings systemSettings = evaluationDetails.systemSettings();
 
             // Gridded features cache, if required. See #51232.
             GriddedFeatures.Builder griddedFeaturesBuilder =
@@ -380,16 +383,19 @@ class EvaluationUtilities
             {
                 // Build the database caches/ORMs, if required
                 DatabaseCaches caches = DatabaseCaches.of( databaseServices.database(), projectConfig );
-                evaluationDetails.setCaches( caches );
+                // Set the caches
+                evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                               .caches( caches )
+                                                                               .build();
                 try ( DatabaseTimeSeriesIngester databaseIngester =
-                              new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.getSystemSettings() )
+                              new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
                                                                       .setDatabase( databaseServices.database() )
                                                                       .setCaches( caches )
                                                                       .setLockManager( databaseServices.databaseLockManager() )
                                                                       .build() )
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
-                                                                          evaluationDetails.getSystemSettings(),
+                                                                          evaluationDetails.systemSettings(),
                                                                           featurefulProjectConfig,
                                                                           griddedFeaturesBuilder );
 
@@ -419,13 +425,16 @@ class EvaluationUtilities
 
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
-                                                                      evaluationDetails.getSystemSettings(),
+                                                                      evaluationDetails.systemSettings(),
                                                                       featurefulProjectConfig,
                                                                       griddedFeaturesBuilder );
 
                 // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
-                evaluationDetails.setTimeSeriesStore( timeSeriesStore );
+                // Set the store
+                evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                               .timeSeriesStore( timeSeriesStore )
+                                                                               .build();
                 project = Projects.getProject( featurefulProjectConfig,
                                                timeSeriesStore,
                                                ingestResults );
@@ -433,7 +442,6 @@ class EvaluationUtilities
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
-            evaluationDetails.setProject( project );
             projectHash = project.getHash();
 
             // Get a unit mapper for the declared or analyzed measurement units
@@ -445,7 +453,7 @@ class EvaluationUtilities
             // interpolation include interpolation of missing declaration and service calls to interpolate features and
             // thresholds. This is the latest step in that process of combining the declaration and data
             Evaluation evaluationDescription =
-                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.getEvaluationDescription(),
+                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.evaluationDescription(),
                                                                           project );
 
             // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
@@ -456,9 +464,14 @@ class EvaluationUtilities
             evaluation = EvaluationMessager.of( evaluationDescription,
                                                 connections,
                                                 EvaluationUtilities.CLIENT_ID,
-                                                evaluationDetails.getEvaluationId(),
-                                                evaluationDetails.getSubscriberApprover() );
-            evaluationDetails.setEvaluation( evaluation );
+                                                evaluationDetails.evaluationId(),
+                                                evaluationDetails.subscriberApprover() );
+
+            // Set the project and evaluation
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .project( project )
+                                                                           .evaluation( evaluation )
+                                                                           .build();
 
             // Acquire the individual feature tuples to correlate with thresholds
             Set<FeatureTuple> features = project.getFeatures();
@@ -518,13 +531,16 @@ class EvaluationUtilities
                 LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
             }
 
-            evaluationDetails.setMetricsAndThresholds( metricsAndThresholds );
+            // Set the metrics and thresholds
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .metricsAndThresholds( metricsAndThresholds )
+                                                                           .build();
 
             PoolFactory poolFactory = PoolFactory.of( project );
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
 
             int poolCount = poolRequests.size();
-            EvaluationEvent monitor = evaluationDetails.getMonitor();
+            EvaluationEvent monitor = evaluationDetails.monitor();
             monitor.setPoolCount( poolCount );
 
             // Report on the completion state of all pools
@@ -1068,11 +1084,11 @@ class EvaluationUtilities
 
         CompletableFuture<Object> poolTasks;
 
-        DatasourceType type = evaluationDetails.getProject()
+        DatasourceType type = evaluationDetails.project()
                                                .getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT )
                                                .getType();
 
-        SystemSettings settings = evaluationDetails.getSystemSettings();
+        SystemSettings settings = evaluationDetails.systemSettings();
         PoolParameters poolParameters =
                 new PoolParameters.Builder().setFeatureBatchThreshold( settings.getFeatureBatchThreshold() )
                                             .setFeatureBatchSize( settings.getFeatureBatchSize() )
@@ -1134,13 +1150,13 @@ class EvaluationUtilities
                                                                                       PoolGroupTracker groupPublicationTracker,
                                                                                       PoolParameters poolParameters )
     {
-        Project project = evaluationDetails.getProject();
+        Project project = evaluationDetails.project();
 
         // Separate metrics for a baseline?
         boolean separateMetrics = EvaluationUtilities.hasSeparateMetricsForBaseline( project );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
-                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.getMetricsAndThresholds(),
+                EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.metricsAndThresholds(),
                                                                executors.thresholdExecutor(),
                                                                executors.metricExecutor() );
 
@@ -1149,15 +1165,16 @@ class EvaluationUtilities
         if ( evaluationDetails.hasInMemoryStore() )
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
-            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
-                                                                        evaluationDetails.getTimeSeriesStore() );
+            retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
+                                                                        evaluationDetails.timeSeriesStore() );
         }
         else
         {
             LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
             retrieverFactory = SingleValuedRetrieverFactory.of( project,
-                                                                evaluationDetails.getDatabase(),
-                                                                evaluationDetails.getCaches() );
+                                                                evaluationDetails.databaseServices()
+                                                                                 .database(),
+                                                                evaluationDetails.caches() );
         }
 
         // Create the pool suppliers for all pools in this evaluation
@@ -1191,8 +1208,8 @@ class EvaluationUtilities
                                                                .setMetricProcessors( processors )
                                                                .setPoolRequest( poolRequest )
                                                                .setPoolSupplier( poolSupplier )
-                                                               .setEvaluation( evaluationDetails.getEvaluation() )
-                                                               .setMonitor( evaluationDetails.getMonitor() )
+                                                               .setEvaluation( evaluationDetails.evaluation() )
+                                                               .setMonitor( evaluationDetails.monitor() )
                                                                .setTraceCountEstimator(
                                                                        SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                                                                .setSeparateMetricsForBaseline( separateMetrics )
@@ -1225,13 +1242,13 @@ class EvaluationUtilities
                                                                                     PoolGroupTracker groupPublicationTracker,
                                                                                     PoolParameters poolParameters )
     {
-        Project project = evaluationDetails.getProject();
+        Project project = evaluationDetails.project();
 
         // Separate metrics for a baseline?
         boolean separateMetrics = EvaluationUtilities.hasSeparateMetricsForBaseline( project );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
-                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.getMetricsAndThresholds(),
+                EvaluationUtilities.getEnsembleProcessors( evaluationDetails.metricsAndThresholds(),
                                                            executors.thresholdExecutor(),
                                                            executors.metricExecutor() );
 
@@ -1240,15 +1257,16 @@ class EvaluationUtilities
         if ( evaluationDetails.hasInMemoryStore() )
         {
             LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
-            retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.getProject(),
-                                                                    evaluationDetails.getTimeSeriesStore() );
+            retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.project(),
+                                                                    evaluationDetails.timeSeriesStore() );
         }
         else
         {
             LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
             retrieverFactory = EnsembleRetrieverFactory.of( project,
-                                                            evaluationDetails.getDatabase(),
-                                                            evaluationDetails.getCaches() );
+                                                            evaluationDetails.databaseServices()
+                                                                             .database(),
+                                                            evaluationDetails.caches() );
         }
 
         // Create the pool suppliers for all pools in this evaluation
@@ -1283,8 +1301,8 @@ class EvaluationUtilities
                                                                  .setMetricProcessors( processors )
                                                                  .setPoolRequest( poolRequest )
                                                                  .setPoolSupplier( poolSupplier )
-                                                                 .setEvaluation( evaluationDetails.getEvaluation() )
-                                                                 .setMonitor( evaluationDetails.getMonitor() )
+                                                                 .setEvaluation( evaluationDetails.evaluation() )
+                                                                 .setMonitor( evaluationDetails.monitor() )
                                                                  .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                                                                  .setSeparateMetricsForBaseline( separateMetrics )
                                                                  .setPoolGroupTracker( groupPublicationTracker )
@@ -1459,200 +1477,35 @@ class EvaluationUtilities
 
     /**
      * Small value class to collect together variables needed to instantiate an evaluation.
+     *
+     * @param systemSettings the system settings
+     * @param projectConfigPlus the project declaration
+     * @param evaluationDescription the evaluation description
+     * @param evaluationId the evaluation identifier
+     * @param subscriberApprover the subscriber approver
+     * @param monitor the evaluation event monitor
+     * @param databaseServices the database services
+     * @param caches the database caches/ORMs
+     * @param metricsAndThresholds the metrics and thresholds
+     * @param project the project
+     * @param evaluation the evaluation
+     * @param timeSeriesStore the time-series data store
      */
 
-    private static class EvaluationDetails
+    @RecordBuilder
+    record EvaluationDetails( SystemSettings systemSettings,
+                              ProjectConfigPlus projectConfigPlus,
+                              Evaluation evaluationDescription,
+                              String evaluationId,
+                              SubscriberApprover subscriberApprover,
+                              EvaluationEvent monitor,
+                              DatabaseServices databaseServices,
+                              DatabaseCaches caches,
+                              List<MetricsAndThresholds> metricsAndThresholds,
+                              Project project,
+                              EvaluationMessager evaluation,
+                              TimeSeriesStore timeSeriesStore )
     {
-        /** System settings. **/
-        private final SystemSettings systemSettings;
-        /** Project configuration. */
-        private final ProjectConfigPlus projectConfigPlus;
-        /** EvaluationMessager description. */
-        private final Evaluation evaluationDescription;
-        /** Unique evaluation identifier. */
-        private final String evaluationId;
-        /** Approves format writer subscriptions that attempt to serve an evaluation. */
-        private final SubscriberApprover subscriberApprover;
-        /** Monitor. */
-        private final EvaluationEvent monitor;
-        /** The database. */
-        private final Database database;
-        /** The caches.*/
-        private DatabaseCaches caches;
-        /** The metrics and thresholds, possibly null. */
-        private List<MetricsAndThresholds> metricsAndThresholds;
-        /** The project, possibly null. */
-        private Project project;
-        /** The messaging component of an evaluation, possibly null. */
-        private EvaluationMessager evaluation;
-        /** An in-memory store of time-series data, possibly null. */
-        private TimeSeriesStore timeSeriesStore;
-
-        /**
-         * @return the project configuration
-         */
-        private ProjectConfigPlus getProjectConfigPlus()
-        {
-            return projectConfigPlus;
-        }
-
-        /**
-         * @return the evaluation description
-         */
-        private Evaluation getEvaluationDescription()
-        {
-            return evaluationDescription;
-        }
-
-        /**
-         * @return the evaluation identifier
-         */
-        private String getEvaluationId()
-        {
-            return evaluationId;
-        }
-
-        /**
-         * @return the subscriber approver
-         */
-        private SubscriberApprover getSubscriberApprover()
-        {
-            return subscriberApprover;
-        }
-
-        /**
-         * @return the monitor
-         */
-
-        private EvaluationEvent getMonitor()
-        {
-            return this.monitor;
-        }
-
-        /**
-         * @return the system settings
-         */
-
-        private SystemSettings getSystemSettings()
-        {
-            return this.systemSettings;
-        }
-
-        /**
-         * @return the project, possibly null
-         */
-
-        private Project getProject()
-        {
-            return this.project;
-        }
-
-        /**
-         * @return the thresholds by metric and feature
-         */
-
-        private List<MetricsAndThresholds> getMetricsAndThresholds()
-        {
-            return this.metricsAndThresholds;
-        }
-
-        /**
-         * @return the evaluation, possibly null
-         */
-
-        private EvaluationMessager getEvaluation()
-        {
-            return this.evaluation;
-        }
-
-        /**
-         * @return the database
-         */
-
-        private Database getDatabase()
-        {
-            return this.database;
-        }
-
-        /**
-         * @return the caches, possibly null
-         */
-
-        private DatabaseCaches getCaches()
-        {
-            return this.caches;
-        }
-
-        /**
-         * @return the time-series store, possibly null
-         */
-
-        private TimeSeriesStore getTimeSeriesStore()
-        {
-            return this.timeSeriesStore;
-        }
-
-        /**
-         * Set the project, not null.
-         * @param project the project
-         * @throws NullPointerException if the project is null
-         */
-
-        private void setProject( Project project )
-        {
-            Objects.requireNonNull( project );
-
-            this.project = project;
-        }
-
-        /**
-         * Set the thresholds, not null.
-         * @param metricsAndThresholds the thresholds
-         * @throws NullPointerException if the input is null
-         */
-
-        private void setMetricsAndThresholds( List<MetricsAndThresholds> metricsAndThresholds )
-        {
-            Objects.requireNonNull( metricsAndThresholds );
-
-            this.metricsAndThresholds = metricsAndThresholds;
-        }
-
-        /**
-         * @param caches the caches
-         */
-
-        private void setCaches( DatabaseCaches caches )
-        {
-            this.caches = caches;
-        }
-
-        /**
-         * Set the evaluation, not null.
-         * @param evaluation the evaluation
-         * @throws NullPointerException if the evaluation is null
-         */
-
-        private void setEvaluation( EvaluationMessager evaluation )
-        {
-            Objects.requireNonNull( evaluation );
-
-            this.evaluation = evaluation;
-        }
-
-        /**
-         * Set the time-series store, not null.
-         * @param timeSeriesStore the in-memory time-series store
-         * @throws NullPointerException if the timeSeriesStore is null
-         */
-
-        private void setTimeSeriesStore( TimeSeriesStore timeSeriesStore )
-        {
-            Objects.requireNonNull( timeSeriesStore );
-
-            this.timeSeriesStore = timeSeriesStore;
-        }
-
         /**
          * @return true if there is an in-memory store of time-series, false otherwise.
          */
@@ -1661,51 +1514,12 @@ class EvaluationUtilities
         {
             return Objects.nonNull( this.timeSeriesStore );
         }
-
-        /**
-         * Builds an instance.
-         *
-         * @param systemSettings the system settings
-         * @param projectConfigPlus the project declaration
-         * @param evaluationDescription the evaluation description
-         * @param evaluationId the evaluation identifier
-         * @param subscriberApprover the subscriber approver
-         * @param monitor the evaluation event monitor
-         * @param databaseServices the database services
-         */
-
-        private EvaluationDetails( SystemSettings systemSettings,
-                                   ProjectConfigPlus projectConfigPlus,
-                                   Evaluation evaluationDescription,
-                                   String evaluationId,
-                                   SubscriberApprover subscriberApprover,
-                                   EvaluationEvent monitor,
-                                   DatabaseServices databaseServices )
-        {
-            this.systemSettings = systemSettings;
-            this.projectConfigPlus = projectConfigPlus;
-            this.evaluationDescription = evaluationDescription;
-            this.evaluationId = evaluationId;
-            this.subscriberApprover = subscriberApprover;
-            this.monitor = monitor;
-
-            if ( Objects.nonNull( databaseServices ) )
-            {
-                this.database = databaseServices.database();
-            }
-            else
-            {
-                this.database = null;
-            }
-        }
     }
 
     /**
      * A value object for shared writers.
-     * @param sharedSampleWriters
-    Shared writers for sample data.
-     * @param sharedBaselineSampleWriters
-    Shared writers for baseline sampled data.
+     * @param sharedSampleWriters Shared writers for sample data.
+     * @param sharedBaselineSampleWriters Shared writers for baseline sampled data.
      */
 
     private record SharedWriters( SharedSampleDataWriters sharedSampleWriters,
