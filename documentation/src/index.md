@@ -34,7 +34,7 @@ For in-RAM (no postgresql) use the example H2 string found in this document.
 This will run an evaluation project configuration specified in "project.xml"
 from start to finish.
 
-You may run the wres script from anywhere, and the project file may be in any
+You may run the wres script from inside the build/install/wres or unzipped project, and the project file may be in any
 location or any file name, absolute or relative.
 
 ### Optional
