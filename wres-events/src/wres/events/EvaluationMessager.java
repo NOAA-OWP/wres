@@ -35,7 +35,7 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
 import wres.events.subscribe.SubscriberApprover;
-import wres.statistics.MessageUtilities;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
@@ -1270,7 +1270,7 @@ public class EvaluationMessager implements Closeable
 
         // Get the formats that are required
         Outputs outputs = evaluationDescription.getOutputs();
-        Set<Format> formatsRequired = MessageUtilities.getDeclaredFormats( outputs );
+        Set<Format> formatsRequired = MessageFactory.getDeclaredFormats( outputs );
 
         Objects.requireNonNull( broker, "Cannot create an evaluation without a broker connection." );
         Objects.requireNonNull( evaluationDescription,

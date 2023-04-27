@@ -1214,11 +1214,11 @@ public class DatabaseProject implements Project
             GeometryTuple geoTuple = null;
             if ( this.hasBaseline() )
             {
-                geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+                geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
             }
             else
             {
-                geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
+                geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
             }
 
             FeatureTuple featureTuple = FeatureTuple.of( geoTuple );

@@ -84,9 +84,9 @@ public final class BoxPlotStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "A" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( this.featureGroup,
@@ -133,9 +133,9 @@ public final class BoxPlotStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
-        Geometry geometryTwo = MessageFactory.getGeometry( "B" );
-        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
-        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        Geometry geometryTwo = wres.statistics.MessageFactory.getGeometry( "B" );
+        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
+        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolThree = MessageFactory.getPool( featureGroupTwo,

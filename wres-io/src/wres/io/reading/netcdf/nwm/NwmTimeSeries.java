@@ -48,7 +48,6 @@ import ucar.nc2.Variable;
 
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
@@ -56,6 +55,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReadException;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -621,7 +621,7 @@ class NwmTimeSeries implements Closeable
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
-            Geometry geometry = MessageFactory.getGeometry(
+            Geometry geometry = wres.statistics.MessageFactory.getGeometry(
                     series.getKey()
                           .toString() );
             Feature feature = Feature.of( geometry );

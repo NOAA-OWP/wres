@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.messages.MessageFactory;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -42,12 +42,12 @@ public final class TimeWindowOuterTest
     public void testAccessors()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                         FIFTH_TIME,
-                                                         THIRD_TIME,
-                                                         FOURTH_TIME,
-                                                         Duration.ofHours( 6 ),
-                                                         Duration.ofHours( 120 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                         FIFTH_TIME,
+                                                                         THIRD_TIME,
+                                                                         FOURTH_TIME,
+                                                                         Duration.ofHours( 6 ),
+                                                                         Duration.ofHours( 120 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
         assertEquals( SECOND_TIME, window.getEarliestReferenceTime() );
         assertEquals( FIFTH_TIME, window.getLatestReferenceTime() );
@@ -64,58 +64,58 @@ public final class TimeWindowOuterTest
     @Test
     public void testEquals()
     {
-        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                         FIFTH_TIME,
-                                                         Duration.ofSeconds( Long.MIN_VALUE ),
-                                                         Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                         FIFTH_TIME,
+                                                                         Duration.ofSeconds( Long.MIN_VALUE ),
+                                                                         Duration.ofSeconds( Long.MAX_VALUE, 999_999_999 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
-        TimeWindow innerEqual = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              FIFTH_TIME,
-                                                              TimeWindowOuter.DURATION_MIN,
-                                                              TimeWindowOuter.DURATION_MAX );
+        TimeWindow innerEqual = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              FIFTH_TIME,
+                                                                              TimeWindowOuter.DURATION_MIN,
+                                                                              TimeWindowOuter.DURATION_MAX );
 
         TimeWindowOuter equalWindow = TimeWindowOuter.of( innerEqual );
         assertEquals( window, equalWindow );
         assertNotEquals( Double.valueOf( 1.0 ), window );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:01Z" ),
-                                                                           FIFTH_TIME ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:01Z" ),
+                                                                                           FIFTH_TIME ) ) );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                           Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                           Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                           FIFTH_TIME,
-                                                                           SECOND_TIME,
-                                                                           Instant.MAX,
-                                                                           Duration.ZERO,
-                                                                           Duration.ZERO ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                           FIFTH_TIME,
+                                                                                           SECOND_TIME,
+                                                                                           Instant.MAX,
+                                                                                           Duration.ZERO,
+                                                                                           Duration.ZERO ) ) );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                           FIFTH_TIME,
-                                                                           Instant.MIN,
-                                                                           FIFTH_TIME,
-                                                                           Duration.ZERO,
-                                                                           Duration.ZERO ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                           FIFTH_TIME,
+                                                                                           Instant.MIN,
+                                                                                           FIFTH_TIME,
+                                                                                           Duration.ZERO,
+                                                                                           Duration.ZERO ) ) );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                           FIFTH_TIME,
-                                                                           Duration.ofHours( -1 ),
-                                                                           Duration.ZERO ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                           FIFTH_TIME,
+                                                                                           Duration.ofHours( -1 ),
+                                                                                           Duration.ZERO ) ) );
         assertNotEquals( window,
-                         TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                           FIFTH_TIME,
-                                                                           Duration.ZERO,
-                                                                           Duration.ofHours( 1 ) ) ) );
-        TimeWindowOuter hours = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                  FIFTH_TIME,
-                                                                                  Duration.ofHours( 1 ),
-                                                                                  Duration.ofHours( 1 ) ) );
-        TimeWindowOuter days = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                 FIFTH_TIME,
-                                                                                 Duration.ofDays( 1 ),
-                                                                                 Duration.ofDays( 1 ) ) );
+                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                           FIFTH_TIME,
+                                                                                           Duration.ZERO,
+                                                                                           Duration.ofHours( 1 ) ) ) );
+        TimeWindowOuter hours = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                  FIFTH_TIME,
+                                                                                                  Duration.ofHours( 1 ),
+                                                                                                  Duration.ofHours( 1 ) ) );
+        TimeWindowOuter days = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                 FIFTH_TIME,
+                                                                                                 Duration.ofDays( 1 ),
+                                                                                                 Duration.ofDays( 1 ) ) );
         assertNotEquals( hours, days );
     }
 
@@ -126,28 +126,28 @@ public final class TimeWindowOuterTest
     @Test
     public void testHashCode()
     {
-        TimeWindowOuter first = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                  FIFTH_TIME,
-                                                                                  Duration.ofSeconds( Long.MIN_VALUE ),
-                                                                                  Duration.ofSeconds( Long.MAX_VALUE,
+        TimeWindowOuter first = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                  FIFTH_TIME,
+                                                                                                  Duration.ofSeconds( Long.MIN_VALUE ),
+                                                                                                  Duration.ofSeconds( Long.MAX_VALUE,
                                                                                                       999_999_999 ) ) );
-        TimeWindowOuter second = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                   FIFTH_TIME,
-                                                                                   TimeWindowOuter.DURATION_MIN,
-                                                                                   TimeWindowOuter.DURATION_MAX ) );
+        TimeWindowOuter second = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                   FIFTH_TIME,
+                                                                                                   TimeWindowOuter.DURATION_MIN,
+                                                                                                   TimeWindowOuter.DURATION_MAX ) );
 
-        TimeWindowOuter third = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                  FIFTH_TIME,
-                                                                                  THIRD_TIME,
-                                                                                  FOURTH_TIME,
-                                                                                  Duration.ZERO,
-                                                                                  Duration.ofHours( 120 ) ) );
-        TimeWindowOuter fourth = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                   FIFTH_TIME,
-                                                                                   THIRD_TIME,
-                                                                                   FOURTH_TIME,
-                                                                                   Duration.ZERO,
-                                                                                   Duration.ofHours( 120 ) ) );
+        TimeWindowOuter third = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                  FIFTH_TIME,
+                                                                                                  THIRD_TIME,
+                                                                                                  FOURTH_TIME,
+                                                                                                  Duration.ZERO,
+                                                                                                  Duration.ofHours( 120 ) ) );
+        TimeWindowOuter fourth = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                   FIFTH_TIME,
+                                                                                                   THIRD_TIME,
+                                                                                                   FOURTH_TIME,
+                                                                                                   Duration.ZERO,
+                                                                                                   Duration.ofHours( 120 ) ) );
         assertEquals( first.hashCode(), second.hashCode() );
         assertEquals( third.hashCode(), fourth.hashCode() );
     }
@@ -160,70 +160,70 @@ public final class TimeWindowOuterTest
     public void testCompareTo()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindowOuter window = TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                   FIFTH_TIME,
-                                                                                   Duration.ZERO ) );
+        TimeWindowOuter window = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                   FIFTH_TIME,
+                                                                                                   Duration.ZERO ) );
 
         //EQUAL
         assertEquals( 0,
-                      window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                          FIFTH_TIME,
-                                                                                          Duration.ZERO ) ) ) );
+                      window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                          FIFTH_TIME,
+                                                                                                          Duration.ZERO ) ) ) );
         assertEquals( 0,
-                      TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                        FIFTH_TIME,
-                                                                        Duration.ZERO ) )
+                      TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO ) )
                                      .compareTo( window ) );
         //Transitive
         //x.compareTo(y) > 0
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
-                                                                                        FIFTH_TIME,
-                                                                                        Duration.ZERO ) ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
+                                                                                                        FIFTH_TIME,
+                                                                                                        Duration.ZERO ) ) ) > 0 );
         //y.compareTo(z) > 0
-        assertTrue( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
-                                                                      FIFTH_TIME,
-                                                                      Duration.ZERO ) )
-                                   .compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                                 FIFTH_TIME,
-                                                                                                 Duration.ZERO ) ) ) > 0 );
+        assertTrue( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1984-01-01T00:00:00Z" ),
+                                                                                      FIFTH_TIME,
+                                                                                      Duration.ZERO ) )
+                                   .compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                                                 FIFTH_TIME,
+                                                                                                                 Duration.ZERO ) ) ) > 0 );
         //x.compareTo(z) > 0
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        Duration.ZERO ) ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        Duration.ZERO ) ) ) > 0 );
         //DIFFERENCES ON EARLIEST TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( THIRD_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        Duration.ZERO ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( THIRD_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        Duration.ZERO ) ) ) < 0 );
         //DIFFERENCES ON LATEST TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
-                                                                                        Duration.ZERO ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
+                                                                                                        Duration.ZERO ) ) ) < 0 );
 
         //DIFFERENCES ON EARLIEST VALID TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        SECOND_TIME,
-                                                                                        Instant.MAX,
-                                                                                        Duration.ZERO,
-                                                                                        Duration.ZERO ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        SECOND_TIME,
+                                                                                                        Instant.MAX,
+                                                                                                        Duration.ZERO,
+                                                                                                        Duration.ZERO ) ) ) < 0 );
 
         //DIFFERENCES ON LATEST VALID TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        Instant.MIN,
-                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
-                                                                                        Duration.ZERO,
-                                                                                        Duration.ZERO ) ) ) > 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        Instant.MIN,
+                                                                                                        Instant.parse( "2011-12-31T11:59:59Z" ),
+                                                                                                        Duration.ZERO,
+                                                                                                        Duration.ZERO ) ) ) > 0 );
 
         //DIFFERENCES ON EARLIEST LEAD TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
         //DIFFERENCES ON LATEST LEAD TIME
-        assertTrue( window.compareTo( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                                        FIFTH_TIME,
-                                                                                        Duration.ZERO,
-                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
+        assertTrue( window.compareTo( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                                        FIFTH_TIME,
+                                                                                                        Duration.ZERO,
+                                                                                                        Duration.ofHours( 1 ) ) ) ) < 0 );
     }
 
     /**
@@ -234,20 +234,20 @@ public final class TimeWindowOuterTest
     public void testToString()
     {
         //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                         FIFTH_TIME,
-                                                         SECOND_TIME,
-                                                         FIFTH_TIME,
-                                                         Duration.ZERO,
-                                                         Duration.ZERO );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                         FIFTH_TIME,
+                                                                         SECOND_TIME,
+                                                                         FIFTH_TIME,
+                                                                         Duration.ZERO,
+                                                                         Duration.ZERO );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
         //Equality of strings for equal objects
-        assertEquals( TimeWindowOuter.of( MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                        FIFTH_TIME,
-                                                                        SECOND_TIME,
-                                                                        FIFTH_TIME,
-                                                                        Duration.ZERO,
-                                                                        Duration.ZERO ) )
+        assertEquals( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        SECOND_TIME,
+                                                                                        FIFTH_TIME,
+                                                                                        Duration.ZERO,
+                                                                                        Duration.ZERO ) )
                                      .toString(),
                       window.toString() );
 
@@ -261,9 +261,9 @@ public final class TimeWindowOuterTest
     @Test
     public void testGetTimeWindow()
     {
-        TimeWindow inner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                         FIFTH_TIME,
-                                                         Duration.ZERO );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                         FIFTH_TIME,
+                                                                         Duration.ZERO );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         TimeWindow expected = TimeWindow.newBuilder()
@@ -294,9 +294,9 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestReferenceTimeAfterLatestReferenceTime()
     {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
-                                                              Duration.ZERO );
+        TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest reference time is before its "
@@ -313,12 +313,12 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestValidTimeAfterLatestValidTime()
     {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              Instant.parse( "1986-12-31T11:59:59Z" ),
-                                                              SECOND_TIME,
-                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
-                                                              Duration.ZERO,
-                                                              Duration.ZERO );
+        TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              Instant.parse( "1986-12-31T11:59:59Z" ),
+                                                                              SECOND_TIME,
+                                                                              Instant.parse( "1984-12-31T11:59:59Z" ),
+                                                                              Duration.ZERO,
+                                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest valid time is before its earliest valid time.",
@@ -333,10 +333,10 @@ public final class TimeWindowOuterTest
     @Test
     public void testExceptionOnEarliestLeadTimeAfterLatestLeadTime()
     {
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              FIFTH_TIME,
-                                                              Duration.ofHours( 1 ),
-                                                              Duration.ZERO );
+        TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              FIFTH_TIME,
+                                                                              Duration.ofHours( 1 ),
+                                                                              Duration.ZERO );
         IllegalArgumentException thrown = assertThrows( IllegalArgumentException.class,
                                                         () -> TimeWindowOuter.of( timeWindow ) );
         assertEquals( "Cannot define a time window whose latest lead duration is before its earliest "
@@ -351,27 +351,27 @@ public final class TimeWindowOuterTest
     @Test
     public void testHasUnboundedReferenceTimes()
     {
-        TimeWindow innerBounded = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                SIXTH_TIME,
-                                                                Duration.ZERO );
+        TimeWindow innerBounded = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                SIXTH_TIME,
+                                                                                Duration.ZERO );
         TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.hasUnboundedReferenceTimes() );
 
-        TimeWindow innerUnbounded = MessageFactory.getTimeWindow();
+        TimeWindow innerUnbounded = wres.statistics.MessageFactory.getTimeWindow();
         TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
         assertTrue( unbounded.hasUnboundedReferenceTimes() );
 
-        TimeWindow innerBoundedLow = MessageFactory.getTimeWindow( Instant.MIN,
-                                                                   SIXTH_TIME,
-                                                                   Duration.ZERO );
+        TimeWindow innerBoundedLow = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                   SIXTH_TIME,
+                                                                                   Duration.ZERO );
         TimeWindowOuter partlyLow = TimeWindowOuter.of( innerBoundedLow );
 
         assertTrue( partlyLow.hasUnboundedReferenceTimes() );
 
-        TimeWindow innerBoundedHigh = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                                    Instant.MAX,
-                                                                    Duration.ZERO );
+        TimeWindow innerBoundedHigh = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                                    Instant.MAX,
+                                                                                    Duration.ZERO );
         TimeWindowOuter partlyHigh = TimeWindowOuter.of( innerBoundedHigh );
 
         assertTrue( partlyHigh.hasUnboundedReferenceTimes() );
@@ -384,31 +384,31 @@ public final class TimeWindowOuterTest
     @Test
     public void testHasUnboundedValidTimes()
     {
-        TimeWindow innerBounded = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                SECOND_TIME,
-                                                                THIRD_TIME,
-                                                                FOURTH_TIME );
+        TimeWindow innerBounded = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                SECOND_TIME,
+                                                                                THIRD_TIME,
+                                                                                FOURTH_TIME );
         TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.hasUnboundedValidTimes() );
 
-        TimeWindow innerUnbounded = MessageFactory.getTimeWindow();
+        TimeWindow innerUnbounded = wres.statistics.MessageFactory.getTimeWindow();
         TimeWindowOuter unbounded = TimeWindowOuter.of( innerUnbounded );
 
         assertTrue( unbounded.hasUnboundedValidTimes() );
 
-        TimeWindow innerBoundedLow = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                   SECOND_TIME,
-                                                                   Instant.MIN,
-                                                                   FOURTH_TIME );
+        TimeWindow innerBoundedLow = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                   SECOND_TIME,
+                                                                                   Instant.MIN,
+                                                                                   FOURTH_TIME );
         TimeWindowOuter partlyLow = TimeWindowOuter.of( innerBoundedLow );
 
         assertTrue( partlyLow.hasUnboundedValidTimes() );
 
-        TimeWindow innerBoundedHigh = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                    SECOND_TIME,
-                                                                    THIRD_TIME,
-                                                                    Instant.MAX );
+        TimeWindow innerBoundedHigh = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                    SECOND_TIME,
+                                                                                    THIRD_TIME,
+                                                                                    Instant.MAX );
         TimeWindowOuter partlyHigh = TimeWindowOuter.of( innerBoundedHigh );
 
         assertTrue( partlyHigh.hasUnboundedValidTimes() );
@@ -421,9 +421,9 @@ public final class TimeWindowOuterTest
     @Test
     public void testBothLeadDurationsAreUnbounded()
     {
-        TimeWindow innerBounded = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                SECOND_TIME,
-                                                                Duration.ZERO );
+        TimeWindow innerBounded = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                SECOND_TIME,
+                                                                                Duration.ZERO );
         TimeWindowOuter bounded = TimeWindowOuter.of( innerBounded );
 
         assertFalse( bounded.bothLeadDurationsAreUnbounded() );
@@ -441,20 +441,20 @@ public final class TimeWindowOuterTest
     @Test
     public void testUnionOf()
     {
-        TimeWindow firstInner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              SEVENTH_TIME,
-                                                              Duration.ofHours( 5 ),
-                                                              Duration.ofHours( 25 ) );
+        TimeWindow firstInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              SEVENTH_TIME,
+                                                                              Duration.ofHours( 5 ),
+                                                                              Duration.ofHours( 25 ) );
         TimeWindowOuter first = TimeWindowOuter.of( firstInner );
-        TimeWindow secondInner = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                               SIXTH_TIME,
-                                                               Duration.ofHours( -5 ),
-                                                               Duration.ofHours( 20 ) );
+        TimeWindow secondInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                               SIXTH_TIME,
+                                                                               Duration.ofHours( -5 ),
+                                                                               Duration.ofHours( 20 ) );
         TimeWindowOuter second = TimeWindowOuter.of( secondInner );
-        TimeWindow expectedInner = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                                 SEVENTH_TIME,
-                                                                 Duration.ofHours( -5 ),
-                                                                 Duration.ofHours( 25 ) );
+        TimeWindow expectedInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                                 SEVENTH_TIME,
+                                                                                 Duration.ofHours( -5 ),
+                                                                                 Duration.ofHours( 25 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
         Set<TimeWindowOuter> union = new HashSet<>();
         union.add( first );
@@ -464,26 +464,26 @@ public final class TimeWindowOuterTest
 
         assertEquals( expected, actual );
 
-        TimeWindow thirdInner = MessageFactory.getTimeWindow( SECOND_TIME,
-                                                              SEVENTH_TIME,
-                                                              FIRST_TIME,
-                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                              Duration.ofHours( 5 ),
-                                                              Duration.ofHours( 21 ) );
+        TimeWindow thirdInner = wres.statistics.MessageFactory.getTimeWindow( SECOND_TIME,
+                                                                              SEVENTH_TIME,
+                                                                              FIRST_TIME,
+                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                                              Duration.ofHours( 5 ),
+                                                                              Duration.ofHours( 21 ) );
         TimeWindowOuter third = TimeWindowOuter.of( thirdInner );
-        TimeWindow fourthInner = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                               SIXTH_TIME,
-                                                               Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                               SEVENTH_TIME,
-                                                               Duration.ZERO,
-                                                               Duration.ofHours( 20 ) );
+        TimeWindow fourthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                               SIXTH_TIME,
+                                                                               Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                                               SEVENTH_TIME,
+                                                                               Duration.ZERO,
+                                                                               Duration.ofHours( 20 ) );
         TimeWindowOuter fourth = TimeWindowOuter.of( fourthInner );
-        TimeWindow fifthInner = MessageFactory.getTimeWindow( FIRST_TIME,
-                                                              SEVENTH_TIME,
-                                                              Instant.parse( "1982-01-01T00:00:00Z" ),
-                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
-                                                              Duration.ZERO,
-                                                              Duration.ofHours( 21 ) );
+        TimeWindow fifthInner = wres.statistics.MessageFactory.getTimeWindow( FIRST_TIME,
+                                                                              SEVENTH_TIME,
+                                                                              Instant.parse( "1982-01-01T00:00:00Z" ),
+                                                                              Instant.parse( "2019-12-31T11:59:59Z" ),
+                                                                              Duration.ZERO,
+                                                                              Duration.ofHours( 21 ) );
         TimeWindowOuter expectedTwo = TimeWindowOuter.of( fifthInner );
         Set<TimeWindowOuter> unionTwo = new HashSet<>();
         unionTwo.add( third );

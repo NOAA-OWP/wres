@@ -3,8 +3,8 @@ package wres.io.retrieving.database;
 import java.net.URI;
 import java.time.Instant;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
+import wres.statistics.MessageFactory;
 
 class RetrieverTestConstants
 {

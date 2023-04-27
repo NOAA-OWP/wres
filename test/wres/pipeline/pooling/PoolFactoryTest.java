@@ -106,11 +106,11 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
-        Geometry keyOne = MessageFactory.getGeometry( "DRRC2", null, null, null );
-        Geometry keyTwo = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        Geometry keyThree = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "DRRC2", null, null, null );
+        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        Geometry keyThree = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
 
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
 
@@ -191,11 +191,11 @@ class PoolFactoryTest
 
         Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
 
-        Geometry keyOne = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        Geometry keyTwo = MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
-        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( "aGroup", geoTuple );
+        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "DRRC2HSF", null, null, null );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( "aGroup", geoTuple );
 
         FeatureGroup groupOne = FeatureGroup.of( geoGroup );
         FeatureGroup groupTwo = FeatureGroup.of( geoGroupTwo );

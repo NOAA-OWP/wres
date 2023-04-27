@@ -18,9 +18,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.RescalingException;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -39,7 +39,7 @@ public class TimeSeriesOfDoubleUpscalerTest
 {
     private static final String VARIABLE_NAME = "Fruit";
     private static final Feature FEATURE_NAME = Feature.of(
-                                                                  MessageFactory.getGeometry( "Tropics" ) );
+            MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0AndTimeScale( Instant t0,

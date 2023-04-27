@@ -706,8 +706,17 @@ public class DeclarationFactory
         if ( Objects.nonNull( pair.getLeadHours() ) )
         {
             IntBoundsType leadBounds = pair.getLeadHours();
-            LeadTimeInterval leadTimes =
-                    new LeadTimeInterval( leadBounds.getMinimum(), leadBounds.getMaximum(), ChronoUnit.HOURS );
+            Duration minimum = null;
+            Duration maximum = null;
+            if( Objects.nonNull( leadBounds.getMinimum() ) )
+            {
+                minimum = Duration.ofHours( leadBounds.getMinimum() );
+            }
+            if( Objects.nonNull( leadBounds.getMaximum() ) )
+            {
+                maximum = Duration.ofHours( leadBounds.getMaximum() );
+            }
+            LeadTimeInterval leadTimes = new LeadTimeInterval( minimum, maximum );
             builder.leadTimes( leadTimes );
             LOGGER.debug( "Migrated a lead time filter: {}.", leadTimes );
         }
@@ -1756,7 +1765,15 @@ public class DeclarationFactory
     {
         ChronoUnit unit = ChronoUnit.valueOf( poolingWindow.getUnit()
                                                            .name() );
-        return new TimePools( poolingWindow.getPeriod(), poolingWindow.getFrequency(), unit );
+        Duration period = Duration.of( poolingWindow.getPeriod(), unit );
+        Duration frequency = null;
+
+        if( Objects.nonNull( poolingWindow.getFrequency() ) )
+        {
+            frequency = Duration.of( poolingWindow.getFrequency(), unit );
+        }
+
+        return new TimePools( period, frequency );
     }
 
     /**

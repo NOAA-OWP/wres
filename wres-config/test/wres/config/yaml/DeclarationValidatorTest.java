@@ -374,11 +374,12 @@ class DeclarationValidatorTest
                                               .left( left )
                                               .right( right )
                                               .referenceDates( new TimeInterval( Instant.MIN, Instant.MAX ) )
-                                              .referenceDatePools( new TimePools( 1,
-                                                                                  null,
-                                                                                  ChronoUnit.HOURS ) )
-                                              .leadTimes( new LeadTimeInterval( 0, 1, ChronoUnit.HOURS ) )
-                                              .leadTimePools( new TimePools( 1, null, ChronoUnit.HOURS ) )
+                                              .referenceDatePools( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                                  null ) )
+                                              .leadTimes( new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                                                java.time.Duration.ofHours( 1 ) ) )
+                                              .leadTimePools( new TimePools( java.time.Duration.ofHours( 1 ),
+                                                                             null ) )
                                               .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -543,7 +544,8 @@ class DeclarationValidatorTest
     void testInvalidTimeIntervalsResultsInErrors()
     {
         TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
-        LeadTimeInterval leadInterval = new LeadTimeInterval( 3, 1, ChronoUnit.HOURS );
+        LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofHours( 3 ),
+                                                              java.time.Duration.ofHours( 1 ) );
         AnalysisDurations analysisDurations = new AnalysisDurations( 1, 0, ChronoUnit.HOURS );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -605,7 +607,8 @@ class DeclarationValidatorTest
     @Test
     void testMissingTimeIntervalsWithTimePoolsResultsInErrors()
     {
-        TimePools timePool = new TimePools( 1, 1, ChronoUnit.HOURS );
+        TimePools timePool = new TimePools( java.time.Duration.ofHours( 1 ),
+                                            java.time.Duration.ofHours( 1 ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -633,10 +636,12 @@ class DeclarationValidatorTest
     @Test
     void testInvalidTimePoolsResultsInErrors()
     {
-        TimePools timePool = new TimePools( 1, null, ChronoUnit.HOURS );
+        TimePools timePool = new TimePools( java.time.Duration.ofHours( 1 ),
+                                            null );
         TimeInterval interval = new TimeInterval( Instant.parse( "2047-01-01T00:00:00Z" ),
                                                   Instant.parse( "2047-01-01T00:01:00Z" ) );
-        LeadTimeInterval leadInterval = new LeadTimeInterval( 1, 2, ChronoUnit.MINUTES );
+        LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofMinutes( 1 ),
+                                                              java.time.Duration.ofMinutes( 2 ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -858,7 +863,8 @@ class DeclarationValidatorTest
     {
         Metric metric = new Metric( MetricConstants.RELIABILITY_DIAGRAM, null );
         Set<Metric> metrics = Set.of( metric );
-        TimePools timePool = new TimePools( 3, 1, ChronoUnit.HOURS );
+        TimePools timePool = new TimePools( java.time.Duration.ofHours( 3 ),
+                                            java.time.Duration.ofHours( 1 ) );
         Outputs formats = Outputs.newBuilder()
                                  .setCsv( Outputs.CsvFormat.getDefaultInstance() )
                                  .build();

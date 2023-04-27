@@ -193,9 +193,9 @@ public final class SingleValuedStatisticsProcessorTest
 
         for ( int i = 1; i < 11; i++ )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             Duration.ofHours( i ) );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX,
+                                                                             Duration.ofHours( i ) );
             TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             wres.statistics.generated.Pool pool = pairs.getMetadata()
@@ -224,12 +224,12 @@ public final class SingleValuedStatisticsProcessorTest
                             .size() );
 
         // Expected result
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 1 ),
-                                                         Duration.ofHours( 1 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Duration.ofHours( 1 ),
+                                                                         Duration.ofHours( 1 ) );
         TimeWindowOuter expectedWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds expectedThreshold =
@@ -335,14 +335,14 @@ public final class SingleValuedStatisticsProcessorTest
 
         //Build the expected output
         // Metadata for the output
-        TimeWindow innerFirst = MessageFactory.getTimeWindow( FIRST_DATE,
-                                                              FIRST_DATE,
-                                                              Duration.ofHours( 6 ),
-                                                              Duration.ofHours( 18 ) );
-        TimeWindow innerSecond = MessageFactory.getTimeWindow( SECOND_DATE,
-                                                               SECOND_DATE,
-                                                               Duration.ofHours( 6 ),
-                                                               Duration.ofHours( 18 ) );
+        TimeWindow innerFirst = wres.statistics.MessageFactory.getTimeWindow( FIRST_DATE,
+                                                                              FIRST_DATE,
+                                                                              Duration.ofHours( 6 ),
+                                                                              Duration.ofHours( 18 ) );
+        TimeWindow innerSecond = wres.statistics.MessageFactory.getTimeWindow( SECOND_DATE,
+                                                                               SECOND_DATE,
+                                                                               Duration.ofHours( 6 ),
+                                                                               Duration.ofHours( 18 ) );
 
         TimeWindowOuter firstWindow = TimeWindowOuter.of( innerFirst );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( innerSecond );
@@ -455,14 +455,14 @@ public final class SingleValuedStatisticsProcessorTest
 
         //Build the expected output
         // Metadata for the output
-        TimeWindow innerFirst = MessageFactory.getTimeWindow( FIRST_DATE,
-                                                              FIRST_DATE,
-                                                              Duration.ofHours( 6 ),
-                                                              Duration.ofHours( 18 ) );
-        TimeWindow innerSecond = MessageFactory.getTimeWindow( SECOND_DATE,
-                                                               SECOND_DATE,
-                                                               Duration.ofHours( 6 ),
-                                                               Duration.ofHours( 18 ) );
+        TimeWindow innerFirst = wres.statistics.MessageFactory.getTimeWindow( FIRST_DATE,
+                                                                              FIRST_DATE,
+                                                                              Duration.ofHours( 6 ),
+                                                                              Duration.ofHours( 18 ) );
+        TimeWindow innerSecond = wres.statistics.MessageFactory.getTimeWindow( SECOND_DATE,
+                                                                               SECOND_DATE,
+                                                                               Duration.ofHours( 6 ),
+                                                                               Duration.ofHours( 18 ) );
         TimeWindowOuter firstWindow = TimeWindowOuter.of( innerFirst );
         TimeWindowOuter secondWindow = TimeWindowOuter.of( innerSecond );
 
@@ -572,10 +572,10 @@ public final class SingleValuedStatisticsProcessorTest
         List<DurationScoreStatisticOuter> actualScores = project.getDurationScoreStatistics();
 
         //Metadata
-        TimeWindow inner = MessageFactory.getTimeWindow( FIRST_DATE,
-                                                         SECOND_DATE,
-                                                         Duration.ofHours( 6 ),
-                                                         Duration.ofHours( 18 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( FIRST_DATE,
+                                                                         SECOND_DATE,
+                                                                         Duration.ofHours( 6 ),
+                                                                         Duration.ofHours( 18 ) );
         final TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds thresholds =
@@ -596,11 +596,11 @@ public final class SingleValuedStatisticsProcessorTest
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
-        com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMedian = MessageFactory.parse( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMin = MessageFactory.parse( Duration.ofHours( -6 ) );
-        com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
-        com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
+        com.google.protobuf.Duration expectedMean = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMedian = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMin = wres.statistics.MessageFactory.parse( Duration.ofHours( -6 ) );
+        com.google.protobuf.Duration expectedMax = wres.statistics.MessageFactory.parse( Duration.ofHours( 12 ) );
+        com.google.protobuf.Duration expectedMeanAbs = wres.statistics.MessageFactory.parse( Duration.ofHours( 9 ) );
 
         DurationScoreMetricComponent baseMetric =
                 DurationScoreMetricComponent.newBuilder()
@@ -726,9 +726,9 @@ public final class SingleValuedStatisticsProcessorTest
         List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
         for ( int i = 1; i < 11; i++ )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             Duration.ofHours( i ) );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX,
+                                                                             Duration.ofHours( i ) );
             TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
@@ -768,12 +768,12 @@ public final class SingleValuedStatisticsProcessorTest
                             .size() );
 
         // Expected result
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 1 ),
-                                                         Duration.ofHours( 1 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Duration.ofHours( 1 ),
+                                                                         Duration.ofHours( 1 ) );
         TimeWindowOuter expectedWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds expectedThreshold =
@@ -840,9 +840,9 @@ public final class SingleValuedStatisticsProcessorTest
         // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             Duration.ofHours( i ) );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX,
+                                                                             Duration.ofHours( i ) );
             TimeWindowOuter window = TimeWindowOuter.of( inner );
 
             FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
@@ -891,8 +891,8 @@ public final class SingleValuedStatisticsProcessorTest
         List<DurationScoreStatisticOuter> actualScores = statistics.getDurationScoreStatistics();
 
         //Metadata
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                         Instant.MAX );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                         Instant.MAX );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds thresholds =
@@ -936,9 +936,9 @@ public final class SingleValuedStatisticsProcessorTest
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsEight();
 
         // Generate results
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ZERO );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Duration.ZERO );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
@@ -1106,9 +1106,9 @@ public final class SingleValuedStatisticsProcessorTest
 
         // Add results for 1 nominal lead time of PT3H
 
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                         Instant.MAX,
-                                                         Duration.ofHours( 3 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         Duration.ofHours( 3 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         wres.statistics.generated.Pool poolOneDescription = pairs.getMetadata()
@@ -1161,12 +1161,12 @@ public final class SingleValuedStatisticsProcessorTest
                             .size() );
 
         // Expected result
-        TimeWindow innerExpected = MessageFactory.getTimeWindow( Instant.MIN,
-                                                                 Instant.MAX,
-                                                                 Instant.MIN,
-                                                                 Instant.MAX,
-                                                                 Duration.ofHours( 3 ),
-                                                                 Duration.ofHours( 3 ) );
+        TimeWindow innerExpected = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 Duration.ofHours( 3 ),
+                                                                                 Duration.ofHours( 3 ) );
         TimeWindowOuter expectedWindow = TimeWindowOuter.of( innerExpected );
 
         OneOrTwoThresholds expectedThreshold =

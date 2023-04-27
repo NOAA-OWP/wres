@@ -43,12 +43,12 @@ public class CommaSeparatedUtilitiesTest
         Duration earlyLead = Duration.ofHours( 6 );
         Duration lateLead = Duration.ofHours( 120 );
 
-        TimeWindow inner = MessageFactory.getTimeWindow( earlyRef,
-                                                         lateRef,
-                                                         earlyValid,
-                                                         lateValid,
-                                                         earlyLead,
-                                                         lateLead );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( earlyRef,
+                                                                         lateRef,
+                                                                         earlyValid,
+                                                                         lateValid,
+                                                                         earlyLead,
+                                                                         lateLead );
         this.timeWindow = TimeWindowOuter.of( inner );
     }
 

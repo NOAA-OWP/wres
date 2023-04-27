@@ -23,13 +23,13 @@ import com.google.common.jimfs.Jimfs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.DataSourceConfig.Variable;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.MessageFactory;
 import wres.system.SystemSettings;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -166,7 +166,7 @@ class TarredReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( DRRC2 ) ),
+                                               Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -190,10 +190,10 @@ class TarredReaderTest
                                                         .addEvent( Event.of( T1985_06_01T15_00_00Z, 6.0 ) )
                                                         .build();
 
-                Feature feature = Feature.of( MessageFactory.getGeometry( DRRC2,
-                                                                                "DOLORES, CO",
-                                                                                0,
-                                                                                "POINT ( 108.5045 37.4739 )" ) );
+                Feature feature = Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2,
+                                                                                          "DOLORES, CO",
+                                                                                          0,
+                                                                                          "POINT ( 108.5045 37.4739 )" ) );
                 TimeSeriesMetadata expectedMetadataThree =
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                TimeScaleOuter.of(),

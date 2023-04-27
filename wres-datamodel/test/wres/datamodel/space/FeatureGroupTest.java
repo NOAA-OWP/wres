@@ -36,16 +36,16 @@ class FeatureGroupTest
     @BeforeEach
     void runBeforeEachTest()
     {
-        Geometry keyOne = MessageFactory.getGeometry( "A" );
-        Geometry keyTwo = MessageFactory.getGeometry( "B" );
-        Geometry keyThree = MessageFactory.getGeometry( "C" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
+        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "A" );
+        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "B" );
+        Geometry keyThree = wres.statistics.MessageFactory.getGeometry( "C" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, keyThree );
         this.aTuple = FeatureTuple.of( geoTuple );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "aGroup", geoTuple );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "aGroup", geoTuple );
         this.aGroup = FeatureGroup.of( geoGroup );
 
-        Geometry keyFour = MessageFactory.getGeometry( "A", "a feature", null, null );
-        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, keyFour );
+        Geometry keyFour = wres.statistics.MessageFactory.getGeometry( "A", "a feature", null, null );
+        GeometryTuple anotherGeoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, keyFour );
         this.anotherTuple = FeatureTuple.of( anotherGeoTuple );
     }
 
@@ -134,10 +134,10 @@ class FeatureGroupTest
         assertTrue( smallerGroup.compareTo( biggerGroup ) < 0 );
 
         // Equal size, equal group name, lesser tuple name        
-        Geometry keyOne = MessageFactory.getGeometry( "A" );
-        Geometry keyTwo = MessageFactory.getGeometry( "B" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
-        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( keyTwo, keyTwo, null );
+        Geometry keyOne = wres.statistics.MessageFactory.getGeometry( "A" );
+        Geometry keyTwo = wres.statistics.MessageFactory.getGeometry( "B" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( keyOne, keyTwo, null );
+        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( keyTwo, keyTwo, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
         FeatureTuple featureTupleTwo = FeatureTuple.of( geoTupleTwo );
 

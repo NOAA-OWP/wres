@@ -29,8 +29,8 @@ import wres.config.generated.Circle;
 import wres.config.generated.Polygon;
 import wres.config.generated.Polygon.Point;
 import wres.config.generated.UnnamedFeature;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.io.reading.netcdf.Netcdf;
 

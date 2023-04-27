@@ -243,14 +243,14 @@ class PoolSlicerTest
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
                                                                         Feature.of(
-                                                                                    MessageFactory.getGeometry( "bar" ) ),
+                                                                                wres.statistics.MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
                                                                         Feature.of(
-                                                                                    MessageFactory.getGeometry( "smeg" ) ),
+                                                                                wres.statistics.MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
@@ -271,13 +271,13 @@ class PoolSlicerTest
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "foo",
-                                                                        Feature.of( MessageFactory.getGeometry( "bar" ) ),
+                                                                        Feature.of( wres.statistics.MessageFactory.getGeometry( "bar" ) ),
                                                                         "baz" ),
                                                  eventsOne ),
                                   TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
                                                                         TimeScaleOuter.of(),
                                                                         "bla",
-                                                                        Feature.of( MessageFactory.getGeometry( "smeg" ) ),
+                                                                        Feature.of( wres.statistics.MessageFactory.getGeometry( "smeg" ) ),
                                                                         "faz" ),
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
@@ -333,12 +333,12 @@ class PoolSlicerTest
 
         Map<FeatureTuple, Pool<String>> expected = new HashMap<>();
 
-        Geometry one = MessageFactory.getGeometry( "foo" );
-        Geometry two = MessageFactory.getGeometry( "bar" );
-        Geometry three = MessageFactory.getGeometry( "baz" );
-        Geometry four = MessageFactory.getGeometry( "qux" );
-        GeometryTuple geoTupleOne = MessageFactory.getGeometryTuple( one, two, null );
-        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( three, four, null );
+        Geometry one = wres.statistics.MessageFactory.getGeometry( "foo" );
+        Geometry two = wres.statistics.MessageFactory.getGeometry( "bar" );
+        Geometry three = wres.statistics.MessageFactory.getGeometry( "baz" );
+        Geometry four = wres.statistics.MessageFactory.getGeometry( "qux" );
+        GeometryTuple geoTupleOne = wres.statistics.MessageFactory.getGeometryTuple( one, two, null );
+        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( three, four, null );
         FeatureTuple featureTupleOne = FeatureTuple.of( geoTupleOne );
         FeatureTuple featureTupleTwo = FeatureTuple.of( geoTupleTwo );
 
@@ -357,15 +357,15 @@ class PoolSlicerTest
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Geometry geo = MessageFactory.getGeometry( DRRC2 );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geo, geo, geo );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geo = wres.statistics.MessageFactory.getGeometry( DRRC2 );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geo, geo, geo );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.getPool( featureGroup,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                          Instant.parse( "1985-12-31T23:59:59Z" ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                                          Instant.parse( "1985-12-31T23:59:59Z" ) ) ),
                                         null,
                                         null,
                                         false,
@@ -375,8 +375,8 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.getPool( featureGroup,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( SECOND_TIME ),
-                                                                                          Instant.parse( "1986-12-31T23:59:59Z" ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( SECOND_TIME ),
+                                                                                                          Instant.parse( "1986-12-31T23:59:59Z" ) ) ),
                                         null,
                                         null,
                                         false,
@@ -386,8 +386,8 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolThree =
                 MessageFactory.getPool( featureGroup,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
-                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
                                         null,
                                         null,
                                         false,
@@ -397,8 +397,8 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolFour =
                 MessageFactory.getPool( featureGroup,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                                          Instant.parse( "1988-01-01T00:00:00Z" ) ) ),
                                         null,
                                         null,
                                         false,
@@ -453,9 +453,9 @@ class PoolSlicerTest
     @Test
     void testUnionOfThrowsExceptionWithUnequalInputs()
     {
-        Geometry geo = MessageFactory.getGeometry( DRRC3 );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geo, geo, geo );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geo = wres.statistics.MessageFactory.getGeometry( DRRC3 );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geo, geo, geo );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -530,15 +530,15 @@ class PoolSlicerTest
                                           .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                           .build();
 
-        Geometry one = MessageFactory.getGeometry( "a" );
-        Geometry two = MessageFactory.getGeometry( "b" );
-        Geometry three = MessageFactory.getGeometry( "c" );
-        Geometry four = MessageFactory.getGeometry( "d" );
-        Geometry five = MessageFactory.getGeometry( "e" );
-        Geometry six = MessageFactory.getGeometry( "f" );
+        Geometry one = wres.statistics.MessageFactory.getGeometry( "a" );
+        Geometry two = wres.statistics.MessageFactory.getGeometry( "b" );
+        Geometry three = wres.statistics.MessageFactory.getGeometry( "c" );
+        Geometry four = wres.statistics.MessageFactory.getGeometry( "d" );
+        Geometry five = wres.statistics.MessageFactory.getGeometry( "e" );
+        Geometry six = wres.statistics.MessageFactory.getGeometry( "f" );
 
-        GeometryTuple geoTupleOne = MessageFactory.getGeometryTuple( one, two, three );
-        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( four, five, six );
+        GeometryTuple geoTupleOne = wres.statistics.MessageFactory.getGeometryTuple( one, two, three );
+        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( four, five, six );
         FeatureTuple featureTupleOne = FeatureTuple.of( geoTupleOne );
         FeatureTuple featureTupleTwo = FeatureTuple.of( geoTupleTwo );
         FeatureGroup featureGroupOne = FeatureGroup.of( MessageFactory.getGeometryGroup( null, featureTupleOne ) );
@@ -546,8 +546,8 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolOne =
                 MessageFactory.getPool( featureGroupOne,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                          Instant.parse( SECOND_TIME ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                                          Instant.parse( SECOND_TIME ) ) ),
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
                                                                                   ThresholdOperator.GREATER,
@@ -557,8 +557,8 @@ class PoolSlicerTest
 
         wres.statistics.generated.Pool poolTwo =
                 MessageFactory.getPool( featureGroupTwo,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                          Instant.parse( FIRST_TIME ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                                          Instant.parse( FIRST_TIME ) ) ),
                                         TimeScaleOuter.of(),
                                         OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
                                                                                   ThresholdOperator.GREATER,
@@ -576,8 +576,8 @@ class PoolSlicerTest
         wres.statistics.generated.Pool expectedPool =
                 MessageFactory.getPool( FeatureGroup.of( MessageFactory.getGeometryGroup( Set.of( featureTupleOne,
                                                                                                   featureTupleTwo ) ) ),
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                                          Instant.parse( SECOND_TIME ) ) ),
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                                                          Instant.parse( SECOND_TIME ) ) ),
                                         TimeScaleOuter.of(),
                                         null,
                                         false,

@@ -18,9 +18,21 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
-
+import wres.datamodel.Ensemble;
+import wres.datamodel.pools.PoolMetadata;
+import wres.datamodel.pools.PoolSlicer;
+import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.Feature;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.StatisticsStore;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DestinationConfig;
@@ -40,23 +52,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
-import wres.datamodel.Ensemble;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
 import wres.config.xml.MetricConstantsFactory;
-import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.pools.PoolSlicer;
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.Feature;
-import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.datamodel.statistics.DurationDiagramStatisticOuter;
-import wres.datamodel.statistics.StatisticsStore;
-import wres.datamodel.thresholds.OneOrTwoThresholds;
-import wres.datamodel.time.Event;
-import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DiagramStatistic;
@@ -94,16 +92,17 @@ import wres.statistics.generated.ValueFilter;
 import wres.statistics.generated.Evaluation.DefaultData;
 
 /**
- * A factory class for mapping between canonical (protobuf) representations and corresponding Java representations, 
+ * A factory class for mapping between canonical (protobuf) representations and corresponding Java representations,
  * which often provide extra behavior. The "parse" methods provide a direct (one-to-one) translation in each direction
  * and the "get" methods involve an indirect translation or one-to-many/many-to-one translation.
  *
+ * @see wres.statistics.MessageFactory
  * @author James Brown
  */
 
 public class MessageFactory
 {
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
 
     /** Persistence baseline string. */
@@ -354,18 +353,6 @@ public class MessageFactory
     }
 
     /**
-     * Uncovers a set of declared formats from a description of the outputs.
-     *
-     * @param outputs the outputs that declare the formats to write
-     * @return the declared formats to write
-     */
-
-    public static Set<Format> getDeclaredFormats( Outputs outputs )
-    {
-        return wres.statistics.MessageUtilities.getDeclaredFormats( outputs );
-    }
-
-    /**
      * Creates a geometry tuple from the input.
      *
      * @param left the left feature, required
@@ -387,57 +374,6 @@ public class MessageFactory
         if ( Objects.nonNull( baseline ) )
         {
             builder.setBaseline( baseline.getGeometry() );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a geometry tuple from the input.
-     *
-     * @param left the left geometry, required
-     * @param right the right geometry, required
-     * @param baseline the baseline geometry, optional
-     * @return the geometry tuple
-     * @throws NullPointerException if either the left or right input is null
-     */
-
-    public static GeometryTuple getGeometryTuple( Geometry left, Geometry right, Geometry baseline )
-    {
-        Objects.requireNonNull( left );
-        Objects.requireNonNull( right );
-
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
-                                                     .setLeft( left )
-                                                     .setRight( right );
-
-        if ( Objects.nonNull( baseline ) )
-        {
-            builder.setBaseline( baseline );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a geometry group from the input.
-     *
-     * @param groupName the group name
-     * @param singleton the single geometry tuple
-     * @return the geometry group
-     * @throws NullPointerException if the singleton is null
-     */
-
-    public static GeometryGroup getGeometryGroup( String groupName, GeometryTuple singleton )
-    {
-        Objects.requireNonNull( singleton );
-
-        GeometryGroup.Builder builder = GeometryGroup.newBuilder()
-                                                     .addGeometryTuples( singleton );
-
-        if ( Objects.nonNull( groupName ) )
-        {
-            builder.setRegionName( groupName );
         }
 
         return builder.build();
@@ -511,261 +447,6 @@ public class MessageFactory
     public static GeometryGroup getGeometryGroup( FeatureTuple singleton )
     {
         return MessageFactory.getGeometryGroup( null, Collections.singleton( singleton ) );
-    }
-
-    /**
-     * Creates a geometry from the input.
-     * @param name the name, optional
-     * @param description the description, optional
-     * @param srid the spatial reference id, optional
-     * @param wkt the well-known text string, optional
-     * @return the geometry
-     */
-
-    public static Geometry getGeometry( String name,
-                                        String description,
-                                        Integer srid,
-                                        String wkt )
-    {
-        Geometry.Builder builder = Geometry.newBuilder();
-
-        if ( Objects.nonNull( name ) )
-        {
-            builder.setName( name );
-        }
-
-        if ( Objects.nonNull( description ) )
-        {
-            builder.setDescription( description );
-        }
-
-        if ( Objects.nonNull( srid ) )
-        {
-            builder.setSrid( srid );
-        }
-
-        if ( Objects.nonNull( wkt ) )
-        {
-            builder.setWkt( wkt );
-        }
-
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Created a new geometry with name '{}', description '{}', srid '{}', and wkt '{}'.",
-                          name,
-                          description,
-                          srid,
-                          wkt );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a geometry from the input.
-     * @param name the name
-     * @return geometry
-     */
-
-    public static Geometry getGeometry( String name )
-    {
-        return MessageFactory.getGeometry( name, null, null, null );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
-     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     *
-     * @param earliestReferenceTime the earliest reference time, optional
-     * @param latestReferenceTime the latest reference time, optional
-     * @param earliestValidTime the earliest valid time, optional
-     * @param latestValidTime the latest valid time, optional 
-     * @param earliestLead the earliest lead time, optional
-     * @param latestLead the latest lead time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
-                                            Instant latestReferenceTime,
-                                            Instant earliestValidTime,
-                                            Instant latestValidTime,
-                                            java.time.Duration earliestLead,
-                                            java.time.Duration latestLead )
-    {
-        Instant earliestR = Instant.MIN;
-        Instant latestR = Instant.MAX;
-        Instant earliestV = Instant.MIN;
-        Instant latestV = Instant.MAX;
-        java.time.Duration earliestL = TimeWindowOuter.DURATION_MIN;
-        java.time.Duration latestL = TimeWindowOuter.DURATION_MAX;
-
-        if ( Objects.nonNull( earliestReferenceTime ) )
-        {
-            earliestR = earliestReferenceTime;
-        }
-
-        if ( Objects.nonNull( latestReferenceTime ) )
-        {
-            latestR = latestReferenceTime;
-        }
-
-        if ( Objects.nonNull( earliestValidTime ) )
-        {
-            earliestV = earliestValidTime;
-        }
-
-        if ( Objects.nonNull( latestValidTime ) )
-        {
-            latestV = latestValidTime;
-        }
-
-        if ( Objects.nonNull( earliestLead ) )
-        {
-            earliestL = earliestLead;
-        }
-
-        if ( Objects.nonNull( latestLead ) )
-        {
-            latestL = latestLead;
-        }
-
-        if ( LOGGER.isTraceEnabled() )
-        {
-            LOGGER.trace( "Created a new time window with an earliest reference time of {}, a latest reference time "
-                          + "of {}, an earliest valid time of {}, a latest valid time of {}, an earliest lead duration "
-                          + "of {} and a latest lead duration of {}.",
-                          earliestR,
-                          latestR,
-                          earliestV,
-                          latestV,
-                          earliestL,
-                          latestL );
-        }
-
-        return TimeWindow.newBuilder()
-                         .setEarliestReferenceTime( MessageFactory.parse( earliestR ) )
-                         .setLatestReferenceTime( MessageFactory.parse( latestR ) )
-                         .setEarliestValidTime( MessageFactory.parse( earliestV ) )
-                         .setLatestValidTime( MessageFactory.parse( latestV ) )
-                         .setEarliestLeadDuration( MessageFactory.parse( earliestL ) )
-                         .setLatestLeadDuration( MessageFactory.parse( latestL ) )
-                         .build();
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
-     *
-     * @param earliestValidTime the earliest valid time, optional
-     * @param latestValidTime the latest valid time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( Instant earliestValidTime,
-                                            Instant latestValidTime )
-    {
-        return MessageFactory.getTimeWindow( null, null, earliestValidTime, latestValidTime, null, null );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Durations on the lower and upper bounds 
-     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     *
-     * @param earliestLead the earliest lead time, optional
-     * @param latestLead the latest lead time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( java.time.Duration earliestLead,
-                                            java.time.Duration latestLead )
-    {
-        return MessageFactory.getTimeWindow( null, null, null, null, earliestLead, latestLead );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively.
-     *
-     * @param earliestReferenceTime the earliest reference time, optional
-     * @param latestReferenceTime the latest reference time, optional
-     * @param earliestValidTime the earliest valid time, optional
-     * @param latestValidTime the latest valid time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
-                                            Instant latestReferenceTime,
-                                            Instant earliestValidTime,
-                                            Instant latestValidTime )
-    {
-        return MessageFactory.getTimeWindow( earliestReferenceTime,
-                                             latestReferenceTime,
-                                             earliestValidTime,
-                                             latestValidTime,
-                                             null,
-                                             null );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
-     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     *
-     * @param earliestReferenceTime the earliest reference time, optional
-     * @param latestReferenceTime the latest reference time, optional
-     * @param lead the earliest and latest lead time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
-                                            Instant latestReferenceTime,
-                                            java.time.Duration lead )
-    {
-        return MessageFactory.getTimeWindow( earliestReferenceTime, latestReferenceTime, null, null, lead, lead );
-    }
-
-    /**
-     * Creates a {@link wres.statistics.generated.TimeWindow} from the input. Times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively. Durations on the lower and upper bounds 
-     * default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     *
-     * @param earliestReferenceTime the earliest reference time, optional
-     * @param latestReferenceTime the latest reference time, optional
-     * @param earliestLead the earliest lead time, optional
-     * @param latestLead the latest lead time, optional
-     * @return the time window
-     */
-
-    public static TimeWindow getTimeWindow( Instant earliestReferenceTime,
-                                            Instant latestReferenceTime,
-                                            java.time.Duration earliestLead,
-                                            java.time.Duration latestLead )
-    {
-        return MessageFactory.getTimeWindow( earliestReferenceTime,
-                                             latestReferenceTime,
-                                             null,
-                                             null,
-                                             earliestLead,
-                                             latestLead );
-    }
-
-    /**
-     * Creates an empty {@link wres.statistics.generated.TimeWindow} in which the times on the lower and upper bounds 
-     * default to {@link Instant#MIN} and {@link Instant#MAX}, respectively, and the durations on the lower and upper 
-     * bounds default to {@link TimeWindowOuter#DURATION_MIN} and {@link TimeWindowOuter#DURATION_MAX}, respectively.
-     *
-     * @return the empty time window
-     */
-
-    public static TimeWindow getTimeWindow()
-    {
-        return MessageFactory.getTimeWindow( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null,
-                                             null );
     }
 
     /**
@@ -956,68 +637,6 @@ public class MessageFactory
     }
 
     /**
-     * Creates a {@link java.time.Duration} from a {@link Duration}.
-     *
-     * @param duration the duration to parse
-     * @return the duration
-     */
-
-    public static java.time.Duration parse( Duration duration )
-    {
-        Objects.requireNonNull( duration );
-
-        return java.time.Duration.ofSeconds( duration.getSeconds(), duration.getNanos() );
-    }
-
-    /**
-     * Creates a {@link java.time.Duration} from a {@link Duration}.
-     *
-     * @param duration the duration to parse
-     * @return the duration
-     */
-
-    public static Duration parse( java.time.Duration duration )
-    {
-        Objects.requireNonNull( duration );
-
-        return Duration.newBuilder()
-                       .setSeconds( duration.getSeconds() )
-                       .setNanos( duration.getNano() )
-                       .build();
-    }
-
-    /**
-     * Creates a {@link java.time.Instant} from a {@link Timestamp}.
-     *
-     * @param timeStamp the time stamp to parse
-     * @return the instant
-     */
-
-    public static java.time.Instant parse( Timestamp timeStamp )
-    {
-        Objects.requireNonNull( timeStamp );
-
-        return java.time.Instant.ofEpochSecond( timeStamp.getSeconds(), timeStamp.getNanos() );
-    }
-
-    /**
-     * Creates a {@link Timestamp} from a {@link java.time.Instant}.
-     *
-     * @param instant the instant to parse
-     * @return the time stamp
-     */
-
-    public static Timestamp parse( java.time.Instant instant )
-    {
-        Objects.requireNonNull( instant );
-
-        return Timestamp.newBuilder()
-                        .setSeconds( instant.getEpochSecond() )
-                        .setNanos( instant.getNano() )
-                        .build();
-    }
-
-    /**
      * Creates a {@link wres.statistics.generated.Threshold} from a 
      * {@link wres.datamodel.thresholds.ThresholdOuter}.
      *
@@ -1133,15 +752,15 @@ public class MessageFactory
     {
         Objects.requireNonNull( feature );
 
-        Geometry left = MessageFactory.getGeometry( feature.getLeft() );
-        Geometry right = MessageFactory.getGeometry( feature.getRight() );
+        Geometry left = wres.statistics.MessageFactory.getGeometry( feature.getLeft() );
+        Geometry right = wres.statistics.MessageFactory.getGeometry( feature.getRight() );
         GeometryTuple.Builder builder = GeometryTuple.newBuilder()
                                                      .setLeft( left )
                                                      .setRight( right );
 
         if ( Objects.nonNull( feature.getBaseline() ) )
         {
-            Geometry baseline = MessageFactory.getGeometry( feature.getBaseline() );
+            Geometry baseline = wres.statistics.MessageFactory.getGeometry( feature.getBaseline() );
             builder.setBaseline( baseline );
         }
 

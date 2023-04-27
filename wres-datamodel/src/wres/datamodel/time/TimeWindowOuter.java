@@ -16,8 +16,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.Timestamp;
 
 import net.jcip.annotations.Immutable;
-import wres.datamodel.messages.MessageFactory;
+
 import wres.datamodel.messages.MessageUtilities;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 
@@ -168,12 +169,12 @@ public class TimeWindowOuter implements Comparable<TimeWindowOuter>
             }
         }
 
-        TimeWindow unionWindow = MessageFactory.getTimeWindow( earliestR,
-                                                               latestR,
-                                                               earliestV,
-                                                               latestV,
-                                                               earliestL,
-                                                               latestL );
+        TimeWindow unionWindow = wres.statistics.MessageFactory.getTimeWindow( earliestR,
+                                                                               latestR,
+                                                                               earliestV,
+                                                                               latestV,
+                                                                               earliestL,
+                                                                               latestL );
         return TimeWindowOuter.of( unionWindow );
     }
 

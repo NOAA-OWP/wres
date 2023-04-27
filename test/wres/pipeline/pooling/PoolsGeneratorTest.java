@@ -121,9 +121,9 @@ class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        Geometry feature = MessageFactory.getGeometry( "FAKE2" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( feature, feature, null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project
@@ -231,9 +231,9 @@ class PoolsGeneratorTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
 
-        Geometry feature = MessageFactory.getGeometry( "FAKE2" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( feature, feature, null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         // Mock the sufficient elements of Project

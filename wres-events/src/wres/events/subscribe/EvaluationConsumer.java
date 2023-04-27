@@ -47,8 +47,8 @@ import wres.events.EvaluationEventUtilities;
 import wres.events.TimedCountDownLatch;
 import wres.events.publish.MessagePublisher;
 import wres.events.publish.MessagePublisher.MessageProperty;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.MessageUtilities;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
@@ -452,7 +452,7 @@ class EvaluationConsumer
 
             // Set the formats on the monitor, which is the intersection of the declared formats and the formats this
             // consumer can handle
-            Set<Format> declaredFormats = MessageUtilities.getDeclaredFormats( evaluationDescription.getOutputs() );
+            Set<Format> declaredFormats = MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
             Set<Format> formats = new TreeSet<>( declaredFormats );
             formats.retainAll( this.getConsumerDescription().getFormatsList() );
             this.getMonitor()

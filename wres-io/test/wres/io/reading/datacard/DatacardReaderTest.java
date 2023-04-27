@@ -23,7 +23,6 @@ import com.google.common.jimfs.Jimfs;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DataSourceConfig.Variable;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -31,6 +30,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.MessageFactory;
 
 /**
  * Tests the {@link DatacardReader}.
@@ -106,10 +106,10 @@ class DatacardReaderTest
                         TimeSeriesMetadata.of( Collections.emptyMap(),
                                                null,
                                                QINE,
-                                               Feature.of( MessageFactory.getGeometry( "DRRC2",
-                                                                                          "DOLORES RIVER, CO",
-                                                                                          null,
-                                                                                          null ) ),
+                                               Feature.of( wres.statistics.MessageFactory.getGeometry( "DRRC2",
+                                                                                                       "DOLORES RIVER, CO",
+                                                                                                       null,
+                                                                                                       null ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =
@@ -193,9 +193,9 @@ class DatacardReaderTest
                                                null,
                                                QINE,
                                                Feature.of( MessageFactory.getGeometry( "DRRC2",
-                                                                                          "DOLORES RIVER, CO",
-                                                                                          null,
-                                                                                          null ) ),
+                                                                                       "DOLORES RIVER, CO",
+                                                                                       null,
+                                                                                       null ) ),
                                                CFS );
 
                 TimeSeries<Double> expectedOne =

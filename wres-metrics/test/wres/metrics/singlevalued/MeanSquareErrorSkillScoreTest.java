@@ -18,7 +18,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.datamodel.pools.Pool;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.PoolException;
@@ -37,6 +36,7 @@ import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.generators.PersistenceGenerator;
 import wres.metrics.MetricTestDataFactory;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;

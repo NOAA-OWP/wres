@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.datamodel.MissingValues;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
@@ -42,6 +41,7 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 
 /**

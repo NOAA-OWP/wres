@@ -23,17 +23,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.IntBoundsType;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.PairConfig;
-import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.TimePools;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -47,6 +45,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeWindow;
@@ -105,55 +104,52 @@ class NetcdfOutputWriterTest
 
         // Mock sufficient aspects of the classes required to create a writer
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
-        ProjectConfig projectConfig = Mockito.mock( ProjectConfig.class );
+        EvaluationDeclaration declaration = Mockito.mock( EvaluationDeclaration.class );
 
-        PoolingWindowConfig pools = new PoolingWindowConfig( 3, 3, DurationUnit.HOURS );
-        PairConfig pairConfig = Mockito.mock( PairConfig.class );
-        IntBoundsType leadHours = new IntBoundsType( 0, 6 );
-        Mockito.when( pairConfig.getLeadTimesPoolingWindow() )
+        TimePools pools = new TimePools( java.time.Duration.ofHours( 3 ),
+                                         java.time.Duration.ofHours( 3 ) );
+        LeadTimeInterval leadHours = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                           java.time.Duration.ofHours( 6 ) );
+        Mockito.when( declaration.leadTimePools() )
                .thenReturn( pools );
-        Mockito.when( pairConfig.getLeadHours() )
+        Mockito.when( declaration.leadTimes() )
                .thenReturn( leadHours );
-        Mockito.when( projectConfig.getPair() )
-               .thenReturn( pairConfig );
 
-        ProjectConfig.Inputs inputs = Mockito.mock( ProjectConfig.Inputs.class );
-
-        DataSourceConfig leftSources = Mockito.mock( DataSourceConfig.class );
-        DataSourceConfig.Source leftSource = Mockito.mock( DataSourceConfig.Source.class );
-        Mockito.when( leftSource.getInterface() )
-               .thenReturn( InterfaceShortHand.WRDS_NWM );
-        Mockito.when( leftSources.getSource() )
+        Dataset leftSources = Mockito.mock( Dataset.class );
+        Source leftSource = Mockito.mock( Source.class );
+        Mockito.when( leftSource.sourceInterface() )
+               .thenReturn( SourceInterface.WRDS_NWM );
+        Mockito.when( leftSources.sources() )
                .thenReturn( List.of( leftSource ) );
 
-        DataSourceConfig rightSources = Mockito.mock( DataSourceConfig.class );
-        DataSourceConfig.Source rightSource = Mockito.mock( DataSourceConfig.Source.class );
-        Mockito.when( rightSource.getInterface() )
-               .thenReturn( InterfaceShortHand.USGS_NWIS );
-        Mockito.when( rightSources.getSource() )
+        Dataset rightSources = Mockito.mock( Dataset.class );
+        Source rightSource = Mockito.mock( Source.class );
+        Mockito.when( rightSource.sourceInterface() )
+               .thenReturn( SourceInterface.USGS_NWIS );
+        Mockito.when( rightSources.sources() )
                .thenReturn( List.of( rightSource ) );
-        Mockito.when( rightSources.getType() )
-               .thenReturn( DatasourceType.ENSEMBLE_FORECASTS );
+        Mockito.when( rightSources.type() )
+               .thenReturn( DataType.ENSEMBLE_FORECASTS );
 
-        Mockito.when( inputs.getLeft() )
+        Mockito.when( declaration.left() )
                .thenReturn( leftSources );
-        Mockito.when( inputs.getRight() )
+        Mockito.when( declaration.right() )
                .thenReturn( rightSources );
-        Mockito.when( projectConfig.getInputs() )
-               .thenReturn( inputs );
 
-        DestinationConfig destinationConfig = Mockito.mock( DestinationConfig.class );
-        Mockito.when( destinationConfig.getType() )
-               .thenReturn( DestinationType.NETCDF_2 );
+        Formats formats = Mockito.mock( Formats.class );
+        Mockito.when( declaration.formats() )
+                       .thenReturn( formats );
+        Mockito.when( formats.outputs() )
+                       .thenReturn( Outputs.newBuilder()
+                                           .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                           .build() );
 
         ChronoUnit durationUnits = ChronoUnit.HOURS;
 
         try ( NetcdfOutputWriter writer = NetcdfOutputWriter.of( systemSettings,
-                                                                 projectConfig,
-                                                                 destinationConfig,
+                                                                 declaration,
                                                                  durationUnits,
-                                                                 output,
-                                                                 false ) )
+                                                                 output ) )
         {
             // Create the features
             Geometry oneLeft = Geometry.newBuilder()

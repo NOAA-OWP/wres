@@ -29,11 +29,11 @@ import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Slicer;
 import wres.datamodel.Ensemble.Labels;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -53,7 +53,7 @@ public final class TimeSeriesSlicerTest
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final Feature DRRC2 = Feature.of(
-                                                     MessageFactory.getGeometry( "DRRC2" ) );
+            wres.statistics.MessageFactory.getGeometry( "DRRC2" ) );
     private static final String T2010_01_01T16_00_00Z = "2010-01-01T16:00:00Z";
     private static final Instant T2010_01_01T15_00_00Z = Instant.parse( "2010-01-01T15:00:00Z" );
     private static final Instant T2010_01_01T12_00_00Z = Instant.parse( "2010-01-01T12:00:00Z" );
@@ -73,7 +73,7 @@ public final class TimeSeriesSlicerTest
 
     private static final String VARIABLE_NAME = "Fruit";
     private static final Feature FEATURE_NAME = Feature.of(
-                                                            MessageFactory.getGeometry( "Tropics" ) );
+            MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     @Test
@@ -142,28 +142,28 @@ public final class TimeSeriesSlicerTest
         //Iterate and test
         TimeSeries<Pair<Double, Double>> filteredOne =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindowOuter.of( MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                           secondBasisTime,
-                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
+                                                                                                           secondBasisTime,
+                                                                                                           TimeWindowOuter.DURATION_MIN,
+                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( TimeSeries.of( metadataOneNoRefTimes ), filteredOne );
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
-                                         TimeWindowOuter.of( MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                           secondBasisTime,
-                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
+                                                                                                           secondBasisTime,
+                                                                                                           TimeWindowOuter.DURATION_MIN,
+                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( two, filteredTwo );
 
         TimeSeries<Pair<Double, Double>> filteredThree =
                 TimeSeriesSlicer.filter( three,
-                                         TimeWindowOuter.of( MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                           secondBasisTime,
-                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
+                                                                                                           secondBasisTime,
+                                                                                                           TimeWindowOuter.DURATION_MIN,
+                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( TimeSeries.of( metadataThreeNoRefTimes ), filteredThree );
 
@@ -189,7 +189,7 @@ public final class TimeSeriesSlicerTest
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( firstMetadata, first );
 
         // Filter the series
-        TimeWindow inner = MessageFactory.getTimeWindow( T1985_01_01T01_00_00Z, T1985_01_01T02_00_00Z );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( T1985_01_01T01_00_00Z, T1985_01_01T02_00_00Z );
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
         TimeSeries<Pair<Double, Double>> actual = TimeSeriesSlicer.filter( one, outer );
 
@@ -250,7 +250,7 @@ public final class TimeSeriesSlicerTest
 
         for ( Duration duration : durations )
         {
-            TimeWindowOuter window = TimeWindowOuter.of( MessageFactory.getTimeWindow( duration, duration ) );
+            TimeWindowOuter window = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( duration, duration ) );
             TimeSeries<Pair<Double, Double>> events =
                     TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
             for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
@@ -274,8 +274,8 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
         next = TimeSeriesSlicer.filter( next,
-                                        TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 51 ),
-                                                                                          Duration.ofHours( 51 ) ) ) );
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 51 ),
+                                                                                                          Duration.ofHours( 51 ) ) ) );
 
         Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
                                                     next.getEvents().first().getTime() );
@@ -1082,7 +1082,7 @@ public final class TimeSeriesSlicerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
 
         Duration frequency = Duration.ofHours( 6 );
 
@@ -1133,7 +1133,7 @@ public final class TimeSeriesSlicerTest
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow() );
 
         Duration frequency = Duration.ofHours( 3 );
 
@@ -1183,7 +1183,7 @@ public final class TimeSeriesSlicerTest
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ) );
 
         TimeWindowOuter timeWindow =
-                TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ZERO, Duration.ofDays( 1 ) ) );
+                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ZERO, Duration.ofDays( 1 ) ) );
 
         Duration frequency = Duration.ofDays( 1 );
 
@@ -1199,7 +1199,7 @@ public final class TimeSeriesSlicerTest
         assertEquals( expectedOne, actualOne );
 
         TimeWindowOuter timeWindowTwo =
-                TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofDays( 1 ), Duration.ofDays( 2 ) ) );
+                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofDays( 1 ), Duration.ofDays( 2 ) ) );
 
 
         SortedSet<Instant> actualTwo = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
@@ -1335,8 +1335,8 @@ public final class TimeSeriesSlicerTest
         Duration lowerLeadBound = Duration.ZERO;
         Duration upperLeadBound = Duration.ofHours( 240 );
 
-        TimeWindowOuter timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( lowerLeadBound,
-                                                                                       upperLeadBound ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( lowerLeadBound,
+                                                                                                       upperLeadBound ) );
 
         SortedSet<Instant> actual = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
                                                                                             right,

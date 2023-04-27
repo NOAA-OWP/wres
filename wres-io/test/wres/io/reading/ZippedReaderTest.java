@@ -23,12 +23,12 @@ import com.google.common.jimfs.Jimfs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.DataSourceConfig.Variable;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.MessageFactory;
 
 /**
  * Tests the {@link ZippedReader}.

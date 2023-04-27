@@ -66,9 +66,9 @@ import wres.system.SystemSettings;
 class DatabaseProjectTest
 {
     private static final Feature FEATURE = Feature.of(
-            MessageFactory.getGeometry( "F" ) );
+            wres.statistics.MessageFactory.getGeometry( "F" ) );
     private static final Feature ANOTHER_FEATURE = Feature.of(
-            MessageFactory.getGeometry( "G" ) );
+            wres.statistics.MessageFactory.getGeometry( "G" ) );
     private static final String PROJECT_HASH = "881hfEaffja267";
     private static final String UNITS = "[ft_i]3/s";
     private static final String VARIABLE_NAME = "V";

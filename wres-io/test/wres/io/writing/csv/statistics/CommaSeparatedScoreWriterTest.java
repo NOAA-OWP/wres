@@ -18,12 +18,12 @@ import wres.config.xml.ProjectConfigException;
 import wres.config.generated.DestinationType;
 import wres.config.generated.NamedFeature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreComponentOuter;
 import wres.io.writing.WriterTestHelper;
+import wres.statistics.MessageFactory;
 
 /**
  * Tests the writing of score outputs to a file of Comma Separated Values (CSV).

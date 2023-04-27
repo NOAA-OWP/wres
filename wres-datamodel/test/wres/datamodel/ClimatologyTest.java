@@ -10,8 +10,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
+import wres.statistics.MessageFactory;
 
 /**
  * Tests the {@link Climatology}.
@@ -25,7 +25,7 @@ class ClimatologyTest
     void testMergeOnBuild()
     {
         Climatology.Builder builder = new Climatology.Builder();
-        Feature feature = Feature.of( MessageFactory.getGeometry( "foo" ) );
+        Feature feature = Feature.of( wres.statistics.MessageFactory.getGeometry( "foo" ) );
         builder.addClimatology( feature, new double[] { 1 } );
         builder.addClimatology( feature, new double[] { 2 } );
 
@@ -39,7 +39,7 @@ class ClimatologyTest
     @Test
     void testGet()
     {
-        Feature feature = Feature.of( MessageFactory.getGeometry( "foo" ) );
+        Feature feature = Feature.of( wres.statistics.MessageFactory.getGeometry( "foo" ) );
         Climatology climatology = new Climatology.Builder().addClimatology( feature, new double[] { 1, 2 } )
                                                            .build();
 
@@ -55,8 +55,8 @@ class ClimatologyTest
     @Test
     void testGetFeatures()
     {
-        Feature fooFeature = Feature.of( MessageFactory.getGeometry( "foo" ) );
-        Feature barFeature = Feature.of( MessageFactory.getGeometry( "bar" ) );
+        Feature fooFeature = Feature.of( wres.statistics.MessageFactory.getGeometry( "foo" ) );
+        Feature barFeature = Feature.of( wres.statistics.MessageFactory.getGeometry( "bar" ) );
         Climatology climatology = new Climatology.Builder().addClimatology( fooFeature, new double[] { 1, 2 } )
                                                            .addClimatology( barFeature, new double[] { 3, 4 } )
                                                            .build();
@@ -70,7 +70,7 @@ class ClimatologyTest
     @Test
     void testEquals()
     {
-        Feature feature = Feature.of( MessageFactory.getGeometry( "foo" ) );
+        Feature feature = Feature.of( wres.statistics.MessageFactory.getGeometry( "foo" ) );
 
         // Reflexive 
         Climatology climatology = new Climatology.Builder().addClimatology( feature, new double[] { 1, 2 } )
@@ -104,7 +104,7 @@ class ClimatologyTest
 
         assertFalse( climatology.equals( yetAnotherClimatology ) );
 
-        Feature anotheFeature = Feature.of( MessageFactory.getGeometry( "bar" ) );
+        Feature anotheFeature = Feature.of( wres.statistics.MessageFactory.getGeometry( "bar" ) );
         Climatology oneFinalClimatology = new Climatology.Builder().addClimatology( anotheFeature, new double[] { 1 } )
                                                                    .build();
 

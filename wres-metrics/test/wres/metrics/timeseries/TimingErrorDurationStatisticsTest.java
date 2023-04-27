@@ -12,7 +12,6 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -20,6 +19,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricParameterException;
 import wres.metrics.MetricTestDataFactory;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreMetric;
@@ -49,7 +49,7 @@ public final class TimingErrorDurationStatisticsTest
                                                   Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MEAN ) )
                                              .apply( input );
 
-        com.google.protobuf.Duration expectedSource = MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedSource = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
 
         DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( ComponentName.MEAN )
@@ -89,7 +89,7 @@ public final class TimingErrorDurationStatisticsTest
                                                   Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MAXIMUM ) )
                                              .apply( input );
 
-        assertEquals( MessageFactory.parse( Duration.ofHours( 12 ) ),
+        assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( 12 ) ),
                       max.getComponent( MetricConstants.MAXIMUM ).getData().getValue() );
 
         // Minimum error = -6
@@ -98,7 +98,7 @@ public final class TimingErrorDurationStatisticsTest
                                                   Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MINIMUM ) )
                                              .apply( input );
 
-        assertEquals( MessageFactory.parse( Duration.ofHours( -6 ) ),
+        assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( -6 ) ),
                       min.getComponent( MetricConstants.MINIMUM ).getData().getValue() );
 
         // Mean absolute error = 9
@@ -107,7 +107,7 @@ public final class TimingErrorDurationStatisticsTest
                                                   Collections.singleton( MetricConstants.TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE ) )
                                              .apply( input );
 
-        assertEquals( MessageFactory.parse( Duration.ofHours( 9 ) ),
+        assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( 9 ) ),
                       meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData().getValue() );
     }
 
@@ -128,9 +128,9 @@ public final class TimingErrorDurationStatisticsTest
                                                                           MetricConstants.TIME_TO_PEAK_ERROR_MINIMUM,
                                                                           MetricConstants.TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE ) ) );
 
-        com.google.protobuf.Duration expectedMean = MessageFactory.parse( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMin = MessageFactory.parse( Duration.ofHours( -6 ) );
-        com.google.protobuf.Duration expectedMax = MessageFactory.parse( Duration.ofHours( 12 ) );
+        com.google.protobuf.Duration expectedMean = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMin = wres.statistics.MessageFactory.parse( Duration.ofHours( -6 ) );
+        com.google.protobuf.Duration expectedMax = wres.statistics.MessageFactory.parse( Duration.ofHours( 12 ) );
         com.google.protobuf.Duration expectedMeanAbs = MessageFactory.parse( Duration.ofHours( 9 ) );
 
         DurationScoreMetricComponent baseMetric =

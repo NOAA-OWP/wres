@@ -1294,7 +1294,8 @@ public class PoolFactory
 
         TimePairingType returnMe = TimePairingType.REFERENCE_TIME_AND_VALID_TIME;
 
-        if ( !ProjectConfigs.isForecast( inputsConfig.getLeft() ) || !ProjectConfigs.isForecast( inputsConfig.getRight() ) )
+        if ( !ProjectConfigs.isForecast( inputsConfig.getLeft() )
+             || !ProjectConfigs.isForecast( inputsConfig.getRight() ) )
         {
             returnMe = TimePairingType.VALID_TIME_ONLY;
         }

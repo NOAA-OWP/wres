@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,11 +31,11 @@ import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.FeatureDimension;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
@@ -47,10 +46,12 @@ import wres.statistics.generated.GeometryTuple;
 
 class NetcdfOutputFileCreator2
 {
-    private NetcdfOutputFileCreator2(){}
+    private NetcdfOutputFileCreator2()
+    {
+    }
 
     private static final Logger
-            LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator2.class);
+            LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator2.class );
 
     /** The _FillValue and missing_value to use when writing. */
     static final double DOUBLE_FILL_VALUE = 9.9692099683868690e+36d;
@@ -63,13 +64,27 @@ class NetcdfOutputFileCreator2
 
     /** The length of strings to use for lid variable in the file. */
     private static final int FEATURE_TUPLE_STRING_LENGTH = FEATURE_STRING_LENGTH * 3 + 2;
-    
+
     /** The length of string to use for each feature group in the file. */
     private static final int FEATURE_GROUP_STRING_LENGTH = FeatureGroup.MAXIMUM_NAME_LENGTH;
 
-    private static final String NOTE_REGARDING_UNITS_AND_GDAL = "Purposely avoided setting true units and standard_name attributes to maintain compatibility with GDAL/OGR 3.0.4 and QGIS 3.10.5.";
+    private static final String NOTE_REGARDING_UNITS_AND_GDAL =
+            "Purposely avoided setting true units and standard_name attributes to maintain compatibility with GDAL/OGR 3.0.4 and QGIS 3.10.5.";
 
-    static String create( ProjectConfig projectDeclaration,
+    /**
+     * Create and set up dimensions of the Netcdf files for a given project.
+     * @param declaration the declaration
+     * @param targetPath The path into which to write.
+     * @param featureGroups The feature groups to write (netCDF lib needs it)
+     * @param window The outermost time window (TODO: support N windows)
+     * @param analysisTime A time to label as "analysis time" in the blob.
+     * @param metricVariables The variables to add to this blob.
+     * @return The writer created
+     * @throws WriteException when something goes wrong when creating or writing
+     * @throws NullPointerException when any non-primitive arg is null
+     */
+
+    static String create( EvaluationDeclaration declaration,
                           Path targetPath,
                           Set<FeatureGroup> featureGroups,
                           TimeWindowOuter window,
@@ -86,13 +101,13 @@ class NetcdfOutputFileCreator2
         LOGGER.debug( "About to create a new file at {}. Variables count={}",
                       targetPath,
                       metricVariables.size() );
-        try( NetcdfFileWriter writer =
-                NetcdfOutputFileCreator2.initializeBlob( projectDeclaration,
-                                                         targetPath,
-                                                         featureGroups,
-                                                         window,
-                                                         analysisTime,
-                                                         metricVariables ) )
+        try ( NetcdfFileWriter writer =
+                      NetcdfOutputFileCreator2.initializeBlob( declaration,
+                                                               targetPath,
+                                                               featureGroups,
+                                                               window,
+                                                               analysisTime,
+                                                               metricVariables ) )
         {
             ArrayInt.D1 duration = new ArrayInt.D1( 1, false );
             duration.set( 0, ( int ) window.getLatestLeadDuration().toMinutes() );
@@ -134,6 +149,7 @@ class NetcdfOutputFileCreator2
 
     /**
      * Create and set up dimensions of the Netcdf files for a given project.
+     * @param declaration the declaration
      * @param targetPath The path into which to write.
      * @param featureGroups The feature groups to write (netCDF lib needs it)
      * @param window The outermost time window (TODO: support N windows)
@@ -144,14 +160,14 @@ class NetcdfOutputFileCreator2
      * @throws NullPointerException when any non-primitive arg is null
      */
 
-    private static NetcdfFileWriter initializeBlob( ProjectConfig projectDeclaration,
+    private static NetcdfFileWriter initializeBlob( EvaluationDeclaration declaration,
                                                     Path targetPath,
                                                     Set<FeatureGroup> featureGroups,
                                                     TimeWindowOuter window,
                                                     ZonedDateTime analysisTime,
                                                     Collection<MetricVariable> metricVariables )
     {
-        Objects.requireNonNull( projectDeclaration );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( window );
         Objects.requireNonNull( analysisTime );
@@ -166,7 +182,7 @@ class NetcdfOutputFileCreator2
 
             // featureType="profile" may be a better way to represent stats.
             writer.addGlobalAttribute( "featureType", "point" );
-            NetcdfOutputFileCreator2.setDimensionsAndVariables( projectDeclaration,
+            NetcdfOutputFileCreator2.setDimensionsAndVariables( declaration,
                                                                 writer,
                                                                 featureGroups,
                                                                 window,
@@ -186,15 +202,20 @@ class NetcdfOutputFileCreator2
     /**
      * Given a writer to use and the context needed, set up the dimensions of
      * the netcdf file. Calls create() which makes writer out of define mode.
-     * 
      * TODO: Refactor this into several smaller methods.
-     * 
+     *
+     * @param declaration the declaration
+     * @param writer the writer
+     * @param featureGroups The feature groups to write (netCDF lib needs it)
+     * @param window The outermost time window (TODO: support N windows)
+     * @param analysisTime A time to label as "analysis time" in the blob.
+     * @param metricVariables The variables to add to this blob.
      * @throws IllegalStateException when writer is not in define mode
      * @throws NullPointerException when any non-primitive arg is null
      * @throws WriteException when netCDF is whiny
      */
 
-    private static void setDimensionsAndVariables( ProjectConfig projectDeclaration,
+    private static void setDimensionsAndVariables( EvaluationDeclaration declaration,
                                                    NetcdfFileWriter writer,
                                                    Set<FeatureGroup> featureGroups,
                                                    TimeWindowOuter window,
@@ -206,7 +227,7 @@ class NetcdfOutputFileCreator2
         Objects.requireNonNull( window );
         Objects.requireNonNull( analysisTime );
         Objects.requireNonNull( metricVariables );
-        
+
         // Total number of features
         int featureCount = featureGroups.stream()
                                         .mapToInt( next -> next.getFeatures().size() )
@@ -235,8 +256,8 @@ class NetcdfOutputFileCreator2
                                                             "string7",
                                                             FEATURE_TUPLE_STRING_LENGTH );
         Dimension featureGroupStringDimension = writer.addDimension( null,
-                                                            "feature_group_string_len",
-                                                            FEATURE_GROUP_STRING_LENGTH );
+                                                                     "feature_group_string_len",
+                                                                     FEATURE_GROUP_STRING_LENGTH );
 
         List<Dimension> stationDimension = List.of( featureDimension );
 
@@ -286,11 +307,11 @@ class NetcdfOutputFileCreator2
         Attribute latStandardName =
                 new Attribute( "standard_name", latName );
         Attribute latLongName = new Attribute( "long_name", latName );
-        Attribute latAxis =  new Attribute( "axis", "Y" );
+        Attribute latAxis = new Attribute( "axis", "Y" );
         latVariable.addAll( List.of( latUnits
-                ,latStandardName
-                ,latLongName
-                ,latAxis
+                , latStandardName
+                , latLongName
+                , latAxis
         ) );
         NetcdfOutputFileCreator2.addNoDataAttributes( latVariable,
                                                       DOUBLE_FILL_VALUE );
@@ -308,9 +329,9 @@ class NetcdfOutputFileCreator2
         Attribute lonAxis =
                 new Attribute( "axis", "X" );
         lonVariable.addAll( List.of( lonUnits
-                ,lonStandardName
-                ,lonLongName
-                ,lonAxis
+                , lonStandardName
+                , lonLongName
+                , lonAxis
         ) );
         NetcdfOutputFileCreator2.addNoDataAttributes( lonVariable,
                                                       DOUBLE_FILL_VALUE );
@@ -330,26 +351,29 @@ class NetcdfOutputFileCreator2
                                                    "lid",
                                                    DataType.CHAR,
                                                    lidDimensions );
-        Attribute lidLongName = new Attribute( "long_name", "The geographic feature names of left, right, and optionally baseline concatenated with underscore." );
+        Attribute lidLongName = new Attribute( "long_name",
+                                               "The geographic feature names of left, right, and optionally baseline concatenated with underscore." );
         lidVariable.addAll( List.of( coordinates, gridMapping, lidLongName ) );
-        
+
         List<Dimension> featureGroupDimensions = List.of( featureDimension,
                                                           featureGroupStringDimension );
         Variable featureGroupVariable = writer.addVariable( null,
-                                                   "feature_group_name",
-                                                   DataType.CHAR,
-                                                   featureGroupDimensions );
-        Attribute featureGroupLongName = new Attribute( "long_name", "The name of the feature group that contains one or more geographic feature tuples." );
+                                                            "feature_group_name",
+                                                            DataType.CHAR,
+                                                            featureGroupDimensions );
+        Attribute featureGroupLongName = new Attribute( "long_name",
+                                                        "The name of the feature group that contains one or more geographic feature tuples." );
         featureGroupVariable.addAll( List.of( coordinates, gridMapping, featureGroupLongName ) );
-        
+
         List<Dimension> featureNameDimensions = List.of( featureDimension,
                                                          featureNameDimension );
         Variable leftFeatureNameVariable = writer.addVariable( null,
                                                                "left_feature_name",
                                                                DataType.CHAR,
                                                                featureNameDimensions );
-        Attribute leftFeatureNameLongName = new Attribute( "long_name", "The name of the geographic feature from the left dataset." );
-        String leftAuthority = NetcdfOutputFileCreator2.getLeftFeatureDimensionName( projectDeclaration );
+        Attribute leftFeatureNameLongName =
+                new Attribute( "long_name", "The name of the geographic feature from the left dataset." );
+        String leftAuthority = NetcdfOutputFileCreator2.getLeftFeatureDimensionName( declaration );
         Attribute leftFeatureNameAuthority = new Attribute( "feature_name_authority", leftAuthority );
         leftFeatureNameVariable.addAll( List.of( coordinates,
                                                  gridMapping,
@@ -360,8 +384,9 @@ class NetcdfOutputFileCreator2
                                                                 "right_feature_name",
                                                                 DataType.CHAR,
                                                                 featureNameDimensions );
-        Attribute rightFeatureNameLongName = new Attribute( "long_name", "The name of the geographic feature from the right dataset." );
-        String rightAuthority = NetcdfOutputFileCreator2.getRightFeatureDimensionName( projectDeclaration );
+        Attribute rightFeatureNameLongName =
+                new Attribute( "long_name", "The name of the geographic feature from the right dataset." );
+        String rightAuthority = NetcdfOutputFileCreator2.getRightFeatureDimensionName( declaration );
         Attribute rightFeatureNameAuthority = new Attribute( "feature_name_authority", rightAuthority );
         rightFeatureNameVariable.addAll( List.of( coordinates,
                                                   gridMapping,
@@ -372,8 +397,9 @@ class NetcdfOutputFileCreator2
                                                                    "baseline_feature_name",
                                                                    DataType.CHAR,
                                                                    featureNameDimensions );
-        Attribute baselineFeatureNameLongName = new Attribute( "long_name", "The name of the geographic feature from the baseline dataset." );
-        String baselineAuthority = NetcdfOutputFileCreator2.getBaselineFeatureDimensionName( projectDeclaration );
+        Attribute baselineFeatureNameLongName =
+                new Attribute( "long_name", "The name of the geographic feature from the baseline dataset." );
+        String baselineAuthority = NetcdfOutputFileCreator2.getBaselineFeatureDimensionName( declaration );
         Attribute baselineFeatureNameAuthority = new Attribute( "feature_name_authority", baselineAuthority );
         baselineFeatureNameVariable.addAll( List.of( coordinates,
                                                      gridMapping,
@@ -435,7 +461,7 @@ class NetcdfOutputFileCreator2
 
         // Order the tuples and write the names
         List<FeatureTuple> orderedTuples = new ArrayList<>();
-        
+
         int writeIndex = 0;
         for ( FeatureGroup nextGroup : featureGroups )
         {
@@ -448,14 +474,14 @@ class NetcdfOutputFileCreator2
                 ArrayChar.D2 nextTupleName = NetcdfOutputFileCreator2.stringToD2( nextTupleString,
                                                                                   FEATURE_TUPLE_STRING_LENGTH );
 
-                int[] index = { writeIndex , 0 };
+                int[] index = { writeIndex, 0 };
 
                 try
                 {
                     LOGGER.debug( "About to call write on {}, {}, {}",
                                   lidVariable, index, nextTupleName );
                     writer.write( lidVariable, index, nextTupleName );
-                    
+
                     LOGGER.debug( "About to call write on {}, {}, {}",
                                   featureGroupVariable, index, nextGroupName );
                     writer.write( featureGroupVariable, index, nextGroupName );
@@ -466,7 +492,7 @@ class NetcdfOutputFileCreator2
                                               + writer.getNetcdfFile().getLocation()
                                               + " failed: ", e );
                 }
-                
+
                 writeIndex++;
             }
         }
@@ -487,7 +513,7 @@ class NetcdfOutputFileCreator2
                                               FEATURE_STRING_LENGTH );
             }
 
-            int[] index = { featureIndex , 0 };
+            int[] index = { featureIndex, 0 };
 
             try
             {
@@ -520,10 +546,10 @@ class NetcdfOutputFileCreator2
         }
 
         FeatureTuple first = orderedTuples.stream()
-                                     .findFirst()
-                                     .orElseThrow();
+                                          .findFirst()
+                                          .orElseThrow();
 
-        LeftOrRightOrBaseline datasetWithGeo =
+        DatasetOrientation datasetWithGeo =
                 NetcdfOutputFileCreator2.getMostCompleteGeo( first );
 
         if ( Objects.nonNull( datasetWithGeo ) )
@@ -535,35 +561,35 @@ class NetcdfOutputFileCreator2
             List<Coordinate> points = Collections.emptyList();
             Integer srid = null;
 
-            if ( datasetWithGeo.equals( LeftOrRightOrBaseline.LEFT ) )
+            if ( datasetWithGeo.equals( DatasetOrientation.LEFT ) )
             {
                 srid = first.getLeft()
                             .getSrid();
                 points = orderedTuples.stream()
-                                 .map( FeatureTuple::getLeft )
-                                 .map( Feature::getWkt )
-                                 .map( DataUtilities::getLonLatOrNullFromWkt )
-                                 .toList();
+                                      .map( FeatureTuple::getLeft )
+                                      .map( Feature::getWkt )
+                                      .map( DataUtilities::getLonLatOrNullFromWkt )
+                                      .toList();
             }
-            else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.RIGHT ) )
+            else if ( datasetWithGeo.equals( DatasetOrientation.RIGHT ) )
             {
                 srid = first.getRight()
                             .getSrid();
                 points = orderedTuples.stream()
-                                 .map( FeatureTuple::getRight )
-                                 .map( Feature::getWkt )
-                                 .map( DataUtilities::getLonLatOrNullFromWkt )
-                                 .collect( Collectors.toList() );
+                                      .map( FeatureTuple::getRight )
+                                      .map( Feature::getWkt )
+                                      .map( DataUtilities::getLonLatOrNullFromWkt )
+                                      .toList();
             }
-            else if ( datasetWithGeo.equals( LeftOrRightOrBaseline.BASELINE ) )
+            else if ( datasetWithGeo.equals( DatasetOrientation.BASELINE ) )
             {
                 srid = first.getBaseline()
                             .getSrid();
                 points = orderedTuples.stream()
-                                 .map( FeatureTuple::getBaseline )
-                                 .map( Feature::getWkt )
-                                 .map( DataUtilities::getLonLatOrNullFromWkt )
-                                 .collect( Collectors.toList() );
+                                      .map( FeatureTuple::getBaseline )
+                                      .map( Feature::getWkt )
+                                      .map( DataUtilities::getLonLatOrNullFromWkt )
+                                      .toList();
             }
 
             LOGGER.debug( "EPSG srid={}", srid );
@@ -658,7 +684,7 @@ class NetcdfOutputFileCreator2
                                                   + writer.getNetcdfFile()
                                                           .getLocation()
                                                   + " for x=" + point.getX()
-                                                  + " for y=" + point.getY() ,
+                                                  + " for y=" + point.getY(),
                                                   e );
                     }
                 }
@@ -671,9 +697,9 @@ class NetcdfOutputFileCreator2
                                .getLocation() );
         }
 
-        LeftOrRightOrBaseline nwmDataset =
-                NetcdfOutputFileCreator2.getFeatureDimension( projectDeclaration,
-                                                              FeatureDimension.NWM_FEATURE_ID );
+        DatasetOrientation nwmDataset =
+                NetcdfOutputFileCreator2.getFeatureDimension( declaration,
+                                                              FeatureAuthority.NWM_FEATURE_ID );
 
         if ( Objects.nonNull( nwmDataset ) )
         {
@@ -696,7 +722,7 @@ class NetcdfOutputFileCreator2
                                               + " encountered feature named '"
                                               + name
                                               + "' from the "
-                                              + nwmDataset.value()
+                                              + nwmDataset.name()
                                               + " dataset that was not an "
                                               + "integer, but NWM feature IDs "
                                               + "are assumed to be integers.",
@@ -853,43 +879,39 @@ class NetcdfOutputFileCreator2
      * Look for which dataset uses the given dimension, if any, null otherwise.
      * If multiple use this feature dimension, return in priority order:
      * right, left, baseline
-     * @param projectConfig Project declaration
+     * @param declaration Project declaration
      * @param featureDimension The feature dimension to seek
      * @return The l/r/b having given dimension, or null if none found.
      */
 
-    static LeftOrRightOrBaseline getFeatureDimension( ProjectConfig projectConfig,
-                                                      FeatureDimension featureDimension )
+    static DatasetOrientation getFeatureDimension( EvaluationDeclaration declaration,
+                                                   FeatureAuthority featureDimension )
     {
-        ProjectConfig.Inputs inputs = projectConfig.getInputs();
-        DataSourceConfig right = inputs.getRight();
-        FeatureDimension rightDimension = NetcdfOutputFileCreator2.getFeatureDimension( right );
+        FeatureAuthority rightDimension = NetcdfOutputFileCreator2.getFeatureDimension( declaration.right() );
 
         if ( Objects.nonNull( rightDimension )
              && rightDimension.equals( featureDimension ) )
         {
-            return LeftOrRightOrBaseline.RIGHT;
+            return DatasetOrientation.RIGHT;
         }
 
-        DataSourceConfig left = inputs.getLeft();
-        FeatureDimension leftDimension = NetcdfOutputFileCreator2.getFeatureDimension( left );
+        FeatureAuthority leftDimension = NetcdfOutputFileCreator2.getFeatureDimension( declaration.left() );
 
         if ( Objects.nonNull( leftDimension )
              && leftDimension.equals( featureDimension ) )
         {
-            return LeftOrRightOrBaseline.LEFT;
+            return DatasetOrientation.LEFT;
         }
 
-        DataSourceConfig baseline = inputs.getBaseline();
-
-        if ( Objects.nonNull( baseline ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
-            FeatureDimension baselineDimension = NetcdfOutputFileCreator2.getFeatureDimension( baseline );
+            FeatureAuthority baselineDimension = NetcdfOutputFileCreator2.getFeatureDimension( declaration.baseline()
+                                                                                                          .dataset() );
 
             if ( Objects.nonNull( baselineDimension )
                  && baselineDimension.equals( featureDimension ) )
             {
-                return LeftOrRightOrBaseline.BASELINE;
+                return DatasetOrientation.BASELINE;
             }
         }
 
@@ -898,75 +920,72 @@ class NetcdfOutputFileCreator2
 
     /**
      * Get the left feature dimension name
-     * @param projectConfig Project declaration
+     * @param declaration Project declaration
      * @return The dimension detected or custom if not consistent or not found.
      */
 
-    private static String getLeftFeatureDimensionName( ProjectConfig projectConfig )
+    private static String getLeftFeatureDimensionName( EvaluationDeclaration declaration )
     {
-        ProjectConfig.Inputs inputs = projectConfig.getInputs();
-        DataSourceConfig left = inputs.getLeft();
-        FeatureDimension leftDimension =
-                NetcdfOutputFileCreator2.getFeatureDimension( left );
+        Dataset dataset = declaration.left();
+        FeatureAuthority leftDimension =
+                NetcdfOutputFileCreator2.getFeatureDimension( dataset );
         if ( Objects.nonNull( leftDimension ) )
         {
-            return leftDimension.value();
+            return leftDimension.nameLowerCase();
         }
         else
         {
-            return FeatureDimension.CUSTOM.value();
+            return FeatureAuthority.CUSTOM.nameLowerCase();
         }
     }
 
     /**
      * Get the right feature dimension name
-     * @param projectConfig Project declaration
+     * @param declaration Project declaration
      * @return The dimension detected or custom if not consistent or not found.
      */
 
-    private static String getRightFeatureDimensionName( ProjectConfig projectConfig )
+    private static String getRightFeatureDimensionName( EvaluationDeclaration declaration )
     {
-        ProjectConfig.Inputs inputs = projectConfig.getInputs();
-        DataSourceConfig right = inputs.getRight();
-        FeatureDimension rightDimension =
-                NetcdfOutputFileCreator2.getFeatureDimension( right );
+        Dataset dataset = declaration.right();
+        FeatureAuthority rightDimension =
+                NetcdfOutputFileCreator2.getFeatureDimension( dataset );
         if ( Objects.nonNull( rightDimension ) )
         {
-            return rightDimension.value();
+            return rightDimension.nameLowerCase();
         }
         else
         {
-            return FeatureDimension.CUSTOM.value();
+            return FeatureAuthority.CUSTOM.nameLowerCase();
         }
     }
 
 
     /**
      * Get the baseline feature dimension name or empty String if no baseline.
-     * @param projectConfig Project declaration
+     * @param declaration Project declaration
      * @return The dimension detected or custom if not consistent or not found,
      * empty string if no baseline.
      */
 
-    private static String getBaselineFeatureDimensionName( ProjectConfig projectConfig )
+    private static String getBaselineFeatureDimensionName( EvaluationDeclaration declaration )
     {
-        ProjectConfig.Inputs inputs = projectConfig.getInputs();
-        DataSourceConfig baseline = inputs.getBaseline();
-
-        if ( Objects.isNull( baseline ) )
+        if ( !DeclarationUtilities.hasBaseline( declaration ) )
         {
             return "";
         }
 
-        FeatureDimension baselineDimension =
-                NetcdfOutputFileCreator2.getFeatureDimension( baseline );
+        Dataset dataset = declaration.baseline()
+                                     .dataset();
+        FeatureAuthority baselineDimension =
+                NetcdfOutputFileCreator2.getFeatureDimension( dataset );
         if ( Objects.nonNull( baselineDimension ) )
         {
-            return baselineDimension.value();
+            return baselineDimension.nameLowerCase();
         }
         else
         {
-            return FeatureDimension.CUSTOM.value();
+            return FeatureAuthority.CUSTOM.nameLowerCase();
         }
     }
 
@@ -974,60 +993,13 @@ class NetcdfOutputFileCreator2
     /**
      * Get the feature dimension for a given DataSourceConfig, null if none or
      * inconsistent data.
+     * @param dataset the dataset
+     * @return the feature authority
      */
 
-    static FeatureDimension getFeatureDimension( DataSourceConfig config )
+    static FeatureAuthority getFeatureDimension( Dataset dataset )
     {
-        Objects.requireNonNull( config );
-        List<DataSourceConfig.Source> sources = config.getSource();
-        List<InterfaceShortHand> interfaces = sources.stream()
-                                                     .map( DataSourceConfig.Source::getInterface )
-                                                     .filter( Objects::nonNull )
-                                                     .collect( Collectors.toList() );
-        Set<InterfaceShortHand> distinctInterfaces = new HashSet<>( interfaces );
-
-        if ( interfaces.size() == sources.size()
-             && distinctInterfaces.size() == 1 )
-        {
-            // OK, unanimous source declaration, detected it, it's first in set.
-            for ( InterfaceShortHand interfaceShortHand : distinctInterfaces )
-            {
-                if ( interfaceShortHand.value()
-                                       .startsWith( "nwm" )
-                     || interfaceShortHand.value()
-                                          .endsWith( "nwm" ) )
-                {
-                    return FeatureDimension.NWM_FEATURE_ID;
-                }
-                else if ( interfaceShortHand.value()
-                                            .startsWith( "usgs" )
-                          || interfaceShortHand.value()
-                                               .endsWith( "usgs" ) )
-                {
-                    return FeatureDimension.USGS_SITE_CODE;
-                }
-                else if ( interfaceShortHand.value()
-                                            .startsWith( "ahps" )
-                          || interfaceShortHand.value()
-                                               .endsWith( "ahps" )
-                          || interfaceShortHand.value()
-                                               .equals( "wrds_obs" ) )
-                {
-                    return FeatureDimension.NWS_LID;
-                }
-
-                // One-item loop. No more after first.
-                break;
-            }
-        }
-        else if ( distinctInterfaces.isEmpty()
-                  && Objects.nonNull( config.getFeatureDimension() ) )
-        {
-            return config.getFeatureDimension();
-        }
-
-        // No valid dimension found for the whole dataset.
-        return null;
+        return dataset.featureAuthority();
     }
 
 
@@ -1038,7 +1010,7 @@ class NetcdfOutputFileCreator2
      * @return null if none have any geo info, otherwise best geo info
      */
 
-    static LeftOrRightOrBaseline getMostCompleteGeo( GeometryTuple geometryTuple )
+    static DatasetOrientation getMostCompleteGeo( GeometryTuple geometryTuple )
     {
         Objects.requireNonNull( geometryTuple );
         Objects.requireNonNull( geometryTuple.getLeft() );
@@ -1078,7 +1050,7 @@ class NetcdfOutputFileCreator2
      * @return null if none have any geo info, otherwise best geo info
      */
 
-    static LeftOrRightOrBaseline getMostCompleteGeo( FeatureTuple featureTuple )
+    static DatasetOrientation getMostCompleteGeo( FeatureTuple featureTuple )
     {
         Objects.requireNonNull( featureTuple );
         Objects.requireNonNull( featureTuple.getLeft() );
@@ -1116,7 +1088,7 @@ class NetcdfOutputFileCreator2
                                                          baselineHasSrid );
     }
 
-    private static LeftOrRightOrBaseline findMostGeoData( String leftWkt,
+    private static DatasetOrientation findMostGeoData( String leftWkt,
                                                           boolean leftHasSrid,
                                                           String rightWkt,
                                                           boolean rightHasSrid,
@@ -1124,7 +1096,7 @@ class NetcdfOutputFileCreator2
                                                           boolean baselineHasSrid )
     {
         final String REGEX = " ";
-        LeftOrRightOrBaseline winner = null;
+        DatasetOrientation winner = null;
         String[] leftElements = {};
         String[] rightElements = {};
 
@@ -1148,22 +1120,22 @@ class NetcdfOutputFileCreator2
                 // RIGHT if tie.
                 if ( leftElements.length > rightElements.length )
                 {
-                    winner = LeftOrRightOrBaseline.LEFT;
+                    winner = DatasetOrientation.LEFT;
                 }
                 else
                 {
-                    winner = LeftOrRightOrBaseline.RIGHT;
+                    winner = DatasetOrientation.RIGHT;
                 }
             }
             else if ( rightHasSrid )
             {
                 // Right has both SRID and lon/lat data
-                winner = LeftOrRightOrBaseline.RIGHT;
+                winner = DatasetOrientation.RIGHT;
             }
             else
             {
                 // Left has both SRID and lon/lat data
-                winner = LeftOrRightOrBaseline.LEFT;
+                winner = DatasetOrientation.LEFT;
             }
         }
 
@@ -1180,7 +1152,7 @@ class NetcdfOutputFileCreator2
                             && !rightHasSrid && baselineElements.length > 1 ) ) )
                 {
                     // Baseline only wins in narrow circumstances.
-                    winner = LeftOrRightOrBaseline.BASELINE;
+                    winner = DatasetOrientation.BASELINE;
                 }
             }
         }
@@ -1201,19 +1173,19 @@ class NetcdfOutputFileCreator2
     private static Variable addDoubleVariable( NetcdfFileWriter fileWriter,
                                                String name,
                                                List<Dimension> dimensions,
-                                               Map<String,Object> attributes )
+                                               Map<String, Object> attributes )
     {
         Variable variable = fileWriter.addVariable( name, DataType.DOUBLE, dimensions );
         NetcdfOutputFileCreator2.addNoDataAttributes( variable, DOUBLE_FILL_VALUE );
 
-        for ( Map.Entry<String, Object> attribute : attributes.entrySet())
+        for ( Map.Entry<String, Object> attribute : attributes.entrySet() )
         {
             Attribute ncAttribute;
 
             if ( attribute.getValue() instanceof Number )
             {
                 ncAttribute = new Attribute( attribute.getKey(),
-                                             (Number) attribute.getValue() );
+                                             ( Number ) attribute.getValue() );
             }
             else
             {
@@ -1233,11 +1205,11 @@ class NetcdfOutputFileCreator2
      * @param length The length of the netCDF 3 array.
      * @return The ArrayChar.D2 version, truncated to length.
      */
-    private static ArrayChar.D2 stringToD2( String string, int length)
+    private static ArrayChar.D2 stringToD2( String string, int length )
     {
         char[] charArray = string.toCharArray();
         char[] truncatedCharArray = Arrays.copyOf( charArray, length );
         char[][] twoDimTruncatedCharArray = new char[][] { truncatedCharArray };
-        return (ArrayChar.D2) ArrayChar.D2.makeFromJavaArray( twoDimTruncatedCharArray );
+        return ( ArrayChar.D2 ) ArrayChar.D2.makeFromJavaArray( twoDimTruncatedCharArray );
     }
 }

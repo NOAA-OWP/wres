@@ -5,6 +5,7 @@ import wres.config.xml.ProjectConfigs;
 import wres.config.generated.*;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConstantsFactory;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -78,21 +79,21 @@ public class ExternalThresholdReader
         Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( this.metricsConfig,
                                                                                     this.projectConfig );
 
-        Map<FeatureTuple,Set<ThresholdOuter>> thresholds = new HashMap<>();
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
 
         for ( ThresholdsConfig thresholdsConfig : this.getThresholds( this.metricsConfig ) )
         {
             ThresholdFormat format = ExternalThresholdReader.getThresholdFormat( thresholdsConfig );
             if ( format == ThresholdFormat.CSV )
             {
-                Map<FeatureTuple,Set<ThresholdOuter>> csvThresholds = this.readCSVThresholds( thresholdsConfig,
-                                                                                              metrics );
+                Map<FeatureTuple, Set<ThresholdOuter>> csvThresholds = this.readCSVThresholds( thresholdsConfig,
+                                                                                               metrics );
                 thresholds.putAll( csvThresholds );
             }
             else if ( format == ThresholdFormat.WRDS )
             {
-                Map<FeatureTuple,Set<ThresholdOuter>> wrdsThresholds = this.readWRDSThresholds( thresholdsConfig,
-                                                                                                metrics );
+                Map<FeatureTuple, Set<ThresholdOuter>> wrdsThresholds = this.readWRDSThresholds( thresholdsConfig,
+                                                                                                 metrics );
                 thresholds.putAll( wrdsThresholds );
             }
             else
@@ -213,8 +214,9 @@ public class ExternalThresholdReader
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
         ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) thresholdsConfig.getCommaSeparatedValuesOrSource();
-        LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
-        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, tupleSide );
+        LeftOrRightOrBaseline lrb = source.getFeatureNameFrom();
+        DatasetOrientation tupleSide = DatasetOrientation.valueOf( lrb.name() );
+        DataSourceConfig dataSourceConfig = ProjectConfigs.getDataSourceBySide( this.projectConfig, lrb );
         FeatureDimension featureDimension = ConfigHelper.getConcreteFeatureDimension( dataSourceConfig );
 
         try
@@ -276,7 +278,7 @@ public class ExternalThresholdReader
 
     private Map<FeatureTuple, Set<ThresholdOuter>> getThresholds( Map<WrdsLocation, Set<ThresholdOuter>> wrdsThresholds,
                                                                   FeatureDimension featureDimension,
-                                                                  LeftOrRightOrBaseline tupleSide )
+                                                                  DatasetOrientation tupleSide )
     {
         // Add all of the WrdsLocation keys in the map to the unrecognized list.
         // As we recognize each one, it will be removed from this list.
@@ -395,8 +397,8 @@ public class ExternalThresholdReader
      * @param metrics The metric constants.
      * @return the thresholds
      */
-    private Map<FeatureTuple,Set<ThresholdOuter>> readCSVThresholds( ThresholdsConfig thresholdsConfig,
-                                                                     Set<MetricConstants> metrics )
+    private Map<FeatureTuple, Set<ThresholdOuter>> readCSVThresholds( ThresholdsConfig thresholdsConfig,
+                                                                      Set<MetricConstants> metrics )
     {
 
         Objects.requireNonNull( thresholdsConfig, "Specify non-null threshold configuration." );
@@ -404,9 +406,10 @@ public class ExternalThresholdReader
         Objects.requireNonNull( metrics, "Specify non-null metrics." );
 
         ThresholdsConfig.Source source = ( ThresholdsConfig.Source ) thresholdsConfig.getCommaSeparatedValuesOrSource();
-        LeftOrRightOrBaseline tupleSide = source.getFeatureNameFrom();
+        DatasetOrientation tupleSide = DatasetOrientation.valueOf( source.getFeatureNameFrom()
+                                                                         .name() );
 
-        Map<FeatureTuple,Set<ThresholdOuter>> thresholds = new HashMap<>();
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
 
         try
         {
@@ -430,11 +433,12 @@ public class ExternalThresholdReader
 
                 // Try to find one of our configured features whose side matches what we were able to pluck out
                 // from our threshold requests
-                Optional<FeatureTuple> possibleFeature = this.features.stream()
-                                                                      .filter( tuple -> equalityCheck.test( tuple.getNameFor(
-                                                                                                                    tupleSide ),
-                                                                                                            locationIdentifier ) )
-                                                                      .findFirst();
+                Optional<FeatureTuple> possibleFeature
+                        = this.features.stream()
+                                       .filter( tuple -> equalityCheck.test( tuple.getNameFor(
+                                                                                     tupleSide ),
+                                                                             locationIdentifier ) )
+                                       .findFirst();
 
                 // If none were found, just move on. This might happen in the case where a CSV returns a mountain of
                 // thresholds yet we only want a few

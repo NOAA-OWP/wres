@@ -56,16 +56,16 @@ class DiagramStatisticOuterTest
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "A" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "A" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
-        Geometry anotherGeometry = MessageFactory.getGeometry( "B" );
-        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( anotherGeometry,
-                                                                         anotherGeometry,
-                                                                         anotherGeometry );
-        GeometryGroup anotherGeoGroup = MessageFactory.getGeometryGroup( null, anotherGeoTuple );
+        Geometry anotherGeometry = wres.statistics.MessageFactory.getGeometry( "B" );
+        GeometryTuple anotherGeoTuple = wres.statistics.MessageFactory.getGeometryTuple( anotherGeometry,
+                                                                                         anotherGeometry,
+                                                                                         anotherGeometry );
+        GeometryGroup anotherGeoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, anotherGeoTuple );
         this.anotherFeatureGroup = FeatureGroup.of( anotherGeoGroup );
 
         Pool pool = MessageFactory.getPool( this.featureGroup,

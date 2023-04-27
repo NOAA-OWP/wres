@@ -22,7 +22,6 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.MetricsAndThresholds;
@@ -30,6 +29,7 @@ import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdsGenerator;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricParameterException;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.GeometryTuple;
 
 /**
@@ -126,9 +126,9 @@ public final class StatisticsProcessorTest
     {
         Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
         Set<ThresholdOuter> thresholds= ThresholdsGenerator.getThresholdsFromConfig( config );
-        GeometryTuple geometryTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( DRRC2 ),
-                                                                       MessageFactory.getGeometry( DRRC2 ),
-                                                                       null );
+        GeometryTuple geometryTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( DRRC2 ),
+                                                                                       MessageFactory.getGeometry( DRRC2 ),
+                                                                                       null );
         FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
         Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
         MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,

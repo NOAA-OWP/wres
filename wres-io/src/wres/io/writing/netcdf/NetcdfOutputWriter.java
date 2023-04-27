@@ -52,14 +52,11 @@ import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.nc2.write.NetcdfFormatWriter;
 
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.NetcdfType;
 import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Format;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
@@ -82,6 +79,7 @@ import wres.io.NoDataException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.system.SystemSettings;
@@ -113,9 +111,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     private final Object windowLock = new Object();
 
-    private final DestinationConfig destinationConfig;
     private final Path outputDirectory;
-    private NetcdfType netcdfConfiguration;
+    private final Outputs.NetcdfFormat netcdfFormat;
 
     // TODO: remove when netcdf writing is one stage. Until then, we must return the paths to blobs created rather than
     // statistics written, i.e., more paths are created than necessary
@@ -134,7 +131,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Project declaration.
      */
 
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
 
     /**
      * Records whether the writer is ready to write. It is ready when all blobs have been created.
@@ -162,28 +159,22 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * Returns an instance of the writer. 
      *
      * @param systemSettings The system settings to use.
-     * @param projectConfig the project configuration
-     * @param destinationDeclaration the destination declaration
+     * @param declaration the project configuration
      * @param durationUnits the time units for durations
      * @param outputDirectory the directory into which to write
-     * @param deprecatedVersion True if using deprecated code, false otherwise
      * @return an instance of the writer
      * @throws NetcdfWriteException if the blobs could not be created for any reason
      */
 
     public static NetcdfOutputWriter of( SystemSettings systemSettings,
-                                         ProjectConfig projectConfig,
-                                         DestinationConfig destinationDeclaration,
+                                         EvaluationDeclaration declaration,
                                          ChronoUnit durationUnits,
-                                         Path outputDirectory,
-                                         boolean deprecatedVersion )
+                                         Path outputDirectory )
     {
         return new NetcdfOutputWriter( systemSettings,
-                                       projectConfig,
-                                       destinationDeclaration,
+                                       declaration,
                                        durationUnits,
-                                       outputDirectory,
-                                       deprecatedVersion );
+                                       outputDirectory );
     }
 
     /**
@@ -198,36 +189,44 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     private NetcdfOutputWriter( SystemSettings systemSettings,
-                                ProjectConfig projectConfig,
-                                DestinationConfig destinationDeclaration,
+                                EvaluationDeclaration declaration,
                                 ChronoUnit durationUnits,
-                                Path outputDirectory,
-                                boolean deprecatedVersion )
+                                Path outputDirectory )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( projectConfig, "Specify non-null project config." );
+        Objects.requireNonNull( declaration, "Specify non-null project declaration." );
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
-        Objects.requireNonNull( destinationDeclaration );
-        LOGGER.debug( "Created NetcdfOutputWriter {}", this );
-        this.destinationConfig = destinationDeclaration;
-        this.netcdfConfiguration = this.destinationConfig.getNetcdf();
-        this.durationUnits = durationUnits;
-        this.outputDirectory = outputDirectory;
-        this.projectConfig = projectConfig;
-        this.isReadyToWrite = new AtomicBoolean();
-        this.deprecatedVersion = deprecatedVersion;
 
-        if ( this.netcdfConfiguration == null )
+        Outputs outputs = declaration.formats()
+                                     .outputs();
+
+        if ( outputs.hasNetcdf2() == outputs.hasNetcdf() )
         {
-            this.netcdfConfiguration = new NetcdfType( null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null );
+            throw new IllegalArgumentException( "To create an output writer, precisely one of the NetCDF or NetCDF2 "
+                                                + "formats should be declared." );
         }
 
-        Objects.requireNonNull( this.destinationConfig, "The NetcdfOutputWriter wasn't properly initialized." );
+        if ( outputs.hasNetcdf() )
+        {
+            LOGGER.debug( "Creating a writer for the deprecated NetCDF format." );
+            this.deprecatedVersion = true;
+            this.netcdfFormat = outputs.getNetcdf();
+
+        }
+        else
+        {
+            LOGGER.debug( "Creating a writer for the NetCDF2 format." );
+            this.deprecatedVersion = false;
+            this.netcdfFormat = null;
+        }
+
+
+        LOGGER.debug( "Created NetcdfOutputWriter {}", this );
+        this.durationUnits = durationUnits;
+        this.outputDirectory = outputDirectory;
+        this.declaration = declaration;
+        this.isReadyToWrite = new AtomicBoolean();
     }
 
     /**
@@ -251,9 +250,10 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Time windows
-        PairConfig pairConfig = this.getProjectConfig()
-                                    .getPair();
-        Set<TimeWindowOuter> timeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig );
+        Set<TimeWindowOuter> timeWindows = DeclarationUtilities.getTimeWindows( this.getDeclaration() )
+                                                               .stream()
+                                                               .map( TimeWindowOuter::of )
+                                                               .collect( Collectors.toSet() );
 
         // Find the thresholds-by-metric for which blobs should be created
 
@@ -261,7 +261,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // more than needed? For example, what happens if the mean error is requested for the ensemble median and not
         // for the ensemble mean - will that produce a variable for the ensemble median only? Use the default averaging
         // type if the evaluation does not contain ensemble forecasts
-        boolean hasEnsembles = ProjectConfigs.hasEnsembleForecasts( this.getProjectConfig() );
+        boolean hasEnsembles = this.getDeclaration()
+                                   .right()
+                                   .type() == wres.config.yaml.components.DataType.ENSEMBLE_FORECASTS;
         Function<MetricsAndThresholds, EnsembleAverageType> ensembleTypeCalculator = thresholds -> {
             if ( hasEnsembles )
             {
@@ -291,16 +293,20 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Units, if declared
         String units = "UNKNOWN";
-        if ( Objects.nonNull( pairConfig.getUnit() ) )
+        if ( Objects.nonNull( this.getDeclaration()
+                                  .unit() ) )
         {
-            units = pairConfig.getUnit();
+            units = this.getDeclaration()
+                        .unit();
         }
 
         // Desired time scale, if declared
         TimeScaleOuter desiredTimeScale = null;
-        if ( Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
+        if ( Objects.nonNull( this.getDeclaration().timeScale() ) )
         {
-            desiredTimeScale = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
+            desiredTimeScale = TimeScaleOuter.of( this.getDeclaration()
+                                                      .timeScale()
+                                                      .timeScale() );
         }
 
         Set<Path> allPathsCreated = new HashSet<>();
@@ -308,8 +314,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Create blobs from components
         synchronized ( this.windowLock )
         {
-            Set<Path> pathsCreated = this.createBlobsAndBlobWriters( this.getProjectConfig()
-                                                                         .getInputs(),
+            Set<Path> pathsCreated = this.createBlobsAndBlobWriters( this.getDeclaration(),
                                                                      featureGroups,
                                                                      timeWindows,
                                                                      thresholds,
@@ -343,9 +348,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the project declaration.
      */
 
-    private ProjectConfig getProjectConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.projectConfig;
+        return this.declaration;
     }
 
     /**
@@ -360,7 +365,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Creates the blobs into which outputs will be written.
      *
-     * @param inputs the inputs declaration
+     * @param declaration the evaluation declaration
      * @param featureGroups The super-set of feature groups used in this evaluation.
      * @param timeWindows the time windows
      * @param thresholds the thresholds
@@ -371,7 +376,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the paths written
      */
 
-    private Set<Path> createBlobsAndBlobWriters( Inputs inputs,
+    private Set<Path> createBlobsAndBlobWriters( EvaluationDeclaration declaration,
                                                  Set<FeatureGroup> featureGroups,
                                                  Set<TimeWindowOuter> timeWindows,
                                                  Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds,
@@ -384,14 +389,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Create the standard threshold names
         this.standardThresholdNames =
-                this.createStandardThresholdNames( thresholds, Objects.nonNull( inputs.getBaseline() ) );
+                this.createStandardThresholdNames( thresholds, DeclarationUtilities.hasBaseline( declaration ) );
 
         LOGGER.debug( "Created this map of standard threshold names: {}", this.standardThresholdNames );
 
         // One blob and blob writer per time window      
         for ( TimeWindowOuter nextWindow : timeWindows )
         {
-            Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( inputs,
+            Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( declaration,
                                                                                             nextWindow,
                                                                                             thresholds,
                                                                                             units,
@@ -399,10 +404,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Create the blob path
             Path targetPath = this.getOutputPathToWriteForOneTimeWindow( this.getOutputDirectory(),
-                                                                         this.getProjectConfig()
-                                                                             .getPair(),
-                                                                         this.getDestinationConfig(),
-                                                                         this.getScenarioNameForBlobOrNull( inputs ),
+                                                                         this.getDeclaration(),
+                                                                         this.getScenarioNameForBlobOrNull( declaration ),
                                                                          nextWindow,
                                                                          this.getDurationUnits() );
 
@@ -412,7 +415,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 // Create the blob
                 pathActuallyWritten =
-                        NetcdfOutputFileCreator2.create( this.getProjectConfig(),
+                        NetcdfOutputFileCreator2.create( declaration,
                                                          targetPath,
                                                          featureGroups,
                                                          nextWindow,
@@ -425,11 +428,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 pathActuallyWritten =
                         NetcdfOutputFileCreator.create( this.getTemplatePath(),
                                                         targetPath,
-                                                        this.destinationConfig,
                                                         nextWindow,
                                                         NetcdfOutputWriter.ANALYSIS_TIME,
-                                                        variables,
-                                                        this.getDurationUnits() );
+                                                        variables );
             }
 
             returnMe.add( targetPath );
@@ -517,8 +518,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * information and other hints provided.
      *
      * @param outputDirectory the directory into which to write
-     * @param pairConfig the pairs declaration
-     * @param destinationConfig the destination information
+     * @param declaration the declaration
      * @param scenarioName the optional scenario name
      * @param timeWindow the time window
      * @param leadUnits the time units to use for the lead durations
@@ -529,19 +529,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     private Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
-                                                       PairConfig pairConfig,
-                                                       DestinationConfig destinationConfig,
+                                                       EvaluationDeclaration declaration,
                                                        String scenarioName,
                                                        TimeWindowOuter timeWindow,
                                                        ChronoUnit leadUnits )
             throws IOException
     {
         Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
-        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
         Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
         Objects.requireNonNull( leadUnits,
                                 "Enter a non-null time unit for the lead durations to establish a path for writing." );
-        Objects.requireNonNull( pairConfig, "Provide non-null pair configuration to establish a path for writing." );
+        Objects.requireNonNull( declaration, "Provide non-null declaration to establish a path for writing." );
 
         StringJoiner filename = new StringJoiner( "_" );
 
@@ -564,7 +562,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // Add latest valid time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
         // For backwards compatibility of file names, only qualify when valid dates pooling windows are supplied
-        if ( Objects.nonNull( pairConfig.getValidDatesPoolingWindow() )
+        if ( Objects.nonNull( declaration.validDatePools() )
              && !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
         {
             String lastTime = timeWindow.getLatestValidTime().toString();
@@ -582,8 +580,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         filename.add( leadUnits.name().toUpperCase() );
 
         String extension = "";
-        if ( destinationConfig.getType() == DestinationType.NETCDF
-             || destinationConfig.getType() == DestinationType.NETCDF_2 )
+        Outputs outputs = declaration.formats()
+                                     .outputs();
+        if ( outputs.hasNetcdf() || outputs.hasNetcdf2() )
         {
             extension = ".nc";
         }
@@ -597,14 +596,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Returns a scenario name to be used in naming a blob or null.
      *
-     * @param inputs the inputs declaration
+     * @param declaration the declaration
      * @return an identifier or null
      */
 
-    private String getScenarioNameForBlobOrNull( Inputs inputs )
+    private String getScenarioNameForBlobOrNull( EvaluationDeclaration declaration )
     {
-        String scenarioName = inputs.getRight().getLabel();
-        if ( Objects.nonNull( inputs.getBaseline() ) && inputs.getBaseline().isSeparateMetrics() )
+        String scenarioName = declaration.right()
+                                         .label();
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && Boolean.TRUE.equals( declaration.baseline()
+                                                .separateMetrics() ) )
         {
             scenarioName = null;
         }
@@ -616,8 +618,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         String templatePath;
 
-        if ( this.getNetcdfConfiguration()
-                 .getTemplatePath() == null )
+        if ( this.getNetcdfFormat()
+                 .getTemplatePath()
+                 .isBlank() )
         {
             String defaultTemplate;
 
@@ -638,8 +641,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
         else
         {
-            templatePath = this.getDestinationConfig()
-                               .getNetcdf()
+            templatePath = this.getNetcdfFormat()
                                .getTemplatePath();
         }
 
@@ -649,7 +651,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Creates a collection of {@link MetricVariable} for one time window.
      *
-     * @param inputs The input configurations
+     * @param declaration the declaration
      * @param timeWindow the time windows
      * @param thresholds the thresholds
      * @param units the measurement units, if available
@@ -657,7 +659,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the metric variables
      */
 
-    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( Inputs inputs,
+    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( EvaluationDeclaration declaration,
                                                                            TimeWindowOuter timeWindow,
                                                                            Map<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> thresholds,
                                                                            String units,
@@ -669,6 +671,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                       timeWindow,
                       thresholds );
 
+        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
+
         // Iterate through the ensemble average types
         for ( Map.Entry<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> next : thresholds.entrySet() )
         {
@@ -676,15 +680,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextThresholdsByMetric = next.getValue();
 
             // Statistics for a separate baseline? If no, there's a single set of variables
-            if ( Objects.isNull( inputs.getBaseline() ) || !inputs.getBaseline().isSeparateMetrics() )
+            if ( !hasBaseline || Boolean.TRUE.equals( !declaration.baseline()
+                                                                  .separateMetrics() ) )
             {
-                Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                                                nextThresholdsByMetric,
-                                                                                                units,
-                                                                                                desiredTimeScale,
-                                                                                                null,
-                                                                                                Objects.nonNull( inputs.getBaseline() ),
-                                                                                                nextType );
+                Collection<MetricVariable> variables =
+                        this.getMetricVariablesForOneTimeWindow( timeWindow,
+                                                                 nextThresholdsByMetric,
+                                                                 units,
+                                                                 desiredTimeScale,
+                                                                 null,
+                                                                 hasBaseline,
+                                                                 nextType );
                 merged.addAll( variables );
             }
             else
@@ -696,7 +702,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                             units,
                                                                                             desiredTimeScale,
                                                                                             null,
-                                                                                            Objects.nonNull( inputs.getBaseline() ),
+                                                                                            true,
                                                                                             nextType );
 
                 Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
@@ -704,7 +710,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                                units,
                                                                                                desiredTimeScale,
                                                                                                LeftOrRightOrBaseline.BASELINE,
-                                                                                               Objects.nonNull( inputs.getBaseline() ),
+                                                                                               true,
                                                                                                nextType );
 
                 merged.addAll( right );
@@ -851,17 +857,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     private boolean isGridded()
     {
-        return this.getNetcdfConfiguration().isGridded();
+        return this.getNetcdfFormat()
+                   .getGridded();
     }
 
-    private NetcdfType getNetcdfConfiguration()
+    private Outputs.NetcdfFormat getNetcdfFormat()
     {
-        return this.netcdfConfiguration;
-    }
-
-    private DestinationConfig getDestinationConfig()
-    {
-        return this.destinationConfig;
+        return this.netcdfFormat;
     }
 
     private Path getOutputDirectory()
@@ -1540,7 +1542,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // What if we got the info through the template?
             if ( this.outputWriter.isGridded() )
             {
-                if ( Objects.isNull( location.getWkt() ) )
+                String wkt = location.getWkt();
+                if ( !wkt.isBlank() )
                 {
                     throw new CoordinateNotFoundException( "The location '" +
                                                            location
@@ -1552,7 +1555,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            + "support it." );
                 }
 
-                String wkt = location.getWkt();
                 Coordinate point = DataUtilities.getLonLatFromPointWkt( wkt );
 
                 // contains the the y index and the x index
@@ -1651,8 +1653,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 if ( this.isDeprecatedWriter )
                 {
                     // TODO remove this whole block
-                    String nameToUse = this.outputWriter.getNetcdfConfiguration()
-                                                        .getVectorVariable();
+                    String nameToUse = this.outputWriter.getNetcdfFormat()
+                                                        .getVariableName();
 
                     LOGGER.debug( "Using {} as the name of the vector variable with the location information.",
                                   nameToUse );
@@ -1776,7 +1778,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // Comid is the glue
             else
             {
-                Long coordinate;
+                long coordinate;
 
                 try
                 {
@@ -1801,7 +1803,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            + " because the NWM feature id was out of integer range." );
                 }
 
-                if ( !this.vectorCoordinatesMap.containsKey( Integer.valueOf( coordinate.intValue() ) ) )
+                if ( !this.vectorCoordinatesMap.containsKey( ( int ) coordinate ) )
                 {
 
                     throw new CoordinateNotFoundException( WHILE_ATTEMPTING_TO_WRITE_STATISTICS_TO

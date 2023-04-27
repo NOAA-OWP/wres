@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.xml.ProjectConfigs;
 import wres.config.generated.DesiredTimeScaleConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.messages.MessageUtilities;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 

@@ -15,8 +15,8 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -94,54 +94,54 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 24 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 1 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                                                   Duration.ofHours( 2 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 2 ),
-                                                                                   Duration.ofHours( 3 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
-                                                                                   Duration.ofHours( 4 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 4 ),
-                                                                                   Duration.ofHours( 5 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 5 ),
-                                                                                   Duration.ofHours( 6 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 6 ),
-                                                                                   Duration.ofHours( 7 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 7 ),
-                                                                                   Duration.ofHours( 8 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 8 ),
-                                                                                   Duration.ofHours( 9 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 9 ),
-                                                                                   Duration.ofHours( 10 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 10 ),
-                                                                                   Duration.ofHours( 11 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 11 ),
-                                                                                   Duration.ofHours( 12 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 12 ),
-                                                                                   Duration.ofHours( 13 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 13 ),
-                                                                                   Duration.ofHours( 14 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 14 ),
-                                                                                   Duration.ofHours( 15 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 15 ),
-                                                                                   Duration.ofHours( 16 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 16 ),
-                                                                                   Duration.ofHours( 17 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 18 ),
-                                                                                   Duration.ofHours( 19 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 19 ),
-                                                                                   Duration.ofHours( 20 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 20 ),
-                                                                                   Duration.ofHours( 21 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 21 ),
-                                                                                   Duration.ofHours( 22 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 22 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 23 ),
-                                                                                   Duration.ofHours( 24 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 1 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                                                                   Duration.ofHours( 2 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 2 ),
+                                                                                                   Duration.ofHours( 3 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 3 ),
+                                                                                                   Duration.ofHours( 4 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 4 ),
+                                                                                                   Duration.ofHours( 5 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 5 ),
+                                                                                                   Duration.ofHours( 6 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 6 ),
+                                                                                                   Duration.ofHours( 7 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 7 ),
+                                                                                                   Duration.ofHours( 8 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 8 ),
+                                                                                                   Duration.ofHours( 9 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 9 ),
+                                                                                                   Duration.ofHours( 10 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 10 ),
+                                                                                                   Duration.ofHours( 11 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 11 ),
+                                                                                                   Duration.ofHours( 12 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 12 ),
+                                                                                                   Duration.ofHours( 13 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 13 ),
+                                                                                                   Duration.ofHours( 14 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 14 ),
+                                                                                                   Duration.ofHours( 15 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 15 ),
+                                                                                                   Duration.ofHours( 16 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 16 ),
+                                                                                                   Duration.ofHours( 17 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 18 ),
+                                                                                                   Duration.ofHours( 19 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 19 ),
+                                                                                                   Duration.ofHours( 20 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 20 ),
+                                                                                                   Duration.ofHours( 21 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 21 ),
+                                                                                                   Duration.ofHours( 22 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 22 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 23 ),
+                                                                                                   Duration.ofHours( 24 ) ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -192,10 +192,10 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 2 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 24 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
-                                                                                   Duration.ofHours( 48 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 24 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
+                                                                                                   Duration.ofHours( 48 ) ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -250,78 +250,78 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 18 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
-                                                                                   Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
-                                                                                   Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
-                                                                                   Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
-                                                                                   Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
-                                                                                   Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
-                                                                                   Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
-                                                                                   Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
-                                                                                   Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 23 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
-                                                                                   Duration.ofHours( 17 ),
-                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),//2551-03-17T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWELVE ),//2551-03-17T13:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),//2551-03-17T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWELVE ),//2551-03-17T13:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),//2551-03-17T07:00:00Z
+                                                                                                   Instant.parse( INSTANT_FOURTEEN ),//2551-03-17T20:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),//2551-03-17T07:00:00Z
+                                                                                                   Instant.parse( INSTANT_FOURTEEN ),//2551-03-17T20:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),//2551-03-17T14:00:00Z
+                                                                                                   Instant.parse( INSTANT_SIXTEEN ),//2551-03-18T03:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),//2551-03-17T14:00:00Z
+                                                                                                   Instant.parse( INSTANT_SIXTEEN ),//2551-03-18T03:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),//2551-03-17T21:00:00Z
+                                                                                                   Instant.parse( INSTANT_EIGHTEEN ),//2551-03-18T10:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),//2551-03-17T21:00:00Z
+                                                                                                   Instant.parse( INSTANT_EIGHTEEN ),//2551-03-18T10:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),//2551-03-18T04:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY ),//2551-03-18T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),//2551-03-18T04:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY ),//2551-03-18T17:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),//2551-03-18T11:00:00Z
+                                                                                                   Instant.parse( INSTANT_ELEVEN ),//2551-03-19T00:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),//2551-03-18T11:00:00Z
+                                                                                                   Instant.parse( INSTANT_ELEVEN ),//2551-03-19T00:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),//2551-03-18T18:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_THREE ),//2551-03-19T07:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),//2551-03-18T18:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_THREE ),//2551-03-19T07:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),//2551-03-19T01:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ),//2551-03-19T14:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),//2551-03-19T01:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ),//2551-03-19T14:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),//2551-03-19T08:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ),//2551-03-19T21:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 23 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),//2551-03-19T08:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ),//2551-03-19T21:00:00Z
+                                                                                                   Duration.ofHours( 17 ),
+                                                                                                   Duration.ofHours( 40 ) ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -372,12 +372,12 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TEN ), //2551-03-20T00:00:00Z
-                                                                                   Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_EIGHT ), //2551-03-24T00:00:00Z
-                                                                                   Duration.ofHours( 1 ),
-                                                                                   Duration.ofHours( 25 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),//2551-03-17T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TEN ),//2551-03-20T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_ELEVEN ),//2551-03-19T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_EIGHT ),//2551-03-24T00:00:00Z
+                                                                                                   Duration.ofHours( 1 ),
+                                                                                                   Duration.ofHours( 25 ) ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -421,12 +421,12 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   TimeWindowOuter.DURATION_MIN,
-                                                                                   TimeWindowOuter.DURATION_MAX ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   TimeWindowOuter.DURATION_MIN,
+                                                                                                   TimeWindowOuter.DURATION_MAX ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -496,144 +496,144 @@ class TimeWindowGeneratorTest
 
         // Generate the expected time windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 23 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_FOUR ), //2017-08-08T01:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ), //2017-08-08T01:00:00Z
-                                                                                   Instant.parse( INSTANT_FIVE ), //2017-08-08T02:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIVE ), //2017-08-08T02:00:00Z
-                                                                                   Instant.parse( INSTANT_SIX ), //2017-08-08T03:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SIX ), //2017-08-08T03:00:00Z
-                                                                                   Instant.parse( INSTANT_SEVEN ), //2017-08-08T04:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVEN ), //2017-08-08T04:00:00Z
-                                                                                   Instant.parse( INSTANT_EIGHT ), //2017-08-08T05:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_EIGHT ), //2017-08-08T05:00:00Z
-                                                                                   Instant.parse( "2017-08-08T06:00:00Z" ), //2017-08-08T06:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T06:00:00Z" ), //2017-08-08T06:00:00Z
-                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ), //2017-08-08T07:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ), //2017-08-08T07:00:00Z
-                                                                                   Instant.parse( "2017-08-08T08:00:00Z" ), //2017-08-08T08:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T08:00:00Z" ), //2017-08-08T08:00:00Z
-                                                                                   Instant.parse( "2017-08-08T09:00:00Z" ), //2017-08-08T09:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T09:00:00Z" ), //2017-08-08T09:00:00Z
-                                                                                   Instant.parse( "2017-08-08T10:00:00Z" ), //2017-08-08T10:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T10:00:00Z" ), //2017-08-08T10:00:00Z
-                                                                                   Instant.parse( "2017-08-08T11:00:00Z" ), //2017-08-08T11:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T11:00:00Z" ), //2017-08-08T11:00:00Z
-                                                                                   Instant.parse( "2017-08-08T12:00:00Z" ), //2017-08-08T12:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T12:00:00Z" ), //2017-08-08T12:00:00Z
-                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ), //2017-08-08T13:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T13:00:00Z" ), //2017-08-08T13:00:00Z
-                                                                                   Instant.parse( "2017-08-08T14:00:00Z" ), //2017-08-08T14:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T14:00:00Z" ), //2017-08-08T14:00:00Z
-                                                                                   Instant.parse( "2017-08-08T15:00:00Z" ), //2017-08-08T15:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T15:00:00Z" ), //2017-08-08T15:00:00Z
-                                                                                   Instant.parse( "2017-08-08T16:00:00Z" ), //2017-08-08T16:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T16:00:00Z" ), //2017-08-08T16:00:00Z
-                                                                                   Instant.parse( "2017-08-08T17:00:00Z" ), //2017-08-08T17:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T17:00:00Z" ), //2017-08-08T17:00:00Z
-                                                                                   Instant.parse( "2017-08-08T18:00:00Z" ), //2017-08-08T18:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T18:00:00Z" ), //2017-08-08T18:00:00Z
-                                                                                   Instant.parse( "2017-08-08T19:00:00Z" ), //2017-08-08T19:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T19:00:00Z" ), //2017-08-08T19:00:00Z
-                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ), //2017-08-08T20:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T20:00:00Z" ), //2017-08-08T20:00:00Z
-                                                                                   Instant.parse( "2017-08-08T21:00:00Z" ), //2017-08-08T21:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T21:00:00Z" ), //2017-08-08T21:00:00Z
-                                                                                   Instant.parse( "2017-08-08T22:00:00Z" ), //2017-08-08T22:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T22:00:00Z" ), //2017-08-08T22:00:00Z
-                                                                                   Instant.parse( INSTANT_TWO ), //2017-08-08T23:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_FOUR ),//2017-08-08T01:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_FOUR ),//2017-08-08T01:00:00Z
+                                                                                                   Instant.parse( INSTANT_FIVE ),//2017-08-08T02:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIVE ),//2017-08-08T02:00:00Z
+                                                                                                   Instant.parse( INSTANT_SIX ),//2017-08-08T03:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_SIX ),//2017-08-08T03:00:00Z
+                                                                                                   Instant.parse( INSTANT_SEVEN ),//2017-08-08T04:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVEN ),//2017-08-08T04:00:00Z
+                                                                                                   Instant.parse( INSTANT_EIGHT ),//2017-08-08T05:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_EIGHT ),//2017-08-08T05:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T06:00:00Z" ),//2017-08-08T06:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T06:00:00Z" ),//2017-08-08T06:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),//2017-08-08T07:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),//2017-08-08T07:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T08:00:00Z" ),//2017-08-08T08:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T08:00:00Z" ),//2017-08-08T08:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T09:00:00Z" ),//2017-08-08T09:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T09:00:00Z" ),//2017-08-08T09:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T10:00:00Z" ),//2017-08-08T10:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T10:00:00Z" ),//2017-08-08T10:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T11:00:00Z" ),//2017-08-08T11:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T11:00:00Z" ),//2017-08-08T11:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T12:00:00Z" ),//2017-08-08T12:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T12:00:00Z" ),//2017-08-08T12:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),//2017-08-08T13:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T13:00:00Z" ),//2017-08-08T13:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T14:00:00Z" ),//2017-08-08T14:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T14:00:00Z" ),//2017-08-08T14:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T15:00:00Z" ),//2017-08-08T15:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T15:00:00Z" ),//2017-08-08T15:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T16:00:00Z" ),//2017-08-08T16:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T16:00:00Z" ),//2017-08-08T16:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T17:00:00Z" ),//2017-08-08T17:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T17:00:00Z" ),//2017-08-08T17:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T18:00:00Z" ),//2017-08-08T18:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T18:00:00Z" ),//2017-08-08T18:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T19:00:00Z" ),//2017-08-08T19:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T19:00:00Z" ),//2017-08-08T19:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),//2017-08-08T20:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T20:00:00Z" ),//2017-08-08T20:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T21:00:00Z" ),//2017-08-08T21:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T21:00:00Z" ),//2017-08-08T21:00:00Z
+                                                                                                   Instant.parse( "2017-08-08T22:00:00Z" ),//2017-08-08T22:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T22:00:00Z" ),//2017-08-08T22:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWO ),//2017-08-08T23:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
 
         // Generate the actual time windows for the explicit test
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -717,12 +717,12 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 1 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TWO ), //2017-08-08T23:00:00Z
-                                                                                   Instant.parse( INSTANT_ONE ), //2017-08-08T00:00:00Z
-                                                                                   Instant.parse( INSTANT_THREE ), //2017-08-09T17:00:00Z
-                                                                                   Duration.ofHours( 0 ),
-                                                                                   Duration.ofHours( 18 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWO ),//2017-08-08T23:00:00Z
+                                                                                                   Instant.parse( INSTANT_ONE ),//2017-08-08T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_THREE ),//2017-08-09T17:00:00Z
+                                                                                                   Duration.ofHours( 0 ),
+                                                                                                   Duration.ofHours( 18 ) ) ) );
 
         // Generate the actual windows
         Set<TimeWindowOuter> actualTimeWindows = TimeWindowGenerator.getTimeWindowsFromPairConfig( pairsConfig );
@@ -779,40 +779,40 @@ class TimeWindowGeneratorTest
         Duration first = Duration.ofHours( 0 );
         Duration last = Duration.ofHours( 40 );
 
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ), //2551-03-17T00:00:00Z
-                                                                                   Instant.parse( INSTANT_TWELVE ), //2551-03-17T13:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ), //2551-03-17T07:00:00Z
-                                                                                   Instant.parse( INSTANT_FOURTEEN ), //2551-03-17T20:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ), //2551-03-17T14:00:00Z
-                                                                                   Instant.parse( INSTANT_SIXTEEN ), //2551-03-18T03:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ), //2551-03-17T21:00:00Z
-                                                                                   Instant.parse( INSTANT_EIGHTEEN ), //2551-03-18T10:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ), //2551-03-18T04:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY ), //2551-03-18T17:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ), //2551-03-18T11:00:00Z
-                                                                                   Instant.parse( INSTANT_ELEVEN ), //2551-03-19T00:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ), //2551-03-18T18:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_THREE ), //2551-03-19T07:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ), //2551-03-19T01:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ), //2551-03-19T14:00:00Z
-                                                                                   first,
-                                                                                   last ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ), //2551-03-19T08:00:00Z
-                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ), //2551-03-19T21:00:00Z
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINE ),//2551-03-17T00:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWELVE ),//2551-03-17T13:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_THIRTEEN ),//2551-03-17T07:00:00Z
+                                                                                                   Instant.parse( INSTANT_FOURTEEN ),//2551-03-17T20:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_FIFTEEN ),//2551-03-17T14:00:00Z
+                                                                                                   Instant.parse( INSTANT_SIXTEEN ),//2551-03-18T03:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_SEVENTEEN ),//2551-03-17T21:00:00Z
+                                                                                                   Instant.parse( INSTANT_EIGHTEEN ),//2551-03-18T10:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_NINETEEN ),//2551-03-18T04:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY ),//2551-03-18T17:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_ONE ),//2551-03-18T11:00:00Z
+                                                                                                   Instant.parse( INSTANT_ELEVEN ),//2551-03-19T00:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_TWO ),//2551-03-18T18:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_THREE ),//2551-03-19T07:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_FOUR ),//2551-03-19T01:00:00Z
+                                                                                                   Instant.parse( INSTANT_TWENTY_FIVE ),//2551-03-19T14:00:00Z
+                                                                                                   first,
+                                                                                                   last ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( INSTANT_TWENTY_SIX ),//2551-03-19T08:00:00Z
+                                                                                   Instant.parse( INSTANT_TWENTY_SEVEN ),//2551-03-19T21:00:00Z
                                                                                    first,
                                                                                    last ) ) );
 
@@ -868,8 +868,8 @@ class TimeWindowGeneratorTest
         Duration first = Duration.ofHours( 43 );
         Duration last = Duration.ofHours( 43 );
 
-        TimeWindow inner = MessageFactory.getTimeWindow( first,
-                                                         last );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( first,
+                                                                         last );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
         expectedTimeWindows.add( timeWindow );
 
@@ -919,11 +919,11 @@ class TimeWindowGeneratorTest
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 2 );
 
-        TimeWindow innerOne = MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
-                                                            Instant.parse( "2017-08-08T13:00:00Z" ) );
+        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( INSTANT_ONE ),
+                                                                            Instant.parse( "2017-08-08T13:00:00Z" ) );
         TimeWindowOuter expectedOne = TimeWindowOuter.of( innerOne );
-        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                            Instant.parse( "2017-08-08T20:00:00Z" ) );
+        TimeWindow innerTwo = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                            Instant.parse( "2017-08-08T20:00:00Z" ) );
         TimeWindowOuter expectedTwo = TimeWindowOuter.of( innerTwo );
 
         expectedTimeWindows.add( expectedOne );
@@ -973,30 +973,30 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 4 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   Instant.parse( INSTANT_ONE ),
-                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                                                   Duration.ofHours( 19 ),
-                                                                                   Duration.ofHours( 27 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                                                   Duration.ofHours( 19 ),
-                                                                                   Duration.ofHours( 27 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   Instant.parse( INSTANT_ONE ),
-                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                                                   Duration.ofHours( 26 ),
-                                                                                   Duration.ofHours( 34 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
-                                                                                   Instant.MAX,
-                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                                                   Duration.ofHours( 26 ),
-                                                                                   Duration.ofHours( 34 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   Instant.parse( INSTANT_ONE ),
+                                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                                                   Duration.ofHours( 19 ),
+                                                                                                   Duration.ofHours( 27 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                                                   Duration.ofHours( 19 ),
+                                                                                                   Duration.ofHours( 27 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   Instant.parse( INSTANT_ONE ),
+                                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                                                   Duration.ofHours( 26 ),
+                                                                                                   Duration.ofHours( 34 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                                                   Instant.MAX,
+                                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                                                   Duration.ofHours( 26 ),
+                                                                                                   Duration.ofHours( 34 ) ) ) );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );
@@ -1047,30 +1047,30 @@ class TimeWindowGeneratorTest
 
         // Generate the expected windows
         Set<TimeWindowOuter> expectedTimeWindows = new HashSet<>( 4 );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                                                   Instant.parse( INSTANT_ONE ),
-                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                                                   Duration.ofHours( 19 ),
-                                                                                   Duration.ofHours( 27 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                                                   Duration.ofHours( 19 ),
-                                                                                   Duration.ofHours( 27 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                                                   Instant.parse( INSTANT_ONE ),
-                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
-                                                                                   Duration.ofHours( 26 ),
-                                                                                   Duration.ofHours( 34 ) ) ) );
-        expectedTimeWindows.add( TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
-                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
-                                                                                   Duration.ofHours( 26 ),
-                                                                                   Duration.ofHours( 34 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                                                   Instant.parse( INSTANT_ONE ),
+                                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                                                   Duration.ofHours( 19 ),
+                                                                                                   Duration.ofHours( 27 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                                                   Duration.ofHours( 19 ),
+                                                                                                   Duration.ofHours( 27 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                                                   Instant.parse( INSTANT_ONE ),
+                                                                                                   Instant.parse( "2017-08-08T13:00:00Z" ),
+                                                                                                   Duration.ofHours( 26 ),
+                                                                                                   Duration.ofHours( 34 ) ) ) );
+        expectedTimeWindows.add( TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2017-08-08T23:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-09T16:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T07:00:00Z" ),
+                                                                                                   Instant.parse( "2017-08-08T20:00:00Z" ),
+                                                                                                   Duration.ofHours( 26 ),
+                                                                                                   Duration.ofHours( 34 ) ) ) );
 
         // Assert that the expected and actual are equal
         assertEquals( expectedTimeWindows, actualTimeWindows );

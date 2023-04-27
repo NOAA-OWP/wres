@@ -2,6 +2,7 @@ package wres.config.yaml.serializers;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -24,6 +25,8 @@ public class DurationSerializer extends JsonSerializer<Duration>
     @Override
     public void serialize( Duration duration, JsonGenerator gen, SerializerProvider serializers ) throws IOException
     {
+        Objects.requireNonNull( duration );
+
         LOGGER.debug( "Discovered a duration of {} to serialize for the {}.", duration, gen.getOutputContext()
                                                                                            .getCurrentName() );
 

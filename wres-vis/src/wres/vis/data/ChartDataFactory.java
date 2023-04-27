@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.config.MetricConstants.StatisticType;
@@ -39,6 +38,7 @@ import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;

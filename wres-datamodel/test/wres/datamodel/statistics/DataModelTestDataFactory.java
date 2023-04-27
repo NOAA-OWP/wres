@@ -46,12 +46,12 @@ public final class DataModelTestDataFactory
 
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    private static final Geometry DRRC2 = MessageFactory.getGeometry( "DRRC2" );
+    private static final Geometry DRRC2 = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
     private static final FeatureGroup DRRC2_GROUP =
-            FeatureGroup.of( MessageFactory.getGeometryGroup( null,
-                                                              MessageFactory.getGeometryTuple( DRRC2,
-                                                                                               DRRC2,
-                                                                                               DRRC2 ) ) );
+            FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( null,
+                                                                              wres.statistics.MessageFactory.getGeometryTuple( DRRC2,
+                                                                                                               DRRC2,
+                                                                                                               DRRC2 ) ) );
 
     /**
      * Returns a {@link List} of {@link ScoreStatistic} comprising the MAE for selected
@@ -87,9 +87,9 @@ public final class DataModelTestDataFactory
         //Iterate through the lead times
         for ( int leadTime : leadTimes )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                             Instant.parse( SECOND_TIME ),
-                                                             Duration.ofHours( leadTime ) );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
+                                                                             Instant.parse( SECOND_TIME ),
+                                                                             Duration.ofHours( leadTime ) );
             TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
             // Add first result

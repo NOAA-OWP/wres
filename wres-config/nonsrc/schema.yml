@@ -132,6 +132,7 @@ definitions:
             - "$ref": "#/definitions/GraphicFormatEnum"
             - "$ref": "#/definitions/FormatWithParameters"
             - "$ref": "#/definitions/GraphicFormatWithParameters"
+            - "$ref": "#/definitions/NetcdfFormatWithParameters"
         minItems: 1
         uniqueItems: true
       # An optional label or name for the evaluation
@@ -1015,6 +1016,27 @@ definitions:
       - format
     title: GraphicFormatWithParameters
 
+  # NetCDF format.
+  NetcdfFormatWithParameters:
+    type: object
+    additionalProperties: false
+    properties:
+      format:
+        "$ref": "#/definitions/NetcdfFormatEnum"
+      template_path:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      variable_name:
+        type: string
+        minLength: 1
+        maxLength: 2083
+      gridded:
+        type: boolean
+    required:
+      - format
+    title: NetcdfFormatWithParameters
+
   DurationEnum:
     type: string
     enum:
@@ -1195,6 +1217,12 @@ definitions:
       - png
       - svg
     title: GraphicFormatEnum
+
+  NetcdfFormatEnum:
+    type: string
+    enum:
+      - netcdf
+    title: NetcdfFormatEnum
 
   OrientationEnum:
     type: string

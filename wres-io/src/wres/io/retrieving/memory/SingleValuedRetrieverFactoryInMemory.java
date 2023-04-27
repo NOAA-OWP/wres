@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -24,6 +23,7 @@ import wres.io.retrieving.CachingRetriever;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.RetrieverUtilities;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

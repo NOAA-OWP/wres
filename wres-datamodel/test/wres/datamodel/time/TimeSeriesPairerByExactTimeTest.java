@@ -13,12 +13,12 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
 
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
@@ -60,7 +60,7 @@ public class TimeSeriesPairerByExactTimeTest
 
     private static final String VARIABLE_NAME = "Fruit";
     private static final Feature FEATURE_NAME = Feature.of(
-                                                                  MessageFactory.getGeometry( "Tropics" ) );
+            wres.statistics.MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     private static TimeSeriesMetadata getBoilerplateMetadata()
@@ -274,7 +274,7 @@ public class TimeSeriesPairerByExactTimeTest
                                                                 TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
                                                                 Feature.of(
-                                                                               MessageFactory.getGeometry( "FAKE2" ) ),
+                                                                        wres.statistics.MessageFactory.getGeometry( "FAKE2" ) ),
                                                                 "CMS" );
         SortedSet<Event<Double>> firstEvents = new TreeSet<>();
         firstEvents.add( Event.of( T2551_03_17T15_00_00Z, 73.0 ) );
@@ -297,7 +297,7 @@ public class TimeSeriesPairerByExactTimeTest
                                                                 TimeScaleOuter.of( Duration.ofHours( 3 ) ),
                                                                 "STREAMFLOW",
                                                                 Feature.of(
-                                                                               MessageFactory.getGeometry( "FAKE2" ) ),
+                                                                        MessageFactory.getGeometry( "FAKE2" ) ),
                                                                 "CMS" );
         SortedSet<Event<Double>> secondEvents = new TreeSet<>();
         secondEvents.add( Event.of( T2551_03_18T03_00_00Z, 131.0 ) );

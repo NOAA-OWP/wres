@@ -74,7 +74,7 @@ public final class SingleValuedPairsWriterTest
 
     private static final String VARIABLE_NAME = "ARMS";
     private static final Feature FEATURE = Feature.of(
-                                                             MessageFactory.getGeometry( "FRUIT" ) );
+            wres.statistics.MessageFactory.getGeometry( "FRUIT" ) );
     private static final String UNIT = "SCOOBIES";
 
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
@@ -114,10 +114,10 @@ public final class SingleValuedPairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "PLUM" ),
-                                                                  MessageFactory.getGeometry( "PLUM" ),
-                                                                  null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                                  wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                                  null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -131,7 +131,7 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesMetadata boilerplate = SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTime );
         TimeSeriesMetadata metadata =
                 new TimeSeriesMetadata.Builder( boilerplate ).setFeature( Feature.of(
-                                                                                         MessageFactory.getGeometry( "PLUM" ) ) )
+                                                                     wres.statistics.MessageFactory.getGeometry( "PLUM" ) ) )
                                                              .build();
 
         TimeSeries<Pair<Double, Double>> timeSeriesOne =
@@ -157,10 +157,10 @@ public final class SingleValuedPairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        GeometryTuple geoTupleTwo = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "ORANGE" ),
-                                                                     MessageFactory.getGeometry( "ORANGE" ),
-                                                                     null );
-        GeometryGroup geoGroupTwo = MessageFactory.getGeometryGroup( null, geoTupleTwo );
+        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                                     wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                                     null );
+        GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroupTwo,
@@ -174,7 +174,7 @@ public final class SingleValuedPairsWriterTest
         TimeSeriesMetadata boilerplateTwo = getBoilerplateMetadataWithT0( basisTimeTwo );
         TimeSeriesMetadata metadataTwo =
                 new TimeSeriesMetadata.Builder( boilerplateTwo ).setFeature( Feature.of(
-                                                                                            MessageFactory.getGeometry( "ORANGE" ) ) )
+                                                                        wres.statistics.MessageFactory.getGeometry( "ORANGE" ) ) )
                                                                 .build();
 
         TimeSeries<Pair<Double, Double>> timeSeriesTwo =
@@ -200,10 +200,10 @@ public final class SingleValuedPairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        GeometryTuple geoTupleThree = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "BANANA" ),
-                                                                       MessageFactory.getGeometry( "BANANA" ),
-                                                                       null );
-        GeometryGroup geoGroupThree = MessageFactory.getGeometryGroup( null, geoTupleThree );
+        GeometryTuple geoTupleThree = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                                       wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                                       null );
+        GeometryGroup geoGroupThree = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleThree );
         FeatureGroup featureGroupThree = FeatureGroup.of( geoGroupThree );
 
         Pool poolThree = MessageFactory.getPool( featureGroupThree,
@@ -218,7 +218,7 @@ public final class SingleValuedPairsWriterTest
                 SingleValuedPairsWriterTest.getBoilerplateMetadataWithT0( basisTimeThree );
         TimeSeriesMetadata metadataThree =
                 new TimeSeriesMetadata.Builder( boilerplateThree ).setFeature( Feature.of(
-                                                                                              MessageFactory.getGeometry( "BANANA" ) ) )
+                                                                          wres.statistics.MessageFactory.getGeometry( "BANANA" ) ) )
                                                                   .build();
         TimeSeries<Pair<Double, Double>> timeSeriesThree =
                 TimeSeries.of( metadataThree, setOfPairsThree );
@@ -251,10 +251,10 @@ public final class SingleValuedPairsWriterTest
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                GeometryTuple geoTuple = MessageFactory.getGeometryTuple( MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                          MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                          null );
-                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+                GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                                          wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
+                                                                                          null );
+                GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
                 Evaluation evaluation = Evaluation.newBuilder()
@@ -350,9 +350,9 @@ public final class SingleValuedPairsWriterTest
                 // Create the pairs with a time window
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
                 tsBuilder.addPool( SingleValuedPairsWriterTest.pairs );
-                TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                 Instant.parse( "1990-01-01T00:00:00Z" ),
-                                                                 Duration.ZERO );
+                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.parse( "1990-01-01T00:00:00Z" ),
+                                                                                 Duration.ZERO );
                 TimeWindowOuter outer = TimeWindowOuter.of( inner );
                 tsBuilder.setMetadata( PoolMetadata.of( SingleValuedPairsWriterTest.pairs.getMetadata(),
                                                         outer ) );

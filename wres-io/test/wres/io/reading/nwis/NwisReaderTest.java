@@ -28,7 +28,6 @@ import wres.config.generated.DateCondition;
 import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -37,7 +36,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.nwis.NwisReader;
+import wres.statistics.MessageFactory;
 import wres.system.SystemSettings;
 
 /**
@@ -276,9 +275,9 @@ class NwisReaderTest
                                                          .collect( Collectors.toList() );
 
             Feature featureKey = Feature.of( MessageFactory.getGeometry( "09165000",
-                                                                               "DOLORES RIVER BELOW RICO, CO.",
-                                                                               4326,
-                                                                               "POINT ( -108.0603517 37.63888428 )" ) );
+                                                                         "DOLORES RIVER BELOW RICO, CO.",
+                                                                         4326,
+                                                                         "POINT ( -108.0603517 37.63888428 )" ) );
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                                  TimeScaleOuter.of(),
                                                                  "00060",

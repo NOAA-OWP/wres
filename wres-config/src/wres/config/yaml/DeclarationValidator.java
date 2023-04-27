@@ -3,7 +3,6 @@ package wres.config.yaml;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -872,8 +871,8 @@ public class DeclarationValidator
         if ( Objects.nonNull( leadTimes )
              && Objects.nonNull( leadTimes.minimum() )
              && Objects.nonNull( leadTimes.maximum() )
-             && leadTimes.maximum() <= declaration.leadTimes()
-                                                  .minimum() )
+             && leadTimes.maximum().compareTo( declaration.leadTimes()
+                                                          .minimum() ) <= 0 )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
@@ -1810,8 +1809,7 @@ public class DeclarationValidator
             else
             {
                 // Create the elements necessary to increment them
-                ChronoUnit periodUnits = pools.unit();
-                Duration period = Duration.of( pools.period(), periodUnits );
+                Duration period = pools.period();
                 Instant start = interval.minimum();
                 Instant end = interval.maximum();
 
@@ -1877,10 +1875,9 @@ public class DeclarationValidator
             else
             {
                 // Create the elements necessary to increment them
-                ChronoUnit periodUnits = pools.unit();
-                Duration period = Duration.of( pools.period(), periodUnits );
-                Duration start = Duration.of( interval.minimum(), interval.unit() );
-                Duration end = Duration.of( interval.maximum(), interval.unit() );
+                Duration period = pools.period();
+                Duration start = interval.minimum();
+                Duration end = interval.maximum();
 
                 if ( start.plus( period )
                           .compareTo( end ) > 0 )

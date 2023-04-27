@@ -765,9 +765,9 @@ public final class EnsembleStatisticsProcessorTest
         StatisticsStore statistics = processor.apply( TestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
 
         // Expected result
-        TimeWindow timeWindow = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                              Duration.ofHours( 24 ) );
+        TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                                              Duration.ofHours( 24 ) );
         TimeWindowOuter expectedWindow = TimeWindowOuter.of( timeWindow );
 
         Evaluation evaluation = Evaluation.newBuilder()
