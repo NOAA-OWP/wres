@@ -17,8 +17,8 @@ import wres.config.generated.IntBoundsType;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -193,12 +193,12 @@ public final class TimeWindowGenerator
             }
         }
 
-        TimeWindow inner = MessageFactory.getTimeWindow( earliestReferenceTime,
-                                                         latestReferenceTime,
-                                                         earliestValidTime,
-                                                         latestValidTime,
-                                                         smallestLeadDuration,
-                                                         largestLeadDuration );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( earliestReferenceTime,
+                                                                         latestReferenceTime,
+                                                                         earliestValidTime,
+                                                                         latestValidTime,
+                                                                         smallestLeadDuration,
+                                                                         largestLeadDuration );
 
         return TimeWindowOuter.of( inner );
     }    
@@ -274,12 +274,12 @@ public final class TimeWindowGenerator
         // Window increments are zero?
         if ( Duration.ZERO.equals( increment ) )
         {
-            TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
-                                                             baseWindow.getLatestReferenceTime(),
-                                                             baseWindow.getEarliestValidTime(),
-                                                             baseWindow.getLatestValidTime(),
-                                                             earliestExclusive,
-                                                             latestInclusive );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                                             baseWindow.getLatestReferenceTime(),
+                                                                             baseWindow.getEarliestValidTime(),
+                                                                             baseWindow.getLatestValidTime(),
+                                                                             earliestExclusive,
+                                                                             latestInclusive );
             TimeWindowOuter outer = TimeWindowOuter.of( inner );
             timeWindows.add( outer );
         }
@@ -289,12 +289,12 @@ public final class TimeWindowGenerator
             while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
             {
                 // Add the current time window
-                TimeWindow inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
-                                                                 baseWindow.getLatestReferenceTime(),
-                                                                 baseWindow.getEarliestValidTime(),
-                                                                 baseWindow.getLatestValidTime(),
-                                                                 earliestExclusive,
-                                                                 latestInclusive );
+                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                                                 baseWindow.getLatestReferenceTime(),
+                                                                                 baseWindow.getEarliestValidTime(),
+                                                                                 baseWindow.getLatestValidTime(),
+                                                                                 earliestExclusive,
+                                                                                 latestInclusive );
                 TimeWindowOuter outer = TimeWindowOuter.of( inner );
                 timeWindows.add( outer );
 
@@ -462,22 +462,22 @@ public final class TimeWindowGenerator
         TimeWindow inner;
         if ( areIssuedTimes )
         {
-            inner = MessageFactory.getTimeWindow( earliestExclusive,
-                                                  latestInclusive,
-                                                  baseWindow.getEarliestValidTime(),
-                                                  baseWindow.getLatestValidTime(),
-                                                  baseWindow.getEarliestLeadDuration(),
-                                                  baseWindow.getLatestLeadDuration() );
+            inner = wres.statistics.MessageFactory.getTimeWindow( earliestExclusive,
+                                                                  latestInclusive,
+                                                                  baseWindow.getEarliestValidTime(),
+                                                                  baseWindow.getLatestValidTime(),
+                                                                  baseWindow.getEarliestLeadDuration(),
+                                                                  baseWindow.getLatestLeadDuration() );
         }
         // Valid dates
         else
         {
-            inner = MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
-                                                  baseWindow.getLatestReferenceTime(),
-                                                  earliestExclusive,
-                                                  latestInclusive,
-                                                  baseWindow.getEarliestLeadDuration(),
-                                                  baseWindow.getLatestLeadDuration() );
+            inner = wres.statistics.MessageFactory.getTimeWindow( baseWindow.getEarliestReferenceTime(),
+                                                                  baseWindow.getLatestReferenceTime(),
+                                                                  earliestExclusive,
+                                                                  latestInclusive,
+                                                                  baseWindow.getEarliestLeadDuration(),
+                                                                  baseWindow.getLatestLeadDuration() );
         }
 
         return TimeWindowOuter.of( inner );
@@ -508,12 +508,12 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
             {
-                TimeWindow inner = MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
-                                                                 nextIssuedWindow.getLatestReferenceTime(),
-                                                                 nextIssuedWindow.getEarliestValidTime(),
-                                                                 nextIssuedWindow.getLatestValidTime(),
-                                                                 nextLeadWindow.getEarliestLeadDuration(),
-                                                                 nextLeadWindow.getLatestLeadDuration() );
+                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
+                                                                                 nextIssuedWindow.getLatestReferenceTime(),
+                                                                                 nextIssuedWindow.getEarliestValidTime(),
+                                                                                 nextIssuedWindow.getLatestValidTime(),
+                                                                                 nextLeadWindow.getEarliestLeadDuration(),
+                                                                                 nextLeadWindow.getLatestLeadDuration() );
                 TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }
@@ -547,12 +547,12 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextIssuedWindow : issuedDatesWindows )
             {
-                TimeWindow inner = MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
-                                                                 nextIssuedWindow.getLatestReferenceTime(),
-                                                                 nextValidWindow.getEarliestValidTime(),
-                                                                 nextValidWindow.getLatestValidTime(),
-                                                                 nextValidWindow.getEarliestLeadDuration(),
-                                                                 nextValidWindow.getLatestLeadDuration() );
+                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( nextIssuedWindow.getEarliestReferenceTime(),
+                                                                                 nextIssuedWindow.getLatestReferenceTime(),
+                                                                                 nextValidWindow.getEarliestValidTime(),
+                                                                                 nextValidWindow.getLatestValidTime(),
+                                                                                 nextValidWindow.getEarliestLeadDuration(),
+                                                                                 nextValidWindow.getLatestLeadDuration() );
                 TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }
@@ -586,12 +586,12 @@ public final class TimeWindowGenerator
         {
             for ( TimeWindowOuter nextLeadWindow : leadDurationWindows )
             {
-                TimeWindow inner = MessageFactory.getTimeWindow( nextValidWindow.getEarliestReferenceTime(),
-                                                                 nextValidWindow.getLatestReferenceTime(),
-                                                                 nextValidWindow.getEarliestValidTime(),
-                                                                 nextValidWindow.getLatestValidTime(),
-                                                                 nextLeadWindow.getEarliestLeadDuration(),
-                                                                 nextLeadWindow.getLatestLeadDuration() );
+                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( nextValidWindow.getEarliestReferenceTime(),
+                                                                                 nextValidWindow.getLatestReferenceTime(),
+                                                                                 nextValidWindow.getEarliestValidTime(),
+                                                                                 nextValidWindow.getLatestValidTime(),
+                                                                                 nextLeadWindow.getEarliestLeadDuration(),
+                                                                                 nextLeadWindow.getLatestLeadDuration() );
                 TimeWindowOuter composite = TimeWindowOuter.of( inner );
                 timeWindows.add( composite );
             }

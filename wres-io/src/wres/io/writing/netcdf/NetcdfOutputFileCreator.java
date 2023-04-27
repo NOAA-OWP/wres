@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NetcdfFileWriter;
-import wres.config.generated.DestinationConfig;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
@@ -31,13 +29,11 @@ class NetcdfOutputFileCreator
             LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator.class);
     private static final Object CREATION_LOCK = new Object();
 
-    static String create( final String templatePath,
+    static String create( String templatePath,
                           Path targetPath,
-                          final DestinationConfig destinationConfig,
-                          final TimeWindowOuter window,
-                          final ZonedDateTime analysisTime,
-                          final Collection<MetricVariable> metricVariables,
-                          final ChronoUnit durationUnits )
+                          TimeWindowOuter window,
+                          ZonedDateTime analysisTime,
+                          Collection<MetricVariable> metricVariables )
             throws IOException
     {
         // We're locking because each created output will be using the same

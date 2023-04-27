@@ -32,11 +32,11 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Climatology;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -61,16 +61,16 @@ class ThresholdSlicerTest
     @BeforeEach
     public void runBeforeEachTest()
     {
-        Geometry a = MessageFactory.getGeometry( "a" );
-        Geometry b = MessageFactory.getGeometry( "b" );
+        Geometry a = wres.statistics.MessageFactory.getGeometry( "a" );
+        Geometry b = wres.statistics.MessageFactory.getGeometry( "b" );
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( a, b, null );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( a, b, null );
         this.featureTuple = FeatureTuple.of( geoTuple );
 
-        Geometry c = MessageFactory.getGeometry( "c" );
+        Geometry c = wres.statistics.MessageFactory.getGeometry( "c" );
         Geometry d = MessageFactory.getGeometry( "d" );
 
-        GeometryTuple anotherGeoTuple = MessageFactory.getGeometryTuple( c, d, null );
+        GeometryTuple anotherGeoTuple = wres.statistics.MessageFactory.getGeometryTuple( c, d, null );
         this.anotherFeatureTuple = FeatureTuple.of( anotherGeoTuple );
     }
 

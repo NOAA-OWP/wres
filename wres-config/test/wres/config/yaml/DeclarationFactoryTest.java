@@ -710,15 +710,19 @@ class DeclarationFactoryTest
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
 
-        TimePools referenceDatePools = new TimePools( 13, 7, ChronoUnit.HOURS );
+        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
+                                                      java.time.Duration.ofHours( 7 ) );
 
         TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
                                                     Instant.parse( "2552-03-20T00:00:00Z" ) );
 
-        TimePools validDatePools = new TimePools( 11, 2, ChronoUnit.HOURS );
+        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
+                                                  java.time.Duration.ofHours( 2 ) );
 
-        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( 0, 40, ChronoUnit.HOURS );
-        TimePools leadTimePools = new TimePools( 23, 17, ChronoUnit.HOURS );
+        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                                  java.time.Duration.ofHours( 40 ) );
+        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
+                                                 java.time.Duration.ofHours( 17 ) );
 
         AnalysisDurations analysisDurations = new AnalysisDurations( 0, 1, ChronoUnit.HOURS );
 
@@ -941,6 +945,8 @@ class DeclarationFactoryTest
                     width: 800
                     height: 600
                     orientation: threshold lead
+                  - format: netcdf
+                    template_path: foo.bar
                 """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -967,6 +973,9 @@ class DeclarationFactoryTest
                                  .setPng( Outputs.PngFormat.newBuilder()
                                                            .setOptions( graphicFormat )
                                                            .build() )
+                                 .setNetcdf( Formats.NETCDF_FORMAT.toBuilder()
+                                                                  .setTemplatePath( "foo.bar" )
+                                                                  .build() )
                                  .build();
 
         DecimalFormat formatter = new DecimalFormatPretty( "#0.000000" );
@@ -1873,15 +1882,19 @@ class DeclarationFactoryTest
         TimeInterval referenceDates = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
                                                         Instant.parse( "2551-03-20T00:00:00Z" ) );
 
-        TimePools referenceDatePools = new TimePools( 13, 7, ChronoUnit.HOURS );
+        TimePools referenceDatePools = new TimePools( java.time.Duration.ofHours( 13 ),
+                                                      java.time.Duration.ofHours( 7 ) );
 
         TimeInterval validDates = new TimeInterval( Instant.parse( "2552-03-17T00:00:00Z" ),
                                                     Instant.parse( "2552-03-20T00:00:00Z" ) );
 
-        TimePools validDatePools = new TimePools( 11, 2, ChronoUnit.HOURS );
+        TimePools validDatePools = new TimePools( java.time.Duration.ofHours( 11 ),
+                                                  java.time.Duration.ofHours( 2 ) );
 
-        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( 0, 40, ChronoUnit.HOURS );
-        TimePools leadTimePools = new TimePools( 23, 17, ChronoUnit.HOURS );
+        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                                  java.time.Duration.ofHours( 40 ) );
+        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
+                                                 java.time.Duration.ofHours( 17 ) );
 
         AnalysisDurations analysisDurations = new AnalysisDurations( 0, 1, ChronoUnit.HOURS );
 
@@ -2119,10 +2132,11 @@ class DeclarationFactoryTest
                 duration_format: hours
                 decimal_format: '#0.000'
                 output_formats:
-                  - netcdf2
                   - csv2
                   - csv
                   - pairs
+                  - format: netcdf
+                    template_path: foo.bar
                   - format: png
                     width: 1200
                     height: 800
@@ -2138,7 +2152,8 @@ class DeclarationFactoryTest
                                                                    .setShape( Outputs.GraphicFormat.GraphicShape.THRESHOLD_LEAD )
                                                                    .build();
         Outputs outputs = Outputs.newBuilder()
-                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .setNetcdf( Outputs.NetcdfFormat.newBuilder()
+                                                                 .setTemplatePath( "foo.bar" ) )
                                  .setPairs( Outputs.PairFormat.newBuilder()
                                                               .setOptions( numericFormat )
                                                               .build() )
@@ -2659,9 +2674,8 @@ class DeclarationFactoryTest
                                                                             .timeScale( innerTimeScale )
                                                                             .build();
         LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
-                                                                   .minimum( 1 )
-                                                                   .maximum( 3 )
-                                                                   .unit( ChronoUnit.HOURS )
+                                                                   .minimum( java.time.Duration.ofHours( 1 ) )
+                                                                   .maximum( java.time.Duration.ofHours( 3 ) )
                                                                    .build();
         TimeInterval validTimeInterval = TimeIntervalBuilder.builder()
                                                             .minimum( Instant.parse( "2096-12-01T00:00:00Z" ) )
@@ -2677,18 +2691,15 @@ class DeclarationFactoryTest
                                                                       .unit( ChronoUnit.HOURS )
                                                                       .build();
         TimePools validTimePools = TimePoolsBuilder.builder()
-                                                   .period( 17 )
-                                                   .frequency( 4 )
-                                                   .unit( ChronoUnit.HOURS )
+                                                   .period( java.time.Duration.ofHours( 17 ) )
+                                                   .frequency( java.time.Duration.ofHours( 4 ) )
                                                    .build();
         TimePools referenceTimePools = TimePoolsBuilder.builder()
-                                                       .period( 13 )
-                                                       .frequency( 7 )
-                                                       .unit( ChronoUnit.HOURS )
+                                                       .period( java.time.Duration.ofHours( 13 ) )
+                                                       .frequency( java.time.Duration.ofHours( 7 ) )
                                                        .build();
         TimePools leadTimePools = TimePoolsBuilder.builder()
-                                                  .period( 24 )
-                                                  .unit( ChronoUnit.HOURS )
+                                                  .period( java.time.Duration.ofHours( 24 ) )
                                                   .build();
         Season season = SeasonBuilder.builder()
                                      .minimum( MonthDay.of( 1, 1 ) )
@@ -2878,7 +2889,7 @@ class DeclarationFactoryTest
                                                                    .build();
         Outputs formats = Outputs.newBuilder()
                                  .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
-                                 .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
+                                 .setNetcdf( Formats.NETCDF_FORMAT )
                                  .setPairs( Outputs.PairFormat.newBuilder()
                                                               .setOptions( numericFormat )
                                                               .build() )

@@ -24,7 +24,6 @@ import com.google.common.jimfs.Jimfs;
 
 import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -33,6 +32,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -45,10 +45,10 @@ class PublishedInterfaceXmlReaderTest
 {
     private static final String TEST_CSV = "test.csv";
     private static final String TEST = "test";
-    private static final Geometry DRRC2 = MessageFactory.getGeometry( "DRRC2",
-                                                                      "DOLORES, CO",
-                                                                      null,
-                                                                      "POINT ( 108.5045 37.4739 )" );
+    private static final Geometry DRRC2 = wres.statistics.MessageFactory.getGeometry( "DRRC2",
+                                                                                      "DOLORES, CO",
+                                                                                      null,
+                                                                                      "POINT ( 108.5045 37.4739 )" );
     private static final String DRRC3 = "DRRC3";
     private static final String CFS = "CFS";
     private static final String QINE = "QINE";

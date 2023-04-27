@@ -16,7 +16,6 @@ import org.junit.Test;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
@@ -26,6 +25,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.metrics.MetricTestDataFactory;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.MetricName;

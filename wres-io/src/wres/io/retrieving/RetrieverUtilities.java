@@ -22,12 +22,12 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.TimeScaleConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -189,12 +189,12 @@ public class RetrieverUtilities
                 latestValidTime = timeWindow.getLatestValidTime();
             }
 
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.MIN,
-                                                             Instant.MAX,
-                                                             earliestValidTime,
-                                                             latestValidTime,
-                                                             earliestAnalysisDuration,
-                                                             latestAnalysisDuration );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                             Instant.MAX,
+                                                                             earliestValidTime,
+                                                                             latestValidTime,
+                                                                             earliestAnalysisDuration,
+                                                                             latestAnalysisDuration );
 
             return TimeWindowOuter.of( inner );
         }

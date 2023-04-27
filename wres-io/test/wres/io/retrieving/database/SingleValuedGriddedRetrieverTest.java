@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
@@ -44,6 +43,7 @@ import wres.io.database.DataScripter;
 import wres.io.database.TestDatabase;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
@@ -68,10 +68,10 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * A feature for testing.
      */
-    private static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( "POINT( 1 2 )",
-                                                                                         null,
-                                                                                         4326,
-                                                                                         "POINT( 1 2 )" ) );
+    private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( "POINT( 1 2 )",
+                                                                                                   null,
+                                                                                                   4326,
+                                                                                                   "POINT( 1 2 )" ) );
 
     /**
      * A variable name for testing.

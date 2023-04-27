@@ -65,17 +65,17 @@ import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponen
 
 public class TestDataGenerator
 {
-    private static final Geometry NWS_FEATURE = MessageFactory.getGeometry( "DRRC2" );
-    private static final Geometry USGS_FEATURE = MessageFactory.getGeometry( "09165000",
-                                                                             "DOLORES RIVER BELOW RICO, CO.",
-                                                                             4326,
-                                                                             "POINT ( -108.0603517 37.63888428 )" );
-    private static final Geometry NWM_FEATURE = MessageFactory.getGeometry( "18384141" );
+    private static final Geometry NWS_FEATURE = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
+    private static final Geometry USGS_FEATURE = wres.statistics.MessageFactory.getGeometry( "09165000",
+                                                                                             "DOLORES RIVER BELOW RICO, CO.",
+                                                                                             4326,
+                                                                                             "POINT ( -108.0603517 37.63888428 )" );
+    private static final Geometry NWM_FEATURE = wres.statistics.MessageFactory.getGeometry( "18384141" );
     private static final FeatureGroup FEATURE_GROUP =
-            FeatureGroup.of( MessageFactory.getGeometryGroup( "DRRC2-09165000-18384141",
-                                                              MessageFactory.getGeometryTuple( USGS_FEATURE,
-                                                                                               NWS_FEATURE,
-                                                                                               NWM_FEATURE ) ) );
+            FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( "DRRC2-09165000-18384141",
+                                                                              wres.statistics.MessageFactory.getGeometryTuple( USGS_FEATURE,
+                                                                                                               NWS_FEATURE,
+                                                                                                               NWM_FEATURE ) ) );
 
     private static final String CMS = "CMS";
 
@@ -111,10 +111,10 @@ public class TestDataGenerator
     public static List<DoubleScoreComponentOuter> getScoresForTwoIssuedDatePools()
     {
         List<DoubleScoreComponentOuter> statistics = new ArrayList<>();
-        TimeWindow innerWindowOne = MessageFactory.getTimeWindow( FIRST_INSTANT,
-                                                                  FIRST_INSTANT,
-                                                                  Duration.ofHours( 1 ),
-                                                                  Duration.ofHours( 1 ) );
+        TimeWindow innerWindowOne = wres.statistics.MessageFactory.getTimeWindow( FIRST_INSTANT,
+                                                                                  FIRST_INSTANT,
+                                                                                  Duration.ofHours( 1 ),
+                                                                                  Duration.ofHours( 1 ) );
         TimeWindowOuter outerWindowOne = TimeWindowOuter.of( innerWindowOne );
 
 
@@ -134,10 +134,10 @@ public class TestDataGenerator
 
         statistics.add( componentOneOuter );
 
-        TimeWindow innerWindowTwo = MessageFactory.getTimeWindow( SECOND_INSTANT,
-                                                                  SECOND_INSTANT,
-                                                                  Duration.ofHours( 1 ),
-                                                                  Duration.ofHours( 1 ) );
+        TimeWindow innerWindowTwo = wres.statistics.MessageFactory.getTimeWindow( SECOND_INSTANT,
+                                                                                  SECOND_INSTANT,
+                                                                                  Duration.ofHours( 1 ),
+                                                                                  Duration.ofHours( 1 ) );
         TimeWindowOuter outerWindowTwo = TimeWindowOuter.of( innerWindowTwo );
 
 
@@ -265,10 +265,10 @@ public class TestDataGenerator
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
 
-            TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( nextDate ),
-                                                             Instant.parse( nextDate ),
-                                                             Duration.ofHours( 0 ),
-                                                             Duration.ofHours( 18 ) );
+            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( nextDate ),
+                                                                             Instant.parse( nextDate ),
+                                                                             Duration.ofHours( 0 ),
+                                                                             Duration.ofHours( 18 ) );
 
             TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
@@ -323,9 +323,9 @@ public class TestDataGenerator
             Instant begin = start.plus( frequency.multipliedBy( i ) );
             Instant end = begin.plus( period );
             //Add the 6h data
-            TimeWindow innerSix = MessageFactory.getTimeWindow( begin,
-                                                                end,
-                                                                Duration.ofHours( 6 ) );
+            TimeWindow innerSix = wres.statistics.MessageFactory.getTimeWindow( begin,
+                                                                                end,
+                                                                                Duration.ofHours( 6 ) );
             TimeWindowOuter sixHourWindow = TimeWindowOuter.of( innerSix );
 
             DoubleScoreStatistic sixHour =
@@ -342,9 +342,9 @@ public class TestDataGenerator
                     DoubleScoreStatisticOuter.of( sixHour, PoolMetadata.of( source, sixHourWindow ) );
             rawData.add( sixHourOutput );
             //Add the 12h data
-            TimeWindow innerTwelve = MessageFactory.getTimeWindow( begin,
-                                                                   end,
-                                                                   Duration.ofHours( 12 ) );
+            TimeWindow innerTwelve = wres.statistics.MessageFactory.getTimeWindow( begin,
+                                                                                   end,
+                                                                                   Duration.ofHours( 12 ) );
             TimeWindowOuter twelveHourWindow = TimeWindowOuter.of( innerTwelve );
 
             DoubleScoreStatistic twelveHour =
@@ -361,9 +361,9 @@ public class TestDataGenerator
                     DoubleScoreStatisticOuter.of( twelveHour, PoolMetadata.of( source, twelveHourWindow ) );
             rawData.add( twelveHourOutput );
             //Add the 18h data
-            TimeWindow innerEighteen = MessageFactory.getTimeWindow( begin,
-                                                                     end,
-                                                                     Duration.ofHours( 18 ) );
+            TimeWindow innerEighteen = wres.statistics.MessageFactory.getTimeWindow( begin,
+                                                                                     end,
+                                                                                     Duration.ofHours( 18 ) );
             TimeWindowOuter eighteenHourWindow = TimeWindowOuter.of( innerEighteen );
 
             DoubleScoreStatistic eighteenHour =
@@ -380,9 +380,9 @@ public class TestDataGenerator
                     DoubleScoreStatisticOuter.of( eighteenHour, PoolMetadata.of( source, eighteenHourWindow ) );
             rawData.add( eighteenHourOutput );
             //Add the 24h data
-            TimeWindow innerTwentyFour = MessageFactory.getTimeWindow( begin,
-                                                                       end,
-                                                                       Duration.ofHours( 24 ) );
+            TimeWindow innerTwentyFour = wres.statistics.MessageFactory.getTimeWindow( begin,
+                                                                                       end,
+                                                                                       Duration.ofHours( 24 ) );
             TimeWindowOuter twentyFourHourWindow = TimeWindowOuter.of( innerTwentyFour );
 
             DoubleScoreStatistic twentyFourHour =
@@ -453,8 +453,8 @@ public class TestDataGenerator
                                                    .build();
 
         // Create several pools and use the same diagram for each
-        TimeWindow innerWindowOne = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
-                                                                  Duration.ofHours( 1 ) );
+        TimeWindow innerWindowOne = wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                                                  Duration.ofHours( 1 ) );
         TimeWindowOuter outerWindowOne = TimeWindowOuter.of( innerWindowOne );
 
 
@@ -472,7 +472,7 @@ public class TestDataGenerator
         DiagramStatisticOuter second = DiagramStatisticOuter.of( diagram, poolTwo );
         statistics.add( second );
 
-        com.google.protobuf.Duration secondDuration = MessageFactory.parse( Duration.ofHours( 2 ) );
+        com.google.protobuf.Duration secondDuration = wres.statistics.MessageFactory.parse( Duration.ofHours( 2 ) );
         TimeWindow innerWindowTwo =
                 innerWindowOne.toBuilder()
                               .setEarliestLeadDuration( secondDuration )
@@ -489,7 +489,7 @@ public class TestDataGenerator
         DiagramStatisticOuter fourth = DiagramStatisticOuter.of( diagram, poolFour );
         statistics.add( fourth );
 
-        com.google.protobuf.Duration thirdDuration = MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration thirdDuration = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
         TimeWindow innerWindowThree =
                 innerWindowOne.toBuilder()
                               .setEarliestLeadDuration( thirdDuration )
@@ -654,10 +654,10 @@ public class TestDataGenerator
                                                                           .build();
 
         // Create the metadata
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
-                                                         Duration.ofHours( 6 ),
-                                                         Duration.ofHours( 336 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                                         Duration.ofHours( 6 ),
+                                                                         Duration.ofHours( 336 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds threshold =
@@ -700,10 +700,10 @@ public class TestDataGenerator
     public static List<DurationScoreStatisticOuter> getTimeToPeakErrorStatistics()
     {
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
-        TimeWindow inner = MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
-                                                         Duration.ofHours( 6 ),
-                                                         Duration.ofHours( 336 ) );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1985-01-10T00:00:00Z" ),
+                                                                         Duration.ofHours( 6 ),
+                                                                         Duration.ofHours( 336 ) );
         TimeWindowOuter window = TimeWindowOuter.of( inner );
 
         Pool pool = MessageFactory.getPool( FEATURE_GROUP,
@@ -773,15 +773,15 @@ public class TestDataGenerator
     public static List<BoxplotStatisticOuter> getBoxPlotPerPairForOnePool()
     {
         // location id
-        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
-        TimeWindow innerOne = MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
-                                                            Duration.ofHours( 24 ) );
+        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
+                                                                            Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -835,11 +835,11 @@ public class TestDataGenerator
     public static List<BoxplotStatisticOuter> getBoxPlotPerPoolForTwoPools()
     {
         // location id
-        Geometry geometry = MessageFactory.getGeometry( "JUNP1" );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "JUNP1" );
 
         // Create fake outputs
-        TimeWindow innerOne = MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
-                                                            Duration.ofHours( 24 ) );
+        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 24 ),
+                                                                            Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -847,8 +847,8 @@ public class TestDataGenerator
                                                           ThresholdOperator.GREATER,
                                                           ThresholdOrientation.LEFT ) );
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, null );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );
 
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -880,10 +880,10 @@ public class TestDataGenerator
 
         BoxplotStatisticOuter fakeOutputsOne = BoxplotStatisticOuter.of( boxOne, fakeMetadataOne );
 
-        TimeWindow innerTwo = MessageFactory.getTimeWindow( Instant.MIN,
-                                                            Instant.MAX,
-                                                            Duration.ofHours( 48 ),
-                                                            Duration.ofHours( 48 ) );
+        TimeWindow innerTwo = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
+                                                                            Instant.MAX,
+                                                                            Duration.ofHours( 48 ),
+                                                                            Duration.ofHours( 48 ) );
         TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolTwo = MessageFactory.getPool( featureGroup,

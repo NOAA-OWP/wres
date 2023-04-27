@@ -17,12 +17,12 @@ import wres.statistics.generated.Outputs.ProtobufFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
 
 /**
- * Tests the {@link MessageUtilities}.
+ * Tests the {@link MessageFactory}.
  * 
  * @author James Brown
  */
 
-class MessageUtilitiesTest
+class MessageFactoryTest
 {
 
     @Test
@@ -43,7 +43,7 @@ class MessageUtilitiesTest
                                  .setNetcdf( NetcdfFormat.newBuilder() )
                                  .build();
 
-        Set<Format> actual = MessageUtilities.getDeclaredFormats( outputs );
+        Set<Format> actual = MessageFactory.getDeclaredFormats( outputs );
 
         assertEquals( expected, actual );
     }

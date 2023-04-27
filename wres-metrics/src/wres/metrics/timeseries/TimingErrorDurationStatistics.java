@@ -13,7 +13,6 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -23,6 +22,7 @@ import wres.metrics.FunctionFactory;
 import wres.metrics.Metric;
 import wres.metrics.MetricParameterException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic;

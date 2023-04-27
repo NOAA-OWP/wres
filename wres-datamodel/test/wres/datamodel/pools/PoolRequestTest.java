@@ -38,13 +38,13 @@ class PoolRequestTest
                                     .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
                                     .build();
 
-        Geometry geometry = MessageFactory.getGeometry( "DRRC2" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         this.featureGroup = FeatureGroup.of( geoGroup );
 
-        this.timeWindow = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                            Instant.parse( "1985-12-31T23:59:59Z" ) ) );
+        this.timeWindow = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                            Instant.parse( "1985-12-31T23:59:59Z" ) ) );
 
         Pool poolOne = MessageFactory.getPool( this.featureGroup,
                                                this.timeWindow,
@@ -104,9 +104,9 @@ class PoolRequestTest
         assertNotEquals( this.poolRequest, null );
 
         // Unequal cases
-        Geometry geometry = MessageFactory.getGeometry( "DRRC3" );
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( null, geoTuple );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC3" );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup group = FeatureGroup.of( geoGroup );
 
         Pool oneMorePool = MessageFactory.getPool( group,

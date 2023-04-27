@@ -192,7 +192,7 @@ class GraphicsClientTest
                                                                                     ThresholdOperator.GREATER,
                                                                                     ThresholdOrientation.LEFT ) );
 
-        Geometry geometry = MessageFactory.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
+        Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2", null, null, "POINT ( 23.45, 56.21 )" );
 
         Instant earliestValid = Instant.parse( "2551-03-20T01:00:00Z" );
         Instant latestValid = Instant.parse( "2551-03-20T12:00:00Z" );
@@ -201,18 +201,18 @@ class GraphicsClientTest
         Duration earliestLead = Duration.ofHours( 1 );
         Duration latestLead = Duration.ofHours( 7 );
 
-        TimeWindow inner = MessageFactory.getTimeWindow( earliestReference,
-                                                         latestReference,
-                                                         earliestValid,
-                                                         latestValid,
-                                                         earliestLead,
-                                                         latestLead );
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( earliestReference,
+                                                                         latestReference,
+                                                                         earliestValid,
+                                                                         latestValid,
+                                                                         earliestLead,
+                                                                         latestLead );
 
         TimeWindowOuter timeWindow =
                 TimeWindowOuter.of( inner );
 
-        GeometryTuple geoTuple = MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( "DRRC2_DRRC2_DRRC2", geoTuple );
+        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
+        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "DRRC2_DRRC2_DRRC2", geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         Pool pool = MessageFactory.getPool( featureGroup,

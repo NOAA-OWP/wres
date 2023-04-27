@@ -27,28 +27,29 @@ public class DurationDeserializer extends JsonDeserializer<Duration>
         ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 
-        return DurationDeserializer.getDuration( mapper, node );
+        return DurationDeserializer.getDuration( mapper, node, "period" );
     }
 
     /**
      * Reads a {@link Duration} from a {@link JsonNode}.
      * @param mapper the object mapper
      * @param node the node to read
+     * @param durationNodeName the name of the node that contains the duration quantity
      * @return a duration
      * @throws IOException if the node could not be read
      */
 
-    static Duration getDuration( ObjectReader mapper, JsonNode node ) throws IOException
+    static Duration getDuration( ObjectReader mapper, JsonNode node, String durationNodeName ) throws IOException
     {
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( node );
 
-        long period = 1;
+        long duration = 1;
         String unitString = "";
-        if ( node.has( "period" ) )
+        if ( node.has( durationNodeName ) )
         {
-            JsonNode periodNode = node.get( "period" );
-            period = periodNode.asLong();
+            JsonNode periodNode = node.get( durationNodeName );
+            duration = periodNode.asLong();
         }
 
         if ( node.has( "unit" ) )
@@ -58,7 +59,7 @@ public class DurationDeserializer extends JsonDeserializer<Duration>
         }
 
         ChronoUnit chronoUnit = mapper.readValue( unitString, ChronoUnit.class );
-        return Duration.of( period, chronoUnit );
+        return Duration.of( duration, chronoUnit );
     }
 }
 

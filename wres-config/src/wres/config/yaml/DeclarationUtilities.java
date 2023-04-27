@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,11 +19,13 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
+import wres.config.xml.ProjectConfigException;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -32,6 +35,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -40,8 +44,12 @@ import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimePools;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.TimeWindow;
+import wres.statistics.MessageFactory;
 
 /**
  * A utility class for working with {@link EvaluationDeclaration}.
@@ -51,6 +59,183 @@ public class DeclarationUtilities
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationUtilities.class );
+
+    /** Re-used message. */
+    private static final String CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION = "Cannot determine time "
+                                                                                         + "windows from missing "
+                                                                                         + "declaration.";
+    /** Re-used string. */
+    private static final String IS_MISSING = "is missing.";
+
+    /**
+     * Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation.
+     * Returns at least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration, cannot be null
+     * @return a set of one or more time windows for evaluation
+     * @throws NullPointerException if any required input is null
+     */
+
+    public static Set<TimeWindow> getTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        TimePools leadDurationPools = declaration.leadTimePools();
+        TimePools referenceDatesPools = declaration.referenceDatePools();
+        TimePools validDatesPools = declaration.validDatePools();
+
+        // Has explicit pooling windows
+        if ( Objects.nonNull( leadDurationPools ) || Objects.nonNull( referenceDatesPools )
+             || Objects.nonNull( validDatesPools ) )
+        {
+            // All dimensions
+            if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( validDatesPools )
+                 && Objects.nonNull( leadDurationPools ) )
+            {
+                LOGGER.debug( "Building time windows for reference dates and valid dates and lead durations." );
+
+                return DeclarationUtilities.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
+            }
+            // Reference dates and valid dates
+            else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( validDatesPools ) )
+            {
+                LOGGER.debug( "Building time windows for reference dates and valid dates." );
+
+                return DeclarationUtilities.getReferenceDatesAndValidDatesTimeWindows( declaration );
+            }
+            // Reference dates and lead durations
+            else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( leadDurationPools ) )
+            {
+                LOGGER.debug( "Building time windows for reference dates and lead durations." );
+
+                return DeclarationUtilities.getReferenceDatesAndLeadDurationTimeWindows( declaration );
+            }
+            // Valid dates and lead durations
+            else if ( Objects.nonNull( validDatesPools ) && Objects.nonNull( leadDurationPools ) )
+            {
+                LOGGER.debug( "Building time windows for valid dates and lead durations." );
+
+                return DeclarationUtilities.getValidDatesAndLeadDurationTimeWindows( declaration );
+            }
+            // Reference dates
+            else if ( Objects.nonNull( referenceDatesPools ) )
+            {
+                LOGGER.debug( "Building time windows for reference dates." );
+
+                return DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+            }
+            // Lead durations
+            else if ( Objects.nonNull( leadDurationPools ) )
+            {
+                LOGGER.debug( "Building time windows for lead durations." );
+
+                return DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+            }
+            // Valid dates
+            else
+            {
+                LOGGER.debug( "Building time windows for valid dates." );
+
+                return DeclarationUtilities.getValidDatesTimeWindows( declaration );
+            }
+        }
+        // One big pool
+        else
+        {
+            LOGGER.debug( "Building one big time window." );
+
+            return Collections.singleton( DeclarationUtilities.getOneBigTimeWindow( declaration ) );
+        }
+    }
+
+    /**
+     * <p>Builds a {@link TimeWindow} whose {@link TimeWindow#getEarliestReferenceTime()} and
+     * {@link TimeWindow#getLatestReferenceTime()} return the {@code earliest} and {@code latest} bookends of the
+     * {@link EvaluationDeclaration#referenceDates()}, respectively, whose {@link TimeWindow#getEarliestValidTime()}
+     * and {@link TimeWindow#getLatestValidTime()} return the {@code earliest} and {@code latest} bookends of the
+     * {@link EvaluationDeclaration#validDates()}, respectively, and whose {@link TimeWindow#getEarliestLeadDuration()}
+     * and {@link TimeWindow#getLatestLeadDuration()} return the {@code minimum} and {@code maximum} bookends of the
+     * {@link EvaluationDeclaration#leadTimes()}, respectively.
+     *
+     * <p>If any of these variables are missing from the input, defaults are used, which represent the
+     * computationally-feasible limiting values. For example, the smallest and largest possible instant is
+     * {@link Instant#MIN} and {@link Instant#MAX}, respectively. The smallest and largest possible {@link Duration} is
+     * {@link MessageFactory#DURATION_MIN} and {@link MessageFactory#DURATION_MAX}, respectively.
+     *
+     * @param declaration the declaration
+     * @return a time window
+     * @throws NullPointerException if the pairConfig is null
+     */
+
+    public static TimeWindow getOneBigTimeWindow( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        Instant earliestReferenceTime = Instant.MIN;
+        Instant latestReferenceTime = Instant.MAX;
+        Instant earliestValidTime = Instant.MIN;
+        Instant latestValidTime = Instant.MAX;
+        Duration smallestLeadDuration = MessageFactory.DURATION_MIN;
+        Duration largestLeadDuration = MessageFactory.DURATION_MAX;
+
+        // Reference datetimes
+        if ( Objects.nonNull( declaration.referenceDates() ) )
+        {
+            if ( Objects.nonNull( declaration.referenceDates()
+                                             .minimum() ) )
+            {
+                earliestReferenceTime = declaration.referenceDates()
+                                                   .minimum();
+            }
+            if ( Objects.nonNull( declaration.referenceDates()
+                                             .maximum() ) )
+            {
+                latestReferenceTime = declaration.referenceDates()
+                                                 .maximum();
+            }
+        }
+
+        // Valid datetimes
+        if ( Objects.nonNull( declaration.validDates() ) )
+        {
+            if ( Objects.nonNull( declaration.validDates()
+                                             .minimum() ) )
+            {
+                earliestValidTime = declaration.validDates()
+                                               .minimum();
+            }
+            if ( Objects.nonNull( declaration.validDates()
+                                             .maximum() ) )
+            {
+                latestValidTime = declaration.validDates()
+                                             .maximum();
+            }
+        }
+
+        // Lead durations
+        if ( Objects.nonNull( declaration.leadTimes() ) )
+        {
+            if ( Objects.nonNull( declaration.leadTimes()
+                                             .minimum() ) )
+            {
+                smallestLeadDuration = declaration.leadTimes()
+                                                  .minimum();
+            }
+            if ( Objects.nonNull( declaration.leadTimes()
+                                             .maximum() ) )
+            {
+                largestLeadDuration = declaration.leadTimes()
+                                                 .maximum();
+            }
+        }
+
+        return MessageFactory.getTimeWindow( earliestReferenceTime,
+                                             latestReferenceTime,
+                                             earliestValidTime,
+                                             latestValidTime,
+                                             smallestLeadDuration,
+                                             largestLeadDuration );
+    }
 
     /**
      * @param evaluation the evaluation
@@ -797,6 +982,432 @@ public class DeclarationUtilities
                       existingSources );
 
         builder.sources( newSources );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#leadTimePools()} and the {@link EvaluationDeclaration#leadTimes()}. Returns at
+     * least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of lead duration time windows
+     * @throws NullPointerException if any required input is null
+     * @throws ProjectConfigException if the time windows cannot be determined
+     */
+
+    private static Set<TimeWindow> getLeadDurationTimeWindows( EvaluationDeclaration declaration )
+    {
+        String messageStart = "Cannot determine lead duration time windows ";
+
+        Objects.requireNonNull( declaration, messageStart + "from null declaration." );
+
+        LeadTimeInterval leadHours = declaration.leadTimes();
+
+        Objects.requireNonNull( leadHours, "Cannot determine lead duration time windows without 'lead_times'." );
+        Objects.requireNonNull( leadHours.minimum(),
+                                "Cannot determine lead duration time windows without a 'minimum' value for "
+                                + "'lead_times'." );
+        Objects.requireNonNull( leadHours.maximum(),
+                                "Cannot determine lead duration time windows without a 'maximum' value for "
+                                + "'lead_times'." );
+
+        TimePools leadTimesPoolingWindow = declaration.leadTimePools();
+
+        Objects.requireNonNull( leadTimesPoolingWindow,
+                                "Cannot determine lead duration time windows without a 'lead_time_pools'." );
+
+        // Obtain the base window
+        TimeWindow baseWindow = DeclarationUtilities.getOneBigTimeWindow( declaration );
+
+        // Period associated with the leadTimesPoolingWindow
+        Duration periodOfLeadTimesPoolingWindow = leadTimesPoolingWindow.period();
+
+        // Exclusive lower bound: #56213-104
+        Duration earliestLeadDurationExclusive = leadHours.minimum();
+
+        // Inclusive upper bound
+        Duration latestLeadDurationInclusive = leadHours.maximum();
+
+        // Duration by which to increment. Defaults to the period associated
+        // with the leadTimesPoolingWindow, otherwise the frequency.
+        Duration increment = periodOfLeadTimesPoolingWindow;
+        if ( Objects.nonNull( leadTimesPoolingWindow.frequency() ) )
+        {
+            increment = leadTimesPoolingWindow.frequency();
+        }
+
+        // Lower bound of the current window
+        Duration earliestExclusive = earliestLeadDurationExclusive;
+
+        // Upper bound of the current window
+        Duration latestInclusive = earliestExclusive.plus( periodOfLeadTimesPoolingWindow );
+
+        // Create the time windows
+        Set<TimeWindow> timeWindows = new HashSet<>();
+
+        // Increment left-to-right and stop when the right bound extends past the
+        // latestLeadDurationInclusive: #56213-104
+        // Window increments are zero?
+        if ( Duration.ZERO.equals( increment ) )
+        {
+            com.google.protobuf.Duration earliest = MessageFactory.parse( earliestExclusive );
+            com.google.protobuf.Duration latest = MessageFactory.parse( latestInclusive );
+            TimeWindow window = baseWindow.toBuilder()
+                                          .setEarliestLeadDuration( earliest )
+                                          .setLatestLeadDuration( latest )
+                                          .build();
+            timeWindows.add( window );
+        }
+        // Create as many windows as required at the prescribed increment
+        else
+        {
+            while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
+            {
+                // Add the current time window
+                com.google.protobuf.Duration earliest = MessageFactory.parse( earliestExclusive );
+                com.google.protobuf.Duration latest = MessageFactory.parse( latestInclusive );
+                TimeWindow window = baseWindow.toBuilder()
+                                              .setEarliestLeadDuration( earliest )
+                                              .setLatestLeadDuration( latest )
+                                              .build();
+                timeWindows.add( window );
+
+                // Increment from left-to-right: #56213-104
+                earliestExclusive = earliestExclusive.plus( increment );
+                latestInclusive = latestInclusive.plus( increment );
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#referenceDatePools()} and the {@link EvaluationDeclaration#referenceDates()}.
+     * Returns at least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of reference time windows
+     * @throws NullPointerException if the declaration is null or any required input within it is null
+     */
+
+    private static Set<TimeWindow> getReferenceDatesTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, "Cannot determine reference time windows from missing "
+                                             + "declaration." );
+        Objects.requireNonNull( declaration.referenceDates(),
+                                "Cannot determine reference time windows without 'reference_dates'." );
+        Objects.requireNonNull( declaration.referenceDates()
+                                           .minimum(),
+                                "Cannot determine reference time windows without the 'minimum' for the "
+                                + "'reference_dates'." );
+        Objects.requireNonNull( declaration.referenceDates()
+                                           .maximum(),
+                                "Cannot determine reference time windows without the 'maximum' for the "
+                                + "'reference_dates'." );
+        Objects.requireNonNull( declaration.referenceDatePools(),
+                                "Cannot determine reference time windows without 'reference_date_pools'." );
+
+        // Base window from which to generate a sequence of windows
+        TimeWindow baseWindow = DeclarationUtilities.getOneBigTimeWindow( declaration );
+
+        return DeclarationUtilities.getTimeWindowsForDateSequence( declaration.referenceDates(),
+                                                                   declaration.referenceDatePools(),
+                                                                   baseWindow,
+                                                                   true );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#validDatePools()} and the {@link EvaluationDeclaration#validDates()}.
+     * Returns at least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of reference time windows
+     * @throws NullPointerException if the declaration is null or any required input within it is null
+     */
+
+    private static Set<TimeWindow> getValidDatesTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, "Cannot determine valid time windows from missing declaration." );
+        Objects.requireNonNull( declaration.validDates(),
+                                "Cannot determine valid time windows without 'valid_dates'." );
+        Objects.requireNonNull( declaration.validDates()
+                                           .minimum(),
+                                "Cannot determine valid time windows without the 'minimum' for the "
+                                + "'valid_dates'." );
+        Objects.requireNonNull( declaration.validDates()
+                                           .maximum(),
+                                "Cannot determine valid time windows without the 'maximum' for the "
+                                + "'valid_dates'." );
+        Objects.requireNonNull( declaration.validDatePools(),
+                                "Cannot determine valid time windows without 'valid_date_pools'." );
+
+        // Base window from which to generate a sequence of windows
+        TimeWindow baseWindow = DeclarationUtilities.getOneBigTimeWindow( declaration );
+
+        return DeclarationUtilities.getTimeWindowsForDateSequence( declaration.validDates(),
+                                                                   declaration.validDatePools(),
+                                                                   baseWindow,
+                                                                   false );
+    }
+
+    /**
+     * <p>Generates a set of time windows based on a sequence of datetimes.
+     *
+     * @param dates the date constraints
+     * @param pools the sequence of datetimes to generate
+     * @param baseWindow the basic time window from which each pool in the sequence begins
+     * @param areReferenceTimes is true if the dates are reference dates, false for valid dates
+     * @return the set of reference time windows
+     * @throws NullPointerException if any input is null
+     * @throws ProjectConfigException if the time windows cannot be determined for any reason
+     */
+
+    private static Set<TimeWindow> getTimeWindowsForDateSequence( TimeInterval dates,
+                                                                  TimePools pools,
+                                                                  TimeWindow baseWindow,
+                                                                  boolean areReferenceTimes )
+    {
+        Objects.requireNonNull( dates );
+        Objects.requireNonNull( pools );
+        Objects.requireNonNull( baseWindow );
+
+        // Period associated with the reference time pool
+        Duration periodOfPoolingWindow = pools.period();
+
+        // Exclusive lower bound: #56213-104
+        Instant earliestInstantExclusive = dates.minimum();
+
+        // Inclusive upper bound
+        Instant latestInstantInclusive = dates.maximum();
+
+        // Duration by which to increment. Defaults to the period associated with the reference time pools, otherwise
+        // the frequency.
+        Duration increment = periodOfPoolingWindow;
+        if ( Objects.nonNull( pools.frequency() ) )
+        {
+            increment = pools.frequency();
+        }
+
+        // Lower bound of the current window
+        Instant earliestExclusive = earliestInstantExclusive;
+
+        // Upper bound of the current window
+        Instant latestInclusive = earliestExclusive.plus( periodOfPoolingWindow );
+
+        // Create the time windows
+        Set<TimeWindow> timeWindows = new HashSet<>();
+
+        // Increment left-to-right and stop when the right bound
+        // extends past the latestInstantInclusive: #56213-104
+        while ( latestInclusive.compareTo( latestInstantInclusive ) <= 0 )
+        {
+            TimeWindow timeWindow = DeclarationUtilities.getTimeWindowFromDates( earliestExclusive,
+                                                                                 latestInclusive,
+                                                                                 baseWindow,
+                                                                                 areReferenceTimes );
+
+            // Add the current time window
+            timeWindows.add( timeWindow );
+
+            // Increment left-to-right: #56213-104
+            earliestExclusive = earliestExclusive.plus( increment );
+            latestInclusive = latestInclusive.plus( increment );
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * Returns a time window from the inputs.
+     *
+     * @param earliestExclusive the earliest exclusive time
+     * @param latestInclusive the latest inclusive time
+     * @param baseWindow the base window with default times
+     * @param areReferenceTimes is true if the earliestExclusive and latestInclusive are reference times, false for
+     *                          valid times
+     * @return a time window
+     */
+
+    private static TimeWindow getTimeWindowFromDates( Instant earliestExclusive,
+                                                      Instant latestInclusive,
+                                                      TimeWindow baseWindow,
+                                                      boolean areReferenceTimes )
+    {
+        Timestamp earliest = MessageFactory.parse( earliestExclusive );
+        Timestamp latest = MessageFactory.parse( latestInclusive );
+
+        // Reference dates
+        if ( areReferenceTimes )
+        {
+            return baseWindow.toBuilder()
+                             .setEarliestReferenceTime( earliest )
+                             .setLatestReferenceTime( latest )
+                             .build();
+        }
+        // Valid dates
+        else
+        {
+            return baseWindow.toBuilder()
+                             .setEarliestValidTime( earliest )
+                             .setLatestValidTime( latest )
+                             .build();
+        }
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#leadTimePools()}, the {@link EvaluationDeclaration#leadTimes()}, the
+     * {@link EvaluationDeclaration#referenceDatePools()} and the {@link EvaluationDeclaration#referenceDates()}.
+     * Returns at least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of lead duration and reference time windows
+     * @throws NullPointerException if the declaration is null
+     */
+
+    private static Set<TimeWindow> getReferenceDatesAndLeadDurationTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        Set<TimeWindow> leadDurationWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+
+        Set<TimeWindow> referenceDatesWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+
+        // Create a new window for each combination of reference dates and lead duration
+        Set<TimeWindow> timeWindows =
+                new HashSet<>( leadDurationWindows.size() * referenceDatesWindows.size() );
+        for ( TimeWindow nextReferenceWindow : referenceDatesWindows )
+        {
+            for ( TimeWindow nextLeadWindow : leadDurationWindows )
+            {
+                TimeWindow window = nextReferenceWindow.toBuilder()
+                                                       .setEarliestLeadDuration( nextLeadWindow.getEarliestLeadDuration() )
+                                                       .setLatestLeadDuration( nextLeadWindow.getLatestLeadDuration() )
+                                                       .build();
+                timeWindows.add( window );
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#referenceDatePools()}, the {@link EvaluationDeclaration#referenceDates()}, the
+     * {@link EvaluationDeclaration#validDatePools()} and the {@link EvaluationDeclaration#validDates()}. Returns at
+     * least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of reference time and valid time windows
+     * @throws NullPointerException if the declaration is null
+     */
+
+    private static Set<TimeWindow> getReferenceDatesAndValidDatesTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        Set<TimeWindow> validDatesWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
+
+        Set<TimeWindow> referenceDatesWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+
+        // Create a new window for each combination of reference dates and lead duration
+        Set<TimeWindow> timeWindows = new HashSet<>( validDatesWindows.size() * referenceDatesWindows.size() );
+        for ( TimeWindow nextValidWindow : validDatesWindows )
+        {
+            for ( TimeWindow nextReferenceWindow : referenceDatesWindows )
+            {
+                TimeWindow window =
+                        nextValidWindow.toBuilder()
+                                       .setEarliestReferenceTime( nextReferenceWindow.getEarliestReferenceTime() )
+                                       .setLatestReferenceTime( nextReferenceWindow.getLatestReferenceTime() )
+                                       .build();
+                timeWindows.add( window );
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#leadTimePools()} ()}, the {@link EvaluationDeclaration#leadTimes()}, the
+     * {@link EvaluationDeclaration#validDatePools()} ()} and the {@link EvaluationDeclaration#validDates()}. Returns
+     * at least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of lead duration and valid dates time windows
+     * @throws NullPointerException if the pairConfig is null
+     */
+
+    private static Set<TimeWindow> getValidDatesAndLeadDurationTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        Set<TimeWindow> leadDurationWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+
+        Set<TimeWindow> validDatesWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
+
+        // Create a new window for each combination of valid dates and lead duration
+        Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * validDatesWindows.size() );
+        for ( TimeWindow nextValidWindow : validDatesWindows )
+        {
+            for ( TimeWindow nextLeadWindow : leadDurationWindows )
+            {
+                TimeWindow window =
+                        nextValidWindow.toBuilder()
+                                       .setEarliestLeadDuration( nextLeadWindow.getEarliestLeadDuration() )
+                                       .setLatestLeadDuration( nextLeadWindow.getLatestLeadDuration() )
+                                       .build();
+                timeWindows.add( window );
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * <p>Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation using
+     * the {@link EvaluationDeclaration#leadTimePools()}, the {@link EvaluationDeclaration#leadTimes()}, the
+     * {@link EvaluationDeclaration#referenceDatePools()} the {@link EvaluationDeclaration#referenceDates()}, the
+     * {@link EvaluationDeclaration#validDatePools()} and the {@link EvaluationDeclaration#validDates()}. Returns at
+     * least one {@link TimeWindow}.
+     *
+     * @param declaration the declaration
+     * @return the set of lead duration, reference time and valid time windows
+     * @throws NullPointerException if the declaration is null
+     */
+
+    private static Set<TimeWindow> getReferenceDatesValidDatesAndLeadDurationTimeWindows( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration, CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION );
+
+        Set<TimeWindow> leadDurationWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+        Set<TimeWindow> referenceDatesWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+        Set<TimeWindow> validDatesWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
+
+        // Create a new window for each combination of reference dates and lead duration
+        Set<TimeWindow> timeWindows = new HashSet<>( leadDurationWindows.size() * referenceDatesWindows.size() );
+        for ( TimeWindow nextReferenceWindow : referenceDatesWindows )
+        {
+            for ( TimeWindow nextValidWindow : validDatesWindows )
+            {
+                for ( TimeWindow nextLeadWindow : leadDurationWindows )
+                {
+                    TimeWindow window =
+                            nextValidWindow.toBuilder()
+                                           .setEarliestReferenceTime( nextReferenceWindow.getEarliestReferenceTime() )
+                                           .setLatestReferenceTime( nextReferenceWindow.getLatestReferenceTime() )
+                                           .setEarliestLeadDuration( nextLeadWindow.getEarliestLeadDuration() )
+                                           .setLatestLeadDuration( nextLeadWindow.getLatestLeadDuration() )
+                                           .build();
+                    timeWindows.add( window );
+                }
+            }
+        }
+
+        return Collections.unmodifiableSet( timeWindows );
     }
 
     /**

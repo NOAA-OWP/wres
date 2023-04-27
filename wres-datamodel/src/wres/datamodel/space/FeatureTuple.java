@@ -7,6 +7,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryTuple;
 
@@ -178,17 +179,17 @@ public class FeatureTuple implements Comparable<FeatureTuple>
      * @return The name of the feature according to the l/r/b dataset.
      */
 
-    public String getNameFor( LeftOrRightOrBaseline leftOrRightOrBaseline )
+    public String getNameFor( DatasetOrientation leftOrRightOrBaseline )
     {
-        if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.LEFT ) )
+        if ( leftOrRightOrBaseline.equals( DatasetOrientation.LEFT ) )
         {
             return this.getLeftName();
         }
-        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.RIGHT ) )
+        else if ( leftOrRightOrBaseline.equals( DatasetOrientation.RIGHT ) )
         {
             return this.getRightName();
         }
-        else if ( leftOrRightOrBaseline.equals( LeftOrRightOrBaseline.BASELINE ) )
+        else if ( leftOrRightOrBaseline.equals( DatasetOrientation.BASELINE ) )
         {
             return this.getBaselineName();
         }

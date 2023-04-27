@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -28,6 +27,7 @@ import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;

@@ -36,6 +36,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
+import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -177,7 +179,8 @@ class EvaluationUtilities
         LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
 
         // Formats delivered by within-process subscribers, in a mutable list
-        Set<Format> internalFormats = MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
+        Set<Format> internalFormats =
+                wres.statistics.MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
 
         internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );
@@ -442,36 +445,13 @@ class EvaluationUtilities
 
             LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
+            // Set the project hash for identification
             projectHash = project.getHash();
 
             // Get a unit mapper for the declared or analyzed measurement units
             String desiredMeasurementUnit = project.getMeasurementUnit();
             UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                                    projectConfig );
-            // Update the evaluation description with any analyzed units and variable names that happen post-ingest
-            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
-            // interpolation include interpolation of missing declaration and service calls to interpolate features and
-            // thresholds. This is the latest step in that process of combining the declaration and data
-            Evaluation evaluationDescription =
-                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.evaluationDescription(),
-                                                                          project );
-
-            // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
-            // description prior to ingest, in order to message the status of ingest to client applications. In order
-            // to build an evaluation description before ingest, those parts of the evaluation description that depend
-            // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
-            // the time scale is part of the pool description for this reason.
-            evaluation = EvaluationMessager.of( evaluationDescription,
-                                                connections,
-                                                EvaluationUtilities.CLIENT_ID,
-                                                evaluationDetails.evaluationId(),
-                                                evaluationDetails.subscriberApprover() );
-
-            // Set the project and evaluation
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .project( project )
-                                                                           .evaluation( evaluation )
-                                                                           .build();
 
             // Acquire the individual feature tuples to correlate with thresholds
             Set<FeatureTuple> features = project.getFeatures();
@@ -531,8 +511,30 @@ class EvaluationUtilities
                 LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
             }
 
-            // Set the metrics and thresholds
+            // Update the evaluation description with any analyzed units and variable names that happen post-ingest
+            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
+            // interpolation include interpolation of missing declaration and service calls to interpolate features and
+            // thresholds. This is the latest step in that process of combining the declaration and data
+            Evaluation evaluationDescription =
+                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.evaluationDescription(),
+                                                                          project );
+
+            // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
+            // description prior to ingest, in order to message the status of ingest to client applications. In order
+            // to build an evaluation description before ingest, those parts of the evaluation description that depend
+            // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
+            // the time scale is part of the pool description for this reason.
+            evaluation = EvaluationMessager.of( evaluationDescription,
+                                                connections,
+                                                EvaluationUtilities.CLIENT_ID,
+                                                evaluationDetails.evaluationId(),
+                                                evaluationDetails.subscriberApprover() );
+
+            // Set the project and evaluation, metrics and thresholds
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .evaluationDescription( evaluationDescription )
+                                                                           .project( project )
+                                                                           .evaluation( evaluation )
                                                                            .metricsAndThresholds( metricsAndThresholds )
                                                                            .build();
 
@@ -731,7 +733,6 @@ class EvaluationUtilities
                                  sharedBaselineSampleWriters );
     }
 
-
     /**
      * Get the netCDF writers requested by this project declaration.
      *
@@ -778,26 +779,24 @@ class EvaluationUtilities
         if ( Objects.nonNull( firstDeprecatedNetcdf ) )
         {
             // Use the template-based netcdf writer.
+            EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
             NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of( systemSettings,
-                                                                               projectConfig,
-                                                                               firstDeprecatedNetcdf,
+                                                                               declaration,
                                                                                durationUnits,
-                                                                               outputDirectory,
-                                                                               true );
+                                                                               outputDirectory );
             writers.add( netcdfWriterDeprecated );
-            LOGGER.warn(
-                    "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
+            LOGGER.warn( "Added a deprecated netcdf writer for statistics to the evaluation. Please update your "
+                         + "declaration to use the newer netCDF output." );
         }
 
         if ( Objects.nonNull( firstNetcdf2 ) )
         {
             // Use the newer from-scratch netcdf writer.
+            EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
             NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of( systemSettings,
-                                                                     projectConfig,
-                                                                     firstNetcdf2,
+                                                                     declaration,
                                                                      durationUnits,
-                                                                     outputDirectory,
-                                                                     false );
+                                                                     outputDirectory );
             writers.add( netcdfWriter );
             LOGGER.debug( "Added a shared netcdf writer for statistics to the evaluation." );
         }

@@ -35,7 +35,6 @@ import wres.config.generated.NamedFeature;
 import wres.config.generated.InterfaceShortHand;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.PairConfig;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -44,6 +43,7 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.ReadException;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
@@ -266,10 +266,10 @@ class WrdsNwmReaderTest
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
                                                          .collect( Collectors.toList() );
 
-            Geometry geometry = MessageFactory.getGeometry( Integer.toString( NWM_FEATURE_ID ),
-                                                            null,
-                                                            null,
-                                                            null );
+            Geometry geometry = wres.statistics.MessageFactory.getGeometry( Integer.toString( NWM_FEATURE_ID ),
+                                                                            null,
+                                                                            null,
+                                                                            null );
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),
