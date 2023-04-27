@@ -179,6 +179,10 @@ public class WebClient
 
         try
         {
+            boolean retry = true;
+            long sleepMillis = 1000;
+            int retryCount = 0;
+
             Request request = new Request.Builder()
                     .url( uri.toURL() )
                     .header( "Accept-Encoding", "gzip" )
@@ -188,11 +192,7 @@ public class WebClient
             monitorEvent.begin();
 
             Instant start = Instant.now();
-            Response httpResponse = tryRequest( request );
-
-            boolean retry = true;
-            long sleepMillis = 1000;
-            int retryCount = 0;
+            Response httpResponse = tryRequest( request, retryCount );
 
             while ( retry )
             {
@@ -209,7 +209,7 @@ public class WebClient
                     }
 
                     Thread.sleep( sleepMillis );
-                    httpResponse = tryRequest( request );
+                    httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
                     retry = start.plus( MAX_RETRY_DURATION )
                                  .isAfter( now );
@@ -301,10 +301,11 @@ public class WebClient
     /**
      *
      * @param request The request to attempt
+     * @param retryCount The number of times this request has been retried
      * @return The response if successful, null if retriable.
      */
 
-    private Response tryRequest( Request request )
+    private Response tryRequest( Request request, int retryCount )
     {
         LOGGER.debug( "Called tryRequest with {}", request );
         HttpUrl uri = request.url();
@@ -329,7 +330,7 @@ public class WebClient
         {
             LOGGER.debug( "Full exception trace: ", ioe );
             // Examine the exception chain to see if it is recoverable.
-            if ( WebClient.shouldRetryWithChain( ioe ) )
+            if ( WebClient.shouldRetryWithChain( ioe, retryCount ) )
             {
                 LOGGER.warn( "Retrying {} in a bit due to {}.", uri, ioe.toString() );
             }
@@ -422,11 +423,12 @@ public class WebClient
     /**
      * Given an IOException, test if this one or its causes should be retried.
      * @param ioe The exception to examine
+     * @param retryCount The number of times this request has been retried
      * @return True when it can be retried, false otherwise.
      */
-    private static boolean shouldRetryWithChain( IOException ioe )
+    private static boolean shouldRetryWithChain( IOException ioe, int retryCount )
     {
-        if ( WebClient.shouldRetryIndividualException( ioe ) )
+        if ( WebClient.shouldRetryIndividualException( ioe, retryCount ) )
         {
             return true;
         }
@@ -435,7 +437,7 @@ public class WebClient
 
         while ( !Objects.isNull( cause ) )
         {
-            if ( WebClient.shouldRetryIndividualException( cause ) )
+            if ( WebClient.shouldRetryIndividualException( cause, retryCount ) )
             {
                 return true;
             }
@@ -449,9 +451,10 @@ public class WebClient
     /**
      * Look at an individual exception, return true if it ought to be retried.
      * @param t The Exception (Throwable to avoid casting mess)
+     * @param retryCount The number of times the request with exception T has been retried
      * @return true when the exception can be safely retried, false otherwise.
      */
-    private static boolean shouldRetryIndividualException( Throwable t )
+    private static boolean shouldRetryIndividualException( Throwable t, int retryCount )
     {
         if ( t instanceof HttpTimeoutException )
         {
@@ -473,7 +476,7 @@ public class WebClient
             return true;
         }
 
-        if ( t instanceof UnknownHostException )
+        if ( t instanceof UnknownHostException && retryCount > 0 )
         {
             return true;
         }
