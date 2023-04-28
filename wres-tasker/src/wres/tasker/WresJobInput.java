@@ -65,7 +65,7 @@ public class WresJobInput
                                         @PathParam( "dataset" ) String dataset,
                                         @FormDataParam( "data" ) InputStream data )
     {
-        LOGGER.debug( "Data might be put in job {}, on {} side.", jobId, dataset );
+        LOGGER.info( "Data to be posted for job {}, on {} side.", jobId, dataset );
 
         // Round-about way of validating job id: look for job state
         JobMetadata.JobState jobState = WresJob.getSharedJobResults()
@@ -140,11 +140,11 @@ public class WresJobInput
             InputStream is = Files.newInputStream( temp );
             md5 = DigestUtils.md5Hex(is);
 
-            LOGGER.debug( "Data in: {} (md5 = {})", temp, md5 );
+            LOGGER.info( "Data successfully posted to {} (md5 = {}, bytes = {})", temp, md5, bytesWritten );
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "While reading InputStream:", ioe );
+            LOGGER.warn( "Failed to post data due to exception while reading data InputStream:", ioe );
 
             if ( Objects.nonNull( temp ) )
             {
@@ -204,6 +204,7 @@ public class WresJobInput
 
         if ( jobState.equals( JobMetadata.JobState.NOT_FOUND ) )
         {
+            LOGGER.info( "User posted postInputDone for job {}, but that job id was not found.", jobId );
             return Response.status( Response.Status.NOT_FOUND )
                            .entity( jobId + " not found." )
                            .build();
@@ -211,18 +212,20 @@ public class WresJobInput
 
         if ( !jobState.equals( JobMetadata.JobState.AWAITING_POSTS_OF_DATA ) )
         {
+            LOGGER.info( "User posted postInputDone for job {}, but that job was not awaiting posts of data.", jobId );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( jobId + " is no longer awaiting data: "
                                     + jobState )
                            .build();
         }
-
         if ( !postInputDone )
         {
-            LOGGER.debug( "Inputs have not yet been fully posted." );
+            LOGGER.info( "User posted postInputDone for job {} indicating Inputs have not yet been fully posted.", jobId );
             return Response.status( Response.Status.OK )
                            .build();
         }
+        LOGGER.info( "User posted postInputDone for job {}. Processing.", jobId );
+
 
         // Mark the job as no longer AWAITING_DATA
         sharedJobResults.setPostInputDone( jobId );
@@ -236,8 +239,8 @@ public class WresJobInput
         }
         catch ( InvalidProtocolBufferException ipbe )
         {
-            LOGGER.warn( "Failed to parse job bytes from {}",
-                         jobMessageBytes, ipbe );
+            LOGGER.warn( "Processing postInputDone for job {}, failed to parse job bytes from {}",
+                         jobId, jobMessageBytes, ipbe );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Failed to parse job bytes: "
@@ -333,13 +336,15 @@ public class WresJobInput
 
         try
         {
+            LOGGER.info( "For job {}, new declaration was prepared for posted input, "
+                    + "and job declaration being sent to broker.", jobId );
             // Send the new job. The priority is fixed to 0, because its not
             // an admin task, which has priority 1.
             WresJob.sendDeclarationMessage( jobId, newJob.toByteArray(), 0 );
         }
         catch ( IOException | TimeoutException e )
         {
-            LOGGER.warn( "Failed to send declaration for job {}", jobId, e );
+            LOGGER.warn( "Failed to send new declaration for job {}", jobId, e );
             // Don't change the job state to a terminal state because it might
             // succeed on the next attempt.
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
