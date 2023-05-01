@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
 
 /**
  * Tests the {@link WebClient}.

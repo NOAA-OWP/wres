@@ -2,7 +2,6 @@ package wres.io.project;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,21 +10,18 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.FeaturePool;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.LenienceType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.TimeScale;
+import wres.config.yaml.components.TimeScaleLenience;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.GeometryGroup;
 
 /**
  * Utilities for working with {@link Project}.
@@ -64,47 +60,55 @@ class ProjectUtilities
 
     /**
      * Creates feature groups from the inputs.
-     * @param singletons the singleton features
-     * @param featuresForGroups the features for multi-feature groups
-     * @param pairConfig the pair configuration
+     * @param singletonsWithData the singleton features that have time-series data
+     * @param groupedFeaturesWithData the features within multi-feature groups that have time-series data
+     * @param declaration the declaration
      * @param projectId a project identifier to help with messaging
      * @return the feature groups
-     * @throws ProjectConfigException if more than one matching tuple was found
      */
 
-    static Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> singletons,
-                                               Set<FeatureTuple> featuresForGroups,
-                                               PairConfig pairConfig,
+    static Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> singletonsWithData,
+                                               Set<FeatureTuple> groupedFeaturesWithData,
+                                               EvaluationDeclaration declaration,
                                                long projectId )
     {
         LOGGER.debug( "Creating feature groups for project {}.", projectId );
+
+        LOGGER.debug( "Discovered these singleton features with time-series data: {}.", singletonsWithData );
+        LOGGER.debug( "Discovered these grouped features with time-series data: {}.", groupedFeaturesWithData );
+
         Set<FeatureGroup> innerGroups = new HashSet<>();
 
-        // Add the singletons
-        singletons.forEach( next -> innerGroups.add( FeatureGroup.of( MessageFactory.getGeometryGroup( next.toStringShort(),
-                                                                                                       next ) ) ) );
+        // Add the singleton groups
+        singletonsWithData.forEach( next -> innerGroups.add( FeatureGroup.of( MessageFactory.getGeometryGroup( next.toStringShort(),
+                                                                                                               next ) ) ) );
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), projectId );
 
         // Add the multi-feature groups
-        List<FeaturePool> declaredGroups =
-                ProjectUtilities.getAndValidateDeclaredFeatureGroups( featuresForGroups, pairConfig );
+        Set<GeometryGroup> declaredGroups =
+                ProjectUtilities.getAndValidateDeclaredFeatureGroups( groupedFeaturesWithData,
+                                                                      declaration );
 
         AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
-        for ( FeaturePool nextGroup : declaredGroups )
+        // Iterate the declared feature groups
+        for ( GeometryGroup nextGroup : declaredGroups )
         {
             Set<FeatureTuple> groupedTuples = new HashSet<>();
             Set<FeatureTuple> noDataTuples = new HashSet<>();
 
-            for ( NamedFeature nextFeature : nextGroup.getFeature() )
+            for ( GeometryTuple nextFeature : nextGroup.getGeometryTuplesList() )
             {
-                FeatureTuple foundTuple = ProjectUtilities.findFeature( nextFeature, featuresForGroups, nextGroup );
+                FeatureTuple foundTuple = ProjectUtilities.findFeature( nextFeature,
+                                                                        groupedFeaturesWithData,
+                                                                        nextGroup );
 
+                // The next feature in a declared group was not matched by a feature with data
                 if ( Objects.isNull( foundTuple ) )
                 {
-                    GeometryTuple geometryTuple = MessageFactory.parse( nextFeature );
-                    FeatureTuple noData = FeatureTuple.of( geometryTuple );
+                    FeatureTuple noData = FeatureTuple.of( nextFeature );
                     noDataTuples.add( noData );
                 }
+                // The next feature in a declared group was matched by a feature with data
                 else
                 {
                     groupedTuples.add( foundTuple );
@@ -134,8 +138,10 @@ class ProjectUtilities
             }
             else
             {
-                LOGGER.warn( "Skipping feature group {} because no features contained any time-series data.",
-                             groupName );
+                LOGGER.warn( "Skipping feature group {} because there were no features with time-series data. The "
+                             + "following features had no data: {}.",
+                             groupName,
+                             noDataTuples );
             }
         }
 
@@ -173,10 +179,10 @@ class ProjectUtilities
              && !Objects.equals( leftVariableName, rightVariableName )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "The LEFT and RIGHT variable names were auto-detected, but the detected variable names do not "
-                         + "match. The LEFT name is {} and the RIGHT name is {}. Proceeding to pair and evaluate these "
+            LOGGER.warn( "The left and right variable names were auto-detected, but the detected variable names do not "
+                         + "match. The left name is {} and the right name is {}. Proceeding to pair and evaluate these "
                          + "variables. If this is unexpected behavior, please add explicit variable declaration for "
-                         + "both the LEFT and RIGHT data and try again.",
+                         + "both the left and right data and try again.",
                          leftVariableName,
                          rightVariableName );
         }
@@ -186,10 +192,10 @@ class ProjectUtilities
              && !Objects.equals( leftVariableName, baselineVariableName )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "The LEFT and BASELINE variable names were auto-detected, but the detected variable names do "
-                         + "not match. The LEFT name is {} and the BASELINE name is {}. Proceeding to pair and "
+            LOGGER.warn( "The left and baseline variable names were auto-detected, but the detected variable names do "
+                         + "not match. The left name is {} and the baseline name is {}. Proceeding to pair and "
                          + "evaluate these variables. If this is unexpected behavior, please add explicit variable "
-                         + "declaration for both the LEFT and BASELINE data and try again.",
+                         + "declaration for both the left and baseline data and try again.",
                          leftVariableName,
                          rightVariableName );
         }
@@ -200,62 +206,51 @@ class ProjectUtilities
      * @param left the possible left variable names
      * @param right the possible right variable names
      * @param baseline the possible baseline variable names
+     * @throws DeclarationException is the variable names could not be determined
      */
 
-    static VariableNames getVariableNames( ProjectConfig projectConfig,
+    static VariableNames getVariableNames( EvaluationDeclaration declaration,
                                            Set<String> left,
                                            Set<String> right,
                                            Set<String> baseline )
     {
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );
         Objects.requireNonNull( baseline );
 
-        DataSourceConfig leftConfig = projectConfig.getInputs()
-                                                   .getLeft();
-
-        DataSourceConfig rightConfig = projectConfig.getInputs()
-                                                    .getRight();
-
-        DataSourceConfig baselineConfig = projectConfig.getInputs()
-                                                       .getBaseline();
-
         // Could not determine variable name
         if ( left.isEmpty() )
         {
-            throw new ProjectConfigException( leftConfig,
-                                              WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.LEFT
-                                              + VARIABLE
-                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                              + NAME_FOR_THE
-                                              + LeftOrRightOrBaseline.LEFT
-                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.LEFT
+                                            + VARIABLE
+                                            + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                            + NAME_FOR_THE
+                                            + DatasetOrientation.LEFT
+                                            + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
         if ( right.isEmpty() )
         {
-            throw new ProjectConfigException( rightConfig,
-                                              WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.RIGHT
-                                              + VARIABLE
-                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                              + NAME_FOR_THE
-                                              + LeftOrRightOrBaseline.RIGHT
-                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.RIGHT
+                                            + VARIABLE
+                                            + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                            + NAME_FOR_THE
+                                            + DatasetOrientation.RIGHT
+                                            + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
-        if ( Objects.nonNull( baselineConfig ) && baseline.isEmpty() )
+        if ( DeclarationUtilities.hasBaseline( declaration ) && baseline.isEmpty() )
         {
-            throw new ProjectConfigException( baselineConfig,
-                                              WHILE_ATTEMPTING_TO_DETECT_THE + LeftOrRightOrBaseline.BASELINE
-                                              + VARIABLE
-                                              + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
-                                              + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                              + NAME_FOR_THE
-                                              + LeftOrRightOrBaseline.BASELINE
-                                              + DATA_SOURCES_TO_DISAMBIGUATE );
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.BASELINE
+                                            + VARIABLE
+                                            + NAME_FROM_THE_DATA_FAILED_TO_IDENTIFY_ANY
+                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                            + NAME_FOR_THE
+                                            + DatasetOrientation.BASELINE
+                                            + DATA_SOURCES_TO_DISAMBIGUATE );
 
         }
 
@@ -269,7 +264,7 @@ class ProjectUtilities
 
             String baselineVariableName = null;
 
-            if ( Objects.nonNull( baselineConfig ) )
+            if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 baselineVariableName = baseline.iterator()
                                                .next();
@@ -286,42 +281,44 @@ class ProjectUtilities
             return ProjectUtilities.getVariableNamesFromIntersection( left,
                                                                       right,
                                                                       baseline,
-                                                                      projectConfig.getInputs(),
-                                                                      Objects.nonNull( baselineConfig ) );
+                                                                      declaration );
         }
     }
 
     /**
      * Tests whether there is a desired time scale present that supports lenient upscaling for the specified side of 
      * data.
-     * @param lrb the orientation of the data, required
-     * @param desiredTimeScale the desired time scale, optional
-     * @return true if the desiredTimeScale is not null and supports lenient upscaling for the specified lrb, else false
+     * @param orientation the orientation of the data, required
+     * @param desiredTimeScale the desired timescale, optional
+     * @param lenience whether the timescale is lenient, required if the timescale is provided
+     * @return true if the desiredTimeScale is not null and supports lenient upscaling for the specified orientation
      */
 
-    static boolean isUpscalingLenient( LeftOrRightOrBaseline lrb, DesiredTimeScaleConfig desiredTimeScale )
+    static boolean isUpscalingLenient( DatasetOrientation orientation,
+                                       TimeScale desiredTimeScale,
+                                       TimeScaleLenience lenience )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        if ( Objects.isNull( desiredTimeScale ) )
+        if ( Objects.isNull( desiredTimeScale )
+             || Objects.isNull( desiredTimeScale.timeScale() ) )
         {
             return false;
         }
 
-        LenienceType lenience = desiredTimeScale.getLenient();
-
         return switch ( lenience )
                 {
-                    case ALL, TRUE -> true;
-                    case NONE, FALSE -> false;
-                    case LEFT -> lrb == LeftOrRightOrBaseline.LEFT;
-                    case RIGHT -> lrb == LeftOrRightOrBaseline.RIGHT;
-                    case BASELINE -> lrb == LeftOrRightOrBaseline.BASELINE;
-                    case LEFT_AND_RIGHT -> lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.RIGHT;
-                    case LEFT_AND_BASELINE ->
-                            lrb == LeftOrRightOrBaseline.LEFT || lrb == LeftOrRightOrBaseline.BASELINE;
-                    case RIGHT_AND_BASELINE ->
-                            lrb == LeftOrRightOrBaseline.RIGHT || lrb == LeftOrRightOrBaseline.BASELINE;
+                    case ALL -> true;
+                    case NONE -> false;
+                    case LEFT -> orientation == DatasetOrientation.LEFT;
+                    case RIGHT -> orientation == DatasetOrientation.RIGHT;
+                    case BASELINE -> orientation == DatasetOrientation.BASELINE;
+                    case LEFT_AND_RIGHT -> orientation == DatasetOrientation.LEFT
+                                           || orientation == DatasetOrientation.RIGHT;
+                    case LEFT_AND_BASELINE -> orientation == DatasetOrientation.LEFT
+                                              || orientation == DatasetOrientation.BASELINE;
+                    case RIGHT_AND_BASELINE -> orientation == DatasetOrientation.RIGHT
+                                               || orientation == DatasetOrientation.BASELINE;
                 };
     }
 
@@ -330,16 +327,14 @@ class ProjectUtilities
      * @param left the possible left variable names
      * @param right the possible right variable names
      * @param baseline the possible baseline variable names
-     * @param inputs the inputs declaration
-     * @param hasBaseline whether the project has a baseline defined
-     * @throws ProjectConfigException if a unique name could not be discovered
+     * @param declaration the declaration
+     * @throws DeclarationException if a unique name could not be discovered
      */
 
     private static VariableNames getVariableNamesFromIntersection( Set<String> left,
                                                                    Set<String> right,
                                                                    Set<String> baseline,
-                                                                   Inputs inputs,
-                                                                   boolean hasBaseline )
+                                                                   EvaluationDeclaration declaration )
     {
         LOGGER.debug( "Discovered several variable names for the data sources. Will attempt to intersect them and "
                       + "discover one. The LEFT variable names are {}, the RIGHT variable names are {} and the "
@@ -351,7 +346,7 @@ class ProjectUtilities
         Set<String> intersection = new HashSet<>( left );
         intersection.retainAll( right );
 
-        if ( hasBaseline )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             intersection.retainAll( baseline );
         }
@@ -362,7 +357,7 @@ class ProjectUtilities
                                                   .next();
             String baselineVariableName = null;
 
-            if ( hasBaseline )
+            if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 baselineVariableName = leftVariableName;
             }
@@ -374,50 +369,57 @@ class ProjectUtilities
         }
         else
         {
-            throw new ProjectConfigException( inputs,
-                                              "While attempting to auto-detect "
-                                              + "the variable to evaluate, failed to identify a "
-                                              + "single variable name that is common to all data "
-                                              + "sources. Discovered LEFT variable names of "
-                                              + left
-                                              + ", RIGHT variable names of "
-                                              + right
-                                              + " and BASELINE variable names of "
-                                              + baseline
-                                              + ". Please declare an explicit variable name for "
-                                              + "each required data source to disambiguate." );
+            throw new DeclarationException( "While attempting to auto-detect "
+                                            + "the variable to evaluate, failed to identify a "
+                                            + "single variable name that is common to all data "
+                                            + "sources. Discovered LEFT variable names of "
+                                            + left
+                                            + ", RIGHT variable names of "
+                                            + right
+                                            + " and BASELINE variable names of "
+                                            + baseline
+                                            + ". Please declare an explicit variable name for "
+                                            + "each required data source to disambiguate." );
         }
     }
 
     /**
      * Returns the declared feature groups.
      * @param featuresForGroups the fully qualified features available to correlate with the declared groups
-     * @param pairConfig the pair configuration
+     * @param declaration the declaration
      * @return the declared groups
-     * @throws ProjectConfigException if some groups were declared but no features are available to correlate with them
+     * @throws DeclarationException if some groups were declared but no features are available to correlate with them
      */
 
-    private static List<FeaturePool> getAndValidateDeclaredFeatureGroups( Set<FeatureTuple> featuresForGroups,
-                                                                          PairConfig pairConfig )
+    private static Set<GeometryGroup> getAndValidateDeclaredFeatureGroups( Set<FeatureTuple> featuresForGroups,
+                                                                           EvaluationDeclaration declaration )
     {
-        List<FeaturePool> declaredGroups = pairConfig.getFeatureGroup();
+        FeatureGroups declaredGroups = declaration.featureGroups();
 
         // Some groups declared, but no fully qualified features available to correlate with the declared features
-        if ( !declaredGroups.isEmpty() && featuresForGroups.isEmpty() )
+        if ( Objects.nonNull( declaredGroups )
+             && !declaredGroups.geometryGroups()
+                               .isEmpty()
+             && featuresForGroups.isEmpty() )
         {
-            throw new ProjectConfigException( pairConfig,
-                                              "Discovered "
-                                              + declaredGroups.size()
-                                              + " feature group in the project declaration, but could not "
-                                              + "find any features with time-series data to correlate with "
-                                              + "the declared features in these groups. If the feature "
-                                              + "names are missing for some sides of data, it may help to "
-                                              + "qualify them, else to use an explicit "
-                                              + "\"featureDimension\" for all sides of data, in order to "
-                                              + "aid interpolation of the feature names." );
+            throw new DeclarationException( "Discovered "
+                                            + declaredGroups.geometryGroups()
+                                                            .size()
+                                            + " feature group in the project declaration, but could not "
+                                            + "find any features with time-series data to correlate with "
+                                            + "the declared features in these groups. If the feature "
+                                            + "names are missing for some sides of data, it may help to "
+                                            + "qualify them, else to use an explicit "
+                                            + "'feature_authority' for all sides of data, in order to "
+                                            + "aid interpolation of the feature names." );
         }
 
-        return declaredGroups;
+        Set<GeometryGroup> geometries = new HashSet<>();
+        if ( Objects.nonNull( declaredGroups ) )
+        {
+            geometries.addAll( declaredGroups.geometryGroups() );
+        }
+        return Collections.unmodifiableSet( geometries );
     }
 
     /**
@@ -426,13 +428,14 @@ class ProjectUtilities
      * @return a group name
      */
 
-    private static String getFeatureGroupNameFrom( FeaturePool declaredGroup,
+    private static String getFeatureGroupNameFrom( GeometryGroup declaredGroup,
                                                    AtomicInteger groupNumber )
     {
         // Explicit name, use it
-        if ( Objects.nonNull( declaredGroup.getName() ) )
+        if ( !declaredGroup.getRegionName()
+                           .isBlank() )
         {
-            return declaredGroup.getName();
+            return declaredGroup.getRegionName();
         }
 
         else
@@ -446,15 +449,17 @@ class ProjectUtilities
      * @param featureToFind the declared feature to find
      * @param featuresToSearch the fully elaborated feature tuples to search
      * @return a matching tuple or null if no tuple was found
-     * @throws ProjectConfigException if more than one matching tuple was found
+     * @throws DeclarationException if more than one matching tuple was found
      */
 
-    private static FeatureTuple
-    findFeature( NamedFeature featureToFind, Set<FeatureTuple> featuresToSearch, FeaturePool nextGroup )
+    private static FeatureTuple findFeature( GeometryTuple featureToFind,
+                                             Set<FeatureTuple> featuresToSearch,
+                                             GeometryGroup nextGroup )
     {
         // Find the left-name matching features first.
         Set<FeatureTuple> leftMatched = featuresToSearch.stream()
-                                                        .filter( next -> Objects.equals( featureToFind.getLeft(),
+                                                        .filter( next -> Objects.equals( featureToFind.getLeft()
+                                                                                                      .getName(),
                                                                                          next.getLeft().getName() ) )
                                                         .collect( Collectors.toSet() );
 
@@ -474,7 +479,8 @@ class ProjectUtilities
 
         // Find the right-name matching features second.
         Set<FeatureTuple> rightMatched = leftMatched.stream()
-                                                    .filter( next -> Objects.equals( featureToFind.getRight(),
+                                                    .filter( next -> Objects.equals( featureToFind.getRight()
+                                                                                                  .getName(),
                                                                                      next.getRight().getName() ) )
                                                     .collect( Collectors.toSet() );
 
@@ -494,7 +500,8 @@ class ProjectUtilities
 
         // Find the baseline-name matching features last.
         Set<FeatureTuple> baselineMatched = rightMatched.stream()
-                                                        .filter( next -> Objects.equals( featureToFind.getBaseline(),
+                                                        .filter( next -> Objects.equals( featureToFind.getBaseline()
+                                                                                                      .getName(),
                                                                                          next.getBaseline()
                                                                                              .getName() ) )
                                                         .collect( Collectors.toSet() );
@@ -513,18 +520,17 @@ class ProjectUtilities
             return baselineMatched.iterator().next();
         }
 
-        throw new ProjectConfigException( nextGroup,
-                                          "Discovered a feature group called '" + nextGroup.getName()
-                                          + "', which has an ambiguous feature tuple. Please additionally "
-                                          + "qualify the feature with left name "
-                                          + featureToFind.getLeft()
-                                          + ", right name "
-                                          + featureToFind.getRight()
-                                          + " and baseline name "
-                                          + featureToFind.getBaseline()
-                                          + ", which matches the feature tuples "
-                                          + baselineMatched
-                                          + "." );
+        throw new DeclarationException( "Discovered a feature group called '" + nextGroup.getRegionName()
+                                        + "', which has an ambiguous feature tuple. Please additionally "
+                                        + "qualify the feature with left name "
+                                        + featureToFind.getLeft()
+                                        + ", right name "
+                                        + featureToFind.getRight()
+                                        + " and baseline name "
+                                        + featureToFind.getBaseline()
+                                        + ", which matches the feature tuples "
+                                        + baselineMatched
+                                        + "." );
     }
 
 }

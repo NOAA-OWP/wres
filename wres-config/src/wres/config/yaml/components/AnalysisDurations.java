@@ -1,13 +1,12 @@
 package wres.config.yaml.components;
 
-import java.time.temporal.ChronoUnit;
-import java.util.Objects;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Duration;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
-import wres.config.yaml.serializers.ChronoUnitSerializer;
+import wres.config.yaml.deserializers.AnalysisDurationIntervalDeserializer;
+import wres.config.yaml.serializers.AnalysisDurationIntervalSerializer;
 
 /**
  * Analysis durations.
@@ -15,7 +14,7 @@ import wres.config.yaml.serializers.ChronoUnitSerializer;
  * @param maximum the latest analysis duration
  */
 @RecordBuilder
-public record AnalysisDurations( @JsonProperty( "minimum_exclusive" ) Integer minimumExclusive,
-                                 @JsonProperty( "maximum" ) Integer maximum,
-                                 @JsonSerialize( using = ChronoUnitSerializer.class )
-                                 @JsonProperty( "unit" ) ChronoUnit unit ) {}
+@JsonSerialize( using = AnalysisDurationIntervalSerializer.class )
+@JsonDeserialize( using = AnalysisDurationIntervalDeserializer.class )
+public record AnalysisDurations( Duration minimumExclusive,
+                                 Duration maximum ) {}

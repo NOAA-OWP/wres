@@ -10,7 +10,7 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 
@@ -27,7 +27,7 @@ class RetrievalEvent extends Event
 {
     @Label( "Orientation" )
     @Description( "The side of the pairing from which the time series data originates." )
-    private final String lrb;
+    private final String orientation;
 
     @Label( "Time window" )
     @Description( "The temporal boundaries of the pool from which the time series data originates." )
@@ -42,7 +42,7 @@ class RetrievalEvent extends Event
     private final String variableName;
 
     /**
-     * @param lrb the orientation of the time-series data
+     * @param orientation the orientation of the time-series data
      * @param timeWindow the time window, optional
      * @param features the geographic features
      * @param variableName the variable name
@@ -50,34 +50,33 @@ class RetrievalEvent extends Event
      * @throws NullPointerException if any required input is null
      */
 
-    static RetrievalEvent of( LeftOrRightOrBaseline lrb,
+    static RetrievalEvent of( DatasetOrientation orientation,
                               TimeWindowOuter timeWindow,
                               Set<Feature> features,
                               String variableName )
     {
-        return new RetrievalEvent( lrb, timeWindow, features, variableName );
+        return new RetrievalEvent( orientation, timeWindow, features, variableName );
     }
 
     /**
      * Hidden constructor.
-     * @param lrb the orientation of the time-series data
+     * @param orientation the orientation of the time-series data
      * @param timeWindow the time window, optional
      * @param features the geographic features
      * @param variableName the variable name
-     * @return an instance
      * @throws NullPointerException if any required input is null
      */
 
-    private RetrievalEvent( LeftOrRightOrBaseline lrb,
+    private RetrievalEvent( DatasetOrientation orientation,
                             TimeWindowOuter timeWindow,
                             Set<Feature> features,
                             String variableName )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
         Objects.requireNonNull( features );
         Objects.requireNonNull( variableName );
 
-        this.lrb = lrb.toString();
+        this.orientation = orientation.toString();
 
         // Use the short names only
         this.features = features.stream()

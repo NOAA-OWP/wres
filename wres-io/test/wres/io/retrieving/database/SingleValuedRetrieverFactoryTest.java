@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,15 +34,16 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureTuple;
@@ -58,6 +58,7 @@ import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
@@ -76,8 +77,6 @@ public class SingleValuedRetrieverFactoryTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
@@ -123,14 +122,9 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( 7 );
         Mockito.when( this.mockSystemSettings.getMaximumIngestThreads() )
                .thenReturn( 7 );
-        PairConfig pairConfig = Mockito.mock( PairConfig.class );
-        Mockito.when( pairConfig.getGridSelection() )
-               .thenReturn( List.of() );
-        Mockito.when( this.mockProjectConfig.getPair() )
-               .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
-        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Create the tables
@@ -345,59 +339,29 @@ public class SingleValuedRetrieverFactoryTest
 
     private void createSingleValuedRetrieverFactory()
     {
-        // Mock the sufficient elements of the ProjectConfig
-        PairConfig pairsConfig = new PairConfig( UNIT,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null );
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder()
+                                                               .name( VARIABLE_NAME )
+                                                               .build() )
+                                     .build();
 
-        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
-                                                      sourceList,
-                                                      new Variable( VARIABLE_NAME, null ),
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
-
-        // Same right and baseline
-        DataSourceBaselineConfig rightAndBaseline =
-                new DataSourceBaselineConfig( DatasourceType.fromValue( "single valued forecasts" ),
-                                              sourceList,
-                                              new Variable( VARIABLE_NAME, null ),
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              false );
-
-        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
-                                                                      rightAndBaseline,
-                                                                      rightAndBaseline );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .variable( VariableBuilder.builder()
+                                                                .name( VARIABLE_NAME )
+                                                                .build() )
+                                      .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( right )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .baseline( baseline )
+                                            .unit( UNIT )
+                                            .build();
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, null );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
@@ -406,13 +370,24 @@ public class SingleValuedRetrieverFactoryTest
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
-        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
-        Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any( LeftOrRightOrBaseline.class ) ) )
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( PROJECT_ID );
+        Mockito.when( project.getFeatures() )
+               .thenReturn( allFeatures );
+        Mockito.when( project.getVariableName( Mockito.any( DatasetOrientation.class ) ) )
                .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.hasBaseline() ).thenReturn( true );
-        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( true );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+               .thenReturn( left );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+               .thenReturn( right );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.BASELINE ) )
+               .thenReturn( right ); // Same as right
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
 
         // Create the factory instance
         this.factoryToTest = SingleValuedRetrieverFactory.of( project, this.wresDatabase, this.caches );
@@ -427,41 +402,47 @@ public class SingleValuedRetrieverFactoryTest
 
     private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException, IOException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
-                                                                    DatasourceType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
-                                                                     DatasourceType.SINGLE_VALUED_FORECASTS );
-        DataSource baselineData =
-                RetrieverTestData.generateBaselineDataSource( DatasourceType.SINGLE_VALUED_FORECASTS );
+        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
+                                                                    DataType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                                     DataType.SINGLE_VALUED_FORECASTS );
+        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DataType.SINGLE_VALUED_FORECASTS );
+        LOGGER.debug( "leftData: {}", leftData );
+        LOGGER.debug( "rightData: {}", rightData );
+        LOGGER.debug( "baselineData: {}", rightData );
+
+        String featureName = FEATURE.getName();
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+        Set<GeometryTuple> features =
+                Set.of( GeometryTuple.newBuilder()
+                                     .setLeft( geometry )
+                                     .setRight( geometry )
+                                     .setBaseline( geometry )
+                                     .build() );
+
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( right )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .baseline( baseline )
+                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .build();
 
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
         LOGGER.debug( "baselineData: {}", baselineData );
-
-        ProjectConfig.Inputs fakeInputs =
-                new ProjectConfig.Inputs( leftData.getContext(),
-                                          rightData.getContext(),
-                                          ( DataSourceBaselineConfig ) baselineData.getContext() );
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( FEATURE.getName(),
-                                                                           FEATURE.getName(),
-                                                                           FEATURE.getName() ) ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
 
         IngestResult ingestResultOne;
         IngestResult ingestResultTwo;
@@ -469,7 +450,6 @@ public class SingleValuedRetrieverFactoryTest
         IngestResult ingestResultOneBaseline;
         IngestResult ingestResultTwoBaseline;
 
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
         try ( DatabaseTimeSeriesIngester ingesterOne =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -551,7 +531,7 @@ public class SingleValuedRetrieverFactoryTest
         LOGGER.debug( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.debug( "ingestResultThree: {}", ingestResultThree );
         Project project = Projects.getProject( this.wresDatabase,
-                                               fakeConfig,
+                                               declaration,
                                                this.caches,
                                                null,
                                                results );

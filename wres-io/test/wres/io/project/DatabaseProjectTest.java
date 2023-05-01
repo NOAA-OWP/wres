@@ -9,7 +9,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -28,14 +27,13 @@ import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.FeaturePool;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeatureGroups;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
@@ -51,6 +49,7 @@ import wres.io.database.details.TimeScaleDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.TestDatabase;
 import wres.io.database.details.TimeSeries;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -129,8 +128,8 @@ class DatabaseProjectTest
         this.addTheDatabaseAndTables();
 
         // Get a project for testing, backed by data
-        ProjectConfig projectConfig = this.getProjectConfig();
-        this.project = this.getProject( projectConfig );
+        EvaluationDeclaration declaration = this.getDeclaration();
+        this.project = this.getProject( declaration );
     }
 
     @AfterEach
@@ -232,11 +231,12 @@ class DatabaseProjectTest
     }
 
     /**
+     * @param declaration the declaration
      * @return a project for testing, backed by data
      * @throws SQLException if the detailed set-up fails
      */
 
-    private DatabaseProject getProject( ProjectConfig projectConfig ) throws SQLException
+    private DatabaseProject getProject( EvaluationDeclaration declaration ) throws SQLException
     {
         // Add two features
         FeatureDetails feature = new FeatureDetails( FEATURE );
@@ -308,7 +308,7 @@ class DatabaseProjectTest
                 new DatabaseProject( this.wresDatabase,
                                      this.mockCaches,
                                      null,
-                                     projectConfig,
+                                     declaration,
                                      PROJECT_HASH );
         boolean saved = project.save();
 
@@ -324,7 +324,8 @@ class DatabaseProjectTest
         String rightSourceInsert = MessageFormat.format( sourceInsert,
                                                          project.getId(),
                                                          sourceId,
-                                                         LeftOrRightOrBaseline.RIGHT.value() );
+                                                         DatasetOrientation.RIGHT.name()
+                                                                                 .toLowerCase() );
 
         DataScripter script = new DataScripter( this.wresDatabase,
                                                 rightSourceInsert );
@@ -335,7 +336,8 @@ class DatabaseProjectTest
         String leftSourceInsert = MessageFormat.format( sourceInsert,
                                                         project.getId(),
                                                         sourceId,
-                                                        LeftOrRightOrBaseline.LEFT.value() );
+                                                        DatasetOrientation.LEFT.name()
+                                                                               .toLowerCase() );
 
         DataScripter leftScript = new DataScripter( this.wresDatabase,
                                                     leftSourceInsert );
@@ -345,7 +347,8 @@ class DatabaseProjectTest
         String rightSourceInsertTwo = MessageFormat.format( sourceInsert,
                                                             project.getId(),
                                                             sourceTwoId,
-                                                            LeftOrRightOrBaseline.RIGHT.value() );
+                                                            DatasetOrientation.RIGHT.name()
+                                                                                    .toLowerCase() );
 
         DataScripter rightScriptTwo = new DataScripter( this.wresDatabase,
                                                         rightSourceInsertTwo );
@@ -356,7 +359,8 @@ class DatabaseProjectTest
         String leftSourceInsertTwo = MessageFormat.format( sourceInsert,
                                                            project.getId(),
                                                            sourceTwoId,
-                                                           LeftOrRightOrBaseline.LEFT.value() );
+                                                           DatasetOrientation.LEFT.name()
+                                                                                  .toLowerCase() );
 
         DataScripter leftScriptTwo = new DataScripter( this.wresDatabase,
                                                        leftSourceInsertTwo );
@@ -370,62 +374,45 @@ class DatabaseProjectTest
      * @return some project declaration
      */
 
-    private ProjectConfig getProjectConfig()
+    private EvaluationDeclaration getDeclaration()
     {
         String featureName = FEATURE.getName();
         String anotherName = ANOTHER_FEATURE.getName();
-        List<NamedFeature> features =
-                List.of( new NamedFeature( featureName, featureName, null ),
-                         new NamedFeature( anotherName, anotherName, null ) );
-        List<FeaturePool> featureGroups = List.of( new FeaturePool( features, "A feature group!" ) );
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+        Geometry anotherGeometry = Geometry.newBuilder()
+                                           .setName( anotherName )
+                                           .build();
+        Set<GeometryTuple> features =
+                Set.of( GeometryTuple.newBuilder()
+                                     .setLeft( geometry )
+                                     .setRight( geometry )
+                                     .build(),
+                        GeometryTuple.newBuilder()
+                                     .setLeft( anotherGeometry )
+                                     .setRight( anotherGeometry )
+                                     .build() );
+        Set<GeometryGroup> featureGroups = Set.of( GeometryGroup.newBuilder()
+                                                                .setRegionName( "A feature group!" )
+                                                                .addAllGeometryTuples( features )
+                                                                .build() );
 
-        Inputs inputs = new Inputs( new DataSourceConfig( DatasourceType.OBSERVATIONS,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null ),
-                                    new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null,
-                                                          null ),
-                                    null );
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
 
-        return new ProjectConfig( inputs,
-                                  new PairConfig( null,
-                                                  null,
-                                                  null,
-                                                  features,
-                                                  featureGroups,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null ),
-                                  null,
-                                  null,
-                                  null,
-                                  "test_project" );
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+
+        return EvaluationDeclarationBuilder.builder()
+                                           .left( left )
+                                           .right( right )
+                                           .features( new wres.config.yaml.components.Features( features ) )
+                                           .featureGroups( new FeatureGroups( featureGroups ) )
+                                           .label( "test_project" )
+                                           .build();
     }
 
     @Test
@@ -437,7 +424,8 @@ class DatabaseProjectTest
         Project project = new DatabaseProject( this.wresDatabase,
                                                this.mockCaches,
                                                null,
-                                               new ProjectConfig( null, null, null, null, null, null ),
+                                               EvaluationDeclarationBuilder.builder()
+                                                                           .build(),
                                                "321" );
         boolean saved = project.save();
         assertTrue( saved, "Expected project details to have performed insert." );

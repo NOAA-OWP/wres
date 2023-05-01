@@ -509,8 +509,7 @@ public final class Slicer
      * @throws NullPointerException if the input is null
      */
 
-    public static Map<Integer, List<Pair<Double, Ensemble>>>
-    filterByRightSize( List<Pair<Double, Ensemble>> input )
+    public static Map<Integer, List<Pair<Double, Ensemble>>> filterByRightSize( List<Pair<Double, Ensemble>> input )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
@@ -758,8 +757,7 @@ public final class Slicer
      * @return the statistics grouped by context
      */
 
-    public static <T extends Statistic<?>> Map<DatasetOrientation, List<T>>
-    getStatisticsGroupedByContext( List<T> input )
+    public static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> getStatisticsGroupedByContext( List<T> input )
     {
 
         Function<? super T, DatasetOrientation> classifier = statistic -> {
@@ -817,7 +815,7 @@ public final class Slicer
     {
         return ( input, digits ) -> {
             // #115230
-            if( !Double.isFinite( input ) )
+            if ( !Double.isFinite( input ) )
             {
                 return input;
             }

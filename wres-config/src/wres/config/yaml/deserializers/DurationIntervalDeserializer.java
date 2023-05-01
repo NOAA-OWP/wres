@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Custom deserializer for a {@link Duration}.
+ * Custom deserializer for a pair of {@link Duration} that represents an interval.
  *
  * @author James Brown
  */

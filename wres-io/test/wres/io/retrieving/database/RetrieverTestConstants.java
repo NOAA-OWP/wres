@@ -15,8 +15,7 @@ class RetrieverTestConstants
     static final String PROJECT_HASH = "123deadbeef456";
 
 
-    static final Feature FEATURE = Feature.of(
-            MessageFactory.getGeometry( "F" ) );
+    static final Feature FEATURE = Feature.of( MessageFactory.getGeometry( "F" ) );
     static final String VARIABLE_NAME = "Q";
 
     static final String UNIT = "[ft_i]3/s";

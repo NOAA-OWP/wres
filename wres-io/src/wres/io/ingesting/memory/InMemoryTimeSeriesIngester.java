@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -46,17 +47,22 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
                 DataSource innerSource = nextTuple.getDataSource();
-                
+                DatasetOrientation innerOrientation =
+                        DatasetOrientation.valueOf( innerSource.getLeftOrRightOrBaseline()
+                                                               .name() );
+
                 // Single-valued time-series?
                 if ( nextTuple.hasSingleValuedTimeSeries() )
                 {
                     this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
-                                                                       innerSource.getLeftOrRightOrBaseline() );
+                                                                       innerOrientation );
 
                     // Add in all other contexts too
                     for ( LeftOrRightOrBaseline lrb : innerSource.getLinks() )
                     {
-                        this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(), lrb );
+                        DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
+                        this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
+                                                                           linkOrientation );
                     }
                 }
 
@@ -64,12 +70,14 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                 if ( nextTuple.hasEnsembleTimeSeries() )
                 {
                     this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
-                                                                   innerSource.getLeftOrRightOrBaseline() );
+                                                                   innerOrientation );
 
                     // Add in all other contexts too
                     for ( LeftOrRightOrBaseline lrb : innerSource.getLinks() )
                     {
-                        this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(), lrb );
+                        DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
+                        this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
+                                                                       linkOrientation );
                     }
                 }
             }

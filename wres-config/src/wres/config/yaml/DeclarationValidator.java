@@ -1950,7 +1950,8 @@ public class DeclarationValidator
         if ( Objects.nonNull( analysisDurations )
              && Objects.nonNull( analysisDurations.minimumExclusive() )
              && Objects.nonNull( analysisDurations.maximum() )
-             && ( analysisDurations.maximum() < analysisDurations.minimumExclusive() ) )
+             && ( analysisDurations.maximum()
+                                   .compareTo( analysisDurations.minimumExclusive() ) < 0 ) )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()

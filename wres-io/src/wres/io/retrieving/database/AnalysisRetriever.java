@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DatasourceType;
+import wres.config.yaml.components.DataType;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieving.DuplicatePolicy;
@@ -51,7 +51,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
         if ( Objects.nonNull( super.getTimeWindow() ) )
         {
             analysisRanges = RetrieverUtilities.adjustForAnalysisTypeIfRequired( super.getTimeWindow(),
-                                                                                 DatasourceType.ANALYSES,
+                                                                                 DataType.ANALYSES,
                                                                                  this.getEarliestAnalysisDuration(),
                                                                                  this.getLatestAnalysisDuration() );
         }
@@ -66,7 +66,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                                            .setProjectId( super.getProjectId() )
                                                            .setDeclaredExistingTimeScale( super.getDeclaredExistingTimeScale() )
                                                            .setDesiredTimeScale( super.getDesiredTimeScale() )
-                                                           .setLeftOrRightOrBaseline( super.getLeftOrRightOrBaseline() )
+                                                           .setDatasetOrientation( super.getDatasetOrientation() )
                                                            .setTimeWindow( analysisRanges )
                                                            .setFeatures( super.getFeatures() )
                                                            .setVariableName( super.getVariableName() )

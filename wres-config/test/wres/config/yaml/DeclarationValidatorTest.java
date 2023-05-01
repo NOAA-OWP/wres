@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 
@@ -546,7 +545,8 @@ class DeclarationValidatorTest
         TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
         LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofHours( 3 ),
                                                               java.time.Duration.ofHours( 1 ) );
-        AnalysisDurations analysisDurations = new AnalysisDurations( 1, 0, ChronoUnit.HOURS );
+        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ofHours( 1 ) ,
+                                                                     java.time.Duration.ZERO );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )

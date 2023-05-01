@@ -21,7 +21,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.NoDataException;
 import wres.io.data.DataProvider;
@@ -45,7 +45,7 @@ public class Projects
     /**
      * Creates a {@link Project} backed by a database.
      * @param database The database to use
-     * @param projectConfig the projectConfig to ingest
+     * @param declaration the project declaration
      * @param caches the database caches/ORMs
      * @param griddedFeatures the gridded features cache, if required
      * @param ingestResults the ingest results
@@ -55,13 +55,13 @@ public class Projects
      * @throws IngestException when anything else goes wrong
      */
     public static Project getProject( Database database,
-                                      ProjectConfig projectConfig,
+                                      EvaluationDeclaration declaration,
                                       DatabaseCaches caches,
                                       GriddedFeatures griddedFeatures,
                                       List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( database );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( caches );
         Objects.requireNonNull( ingestResults );
 
@@ -70,7 +70,7 @@ public class Projects
             return Projects.getDatabaseProject( database,
                                                 caches,
                                                 griddedFeatures,
-                                                projectConfig,
+                                                declaration,
                                                 ingestResults );
         }
         catch ( SQLException | IngestException | PreIngestException e )
@@ -81,20 +81,20 @@ public class Projects
 
     /**
      * Creates a {@link Project} backed by an in-memory {@link TimeSeriesStore}.
-     * @param projectConfig the projectConfig
+     * @param declaration the project declaration
      * @param timeSeriesStore the store of time-series data
      * @param ingestResults the ingest results
      * @return the project
      */
-    public static Project getProject( ProjectConfig projectConfig,
+    public static Project getProject( EvaluationDeclaration declaration,
                                       TimeSeriesStore timeSeriesStore,
                                       List<IngestResult> ingestResults )
     {
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( timeSeriesStore );
         Objects.requireNonNull( ingestResults );
 
-        return new InMemoryProject( projectConfig, timeSeriesStore, ingestResults );
+        return new InMemoryProject( declaration, timeSeriesStore, ingestResults );
     }
 
     /**
@@ -102,7 +102,7 @@ public class Projects
      * @param database the database
      * @param caches the database caches
      * @param griddedFeatures the gridded features cache
-     * @param projectConfig the declaration that produced the ingest results
+     * @param declaration the declaration that produced the ingest results
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
@@ -113,7 +113,7 @@ public class Projects
     private static Project getDatabaseProject( Database database,
                                                DatabaseCaches caches,
                                                GriddedFeatures griddedFeatures,
-                                               ProjectConfig projectConfig,
+                                               EvaluationDeclaration declaration,
                                                List<IngestResult> ingestResults )
             throws SQLException
     {
@@ -146,7 +146,7 @@ public class Projects
         DatabaseProject project = Projects.getDatabaseProjectStepTwo( database,
                                                                       caches,
                                                                       griddedFeatures,
-                                                                      projectConfig,
+                                                                      declaration,
                                                                       leftIds,
                                                                       rightIds,
                                                                       baselineIds );
@@ -164,7 +164,7 @@ public class Projects
      * @param database the database
      * @param caches the database caches
      * @param griddedFeatures the gridded features cache
-     * @param projectConfig the config that produced the ingest results
+     * @param declaration the declaration that produced the ingest results
      * @param leftIds the left-sided data identifiers
      * @param rightIds the right-sided data identifiers
      * @param baselineIds the baseline-sided data identifiers
@@ -174,7 +174,7 @@ public class Projects
     private static DatabaseProject getDatabaseProjectStepTwo( Database database,
                                                               DatabaseCaches caches,
                                                               GriddedFeatures griddedFeatures,
-                                                              ProjectConfig projectConfig,
+                                                              EvaluationDeclaration declaration,
                                                               long[] leftIds,
                                                               long[] rightIds,
                                                               long[] baselineIds )
@@ -233,7 +233,7 @@ public class Projects
                 Projects.getProject( database,
                                      caches,
                                      griddedFeatures,
-                                     projectConfig,
+                                     declaration,
                                      leftHashes,
                                      rightHashes,
                                      baselineHashes );
@@ -434,7 +434,7 @@ public class Projects
      * @param database the database
      * @param caches the database ORM
      * @param griddedFeatures the gridded features, if any
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @param leftHashes the left hashes
      * @param rightHashes the right hashes
      * @param baselineHashes the baseline hashes
@@ -443,14 +443,14 @@ public class Projects
     private static Pair<DatabaseProject, Boolean> getProject( Database database,
                                                               DatabaseCaches caches,
                                                               GriddedFeatures griddedFeatures,
-                                                              ProjectConfig projectConfig,
+                                                              EvaluationDeclaration declaration,
                                                               String[] leftHashes,
                                                               String[] rightHashes,
                                                               String[] baselineHashes )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( caches );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( leftHashes );
         Objects.requireNonNull( rightHashes );
         Objects.requireNonNull( baselineHashes );
@@ -461,7 +461,7 @@ public class Projects
         DatabaseProject details = new DatabaseProject( database,
                                                        caches,
                                                        griddedFeatures,
-                                                       projectConfig,
+                                                       declaration,
                                                        identity );
         boolean thisCallCausedInsert = details.save();
         LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",

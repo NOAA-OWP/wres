@@ -1,6 +1,7 @@
 package wres.pipeline.pooling;
 
-import java.util.ArrayList;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -13,16 +14,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DateCondition;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.IntBoundsType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.LeadTimeIntervalBuilder;
+import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
+import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -57,69 +61,47 @@ class PoolsGeneratorTest
     /**
      * Tests {@link PoolsGenerator#get()} using project declaration that is representative of system test
      * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c.
-     * @throws Exception if the test set-up fails
      */
 
     @Test
-    void testGetProducesEighteenPoolSuppliersForSingleValuedCase() throws Exception
+    void testGetProducesEighteenPoolSuppliersForSingleValuedCase()
     {
-        // Mock the sufficient elements of the ProjectConfig
-        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
-        // (2551-03-17T00:00:00Z, 2551-03-20T00:00:00Z)
-        DateCondition issuedDatesConfig = new DateCondition( "2551-03-17T00:00:00Z", "2551-03-20T00:00:00Z" );
-        PoolingWindowConfig leadTimesPoolingWindowConfig =
-                new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
-        PoolingWindowConfig issuedDatesPoolingWindowConfig =
-                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( CFS,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 leadBoundsConfig,
-                                                 null,
-                                                 null,
-                                                 issuedDatesConfig,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 issuedDatesPoolingWindowConfig,
-                                                 null,
-                                                 leadTimesPoolingWindowConfig,
-                                                 null,
-                                                 null );
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 40 ) )
+                                                            .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( Duration.ofHours( 23 ) )
+                                                  .frequency( Duration.ofHours( 17 ) )
+                                                  .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2551-03-17T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2551-03-20T00:00:00Z" ) )
+                                                         .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder().name( "DISCHARGE" )
+                                                               .build() )
+                                     .build();
 
-        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
-                                                      sourceList,
-                                                      new Variable( "DISCHARGE", null ),
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
-
-        DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "single valued forecasts" ),
-                                                       sourceList,
-                                                       new Variable( STREAMFLOW, null ),
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null );
-
-        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
-                                                                      right,
-                                                                      null );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .variable( VariableBuilder.builder().name( "STREAMFLOW" )
+                                                                .build() )
+                                      .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .unit( CFS )
+                                                                        .leadTimes( leadTimes )
+                                                                        .leadTimePools( leadTimePools )
+                                                                        .referenceDates( referenceDates )
+                                                                        .referenceDatePools( referenceTimePools )
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
 
         Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
         GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
@@ -128,17 +110,30 @@ class PoolsGeneratorTest
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
-        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( 12345L );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.LEFT ) ).thenReturn( "DISCHARGE" );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) ).thenReturn( null );
-        Mockito.when( project.hasBaseline() ).thenReturn( false );
-        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-        Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
-        Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( 12345L );
+        Mockito.when( project.getVariableName( DatasetOrientation.LEFT ) )
+               .thenReturn( "DISCHARGE" );
+        Mockito.when( project.getVariableName( DatasetOrientation.RIGHT ) )
+               .thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
+               .thenReturn( null );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+               .thenReturn( left );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+               .thenReturn( right );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
 
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
@@ -167,69 +162,47 @@ class PoolsGeneratorTest
      * scenario505 as of commit 43332ccbb45e712722ef2ca52904b18d8f98397c. While that scenario does not supply ensemble 
      * data, the purpose of this test is to assert that the correct number of pools is generated, rather than the 
      * contents of each pool.
-     * @throws Exception if the test set-up fails
      */
 
     @Test
-    void testGetProducesEighteenPoolSuppliersForEnsembleCase() throws Exception
+    void testGetProducesEighteenPoolSuppliersForEnsembleCase()
     {
-        // Mock the sufficient elements of the ProjectConfig
-        IntBoundsType leadBoundsConfig = new IntBoundsType( 0, 40 );
-        // (2551-03-17T00:00:00Z, 2551-03-20T00:00:00Z)
-        DateCondition issuedDatesConfig = new DateCondition( "2551-03-17T00:00:00Z", "2551-03-20T00:00:00Z" );
-        PoolingWindowConfig leadTimesPoolingWindowConfig =
-                new PoolingWindowConfig( 23, 17, DurationUnit.HOURS );
-        PoolingWindowConfig issuedDatesPoolingWindowConfig =
-                new PoolingWindowConfig( 13, 7, DurationUnit.HOURS );
-        PairConfig pairsConfig = new PairConfig( CFS,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 leadBoundsConfig,
-                                                 null,
-                                                 null,
-                                                 issuedDatesConfig,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 issuedDatesPoolingWindowConfig,
-                                                 null,
-                                                 leadTimesPoolingWindowConfig,
-                                                 null,
-                                                 null );
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 40 ) )
+                                                            .build();
+        TimePools leadTimePools = TimePoolsBuilder.builder()
+                                                  .period( Duration.ofHours( 23 ) )
+                                                  .frequency( Duration.ofHours( 17 ) )
+                                                  .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2551-03-17T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2551-03-20T00:00:00Z" ) )
+                                                         .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder().name( "DISCHARGE" )
+                                                               .build() )
+                                     .build();
 
-        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
-                                                      sourceList,
-                                                      new Variable( "DISCHARGE", null ),
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
-
-        DataSourceConfig right = new DataSourceConfig( DatasourceType.fromValue( "ensemble forecasts" ),
-                                                       sourceList,
-                                                       new Variable( STREAMFLOW, null ),
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null,
-                                                       null );
-
-        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
-                                                                      right,
-                                                                      null );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .variable( VariableBuilder.builder().name( "STREAMFLOW" )
+                                                                .build() )
+                                      .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .unit( CFS )
+                                                                        .leadTimes( leadTimes )
+                                                                        .leadTimePools( leadTimePools )
+                                                                        .referenceDates( referenceDates )
+                                                                        .referenceDatePools( referenceTimePools )
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .build();
 
         Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
         GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
@@ -238,17 +211,30 @@ class PoolsGeneratorTest
 
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
-        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( 12345L );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.LEFT ) ).thenReturn( "DISCHARGE" );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) ).thenReturn( STREAMFLOW );
-        Mockito.when( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) ).thenReturn( null );
-        Mockito.when( project.hasBaseline() ).thenReturn( false );
-        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
-        Mockito.when( project.getFeatureGroups() ).thenReturn( Set.of( featureGroup ) );
-        Mockito.when( project.getMeasurementUnit() ).thenReturn( CFS );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( 12345L );
+        Mockito.when( project.getVariableName( DatasetOrientation.LEFT ) )
+               .thenReturn( "DISCHARGE" );
+        Mockito.when( project.getVariableName( DatasetOrientation.RIGHT ) )
+               .thenReturn( STREAMFLOW );
+        Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
+               .thenReturn( null );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+               .thenReturn( left );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+               .thenReturn( right );
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( false );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
+        Mockito.when( project.getFeatureGroups() )
+               .thenReturn( Set.of( featureGroup ) );
+        Mockito.when( project.getMeasurementUnit() )
+               .thenReturn( CFS );
 
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
+        Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
         // Mock a feature-shaped retriever factory
         RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );

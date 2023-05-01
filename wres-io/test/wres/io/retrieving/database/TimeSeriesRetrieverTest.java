@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -68,8 +68,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getReferenceTimeType() )
                .thenReturn( ReferenceTimeType.T0 );
 
-        Mockito.when( retriever.getLeftOrRightOrBaseline() )
-               .thenReturn( LeftOrRightOrBaseline.LEFT );
+        Mockito.when( retriever.getDatasetOrientation() )
+               .thenReturn( DatasetOrientation.LEFT );
 
         Database database = Mockito.mock( Database.class );
         Connection connection = Mockito.mock( Connection.class );
@@ -192,8 +192,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getReferenceTimeType() )
                .thenReturn( ReferenceTimeType.T0 );
 
-        Mockito.when( retriever.getLeftOrRightOrBaseline() )
-               .thenReturn( LeftOrRightOrBaseline.LEFT );
+        Mockito.when( retriever.getDatasetOrientation() )
+               .thenReturn( DatasetOrientation.LEFT );
 
         Database database = Mockito.mock( Database.class );
         Connection connection = Mockito.mock( Connection.class );
@@ -359,8 +359,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getReferenceTimeType() )
                .thenReturn( ReferenceTimeType.T0 );
 
-        Mockito.when( retriever.getLeftOrRightOrBaseline() )
-               .thenReturn( LeftOrRightOrBaseline.LEFT );
+        Mockito.when( retriever.getDatasetOrientation() )
+               .thenReturn( DatasetOrientation.LEFT );
 
         Database database = Mockito.mock( Database.class );
         Connection connection = Mockito.mock( Connection.class );

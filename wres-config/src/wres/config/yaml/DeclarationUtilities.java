@@ -7,6 +7,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
 import wres.config.xml.ProjectConfigException;
+import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -39,6 +41,7 @@ import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
@@ -48,6 +51,7 @@ import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.MessageFactory;
 
@@ -64,8 +68,6 @@ public class DeclarationUtilities
     private static final String CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION = "Cannot determine time "
                                                                                          + "windows from missing "
                                                                                          + "declaration.";
-    /** Re-used string. */
-    private static final String IS_MISSING = "is missing.";
 
     /**
      * Consumes a {@link EvaluationDeclaration} and returns a {@link Set} of {@link TimeWindow} for evaluation.
@@ -280,6 +282,239 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( tuples );
+    }
+
+    /**
+     * Returns the time scales associated with all declared data sources, if any.
+     * @param declaration the declaration
+     * @return the time scales
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static Set<TimeScale> getSourceTimeScales( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        Set<TimeScale> left = DeclarationUtilities.getSourceTimeScales( declaration.left() );
+        Set<TimeScale> timeScales = new HashSet<>( left );
+        Set<TimeScale> right = DeclarationUtilities.getSourceTimeScales( declaration.right() );
+        timeScales.addAll( right );
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            Set<TimeScale> baseline = DeclarationUtilities.getSourceTimeScales( declaration.baseline()
+                                                                                           .dataset() );
+            timeScales.addAll( baseline );
+        }
+
+        return Collections.unmodifiableSet( timeScales );
+    }
+
+    /**
+     * Adds the timescales associated with the input dataset to the supplied set of timescales.
+     * @param dataset the dataset
+     * @return the source timescales
+     * @throws NullPointerException if the dataset is null
+     */
+
+    public static Set<TimeScale> getSourceTimeScales( Dataset dataset )
+    {
+        Objects.requireNonNull( dataset );
+        return dataset.sources()
+                      .stream()
+                      .map( Source::timeScale )
+                      .filter( Objects::nonNull )
+                      .map( wres.config.yaml.components.TimeScale::timeScale )
+                      .collect( Collectors.toSet() );
+    }
+
+    /**
+     * Determines whether the dataset is a forecast dataset
+     * @param dataset the dataset
+     * @return whether the dataset is a forecast dataset
+     * @throws NullPointerException if the dataset is null
+     */
+    public static boolean isForecast( Dataset dataset )
+    {
+        Objects.requireNonNull( dataset );
+
+        return Objects.nonNull( dataset.type() ) && dataset.type() == DataType.ENSEMBLE_FORECASTS
+               || dataset.type() == DataType.SINGLE_VALUED_FORECASTS;
+    }
+
+    /**
+     * Returns the earliest analysis duration associated with the project.
+     *
+     * @param declaration the project declaration
+     * @return the earliest analysis duration
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static Duration getEarliestAnalysisDuration( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        {
+            AnalysisDurations durations = declaration.analysisDurations();
+            returnMe = durations.minimumExclusive();
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            returnMe = MessageFactory.DURATION_MIN;
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the latest analysis duration associated with the project.
+     *
+     * @param declaration the project declaration
+     * @return the latest analysis duration
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static Duration getLatestAnalysisDuration( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        Duration returnMe = null;
+
+        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        {
+            AnalysisDurations durations = declaration.analysisDurations();
+            returnMe = durations.maximum();
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            returnMe = MessageFactory.DURATION_MAX;
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * @param declaration the project declaration
+     * @return The earliest possible day in a season or null
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static MonthDay getStartOfSeason( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        MonthDay earliest = null;
+
+        Season season = declaration.season();
+
+        if ( Objects.nonNull( season ) )
+        {
+            earliest = season.minimum();
+        }
+
+        return earliest;
+    }
+
+    /**
+     * @param declaration the project declaration
+     * @return The latest possible day in a season or null
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static MonthDay getEndOfSeason( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        MonthDay latest = null;
+
+        Season season = declaration.season();
+
+        if ( Objects.nonNull( season ) )
+        {
+            latest = season.maximum();
+        }
+
+        return latest;
+    }
+
+    /**
+     * Return <code>true</code> if the declaration uses probability thresholds, otherwise <code>false</code>.
+     *
+     * @param declaration the project declaration
+     * @return whether the project uses probability thresholds
+     * @throws NullPointerException if the declaration is null
+     */
+    public static boolean hasProbabilityThresholds( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        // Top-level probability thresholds?
+        if ( !declaration.probabilityThresholds().isEmpty() )
+        {
+            return true;
+        }
+
+        // Threshold sets with probability thresholds?
+        if ( declaration.thresholdSets()
+                        .stream()
+                        .anyMatch( next -> next.type() == ThresholdType.PROBABILITY ) )
+        {
+            return true;
+        }
+
+        // A threshold service with probability thresholds?
+        if ( Objects.nonNull( declaration.thresholdService() )
+             && declaration.thresholdService()
+                           .type() == ThresholdType.PROBABILITY )
+        {
+            return true;
+        }
+
+        // Individual metrics with probability thresholds?
+        return declaration.metrics()
+                          .stream()
+                          .map( Metric::parameters )
+                          .filter( Objects::nonNull )
+                          .anyMatch( next -> !next.probabilityThresholds().isEmpty() );
+    }
+
+    /**
+     * Looks for a variable name.
+     * @param dataset the dataset
+     * @return the declared variable name or null if no variable was declared
+     * @throws NullPointerException if the dataset is null
+     */
+
+    public static String getVariableName( Dataset dataset )
+    {
+        Objects.requireNonNull( dataset );
+
+        String variableName = null;
+
+        if ( Objects.nonNull( dataset.variable() ) )
+        {
+            variableName = dataset.variable()
+                                  .name();
+        }
+
+        return variableName;
+    }
+
+    /**
+     * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
+     *
+     * @param baselineDataset the declaration to inspect
+     * @return true if a generated baseline is required
+     */
+
+    public static boolean hasGeneratedBaseline( BaselineDataset baselineDataset )
+    {
+        return Objects.nonNull( baselineDataset )
+               && Objects.nonNull( baselineDataset.persistence() );
     }
 
     /**

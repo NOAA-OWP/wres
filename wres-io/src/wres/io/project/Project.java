@@ -4,9 +4,9 @@ import java.time.Duration;
 import java.time.MonthDay;
 import java.util.Set;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
@@ -25,7 +25,7 @@ public interface Project
      * @return the project declaration
      */
 
-    ProjectConfig getProjectConfig();
+    EvaluationDeclaration getDeclaration();
 
     /**
      * @return the measurement unit, which is either the declared unit or the analyzed unit, but possibly null
@@ -74,40 +74,40 @@ public interface Project
     Set<FeatureGroup> getFeatureGroups();
 
     /**
-     * @param lrb the side of data for which the variable is required
-     * @return the declared data source for the specified orientation
-     * @throws NullPointerException if the lrb is null
+     * @param orientation the side of data for which the variable is required
+     * @return the declared dataset for the specified orientation
+     * @throws NullPointerException if the orientation is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    DataSourceConfig getDeclaredDataSource( LeftOrRightOrBaseline lrb );
+    Dataset getDeclaredDataSource( DatasetOrientation orientation );
 
     /**
-     * @param lrb the side of data
+     * @param orientation the side of data
      * @return whether there is lenient upscaling enforced for the specified side of data
-     * @throws NullPointerException if the lrb is null
+     * @throws NullPointerException if the orientation is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    boolean isUpscalingLenient( LeftOrRightOrBaseline lrb );
+    boolean isUpscalingLenient( DatasetOrientation orientation );
 
     /**
-     * @param lrb the side of data for which the variable is required
+     * @param orientation the side of data for which the variable is required
      * @return the name of the variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
+     * @throws NullPointerException if the orientation is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    String getVariableName( LeftOrRightOrBaseline lrb );
+    String getVariableName( DatasetOrientation orientation );
 
     /**
-     * @param lrb the side of data for which the variable is required
+     * @param orientation the side of data for which the variable is required
      * @return the name of the declared variable for the specified side of data
      * @throws NullPointerException if the lrb is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    String getDeclaredVariableName( LeftOrRightOrBaseline lrb );
+    String getDeclaredVariableName( DatasetOrientation orientation );
 
     /**
      * @return the earliest analysis duration, defaults to {@link TimeWindowOuter#DURATION_MIN}.
@@ -138,7 +138,7 @@ public interface Project
      * @return true if the data source uses gridded data, false otherwise
      */
 
-    boolean usesGriddedData( LeftOrRightOrBaseline orientation );
+    boolean usesGriddedData( DatasetOrientation orientation );
 
     /**
      * Returns unique identifier for this project data

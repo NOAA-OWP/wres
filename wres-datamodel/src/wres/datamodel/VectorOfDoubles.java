@@ -8,7 +8,7 @@ import java.util.stream.Stream;
  * block type of the rest of the type hierarchy. Helps avoid use of boxed Double for large (gt 1m values) datasets. This
  * implementation is immutable.
 
- * @author jesse
+ * @author Jesse Bickel
  * @author James Brown
  */
 public class VectorOfDoubles implements Comparable<VectorOfDoubles>

@@ -462,7 +462,6 @@ public class MessageFactory
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( evaluation.left() );
         Objects.requireNonNull( evaluation.right() );
-        Objects.requireNonNull( evaluation.formats() );
 
         Evaluation.Builder builder = Evaluation.newBuilder();
 
@@ -498,11 +497,14 @@ public class MessageFactory
         // Set the ensemble members to filter
         MessageFactory.addEnsembleMemberFilters( evaluation, builder );
 
-        // Set the outputs, which are always present
+        // Set the outputs
         wres.config.yaml.components.Formats formats = evaluation.formats();
-        Outputs innerOutputs = formats.outputs();
-        builder.setOutputs( innerOutputs );
-        LOGGER.debug( "Set the outputs to: {}.", formats );
+        if( Objects.nonNull( formats ) )
+        {
+            Outputs innerOutputs = formats.outputs();
+            builder.setOutputs( innerOutputs );
+            LOGGER.debug( "Set the outputs to: {}.", formats );
+        }
 
         return builder.build();
     }

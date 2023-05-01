@@ -8,8 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.MonthDay;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
+import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.AnalysisDurationsBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
@@ -44,21 +47,26 @@ import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.SeasonBuilder;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -1595,12 +1603,12 @@ class DeclarationUtilitiesTest
     @Test
     void testHasAnalysisDurationsReturnsTrue()
     {
+        AnalysisDurations analysisDurations =
+                AnalysisDurationsBuilder.builder()
+                                        .minimumExclusive( java.time.Duration.ofHours( 3 ) )
+                                        .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .analysisDurations( AnalysisDurationsBuilder.builder()
-                                                                                                                   .minimumExclusive(
-                                                                                                                           3 )
-                                                                                                                   .unit( ChronoUnit.HOURS )
-                                                                                                                   .build() )
+                                                                       .analysisDurations( analysisDurations )
                                                                        .build();
 
         assertTrue( DeclarationUtilities.hasAnalysisDurations( evaluation ) );
@@ -1836,5 +1844,217 @@ class DeclarationUtilitiesTest
 
             assertTrue( DeclarationUtilities.isReadableFile( fileSystem, pathString ) );
         }
+    }
+
+    @Test
+    void testGetSourceTimeScales()
+    {
+        TimeScale scaleOne = TimeScale.newBuilder()
+                                      .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                      .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                              .setSeconds( 100 )
+                                                                              .build() )
+                                      .build();
+        wres.config.yaml.components.TimeScale scaleOneWrapped = new wres.config.yaml.components.TimeScale( scaleOne );
+        Source leftSourceOne = SourceBuilder.builder()
+                                            .timeScale( scaleOneWrapped )
+                                            .build();
+        TimeScale scaleTwo = TimeScale.newBuilder()
+                                      .setFunction( TimeScale.TimeScaleFunction.TOTAL )
+                                      .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                              .setSeconds( 789 )
+                                                                              .build() )
+                                      .build();
+        wres.config.yaml.components.TimeScale scaleTwoWrapped = new wres.config.yaml.components.TimeScale( scaleTwo );
+        Source rightSourceOne = SourceBuilder.builder()
+                                             .timeScale( scaleTwoWrapped )
+                                             .build();
+        TimeScale scaleThree = TimeScale.newBuilder()
+                                        .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
+                                        .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                                .setSeconds( 1800 )
+                                                                                .build() )
+                                        .build();
+        wres.config.yaml.components.TimeScale scaleThreeWrapped =
+                new wres.config.yaml.components.TimeScale( scaleThree );
+        Source baselineSourceOne = SourceBuilder.builder()
+                                                .timeScale( scaleThreeWrapped )
+                                                .build();
+        List<Source> leftSources = List.of( leftSourceOne );
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( leftSources )
+                                     .build();
+        List<Source> rightSources = List.of( rightSourceOne );
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( rightSources )
+                                      .build();
+        List<Source> baselineSources = List.of( baselineSourceOne );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( left )
+                                                                       .right( right )
+                                                                       .baseline( baseline )
+                                                                       .build();
+
+        Set<TimeScale> actual = DeclarationUtilities.getSourceTimeScales( evaluation );
+        Set<TimeScale> expected = Set.of( scaleOne, scaleTwo, scaleThree );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetSourceTimeScalesWithNoTimeScalesPresent()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .build();
+        assertEquals( Collections.emptySet(), DeclarationUtilities.getSourceTimeScales( dataset ) );
+    }
+
+    @Test
+    void testGetEarliestAnalysisDuration()
+    {
+        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
+                                                                      .minimumExclusive( Duration.ZERO )
+                                                                      .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .analysisDurations( analysisDurations )
+                                                                       .build();
+        assertEquals( Duration.ZERO, DeclarationUtilities.getEarliestAnalysisDuration( evaluation ) );
+    }
+
+    @Test
+    void testGetLatestAnalysisDuration()
+    {
+        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
+                                                                      .maximum( Duration.ZERO )
+                                                                      .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .analysisDurations( analysisDurations )
+                                                                       .build();
+        assertEquals( Duration.ZERO, DeclarationUtilities.getLatestAnalysisDuration( evaluation ) );
+    }
+
+    @Test
+    void testGetStartOfSeason()
+    {
+        MonthDay startOfSeason = MonthDay.of( 1, 2 );
+        wres.config.yaml.components.Season season = SeasonBuilder.builder()
+                                                                 .minimum( startOfSeason )
+                                                                 .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .season( season )
+                                                                       .build();
+        assertEquals( startOfSeason, DeclarationUtilities.getStartOfSeason( evaluation ) );
+    }
+
+    @Test
+    void testGetEndOfSeason()
+    {
+        MonthDay endOfSeason = MonthDay.of( 1, 2 );
+        wres.config.yaml.components.Season season = SeasonBuilder.builder()
+                                                                 .maximum( endOfSeason )
+                                                                 .build();
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .season( season )
+                                                                       .build();
+        assertEquals( endOfSeason, DeclarationUtilities.getEndOfSeason( evaluation ) );
+    }
+
+    @Test
+    void testHasProbabilityThresholds()
+    {
+        Threshold probability = Threshold.newBuilder()
+                                         .build();
+        wres.config.yaml.components.Threshold wrapped = ThresholdBuilder.builder()
+                                                                        .threshold( probability )
+                                                                        .type( ThresholdType.PROBABILITY ).build();
+        EvaluationDeclaration topLevelEvaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .probabilityThresholds( Set.of( wrapped ) )
+                                            .build();
+        EvaluationDeclaration thresholdSetEvaluation = EvaluationDeclarationBuilder.builder()
+                                                                                   .thresholdSets( Set.of( wrapped ) )
+                                                                                   .build();
+        ThresholdService thresholdService = ThresholdServiceBuilder.builder()
+                                                                   .type( ThresholdType.PROBABILITY )
+                                                                   .build();
+        EvaluationDeclaration serviceEvaluation = EvaluationDeclarationBuilder.builder()
+                                                                              .thresholdService( thresholdService )
+                                                                              .build();
+        Metric metric = MetricBuilder.builder()
+                                     .parameters( MetricParametersBuilder.builder()
+                                                                         .probabilityThresholds( Set.of( wrapped ) )
+                                                                         .build() )
+                                     .build();
+        EvaluationDeclaration metricEvaluation = EvaluationDeclarationBuilder.builder()
+                                                                             .metrics( Set.of( metric ) )
+                                                                             .build();
+        EvaluationDeclaration emptyEvaluation = EvaluationDeclarationBuilder.builder()
+                                                                            .build();
+        assertAll( () -> assertTrue( DeclarationUtilities.hasProbabilityThresholds( topLevelEvaluation ) ),
+                   () -> assertTrue( DeclarationUtilities.hasProbabilityThresholds( thresholdSetEvaluation ) ),
+                   () -> assertTrue( DeclarationUtilities.hasProbabilityThresholds( serviceEvaluation ) ),
+                   () -> assertTrue( DeclarationUtilities.hasProbabilityThresholds( metricEvaluation ) ),
+                   () -> assertFalse( DeclarationUtilities.hasProbabilityThresholds( emptyEvaluation ) ) );
+    }
+
+    @Test
+    void testHasGeneratedBaseline()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .build();
+        BaselineDataset baselineDataset = BaselineDatasetBuilder.builder().dataset( dataset )
+                                                                .persistence( 1 )
+                                                                .build();
+        BaselineDataset anotherBaselineDataset = BaselineDatasetBuilder.builder()
+                                                                       .dataset( dataset )
+                                                                       .build();
+        assertAll( () -> assertTrue( DeclarationUtilities.hasGeneratedBaseline( baselineDataset ) ),
+                   () -> assertFalse( DeclarationUtilities.hasGeneratedBaseline( anotherBaselineDataset ) ) );
+    }
+
+    @Test
+    void testGetVariableName()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                     .variable( VariableBuilder.builder()
+                                                               .name( "foo" )
+                                                               .build() )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .variable( VariableBuilder.builder()
+                                                                .name( "bar" )
+                                                                .build() )
+                                      .build();
+        Dataset baseline = DatasetBuilder.builder()
+                                         .variable( VariableBuilder.builder()
+                                                                   .name( "baz" )
+                                                                   .build() )
+                                         .build();
+        assertAll( () -> assertEquals( "foo", DeclarationUtilities.getVariableName( left ) ),
+                   () -> assertEquals( "bar", DeclarationUtilities.getVariableName( right ) ),
+                   () -> assertEquals( "baz", DeclarationUtilities.getVariableName( baseline ) ) );
+    }
+
+    @Test
+    void testIsForecast()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.ENSEMBLE_FORECASTS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+        Dataset baseline = DatasetBuilder.builder()
+                                         .type( DataType.OBSERVATIONS )
+                                         .build();
+        assertAll( () -> assertTrue( DeclarationUtilities.isForecast( left ) ),
+                   () -> assertTrue( DeclarationUtilities.isForecast( right ) ),
+                   () -> assertFalse( DeclarationUtilities.isForecast( baseline ) ) );
     }
 }

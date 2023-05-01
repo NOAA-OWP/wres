@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Format;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
@@ -345,25 +345,25 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         try
         {
             // Split the statistics into two groups as there may be separate statistics for a baseline
-            Function<? super Statistics, LeftOrRightOrBaseline> classifier = statistic -> {
+            Function<? super Statistics, DatasetOrientation> classifier = statistic -> {
                 if ( !statistic.hasPool() && statistic.hasBaselinePool() )
                 {
-                    return LeftOrRightOrBaseline.BASELINE;
+                    return DatasetOrientation.BASELINE;
                 }
 
-                return LeftOrRightOrBaseline.RIGHT;
+                return DatasetOrientation.RIGHT;
             };
 
-            Map<LeftOrRightOrBaseline, List<Statistics>> groups =
+            Map<DatasetOrientation, List<Statistics>> groups =
                     statistics.stream()
                               .collect( Collectors.groupingBy( classifier ) );
 
             // Iterate the types
-            for ( Map.Entry<LeftOrRightOrBaseline, List<Statistics>> nextEntry : groups.entrySet() )
+            for ( Map.Entry<DatasetOrientation, List<Statistics>> nextEntry : groups.entrySet() )
             {
-                LeftOrRightOrBaseline key = nextEntry.getKey();
+                DatasetOrientation key = nextEntry.getKey();
                 List<Statistics> value = nextEntry.getValue();
-                Set<Path> innerPaths = this.accept( value, key == LeftOrRightOrBaseline.BASELINE );
+                Set<Path> innerPaths = this.accept( value, key == DatasetOrientation.BASELINE );
                 paths.addAll( innerPaths );
             }
         }

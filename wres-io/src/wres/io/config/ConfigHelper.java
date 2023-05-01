@@ -2,10 +2,7 @@ package wres.io.config;
 
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
-import java.time.Duration;
-import java.time.MonthDay;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.xml.ProjectConfigException;
 import wres.config.generated.*;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.datamodel.scale.TimeScaleOuter;
-import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.UnitMapper;
 import wres.io.reading.wrds.geography.WrdsFeatureFiller;
 import wres.io.reading.wrds.thresholds.WrdsThresholdFiller;
@@ -135,55 +130,6 @@ public class ConfigHelper
         return result;
     }
 
-    /**
-     * @param dataSourceConfig the data source declaration
-     * @return the declared variable name or null if no variable was declared
-     * @throws NullPointerException if the dataSourceConfig is null
-     */
-
-    public static String getVariableName( DataSourceConfig dataSourceConfig )
-    {
-        Objects.requireNonNull( dataSourceConfig );
-
-        DataSourceConfig.Variable variable = dataSourceConfig.getVariable();
-
-        String variableName = null;
-
-        if ( Objects.nonNull( variable ) )
-        {
-            variableName = variable.getValue();
-        }
-
-        return variableName;
-    }
-
-    /**
-     * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     *
-     * @param projectConfig the project declaration
-     * @return whether or not the project uses probability thresholds
-     * @throws NullPointerException if the input is null or the metrics declaration is null
-     */
-    public static boolean hasProbabilityThresholds( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getMetrics() );
-
-        // Iterate metrics configuration
-        for ( MetricsConfig next : projectConfig.getMetrics() )
-        {
-            // Check thresholds           
-            if ( next.getThresholds()
-                     .stream()
-                     .anyMatch( a -> Objects.isNull( a.getType() )
-                                     || a.getType() == ThresholdType.PROBABILITY ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private enum ConusZoneId
     {
         UTC( "+0000" ),
@@ -258,41 +204,6 @@ public class ConfigHelper
         if ( Objects.nonNull( destinationConfig.getOutputType() ) )
         {
             returnMe = destinationConfig.getOutputType();
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Returns <code>true</code> if a generated baseline is required, otherwise <code>false</code>.
-     *
-     * @param baselineConfig the declaration to inspect
-     * @return true if a generated baseline is required
-     */
-
-    public static boolean hasGeneratedBaseline( DataSourceConfig baselineConfig )
-    {
-        // Currently only one generated type supported
-        return Objects.nonNull( baselineConfig )
-               && ( baselineConfig.getTransformation() == SourceTransformationType.PERSISTENCE ||
-                    Objects.nonNull( baselineConfig.getPersistence() ) );
-    }
-
-    /**
-     * Gets the desired time scale associated with the pair declaration, if any.
-     *
-     * @param pairConfig the pair declaration
-     * @return the desired time scale or null
-     */
-
-    public static TimeScaleOuter getDesiredTimeScale( PairConfig pairConfig )
-    {
-        TimeScaleOuter returnMe = null;
-
-        if ( Objects.nonNull( pairConfig )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale() ) )
-        {
-            returnMe = TimeScaleOuter.of( pairConfig.getDesiredTimeScale() );
         }
 
         return returnMe;
@@ -517,138 +428,6 @@ public class ConfigHelper
                     case ENSEMBLE_FORECASTS, SINGLE_VALUED_FORECASTS -> ReferenceTimeType.T0;
                 };
     }
-
-    /**
-     * Returns the earliest analysis duration associated with the project.
-     *
-     * @param projectConfig the project declaration
-     * @return the earliest analysis duration
-     * @throws NullPointerException if the projectConfig is null
-     */
-
-    public static Duration getEarliestAnalysisDuration( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-
-        Duration returnMe = null;
-
-        if ( Objects.nonNull( projectConfig.getPair()
-                                           .getAnalysisDurations() ) )
-        {
-            DurationBoundsType analysisDurations = projectConfig.getPair()
-                                                                .getAnalysisDurations();
-
-            returnMe = ConfigHelper.getDurationOrNull( analysisDurations.getGreaterThan(),
-                                                       analysisDurations.getUnit() );
-        }
-
-        if ( Objects.isNull( returnMe ) )
-        {
-            returnMe = TimeWindowOuter.DURATION_MIN;
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Returns the latest analysis duration associated with the project.
-     *
-     * @param projectConfig the project declaration
-     * @return the latest analysis duration
-     * @throws NullPointerException if the projectConfig is null
-     */
-
-    public static Duration getLatestAnalysisDuration( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-
-        Duration returnMe = null;
-
-        if ( Objects.nonNull( projectConfig.getPair()
-                                           .getAnalysisDurations() ) )
-        {
-            DurationBoundsType analysisDurations = projectConfig.getPair()
-                                                                .getAnalysisDurations();
-
-            returnMe = ConfigHelper.getDurationOrNull( analysisDurations.getLessThanOrEqualTo(),
-                                                       analysisDurations.getUnit() );
-        }
-
-        if ( Objects.isNull( returnMe ) )
-        {
-            returnMe = TimeWindowOuter.DURATION_MAX;
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * @param projectConfig the project declaration
-     * @return The earliest possible day in a season. NULL unless specified in the configuration
-     * @throws NullPointerException if the projectConfig is null
-     */
-
-    public static MonthDay getEarliestDayInSeason( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-
-        MonthDay earliest = null;
-
-        PairConfig.Season season = projectConfig.getPair()
-                                                .getSeason();
-
-        if ( season != null )
-        {
-            earliest = MonthDay.of( season.getEarliestMonth(), season.getEarliestDay() );
-        }
-
-        return earliest;
-    }
-
-    /**
-     * @param projectConfig the project declaration
-     * @return The latest possible day in a season. NULL unless specified in the configuration
-     * @throws NullPointerException if the projectConfig is null
-     */
-
-    public static MonthDay getLatestDayInSeason( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig );
-
-        MonthDay latest = null;
-
-        PairConfig.Season season = projectConfig.getPair()
-                                                .getSeason();
-
-        if ( season != null )
-        {
-            latest = MonthDay.of( season.getLatestMonth(), season.getLatestDay() );
-        }
-
-        return latest;
-    }
-
-    /**
-     * Returns a duration from an integer amount and a string unit, else <code>null</null>.
-     *
-     * @return a duration or null
-     */
-
-    private static Duration getDurationOrNull( Integer duration, DurationUnit durationUnit )
-    {
-        Duration returnMe = null;
-
-        if ( Objects.nonNull( duration ) && Objects.nonNull( durationUnit ) )
-        {
-            ChronoUnit unit = ChronoUnit.valueOf( durationUnit.toString()
-                                                              .toUpperCase() );
-
-            returnMe = Duration.of( duration, unit );
-        }
-
-        return returnMe;
-    }
-
 
     private ConfigHelper()
     {

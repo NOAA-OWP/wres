@@ -420,7 +420,7 @@ final class Functions
                 lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
                 // Build the database caches/ORMs
-                DatabaseCaches caches = DatabaseCaches.of( sharedResources.database(), projectConfig );
+                DatabaseCaches caches = DatabaseCaches.of( sharedResources.database() );
                 TimeSeriesIngester timeSeriesIngester =
                         new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.systemSettings() )
                                                                 .setDatabase( sharedResources.database() )

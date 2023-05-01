@@ -29,14 +29,14 @@ import wres.config.xml.MetricConstantsFactory;
 import wres.config.xml.ProjectConfigException;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
@@ -368,6 +368,7 @@ class EvaluationUtilities
 
             // Look up any needed feature correlations, generate a new declaration.
             ProjectConfig featurefulProjectConfig = WrdsFeatureFinder.fillFeatures( projectConfig );
+            EvaluationDeclaration declaration = DeclarationFactory.from( featurefulProjectConfig );
             LOGGER.debug( "Filled out features for project. Before: {} After: {}",
                           projectConfig,
                           featurefulProjectConfig );
@@ -385,7 +386,7 @@ class EvaluationUtilities
             if ( systemSettings.isInDatabase() )
             {
                 // Build the database caches/ORMs, if required
-                DatabaseCaches caches = DatabaseCaches.of( databaseServices.database(), projectConfig );
+                DatabaseCaches caches = DatabaseCaches.of( databaseServices.database() );
                 // Set the caches
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .caches( caches )
@@ -411,7 +412,7 @@ class EvaluationUtilities
 
                     // Get the project, which provides an interface to the underlying store of time-series data
                     project = Projects.getProject( databaseServices.database(),
-                                                   featurefulProjectConfig,
+                                                   declaration,
                                                    caches,
                                                    griddedFeatures,
                                                    ingestResults );
@@ -438,7 +439,7 @@ class EvaluationUtilities
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .timeSeriesStore( timeSeriesStore )
                                                                                .build();
-                project = Projects.getProject( featurefulProjectConfig,
+                project = Projects.getProject( declaration,
                                                timeSeriesStore,
                                                ingestResults );
             }
@@ -451,7 +452,7 @@ class EvaluationUtilities
             // Get a unit mapper for the declared or analyzed measurement units
             String desiredMeasurementUnit = project.getMeasurementUnit();
             UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
-                                                   projectConfig );
+                                                   declaration.unitAliases() );
 
             // Acquire the individual feature tuples to correlate with thresholds
             Set<FeatureTuple> features = project.getFeatures();
@@ -974,15 +975,15 @@ class EvaluationUtilities
         // Only set the names with analyzed names if the existing names are empty
         if ( "".equals( evaluation.getLeftVariableName() ) )
         {
-            builder.setLeftVariableName( project.getVariableName( LeftOrRightOrBaseline.LEFT ) );
+            builder.setLeftVariableName( project.getVariableName( DatasetOrientation.LEFT ) );
         }
         if ( "".equals( evaluation.getRightVariableName() ) )
         {
-            builder.setRightVariableName( project.getVariableName( LeftOrRightOrBaseline.RIGHT ) );
+            builder.setRightVariableName( project.getVariableName( DatasetOrientation.RIGHT ) );
         }
         if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
         {
-            builder.setBaselineVariableName( project.getVariableName( LeftOrRightOrBaseline.BASELINE ) );
+            builder.setBaselineVariableName( project.getVariableName( DatasetOrientation.BASELINE ) );
         }
 
         return builder.build();
@@ -1019,8 +1020,8 @@ class EvaluationUtilities
                 timeWindows.add( nextTimeWindow );
             }
 
-            LOGGER.info( "Created {} pool requests, which included {} features groups and {} time windows. "
-                         + "The feature groups were: {}. The time windows were: {}.",
+            LOGGER.info( "Created {} pool requests, which include {} features groups and {} time windows. "
+                         + "The feature groups are: {}. The time windows are: {}.",
                          poolRequests.size(),
                          features.size(),
                          timeWindows.size(),
@@ -1083,9 +1084,9 @@ class EvaluationUtilities
 
         CompletableFuture<Object> poolTasks;
 
-        DatasourceType type = evaluationDetails.project()
-                                               .getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT )
-                                               .getType();
+        DataType type = evaluationDetails.project()
+                                         .getDeclaredDataSource( DatasetOrientation.RIGHT )
+                                         .type();
 
         SystemSettings settings = evaluationDetails.systemSettings();
         PoolParameters poolParameters =
@@ -1094,7 +1095,7 @@ class EvaluationUtilities
                                             .build();
 
         // Ensemble pairs
-        if ( type == DatasourceType.ENSEMBLE_FORECASTS )
+        if ( type == DataType.ENSEMBLE_FORECASTS )
         {
             List<PoolProcessor<Double, Ensemble>> poolProcessors =
                     EvaluationUtilities.getEnsemblePoolProcessors( poolFactory,
@@ -1415,10 +1416,9 @@ class EvaluationUtilities
 
     private static boolean hasSeparateMetricsForBaseline( Project project )
     {
-        return project.hasBaseline() && project.getProjectConfig()
-                                               .getInputs()
-                                               .getBaseline()
-                                               .isSeparateMetrics();
+        return project.hasBaseline() && project.getDeclaration()
+                                               .baseline()
+                                               .separateMetrics();
     }
 
     /**

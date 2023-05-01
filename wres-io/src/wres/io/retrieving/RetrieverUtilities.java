@@ -18,16 +18,17 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.TimeScaleConfig;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -98,7 +99,7 @@ public class RetrieverUtilities
      */
 
     public static TimeWindowOuter adjustForAnalysisTypeIfRequired( TimeWindowOuter timeWindow,
-                                                                   DatasourceType dataType,
+                                                                   DataType dataType,
                                                                    Duration earliestAnalysisDuration,
                                                                    Duration latestAnalysisDuration )
     {
@@ -108,7 +109,7 @@ public class RetrieverUtilities
         TimeWindowOuter adjustedWindow = timeWindow;
 
         // Analysis data? If so, needs special handling on retrieval
-        if ( dataType == DatasourceType.ANALYSES )
+        if ( dataType == DataType.ANALYSES )
         {
             TimeWindowOuter analysisWindow = RetrieverUtilities.getAnalysisTimeWindow( adjustedWindow,
                                                                                        earliestAnalysisDuration,
@@ -126,22 +127,30 @@ public class RetrieverUtilities
     }
 
     /**
-     * Augments the time-scale of the input series, as needed.
+     * Augments the timescale of the input series, as needed.
      * @param <T> the time-series event value type
      * @param timeSeries the time-series
      * @param orientation the orientation of the time-series
-     * @param dataSource the data source declaration
+     * @param dataset the dataset declaration
      * @return the augmented time-series
      */
     public static <T> TimeSeries<T> augmentTimeScale( TimeSeries<T> timeSeries,
-                                                      LeftOrRightOrBaseline orientation,
-                                                      DataSourceConfig dataSource )
+                                                      DatasetOrientation orientation,
+                                                      Dataset dataset )
     {
-        TimeScaleConfig existingTimeScale = dataSource.getExistingTimeScale();
+        // Declared existing scale, which can be used to augment a source
+        Set<TimeScale> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( dataset );
 
-        if ( Objects.nonNull( existingTimeScale ) )
+        if( declaredExistingTimeScales.size() > 1 )
         {
-            TimeScaleOuter existingTimeScaleOuter = TimeScaleOuter.of( existingTimeScale );
+            throw new UnsupportedOperationException( "Currently, only one timescale is supported for each side of "
+                                                     + "data in an evaluation, not one per source." );
+        }
+
+        if ( !declaredExistingTimeScales.isEmpty() )
+        {
+            TimeScaleOuter existingTimeScaleOuter = TimeScaleOuter.of( declaredExistingTimeScales.iterator()
+                                                                                                 .next() );
             LOGGER.debug( "Discovered a declared existing time-scale of {} for the {} time-series data. Using this "
                           + "to augment the ingested time time-series.",
                           existingTimeScaleOuter,

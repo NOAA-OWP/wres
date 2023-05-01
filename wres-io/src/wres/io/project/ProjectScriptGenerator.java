@@ -1,15 +1,15 @@
 package wres.io.project;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.StringJoiner;
 
-import wres.config.generated.NamedFeature;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Houses the logic used to create SQL scripts based on a project
@@ -42,7 +42,7 @@ final class ProjectScriptGenerator
 
     static DataScripter createIntersectingFeaturesScript( Database database,
                                                           long projectId,
-                                                          List<NamedFeature> featureDeclarations,
+                                                          Set<GeometryTuple> featureDeclarations,
                                                           boolean hasBaseline,
                                                           boolean isGrouped )
     {
@@ -209,17 +209,17 @@ final class ProjectScriptGenerator
      *
      * @param database The database, not null
      * @param projectId The project identifier
-     * @param lrb The side of data, not null
+     * @param orientation The side of data, not null
      * @return the script
      * @throws NullPointerException if any nullable input is null
      */
 
     static DataScripter createVariablesScript( Database database,
                                                long projectId,
-                                               LeftOrRightOrBaseline lrb )
+                                               DatasetOrientation orientation )
     {
         Objects.requireNonNull( database );
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
         DataScripter script = new DataScripter( database );
 
@@ -230,7 +230,8 @@ final class ProjectScriptGenerator
         script.addLine( WHERE_PS_PROJECT_IDQ );
         script.addArgument( projectId );
         script.addTab().addLine( "AND PS.member = ?" );
-        script.addArgument( lrb.toString().toLowerCase() );
+        script.addArgument( orientation.name()
+                                       .toLowerCase() );
         script.setMaxRows( 2 ); // Adds jdbc limit plus sql LIMIT if supported
 
         return script;
@@ -322,7 +323,7 @@ final class ProjectScriptGenerator
      */
 
     private static String generateTempTableName( long projectId,
-                                                 List<NamedFeature> features,
+                                                 Set<GeometryTuple> features,
                                                  boolean isGrouped )
     {
         long qualifier = 0;
@@ -358,7 +359,7 @@ final class ProjectScriptGenerator
      */
 
     private static String generateInsertStatement( String tempTableName,
-                                                   List<NamedFeature> features,
+                                                   Set<GeometryTuple> features,
                                                    boolean hasBaseline )
     {
         String start = "INSERT INTO "
@@ -381,15 +382,18 @@ final class ProjectScriptGenerator
                                                 start,
                                                 " );" );
         boolean anyFeaturesWereAdded = false;
-        for ( NamedFeature feature : features )
+        for ( GeometryTuple feature : features )
         {
             String toAdd;
-            String leftName = feature.getLeft();
-            String rightName = feature.getRight();
-            String baselineName = feature.getBaseline();
+            String leftName = feature.getLeft()
+                                     .getName();
+            String rightName = feature.getRight()
+                                      .getName();
+            String baselineName = feature.getBaseline()
+                                         .getName();
 
-            if ( Objects.nonNull( leftName )
-                 && Objects.nonNull( rightName ) )
+            if ( !leftName.isBlank()
+                 && !rightName.isBlank() )
             {
                 toAdd = "'" + validateStringForSql( leftName )
                         + "', "
@@ -399,7 +403,7 @@ final class ProjectScriptGenerator
 
                 if ( hasBaseline )
                 {
-                    if ( Objects.nonNull( baselineName ) )
+                    if ( !baselineName.isBlank() )
                     {
                         toAdd += ", '" + validateStringForSql( baselineName )
                                  + "'";

@@ -20,15 +20,14 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.NamedFeature;
 import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.TimeScaleConfig;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.TimeScale;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
@@ -38,12 +37,12 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.io.NoDataException;
-import wres.io.config.ConfigHelper;
 import wres.io.ingesting.IngestResult;
 import wres.io.project.ProjectUtilities.VariableNames;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 
 /**
@@ -56,7 +55,7 @@ public class InMemoryProject implements Project
     private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryProject.class );
 
     /** Project declaration. */
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
 
     /** Time-series data. */
     private final TimeSeriesStore timeSeriesStore;
@@ -96,17 +95,17 @@ public class InMemoryProject implements Project
 
     /**
      * Creates an instance.
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @param timeSeriesStore the time-series data
      * @param ingestResults the ingest results
      */
-    public InMemoryProject( ProjectConfig projectConfig,
+    public InMemoryProject( EvaluationDeclaration declaration,
                             TimeSeriesStore timeSeriesStore,
                             List<IngestResult> ingestResults )
     {
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         this.timeSeriesStore = timeSeriesStore;
-        this.projectConfig = projectConfig;
+        this.declaration = declaration;
         this.setUsesGriddedData( ingestResults );
         this.hash = this.getHash( timeSeriesStore );
         this.setFeaturesAndFeatureGroups();
@@ -123,9 +122,9 @@ public class InMemoryProject implements Project
     }
 
     @Override
-    public ProjectConfig getProjectConfig()
+    public EvaluationDeclaration getDeclaration()
     {
-        return this.projectConfig;
+        return this.declaration;
     }
 
     /**
@@ -138,9 +137,8 @@ public class InMemoryProject implements Project
     public String getMeasurementUnit()
     {
         // Declared unit available?
-        String declaredUnit = this.getProjectConfig()
-                                  .getPair()
-                                  .getUnit();
+        String declaredUnit = this.getDeclaration()
+                                  .unit();
         if ( Objects.isNull( this.measurementUnit ) && Objects.nonNull( declaredUnit ) && !declaredUnit.isBlank() )
         {
             this.measurementUnit = declaredUnit;
@@ -153,8 +151,8 @@ public class InMemoryProject implements Project
         if ( Objects.isNull( this.measurementUnit ) )
         {
             Stream<TimeSeries<?>> concat =
-                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.RIGHT ),
-                                   this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.RIGHT ) );
+                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.RIGHT ),
+                                   this.timeSeriesStore.getEnsembleSeries( DatasetOrientation.RIGHT ) );
             Optional<String> mostCommon = concat.map( next -> next.getMetadata().getUnit() )
                                                 .collect( Collectors.groupingBy( Function.identity(),
                                                                                  Collectors.counting() ) )
@@ -177,7 +175,7 @@ public class InMemoryProject implements Project
                               + "measurement unit is {} and corresponds to the most commonly occurring unit "
                               + "among time-series from {} sources.",
                               this.measurementUnit,
-                              LeftOrRightOrBaseline.RIGHT );
+                              DatasetOrientation.RIGHT );
             }
         }
 
@@ -185,7 +183,7 @@ public class InMemoryProject implements Project
     }
 
     /**
-     * Returns the desired time scale. In order of availability, this is:
+     * Returns the desired timescale. In order of availability, this is:
      *
      * <ol>
      * <li>The desired time scale provided on construction;</li>
@@ -197,7 +195,7 @@ public class InMemoryProject implements Project
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
      *
-     * @return the desired time scale or null if unknown
+     * @return the desired timescale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained
      */
 
@@ -212,12 +210,12 @@ public class InMemoryProject implements Project
             return this.desiredTimeScale;
         }
 
-        // Use the declared time scale
-        TimeScaleOuter declaredScale = ConfigHelper.getDesiredTimeScale( this.getProjectConfig()
-                                                                             .getPair() );
+        // Use the declared timescale
+        TimeScale declaredScale = this.getDeclaration()
+                                      .timeScale();
         if ( Objects.nonNull( declaredScale ) )
         {
-            this.desiredTimeScale = declaredScale;
+            this.desiredTimeScale = TimeScaleOuter.of( declaredScale.timeScale() );
 
             LOGGER.trace( "Discovered that the desired time scale was declared explicitly as {}.",
                           this.desiredTimeScale );
@@ -249,103 +247,70 @@ public class InMemoryProject implements Project
             return this.desiredTimeScale;
         }
 
-        Inputs inputDeclaration = this.getProjectConfig()
-                                      .getInputs();
-
         // Look for the LCS among the declared inputs
-        if ( Objects.nonNull( inputDeclaration ) )
+        Set<TimeScaleOuter> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( declaration )
+                                                                             .stream()
+                                                                             .map( TimeScaleOuter::of )
+                                                                             .collect( Collectors.toUnmodifiableSet() );
+
+        if ( !declaredExistingTimeScales.isEmpty() )
         {
-            Set<TimeScaleOuter> declaredExistingTimeScales = new HashSet<>();
-            TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
-            TimeScaleConfig rightScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
 
-            if ( Objects.nonNull( leftScaleConfig ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( leftScaleConfig ) );
-            }
-            if ( Objects.nonNull( rightScaleConfig ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( rightScaleConfig ) );
-            }
-            if ( Objects.nonNull( inputDeclaration.getBaseline() )
-                 && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline()
-                                                                                   .getExistingTimeScale() ) );
-            }
+            this.desiredTimeScale = leastCommonScale;
 
-            if ( !declaredExistingTimeScales.isEmpty() )
-            {
-                TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
+            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
+                          + " Instead, determined the desired time scale from the Least Common Scale of the "
+                          + "declared inputs, which  was {}.",
+                          leastCommonScale );
 
-                this.desiredTimeScale = leastCommonScale;
-
-                LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
-                              + " Instead, determined the desired time scale from the Least Common Scale of the "
-                              + "declared inputs, which  was {}.",
-                              leastCommonScale );
-
-                return this.desiredTimeScale;
-            }
+            return this.desiredTimeScale;
         }
 
         return this.desiredTimeScale;
     }
 
-    /**
-     * Returns the set of {@link FeatureTuple} for the project.
-     * the configuration, all locations that have been ingested are retrieved
-     * @return A set of all feature tuples involved in the project
-     */
     @Override
     public Set<FeatureTuple> getFeatures()
     {
         return this.features;
     }
 
-    /**
-     * Returns the set of {@link FeatureGroup} for the project.
-     * @return A set of all feature groups involved in the project
-     */
     @Override
     public Set<FeatureGroup> getFeatureGroups()
     {
         return this.featureGroups;
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The declared data source for the specified orientation
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public DataSourceConfig getDeclaredDataSource( LeftOrRightOrBaseline lrb )
+    public Dataset getDeclaredDataSource( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        if ( orientation == DatasetOrientation.BASELINE && !this.hasBaseline() )
+        {
+            LOGGER.debug( "Requested a baseline dataset, but not baseline dataset was defined." );
+            return null;
+        }
+
+        return switch ( orientation )
                 {
-                    case LEFT -> this.getLeft();
-                    case RIGHT -> this.getRight();
-                    case BASELINE -> this.getBaseline();
+                    case LEFT -> this.getDeclaration()
+                                     .left();
+                    case RIGHT -> this.getDeclaration()
+                                      .right();
+                    case BASELINE -> this.getDeclaration()
+                                         .baseline()
+                                         .dataset();
                 };
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public String getVariableName( LeftOrRightOrBaseline lrb )
+    public String getVariableName( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        return switch ( orientation )
                 {
                     case LEFT -> this.getLeftVariableName();
                     case RIGHT -> this.getRightVariableName();
@@ -353,19 +318,12 @@ public class InMemoryProject implements Project
                 };
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the declared variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public String getDeclaredVariableName( LeftOrRightOrBaseline lrb )
+    public String getDeclaredVariableName( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        return switch ( orientation )
                 {
                     case LEFT -> this.getDeclaredLeftVariableName();
                     case RIGHT -> this.getDeclaredRightVariableName();
@@ -373,46 +331,32 @@ public class InMemoryProject implements Project
                 };
     }
 
-    /**
-     * @return the earliest analysis duration
-     */
-
     @Override
     public Duration getEarliestAnalysisDuration()
     {
-        return ConfigHelper.getEarliestAnalysisDuration( this.getProjectConfig() );
+        return DeclarationUtilities.getEarliestAnalysisDuration( this.getDeclaration() );
     }
-
-    /**
-     * @return the latest analysis duration
-     */
 
     @Override
     public Duration getLatestAnalysisDuration()
     {
-        return ConfigHelper.getLatestAnalysisDuration( this.getProjectConfig() );
+        return DeclarationUtilities.getLatestAnalysisDuration( this.getDeclaration() );
     }
 
-    /**
-     * @return the earliest possible day in a season. NULL unless specified in the configuration
-     */
     @Override
     public MonthDay getStartOfSeason()
     {
-        return ConfigHelper.getEarliestDayInSeason( this.getProjectConfig() );
+        return DeclarationUtilities.getStartOfSeason( this.getDeclaration() );
     }
 
-    /**
-     * @return the latest possible day in a season. NULL unless specified in the configuration
-     */
     @Override
     public MonthDay getEndOfSeason()
     {
-        return ConfigHelper.getLatestDayInSeason( this.getProjectConfig() );
+        return DeclarationUtilities.getEndOfSeason( this.getDeclaration() );
     }
 
     @Override
-    public boolean usesGriddedData( LeftOrRightOrBaseline orientation )
+    public boolean usesGriddedData( DatasetOrientation orientation )
     {
         return switch ( orientation )
                 {
@@ -454,37 +398,23 @@ public class InMemoryProject implements Project
                       this.baselineUsesGriddedData );
     }
 
-    /**
-     * Returns unique identifier for this project's dataset
-     * @return The unique ID
-     */
     @Override
     public String getHash()
     {
         return this.hash;
     }
 
-    /**
-     * @return Whether or not baseline data is involved in the project
-     */
     @Override
     public boolean hasBaseline()
     {
         return this.getBaseline() != null;
     }
 
-    /**
-     * @return Whether or not there is a generated baseline
-     */
     @Override
     public boolean hasGeneratedBaseline()
     {
-        return ConfigHelper.hasGeneratedBaseline( this.getBaseline() );
+        return DeclarationUtilities.hasGeneratedBaseline( this.getBaseline() );
     }
-
-    /**
-     * @return the project identity
-     */
 
     @Override
     public long getId()
@@ -492,31 +422,22 @@ public class InMemoryProject implements Project
         return 0;
     }
 
-    /**
-     * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     *
-     * @return Whether or not the project uses probability thresholds
-     */
     @Override
     public boolean hasProbabilityThresholds()
     {
-        return ConfigHelper.hasProbabilityThresholds( this.getProjectConfig() );
+        return DeclarationUtilities.hasProbabilityThresholds( this.getDeclaration() );
     }
 
     @Override
-    public boolean isUpscalingLenient( LeftOrRightOrBaseline lrb )
+    public boolean isUpscalingLenient( DatasetOrientation orientation )
     {
-        return ProjectUtilities.isUpscalingLenient( lrb,
-                                                    this.getProjectConfig()
-                                                        .getPair()
-                                                        .getDesiredTimeScale() );
+        return ProjectUtilities.isUpscalingLenient( orientation,
+                                                    this.getDeclaration()
+                                                        .timeScale(),
+                                                    this.getDeclaration()
+                                                        .rescaleLenience() );
     }
 
-    /**
-     * Saves the project.
-     * @return true if this call resulted in the project being saved, false otherwise
-     * @throws DataAccessException if the save fails for any reason
-     */
     @Override
     public boolean save()
     {
@@ -554,19 +475,21 @@ public class InMemoryProject implements Project
 
     private void validateEnsembleConditions()
     {
-        DataSourceConfig left = this.getProjectConfig().getInputs().getLeft();
-        DataSourceConfig right = this.getProjectConfig().getInputs().getRight();
-        DataSourceConfig baseline = this.getProjectConfig().getInputs().getBaseline();
-
         // Show all errors at once rather than drip-feeding
-        List<String> failed = new ArrayList<>();
-        List<String> failedLeft = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.LEFT, left );
-        List<String> failedRight = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.RIGHT, right );
-        List<String> failedBaseline = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.BASELINE, baseline );
-
-        failed.addAll( failedLeft );
+        Dataset left = this.getLeft();
+        List<String> failedLeft = this.getInvalidEnsembleConditions( DatasetOrientation.LEFT, left );
+        List<String> failed = new ArrayList<>( failedLeft );
+        Dataset right = this.getRight();
+        List<String> failedRight = this.getInvalidEnsembleConditions( DatasetOrientation.RIGHT, right );
         failed.addAll( failedRight );
-        failed.addAll( failedBaseline );
+
+        if ( this.hasBaseline() )
+        {
+            Dataset baseline = this.getBaseline()
+                                   .dataset();
+            List<String> failedBaseline = this.getInvalidEnsembleConditions( DatasetOrientation.BASELINE, baseline );
+            failed.addAll( failedBaseline );
+        }
 
         if ( !failed.isEmpty() )
         {
@@ -583,7 +506,7 @@ public class InMemoryProject implements Project
      * Sets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for 
      * any particular left/right/baseline context, it looks at the data instead. If there is more than one possible 
      * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
-     * thrown because declaration is require to disambiguate. Otherwise, it chooses the single variable name and warns 
+     * thrown because declaration is required to disambiguate. Otherwise, it chooses the single variable name and warns
      * about the assumption made when using the data to disambiguate.
      *
      * @throws DataAccessException if the variable information could not be determined from the data
@@ -601,29 +524,29 @@ public class InMemoryProject implements Project
         boolean baselineAuto = false;
 
         // Left declared?
-        if ( Objects.nonNull( this.getLeft().getVariable() ) )
+        String leftName = this.getVariableName( DatasetOrientation.LEFT );
+        if ( Objects.nonNull( leftName ) )
         {
-            String name = this.getLeft().getVariable().getValue();
-            leftNames.add( name );
+            leftNames.add( leftName );
         }
         // No, look at data
         else
         {
-            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.LEFT );
+            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
             leftNames.addAll( names );
             leftAuto = true;
         }
 
         // Right declared?
-        if ( Objects.nonNull( this.getRight().getVariable() ) )
+        String rightName = this.getVariableName( DatasetOrientation.RIGHT );
+        if ( Objects.nonNull( rightName ) )
         {
-            String name = this.getRight().getVariable().getValue();
-            rightNames.add( name );
+            rightNames.add( rightName );
         }
         // No, look at data
         else
         {
-            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.RIGHT );
+            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
             rightNames.addAll( names );
             rightAuto = true;
         }
@@ -631,15 +554,15 @@ public class InMemoryProject implements Project
         // Baseline declared?
         if ( this.hasBaseline() )
         {
-            if ( Objects.nonNull( this.getBaseline().getVariable() ) )
+            String baselineName = this.getVariableName( DatasetOrientation.BASELINE );
+            if ( Objects.nonNull( baselineName ) )
             {
-                String name = this.getBaseline().getVariable().getValue();
-                baselineNames.add( name );
+                baselineNames.add( baselineName );
             }
             // No, look at data
             else
             {
-                Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.BASELINE );
+                Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
                 baselineNames.addAll( names );
                 baselineAuto = true;
             }
@@ -655,7 +578,7 @@ public class InMemoryProject implements Project
                       rightAuto,
                       baselineAuto );
 
-        VariableNames variableNames = ProjectUtilities.getVariableNames( this.getProjectConfig(),
+        VariableNames variableNames = ProjectUtilities.getVariableNames( this.getDeclaration(),
                                                                          Collections.unmodifiableSet( leftNames ),
                                                                          Collections.unmodifiableSet( rightNames ),
                                                                          Collections.unmodifiableSet( baselineNames ) );
@@ -690,16 +613,15 @@ public class InMemoryProject implements Project
     /**
      * Determines the possible variable names by inspecting the data.
      *
-     * @param lrb the context
+     * @param orientation the context
      * @return the possible variable names
      * @throws DataAccessException if the variable information could not be determined from the data
-     * @throws ProjectConfigException if declaration is required to disambiguate the variable name
      */
 
-    private Set<String> getVariableNameByInspectingData( LeftOrRightOrBaseline lrb )
+    private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation )
     {
-        Stream<TimeSeries<?>> series = Stream.concat( this.timeSeriesStore.getSingleValuedSeries( lrb ),
-                                                      this.timeSeriesStore.getEnsembleSeries( lrb ) );
+        Stream<TimeSeries<?>> series = Stream.concat( this.timeSeriesStore.getSingleValuedSeries( orientation ),
+                                                      this.timeSeriesStore.getEnsembleSeries( orientation ) );
 
         return series.map( next -> next.getMetadata().getVariableName() ).collect( Collectors.toSet() );
     }
@@ -707,43 +629,41 @@ public class InMemoryProject implements Project
     /**
      * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
      *
-     * @param lrb the orientation of the source
-     * @param config the source configuration whose ensemble conditions should be validated
+     * @param orientation the orientation of the dataset
+     * @param dataset the dataset whose ensemble conditions should be validated
      * @return a string representation of the invalid conditions 
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
-    private List<String> getInvalidEnsembleConditions( LeftOrRightOrBaseline lrb,
-                                                       DataSourceConfig config )
+    private List<String> getInvalidEnsembleConditions( DatasetOrientation orientation,
+                                                       Dataset dataset )
     {
         List<String> failed = new ArrayList<>();
 
-        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
+        EnsembleFilter filter = dataset.ensembleFilter();
+        if ( Objects.nonNull( filter ) )
         {
-            List<EnsembleCondition> conditions = config.getEnsemble();
-            for ( EnsembleCondition condition : conditions )
+            for ( String name : filter.members() )
             {
-                Stream<TimeSeries<Ensemble>> series = this.timeSeriesStore.getEnsembleSeries( lrb );
-                String name = condition.getName();
-
-                boolean dataExists = series.flatMap( next -> next.getEvents().stream() )
-                                           .map( next -> next.getValue().getLabels() )
+                Stream<TimeSeries<Ensemble>> series = this.timeSeriesStore.getEnsembleSeries( orientation );
+                boolean dataExists = series.flatMap( next -> next.getEvents()
+                                                                 .stream() )
+                                           .map( next -> next.getValue()
+                                                             .getLabels() )
                                            .flatMap( labels -> Arrays.stream( labels.getLabels() ) )
                                            .anyMatch( name::equals );
 
                 if ( !dataExists )
                 {
                     ToStringBuilder builder =
-                            new ToStringBuilder( condition,
-                                                 ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation", lrb )
-                                                                                   .append( "name",
-                                                                                            condition.getName() )
+                            new ToStringBuilder( ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation",
+                                                                                            orientation )
+                                                                                   .append( "name", name )
                                                                                    .append( "exclude",
-                                                                                            condition.isExclude() );
+                                                                                            filter.exclude() );
 
                     failed.add( builder.toString() );
                 }
-
             }
         }
 
@@ -762,8 +682,8 @@ public class InMemoryProject implements Project
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
 
         Stream<TimeSeries<?>> leftSeries =
-                Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT ),
-                               this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.LEFT ) );
+                Stream.concat( this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.LEFT ),
+                               this.timeSeriesStore.getEnsembleSeries( DatasetOrientation.LEFT ) );
 
         Set<Feature> griddedFeatures = leftSeries.map( next -> next.getMetadata()
                                                                    .getFeature() )
@@ -802,15 +722,14 @@ public class InMemoryProject implements Project
 
         // Gridded features?
         // Yes
-        if ( this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) )
+        if ( this.usesGriddedData( DatasetOrientation.RIGHT ) )
         {
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
 
             this.features = griddedTuples;
             this.featureGroups = ProjectUtilities.getFeatureGroups( this.features,
                                                                     Set.of(),
-                                                                    this.getProjectConfig()
-                                                                        .getPair(),
+                                                                    this.getDeclaration(),
                                                                     this.getId() );
 
             LOGGER.debug( "Finished setting the features for project {}. Discovered {} gridded features.",
@@ -820,18 +739,18 @@ public class InMemoryProject implements Project
         else
         {
             Stream<TimeSeries<?>> leftSeries =
-                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT ),
-                                   this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.LEFT ) );
+                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.LEFT ),
+                                   this.timeSeriesStore.getEnsembleSeries( DatasetOrientation.LEFT ) );
 
             Stream<TimeSeries<?>> rightSeries =
-                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.RIGHT ),
-                                   this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.RIGHT ) );
+                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.RIGHT ),
+                                   this.timeSeriesStore.getEnsembleSeries( DatasetOrientation.RIGHT ) );
 
             Stream<TimeSeries<?>> baselineSeries =
-                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.BASELINE ),
-                                   this.timeSeriesStore.getEnsembleSeries( LeftOrRightOrBaseline.BASELINE ) );
+                    Stream.concat( this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.BASELINE ),
+                                   this.timeSeriesStore.getEnsembleSeries( DatasetOrientation.BASELINE ) );
 
-            Map<String, Feature> leftFeatures =
+            Map<String, Feature> leftFeaturesWithData =
                     leftSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                       .getFeature()
                                                                       .getName(),
@@ -839,7 +758,7 @@ public class InMemoryProject implements Project
                                                                       .getFeature(),
                                                           ( a, b ) -> a ) );
 
-            Map<String, Feature> rightFeatures =
+            Map<String, Feature> rightFeaturesWithData =
                     rightSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                        .getFeature()
                                                                        .getName(),
@@ -847,7 +766,7 @@ public class InMemoryProject implements Project
                                                                        .getFeature(),
                                                            ( a, b ) -> a ) );
 
-            Map<String, Feature> baselineFeatures =
+            Map<String, Feature> baselineFeaturesWithData =
                     baselineSeries.collect( Collectors.toMap( next -> next.getMetadata()
                                                                           .getFeature()
                                                                           .getName(),
@@ -855,33 +774,33 @@ public class InMemoryProject implements Project
                                                                           .getFeature(),
                                                               ( a, b ) -> a ) );
 
-            PairConfig pairConfig = this.getProjectConfig()
-                                        .getPair();
+            EvaluationDeclaration innerDeclaration = this.getDeclaration();
 
-            // Create the singletons
-            List<NamedFeature> declaredSingletons = pairConfig.getFeature();
+            // Get the declared singletons
+            Set<GeometryTuple> declaredSingletons = this.getDeclaredFeatures();
+            // Correlate with those from the times-series data
+            Set<FeatureTuple> singletons = this.getCorrelatedFeatures( declaredSingletons,
+                                                                       leftFeaturesWithData,
+                                                                       rightFeaturesWithData,
+                                                                       baselineFeaturesWithData );
 
-            Set<FeatureTuple> singletons = this.getFeatureTuplesFromDeclaredFeatures( declaredSingletons,
-                                                                                      leftFeatures,
-                                                                                      rightFeatures,
-                                                                                      baselineFeatures );
+            // Get the feature tuples within feature groups
+            Set<GeometryTuple> groupedFeatures = this.getDeclaredFeatureGroups()
+                                                     .stream()
+                                                     .flatMap( next -> next.getGeometryTuplesList()
+                                                                           .stream() )
+                                                     .collect( Collectors.toSet() );
 
-
-            // Create the feature groups
-            List<NamedFeature> groupedFeatures = pairConfig.getFeatureGroup()
-                                                           .stream()
-                                                           .flatMap( next -> next.getFeature().stream() )
-                                                           .toList();
-
-            Set<FeatureTuple> groupedTuples = this.getFeatureTuplesFromDeclaredFeatures( groupedFeatures,
-                                                                                         leftFeatures,
-                                                                                         rightFeatures,
-                                                                                         baselineFeatures );
+            // Correlate with those from the time-series data
+            Set<FeatureTuple> groupedTuples = this.getCorrelatedFeatures( groupedFeatures,
+                                                                          leftFeaturesWithData,
+                                                                          rightFeaturesWithData,
+                                                                          baselineFeaturesWithData );
 
             this.featureGroups = ProjectUtilities.getFeatureGroups( singletons,
-                                                                           groupedTuples,
-                                                                           pairConfig,
-                                                                           this.getId() );
+                                                                    groupedTuples,
+                                                                    innerDeclaration,
+                                                                    this.getId() );
 
             this.features = Collections.unmodifiableSet( singletons );
 
@@ -893,6 +812,40 @@ public class InMemoryProject implements Project
     }
 
     /**
+     * @return the declared features
+     */
+    private Set<GeometryTuple> getDeclaredFeatures()
+    {
+        if ( Objects.isNull( this.getDeclaration()
+                                 .features() ) )
+        {
+            return Set.of();
+        }
+
+        return this.getDeclaration()
+                   .features()
+                   .geometries();
+    }
+
+    /**
+     * @return the declared feature groups
+     */
+    private Set<GeometryGroup> getDeclaredFeatureGroups()
+    {
+        if ( Objects.isNull( this.getDeclaration()
+                                 .featureGroups() ) )
+        {
+            return Set.of();
+        }
+
+        return this.getDeclaration()
+                   .featureGroups()
+                   .geometryGroups();
+    }
+
+    /**
+     * Attempts to correlate the declared feature tuples with the oriented features that have data, returning the
+     * feature tuples with data.
      * @param features the declared features
      * @param leftFeatures the left feature names against feature keys
      * @param rightFeatures the right feature names against feature keys
@@ -900,10 +853,10 @@ public class InMemoryProject implements Project
      * @return the feature tuples
      */
 
-    private Set<FeatureTuple> getFeatureTuplesFromDeclaredFeatures( List<NamedFeature> features,
-                                                                    Map<String, Feature> leftFeatures,
-                                                                    Map<String, Feature> rightFeatures,
-                                                                    Map<String, Feature> baselineFeatures )
+    private Set<FeatureTuple> getCorrelatedFeatures( Set<GeometryTuple> features,
+                                                     Map<String, Feature> leftFeatures,
+                                                     Map<String, Feature> rightFeatures,
+                                                     Map<String, Feature> baselineFeatures )
     {
         // No features declared?
         if ( features.isEmpty() )
@@ -911,13 +864,16 @@ public class InMemoryProject implements Project
             return this.getFeaturesWhenNoneDeclared( leftFeatures, rightFeatures, baselineFeatures );
         }
 
-        // Declared features
+        // Iterate the declared features and look for matching features by name that have data
         Set<FeatureTuple> featureTuples = new HashSet<>();
-        for ( NamedFeature next : features )
+        for ( GeometryTuple next : features )
         {
-            String leftName = next.getLeft();
-            String rightName = next.getRight();
-            String baselineName = next.getBaseline();
+            String leftName = next.getLeft()
+                                  .getName();
+            String rightName = next.getRight()
+                                   .getName();
+            String baselineName = next.getBaseline()
+                                      .getName();
 
             if ( leftFeatures.containsKey( leftName ) && rightFeatures.containsKey( rightName ) )
             {
@@ -992,7 +948,8 @@ public class InMemoryProject implements Project
      */
     private String getProjectName()
     {
-        return this.projectConfig.getName();
+        return this.getDeclaration()
+                   .label();
     }
 
     /**
@@ -1042,7 +999,7 @@ public class InMemoryProject implements Project
      */
     private String getDeclaredLeftVariableName()
     {
-        return ConfigHelper.getVariableName( this.getLeft() );
+        return DeclarationUtilities.getVariableName( this.getLeft() );
     }
 
     /**
@@ -1051,7 +1008,7 @@ public class InMemoryProject implements Project
      */
     private String getDeclaredRightVariableName()
     {
-        return ConfigHelper.getVariableName( this.getRight() );
+        return DeclarationUtilities.getVariableName( this.getRight() );
     }
 
     /**
@@ -1064,7 +1021,8 @@ public class InMemoryProject implements Project
 
         if ( this.hasBaseline() )
         {
-            variableName = ConfigHelper.getVariableName( this.getBaseline() );
+            variableName = DeclarationUtilities.getVariableName( this.getBaseline()
+                                                                     .dataset() );
         }
 
         return variableName;
@@ -1073,28 +1031,28 @@ public class InMemoryProject implements Project
     /**
      * @return The left hand data source configuration
      */
-    private DataSourceConfig getLeft()
+    private Dataset getLeft()
     {
-        return this.projectConfig.getInputs()
-                                 .getLeft();
+        return this.getDeclaration()
+                   .left();
     }
 
     /**
      * @return The right hand data source configuration
      */
-    private DataSourceConfig getRight()
+    private Dataset getRight()
     {
-        return this.projectConfig.getInputs()
-                                 .getRight();
+        return this.getDeclaration()
+                   .right();
     }
 
     /**
      * @return The baseline data source configuration
      */
-    private DataSourceConfig getBaseline()
+    private BaselineDataset getBaseline()
     {
-        return this.projectConfig.getInputs()
-                                 .getBaseline();
+        return this.getDeclaration()
+                   .baseline();
     }
 }
 

@@ -1,8 +1,7 @@
 package wres.datamodel.units;
 
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.DoubleUnaryOperator;
 
 import org.junit.Assert;
@@ -14,10 +13,8 @@ import static org.apache.commons.math3.util.Precision.EPSILON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.UnitAlias;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.UnitAlias;
 
 /**
  * The UnitMapper doesn't need a database (db) to test conversions.
@@ -138,9 +135,8 @@ class UnitMapperTest
 
         // Here we declare that boogaflickle should be interpreted as "m/s"
         UnitAlias boogaflickleMeansMetersPerSecond = new UnitAlias( BOOGAFLICKLE, "m/s" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( boogaflickleMeansMetersPerSecond ) );
         UnitMapper mapper = UnitMapper.of( toUnit,
-                                           declaration );
+                                           Set.of( boogaflickleMeansMetersPerSecond ) );
         DoubleUnaryOperator converter = mapper.getUnitMapper( BOOGAFLICKLE );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
     }
@@ -157,9 +153,8 @@ class UnitMapperTest
 
         // Here declare that boogaflickle should be interpreted as "[ft_i]/min"
         UnitAlias boogaflickleMeansFeetPerMinute = new UnitAlias( BOOGAFLICKLE, "[ft_i]/min" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( boogaflickleMeansFeetPerMinute ) );
         UnitMapper mapper = UnitMapper.of( BOOGAFLICKLE,
-                                           declaration );
+                                           Set.of( boogaflickleMeansFeetPerMinute ) );
         DoubleUnaryOperator converter = mapper.getUnitMapper( fromUnit );
         assertEquals( 510039.370, converter.applyAsDouble( 2591.0 ), 0.001 );
     }
@@ -178,9 +173,8 @@ class UnitMapperTest
         // Here we declare that "C" should be interpreted as "C" or Coulomb
         // rather than the WRES convenience alias for Celsius
         UnitAlias coulombMeansCoulomb = new UnitAlias( "C", "C" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( coulombMeansCoulomb ) );
         UnitMapper mapper = UnitMapper.of( toUnit,
-                                           declaration );
+                                           Set.of( coulombMeansCoulomb ) );
         assertThrows( NoSuchUnitConversionException.class,
                       () -> mapper.getUnitMapper( fromUnit ) );
     }
@@ -199,9 +193,8 @@ class UnitMapperTest
         // Here we declare that "F" should be interpreted as "F" or Farad
         // rather than the WRES convenience alias for Fahrenheit.
         UnitAlias faradMeansFarad = new UnitAlias( "F", "F" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( faradMeansFarad ) );
         UnitMapper mapper = UnitMapper.of( toUnit,
-                                           declaration );
+                                           Set.of( faradMeansFarad ) );
         assertThrows( NoSuchUnitConversionException.class,
                       () -> mapper.getUnitMapper( fromUnit ) );
     }
@@ -216,10 +209,10 @@ class UnitMapperTest
         String toUnit = "s";
         UnitAlias aliasOne = new UnitAlias( "F", "far out" );
         UnitAlias aliasTwo = new UnitAlias( "F", "nearby" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( aliasOne, aliasTwo ) );
-        assertThrows( ProjectConfigException.class,
+        Set<UnitAlias> aliases = Set.of( aliasOne, aliasTwo );
+        assertThrows( DeclarationException.class,
                       () -> UnitMapper.of( toUnit,
-                                           declaration ) );
+                                           aliases ) );
     }
 
     /**
@@ -234,9 +227,8 @@ class UnitMapperTest
 
         UnitAlias aliasOne = new UnitAlias( FUNKY_MINUTES, "min" );
         UnitAlias aliasTwo = new UnitAlias( FUNKY_SECONDS, "s" );
-        ProjectConfig declaration = this.getProjectDeclarationWith( List.of( aliasOne, aliasTwo ) );
         UnitMapper mapper = UnitMapper.of( FUNKY_SECONDS,
-                                           declaration );
+                                           Set.of( aliasOne, aliasTwo ) );
         DoubleUnaryOperator converter = mapper.getUnitMapper( FUNKY_MINUTES );
         assertEquals( 156540.0, converter.applyAsDouble( 2609.0 ), EPSILON );
     }
@@ -274,7 +266,7 @@ class UnitMapperTest
     }
 
     @Test
-    void testConversionOfCFSToCMS() throws SQLException
+    void testConversionOfCFSToCMS()
     {
         // Create the unit mapper for CMS
         UnitMapper mapper = UnitMapper.of( "CMS" );
@@ -290,39 +282,12 @@ class UnitMapperTest
     }
 
     @Test
-    void testIdentityConversionOfCMSToCMS() throws SQLException
+    void testIdentityConversionOfCMSToCMS()
     {
         // Create the unit mapper for CMS
         UnitMapper mapper = UnitMapper.of( "CMS" );
 
         DoubleUnaryOperator converter = mapper.getUnitMapper( "CMS" );
         assertEquals( 1.0, converter.applyAsDouble( 1.0 ), 0.00001 );
-    }
-
-    private ProjectConfig getProjectDeclarationWith( List<UnitAlias> aliases )
-    {
-        return new ProjectConfig( null,
-                                  new PairConfig( null,
-                                                  aliases,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null ),
-                                  null,
-                                  null,
-                                  null,
-                                  null );
     }
 }

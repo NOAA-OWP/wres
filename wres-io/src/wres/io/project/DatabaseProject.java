@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -17,22 +18,19 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.FeaturePool;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.TimeScaleConfig;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.TimeScale;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.io.NoDataException;
-import wres.io.config.ConfigHelper;
 import wres.io.data.DataProvider;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
@@ -43,6 +41,7 @@ import wres.io.database.Database;
 import wres.io.project.ProjectUtilities.VariableNames;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
@@ -60,7 +59,7 @@ public class DatabaseProject implements Project
     /** Protects access and generation of the feature collection. */
     private final Object featureLock = new Object();
 
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
     private final Database database;
     private final DatabaseCaches caches;
     private final GriddedFeatures griddedFeatures;
@@ -117,22 +116,22 @@ public class DatabaseProject implements Project
      * @param database the database
      * @param caches the database ORMs/caches
      * @param griddedFeatures the gridded features cache, if required
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @param hash the hash of the project data
      */
 
     public DatabaseProject( Database database,
                             DatabaseCaches caches,
                             GriddedFeatures griddedFeatures,
-                            ProjectConfig projectConfig,
+                            EvaluationDeclaration declaration,
                             String hash )
     {
         Objects.requireNonNull( database );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( hash );
 
         this.database = database;
-        this.projectConfig = projectConfig;
+        this.declaration = declaration;
         this.hash = hash;
         this.caches = caches;
         this.griddedFeatures = griddedFeatures;
@@ -142,9 +141,9 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public ProjectConfig getProjectConfig()
+    public EvaluationDeclaration getDeclaration()
     {
-        return this.projectConfig;
+        return this.declaration;
     }
 
     /**
@@ -157,9 +156,8 @@ public class DatabaseProject implements Project
     public String getMeasurementUnit()
     {
         // Declared unit available?
-        String declaredUnit = this.getProjectConfig()
-                                  .getPair()
-                                  .getUnit();
+        String declaredUnit = this.getDeclaration()
+                                  .unit();
         if ( Objects.isNull( this.measurementUnit ) && Objects.nonNull( declaredUnit ) && !declaredUnit.isBlank() )
         {
             this.measurementUnit = declaredUnit;
@@ -235,14 +233,14 @@ public class DatabaseProject implements Project
         }
 
         // Use the declared timescale
-        TimeScaleOuter declaredScale = ConfigHelper.getDesiredTimeScale( this.getProjectConfig()
-                                                                             .getPair() );
+        TimeScale declaredScale = this.getDeclaration()
+                                      .timeScale();
         if ( Objects.nonNull( declaredScale ) )
         {
+            this.desiredTimeScale = TimeScaleOuter.of( declaredScale.timeScale() );
+
             LOGGER.trace( "Discovered that the desired time scale was declared explicitly as {}.",
                           this.desiredTimeScale );
-
-            this.desiredTimeScale = declaredScale;
 
             return this.desiredTimeScale;
         }
@@ -287,66 +285,39 @@ public class DatabaseProject implements Project
             return this.desiredTimeScale;
         }
 
-        Inputs inputDeclaration = this.getProjectConfig()
-                                      .getInputs();
-
         // Look for the LCS among the declared inputs
-        if ( Objects.nonNull( inputDeclaration ) )
+        Set<TimeScaleOuter> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( declaration )
+                                                                             .stream()
+                                                                             .map( TimeScaleOuter::of )
+                                                                             .collect( Collectors.toUnmodifiableSet() );
+
+        if ( !declaredExistingTimeScales.isEmpty() )
         {
-            Set<TimeScaleOuter> declaredExistingTimeScales = new HashSet<>();
-            TimeScaleConfig leftScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
-            TimeScaleConfig rightScaleConfig = inputDeclaration.getLeft().getExistingTimeScale();
+            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
 
-            if ( Objects.nonNull( leftScaleConfig ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( leftScaleConfig ) );
-            }
-            if ( Objects.nonNull( rightScaleConfig ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( rightScaleConfig ) );
-            }
-            if ( Objects.nonNull( inputDeclaration.getBaseline() )
-                 && Objects.nonNull( inputDeclaration.getBaseline().getExistingTimeScale() ) )
-            {
-                declaredExistingTimeScales.add( TimeScaleOuter.of( inputDeclaration.getBaseline()
-                                                                                   .getExistingTimeScale() ) );
-            }
+            this.desiredTimeScale = leastCommonScale;
 
-            if ( !declaredExistingTimeScales.isEmpty() )
-            {
-                TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
+            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
+                          + " Instead, determined the desired time scale from the Least Common Scale of the "
+                          + "declared inputs, which  was {}.",
+                          leastCommonScale );
 
-                this.desiredTimeScale = leastCommonScale;
-
-                LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
-                              + " Instead, determined the desired time scale from the Least Common Scale of the "
-                              + "declared inputs, which  was {}.",
-                              leastCommonScale );
-
-                return this.desiredTimeScale;
-            }
+            return this.desiredTimeScale;
         }
 
         return this.desiredTimeScale;
     }
 
     @Override
-    public boolean isUpscalingLenient( LeftOrRightOrBaseline lrb )
+    public boolean isUpscalingLenient( DatasetOrientation orientation )
     {
-        return ProjectUtilities.isUpscalingLenient( lrb,
-                                                    this.getProjectConfig()
-                                                        .getPair()
-                                                        .getDesiredTimeScale() );
+        return ProjectUtilities.isUpscalingLenient( orientation,
+                                                    this.getDeclaration()
+                                                        .timeScale(),
+                                                    this.getDeclaration()
+                                                        .rescaleLenience() );
     }
 
-    /**
-     * Returns the set of {@link FeatureTuple} for the project. If none have been
-     * created yet, then it is evaluated. If there is no specification within
-     * the configuration, all locations that have been ingested are retrieved
-     * @return A set of all feature tuples involved in the project
-     * cannot be retrieved from the database
-     * @throws IllegalStateException if the features have not been set. Call {@link #prepareAndValidate()} first.
-     */
     @Override
     public Set<FeatureTuple> getFeatures()
     {
@@ -358,11 +329,6 @@ public class DatabaseProject implements Project
         return Collections.unmodifiableSet( this.features );
     }
 
-    /**
-     * Returns the set of {@link FeatureGroup} for the project.
-     * @return A set of all feature groups involved in the project
-     * @throws IllegalStateException if the features have not been set. Call {@link #prepareAndValidate()} first.
-     */
     @Override
     public Set<FeatureGroup> getFeatureGroups()
     {
@@ -374,39 +340,35 @@ public class DatabaseProject implements Project
         return Collections.unmodifiableSet( this.featureGroups );
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The declared data source for the specified orientation
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public DataSourceConfig getDeclaredDataSource( LeftOrRightOrBaseline lrb )
+    public Dataset getDeclaredDataSource( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        if ( orientation == DatasetOrientation.BASELINE && !this.hasBaseline() )
+        {
+            LOGGER.debug( "Requested a baseline dataset, but not baseline dataset was defined." );
+            return null;
+        }
+
+        return switch ( orientation )
                 {
-                    case LEFT -> this.getLeft();
-                    case RIGHT -> this.getRight();
-                    case BASELINE -> this.getBaseline();
+                    case LEFT -> this.getDeclaration()
+                                     .left();
+                    case RIGHT -> this.getDeclaration()
+                                      .right();
+                    case BASELINE -> this.getDeclaration()
+                                         .baseline()
+                                         .dataset();
                 };
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public String getVariableName( LeftOrRightOrBaseline lrb )
+    public String getVariableName( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        return switch ( orientation )
                 {
                     case LEFT -> this.getLeftVariableName();
                     case RIGHT -> this.getRightVariableName();
@@ -414,19 +376,12 @@ public class DatabaseProject implements Project
                 };
     }
 
-    /**
-     * @param lrb The side of data for which the variable is required
-     * @return The name of the declared variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
     @Override
-    public String getDeclaredVariableName( LeftOrRightOrBaseline lrb )
+    public String getDeclaredVariableName( DatasetOrientation orientation )
     {
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( orientation );
 
-        return switch ( lrb )
+        return switch ( orientation )
                 {
                     case LEFT -> this.getDeclaredLeftVariableName();
                     case RIGHT -> this.getDeclaredRightVariableName();
@@ -434,46 +389,32 @@ public class DatabaseProject implements Project
                 };
     }
 
-    /**
-     * @return the earliest analysis duration
-     */
-
     @Override
     public Duration getEarliestAnalysisDuration()
     {
-        return ConfigHelper.getEarliestAnalysisDuration( this.getProjectConfig() );
+        return DeclarationUtilities.getEarliestAnalysisDuration( this.getDeclaration() );
     }
-
-    /**
-     * @return the latest analysis duration
-     */
 
     @Override
     public Duration getLatestAnalysisDuration()
     {
-        return ConfigHelper.getLatestAnalysisDuration( this.getProjectConfig() );
+        return DeclarationUtilities.getLatestAnalysisDuration( this.getDeclaration() );
     }
 
-    /**
-     * @return the earliest possible day in a season. NULL unless specified in the configuration
-     */
     @Override
     public MonthDay getStartOfSeason()
     {
-        return ConfigHelper.getEarliestDayInSeason( this.getProjectConfig() );
+        return DeclarationUtilities.getStartOfSeason( this.getDeclaration() );
     }
 
-    /**
-     * @return the latest possible day in a season. NULL unless specified in the configuration
-     */
     @Override
     public MonthDay getEndOfSeason()
     {
-        return ConfigHelper.getLatestDayInSeason( this.getProjectConfig() );
+        return DeclarationUtilities.getEndOfSeason( this.getDeclaration() );
     }
 
     @Override
-    public boolean usesGriddedData( LeftOrRightOrBaseline orientation )
+    public boolean usesGriddedData( DatasetOrientation orientation )
     {
         Boolean usesGriddedData;
 
@@ -495,7 +436,7 @@ public class DatabaseProject implements Project
             script.addLine( "WHERE PS.project_id = ?" );
             script.addArgument( this.getId() );
             script.addTab().addLine( "AND PS.member = ?" );
-            script.addArgument( orientation.toString()
+            script.addArgument( orientation.name()
                                            .toLowerCase() );
             script.addTab().addLine( "AND S.is_point_data = FALSE" );
             script.setMaxRows( 1 );
@@ -520,37 +461,23 @@ public class DatabaseProject implements Project
         return usesGriddedData;
     }
 
-    /**
-     * Returns unique identifier for this project's dataset
-     * @return The unique ID
-     */
     @Override
     public String getHash()
     {
         return this.hash;
     }
 
-    /**
-     * @return whether baseline data is involved in the project
-     */
     @Override
     public boolean hasBaseline()
     {
         return this.getBaseline() != null;
     }
 
-    /**
-     * @return whether there is a generated baseline
-     */
     @Override
     public boolean hasGeneratedBaseline()
     {
-        return ConfigHelper.hasGeneratedBaseline( this.getBaseline() );
+        return DeclarationUtilities.hasGeneratedBaseline( this.getBaseline() );
     }
-
-    /**
-     * @return the project identity
-     */
 
     @Override
     public long getId()
@@ -558,22 +485,12 @@ public class DatabaseProject implements Project
         return this.projectId;
     }
 
-    /**
-     * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
-     *
-     * @return whether the project uses probability thresholds
-     */
     @Override
     public boolean hasProbabilityThresholds()
     {
-        return ConfigHelper.hasProbabilityThresholds( this.getProjectConfig() );
+        return DeclarationUtilities.hasProbabilityThresholds( this.getDeclaration() );
     }
 
-    /**
-     * Saves the project.
-     * @return true if this call resulted in the project being saved, false otherwise
-     * @throws DataAccessException if the save fails for any reason
-     */
     @Override
     public boolean save()
     {
@@ -738,19 +655,21 @@ public class DatabaseProject implements Project
 
     private void validateEnsembleConditions()
     {
-        DataSourceConfig left = this.getProjectConfig().getInputs().getLeft();
-        DataSourceConfig right = this.getProjectConfig().getInputs().getRight();
-        DataSourceConfig baseline = this.getProjectConfig().getInputs().getBaseline();
-
         // Show all errors at once rather than drip-feeding
-        List<String> failed = new ArrayList<>();
-        List<String> failedLeft = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.LEFT, left );
-        List<String> failedRight = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.RIGHT, right );
-        List<String> failedBaseline = this.getInvalidEnsembleConditions( LeftOrRightOrBaseline.BASELINE, baseline );
-
-        failed.addAll( failedLeft );
+        Dataset left = this.getLeft();
+        List<String> failedLeft = this.getInvalidEnsembleConditions( DatasetOrientation.LEFT, left );
+        List<String> failed = new ArrayList<>( failedLeft );
+        Dataset right = this.getRight();
+        List<String> failedRight = this.getInvalidEnsembleConditions( DatasetOrientation.RIGHT, right );
         failed.addAll( failedRight );
-        failed.addAll( failedBaseline );
+
+        if ( this.hasBaseline() )
+        {
+            Dataset baseline = this.getBaseline()
+                                   .dataset();
+            List<String> failedBaseline = this.getInvalidEnsembleConditions( DatasetOrientation.BASELINE, baseline );
+            failed.addAll( failedBaseline );
+        }
 
         if ( !failed.isEmpty() )
         {
@@ -779,34 +698,38 @@ public class DatabaseProject implements Project
 
         try
         {
-            isVector = !( this.usesGriddedData( LeftOrRightOrBaseline.LEFT ) ||
-                          this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) );
+            isVector = !( this.usesGriddedData( DatasetOrientation.LEFT ) ||
+                          this.usesGriddedData( DatasetOrientation.RIGHT ) );
 
             // Validate the variable declaration against the data, when the declaration is present
             if ( isVector )
             {
-                String name = this.getDeclaredVariableName( LeftOrRightOrBaseline.LEFT );
+                String name = this.getDeclaredVariableName( DatasetOrientation.LEFT );
                 leftTimeSeriesValid = Objects.isNull( name )
                                       || variables.isValid( this.getId(),
-                                                            LeftOrRightOrBaseline.LEFT.value(),
+                                                            DatasetOrientation.LEFT.name()
+                                                                                   .toLowerCase(),
                                                             name );
             }
 
             if ( isVector )
             {
-                String name = this.getDeclaredVariableName( LeftOrRightOrBaseline.RIGHT );
+                String name = this.getDeclaredVariableName( DatasetOrientation.RIGHT );
                 rightTimeSeriesValid = Objects.isNull( name )
                                        || variables.isValid( this.getId(),
-                                                             LeftOrRightOrBaseline.RIGHT.value(),
+                                                             DatasetOrientation.RIGHT.name()
+                                                                                     .toLowerCase(),
                                                              name );
             }
 
             if ( isVector && this.hasBaseline() )
             {
-                String name = this.getDeclaredVariableName( LeftOrRightOrBaseline.BASELINE );
-                baselineTimeSeriesValid = Objects.isNull( name ) || variables.isValid( this.getId(),
-                                                                                       LeftOrRightOrBaseline.BASELINE.value(),
-                                                                                       name );
+                String name = this.getDeclaredVariableName( DatasetOrientation.BASELINE );
+                baselineTimeSeriesValid = Objects.isNull( name )
+                                          || variables.isValid( this.getId(),
+                                                                DatasetOrientation.BASELINE.name()
+                                                                                           .toLowerCase(),
+                                                                name );
             }
         }
         catch ( SQLException | DataAccessException e )
@@ -830,19 +753,19 @@ public class DatabaseProject implements Project
         {
             valid = false;
             message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, LeftOrRightOrBaseline.LEFT );
+            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.LEFT );
         }
         if ( !rightTimeSeriesValid )
         {
             valid = false;
             message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, LeftOrRightOrBaseline.RIGHT );
+            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.RIGHT );
         }
         if ( !baselineTimeSeriesValid )
         {
             valid = false;
             message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, LeftOrRightOrBaseline.BASELINE );
+            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.BASELINE );
         }
 
         if ( !valid )
@@ -854,21 +777,22 @@ public class DatabaseProject implements Project
     /**
      * Get the message about invalid variables.
      * @param variables the variables cache
-     * @param lrb the orientation
+     * @param orientation the orientation
      * @return the message
      */
 
-    private String getInvalidVariablesMessage( Variables variables, LeftOrRightOrBaseline lrb )
+    private String getInvalidVariablesMessage( Variables variables, DatasetOrientation orientation )
     {
         try
         {
             List<String> availableVariables = variables.getAvailableVariables( this.getId(),
-                                                                               lrb.value() );
+                                                                               orientation.name()
+                                                                                          .toLowerCase() );
             StringBuilder message = new StringBuilder();
             message.append( "There is no '" )
-                   .append( this.getVariableName( lrb ) )
+                   .append( this.getVariableName( orientation ) )
                    .append( "' data available for the " )
-                   .append( lrb )
+                   .append( orientation )
                    .append( " evaluation dataset." );
 
             if ( !availableVariables.isEmpty() )
@@ -891,9 +815,9 @@ public class DatabaseProject implements Project
         catch ( SQLException e )
         {
             throw new DataAccessException( "'"
-                                           + this.getVariableName( lrb )
+                                           + this.getVariableName( orientation )
                                            + "' is not a valid "
-                                           + lrb
+                                           + orientation
                                            + "variable for evaluation. Possible alternatives could "
                                            + "not be found.",
                                            e );
@@ -922,29 +846,35 @@ public class DatabaseProject implements Project
         boolean baselineAuto = false;
 
         // Left declared?
-        if ( Objects.nonNull( this.getLeft().getVariable() ) )
+        if ( Objects.nonNull( this.getLeft()
+                                  .variable() ) )
         {
-            String name = this.getLeft().getVariable().getValue();
+            String name = this.getLeft()
+                              .variable()
+                              .name();
             leftNames.add( name );
         }
         // No, look at data
         else
         {
-            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.LEFT );
+            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
             leftNames.addAll( names );
             leftAuto = true;
         }
 
         // Right declared?
-        if ( Objects.nonNull( this.getRight().getVariable() ) )
+        if ( Objects.nonNull( this.getRight()
+                                  .variable() ) )
         {
-            String name = this.getRight().getVariable().getValue();
+            String name = this.getRight()
+                              .variable()
+                              .name();
             rightNames.add( name );
         }
         // No, look at data
         else
         {
-            Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.RIGHT );
+            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
             rightNames.addAll( names );
             rightAuto = true;
         }
@@ -952,15 +882,20 @@ public class DatabaseProject implements Project
         // Baseline declared?
         if ( this.hasBaseline() )
         {
-            if ( Objects.nonNull( this.getBaseline().getVariable() ) )
+            if ( Objects.nonNull( this.getBaseline()
+                                      .dataset()
+                                      .variable() ) )
             {
-                String name = this.getBaseline().getVariable().getValue();
+                String name = this.getBaseline()
+                                  .dataset()
+                                  .variable()
+                                  .name();
                 baselineNames.add( name );
             }
             // No, look at data
             else
             {
-                Set<String> names = this.getVariableNameByInspectingData( LeftOrRightOrBaseline.BASELINE );
+                Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
                 baselineNames.addAll( names );
                 baselineAuto = true;
             }
@@ -976,7 +911,7 @@ public class DatabaseProject implements Project
                       rightAuto,
                       baselineAuto );
 
-        VariableNames variableNames = ProjectUtilities.getVariableNames( this.getProjectConfig(),
+        VariableNames variableNames = ProjectUtilities.getVariableNames( this.getDeclaration(),
                                                                          Collections.unmodifiableSet( leftNames ),
                                                                          Collections.unmodifiableSet( rightNames ),
                                                                          Collections.unmodifiableSet( baselineNames ) );
@@ -997,20 +932,21 @@ public class DatabaseProject implements Project
     /**
      * Determines the possible variable names by inspecting the data.
      *
-     * @param lrb the context
+     * @param orientation the context
      * @return the possible variable names
      * @throws DataAccessException if the variable information could not be determined from the data
-     * @throws ProjectConfigException if declaration is required to disambiguate the variable name
      */
 
-    private Set<String> getVariableNameByInspectingData( LeftOrRightOrBaseline lrb )
+    private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation )
     {
-        DataScripter script = ProjectScriptGenerator.createVariablesScript( this.getDatabase(), this.getId(), lrb );
+        DataScripter script = ProjectScriptGenerator.createVariablesScript( this.getDatabase(),
+                                                                            this.getId(),
+                                                                            orientation );
 
         if ( LOGGER.isDebugEnabled() )
         {
             LOGGER.debug( "The script for auto-detecting variables on the {} side will run with parameters {}:{}{}",
-                          lrb,
+                          orientation,
                           script.getParameterStrings(),
                           System.lineSeparator(),
                           script );
@@ -1027,7 +963,8 @@ public class DatabaseProject implements Project
         }
         catch ( SQLException e )
         {
-            throw new DataAccessException( "While attempting to determine the variable name for " + lrb + " data.", e );
+            throw new DataAccessException(
+                    "While attempting to determine the variable name for " + orientation + " data.", e );
         }
 
         return Collections.unmodifiableSet( names );
@@ -1045,26 +982,26 @@ public class DatabaseProject implements Project
     /**
      * Checks for any invalid ensemble conditions and returns a string representation of the invalid conditions.
      *
-     * @param lrb the orientation of the source
-     * @param config the source configuration whose ensemble conditions should be validated
+     * @param orientation the orientation of the source
+     * @param dataset the source configuration whose ensemble conditions should be validated
      * @return a string representation of the invalid conditions 
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
-    private List<String> getInvalidEnsembleConditions( LeftOrRightOrBaseline lrb,
-                                                       DataSourceConfig config )
+    private List<String> getInvalidEnsembleConditions( DatasetOrientation orientation,
+                                                       Dataset dataset )
     {
         List<String> failed = new ArrayList<>();
 
-        if ( Objects.nonNull( config ) && !config.getEnsemble().isEmpty() )
+        EnsembleFilter filter = dataset.ensembleFilter();
+        if ( Objects.nonNull( filter ) )
         {
-            List<EnsembleCondition> conditions = config.getEnsemble();
-            for ( EnsembleCondition condition : conditions )
+            for ( String name : filter.members() )
             {
                 DataScripter script = ProjectScriptGenerator.getIsValidEnsembleCondition( this.getDatabase(),
-                                                                                          condition.getName(),
+                                                                                          name,
                                                                                           this.getId(),
-                                                                                          condition.isExclude() );
+                                                                                          filter.exclude() );
 
                 LOGGER.debug( "getIsValidEnsembleCondition will run: {}", script );
 
@@ -1078,12 +1015,12 @@ public class DatabaseProject implements Project
                         if ( !dataExists )
                         {
                             ToStringBuilder builder =
-                                    new ToStringBuilder( condition,
-                                                         ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation", lrb )
+                                    new ToStringBuilder( ToStringStyle.SHORT_PREFIX_STYLE ).append( "orientation",
+                                                                                                    orientation )
                                                                                            .append( "name",
-                                                                                                    condition.getName() )
+                                                                                                    name )
                                                                                            .append( "exclude",
-                                                                                                    condition.isExclude() );
+                                                                                                    filter.exclude() );
 
                             failed.add( builder.toString() );
                         }
@@ -1094,7 +1031,7 @@ public class DatabaseProject implements Project
                     throw new DataAccessException( "While attempting validate ensemble conditions.", e );
                 }
 
-                LOGGER.debug( "getIntersectingFeatures finished run: {}", script );
+                LOGGER.debug( "getIsValidEnsembleCondition finished run: {}", script );
             }
         }
 
@@ -1117,7 +1054,7 @@ public class DatabaseProject implements Project
 
         // Gridded features? #74266
         // Yes
-        if ( this.usesGriddedData( LeftOrRightOrBaseline.RIGHT ) )
+        if ( this.usesGriddedData( DatasetOrientation.RIGHT ) )
         {
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
             singletons.addAll( griddedTuples );
@@ -1135,15 +1072,11 @@ public class DatabaseProject implements Project
 
 
             // Deal with the special case of singletons first
-            List<NamedFeature> singletonFeatures = this.getProjectConfig()
-                                                       .getPair()
-                                                       .getFeature();
+            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures();
 
             // If there are no declared singletons, allow features to be discovered, but only if there are no declared
-            // multi-feature groups. TODO: consider whether zero declared features should be supported in future
-            List<FeaturePool> declaredGroups = this.getProjectConfig()
-                                                   .getPair()
-                                                   .getFeatureGroup();
+            // multi-feature groups.
+            Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups();
             if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
             {
                 DataScripter script =
@@ -1163,9 +1096,10 @@ public class DatabaseProject implements Project
             }
 
             // Now deal with feature groups that contain one or more
-            List<NamedFeature> groupedFeatures = declaredGroups.stream()
-                                                               .flatMap( next -> next.getFeature().stream() )
-                                                               .toList();
+            Set<GeometryTuple> groupedFeatures = declaredGroups.stream()
+                                                               .flatMap( next -> next.getGeometryTuplesList()
+                                                                                     .stream() )
+                                                               .collect( Collectors.toSet() );
 
             if ( !groupedFeatures.isEmpty() )
             {
@@ -1187,11 +1121,42 @@ public class DatabaseProject implements Project
         // Combine the singletons and feature groups into groups that contain one or more tuples
         Set<FeatureGroup> groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
                                                                       Collections.unmodifiableSet( grouped ),
-                                                                      this.getProjectConfig()
-                                                                          .getPair(),
+                                                                      this.getDeclaration(),
                                                                       this.getId() );
 
         return Pair.of( Collections.unmodifiableSet( singletons ), groups );
+    }
+
+    /**
+     * @return the declared features
+     */
+    private Set<GeometryTuple> getDeclaredFeatures()
+    {
+        if ( Objects.isNull( this.getDeclaration()
+                                 .features() ) )
+        {
+            return Set.of();
+        }
+
+        return this.getDeclaration()
+                   .features()
+                   .geometries();
+    }
+
+    /**
+     * @return the declared feature groups
+     */
+    private Set<GeometryGroup> getDeclaredFeatureGroups()
+    {
+        if ( Objects.isNull( this.getDeclaration()
+                                 .featureGroups() ) )
+        {
+            return Set.of();
+        }
+
+        return this.getDeclaration()
+                   .featureGroups()
+                   .geometryGroups();
     }
 
     /**
@@ -1205,13 +1170,13 @@ public class DatabaseProject implements Project
     {
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
         Set<Feature> innerGriddedFeatures = this.getGriddedFeatures()
-                                           .get();
+                                                .get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( Feature nextFeature : innerGriddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
-            GeometryTuple geoTuple = null;
+            GeometryTuple geoTuple;
             if ( this.hasBaseline() )
             {
                 geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
@@ -1316,7 +1281,8 @@ public class DatabaseProject implements Project
      */
     private String getProjectName()
     {
-        return this.projectConfig.getName();
+        return this.getDeclaration()
+                   .label();
     }
 
     /**
@@ -1390,25 +1356,25 @@ public class DatabaseProject implements Project
 
     /**
      * @see #getLeftVariableName()
-     * @return the declared left variable name or null if undeclared
+     * @return The declared left variable name or null if undeclared
      */
     private String getDeclaredLeftVariableName()
     {
-        return ConfigHelper.getVariableName( this.getLeft() );
+        return DeclarationUtilities.getVariableName( this.getLeft() );
     }
 
     /**
      * @see #getRightVariableName()
-     * @return the declared right variable name or null if undeclared
+     * @return The declared right variable name or null if undeclared
      */
     private String getDeclaredRightVariableName()
     {
-        return ConfigHelper.getVariableName( this.getRight() );
+        return DeclarationUtilities.getVariableName( this.getRight() );
     }
 
     /**
      * @see #getBaselineVariableName()
-     * @return the declared baseline variable name or null if undeclared
+     * @return The declared baseline variable name or null if undeclared
      */
     private String getDeclaredBaselineVariableName()
     {
@@ -1416,37 +1382,38 @@ public class DatabaseProject implements Project
 
         if ( this.hasBaseline() )
         {
-            variableName = ConfigHelper.getVariableName( this.getBaseline() );
+            variableName = DeclarationUtilities.getVariableName( this.getBaseline()
+                                                                     .dataset() );
         }
 
         return variableName;
     }
 
     /**
-     * @return the left hand data source configuration
+     * @return The left hand data source configuration
      */
-    private DataSourceConfig getLeft()
+    private Dataset getLeft()
     {
-        return this.projectConfig.getInputs()
-                                 .getLeft();
+        return this.getDeclaration()
+                   .left();
     }
 
     /**
-     * @return the right hand data source configuration
+     * @return The right hand data source configuration
      */
-    private DataSourceConfig getRight()
+    private Dataset getRight()
     {
-        return this.projectConfig.getInputs()
-                                 .getRight();
+        return this.getDeclaration()
+                   .right();
     }
 
     /**
-     * @return the baseline data source configuration
+     * @return The baseline data source configuration
      */
-    private DataSourceConfig getBaseline()
+    private BaselineDataset getBaseline()
     {
-        return this.projectConfig.getInputs()
-                                 .getBaseline();
+        return this.getDeclaration()
+                   .baseline();
     }
 }
 

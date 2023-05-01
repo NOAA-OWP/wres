@@ -2,9 +2,9 @@ package wres.datamodel.units;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.DoubleUnaryOperator;
@@ -17,9 +17,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.UnitAlias;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.UnitAlias;
 import wres.datamodel.units.Units.UnrecognizedUnitException;
 
 /**
@@ -44,27 +43,23 @@ public class UnitMapper
     public static UnitMapper of( String desiredMeasurementUnit )
     {
         return new UnitMapper( desiredMeasurementUnit,
-                               Collections.emptyList() );
+                               Collections.emptySet() );
     }
 
     /**
      * Creates an instance.
      * @param desiredMeasurementUnit the desired measurement unit name
-     * @param projectConfig the project declaration
+     * @param aliases the optional unit aliases
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
     public static UnitMapper of( String desiredMeasurementUnit,
-                                 ProjectConfig projectConfig )
+                                 Set<UnitAlias> aliases )
     {
-        Objects.requireNonNull( projectConfig );
-
-        List<UnitAlias> aliases = projectConfig.getPair()
-                                               .getUnitAlias();
         if ( aliases == null )
         {
-            aliases = Collections.emptyList();
+            aliases = Collections.emptySet();
         }
 
         return new UnitMapper( desiredMeasurementUnit,
@@ -256,7 +251,7 @@ public class UnitMapper
      */
 
     private UnitMapper( String desiredMeasurementUnitName,
-                        List<UnitAlias> aliases )
+                        Set<UnitAlias> aliases )
     {
         Objects.requireNonNull( desiredMeasurementUnitName );
         Objects.requireNonNull( aliases );
@@ -275,21 +270,20 @@ public class UnitMapper
 
         for ( UnitAlias alias : aliases )
         {
-            String existing = aliasToUnitStrings.put( alias.getAlias(),
-                                                      alias.getUnit() );
+            String existing = aliasToUnitStrings.put( alias.alias(),
+                                                      alias.unit() );
 
             if ( existing != null )
             {
-                throw new ProjectConfigException( alias,
-                                                  "Multiple declarations for a "
+                throw new DeclarationException( "Multiple declarations for a "
                                                   + "single unit alias are not "
                                                   + "supported. Found repeated "
                                                   + "'"
-                                                  + alias.getAlias()
+                                                  + alias.alias()
                                                   + "' alias. Remove all but "
                                                   + "one declaration for alias "
                                                   + "'"
-                                                  + alias.getAlias()
+                                                  + alias.alias()
                                                   + "'." );
             }
         }
@@ -319,8 +313,8 @@ public class UnitMapper
         // Immediately attempt to parse the given javax.measure.Unit, only warn.
         for ( UnitAlias unitAlias : aliases )
         {
-            String aliasName = unitAlias.getAlias();
-            String unitName = unitAlias.getUnit();
+            String aliasName = unitAlias.alias();
+            String unitName = unitAlias.unit();
 
             // In the case of the desiredMeasurementUnitName, it's already been
             // added above, so skip here to avoid duplication.
