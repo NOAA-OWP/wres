@@ -490,27 +490,24 @@ public class ReaderUtilities
 
         SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
 
-        OffsetDateTime earliest;
         String specifiedEarliest = dates.getEarliest();
-
-        OffsetDateTime latest;
-        String specifiedLatest = dates.getLatest();
-
-        OffsetDateTime nowDate = OffsetDateTime.now();
-
-        earliest = OffsetDateTime.parse( specifiedEarliest )
-                                 .with( TemporalAdjusters.firstDayOfYear() )
-                                 .withHour( 0 )
-                                 .withMinute( 0 )
-                                 .withSecond( 0 )
-                                 .withNano( 0 );
+        OffsetDateTime earliest = OffsetDateTime.parse( specifiedEarliest )
+                                                .with( TemporalAdjusters.firstDayOfYear() )
+                                                .withHour( 0 )
+                                                .withMinute( 0 )
+                                                .withSecond( 0 )
+                                                .withNano( 0 );
 
         LOGGER.debug( "Given {}, calculated {} for earliest.",
                       specifiedEarliest,
                       earliest );
 
+        String specifiedLatest = dates.getLatest();
+
         // Intentionally keep this raw, un-next-year-ified.
-        latest = OffsetDateTime.parse( specifiedLatest );
+        OffsetDateTime latest = OffsetDateTime.parse( specifiedLatest );
+
+        OffsetDateTime nowDate = OffsetDateTime.now();
 
         LOGGER.debug( "Given {}, parsed {} for latest.",
                       specifiedLatest,

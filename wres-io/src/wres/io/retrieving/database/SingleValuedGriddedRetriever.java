@@ -277,9 +277,9 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
         this.isForecast = builder.isForecast;
 
         // Validate
-        Objects.requireNonNull( this.getLeftOrRightOrBaseline(),
+        Objects.requireNonNull( this.getDatasetOrientation(),
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A
-                                + "member type (left or right or baseline)." );
+                                + "dataset orientation." );
 
         Objects.requireNonNull( this.isForecast,
                                 CANNOT_BUILD_A_TIME_SERIES_RETRIEVER_WITHOUT_A + "forecast status." );
@@ -301,8 +301,9 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
 
         // Parameters
         dataScripter.addArgument( this.getProjectId() )
-                    .addArgument( this.getLeftOrRightOrBaseline()
-                                      .value() );
+                    .addArgument( this.getDatasetOrientation()
+                                      .name()
+                                      .toLowerCase() );
 
         // Time window
         this.addTimeWindowClause( dataScripter );

@@ -12,7 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
-import wres.config.generated.LeftOrRightOrBaseline;
+
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.space.Feature;
 
@@ -54,7 +55,7 @@ public class TimeSeriesStore
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline orientation,
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( DatasetOrientation orientation,
                                                              Set<Feature> features )
     {
         Objects.requireNonNull( orientation );
@@ -76,7 +77,7 @@ public class TimeSeriesStore
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    public Stream<TimeSeries<Double>> getSingleValuedSeries( LeftOrRightOrBaseline orientation )
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );
 
@@ -110,7 +111,7 @@ public class TimeSeriesStore
      */
 
     public Stream<TimeSeries<Double>> getSingleValuedSeries( TimeWindowOuter timeWindow,
-                                                             LeftOrRightOrBaseline orientation,
+                                                             DatasetOrientation orientation,
                                                              Set<Feature> features )
     {
         Objects.requireNonNull( timeWindow );
@@ -137,7 +138,7 @@ public class TimeSeriesStore
      */
 
     public Stream<TimeSeries<Ensemble>> getEnsembleSeries( TimeWindowOuter timeWindow,
-                                                           LeftOrRightOrBaseline orientation,
+                                                           DatasetOrientation orientation,
                                                            Set<Feature> features )
     {
         Objects.requireNonNull( timeWindow );
@@ -162,7 +163,7 @@ public class TimeSeriesStore
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    public Stream<TimeSeries<Ensemble>> getEnsembleSeries( LeftOrRightOrBaseline orientation )
+    public Stream<TimeSeries<Ensemble>> getEnsembleSeries( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );
 
@@ -218,7 +219,7 @@ public class TimeSeriesStore
          * @throws IllegalArgumentException if the context is unrecognized
          */
 
-        public Builder addSingleValuedSeries( TimeSeries<Double> series, LeftOrRightOrBaseline context )
+        public Builder addSingleValuedSeries( TimeSeries<Double> series, DatasetOrientation context )
         {
             Objects.requireNonNull( series );
             Objects.requireNonNull( context );
@@ -241,7 +242,7 @@ public class TimeSeriesStore
          * @throws IllegalArgumentException if the context is unrecognized
          */
 
-        public Builder addEnsembleSeries( TimeSeries<Ensemble> series, LeftOrRightOrBaseline context )
+        public Builder addEnsembleSeries( TimeSeries<Ensemble> series, DatasetOrientation context )
         {
             Objects.requireNonNull( series );
             Objects.requireNonNull( context );
@@ -279,7 +280,7 @@ public class TimeSeriesStore
             getSingleValuedStore( Collection<TimeSeries<Double>> leftSingleValuedSeries,
                                   Collection<TimeSeries<Double>> rightSingleValuedSeries,
                                   Collection<TimeSeries<Double>> baselineSingleValuedSeries,
-                                  LeftOrRightOrBaseline orientation )
+                                  DatasetOrientation orientation )
     {
         return switch ( orientation )
                 {
@@ -303,7 +304,7 @@ public class TimeSeriesStore
             getEnsembleStore( Collection<TimeSeries<Ensemble>> leftEnsembleSeries,
                               Collection<TimeSeries<Ensemble>> rightEnsembleSeries,
                               Collection<TimeSeries<Ensemble>> baselineEnsembleSeries,
-                              LeftOrRightOrBaseline context )
+                              DatasetOrientation context )
     {
         return switch ( context )
                 {
@@ -346,17 +347,17 @@ public class TimeSeriesStore
                          size,
                          size,
                          this.leftSingleValuedSeries.size(),
-                         LeftOrRightOrBaseline.LEFT,
+                         DatasetOrientation.LEFT,
                          this.rightSingleValuedSeries.size(),
-                         LeftOrRightOrBaseline.RIGHT,
+                         DatasetOrientation.RIGHT,
                          this.baselineSingleValuedSeries.size(),
-                         LeftOrRightOrBaseline.BASELINE,
+                         DatasetOrientation.BASELINE,
                          this.leftEnsembleSeries.size(),
-                         LeftOrRightOrBaseline.LEFT,
+                         DatasetOrientation.LEFT,
                          this.rightEnsembleSeries.size(),
-                         LeftOrRightOrBaseline.RIGHT,
+                         DatasetOrientation.RIGHT,
                          this.baselineEnsembleSeries.size(),
-                         LeftOrRightOrBaseline.BASELINE );
+                         DatasetOrientation.BASELINE );
         }
     }
 

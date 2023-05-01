@@ -724,7 +724,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( 0, 1, ChronoUnit.HOURS );
+        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
+                                                                     java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -1896,7 +1897,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( 0, 1, ChronoUnit.HOURS );
+        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
+                                                                     java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -2685,11 +2687,11 @@ class DeclarationFactoryTest
                                                                 .minimum( Instant.parse( "2093-12-01T00:00:00Z" ) )
                                                                 .maximum( Instant.parse( "2094-12-01T00:00:00Z" ) )
                                                                 .build();
-        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
-                                                                      .minimumExclusive( 4 )
-                                                                      .maximum( 5 )
-                                                                      .unit( ChronoUnit.HOURS )
-                                                                      .build();
+        AnalysisDurations analysisDurations =
+                AnalysisDurationsBuilder.builder()
+                                        .minimumExclusive( java.time.Duration.ofHours( 4 ) )
+                                        .maximum( java.time.Duration.ofHours( 5 ) )
+                                        .build();
         TimePools validTimePools = TimePoolsBuilder.builder()
                                                    .period( java.time.Duration.ofHours( 17 ) )
                                                    .frequency( java.time.Duration.ofHours( 4 ) )

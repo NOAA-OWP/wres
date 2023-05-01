@@ -10,9 +10,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -67,12 +67,12 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
-        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.LEFT, null, features );
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT, null, features );
 
         // Wrap in a caching retriever
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                            LeftOrRightOrBaseline.LEFT,
-                                                                                                            this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT ) ) ) );
+                                                                                                            DatasetOrientation.LEFT,
+                                                                                                            this.project.getDeclaredDataSource( DatasetOrientation.LEFT ) ) ) );
     }
 
     @Override
@@ -101,19 +101,19 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.LEFT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.LEFT,
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT,
                                                                    adjustedWindow,
                                                                    features );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                            LeftOrRightOrBaseline.LEFT,
+                                                                                                            DatasetOrientation.LEFT,
                                                                                                             data ) ) );
     }
 
@@ -124,18 +124,18 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.RIGHT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.RIGHT,
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.RIGHT,
                                                                    adjustedWindow,
                                                                    features );
         return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                       LeftOrRightOrBaseline.RIGHT,
-                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT ) ) );
+                                                                                       DatasetOrientation.RIGHT,
+                                                                                       this.project.getDeclaredDataSource( DatasetOrientation.RIGHT ) ) );
     }
 
     @Override
@@ -153,18 +153,18 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.BASELINE );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.BASELINE );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( LeftOrRightOrBaseline.BASELINE,
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.BASELINE,
                                                                    adjustedWindow,
                                                                    features );
         return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                       LeftOrRightOrBaseline.BASELINE,
-                                                                                       this.project.getDeclaredDataSource( LeftOrRightOrBaseline.BASELINE ) ) );
+                                                                                       DatasetOrientation.BASELINE,
+                                                                                       this.project.getDeclaredDataSource( DatasetOrientation.BASELINE ) ) );
     }
 
     /**
@@ -173,7 +173,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
      * @return the time-series
      */
 
-    private Stream<TimeSeries<Double>> getTimeSeries( LeftOrRightOrBaseline orientation,
+    private Stream<TimeSeries<Double>> getTimeSeries( DatasetOrientation orientation,
                                                       TimeWindowOuter timeWindow,
                                                       Set<Feature> features )
     {
@@ -193,7 +193,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         // Analysis shape of evaluation?
         if ( this.project.getDeclaredDataSource( orientation )
-                         .getType() == DatasourceType.ANALYSES )
+                         .type() == DataType.ANALYSES )
         {
             allSeries = RetrieverUtilities.createAnalysisTimeSeries( allSeries,
                                                                      this.project.getEarliestAnalysisDuration(),

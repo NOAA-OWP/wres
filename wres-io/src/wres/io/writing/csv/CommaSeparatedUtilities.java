@@ -22,6 +22,8 @@ public class CommaSeparatedUtilities
      */
 
     public static final String HEADER_DELIMITER = " ";
+    private static final String EARLIEST = "EARLIEST";
+    private static final String LATEST = "LATEST";
 
     /**
      * Returns a default header from the {@link PoolMetadata} to which additional information may be appended.
@@ -52,27 +54,27 @@ public class CommaSeparatedUtilities
                         + CommaSeparatedUtilities.getTimeScaleForHeader( s, durationUnits );
         }
 
-        joiner.add( "EARLIEST"
+        joiner.add( EARLIEST
                     + HEADER_DELIMITER
                     + "ISSUE"
                     + HEADER_DELIMITER
                     + "TIME" )
-              .add( "LATEST"
+              .add( LATEST
                     + HEADER_DELIMITER
                     + "ISSUE"
                     + HEADER_DELIMITER
                     + "TIME" )
-              .add( "EARLIEST"
+              .add( EARLIEST
                     + HEADER_DELIMITER
                     + "VALID"
                     + HEADER_DELIMITER
                     + "TIME" )
-              .add( "LATEST"
+              .add( LATEST
                     + HEADER_DELIMITER
                     + "VALID"
                     + HEADER_DELIMITER
                     + "TIME" )
-              .add( "EARLIEST" + HEADER_DELIMITER
+              .add( EARLIEST + HEADER_DELIMITER
                     + "LEAD"
                     + HEADER_DELIMITER
                     + "TIME"
@@ -81,7 +83,7 @@ public class CommaSeparatedUtilities
                     + HEADER_DELIMITER
                     + durationUnits.name()
                     + timeScale )
-              .add( "LATEST" + HEADER_DELIMITER
+              .add( LATEST + HEADER_DELIMITER
                     + "LEAD"
                     + HEADER_DELIMITER
                     + "TIME"
@@ -154,6 +156,13 @@ public class CommaSeparatedUtilities
         }
 
         return timeScaleString;
+    }
+
+    /**
+     * Do not construct.
+     */
+    private CommaSeparatedUtilities()
+    {
     }
 
 }

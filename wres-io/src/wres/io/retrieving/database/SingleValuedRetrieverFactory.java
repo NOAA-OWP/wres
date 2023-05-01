@@ -10,18 +10,14 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
@@ -31,6 +27,7 @@ import wres.io.retrieving.DataAccessException;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 
@@ -61,13 +58,13 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private final DatabaseCaches caches;
 
     /** Left data declaration. */
-    private final DataSourceConfig leftConfig;
+    private final Dataset leftDataset;
 
     /** Right data declaration. */
-    private final DataSourceConfig rightConfig;
+    private final Dataset rightDataset;
 
     /** Baseline data declaration. */
-    private final DataSourceConfig baselineConfig;
+    private final Dataset baselineDataset;
 
     /** Start of a seasonal constraint, if any. */
     private final MonthDay seasonStart;
@@ -107,8 +104,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
-        return this.get( this.leftConfig,
-                         LeftOrRightOrBaseline.LEFT,
+        return this.get( this.leftDataset,
+                         DatasetOrientation.LEFT,
                          features,
                          null );
     }
@@ -117,8 +114,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
-        return this.get( this.leftConfig,
-                         LeftOrRightOrBaseline.LEFT,
+        return this.get( this.leftDataset,
+                         DatasetOrientation.LEFT,
                          features,
                          timeWindow );
     }
@@ -127,8 +124,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     public Supplier<Stream<TimeSeries<Double>>> getRightRetriever( Set<Feature> features,
                                                                    TimeWindowOuter timeWindow )
     {
-        return this.get( this.rightConfig,
-                         LeftOrRightOrBaseline.RIGHT,
+        return this.get( this.rightDataset,
+                         DatasetOrientation.RIGHT,
                          features,
                          timeWindow );
     }
@@ -136,8 +133,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
-        return this.get( this.baselineConfig,
-                         LeftOrRightOrBaseline.BASELINE,
+        return this.get( this.baselineDataset,
+                         DatasetOrientation.BASELINE,
                          features,
                          null );
     }
@@ -146,8 +143,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
-        return this.get( this.baselineConfig,
-                         LeftOrRightOrBaseline.BASELINE,
+        return this.get( this.baselineDataset,
+                         DatasetOrientation.BASELINE,
                          features,
                          timeWindow );
     }
@@ -155,56 +152,57 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     /**
      * Returns a supplier of time-series.
      *
-     * @param dataSourceConfig the data source configuration
-     * @param lrb the orientation of the data source
+     * @param dataset the data source configuration
+     * @param orientation the orientation of the data source
      * @param features the features
      * @param timeWindow the time window
      * @return the supplier
      */
 
-    private Supplier<Stream<TimeSeries<Double>>> get( DataSourceConfig dataSourceConfig,
-                                                      LeftOrRightOrBaseline lrb,
+    private Supplier<Stream<TimeSeries<Double>>> get( Dataset dataset,
+                                                      DatasetOrientation orientation,
                                                       Set<Feature> features,
                                                       TimeWindowOuter timeWindow )
     {
-        Objects.requireNonNull( dataSourceConfig );
-        Objects.requireNonNull( lrb );
+        Objects.requireNonNull( dataset );
+        Objects.requireNonNull( orientation );
         Objects.requireNonNull( features );
 
         LOGGER.debug( "Creating a {} retriever for project '{}', features '{}' and time window {}.",
-                      lrb,
+                      orientation,
                       this.getProject().getId(),
                       features,
                       timeWindow );
         TimeSeriesRetriever.Builder<Double> builder;
 
-        boolean isConfiguredAsForecast = ProjectConfigs.isForecast( dataSourceConfig );
+        boolean isConfiguredAsForecast = DeclarationUtilities.isForecast( dataset );
         String variableName = this.getProject()
-                                  .getVariableName( lrb );
+                                  .getVariableName( orientation );
         TimeScaleOuter declaredExistingTimeScale =
-                this.getDeclaredExistingTimeScale( dataSourceConfig );
+                this.getDeclaredExistingTimeScale( dataset );
 
         try
         {
             // Gridded data?
-            if ( this.getProject().usesGriddedData( lrb ) )
+            if ( this.getProject().usesGriddedData( orientation ) )
             {
-                builder = this.getGriddedRetrieverBuilder( dataSourceConfig.getType() )
+                builder = this.getGriddedRetrieverBuilder( dataset.type() )
                               .setIsForecast( isConfiguredAsForecast )
                               .setFeatures( features );
             }
             else
             {
-                builder = this.getRetrieverBuilder( dataSourceConfig.getType() )
+                builder = this.getRetrieverBuilder( dataset.type() )
                               .setFeatures( features );
             }
         }
         catch ( DataAccessException e )
         {
             throw new DataAccessException( "While creating a retriever of "
-                                           + lrb
+                                           + orientation
                                            + " data for project "
-                                           + this.getProject().getId()
+                                           + this.getProject()
+                                                 .getId()
                                            + FEATURE_MESSAGE
                                            + features
                                            + AND_TIME_WINDOW_MESSAGE
@@ -219,7 +217,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                .setProjectId( this.getProject()
                                   .getId() )
                .setVariableName( variableName )
-               .setLeftOrRightOrBaseline( lrb )
+               .setDatasetOrientation( orientation )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                .setDesiredTimeScale( this.desiredTimeScale );
 
@@ -232,7 +230,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         // left-ish data because the current interpretation of right-ish data
         // with a forecast type is to use reference time, not valid time. See #40405
 
-        if ( lrb != LeftOrRightOrBaseline.LEFT )
+        if ( orientation != DatasetOrientation.LEFT )
         {
             builder.setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd );
@@ -276,7 +274,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private TimeSeriesRetriever.Builder<Double> getRetrieverBuilder( DatasourceType dataType )
+    private TimeSeriesRetriever.Builder<Double> getRetrieverBuilder( DataType dataType )
     {
         Duration earliestAnalysisDuration = this.getProject()
                                                 .getEarliestAnalysisDuration();
@@ -311,7 +309,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private SingleValuedGriddedRetriever.Builder getGriddedRetrieverBuilder( DatasourceType dataType )
+    private SingleValuedGriddedRetriever.Builder getGriddedRetrieverBuilder( DataType dataType )
     {
         return switch ( dataType )
                 {
@@ -335,18 +333,27 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     /**
      * Returns the declared existing time scale associated with a data source, if any.
      *
-     * @param dataSourceConfig the data source declaration
+     * @param dataset the dataset declaration
      * @return a declared existing time scale, or null
      */
 
-    private TimeScaleOuter getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
+    private TimeScaleOuter getDeclaredExistingTimeScale( Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
+        Set<TimeScale> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( dataset );
+
         TimeScaleOuter declaredExistingTimeScale = null;
 
-        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+        if( declaredExistingTimeScales.size() > 1 )
         {
-            declaredExistingTimeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
+            throw new UnsupportedOperationException( "Currently, only one timescale is supported for each side of "
+                                                     + "data in an evaluation, not one per source." );
+        }
+
+        if ( !declaredExistingTimeScales.isEmpty() )
+        {
+            declaredExistingTimeScale = TimeScaleOuter.of( declaredExistingTimeScales.iterator()
+                                                                                     .next() );
         }
 
         return declaredExistingTimeScale;
@@ -384,19 +391,16 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         this.database = database;
         this.caches = caches;
 
-        ProjectConfig projectConfig = project.getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
-        Inputs inputsConfig = projectConfig.getInputs();
-        this.leftConfig = inputsConfig.getLeft();
-        this.rightConfig = inputsConfig.getRight();
-        this.baselineConfig = inputsConfig.getBaseline();
+        this.leftDataset = project.getDeclaredDataSource( DatasetOrientation.LEFT );
+        this.rightDataset = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
+        this.baselineDataset = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();
         this.seasonEnd = project.getEndOfSeason();
 
-        // Obtain and set the desired time scale. 
-        this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        // Obtain and set the desired timescale.
+        this.desiredTimeScale = project.getDesiredTimeScale();
     }
 
 }

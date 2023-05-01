@@ -31,9 +31,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.datamodel.space.Feature;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
@@ -80,10 +80,10 @@ public class SingleValuedGriddedRetrieverTest
     private static final String VARIABLE_NAME = "QINE";
 
     /**
-     * A {@link LeftOrRightOrBaseline} for testing.
+     * A {@link DatasetOrientation} for testing.
      */
 
-    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.RIGHT;
+    private static final DatasetOrientation ORIENTATION = DatasetOrientation.RIGHT;
 
     /**
      * The measurement units for testing.
@@ -166,7 +166,7 @@ public class SingleValuedGriddedRetrieverTest
                 (SingleValuedGriddedRetriever) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
                                                                                          .setFeatures( Set.of( FEATURE ) )
                                                                                          .setProjectId( PROJECT_ID )
-                                                                                         .setLeftOrRightOrBaseline( SingleValuedGriddedRetrieverTest.LRB )
+                                                                                         .setDatasetOrientation( SingleValuedGriddedRetrieverTest.ORIENTATION )
                                                                                          .setTimeWindow( timeWindow )
                                                                                          .setDatabase( this.wresDatabase )
                                                                                          .setMeasurementUnitsCache( this.measurementUnitsCache )
@@ -243,7 +243,9 @@ public class SingleValuedGriddedRetrieverTest
                 new DatabaseProject( this.wresDatabase,
                                      this.mockCaches,
                                      null,
-                                     new ProjectConfig( null, null, null, null, null, "test_gridded_project" ),
+                                     EvaluationDeclarationBuilder.builder()
+                                                                 .label( "test_gridded_project" )
+                                                                 .build(),
                                      PROJECT_HASH );
         boolean saved = project.save();
 
@@ -258,7 +260,8 @@ public class SingleValuedGriddedRetrieverTest
                 "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ("
                                      + project.getId()
                                      + ",{0},''"
-                                     + SingleValuedGriddedRetrieverTest.LRB.value()
+                                     + SingleValuedGriddedRetrieverTest.ORIENTATION.name()
+                                                                                   .toLowerCase()
                                      + "'')";
 
 

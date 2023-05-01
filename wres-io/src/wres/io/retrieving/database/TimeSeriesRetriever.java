@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.scale.TimeScaleOuter;
 
 import wres.datamodel.space.Feature;
@@ -96,7 +96,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final String variableName;
 
     /** The data type. */
-    private final LeftOrRightOrBaseline lrb;
+    private final DatasetOrientation orientation;
 
     /** A declared existing time-scale, which can be used to augment a source, but not override it. */
     private final TimeScaleOuter declaredExistingTimeScale;
@@ -183,7 +183,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         LOGGER.debug( "Submitting a script to obtain time-series data from an underlying data store." );
 
         // JFR monitoring
-        RetrievalEvent retrievalEvent = RetrievalEvent.of( this.getLeftOrRightOrBaseline(),
+        RetrievalEvent retrievalEvent = RetrievalEvent.of( this.getDatasetOrientation(),
                                                            this.getTimeWindow(),
                                                            this.getFeatures(),
                                                            this.getVariableName() );
@@ -380,7 +380,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
-     * {@link #getVariableName()}, {@link #getFeatureIds()} and {@link #getLeftOrRightOrBaseline()}.
+     * {@link #getVariableName()}, {@link #getFeatureIds()} and {@link #getDatasetOrientation()}.
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
@@ -422,12 +422,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         // Member
-        if ( Objects.nonNull( this.getLeftOrRightOrBaseline() ) )
+        if ( Objects.nonNull( this.getDatasetOrientation() ) )
         {
             this.addWhereOrAndClause( script,
                                       tabsIn,
                                       "PS.member = ?",
-                                      this.getLeftOrRightOrBaseline().toString().toLowerCase() );
+                                      this.getDatasetOrientation()
+                                          .name()
+                                          .toLowerCase() );
         }
     }
 
@@ -481,9 +483,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the data type
      */
 
-    LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    DatasetOrientation getDatasetOrientation()
     {
-        return this.lrb;
+        return this.orientation;
     }
 
     /**
@@ -596,7 +598,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                            + "cannot determine the time-series identifiers without a projectID." );
         }
 
-        if ( Objects.isNull( this.getLeftOrRightOrBaseline() ) )
+        if ( Objects.isNull( this.getDatasetOrientation() ) )
         {
             throw new DataAccessException( "There is no leftOrRightOrBaseline identifier associated with this Data "
                                            + "Access Object: cannot determine the time-series identifiers without a "
@@ -700,7 +702,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
              && !this.getDeclaredExistingTimeScale().equalsOrInstantaneous( returnMe ) )
         {
             throw new DataAccessException( "The time scale information associated with a "
-                                           + this.getLeftOrRightOrBaseline()
+                                           + this.getDatasetOrientation()
                                            + " event at '"
                                            + validTime
                                            + "' was declared as '"
@@ -868,6 +870,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             lastSeriesId.set( -1 );
 
             TimeSeries<S> replicate = lastBuilder.build();
+
             List<TimeSeries<S>> replicates = this.getReplicates( replicate, replicateCount.get() );
             returnMe.addAll( replicates );
 
@@ -1010,7 +1013,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             throw new DataAccessException( "While processing a time-series for project_id '"
                                            + this.getProjectId()
                                            + "' and data type '"
-                                           + this.getLeftOrRightOrBaseline()
+                                           + this.getDatasetOrientation()
                                            + "', encountered an error: ",
                                            e );
         }
@@ -1040,7 +1043,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         {
             Duration period = Duration.ZERO;
 
-            if ( Objects.nonNull( this.desiredTimeScale ) )
+            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
+            if ( Objects.nonNull( this.desiredTimeScale ) && ! this.desiredTimeScale.isInstantaneous() )
             {
                 period = TimeScaleOuter.getOrInferPeriodFromTimeScale( this.desiredTimeScale );
             }
@@ -1222,7 +1226,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             LOGGER.debug( message,
                           this.getProjectId(),
-                          this.getLeftOrRightOrBaseline(),
+                          this.getDatasetOrientation(),
                           lowerValidTime,
                           upperValidTime );
         }
@@ -1434,7 +1438,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * The data type.
          */
 
-        private LeftOrRightOrBaseline lrb;
+        private DatasetOrientation orientation;
 
         /**
          * Desired time scale.
@@ -1548,13 +1552,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         /**
          * Sets the data type.
          *
-         * @param lrb the data type
+         * @param orientation the data type
          * @return the builder
          */
 
-        Builder<S> setLeftOrRightOrBaseline( LeftOrRightOrBaseline lrb )
+        Builder<S> setDatasetOrientation( DatasetOrientation orientation )
         {
-            this.lrb = lrb;
+            this.orientation = orientation;
             return this;
         }
 
@@ -1659,7 +1663,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.projectId = builder.projectId;
         this.variableName = builder.variableName;
         this.features = Set.copyOf( builder.features );
-        this.lrb = builder.lrb;
+        this.orientation = builder.orientation;
         this.timeWindow = builder.timeWindow;
         this.desiredTimeScale = builder.desiredTimeScale;
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
@@ -1707,7 +1711,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.lrb,
+                              this.orientation,
                               "the time window was null: the retrieval will be unconditional in time." );
             }
 
@@ -1715,7 +1719,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.lrb,
+                              this.orientation,
                               "the desired time scale was null: the retrieval will not be adjusted to account "
                               + "for the desired time scale." );
             }
@@ -1727,7 +1731,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
                 LOGGER.debug( message,
                               this.projectId,
-                              this.lrb,
+                              this.orientation,
                               this.timeWindow,
                               this.desiredTimeScale );
             }
@@ -1736,7 +1740,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             {
                 LOGGER.debug( start,
                               this.projectId,
-                              this.lrb,
+                              this.orientation,
                               "the supplied lead duration column was null." );
             }
         }

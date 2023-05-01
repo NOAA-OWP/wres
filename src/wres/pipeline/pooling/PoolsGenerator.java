@@ -21,11 +21,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Climatology;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -467,10 +465,6 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                       this.getPoolRequests().size(),
                       this.getPoolRequests() );
 
-        ProjectConfig projectConfig = this.getProject()
-                                          .getProjectConfig();
-        Inputs inputsConfig = projectConfig.getInputs();
-
         TimeScaleOuter desiredTimeScale = this.getProject()
                                               .getDesiredTimeScale();
 
@@ -537,8 +531,9 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
             else
             {
                 leftRetrievers = this.getLeftRetrievers( this.getPoolRequests(),
-                                                         inputsConfig.getLeft()
-                                                                     .getType() );
+                                                         this.getProject()
+                                                             .getDeclaredDataSource( DatasetOrientation.LEFT )
+                                                             .type() );
             }
 
             List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
@@ -603,7 +598,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
             return Collections.unmodifiableList( returnMe );
         }
-        catch ( DataAccessException | ProjectConfigException e )
+        catch ( DataAccessException | DeclarationException e )
         {
             throw new PoolCreationException( "While attempting to create pool suppliers:", e );
         }
@@ -615,8 +610,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * to achieve this, each unique retriever is wrapped inside a {@link CachingRetriever} and re-used as many times 
      * as there are common time-windows, ignoring any lead duration bounds. The returned map has a comparator that 
      * ignores the lead duration bounds, which allows for transparent use by the caller against the original time 
-     * windows. De-duplication only happens for datasets that are {@link DatasourceType#OBSERVATIONS} or 
-     * {@link DatasourceType#SIMULATIONS}.
+     * windows. De-duplication only happens for datasets that are {@link DataType#OBSERVATIONS} or
+     * {@link DataType#SIMULATIONS}.
      *
      * @param poolRequests the pool requests
      * @param type the type of data
@@ -624,7 +619,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      */
 
     private Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> getLeftRetrievers( List<PoolRequest> poolRequests,
-                                                                                     DatasourceType type )
+                                                                                     DataType type )
     {
         RetrieverFactory<L, R> factory = this.getRetrieverFactory();
 
@@ -638,7 +633,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                             .collect( Collectors.toSet() );
 
         // Observations or simulations? Then de-duplicate if possible.
-        if ( type == DatasourceType.OBSERVATIONS || type == DatasourceType.SIMULATIONS )
+        if ( type == DataType.OBSERVATIONS || type == DataType.SIMULATIONS )
         {
             // Find the union of the time windows, bearing in mind that lead durations can influence the valid 
             // datetimes for observation selection
@@ -657,7 +652,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                         "While creating pools for {} pools, de-duplicated the retrievers of {} data from {} to {} "
                         + "using the union of time windows across all pools, which is {}.",
                         this.getPoolRequests().size(),
-                        LeftOrRightOrBaseline.LEFT,
+                        DatasetOrientation.LEFT,
                         timeWindows.size(),
                         1,
                         unionWindow );

@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -63,18 +63,18 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
         Stream<TimeSeries<Double>> originalSeries =
-                this.timeSeriesStore.getSingleValuedSeries( LeftOrRightOrBaseline.LEFT,
+                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.LEFT,
                                                             features );
 
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.LEFT,
+        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.LEFT,
                                                                                   originalSeries,
                                                                                   null );
         // Wrap in a caching retriever
         return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries ->
                                                                          RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                              LeftOrRightOrBaseline.LEFT,
+                                                                                                              DatasetOrientation.LEFT,
                                                                                                               this.project.getDeclaredDataSource(
-                                                                                                                      LeftOrRightOrBaseline.LEFT ) ) ) );
+                                                                                                                      DatasetOrientation.LEFT ) ) ) );
     }
 
     @Override
@@ -103,25 +103,25 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.LEFT );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.LEFT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
         Stream<TimeSeries<Double>> originalSeries =
                 this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
-                                                            LeftOrRightOrBaseline.LEFT,
+                                                            DatasetOrientation.LEFT,
                                                             features );
 
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.LEFT,
+        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.LEFT,
                                                                                   originalSeries,
                                                                                   adjustedWindow );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale(
                 timeSeries,
-                LeftOrRightOrBaseline.LEFT,
+                DatasetOrientation.LEFT,
                 data ) ) );
     }
 
@@ -132,23 +132,23 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.RIGHT );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.RIGHT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
         Stream<TimeSeries<Ensemble>> originalSeries =
                 this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
-                                                        LeftOrRightOrBaseline.RIGHT,
+                                                        DatasetOrientation.RIGHT,
                                                         features );
 
-        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.RIGHT,
+        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.RIGHT,
                                                                                     originalSeries,
                                                                                     adjustedWindow );
 
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                               LeftOrRightOrBaseline.RIGHT,
+                                                                                               DatasetOrientation.RIGHT,
                                                                                                data ) );
     }
 
@@ -167,23 +167,23 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        DataSourceConfig data = this.project.getDeclaredDataSource( LeftOrRightOrBaseline.BASELINE );
+        Dataset data = this.project.getDeclaredDataSource( DatasetOrientation.BASELINE );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.getType(),
+                                                                             data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
         Stream<TimeSeries<Ensemble>> originalSeries =
                 this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
-                                                        LeftOrRightOrBaseline.BASELINE,
+                                                        DatasetOrientation.BASELINE,
                                                         features );
 
-        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( LeftOrRightOrBaseline.BASELINE,
+        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.BASELINE,
                                                                                     originalSeries,
                                                                                     adjustedWindow );
 
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                               LeftOrRightOrBaseline.BASELINE,
+                                                                                               DatasetOrientation.BASELINE,
                                                                                                data ) );
     }
 
@@ -196,7 +196,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      * @return the adapted time-series
      */
 
-    private <T> Stream<TimeSeries<T>> getAdaptedTimeSeries( LeftOrRightOrBaseline orientation,
+    private <T> Stream<TimeSeries<T>> getAdaptedTimeSeries( DatasetOrientation orientation,
                                                             Stream<TimeSeries<T>> timeSeries,
                                                             TimeWindowOuter timeWindow )
     {
@@ -204,7 +204,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         // Analysis shape of evaluation?
         if ( this.project.getDeclaredDataSource( orientation )
-                         .getType() == DatasourceType.ANALYSES )
+                         .type() == DataType.ANALYSES )
         {
             allSeries = RetrieverUtilities.createAnalysisTimeSeries( timeSeries,
                                                                      this.project.getEarliestAnalysisDuration(),

@@ -2,7 +2,6 @@ package wres.io.database.caching;
 
 import java.util.Objects;
 
-import wres.config.generated.ProjectConfig;
 import wres.io.database.Database;
 
 /**
@@ -29,14 +28,13 @@ public class DatabaseCaches
     /**
      * Creates an instance.
      * @param database the database, required
-     * @param projectConfig the project declaration, required
      * @return an instance of the caches
      * @throws NullPointerException if either input is null
      */
 
-    public static DatabaseCaches of( Database database, ProjectConfig projectConfig )
+    public static DatabaseCaches of( Database database )
     {
-        return new DatabaseCaches( database, projectConfig );
+        return new DatabaseCaches( database );
     }
 
     /**
@@ -102,14 +100,11 @@ public class DatabaseCaches
     /**
      * Hidden constructor.
      * @param database the database, required
-     * @param projectConfig the project declaration, required
      * @throws NullPointerException if either input is null
      */
-    private DatabaseCaches( Database database, ProjectConfig projectConfig )
+    private DatabaseCaches( Database database )
     {
         Objects.requireNonNull( database );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getPair() );
         
         this.dataSourcesCache = new DataSources( database );
         this.featuresCache = new Features( database );

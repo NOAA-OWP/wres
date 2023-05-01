@@ -1226,6 +1226,7 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
         TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
 
         TimeSeries<R> scaledRight = rightOrBaseline;
+
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
                                && !desiredTimeScale.equals( rightOrBaseline.getTimeScale() );
@@ -1355,11 +1356,14 @@ public class PoolSupplier<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>
                           + "created {} pairs at the desired time scale of {}.",
                           LeftOrRightOrBaseline.LEFT,
                           scaledAndTransformedLeft.getMetadata(),
-                          scaledAndTransformedLeft.getEvents().size(),
+                          scaledAndTransformedLeft.getEvents()
+                                                  .size(),
                           orientation,
                           scaledAndTransformedRight.getMetadata(),
-                          scaledAndTransformedRight.getEvents().size(),
-                          snippedPairs.getEvents().size(),
+                          scaledAndTransformedRight.getEvents()
+                                                   .size(),
+                          snippedPairs.getEvents()
+                                      .size(),
                           desiredTimeScale );
         }
 

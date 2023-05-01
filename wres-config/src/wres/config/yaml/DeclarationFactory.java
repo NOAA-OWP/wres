@@ -706,16 +706,8 @@ public class DeclarationFactory
         if ( Objects.nonNull( pair.getLeadHours() ) )
         {
             IntBoundsType leadBounds = pair.getLeadHours();
-            Duration minimum = null;
-            Duration maximum = null;
-            if( Objects.nonNull( leadBounds.getMinimum() ) )
-            {
-                minimum = Duration.ofHours( leadBounds.getMinimum() );
-            }
-            if( Objects.nonNull( leadBounds.getMaximum() ) )
-            {
-                maximum = Duration.ofHours( leadBounds.getMaximum() );
-            }
+            Duration minimum = DeclarationFactory.getDurationOrNull( leadBounds.getMinimum(), null );
+            Duration maximum = DeclarationFactory.getDurationOrNull( leadBounds.getMaximum(), null );
             LeadTimeInterval leadTimes = new LeadTimeInterval( minimum, maximum );
             builder.leadTimes( leadTimes );
             LOGGER.debug( "Migrated a lead time filter: {}.", leadTimes );
@@ -735,8 +727,9 @@ public class DeclarationFactory
             DurationBoundsType durations = pair.getAnalysisDurations();
             ChronoUnit unit = ChronoUnit.valueOf( durations.getUnit()
                                                            .name() );
-            AnalysisDurations analysisDurations =
-                    new AnalysisDurations( durations.getGreaterThan(), durations.getLessThanOrEqualTo(), unit );
+            Duration minimum = DeclarationFactory.getDurationOrNull( durations.getGreaterThan(), unit );
+            Duration maximum = DeclarationFactory.getDurationOrNull( durations.getLessThanOrEqualTo(), unit );
+            AnalysisDurations analysisDurations = new AnalysisDurations( minimum, maximum );
             builder.analysisDurations( analysisDurations );
             LOGGER.debug( "Migrated an analysis duration filter: {}.", analysisDurations );
         }
@@ -748,6 +741,30 @@ public class DeclarationFactory
             builder.season( season );
             LOGGER.debug( "Migrated a season filter: {}.", season );
         }
+    }
+
+    /**
+     * Returns a duration unit from the input or null.
+     * @param period the optional period
+     * @param unit the optional unit
+     * @return the duration or null
+     */
+    private static Duration getDurationOrNull( Integer period, ChronoUnit unit )
+    {
+        Duration duration = null;
+        if ( Objects.nonNull( period ) )
+        {
+            if ( Objects.isNull( unit ) )
+            {
+                duration = Duration.ofHours( period );
+            }
+            else
+            {
+                duration = Duration.of( period, unit );
+            }
+        }
+
+        return duration;
     }
 
     /**
@@ -1768,7 +1785,7 @@ public class DeclarationFactory
         Duration period = Duration.of( poolingWindow.getPeriod(), unit );
         Duration frequency = null;
 
-        if( Objects.nonNull( poolingWindow.getFrequency() ) )
+        if ( Objects.nonNull( poolingWindow.getFrequency() ) )
         {
             frequency = Duration.of( poolingWindow.getFrequency(), unit );
         }

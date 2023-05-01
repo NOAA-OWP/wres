@@ -2,7 +2,6 @@ package wres.pipeline.pooling;
 
 import java.time.Duration;
 import java.time.MonthDay;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,17 +33,16 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import wres.config.generated.CrossPair;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.PairConfig.Season;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Season;
+import wres.config.yaml.components.Values;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
@@ -73,8 +71,6 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.time.generators.PersistenceGenerator;
-import wres.datamodel.time.generators.TimeWindowGenerator;
-import wres.io.config.ConfigHelper;
 import wres.io.project.Project;
 import wres.io.retrieving.CachingSupplier;
 import wres.io.retrieving.RetrieverFactory;
@@ -314,22 +310,22 @@ public class PoolFactory
         Objects.requireNonNull( evaluation );
 
         Project innerProject = this.getProject();
+        EvaluationDeclaration declaration = innerProject.getDeclaration();
 
         Set<FeatureGroup> featureGroups = innerProject.getFeatureGroups();
-        ProjectConfig projectConfig = innerProject.getProjectConfig();
 
-        PairConfig pairConfig = projectConfig.getPair();
-
-        // Get the desired time scale
-        TimeScaleOuter desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        // Get the desired timescale
+        TimeScaleOuter desiredTimeScale = innerProject.getDesiredTimeScale();
 
         // Get the time windows and sort them
-        Set<TimeWindowOuter> timeWindows =
-                new TreeSet<>( TimeWindowGenerator.getTimeWindowsFromPairConfig( pairConfig ) );
+        Set<TimeWindowOuter> timeWindows = DeclarationUtilities.getTimeWindows( declaration )
+                                                               .stream()
+                                                               .map( TimeWindowOuter::of )
+                                                               .collect( Collectors.toCollection( TreeSet::new ) );
 
         return featureGroups.stream()
                             .flatMap( nextGroup -> this.getPoolRequests( evaluation,
-                                                                         projectConfig,
+                                                                         declaration,
                                                                          nextGroup,
                                                                          desiredTimeScale,
                                                                          timeWindows )
@@ -361,15 +357,12 @@ public class PoolFactory
                                List<PoolRequest> poolRequests,
                                RetrieverFactory<Double, Double> retrieverFactory )
     {
-        ProjectConfig projectConfig = project.getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
-        Inputs inputsConfig = projectConfig.getInputs();
-        DataSourceConfig baselineConfig = inputsConfig.getBaseline();
+        EvaluationDeclaration declaration = project.getDeclaration();
 
         // Check that the project declaration is consistent with a request for single-valued pools
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
-        this.validateRequestedPoolsAgainstDeclaration( inputsConfig, false );
+        this.validateRequestedPoolsAgainstDeclaration( project, false );
 
         long projectId = project.getId();
 
@@ -377,23 +370,23 @@ public class PoolFactory
                       projectId );
 
         // Create a default pairer for finite left and right values
-        TimePairingType timePairingType = this.getTimePairingTypeFromInputsConfig( inputsConfig );
+        TimePairingType timePairingType = this.getTimePairingTypeFromDeclaration( declaration );
 
-        LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
+        LOGGER.debug( "Using a time-based pairing strategy of {} for the declaration {}.",
                       timePairingType,
-                      inputsConfig );
+                      declaration );
 
         TimeSeriesPairer<Double, Double> pairer = TimeSeriesPairerByExactTime.of( Double::isFinite,
                                                                                   Double::isFinite,
                                                                                   timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double, Double> crossPairer = this.getCrossPairerOrNull( pairConfig );
+        TimeSeriesCrossPairer<Double, Double> crossPairer = this.getCrossPairerOrNull( declaration );
 
         // Lenient upscaling?
-        boolean leftLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.LEFT );
-        boolean rightLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.RIGHT );
-        boolean baselineLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.BASELINE );
+        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
 
         // Create a default upscaler for each side
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
@@ -417,26 +410,29 @@ public class PoolFactory
                           + "to generate from a data source.",
                           projectId );
 
-            baselineGenerator = this.getGeneratedBaseline( baselineConfig,
+            baselineGenerator = this.getGeneratedBaseline( declaration.baseline(),
                                                            retrieverFactory,
                                                            rightUpscaler,
                                                            Double::isFinite );
         }
 
         // Create any required transformers for value constraints and units
-        DoubleUnaryOperator valueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
+        DoubleUnaryOperator valueTransformer = this.getSingleValuedTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> valueAndUnitTransformer =
                 this.getSingleValuedTransformer( valueTransformer );
 
         // Currently only a seasonal filter, which applies equally to all sides
-        Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( pairConfig.getSeason() );
+        Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( declaration.season() );
 
         // Get the time shifts
-        Duration leftTimeShift = this.getTimeShift( inputsConfig.getLeft() );
-        Duration rightTimeShift = this.getTimeShift( inputsConfig.getRight() );
-        Duration baselineTimeShift = this.getTimeShift( inputsConfig.getBaseline() );
+        Dataset left = project.getDeclaredDataSource( DatasetOrientation.LEFT );
+        Duration leftTimeShift = this.getTimeShift( left );
+        Dataset right = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
+        Duration rightTimeShift = this.getTimeShift( right );
+        Dataset baseline = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
+        Duration baselineTimeShift = this.getTimeShift( baseline );
 
-        Duration pairFrequency = this.getPairFrequency( pairConfig );
+        Duration pairFrequency = this.getPairFrequency( declaration );
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
@@ -487,14 +483,12 @@ public class PoolFactory
                            List<PoolRequest> poolRequests,
                            RetrieverFactory<Double, Ensemble> retrieverFactory )
     {
-        ProjectConfig projectConfig = project.getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
-        Inputs inputsConfig = projectConfig.getInputs();
+        EvaluationDeclaration declaration = project.getDeclaration();
 
         // Check that the project declaration is consistent with a request for ensemble pools
         // TODO: do not rely on the declared type. Detect the type instead
         // See #57301
-        this.validateRequestedPoolsAgainstDeclaration( inputsConfig, true );
+        this.validateRequestedPoolsAgainstDeclaration( project, true );
 
         long projectId = project.getId();
 
@@ -502,11 +496,11 @@ public class PoolFactory
                       projectId );
 
         // Create a default pairer for finite left values and one or more finite right values
-        TimePairingType timePairingType = this.getTimePairingTypeFromInputsConfig( inputsConfig );
+        TimePairingType timePairingType = this.getTimePairingTypeFromDeclaration( declaration );
 
         LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
                       timePairingType,
-                      inputsConfig );
+                      declaration );
 
         TimeSeriesPairer<Double, Ensemble> pairer =
                 TimeSeriesPairerByExactTime.of( Double::isFinite,
@@ -515,12 +509,12 @@ public class PoolFactory
                                                 timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( pairConfig );
+        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( declaration );
 
         // Lenient upscaling?
-        boolean leftLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.LEFT );
-        boolean rightLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.RIGHT );
-        boolean baselineLenient = project.isUpscalingLenient( LeftOrRightOrBaseline.BASELINE );
+        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
 
         // Create a default upscaler for each side
         TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
@@ -535,33 +529,36 @@ public class PoolFactory
                                                                                          this.getUnitMapper()
                                                                                              .getUnitAliases() );
         // Left transformer
-        DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( pairConfig.getValues() );
+        DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getSingleValuedTransformer( leftValueTransformer );
 
         // Right transformer
+        Dataset right = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                            inputsConfig.getRight() );
+                                                                                            right );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
                 this.getEnsembleTransformer( rightValueTransformer );
 
         // Baseline transformer
+        Dataset baseline = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                               inputsConfig.getBaseline() );
+                                                                                               baseline );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
                 this.getEnsembleTransformer( baselineValueTransformer );
 
         // Currently only a seasonal filter, which applies equally to all sides
-        Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( pairConfig.getSeason() );
-        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( pairConfig.getSeason() );
+        Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
+        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
 
         // Get the time shifts
-        Duration leftTimeShift = this.getTimeShift( inputsConfig.getLeft() );
-        Duration rightTimeShift = this.getTimeShift( inputsConfig.getRight() );
-        Duration baselineTimeShift = this.getTimeShift( inputsConfig.getBaseline() );
+        Dataset left = project.getDeclaredDataSource( DatasetOrientation.LEFT );
+        Duration leftTimeShift = this.getTimeShift( left );
+        Duration rightTimeShift = this.getTimeShift( right );
+        Duration baselineTimeShift = this.getTimeShift( baseline );
 
-        Duration pairFrequency = this.getPairFrequency( pairConfig );
+        Duration pairFrequency = this.getPairFrequency( declaration );
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
@@ -677,7 +674,7 @@ public class PoolFactory
      * creation.
      *
      * @param evaluation the evaluation description
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @param featureGroup the feature group
      * @param desiredTimeScale the desired time scale
      * @param timeWindows the time windows
@@ -687,13 +684,13 @@ public class PoolFactory
      */
 
     private List<PoolRequest> getPoolRequests( Evaluation evaluation,
-                                               ProjectConfig projectConfig,
+                                               EvaluationDeclaration declaration,
                                                FeatureGroup featureGroup,
                                                TimeScaleOuter desiredTimeScale,
                                                Set<TimeWindowOuter> timeWindows )
     {
         Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( featureGroup );
 
         List<PoolRequest> poolRequests = new ArrayList<>();
@@ -705,17 +702,17 @@ public class PoolFactory
                                                              featureGroup,
                                                              timeWindow,
                                                              desiredTimeScale,
-                                                             LeftOrRightOrBaseline.RIGHT );
+                                                             DatasetOrientation.RIGHT );
 
             // Create the basic metadata
             PoolMetadata baselineMetadata = null;
-            if ( ProjectConfigs.hasBaseline( projectConfig ) )
+            if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 baselineMetadata = this.createMetadata( evaluation,
                                                         featureGroup,
                                                         timeWindow,
                                                         desiredTimeScale,
-                                                        LeftOrRightOrBaseline.BASELINE );
+                                                        DatasetOrientation.BASELINE );
             }
 
             PoolRequest request = PoolRequest.of( mainMetadata, baselineMetadata );
@@ -731,14 +728,14 @@ public class PoolFactory
      * @return a cross-pairer or null
      */
 
-    private <L, R> TimeSeriesCrossPairer<L, R> getCrossPairerOrNull( PairConfig pairConfig )
+    private <L, R> TimeSeriesCrossPairer<L, R> getCrossPairerOrNull( EvaluationDeclaration declaration )
     {
         // Create a cross pairer, in case this is required by the declaration
         TimeSeriesCrossPairer<L, R> crossPairer = null;
-        CrossPair crossPair = pairConfig.getCrossPair();
+        CrossPair crossPair = declaration.crossPair();
         if ( Objects.nonNull( crossPair ) )
         {
-            MatchMode matchMode = crossPair.isExact() ? MatchMode.EXACT : MatchMode.FUZZY;
+            MatchMode matchMode = MatchMode.valueOf( crossPair.name() );
             crossPairer = TimeSeriesCrossPairer.of( matchMode );
         }
 
@@ -752,7 +749,7 @@ public class PoolFactory
      * @param featureGroup the feature group
      * @param timeWindow the time window
      * @param desiredTimeScale the desired time scale
-     * @param leftOrRightOrBaseline the context for the data as it relates to the declaration
+     * @param orientation the context for the data as it relates to the declaration
      * @return the metadata
      */
 
@@ -760,7 +757,7 @@ public class PoolFactory
                                          FeatureGroup featureGroup,
                                          TimeWindowOuter timeWindow,
                                          TimeScaleOuter desiredTimeScale,
-                                         LeftOrRightOrBaseline leftOrRightOrBaseline )
+                                         DatasetOrientation orientation )
     {
         long innerPoolId = this.getNextPoolId();
 
@@ -768,8 +765,8 @@ public class PoolFactory
                                                                       timeWindow, // Default to start with
                                                                       desiredTimeScale,
                                                                       null,
-                                                                      leftOrRightOrBaseline
-                                                                      == LeftOrRightOrBaseline.BASELINE,
+                                                                      orientation
+                                                                      == DatasetOrientation.BASELINE,
                                                                       innerPoolId );
 
         return PoolMetadata.of( evaluation, pool );
@@ -985,13 +982,13 @@ public class PoolFactory
     /**
      * Returns a transformer for single-valued data if required.
      *
-     * @param valueConfig the value declaration 
+     * @param values the value declaration
      * @return a transformer or null
      */
 
-    private DoubleUnaryOperator getSingleValuedTransformer( DoubleBoundsType valueConfig )
+    private DoubleUnaryOperator getSingleValuedTransformer( Values values )
     {
-        if ( Objects.isNull( valueConfig ) )
+        if ( Objects.isNull( values ) )
         {
             return value -> value;
         }
@@ -1002,24 +999,24 @@ public class PoolFactory
         double minimum = Double.NEGATIVE_INFINITY;
         double maximum = Double.POSITIVE_INFINITY;
 
-        if ( Objects.nonNull( valueConfig.getDefaultMinimum() ) )
+        if ( Objects.nonNull( values.belowMinimum() ) )
         {
-            assignToLowMiss = valueConfig.getDefaultMinimum();
+            assignToLowMiss = values.belowMinimum();
         }
 
-        if ( Objects.nonNull( valueConfig.getDefaultMaximum() ) )
+        if ( Objects.nonNull( values.aboveMaximum() ) )
         {
-            assignToHighMiss = valueConfig.getDefaultMaximum();
+            assignToHighMiss = values.aboveMaximum();
         }
 
-        if ( Objects.nonNull( valueConfig.getMinimum() ) )
+        if ( Objects.nonNull( values.minimum() ) )
         {
-            minimum = valueConfig.getMinimum();
+            minimum = values.minimum();
         }
 
-        if ( Objects.nonNull( valueConfig.getMaximum() ) )
+        if ( Objects.nonNull( values.maximum() ) )
         {
-            maximum = valueConfig.getMaximum();
+            maximum = values.maximum();
         }
 
         // Effectively final constants for use 
@@ -1053,16 +1050,20 @@ public class PoolFactory
      * Returns a transformer for ensemble data if required.
      *
      * @param valueTransformer the value transformer to compose
-     * @param dataSource the data source declaration
+     * @param dataset the data source declaration
      * @return a transformer or null
      */
 
     private UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer,
-                                                                   DataSourceConfig dataSource )
+                                                                   Dataset dataset )
     {
         // Return null to avoid iterating a no-op function
         if ( Objects.isNull( valueTransformer )
-             && ( Objects.isNull( dataSource ) || dataSource.getEnsemble().isEmpty() ) )
+             && ( Objects.isNull( dataset )
+                  || Objects.isNull( dataset.ensembleFilter() )
+                  || dataset.ensembleFilter()
+                            .members()
+                            .isEmpty() ) )
         {
             return null;
         }
@@ -1070,18 +1071,22 @@ public class PoolFactory
         List<String> inclusive = null;
         List<String> exclusive = null;
 
-        if ( Objects.nonNull( dataSource ) && !dataSource.getEnsemble().isEmpty() )
+        if ( Objects.nonNull( dataset )
+             && Objects.nonNull( dataset.ensembleFilter() ) )
         {
-            exclusive = dataSource.getEnsemble()
-                                  .stream()
-                                  .filter( EnsembleCondition::isExclude )
-                                  .map( EnsembleCondition::getName )
-                                  .toList();
-            inclusive = dataSource.getEnsemble()
-                                  .stream()
-                                  .filter( next -> !next.isExclude() )
-                                  .map( EnsembleCondition::getName )
-                                  .toList();
+            EnsembleFilter ensembleFilter = dataset.ensembleFilter();
+            if ( ensembleFilter.exclude() )
+            {
+                exclusive = ensembleFilter.members()
+                                          .stream()
+                                          .toList();
+            }
+            else
+            {
+                inclusive = ensembleFilter.members()
+                                          .stream()
+                                          .toList();
+            }
         }
 
         List<String> finalInclusive = inclusive;
@@ -1105,9 +1110,12 @@ public class PoolFactory
             double[] members = ensemble.getMembers();
 
             // Map the members
-            members = Arrays.stream( members )
-                            .map( valueTransformer )
-                            .toArray();
+            if ( Objects.nonNull( valueTransformer ) )
+            {
+                members = Arrays.stream( members )
+                                .map( valueTransformer )
+                                .toArray();
+            }
 
             Ensemble furtherFilter = Ensemble.of( members, ensLabels );
             furtherFilter = this.filterEnsembleMembers( furtherFilter, finalInclusive, finalExclusive );
@@ -1206,11 +1214,8 @@ public class PoolFactory
             return in -> true;
         }
 
-        MonthDay start = MonthDay.of( season.getEarliestMonth(),
-                                      season.getEarliestDay() );
-
-        MonthDay end = MonthDay.of( season.getLatestMonth(),
-                                    season.getLatestDay() );
+        MonthDay start = season.minimum();
+        MonthDay end = season.maximum();
 
         return TimeSeriesSlicer.getSeasonFilter( start, end );
     }
@@ -1222,33 +1227,32 @@ public class PoolFactory
      * persistence baseline, the former is a source of observation-like data and the latter may be a source of forecast-
      * like data, each of which has a different feature name.
      *
-     * @param baselineConfig the baseline declaration
+     * @param baseline the baseline declaration
      * @param retrieverFactory the factory to acquire a data source for a generated baseline
      * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
      * @param admissibleValue a guard for admissible values of the generated baseline
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private <L, R> Function<Set<Feature>, UnaryOperator<TimeSeries<R>>>
-    getGeneratedBaseline( DataSourceConfig baselineConfig,
-                          RetrieverFactory<L, R> retrieverFactory,
-                          TimeSeriesUpscaler<R> upscaler,
-                          Predicate<R> admissibleValue )
+    private <L, R> Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> getGeneratedBaseline( BaselineDataset baseline,
+                                                                                              RetrieverFactory<L, R> retrieverFactory,
+                                                                                              TimeSeriesUpscaler<R> upscaler,
+                                                                                              Predicate<R> admissibleValue )
     {
-        Objects.requireNonNull( baselineConfig );
+        Objects.requireNonNull( baseline );
         Objects.requireNonNull( retrieverFactory );
 
         // Has a generated baseline, only one supported for now: persistence
-        if ( ConfigHelper.hasGeneratedBaseline( baselineConfig ) )
+        if ( DeclarationUtilities.hasGeneratedBaseline( baseline ) )
         {
-            LOGGER.trace( "Creating a persistence generator for data source {}.", baselineConfig );
+            LOGGER.trace( "Creating a persistence generator for data source {}.", baseline );
 
             // Default lag of 1
             int lag = 1;
 
-            if ( Objects.nonNull( baselineConfig.getPersistence() ) )
+            if ( Objects.nonNull( baseline.persistence() ) )
             {
-                lag = baselineConfig.getPersistence();
+                lag = baseline.persistence();
                 LOGGER.debug( "Discovered a persistence baseline with a lag of {}.", lag );
             }
 
@@ -1275,27 +1279,25 @@ public class PoolFactory
         else
         {
             throw new UnsupportedOperationException( "While attempting to generate a baseline: unrecognized "
-                                                     + "type of baseline to generate, '"
-                                                     + baselineConfig.getTransformation()
-                                                     + "'." );
+                                                     + "type of baseline to generate." );
         }
     }
 
     /**
-     * Returns the type of time-based pairing to perform given the declared input type of the datasets in the project.
+     * Returns the type of time-based pairing to perform given the declared type of the datasets in the project.
      *
-     * @param inputsConfig the inputs declaration
+     * @param declaration the declaration
      * @return the type of time-based pairing to perform
      */
 
-    private TimePairingType getTimePairingTypeFromInputsConfig( Inputs inputsConfig )
+    private TimePairingType getTimePairingTypeFromDeclaration( EvaluationDeclaration declaration )
     {
-        Objects.requireNonNull( inputsConfig );
+        Objects.requireNonNull( declaration );
 
         TimePairingType returnMe = TimePairingType.REFERENCE_TIME_AND_VALID_TIME;
 
-        if ( !ProjectConfigs.isForecast( inputsConfig.getLeft() )
-             || !ProjectConfigs.isForecast( inputsConfig.getRight() ) )
+        if ( !DeclarationUtilities.isForecast( declaration.left() )
+             || !DeclarationUtilities.isForecast( declaration.right() ) )
         {
             returnMe = TimePairingType.VALID_TIME_ONLY;
         }
@@ -1307,26 +1309,26 @@ public class PoolFactory
      * Checks the project declaration and throws an exception when the declared type is inconsistent with the type of
      * pools requested. 
      *
-     * @param inputsConfig the input declaration
+     * @param project the project
      * @param ensemble is true if ensemble pools were requested, false for single-valued pools
      * @throws IllegalArgumentException if the requested pools are inconsistent with the declaration
      */
 
-    private void validateRequestedPoolsAgainstDeclaration( Inputs inputsConfig, boolean ensemble )
+    private void validateRequestedPoolsAgainstDeclaration( Project project, boolean ensemble )
     {
-        DataSourceConfig rightConfig = inputsConfig.getRight();
-        DataSourceConfig baselineConfig = inputsConfig.getBaseline();
-        DatasourceType rightType = rightConfig.getType();
+        Dataset right = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
+        Dataset baseline = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
+        DataType rightType = right.type();
 
         // Right
-        if ( ensemble && rightType != DatasourceType.ENSEMBLE_FORECASTS )
+        if ( ensemble && rightType != DataType.ENSEMBLE_FORECASTS )
         {
             throw new IllegalArgumentException( "Requested pools for ensemble data, but the right "
                                                 + DATA_IS_DECLARED_AS
                                                 + rightType
                                                 + WHICH_IS_NOT_ALLOWED );
         }
-        else if ( !ensemble && rightType == DatasourceType.ENSEMBLE_FORECASTS )
+        else if ( !ensemble && rightType == DataType.ENSEMBLE_FORECASTS )
         {
             throw new IllegalArgumentException( "Requested pools for single-valued data, but the right "
                                                 + DATA_IS_DECLARED_AS
@@ -1335,18 +1337,18 @@ public class PoolFactory
         }
 
         // Baseline?
-        if ( Objects.nonNull( baselineConfig ) )
+        if ( Objects.nonNull( baseline ) )
         {
-            DatasourceType baselineType = baselineConfig.getType();
+            DataType baselineType = baseline.type();
 
-            if ( ensemble && baselineType != DatasourceType.ENSEMBLE_FORECASTS )
+            if ( ensemble && baselineType != DataType.ENSEMBLE_FORECASTS )
             {
                 throw new IllegalArgumentException( "Requested pools for ensemble data, but the baseline "
                                                     + DATA_IS_DECLARED_AS
                                                     + baselineType
                                                     + WHICH_IS_NOT_ALLOWED );
             }
-            else if ( !ensemble && baselineType == DatasourceType.ENSEMBLE_FORECASTS )
+            else if ( !ensemble && baselineType == DataType.ENSEMBLE_FORECASTS )
             {
                 throw new IllegalArgumentException( "Requested pools for single-valued data, but the baseline "
                                                     + DATA_IS_DECLARED_AS
@@ -1794,22 +1796,17 @@ public class PoolFactory
     }
 
     /**
-     * @param dataSourceConfig the data source declaration
+     * @param dataset the data source declaration
      * @return the declared time shift or null if no time shift is declared
      */
-    private Duration getTimeShift( final DataSourceConfig dataSourceConfig )
+    private Duration getTimeShift( Dataset dataset )
     {
         Duration timeShift = Duration.ZERO; // Benign time shift
 
-        if ( Objects.nonNull( dataSourceConfig )
-             && Objects.nonNull( dataSourceConfig.getTimeShift() ) )
+        if ( Objects.nonNull( dataset )
+             && Objects.nonNull( dataset.timeShift() ) )
         {
-            ChronoUnit chronoUnit = ChronoUnit.valueOf( dataSourceConfig.getTimeShift()
-                                                                        .getUnit()
-                                                                        .toString()
-                                                                        .toUpperCase() );
-            timeShift = Duration.of( dataSourceConfig.getTimeShift().getWidth(),
-                                     chronoUnit );
+            timeShift = dataset.timeShift();
         }
 
         return timeShift;
@@ -1818,25 +1815,18 @@ public class PoolFactory
     /**
      * Gets the frequency of the pairs, if declared.
      *
-     * @param pairConfig the pair declaration
+     * @param declaration the declaration
      * @return the pair frequency or null
      */
 
-    private Duration getPairFrequency( PairConfig pairConfig )
+    private Duration getPairFrequency( EvaluationDeclaration declaration )
     {
         Duration frequency = null;
 
         // Obtain from the declaration if available
-        if ( Objects.nonNull( pairConfig )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale() )
-             && Objects.nonNull( pairConfig.getDesiredTimeScale().getFrequency() ) )
+        if ( Objects.nonNull( declaration.pairFrequency() ) )
         {
-            ChronoUnit unit = ChronoUnit.valueOf( pairConfig.getDesiredTimeScale()
-                                                            .getUnit()
-                                                            .value()
-                                                            .toUpperCase() );
-
-            frequency = Duration.of( pairConfig.getDesiredTimeScale().getFrequency(), unit );
+            frequency = declaration.pairFrequency();
         }
 
         return frequency;
@@ -1881,8 +1871,8 @@ public class PoolFactory
             return false;
         }
 
-        if ( !Objects.equals( localProject.getVariableName( LeftOrRightOrBaseline.LEFT ),
-                              localProject.getVariableName( LeftOrRightOrBaseline.BASELINE ) ) )
+        if ( !Objects.equals( localProject.getVariableName( DatasetOrientation.LEFT ),
+                              localProject.getVariableName( DatasetOrientation.BASELINE ) ) )
         {
             return false;
         }
@@ -1891,10 +1881,9 @@ public class PoolFactory
         // A common assumption throughout WRES is that sources can be de-duplicated on the basis of declaration and that
         // any runtime differences, based on when reading/ingest calls an external source for a snapshot, should be 
         // ignored - in other words, the first snapshot wins, because this allows for de-duplication
-        Inputs inputs = localProject.getProjectConfig()
-                                    .getInputs();
-
-        return Objects.equals( inputs.getLeft().getSource(), inputs.getBaseline().getSource() );
+        Dataset left = project.getDeclaredDataSource( DatasetOrientation.LEFT );
+        Dataset baseline = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
+        return Objects.equals( left.sources(), baseline.sources() );
     }
 
     /**
@@ -2076,9 +2065,9 @@ public class PoolFactory
 
         // Create a unit mapper
         String desiredMeasurementUnit = project.getMeasurementUnit();
-        ProjectConfig projectConfig = project.getProjectConfig();
+        EvaluationDeclaration declaration = project.getDeclaration();
 
         this.unitMapper = UnitMapper.of( desiredMeasurementUnit,
-                                         projectConfig );
+                                         declaration.unitAliases() );
     }
 }

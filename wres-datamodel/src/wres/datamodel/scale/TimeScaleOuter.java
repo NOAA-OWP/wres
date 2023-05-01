@@ -534,7 +534,7 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     {
         Objects.requireNonNull( timeScale );
 
-        Duration period = null;
+        Duration period;
 
         if ( !timeScale.isInstantaneous() )
         {

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestConstants.*;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -34,12 +35,13 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DatasourceType;
-import wres.config.generated.NamedFeature;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -47,7 +49,6 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
@@ -55,6 +56,8 @@ import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.retrieving.Retriever;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -75,8 +78,6 @@ public class ObservationRetrieverTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
@@ -84,10 +85,10 @@ public class ObservationRetrieverTest
     private Connection rawConnection;
 
     /**
-     * A {@link LeftOrRightOrBaseline} for testing.
+     * A {@link DatasetOrientation} for testing.
      */
 
-    private static final LeftOrRightOrBaseline LRB = LeftOrRightOrBaseline.LEFT;
+    private static final DatasetOrientation ORIENTATION = DatasetOrientation.LEFT;
 
     /**
      * Error message when attempting to retrieve by identifier.
@@ -125,14 +126,9 @@ public class ObservationRetrieverTest
                .thenReturn( 7 );
         Mockito.when( this.mockSystemSettings.getMaximumIngestThreads() )
                .thenReturn( 7 );
-        PairConfig pairConfig = Mockito.mock( PairConfig.class );
-        Mockito.when( pairConfig.getGridSelection() )
-               .thenReturn( List.of() );
-        Mockito.when( this.mockProjectConfig.getPair() )
-               .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
-        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Create the connection and schema
@@ -156,7 +152,7 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .setDatasetOrientation( ORIENTATION )
                                                   .build();
 
         // Get the time-series
@@ -212,7 +208,7 @@ public class ObservationRetrieverTest
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setTimeWindow( poolBoundaries )
-                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .setDatasetOrientation( ORIENTATION )
                                                   .build();
 
         // Get the time-series
@@ -262,7 +258,7 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .setDatasetOrientation( ORIENTATION )
                                                   .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
@@ -282,7 +278,7 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .setDatasetOrientation( ORIENTATION )
                                                   .build();
 
         UnsupportedOperationException expected = assertThrows( UnsupportedOperationException.class,
@@ -302,7 +298,7 @@ public class ObservationRetrieverTest
                                                   .setProjectId( PROJECT_ID )
                                                   .setVariableName( VARIABLE_NAME )
                                                   .setFeatures( Set.of( FEATURE ) )
-                                                  .setLeftOrRightOrBaseline( LRB )
+                                                  .setDatasetOrientation( ORIENTATION )
                                                   .build();
 
         LongStream longStream = LongStream.of();
@@ -369,60 +365,68 @@ public class ObservationRetrieverTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
+    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException, IOException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
-                                                                    DatasourceType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
-                                                                     DatasourceType.SINGLE_VALUED_FORECASTS );
-        LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}", rightData );
-        ProjectConfig.Inputs fakeInputs =
-                new ProjectConfig.Inputs( leftData.getContext(), rightData.getContext(), null );
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( FEATURE.getName(),
-                                                                           FEATURE.getName(),
-                                                                           null ) ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
+        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
+                                                                    DataType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                                     DataType.SINGLE_VALUED_FORECASTS );
+        LOGGER.debug( "leftData: {}", leftData );
+        LOGGER.debug( "rightData: {}", rightData );
+
+        String featureName = FEATURE.getName();
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+        Set<GeometryTuple> features =
+                Set.of( GeometryTuple.newBuilder()
+                                     .setLeft( geometry )
+                                     .setRight( geometry )
+                                     .build() );
+
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .build();
+
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
-        TimeSeriesIngester ingesterOne =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
-        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, leftData )
-                                                  .get( 0 );
+        IngestResult ingestResultOne;
+        try ( DatabaseTimeSeriesIngester ingesterOne =
+                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                              .setDatabase( this.wresDatabase )
+                                                              .setCaches( this.caches )
+                                                              .setLockManager( this.lockManager )
+                                                              .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamOne =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
+            ingestResultOne = ingesterOne.ingest( tupleStreamOne, leftData )
+                                         .get( 0 );
+        }
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
-
-        TimeSeriesIngester ingesterTwo =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamTwo =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
-                                                  .get( 0 );
-
+        IngestResult ingestResultTwo;
+        try ( DatabaseTimeSeriesIngester ingesterTwo =
+                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                              .setDatabase( this.wresDatabase )
+                                                              .setCaches( this.caches )
+                                                              .setLockManager( this.lockManager )
+                                                              .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamTwo =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
+            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
+                                         .get( 0 );
+        }
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo );
 
@@ -445,7 +449,7 @@ public class ObservationRetrieverTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         Project project = Projects.getProject( this.wresDatabase,
-                                               fakeConfig,
+                                               declaration,
                                                this.caches,
                                                null,
                                                results );

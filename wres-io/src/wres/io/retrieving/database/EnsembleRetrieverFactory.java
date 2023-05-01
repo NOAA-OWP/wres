@@ -9,18 +9,15 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Ensembles;
 import wres.io.database.caching.Features;
@@ -29,6 +26,7 @@ import wres.io.database.Database;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -52,10 +50,10 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private final DatabaseCaches caches;
 
     /** Right data declaration. */
-    private final DataSourceConfig rightConfig;
+    private final Dataset rightDataset;
 
     /** Baseline data declaration. */
-    private final DataSourceConfig baselineConfig;
+    private final Dataset baselineDataset;
 
     /** Start of a seasonal constraint, if any. */
     private final MonthDay seasonStart;
@@ -115,16 +113,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                       features,
                       timeWindow );
 
-        return this.getRightRetrieverBuilder( this.rightConfig.getType() )
+        return this.getRightRetrieverBuilder( this.rightDataset.type() )
                    .setEnsemblesCache( this.getEnsemblesCache() )
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
                    .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                    .setProjectId( this.project.getId() )
                    .setFeatures( features )
-                   .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.RIGHT ) )
-                   .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.RIGHT )
-                   .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightConfig ) )
+                   .setVariableName( this.project.getVariableName( DatasetOrientation.RIGHT ) )
+                   .setDatasetOrientation( DatasetOrientation.RIGHT )
+                   .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightDataset ) )
                    .setDesiredTimeScale( this.desiredTimeScale )
                    .setSeasonStart( this.seasonStart )
                    .setSeasonEnd( this.seasonEnd )
@@ -151,16 +149,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                           features,
                           timeWindow );
 
-            baseline = this.getRightRetrieverBuilder( this.baselineConfig.getType() )
+            baseline = this.getRightRetrieverBuilder( this.baselineDataset.type() )
                            .setEnsemblesCache( this.getEnsemblesCache() )
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
                            .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
-                           .setVariableName( this.project.getVariableName( LeftOrRightOrBaseline.BASELINE ) )
-                           .setLeftOrRightOrBaseline( LeftOrRightOrBaseline.BASELINE )
-                           .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineConfig ) )
+                           .setVariableName( this.project.getVariableName( DatasetOrientation.BASELINE ) )
+                           .setDatasetOrientation( DatasetOrientation.BASELINE )
+                           .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineDataset ) )
                            .setDesiredTimeScale( this.desiredTimeScale )
                            .setSeasonStart( this.seasonStart )
                            .setSeasonEnd( this.seasonEnd )
@@ -227,9 +225,9 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private EnsembleForecastRetriever.Builder getRightRetrieverBuilder( DatasourceType dataType )
+    private EnsembleForecastRetriever.Builder getRightRetrieverBuilder( DataType dataType )
     {
-        if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
+        if ( dataType == DataType.ENSEMBLE_FORECASTS )
         {
             return (EnsembleForecastRetriever.Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
         }
@@ -243,20 +241,29 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     /**
-     * Returns the declared existing time scale associated with a data source, if any.
+     * Returns the declared existing timescale associated with a data source, if any.
      * 
-     * @param dataSourceConfig the data source declaration
+     * @param dataset the dataset declaration
      * @return a declared existing time scale, or null
      */
 
-    private TimeScaleOuter getDeclaredExistingTimeScale( DataSourceConfig dataSourceConfig )
+    private TimeScaleOuter getDeclaredExistingTimeScale( Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
+        Set<TimeScale> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( dataset );
+
         TimeScaleOuter declaredExistingTimeScale = null;
 
-        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+        if( declaredExistingTimeScales.size() > 1 )
         {
-            declaredExistingTimeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
+            throw new UnsupportedOperationException( "Currently, only one timescale is supported for each side of "
+                                                     + "data in an evaluation, not one per source." );
+        }
+
+        if ( !declaredExistingTimeScales.isEmpty() )
+        {
+            declaredExistingTimeScale = TimeScaleOuter.of( declaredExistingTimeScales.iterator()
+                                                                                     .next() );
         }
 
         return declaredExistingTimeScale;
@@ -283,18 +290,15 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.database = database;
         this.caches = caches;
 
-        ProjectConfig projectConfig = project.getProjectConfig();
-        PairConfig pairConfig = projectConfig.getPair();
-        Inputs inputsConfig = projectConfig.getInputs();
-        this.rightConfig = inputsConfig.getRight();
-        this.baselineConfig = inputsConfig.getBaseline();
+        this.rightDataset = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
+        this.baselineDataset = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();
         this.seasonEnd = project.getEndOfSeason();
 
-        // Obtain and set the desired time scale. 
-        this.desiredTimeScale = ConfigHelper.getDesiredTimeScale( pairConfig );
+        // Obtain and set the desired timescale.
+        this.desiredTimeScale = project.getDesiredTimeScale();
 
         // Create a factory for the left-ish data
         this.leftFactory = SingleValuedRetrieverFactory.of( project,

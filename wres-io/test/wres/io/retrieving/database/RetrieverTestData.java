@@ -11,6 +11,8 @@ import wres.config.generated.DataSourceBaselineConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -143,11 +145,13 @@ public class RetrieverTestData
                 .build();
     }
 
-    static DataSource generateDataSource( LeftOrRightOrBaseline lrb,
-                                          DatasourceType type )
+    static DataSource generateDataSource( DatasetOrientation orientation,
+                                          DataType type )
     {
+        LeftOrRightOrBaseline lrb = LeftOrRightOrBaseline.valueOf( orientation.name() );
+        DatasourceType dataType = DatasourceType.valueOf( type.name() );
         DataSourceConfig.Source config1 = new DataSourceConfig.Source( FAKE_URI, null, null, null, null );
-        DataSourceConfig config2 = new DataSourceConfig( type,
+        DataSourceConfig config2 = new DataSourceConfig( dataType,
                                                          List.of( config1 ),
                                                          new DataSourceConfig.Variable( VARIABLE_NAME, null ),
                                                          null,
@@ -166,10 +170,11 @@ public class RetrieverTestData
                               lrb );
     }
 
-    static DataSource generateBaselineDataSource( DatasourceType type )
+    static DataSource generateBaselineDataSource( DataType type )
     {
         DataSourceConfig.Source config1 = new DataSourceConfig.Source( FAKE_URI, null, null, null, null );
-        DataSourceConfig config2 = new DataSourceBaselineConfig( type,
+        DatasourceType dataType = DatasourceType.valueOf( type.name() );
+        DataSourceConfig config2 = new DataSourceBaselineConfig( dataType,
                                                                  List.of( config1 ),
                                                                  new DataSourceConfig.Variable( VARIABLE_NAME, null ),
                                                                  null,

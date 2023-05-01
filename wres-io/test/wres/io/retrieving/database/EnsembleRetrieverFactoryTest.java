@@ -5,13 +5,13 @@ import static org.junit.Assert.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestConstants.*;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,15 +33,16 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.DataSourceConfig.Variable;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.messages.MessageFactory;
@@ -53,12 +54,12 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseLockManager;
@@ -77,8 +78,6 @@ public class EnsembleRetrieverFactoryTest
     @Mock
     private SystemSettings mockSystemSettings;
     private wres.io.database.Database wresDatabase;
-    @Mock
-    private ProjectConfig mockProjectConfig;
     private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
@@ -99,7 +98,7 @@ public class EnsembleRetrieverFactoryTest
     }
 
     @Before
-    public void runBeforeEachTest() throws SQLException, LiquibaseException
+    public void runBeforeEachTest() throws SQLException, LiquibaseException, IOException
     {
         MockitoAnnotations.openMocks( this );
 
@@ -120,11 +119,6 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( 7 );
         Mockito.when( this.mockSystemSettings.getMaximumIngestThreads() )
                .thenReturn( 7 );
-        PairConfig pairConfig = Mockito.mock( PairConfig.class );
-        Mockito.when( pairConfig.getGridSelection() )
-               .thenReturn( List.of() );
-        Mockito.when( this.mockProjectConfig.getPair() )
-               .thenReturn( pairConfig );
 
         this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
 
@@ -133,7 +127,7 @@ public class EnsembleRetrieverFactoryTest
 
         // Create the tables
         this.addTheDatabaseAndTables();
-        this.caches = DatabaseCaches.of( this.wresDatabase, this.mockProjectConfig );
+        this.caches = DatabaseCaches.of( this.wresDatabase );
         this.lockManager = new DatabaseLockManagerNoop();
 
         // Add some data for testing
@@ -146,7 +140,6 @@ public class EnsembleRetrieverFactoryTest
     @Test
     public void testGetLeftRetrieverReturnsOneTimeSeriesWithTenEvents()
     {
-
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ) )
                                                                       .get()
@@ -370,59 +363,29 @@ public class EnsembleRetrieverFactoryTest
 
     private void createEnsembleRetrieverFactory()
     {
-        // Mock the sufficient elements of the ProjectConfig
-        PairConfig pairsConfig = new PairConfig( UNIT,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null );
-        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                .variable( VariableBuilder.builder()
+                                          .name( VARIABLE_NAME )
+                                          .build() )
+                                     .build();
 
-        DataSourceConfig left = new DataSourceConfig( DatasourceType.fromValue( "observations" ),
-                                                      sourceList,
-                                                      new Variable( VARIABLE_NAME, null ),
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null,
-                                                      null );
-
-        // Same right and baseline
-        DataSourceBaselineConfig rightAndBaseline =
-                new DataSourceBaselineConfig( DatasourceType.fromValue( "ensemble forecasts" ),
-                                              sourceList,
-                                              new Variable( VARIABLE_NAME, null ),
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              false );
-
-        ProjectConfig.Inputs inputsConfig = new ProjectConfig.Inputs( left,
-                                                                      rightAndBaseline,
-                                                                      rightAndBaseline );
-
-        ProjectConfig projectConfig = new ProjectConfig( inputsConfig, pairsConfig, null, null, null, null );
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .variable( VariableBuilder.builder()
+                                                                .name( VARIABLE_NAME )
+                                                                .build() )
+                                      .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( right )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .baseline( baseline )
+                                            .unit( UNIT )
+                                            .build();
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
@@ -430,13 +393,26 @@ public class EnsembleRetrieverFactoryTest
         Set<FeatureTuple> allFeatures = Set.of( featureTuple );
         // Mock the sufficient elements of Project
         Project project = Mockito.mock( Project.class );
-        Mockito.when( project.getProjectConfig() ).thenReturn( projectConfig );
-        Mockito.when( project.getId() ).thenReturn( PROJECT_ID );
-        Mockito.when( project.getFeatures() ).thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getVariableName( Mockito.any() ) ).thenReturn( VARIABLE_NAME );
-        Mockito.when( project.hasBaseline() ).thenReturn( true );
-        Mockito.when( project.hasProbabilityThresholds() ).thenReturn( false );
+        Mockito.when( project.getDeclaration() )
+               .thenReturn( declaration );
+        Mockito.when( project.getId() )
+               .thenReturn( PROJECT_ID );
+        Mockito.when( project.getFeatures() )
+               .thenReturn( allFeatures );
+        Mockito.when( project.getVariableName( Mockito.any() ) )
+               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getVariableName( Mockito.any() ) )
+               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+               .thenReturn( left );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+               .thenReturn( right );
+        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.BASELINE ) )
+               .thenReturn( right ); // Same as right
+        Mockito.when( project.hasBaseline() )
+               .thenReturn( true );
+        Mockito.when( project.hasProbabilityThresholds() )
+               .thenReturn( false );
 
         // Create the factory instance
         this.factoryToTest = EnsembleRetrieverFactory.of( project, this.wresDatabase, this.caches );
@@ -449,73 +425,91 @@ public class EnsembleRetrieverFactoryTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addTimeSeriesToDatabase() throws SQLException
+    private void addTimeSeriesToDatabase() throws SQLException, IOException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.LEFT,
-                                                                    DatasourceType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( LeftOrRightOrBaseline.RIGHT,
-                                                                     DatasourceType.ENSEMBLE_FORECASTS );
-        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DatasourceType.ENSEMBLE_FORECASTS );
-        LOGGER.info( "leftData: {}", leftData );
-        LOGGER.info( "rightData: {}", rightData );
-        LOGGER.info( "baselineData: {}", rightData );
-        ProjectConfig.Inputs fakeInputs = new ProjectConfig.Inputs( leftData.getContext(),
-                                                                    rightData.getContext(),
-                                                                    ( DataSourceBaselineConfig ) baselineData.getContext() );
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( FEATURE.getName(),
-                                                                           FEATURE.getName(),
-                                                                           FEATURE.getName() ) ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-        ProjectConfig fakeConfig = new ProjectConfig( fakeInputs, pairConfig, null, null, null, null );
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
-        Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
-        TimeSeriesIngester ingesterOne =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
-        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
-                                                  .get( 0 );
-        TimeSeriesIngester ingesterTwo =
-                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                        .setDatabase( this.wresDatabase )
-                                                        .setCaches( this.caches )
-                                                        .setLockManager( this.lockManager )
-                                                        .build();
+        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
+                                                                    DataType.OBSERVATIONS );
+        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                                     DataType.ENSEMBLE_FORECASTS );
+        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DataType.ENSEMBLE_FORECASTS );
+        LOGGER.debug( "leftData: {}", leftData );
+        LOGGER.debug( "rightData: {}", rightData );
+        LOGGER.debug( "baselineData: {}", baselineData );
 
-        Stream<TimeSeriesTuple> tupleStreamTwo = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
-        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
-                                                  .get( 0 );
+        String featureName = FEATURE.getName();
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+        Set<GeometryTuple> features =
+                Set.of( GeometryTuple.newBuilder()
+                                     .setLeft( geometry )
+                                     .setRight( geometry )
+                                     .setBaseline( geometry )
+                                     .build() );
+
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+        Dataset baselineDatset = DatasetBuilder.builder()
+                                               .type( DataType.ENSEMBLE_FORECASTS )
+                                               .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDatset )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .baseline( baseline )
+                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .build();
+
+        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
+        IngestResult ingestResultOne;
+        try( DatabaseTimeSeriesIngester ingesterOne =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
+            ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
+                                                      .get( 0 );
+        }
+
+        IngestResult ingestResultTwo;
+        try( DatabaseTimeSeriesIngester ingesterTwo =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamTwo =
+                    Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
+            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
+                                                      .get( 0 );
+        }
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        TimeSeriesIngester ingesterThree =
+        IngestResult ingestResultThree;
+        try(DatabaseTimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
                                                         .setLockManager( this.lockManager )
-                                                        .build();
-        Stream<TimeSeriesTuple> tupleStreamThree =
-                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
-        IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
-                                                      .get( 0 );
-
+                                                        .build() )
+        {
+            Stream<TimeSeriesTuple> tupleStreamThree =
+                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
+            ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
+                                                          .get( 0 );
+        }
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
                                               ingestResultThree );
@@ -539,7 +533,7 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
         Project project = Projects.getProject( this.wresDatabase,
-                                               fakeConfig,
+                                               declaration,
                                                this.caches,
                                                null,
                                                results );
