@@ -34,7 +34,7 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     public static SingleValuedPairsWriter of( Path pathToPairs,
                                               ChronoUnit timeResolution )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null );
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null, false );
     }
 
     /**
@@ -51,7 +51,26 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
                                               ChronoUnit timeResolution,
                                               DecimalFormat decimalFormatter )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter );
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, false );
+    }
+
+    /**
+     * Build an instance of a writer.
+     *
+     * @param pathToPairs the path to write
+     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param decimalFormatter the optional formatter for writing decimal values
+     * @param gzip boolean to determine if output should be gzip
+     * @return the writer
+     * @throws NullPointerException if the pathToPairs is null or the timeResolution is null
+     */
+
+    public static SingleValuedPairsWriter of( Path pathToPairs,
+                                              ChronoUnit timeResolution,
+                                              DecimalFormat decimalFormatter,
+                                              boolean gzip)
+    {
+        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
     }
 
     @Override
@@ -72,16 +91,19 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
+     * @param gzip boolean to determine if output should be gzip
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     private SingleValuedPairsWriter( Path pathToPairs,
                                      ChronoUnit timeResolution,
-                                     DecimalFormat decimalFormatter )
+                                     DecimalFormat decimalFormatter,
+                                     boolean gzip)
     {
         super( pathToPairs,
                timeResolution,
-               SingleValuedPairsWriter.getPairFormatter( decimalFormatter ) );
+               SingleValuedPairsWriter.getPairFormatter( decimalFormatter ),
+               gzip);
     }
 
     /**

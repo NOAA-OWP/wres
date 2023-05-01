@@ -3,7 +3,9 @@ package wres.io.writing.csv.pairs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +24,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -323,6 +330,42 @@ public final class SingleValuedPairsWriterTest
                 assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0", results.get( 1 ) );
                 assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,3.0,4.0", results.get( 2 ) );
                 assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,5.0,6.0", results.get( 3 ) );
+            }
+        }
+    }
+
+    /**
+     * Builds a {@link SingleValuedPairsWriter}, writes a pair, and checks the output is gzip.
+     * @throws IOException if the writing or removal of the paired file fails
+     * @throws TikaException if problem with MimeTypes or parsing XML config
+     */
+    @Test
+    public void testAcceptForOneSetOfPairsGzip() throws IOException, TikaException
+    {
+        // Create the file system
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_ZIP_NAME );
+
+            // Create the writer
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS, null, true ) )
+            {
+                // Write the pairs with gzip set to true
+                writer.accept( SingleValuedPairsWriterTest.pairs );
+
+                Metadata metadata = new Metadata();
+                TikaConfig tikaConfig = new TikaConfig();
+                Detector detector = tikaConfig.getDetector();
+
+                try( InputStream inStream = Files.newInputStream( csvPath ) )
+                {
+                    InputStream bufferedStream = new BufferedInputStream( inStream );
+                    MediaType detectedMediaType = detector.detect( bufferedStream, metadata );
+                    String subtype = detectedMediaType.getSubtype();
+                    assertEquals( "gzip", subtype.toLowerCase() );
+                }
             }
         }
     }
