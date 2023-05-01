@@ -3,6 +3,7 @@ package wres.io.writing.csv.pairs;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -82,6 +84,12 @@ public abstract class PairsWriter<L, R>
     public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
 
     /**
+     * A default name for the pairs.
+     */
+
+    public static final String DEFAULT_PAIRS_ZIP_NAME = "pairs.zip";
+
+    /**
      * Delimiter.
      */
 
@@ -110,6 +118,11 @@ public abstract class PairsWriter<L, R>
      */
 
     private final Path pathToPairs;
+
+    /**
+     * Boolean determining if output is gzip
+     */
+    private final boolean gzip;
 
     /**
      * The time resolution.
@@ -239,7 +252,6 @@ public abstract class PairsWriter<L, R>
      * @throws NullPointerException if the input is null or required metadata is null
      * @throws WriteException if the writing fails
      */
-
     @Override
     public void accept( Pool<TimeSeries<Pair<L, R>>> pairs )
     {
@@ -393,6 +405,16 @@ public abstract class PairsWriter<L, R>
     }
 
     /**
+     * Returns the flag for if a file should be gzip
+     *
+     * @return the gzip flag
+     */
+    boolean getGzip()
+    {
+        return this.gzip;
+    }
+
+    /**
      * Returns the path to the pairs.
      * 
      * @return the path to the pairs.
@@ -455,7 +477,6 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns a shared instance of a {@link BufferedWriter}.
-     * 
      * @return a writer
      * @throws IOException if the writer cannot be constructed
      */
@@ -468,10 +489,20 @@ public abstract class PairsWriter<L, R>
 
             try
             {
-                this.writer = Files.newBufferedWriter( this.getPath(),
-                                                       StandardCharsets.UTF_8,
-                                                       StandardOpenOption.CREATE,
-                                                       StandardOpenOption.TRUNCATE_EXISTING );
+                if ( this.getGzip() )
+                {
+                    GZIPOutputStream zip = new GZIPOutputStream( Files.newOutputStream( this.getPath(),
+                                                                                        StandardOpenOption.CREATE,
+                                                                                        StandardOpenOption.APPEND ) );
+                    this.writer = new BufferedWriter( new OutputStreamWriter( zip, StandardCharsets.UTF_8 ) );
+                }
+                else
+                {
+                    this.writer = Files.newBufferedWriter( this.getPath(),
+                                                           StandardCharsets.UTF_8,
+                                                           StandardOpenOption.CREATE,
+                                                           StandardOpenOption.TRUNCATE_EXISTING );
+                }
             }
             finally
             {
@@ -581,12 +612,14 @@ public abstract class PairsWriter<L, R>
      * @param pathToPairs the required path to write
      * @param timeResolution the required time resolution at which to write datetime and duration information
      * @param formatter the required formatter for writing pairs
+     * @param gzip boolean to determine if output should be gzip
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     PairsWriter( Path pathToPairs,
                  ChronoUnit timeResolution,
-                 Function<Pair<L, R>, String> formatter )
+                 Function<Pair<L, R>, String> formatter,
+                 boolean gzip )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
@@ -597,6 +630,7 @@ public abstract class PairsWriter<L, R>
         this.pathToPairs = pathToPairs;
         this.timeResolution = timeResolution;
         this.pairFormatter = formatter;
+        this.gzip = gzip;
 
         this.writeLock = new ReentrantLock();
 
