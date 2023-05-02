@@ -7,12 +7,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -43,10 +44,10 @@ public class RetrieverTestData
                                                .build();
     }
 
-    static TimeSeries<Double> generateTimeSeriesDoubleTwo( ReferenceTimeType referenceTimeType )
+    static TimeSeries<Double> generateTimeSeriesDoubleTwo()
     {
         TimeSeriesMetadata metadataTwo =
-                TimeSeriesMetadata.of( Map.of( referenceTimeType,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T03_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -59,10 +60,10 @@ public class RetrieverTestData
                                                .build();
     }
 
-    static TimeSeries<Double> generateTimeSeriesDoubleThree( ReferenceTimeType referenceTimeType )
+    static TimeSeries<Double> generateTimeSeriesDoubleThree()
     {
         TimeSeriesMetadata metadataThree =
-                TimeSeriesMetadata.of( Map.of( referenceTimeType,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.ANALYSIS_START_TIME,
                                                T2023_04_01T06_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -78,10 +79,10 @@ public class RetrieverTestData
                                                .build();
     }
 
-    static TimeSeries<Double> generateTimeSeriesDoubleFour( ReferenceTimeType referenceTimeType )
+    static TimeSeries<Double> generateTimeSeriesDoubleFour()
     {
         TimeSeriesMetadata metadataThree =
-                TimeSeriesMetadata.of( Map.of( referenceTimeType,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T17_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -120,10 +121,10 @@ public class RetrieverTestData
                 .build();
     }
 
-    static TimeSeries<Ensemble> generateTimeSeriesEnsembleOne( ReferenceTimeType referenceTimeType )
+    static TimeSeries<Ensemble> generateTimeSeriesEnsembleOne()
     {
         TimeSeriesMetadata metadataThree =
-                TimeSeriesMetadata.of( Map.of( referenceTimeType,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -148,49 +149,45 @@ public class RetrieverTestData
     static DataSource generateDataSource( DatasetOrientation orientation,
                                           DataType type )
     {
-        LeftOrRightOrBaseline lrb = LeftOrRightOrBaseline.valueOf( orientation.name() );
-        DatasourceType dataType = DatasourceType.valueOf( type.name() );
-        DataSourceConfig.Source config1 = new DataSourceConfig.Source( FAKE_URI, null, null, null, null );
-        DataSourceConfig config2 = new DataSourceConfig( dataType,
-                                                         List.of( config1 ),
-                                                         new DataSourceConfig.Variable( VARIABLE_NAME, null ),
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null,
-                                                         null );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( FAKE_URI )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( type )
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( VARIABLE_NAME )
+                                                                  .build() )
+                                        .build();
+
         return DataSource.of( DataSource.DataDisposition.CSV_WRES,
-                              config1,
-                              config2,
+                              fakeDeclarationSource,
+                              dataset,
                               Collections.emptyList(),
                               FAKE_URI,
-                              lrb );
+                              orientation );
     }
 
     static DataSource generateBaselineDataSource( DataType type )
     {
-        DataSourceConfig.Source config1 = new DataSourceConfig.Source( FAKE_URI, null, null, null, null );
-        DatasourceType dataType = DatasourceType.valueOf( type.name() );
-        DataSourceConfig config2 = new DataSourceBaselineConfig( dataType,
-                                                                 List.of( config1 ),
-                                                                 new DataSourceConfig.Variable( VARIABLE_NAME, null ),
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 null,
-                                                                 false );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( FAKE_URI )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( type )
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( VARIABLE_NAME )
+                                                                  .build() )
+                                        .build();
+
         return DataSource.of( DataSource.DataDisposition.CSV_WRES,
-                              config1,
-                              config2,
+                              fakeDeclarationSource,
+                              dataset,
                               Collections.emptyList(),
                               FAKE_URI,
-                              LeftOrRightOrBaseline.BASELINE  );
+                              DatasetOrientation.BASELINE );
     }
 }

@@ -17,14 +17,13 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.PairConfig;
-import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.reading.netcdf.grid.GridRequest;
 import wres.io.reading.netcdf.grid.GridReader;
 import wres.io.database.caching.GriddedFeatures;
@@ -34,6 +33,8 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>A reader of time-series data from a gridded Netcdf source of National Water Model (NWM) forecasts, simulations or
@@ -58,22 +59,22 @@ public class NwmGridReader implements TimeSeriesReader
      * service API. */
     private static final int MAXIMUM_READ_ATTEMPTS = 5;
 
-    /** Pair declaration. */
-    private final PairConfig pairConfig;
+    /** Declaration. */
+    private final EvaluationDeclaration declaration;
 
     /** The gridded features cache. */
     private final GriddedFeatures.Builder features;
 
     /**
-     * @param pairConfig the pair declaration, which is used to determine whether gridded features should be read
+     * @param declaration the declaration, which is used to determine whether gridded features should be read
      * @param features the gridded features cache
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static NwmGridReader of( PairConfig pairConfig, GriddedFeatures.Builder features )
+    public static NwmGridReader of( EvaluationDeclaration declaration, GriddedFeatures.Builder features )
     {
-        return new NwmGridReader( pairConfig, features );
+        return new NwmGridReader( declaration, features );
     }
 
     @Override
@@ -135,9 +136,9 @@ public class NwmGridReader implements TimeSeriesReader
     /**
      * @return the pair declaration
      */
-    private PairConfig getPairConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.pairConfig;
+        return this.declaration;
     }
 
     /**
@@ -170,22 +171,25 @@ public class NwmGridReader implements TimeSeriesReader
         String pathString = path.toString();
         TimeScaleOuter timeScale = null;
 
-        DataSourceConfig dataSourceConfig = dataSource.getContext();
+        Dataset dataset = dataSource.getContext();
+        Set<TimeScale> timeScales = DeclarationUtilities.getSourceTimeScales( dataset );
 
-        if ( Objects.nonNull( dataSourceConfig.getExistingTimeScale() ) )
+        if ( ! timeScales.isEmpty() )
         {
-            timeScale = TimeScaleOuter.of( dataSourceConfig.getExistingTimeScale() );
+            timeScale = TimeScaleOuter.of( timeScales.iterator()
+                                                     .next() );
         }
 
         // Time window constrained only by the pair declaration
-        TimeWindowOuter timeWindow = TimeWindowGenerator.getOneBigTimeWindow( this.getPairConfig() );
+        TimeWindow timeWindowInner = DeclarationUtilities.getOneBigTimeWindow( this.getDeclaration() );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindowInner );
 
         GridRequest request = new GridRequest( List.of( pathString ),
                                                featureKeys,
                                                dataSource.getVariable()
-                                                         .getValue(),
+                                                         .name(),
                                                timeWindow,
-                                               ProjectConfigs.isForecast( dataSourceConfig ),
+                                               DeclarationUtilities.isForecast( dataset ),
                                                timeScale );
 
         // Acquire the time-series
@@ -210,18 +214,18 @@ public class NwmGridReader implements TimeSeriesReader
 
     /**
      * Hidden constructor.
-     * @param pairConfig the required pair declaration, which is used to determine when gridded feature ingest is needed
+     * @param declaration the declaration, which is used to determine when gridded feature ingest is needed
      * @param features the gridded features cache
      * @throws NullPointerException if either input is null
      * @throws IllegalArgumentException if the features cache does not include any gridded features
      */
 
-    private NwmGridReader( PairConfig pairConfig, GriddedFeatures.Builder features )
+    private NwmGridReader( EvaluationDeclaration declaration, GriddedFeatures.Builder features )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( features );
 
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
         this.features = features;
     }
 }

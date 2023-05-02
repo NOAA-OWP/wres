@@ -11,7 +11,9 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,13 +48,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DateCondition;
-import wres.config.generated.PairConfig;
-import wres.config.generated.UrlParameter;
-import wres.config.xml.ProjectConfigs;
-import wres.io.config.ConfigHelper;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.TimeInterval;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
@@ -61,11 +61,12 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.WebClient;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
 /**
- * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the National Water 
- * Model (NWM). Time-series requests are chunked by feature and date range into 25-feature blocks and weekly date 
+ * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the National Water
+ * Model (NWM). Time-series requests are chunked by feature and date range into 25-feature blocks and weekly date
  * ranges, respectively. The underlying format reader is a {@link WrdsNwmJsonReader}.
  *
  * @author James Brown
@@ -111,8 +112,8 @@ public class WrdsNwmReader implements TimeSeriesReader
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
-    /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
-    private final PairConfig pairConfig;
+    /** Declaration, which is used to chunk requests. Null if no chunking is required. */
+    private final EvaluationDeclaration declaration;
 
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
@@ -121,7 +122,7 @@ public class WrdsNwmReader implements TimeSeriesReader
     private final int featureChunkSize;
 
     /**
-     * @see #of(PairConfig, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings)
      * @param systemSettings the system settings
      * @return an instance that does not performing any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
@@ -133,21 +134,21 @@ public class WrdsNwmReader implements TimeSeriesReader
     }
 
     /**
-     * @param pairConfig the pair declaration, which is used to perform chunking of a data source
+     * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsNwmReader of( PairConfig pairConfig, SystemSettings systemSettings )
+    public static WrdsNwmReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
-        return new WrdsNwmReader( pairConfig, systemSettings, DEFAULT_FEATURE_CHUNK_SIZE );
+        return new WrdsNwmReader( declaration, systemSettings, DEFAULT_FEATURE_CHUNK_SIZE );
     }
 
     /**
-     * @param pairConfig the pair declaration, which is used to perform chunking of a data source
+     * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @param featureChunkSize the number of features to include in each request
      * @return an instance
@@ -155,11 +156,13 @@ public class WrdsNwmReader implements TimeSeriesReader
      * @throws IllegalArgumentException if the featureChunkSize is invalid
      */
 
-    public static WrdsNwmReader of( PairConfig pairConfig, SystemSettings systemSettings, int featureChunkSize )
+    public static WrdsNwmReader of( EvaluationDeclaration declaration,
+                                    SystemSettings systemSettings,
+                                    int featureChunkSize )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
-        return new WrdsNwmReader( pairConfig, systemSettings, featureChunkSize );
+        return new WrdsNwmReader( declaration, systemSettings, featureChunkSize );
     }
 
     @Override
@@ -168,11 +171,11 @@ public class WrdsNwmReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Chunk the requests if needed
-        if ( Objects.nonNull( this.getPairConfig() ) )
+        if ( Objects.nonNull( this.getDeclaration() ) )
         {
             LOGGER.debug( "Preparing requests for WRDS NWM time-series that chunk the time-series data by feature and "
                           + "time range." );
-            return this.read( dataSource, this.getPairConfig() );
+            return this.read( dataSource, this.getDeclaration() );
         }
 
         LOGGER.debug( "Preparing a request to WRDS for NWM time-series without any chunking of the data." );
@@ -199,12 +202,12 @@ public class WrdsNwmReader implements TimeSeriesReader
     }
 
     /**
-     * @return the pair declaration, possibly null
+     * @return the declaration, possibly null
      */
 
-    private PairConfig getPairConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.pairConfig;
+        return this.declaration;
     }
 
     /**
@@ -220,21 +223,21 @@ public class WrdsNwmReader implements TimeSeriesReader
      * Reads the data source by forming separate requests by feature and time range.
      *
      * @param dataSource the data source
-     * @param pairConfig the pair declaration used for chunking
+     * @param declaration the pair declaration used for chunking
      * @throws NullPointerException if either input is null
      */
 
-    private Stream<TimeSeriesTuple> read( DataSource dataSource, PairConfig pairConfig )
+    private Stream<TimeSeriesTuple> read( DataSource dataSource, EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
         this.validateSource( dataSource );
 
         // The features
-        Set<String> featureSet = ConfigHelper.getFeatureNamesForSource( pairConfig,
-                                                                        dataSource.getContext(),
-                                                                        dataSource.getLeftOrRightOrBaseline() );
+        Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
+        Set<String> featureSet = DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                                          dataSource.getDatasetOrientation() );
 
         List<String> features = List.copyOf( featureSet );
 
@@ -242,7 +245,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         List<List<String>> featureBlocks = ListUtils.partition( features, this.getFeatureChunkSize() );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = WrdsNwmReader.getWeekRanges( pairConfig, dataSource );
+        Set<Pair<Instant, Instant>> dateRanges = WrdsNwmReader.getWeekRanges( declaration, dataSource );
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<List<String>, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -259,8 +262,8 @@ public class WrdsNwmReader implements TimeSeriesReader
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource,
                                                                          Collections.unmodifiableSet( chunks ) );
 
-        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
-        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
+        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this
+        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to
         // the data source.
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
@@ -289,8 +292,8 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         List<Pair<List<String>, Pair<Instant, Instant>>> mutableChunks = new ArrayList<>( chunks );
 
-        // The size of this queue is equal to the setting for simultaneous web client threads so that we can 1. get 
-        // quick feedback on exception (which requires a small queue) and 2. allow some requests to go out prior to 
+        // The size of this queue is equal to the setting for simultaneous web client threads so that we can 1. get
+        // quick feedback on exception (which requires a small queue) and 2. allow some requests to go out prior to
         // get-one-response-per-submission-of-one-ingest-task
         int concurrentCount = this.getExecutor()
                                   .getMaximumPoolSize();
@@ -323,9 +326,9 @@ public class WrdsNwmReader implements TimeSeriesReader
                 {
                     Pair<List<String>, Pair<Instant, Instant>> nextChunk = mutableChunks.remove( 0 );
 
-                    // Create the inner data source for the chunk 
+                    // Create the inner data source for the chunk
                     URI nextUri = this.getUriForChunk( dataSource.getSource()
-                                                                 .getValue(),
+                                                                 .uri(),
                                                        dataSource,
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
@@ -336,7 +339,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                                            dataSource.getContext(),
                                            dataSource.getLinks(),
                                            nextUri,
-                                           dataSource.getLeftOrRightOrBaseline() );
+                                           dataSource.getDatasetOrientation() );
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -346,8 +349,8 @@ public class WrdsNwmReader implements TimeSeriesReader
                     results.add( future );
                 }
 
-                // Check that all is well with previously submitted tasks, but only after a handful have been 
-                // submitted. This means that an exception should propagate relatively shortly after it occurs with the 
+                // Check that all is well with previously submitted tasks, but only after a handful have been
+                // submitted. This means that an exception should propagate relatively shortly after it occurs with the
                 // read task. It also means after the creation of a handful of tasks, we only create one after a
                 // previously created one has been completed, fifo/lockstep.
                 startGettingResults.countDown();
@@ -430,68 +433,62 @@ public class WrdsNwmReader implements TimeSeriesReader
     /**
      * Break up dates into weeks starting at T00Z Sunday and ending T00Z the next Sunday.
      *
-     * <p>The purpose of chunking by weeks is re-use between evaluations. Suppose evaluation A evaluates forecasts 
-     * issued December 12 through December 28. Then evaluation B evaluates forecasts issued December 13 through 
-     * December 29. Rather than each evaluation ingesting the data every time the dates change, if we chunk by week, we 
-     * can avoid the re-ingest of data from say, December 16 through December 22, and if we extend the chunk to each 
+     * <p>The purpose of chunking by weeks is re-use between evaluations. Suppose evaluation A evaluates forecasts
+     * issued December 12 through December 28. Then evaluation B evaluates forecasts issued December 13 through
+     * December 29. Rather than each evaluation ingesting the data every time the dates change, if we chunk by week, we
+     * can avoid the re-ingest of data from say, December 16 through December 22, and if we extend the chunk to each
      * Sunday, there will be three sources, none re-ingested.
      *
-     * <p>Issued dates must be specified when using an API source to avoid ambiguities and to avoid infinite data 
+     * <p>Issued dates must be specified when using an API source to avoid ambiguities and to avoid infinite data
      * requests.
      *
      * <p>TODO: promote this to {@link ReaderUtilities} when required by more readers.
      *
-     * @param pairConfig the evaluation project pair declaration, required
+     * @param declaration the project declaration, required
      * @param dataSource the data source, required
      * @return a set of week ranges
      */
 
-    private static Set<Pair<Instant, Instant>> getWeekRanges( PairConfig pairConfig,
+    private static Set<Pair<Instant, Instant>> getWeekRanges( EvaluationDeclaration declaration,
                                                               DataSource dataSource )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getContext() );
 
-        boolean isForecast = ProjectConfigs.isForecast( dataSource.getContext() );
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
 
-        DateCondition dates = pairConfig.getDates();
+        TimeInterval dates = declaration.validDates();
 
         if ( isForecast )
         {
-            dates = pairConfig.getIssuedDates();
+            dates = declaration.referenceDates();
         }
 
         SortedSet<Pair<Instant, Instant>> weekRanges = new TreeSet<>();
-
-        OffsetDateTime earliest;
-        String specifiedEarliest = dates.getEarliest();
-
-        OffsetDateTime latest;
-        String specifiedLatest = dates.getLatest();
-
-        earliest = OffsetDateTime.parse( specifiedEarliest )
-                                 .with( previousOrSame( SUNDAY ) )
-                                 .withHour( 0 )
-                                 .withMinute( 0 )
-                                 .withSecond( 0 )
-                                 .withNano( 0 );
+        ZonedDateTime earliest = dates.minimum()
+                                      .atZone( ReaderUtilities.UTC )
+                                      .with( TemporalAdjusters.previousOrSame( SUNDAY ) )
+                                      .withHour( 0 )
+                                      .withMinute( 0 )
+                                      .withSecond( 0 )
+                                      .withNano( 0 );
 
         LOGGER.debug( "Given {} calculated {} for earliest.",
-                      specifiedEarliest,
+                      dates.minimum(),
                       earliest );
 
         // Intentionally keep this raw, un-Sunday-ified.
-        latest = OffsetDateTime.parse( specifiedLatest );
+        ZonedDateTime latest = dates.maximum().atZone( ReaderUtilities.UTC );
 
         LOGGER.debug( "Given {} parsed {} for latest.",
-                      specifiedLatest,
+                      dates.maximum(),
                       latest );
 
-        OffsetDateTime left = earliest;
-        OffsetDateTime right = left.with( next( SUNDAY ) );
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( next( SUNDAY ) );
 
-        OffsetDateTime nowDate = OffsetDateTime.now();
+        ZonedDateTime nowDate = ZonedDateTime.now( ReaderUtilities.UTC );
 
         while ( left.isBefore( latest ) )
         {
@@ -546,7 +543,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         Objects.requireNonNull( featureNames );
 
         String variableName = dataSource.getVariable()
-                                        .getValue();
+                                        .name();
 
         String basePath = baseUri.getPath();
 
@@ -557,12 +554,12 @@ public class WrdsNwmReader implements TimeSeriesReader
         }
 
         boolean isEnsemble = dataSource.getContext()
-                                       .getType() == DatasourceType.ENSEMBLE_FORECASTS;
+                                       .type() == DataType.ENSEMBLE_FORECASTS;
 
         Map<String, String> wrdsParameters = this.createWrdsNwmUrlParameters( range,
                                                                               isEnsemble,
-                                                                              dataSource.getContext()
-                                                                                        .getUrlParameter() );
+                                                                              dataSource.getSource()
+                                                                                        .parameters() );
         StringJoiner joiner = new StringJoiner( "," );
 
         for ( String featureName : featureNames )
@@ -610,12 +607,13 @@ public class WrdsNwmReader implements TimeSeriesReader
     /**
      * Specific to WRDS NWM API, get date range url parameters
      * @param range the date range to set parameters for
+     * @param additionalParameters the additional parameters, if any
      * @return the key/value parameters
      */
 
     private Map<String, String> createWrdsNwmUrlParameters( Pair<Instant, Instant> range,
                                                             boolean isEnsemble,
-                                                            List<UrlParameter> additionalParameters )
+                                                            Map<String, String> additionalParameters )
     {
         Map<String, String> urlParameters = new HashMap<>( 3 );
 
@@ -636,10 +634,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         // Caller-supplied additional parameters are lower precedence, put first
         // This will override the parameter added above.
-        for ( UrlParameter parameter : additionalParameters )
-        {
-            urlParameters.put( parameter.getName(), parameter.getValue() );
-        }
+        urlParameters.putAll( additionalParameters );
 
         String leftWrdsFormattedDate = WrdsNwmReader.iso8601TruncatedToHourFromInstant( range.getLeft() );
         String rightWrdsFormattedDate = WrdsNwmReader.iso8601TruncatedToHourFromInstant( range.getRight() );
@@ -758,15 +753,15 @@ public class WrdsNwmReader implements TimeSeriesReader
 
     /**
      * Hidden constructor.
-     * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
+     * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
      * @param featureChunkSize the number of features to include in each request, must be greater than zero
-     * @throws ProjectConfigException if the project declaration is invalid for this source type
+     * @throws DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      * @throws IllegalArgumentException if the featureChunkSize is invalid
      */
 
-    private WrdsNwmReader( PairConfig pairConfig, SystemSettings systemSettings, int featureChunkSize )
+    private WrdsNwmReader( EvaluationDeclaration declaration, SystemSettings systemSettings, int featureChunkSize )
     {
         Objects.requireNonNull( systemSettings );
 
@@ -777,43 +772,39 @@ public class WrdsNwmReader implements TimeSeriesReader
                                                 + "." );
         }
 
-        if ( Objects.nonNull( pairConfig ) )
+        if ( Objects.nonNull( declaration ) )
         {
-            if ( Objects.isNull( pairConfig.getDates() ) && Objects.isNull( pairConfig.getIssuedDates() ) )
+            if ( Objects.isNull( declaration.validDates() ) && Objects.isNull( declaration.referenceDates() ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                  + "either the dates or issuedDates." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                + "either the 'valid_dates' or 'reference_dates'." );
             }
 
-            if ( Objects.nonNull( pairConfig.getDates() ) && ( Objects.isNull( pairConfig.getDates().getEarliest() )
-                                                               || Objects.isNull( pairConfig.getDates()
-                                                                                            .getLatest() ) ) )
+            if ( Objects.nonNull( declaration.validDates() ) && ( Objects.isNull( declaration.validDates()
+                                                                                             .minimum() )
+                                                                  || Objects.isNull( declaration.validDates()
+                                                                                                .maximum() ) ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                  + "both the earliest and latest dates (e.g. "
-                                                  + "<dates earliest=\"2019-08-10T14:30:00Z\" "
-                                                  + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                + "both the 'minimum' and 'maximum' values for "
+                                                + "the 'valid_dates'." );
             }
 
-            if ( Objects.nonNull( pairConfig.getIssuedDates() )
-                 && ( Objects.isNull( pairConfig.getIssuedDates().getEarliest() )
-                      || Objects.isNull( pairConfig.getIssuedDates()
-                                                   .getLatest() ) ) )
+            if ( Objects.nonNull( declaration.referenceDates() )
+                 && ( Objects.isNull( declaration.referenceDates()
+                                                 .minimum() )
+                      || Objects.isNull( declaration.referenceDates()
+                                                    .maximum() ) ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                  + "both the earliest and latest issued dates (e.g. "
-                                                  + "<issuedDates earliest=\"2019-08-10T14:30:00Z\" "
-                                                  + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                + "both the 'minimum' and 'maximum' values of the 'reference_dates'." );
             }
 
-            LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete pair "
+            LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete "
                           + "declaration, which will be used to chunk requests by feature and time range." );
         }
 
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
         this.featureChunkSize = featureChunkSize;
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS NWM Reading Thread %d" )

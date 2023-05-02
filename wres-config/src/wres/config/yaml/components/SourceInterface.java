@@ -129,4 +129,17 @@ public enum SourceInterface
     {
         return this.featureAuthority;
     }
+
+    /**
+     * Convenience method that inspects the interface {@link #name()} and returns <code>true</code> when the name
+     * begins with 'NWM_', otherwise <code>false</code>.
+     *
+     * @return whether the source interface is an NWM interface
+     */
+
+    public boolean isNwmInterface()
+    {
+        return this.name()
+                   .startsWith( "NWM_" );
+    }
 }

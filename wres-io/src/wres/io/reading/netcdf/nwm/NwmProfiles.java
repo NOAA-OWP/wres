@@ -2,19 +2,19 @@ package wres.io.reading.netcdf.nwm;
 
 import java.time.Duration;
 
-import wres.config.generated.InterfaceShortHand;
+import wres.config.yaml.components.SourceInterface;
 
 /**
- * Static helper class to generate NWM profiles for NWM versions.
+ * <p>Static helper class to generate NWM profiles for NWM versions.
  *
- * Maps short-hand declarations to the ten parameters required to describe an
+ * <p>Maps short-hand declarations to the ten parameters required to describe an
  * NWM dataset sufficient for successful retrieval.
  *
- * Survey of the directories on 2019-10-23:
+ * <p>Survey of the directories on 2019-10-23:
  *
- * Index of /pub/data/nccf/com/nwm/prod/nwm.20191023
+ * <p>Index of /pub/data/nccf/com/nwm/prod/nwm.20191023
  *
- * Name                           Last modified      Size  Parent Directory                                    -
+ * <p>Name                           Last modified      Size  Parent Directory                                    -
  * analysis_assim/                23-Oct-2019 17:48    -
  * analysis_assim_hawaii/         23-Oct-2019 17:58    -
  * analysis_assim_long/           23-Oct-2019 12:50    -
@@ -39,10 +39,10 @@ import wres.config.generated.InterfaceShortHand;
  * short_range_hawaii/            23-Oct-2019 14:58    -
  * usgs_timeslices/               23-Oct-2019 18:31    -
  *
- * Survey of directories on para 2020-08-03
+ * <p>Survey of directories on para 2020-08-03
  * Index of /pub/data/nccf/com/nwm/para/nwm.20200802
  *
- * Name                               Last modified      Size  Parent Directory                                        -
+ * <p>Name                               Last modified      Size  Parent Directory                                        -
  * analysis_assim/                    02-Aug-2020 23:48    -
  * analysis_assim_extend/             03-Aug-2020 21:01    -
  * analysis_assim_extend_no_da/       03-Aug-2020 21:00    -
@@ -83,94 +83,41 @@ import wres.config.generated.InterfaceShortHand;
 
 class NwmProfiles
 {
-    private NwmProfiles()
-    {
-        // Static utility class, no construction allowed.
-    }
+    private static final String ANALYSIS_ASSIM_NO_DA = "analysis_assim_no_da";
+    private static final String HAWAII = "hawaii";
+    private static final String PUERTORICO = "puertorico";
+    private static final String ANALYSIS_ASSIM = "analysis_assim";
+    private static final String MEDIUM_RANGE = "medium_range";
+    private static final String SHORT_RANGE = "short_range";
+    private static final String CHANNEL_RT = "channel_rt";
+    private static final String CONUS = "conus";
 
-    static NwmProfile getProfileFromShortHand( InterfaceShortHand shortHand )
+    static NwmProfile getProfileFromShortHand( SourceInterface shortHand )
     {
-        if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS ) )
+        return switch( shortHand )
         {
-            return NwmProfiles.getShortRangeChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getMediumRangeEnsembleChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getMediumRangeDeterministicChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY ) )
-        {
-            return NwmProfiles.getMediumRangeEnsembleChannelRtConusHourly();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS_HOURLY ) )
-        {
-            return NwmProfiles.getMediumRangeDeterministicChannelRtConusHourly();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getMediumRangeNoDaDeterministicChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getAnalysisAssimChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getAnalysisAssimNoDaChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getAnalysisAssimExtendChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getAnalysisAssimExtendNoDaChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII ) )
-        {
-            return NwmProfiles.getAnalysisAssimChannelRtHawaii();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_HAWAII ) )
-        {
-            return NwmProfiles.getAnalysisAssimNoDaChannelRtHawaii();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO ) )
-        {
-            return NwmProfiles.getAnalysisAssimChannelRtPuertoRico();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO ) )
-        {
-            return NwmProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_LONG_RANGE_CHANNEL_RT_CONUS ) )
-        {
-            return NwmProfiles.getLongRangeChannelRtConus();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_HAWAII ) )
-        {
-            return NwmProfiles.getShortRangeChannelRtHawaii();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII ) )
-        {
-            return NwmProfiles.getShortRangeNoDaChannelRtHawaii();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO ) )
-        {
-            return NwmProfiles.getShortRangeChannelRtPuertoRico();
-        }
-        else if ( shortHand.equals( InterfaceShortHand.NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO ) )
-        {
-            return NwmProfiles.getShortRangeNoDaChannelRtPuertoRico();
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "No NwmProfile known to WRES for "
-                                                     + shortHand.toString() );
-        }
+            case NWM_SHORT_RANGE_CHANNEL_RT_CONUS -> NwmProfiles.getShortRangeChannelRtConus();
+            case NWM_SHORT_RANGE_CHANNEL_RT_HAWAII -> NwmProfiles.getShortRangeChannelRtHawaii();
+            case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_HAWAII -> NwmProfiles.getShortRangeNoDaChannelRtHawaii();
+            case NWM_SHORT_RANGE_CHANNEL_RT_PUERTORICO -> NwmProfiles.getShortRangeChannelRtPuertoRico();
+            case NWM_SHORT_RANGE_NO_DA_CHANNEL_RT_PUERTORICO -> NwmProfiles.getShortRangeNoDaChannelRtPuertoRico();
+            case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS -> NwmProfiles.getMediumRangeEnsembleChannelRtConus();
+            case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS -> NwmProfiles.getMediumRangeDeterministicChannelRtConus();
+            case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_CONUS_HOURLY -> NwmProfiles.getMediumRangeEnsembleChannelRtConusHourly();
+            case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS_HOURLY -> NwmProfiles.getMediumRangeDeterministicChannelRtConusHourly();
+            case NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_CONUS -> NwmProfiles.getMediumRangeNoDaDeterministicChannelRtConus();
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_CONUS -> NwmProfiles.getAnalysisAssimChannelRtConus();
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_CONUS -> NwmProfiles.getAnalysisAssimNoDaChannelRtConus();
+            case NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_CONUS -> NwmProfiles.getAnalysisAssimExtendChannelRtConus();
+            case NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS -> NwmProfiles.getAnalysisAssimExtendNoDaChannelRtConus();
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII -> NwmProfiles.getAnalysisAssimChannelRtHawaii();
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_HAWAII -> NwmProfiles.getAnalysisAssimNoDaChannelRtHawaii();
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO -> NwmProfiles.getAnalysisAssimChannelRtPuertoRico();
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO -> NwmProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
+            case NWM_LONG_RANGE_CHANNEL_RT_CONUS -> NwmProfiles.getLongRangeChannelRtConus();
+            default -> throw new UnsupportedOperationException( "No NwmProfile known to WRES for "
+                                                                + shortHand );
+        };
     }
 
     private static NwmProfile getShortRangeChannelRtConus()
@@ -179,11 +126,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "short_range",
-                               "channel_rt",
+                               SHORT_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "short_range",
-                               "conus",
+                               SHORT_RANGE,
+                               CONUS,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -196,11 +143,11 @@ class NwmProfiles
                                7,
                                Duration.ofHours( 3 ),
                                true,
-                               "medium_range",
-                               "channel_rt",
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "medium_range",
-                               "conus",
+                               MEDIUM_RANGE,
+                               CONUS,
                                Duration.ofHours( 6 ),
                                true,
                                Duration.ZERO );
@@ -212,11 +159,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 3 ),
                                true,
-                               "medium_range",
-                               "channel_rt",
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "medium_range",
-                               "conus",
+                               MEDIUM_RANGE,
+                               CONUS,
                                Duration.ofHours( 6 ),
                                true, // For 2.0 and higher, the path has an ensemble-like structure: #110992
                                Duration.ZERO );
@@ -228,11 +175,11 @@ class NwmProfiles
                                7,
                                Duration.ofHours( 1 ),
                                true,
-                               "medium_range",
-                               "channel_rt",
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "medium_range",
-                               "conus",
+                               MEDIUM_RANGE,
+                               CONUS,
                                Duration.ofHours( 6 ),
                                true,
                                Duration.ZERO );
@@ -244,11 +191,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "medium_range",
-                               "channel_rt",
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "medium_range",
-                               "conus",
+                               MEDIUM_RANGE,
+                               CONUS,
                                Duration.ofHours( 6 ),
                                true, // For 2.0 and higher, the path has an ensemble-like structure: #110992
                                Duration.ZERO );
@@ -261,10 +208,10 @@ class NwmProfiles
                                Duration.ofHours( 3 ),
                                true,
                                "medium_range_no_da",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "medium_range_no_da",
-                               "conus",
+                               CONUS,
                                Duration.ofHours( 6 ),
                                false, // Available for 2.1 and above, no ensemble-like structure: #110992
                                Duration.ZERO );
@@ -276,11 +223,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim",
-                               "channel_rt",
+                               ANALYSIS_ASSIM,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
-                               "analysis_assim",
-                               "conus",
+                               ANALYSIS_ASSIM,
+                               CONUS,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -293,10 +240,10 @@ class NwmProfiles
                                Duration.ofHours( 6 ),
                                true,
                                "long_range",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "long_range",
-                               "conus",
+                               CONUS,
                                Duration.ofHours( 6 ),
                                true,
                                Duration.ZERO );
@@ -309,11 +256,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "short_range",
-                               "channel_rt",
+                               SHORT_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "short_range_puertorico",
-                               "puertorico",
+                               PUERTORICO,
                                Duration.ofHours( 12 ),
                                false,
                                Duration.ofHours( 6 ) );
@@ -327,10 +274,10 @@ class NwmProfiles
                                Duration.ofHours( 1 ),
                                true,
                                "short_range_no_da",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "short_range_puertorico_no_da",
-                               "puertorico",
+                               PUERTORICO,
                                Duration.ofHours( 12 ),
                                false,
                                Duration.ofHours( 6 ) );
@@ -343,11 +290,11 @@ class NwmProfiles
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
-                               "short_range",
-                               "channel_rt",
+                               SHORT_RANGE,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "short_range_hawaii",
-                               "hawaii",
+                               HAWAII,
                                Duration.ofHours( 12 ),
                                false,
                                Duration.ZERO );
@@ -360,10 +307,10 @@ class NwmProfiles
                                Duration.ofMinutes( 15 ),
                                true,
                                "short_range_no_da",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "short_range_hawaii_no_da",
-                               "hawaii",
+                               HAWAII,
                                Duration.ofHours( 12 ),
                                false,
                                Duration.ZERO );
@@ -375,11 +322,11 @@ class NwmProfiles
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
-                               "analysis_assim",
-                               "channel_rt",
+                               ANALYSIS_ASSIM,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_hawaii",
-                               "hawaii",
+                               HAWAII,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -391,11 +338,11 @@ class NwmProfiles
                                1,
                                Duration.ofMinutes( 15 ),
                                true,
-                               "analysis_assim_no_da",
-                               "channel_rt",
+                               ANALYSIS_ASSIM_NO_DA,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_hawaii_no_da",
-                               "hawaii",
+                               HAWAII,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -407,11 +354,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim",
-                               "channel_rt",
+                               ANALYSIS_ASSIM,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_puertorico",
-                               "puertorico",
+                               PUERTORICO,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -423,11 +370,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_no_da",
-                               "channel_rt",
+                               ANALYSIS_ASSIM_NO_DA,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_puertorico_no_da",
-                               "puertorico",
+                               PUERTORICO,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -439,11 +386,11 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_no_da",
-                               "channel_rt",
+                               ANALYSIS_ASSIM_NO_DA,
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
-                               "analysis_assim_no_da",
-                               "conus",
+                               ANALYSIS_ASSIM_NO_DA,
+                               CONUS,
                                Duration.ofHours( 1 ),
                                false,
                                Duration.ZERO );
@@ -456,10 +403,10 @@ class NwmProfiles
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_extend",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend",
-                               "conus",
+                               CONUS,
                                Duration.ofDays( 1 ),
                                false,
                                Duration.ofHours( 16 ) );
@@ -472,12 +419,17 @@ class NwmProfiles
                                Duration.ofHours( 1 ),
                                true,
                                "analysis_assim_extend_no_da",
-                               "channel_rt",
+                               CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend_no_da",
-                               "conus",
+                               CONUS,
                                Duration.ofDays( 1 ),
                                false,
                                Duration.ofHours( 16 ) );
+    }
+
+    private NwmProfiles()
+    {
+        // Static utility class, no construction allowed.
     }
 }

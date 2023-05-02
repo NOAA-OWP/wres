@@ -35,12 +35,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DateCondition;
-import wres.config.generated.PairConfig;
-import wres.config.generated.UrlParameter;
-import wres.config.xml.ProjectConfigs;
-import wres.io.config.ConfigHelper;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.TimeInterval;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
@@ -49,15 +47,15 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.WebClient;
-import wres.io.reading.wrds.nwm.WrdsNwmJsonReader;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
 /**
- * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the Advanced 
- * Hydrologic Prediction Service (AHPS). The service requests are chunked into year ranges for observations or 
+ * Reads time-series data from the National Weather Service (NWS) Water Resources Data Service for the Advanced
+ * Hydrologic Prediction Service (AHPS). The service requests are chunked into year ranges for observations or
  * simple ranges, based on the declaration, for forecast sources. The underlying format reader is a
  * {@link WrdsAhpsJsonReader}.
- *  
+ *
  * @author James Brown
  */
 
@@ -99,15 +97,15 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
-    private final PairConfig pairConfig;
+    private final EvaluationDeclaration declaration;
 
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
     /**
-     * @see #of(PairConfig, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings)
      * @param systemSettings the system settings
-     * @return an instance that does not performing any chunking of the time-series data
+     * @return an instance that does not perform any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
      */
 
@@ -117,17 +115,17 @@ public class WrdsAhpsReader implements TimeSeriesReader
     }
 
     /**
-     * @param pairConfig the pair declaration, which is used to perform chunking of a data source
+     * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static WrdsAhpsReader of( PairConfig pairConfig, SystemSettings systemSettings )
+    public static WrdsAhpsReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
-        return new WrdsAhpsReader( pairConfig, systemSettings );
+        return new WrdsAhpsReader( declaration, systemSettings );
     }
 
     @Override
@@ -136,11 +134,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Chunk the requests if needed
-        if ( Objects.nonNull( this.getPairConfig() ) )
+        if ( Objects.nonNull( this.getDeclaration() ) )
         {
             LOGGER.debug( "Preparing requests for WRDS AHPS time-series that chunk the time-series data by feature and "
                           + "time range." );
-            return this.read( dataSource, this.getPairConfig() );
+            return this.read( dataSource, this.getDeclaration() );
         }
 
         LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
@@ -172,12 +170,12 @@ public class WrdsAhpsReader implements TimeSeriesReader
     }
 
     /**
-     * @return the pair declaration, possibly null
+     * @return the declaration, possibly null
      */
 
-    private PairConfig getPairConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.pairConfig;
+        return this.declaration;
     }
 
     /**
@@ -191,33 +189,33 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     /**
      * Reads the data source by forming separate requests by feature and time range.
-     * 
+     *
      * @param dataSource the data source
-     * @param pairConfig the pair declaration used for chunking
+     * @param declaration the declaration used for chunking
      * @throws NullPointerException if either input is null
      */
 
-    private Stream<TimeSeriesTuple> read( DataSource dataSource, PairConfig pairConfig )
+    private Stream<TimeSeriesTuple> read( DataSource dataSource, EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
         this.validateSource( dataSource );
 
         // The features
-        Set<String> features = ConfigHelper.getFeatureNamesForSource( pairConfig,
-                                                                      dataSource.getContext(),
-                                                                      dataSource.getLeftOrRightOrBaseline() );
+        Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
+        Set<String> features = DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                                        dataSource.getDatasetOrientation() );
 
         // Date ranges
         Set<Pair<Instant, Instant>> dateRanges;
         if ( ReaderUtilities.isWrdsObservedSource( dataSource ) )
         {
-            dateRanges = ReaderUtilities.getYearRanges( pairConfig, dataSource );
+            dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
         }
         else
         {
-            dateRanges = WrdsAhpsReader.getSimpleRange( pairConfig, dataSource );
+            dateRanges = WrdsAhpsReader.getSimpleRange( declaration, dataSource );
         }
 
         // Combine the features and date ranges to form the chunk boundaries
@@ -235,8 +233,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
         Supplier<TimeSeriesTuple> supplier = this.getTimeSeriesSupplier( dataSource,
                                                                          Collections.unmodifiableSet( chunks ) );
 
-        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this 
-        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to 
+        // Generate a stream of time-series. Nothing is read here. Rather, as part of a terminal operation on this
+        // stream, each pull will read through to the supplier, then in turn to the data provider, and finally to
         // the data source.
         return Stream.generate( supplier )
                      // Finite stream, proceeds while a time-series is returned
@@ -250,7 +248,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param chunks the data chunks to iterate
      * @return a time-series supplier
@@ -265,8 +263,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         SortedSet<Pair<String, Pair<Instant, Instant>>> mutableChunks = new TreeSet<>( chunks );
 
-        // The size of this queue is equal to the setting for simultaneous web client threads so that we can 1. get 
-        // quick feedback on exception (which requires a small queue) and 2. allow some requests to go out prior to 
+        // The size of this queue is equal to the setting for simultaneous web client threads so that we can 1. get
+        // quick feedback on exception (which requires a small queue) and 2. allow some requests to go out prior to
         // get-one-response-per-submission-of-one-ingest-task
         int concurrentCount = this.getExecutor()
                                   .getMaximumPoolSize();
@@ -300,13 +298,13 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     Pair<String, Pair<Instant, Instant>> nextChunk = mutableChunks.first();
                     mutableChunks.remove( nextChunk );
 
-                    // Create the inner data source for the chunk 
+                    // Create the inner data source for the chunk
                     URI nextUri = this.getUriForChunk( dataSource.getSource()
-                                                                 .getValue(),
+                                                                 .uri(),
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft(),
-                                                       dataSource.getContext()
-                                                                 .getUrlParameter(),
+                                                       dataSource.getSource()
+                                                                 .parameters(),
                                                        ReaderUtilities.isWrdsObservedSource( dataSource ) );
 
                     DataSource innerSource =
@@ -315,7 +313,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                            dataSource.getContext(),
                                            dataSource.getLinks(),
                                            nextUri,
-                                           dataSource.getLeftOrRightOrBaseline() );
+                                           dataSource.getDatasetOrientation() );
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -325,8 +323,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     results.add( future );
                 }
 
-                // Check that all is well with previously submitted tasks, but only after a handful have been 
-                // submitted. This means that an exception should propagate relatively shortly after it occurs with the 
+                // Check that all is well with previously submitted tasks, but only after a handful have been
+                // submitted. This means that an exception should propagate relatively shortly after it occurs with the
                 // read task. It also means after the creation of a handful of tasks, we only create one after a
                 // previously created one has been completed, fifo/lockstep.
                 startGettingResults.countDown();
@@ -386,8 +384,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     private void validateSource( DataSource dataSource )
     {
-        if ( ! ( ReaderUtilities.isWrdsAhpsSource( dataSource )
-                 || ReaderUtilities.isWrdsObservedSource( dataSource ) ) )
+        if ( !( ReaderUtilities.isWrdsAhpsSource( dataSource )
+                || ReaderUtilities.isWrdsObservedSource( dataSource ) ) )
         {
             throw new ReadException( "Expected a WRDS AHPS data source, but got: " + dataSource + "." );
         }
@@ -395,7 +393,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     /**
      * Returns a byte stream from a file or web source.
-     * 
+     *
      * @param uri the uri
      * @return the byte stream
      * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
@@ -440,50 +438,49 @@ public class WrdsAhpsReader implements TimeSeriesReader
     }
 
     /**
-     * Returns the exact forecast range from the declaration instead of breaking it apart. Promote to 
+     * Returns the exact forecast range from the declaration instead of breaking it apart. Promote to
      * {@link ReaderUtilities} if other readers require this behavior.
-     * 
-     * @param pairConfig the pair declaration
+     *
+     * @param declaration the pair declaration
      * @param dataSource the data source
      * @return a simple range
      */
-    private static Set<Pair<Instant, Instant>> getSimpleRange( PairConfig pairConfig,
+    private static Set<Pair<Instant, Instant>> getSimpleRange( EvaluationDeclaration declaration,
                                                                DataSource dataSource )
     {
 
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getContext() );
 
         // Forecast data?
-        boolean isForecast = ProjectConfigs.isForecast( dataSource.getContext() );
+        boolean isForecast = DeclarationUtilities.isForecast( dataSource.getContext() );
 
-        if ( ( isForecast && Objects.isNull( pairConfig.getIssuedDates() ) ) )
+        if ( ( isForecast && Objects.isNull( declaration.referenceDates() ) ) )
         {
-            throw new ReadException( "While attempting to read forecasts from the WRDS AHPS service, discovered a data "
-                                     + "source with missing issued dates, which is not allowed. Please declare issued "
-                                     + "dates to constrain the read to a finite amount of time-series data." );
+            throw new ReadException( "While attempting to read forecasts from the WRDS AHPS service, discovered an "
+                                     + "evaluation with missing 'reference_dates', which is not allowed. Please "
+                                     + "declare 'reference_dates' to constrain the evaluation to a finite amount of "
+                                     + "time-series data." );
         }
-        else if ( !isForecast && Objects.isNull( pairConfig.getDates() ) )
+        else if ( !isForecast && Objects.isNull( declaration.validDates() ) )
         {
-            throw new ReadException( "While attempting to read observations from the WRDS AHPS service, discovered a "
-                                     + "data source with missing dates, which is not allowed. Please declare dates to "
-                                     + "constrain the read to a finite amount of time-series data." );
+            throw new ReadException( "While attempting to read observations from the WRDS AHPS service, discovered an "
+                                     + "evaluation with missing 'valid_dates', which is not allowed. Please declare "
+                                     + "'valid_dates' to constrain the evaluation to a finite amount of time-series "
+                                     + "data." );
         }
 
         // When dates are present, both bookends are present because this was validated on construction of the reader
-        DateCondition dates = pairConfig.getDates();
+        TimeInterval dates = declaration.validDates();
 
         if ( isForecast )
         {
-            dates = pairConfig.getIssuedDates();
+            dates = declaration.referenceDates();
         }
 
-        String specifiedEarliest = dates.getEarliest();
-        Instant earliest = Instant.parse( specifiedEarliest );
-
-        String specifiedLatest = dates.getLatest();
-        Instant latest = Instant.parse( specifiedLatest );
+        Instant earliest = dates.minimum();
+        Instant latest = dates.maximum();
         Pair<Instant, Instant> range = Pair.of( earliest, latest );
         return Set.of( range );
     }
@@ -493,8 +490,10 @@ public class WrdsAhpsReader implements TimeSeriesReader
      *
      * <p>Expecting a wrds URI like this:
      * <a href="http://redacted/api/v1/forecasts/streamflow/ahps">http://redacted/api/v1/forecasts/streamflow/ahps</a></p>
+     * @param baseUri the base URI
      * @param range the range of dates (from left to right)
      * @param nwsLocationId the feature for which to get data
+     * @param additionalParameters the additional parameters, if any
      * @param observed true for observations, false for AHPS forecasts
      * @return a URI suitable to get the data from WRDS API
      * @throws ReadException if the URI could not be constructed
@@ -503,7 +502,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private URI getUriForChunk( URI baseUri,
                                 Pair<Instant, Instant> range,
                                 String nwsLocationId,
-                                List<UrlParameter> additionalParameters,
+                                Map<String,String> additionalParameters,
                                 boolean observed )
     {
         String basePath = baseUri.getPath();
@@ -515,7 +514,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
 
         // Add nws_lid to the end of the path.
-        // TODO Remove the outer if-check once the old, 1.1 API is gone. 
+        // TODO Remove the outer if-check once the old, 1.1 API is gone.
         if ( !basePath.contains( "v1.1" ) && !basePath.endsWith( "nws_lid/" ) )
         {
             basePath = basePath + "nws_lid/";
@@ -551,24 +550,22 @@ public class WrdsAhpsReader implements TimeSeriesReader
     /**
      * Specific to WRDS API, get date range url parameters
      * @param dateRange the date range to set parameters for
+     * @param additionalParameters the additional parameters, if any
      * @return the key/value parameters
      */
 
     private Map<String, String> createWrdsAhpsUrlParameters( Pair<Instant, Instant> dateRange,
-                                                             List<UrlParameter> additionalParameters,
+                                                             Map<String,String> additionalParameters,
                                                              boolean observed )
     {
         Map<String, String> urlParameters = new HashMap<>( 2 );
 
-        // Set the proj field, allowing for a user to override it with a URL 
+        // Set the proj field, allowing for a user to override it with a URL
         // parameter, which is handled next.
         urlParameters.put( "proj", ReaderUtilities.DEFAULT_WRDS_PROJ );
 
         // Caller-supplied additional parameters are lower precedence, put first
-        for ( UrlParameter parameter : additionalParameters )
-        {
-            urlParameters.put( parameter.getName(), parameter.getValue() );
-        }
+        urlParameters.putAll( additionalParameters );
 
         String timeTag = "issuedTime";
         if ( observed )
@@ -578,62 +575,58 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         urlParameters.put( timeTag,
                            "[" + dateRange.getLeft().toString()
-                                    + ","
-                                    + dateRange.getRight().toString()
-                                    + "]" );
+                           + ","
+                           + dateRange.getRight().toString()
+                           + "]" );
 
         return Collections.unmodifiableMap( urlParameters );
     }
 
     /**
      * Hidden constructor.
-     * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
+     * @param declaration the optional pair declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings, required
-     * @throws ProjectConfigException if the project declaration is invalid for this source type
+     * @throws wres.config.yaml.DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private WrdsAhpsReader( PairConfig pairConfig, SystemSettings systemSettings )
+    private WrdsAhpsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
         Objects.requireNonNull( systemSettings );
 
-        if ( Objects.nonNull( pairConfig ) )
+        if ( Objects.nonNull( declaration ) )
         {
-            if ( Objects.isNull( pairConfig.getDates() ) && Objects.isNull( pairConfig.getIssuedDates() ) )
+            if ( Objects.isNull( declaration.validDates() ) && Objects.isNull( declaration.referenceDates() ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "either the dates or issuedDates." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                + "either the 'valid_dates' or 'reference_dates'." );
             }
 
-            if ( Objects.nonNull( pairConfig.getDates() ) && ( Objects.isNull( pairConfig.getDates().getEarliest() )
-                                                               || Objects.isNull( pairConfig.getDates()
-                                                                                            .getLatest() ) ) )
+            if ( Objects.nonNull( declaration.validDates() ) && ( Objects.isNull( declaration.validDates()
+                                                                                             .minimum() )
+                                                                  || Objects.isNull( declaration.validDates()
+                                                                                                .maximum() ) ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "both the earliest and latest dates (e.g. "
-                                                              + "<dates earliest=\"2019-08-10T14:30:00Z\" "
-                                                              + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                + "both the 'minimum' and 'maximum' values for "
+                                                + "the 'valid_dates'." );
             }
 
-            if ( Objects.nonNull( pairConfig.getIssuedDates() )
-                 && ( Objects.isNull( pairConfig.getIssuedDates().getEarliest() )
-                      || Objects.isNull( pairConfig.getIssuedDates()
-                                                   .getLatest() ) ) )
+            if ( Objects.nonNull( declaration.referenceDates() )
+                 && ( Objects.isNull( declaration.referenceDates()
+                                                 .minimum() )
+                      || Objects.isNull( declaration.referenceDates()
+                                                    .maximum() ) ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                              + "both the earliest and latest issued dates (e.g. "
-                                                              + "<issuedDates earliest=\"2019-08-10T14:30:00Z\" "
-                                                              + "latest=\"2019-08-15T18:00:00Z\" />)." );
+                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
+                                                  + "both the 'minimum' and 'maximum' values of the 'reference_dates'." );
             }
 
-            LOGGER.debug( "When building a reader for AHPS time-series data from the WRDS, received a complete pair "
+            LOGGER.debug( "When building a reader for AHPS time-series data from the WRDS, received a complete "
                           + "declaration, which will be used to chunk requests by feature and time range." );
         }
 
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "WRDS AHPS Reading Thread %d" )
                                                                          .build();

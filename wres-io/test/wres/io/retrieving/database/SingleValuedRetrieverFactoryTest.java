@@ -470,7 +470,7 @@ public class SingleValuedRetrieverFactoryTest
                                                  .get( 0 );
         }
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour();
 
         try ( DatabaseTimeSeriesIngester ingesterTwo =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

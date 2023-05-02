@@ -38,14 +38,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; // NOSONAR
 
-import wres.config.xml.ProjectConfigException;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.config.ConfigHelper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
@@ -338,8 +336,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                                         currentTraceName,
                                                         currentTimeSeriesMetadata );
                 }
-                catch ( XMLStreamException
-                        | ProjectConfigException e )
+                catch ( XMLStreamException e )
                 {
                     String message = "While reading a timeseries from " + dataSource
                                      + " at line "
@@ -419,7 +416,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
         else
         {
-            ZoneOffset configuredOffset = ConfigHelper.getZoneOffset( dataSource.getSource() );
+            ZoneOffset configuredOffset = dataSource.getSource()
+                                                    .timeZoneOffset();
             if ( Objects.nonNull( configuredOffset ) && !configuredOffset.equals( zoneOffset ) )
             {
                 LOGGER.warn( "The zone offset specified {}{}{}{}{}{}{}{}",
@@ -486,7 +484,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @param currentTimeSeriesMetadata the current time-series metadata
      * @param zoneOffset the time zone offset
      * @param missingValue the missing value sentinel
-     * @throws ProjectConfigException when a forecast is missing a forecast date
+     * @throws ReadException if the event could not be read
      * @throws PreIngestException When data is improperly formatted.
      */
 

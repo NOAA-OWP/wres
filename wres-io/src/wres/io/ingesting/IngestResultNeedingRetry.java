@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.lang.Short.MAX_VALUE;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.io.reading.DataSource;
 
 /**
@@ -18,7 +18,7 @@ public class IngestResultNeedingRetry implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultNeedingRetry.class );
     private static final String TOO_MANY_RE_USES_OF = "Too many re-uses of ";
-    private final LeftOrRightOrBaseline leftOrRightOrBaseline;
+    private final DatasetOrientation orientation;
     private final DataSource dataSource;
     private final long surrogateKey;
 
@@ -44,7 +44,7 @@ public class IngestResultNeedingRetry implements IngestResult
                                                 + surrogateKey );
         }
 
-        this.leftOrRightOrBaseline = dataSource.getLeftOrRightOrBaseline();
+        this.orientation = dataSource.getDatasetOrientation();
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
     }
@@ -56,9 +56,9 @@ public class IngestResultNeedingRetry implements IngestResult
     }
 
     @Override
-    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    public DatasetOrientation getDatasetOrientation()
     {
-        return this.leftOrRightOrBaseline;
+        return this.orientation;
     }
 
     @Override
@@ -84,16 +84,16 @@ public class IngestResultNeedingRetry implements IngestResult
     {
         short leftCount = 0;
 
-        if ( this.getLeftOrRightOrBaseline()
-                 .equals( LeftOrRightOrBaseline.LEFT ) )
+        if ( this.getDatasetOrientation()
+                 .equals( DatasetOrientation.LEFT ) )
         {
             leftCount++;
         }
 
-        for ( LeftOrRightOrBaseline lrb : this.getDataSource()
-                                              .getLinks() )
+        for ( DatasetOrientation lrb : this.getDataSource()
+                                           .getLinks() )
         {
-            if ( lrb.equals( LeftOrRightOrBaseline.LEFT ) )
+            if ( lrb.equals( DatasetOrientation.LEFT ) )
             {
                 if ( leftCount == MAX_VALUE )
                 {
@@ -115,16 +115,16 @@ public class IngestResultNeedingRetry implements IngestResult
     {
         short rightCount = 0;
 
-        if ( this.getLeftOrRightOrBaseline()
-                 .equals( LeftOrRightOrBaseline.RIGHT ) )
+        if ( this.getDatasetOrientation()
+                 .equals( DatasetOrientation.RIGHT ) )
         {
             rightCount++;
         }
 
-        for ( LeftOrRightOrBaseline lrb : this.getDataSource()
-                                              .getLinks() )
+        for ( DatasetOrientation lrb : this.getDataSource()
+                                           .getLinks() )
         {
-            if ( lrb.equals( LeftOrRightOrBaseline.RIGHT ) )
+            if ( lrb.equals( DatasetOrientation.RIGHT ) )
             {
                 if ( rightCount == MAX_VALUE )
                 {
@@ -146,16 +146,16 @@ public class IngestResultNeedingRetry implements IngestResult
     {
         short baselineCount = 0;
 
-        if ( this.getLeftOrRightOrBaseline()
-                 .equals( LeftOrRightOrBaseline.BASELINE ) )
+        if ( this.getDatasetOrientation()
+                 .equals( DatasetOrientation.BASELINE ) )
         {
             baselineCount++;
         }
 
-        for ( LeftOrRightOrBaseline lrb : this.getDataSource()
-                                              .getLinks() )
+        for ( DatasetOrientation lrb : this.getDataSource()
+                                           .getLinks() )
         {
-            if ( lrb.equals( LeftOrRightOrBaseline.BASELINE ) )
+            if ( lrb.equals( DatasetOrientation.BASELINE ) )
             {
                 if ( baselineCount == MAX_VALUE )
                 {
@@ -175,7 +175,7 @@ public class IngestResultNeedingRetry implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
+        return new ToStringBuilder( this ).append( "orientation", this.getDatasetOrientation() )
                                           .append( "dataSource", this.getDataSource() )
                                           .append( "surrogateKey", this.getSurrogateKey() )
                                           .toString();

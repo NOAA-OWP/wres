@@ -4,26 +4,38 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DateCondition;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.IntBoundsType;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.LeadTimeIntervalBuilder;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
+import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeries;
-import wres.config.generated.DataSourceConfig.Variable;
-import wres.config.generated.DatasourceType;
 import wres.io.reading.DataSource;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.netcdf.nwm.NwmVectorReader;
+import wres.io.reading.TimeSeriesTuple;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link NwmVectorReader}.
@@ -45,56 +57,63 @@ class NwmVectorReaderTest
         // Read a vector source
         Path path = Paths.get( "data/nwmVector/" );
 
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( path.toUri(),
-                                             InterfaceShortHand.NWM_SHORT_RANGE_CHANNEL_RT_CONUS,
-                                             null,
-                                             null,
-                                             null );
+        Source fakeDeclarationSource =
+                SourceBuilder.builder()
+                             .uri( path.toUri() )
+                             .sourceInterface( SourceInterface.NWM_SHORT_RANGE_CHANNEL_RT_CONUS )
+                             .build();
 
         DataSource fakeSource = DataSource.of( DataDisposition.NETCDF_VECTOR,
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     List.of( fakeDeclarationSource ),
-                                                                     new Variable( "streamflow", null ),
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
+                                               DatasetBuilder.builder()
+                                                             .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                             .sources( List.of( fakeDeclarationSource ) )
+                                                             .variable( VariableBuilder.builder()
+                                                                                       .name( "streamflow" )
+                                                                                       .build() )
+                                                             .build(),
                                                Collections.emptyList(),
-                                               // Use a fake URI with an NWIS-like string as this is used to trigger the 
-                                               // identification of an instantaneous time-scale 
+                                               // Use a fake URI with an NWIS-like string as this is used to trigger the
+                                               // identification of an instantaneous timescale
                                                path.toUri(),
-                                               LeftOrRightOrBaseline.RIGHT );
+                                               DatasetOrientation.RIGHT );
 
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( "18384141", "18384141", null ) ),
-                                                null,
-                                                null,
-                                                new IntBoundsType( 0, 18 ),
-                                                null,
-                                                new DateCondition( "2017-08-07T23:59:59Z", "2017-08-09T17:00:00Z" ),
-                                                new DateCondition( "2017-08-07T23:59:59Z", "2017-08-08T23:00:00Z" ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 18 ) )
+                                                            .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2017-08-07T23:59:59Z" ) )
+                                                         .maximum( Instant.parse( "2017-08-08T23:00:00Z" ) )
+                                                         .build();
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( Instant.parse( "2017-08-07T23:59:59Z" ) )
+                                                     .maximum( Instant.parse( "2017-08-09T17:00:00Z" ) )
+                                                     .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder().setName( "18384141" ) )
+                                                             .setRight( Geometry.newBuilder().setName( "18384141" ) )
+                                                             .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .leadTimes( leadTimes )
+                                                                        .referenceDates( referenceDates )
+                                                                        .validDates( validDates )
+                                                                        .referenceDatePools( referenceTimePools )
+                                                                        .features( features )
+                                                                        .build();
 
-        NwmVectorReader reader = NwmVectorReader.of( pairConfig );
+        NwmVectorReader reader = NwmVectorReader.of( declaration );
 
         List<TimeSeries<Double>> actual = reader.read( fakeSource )
-                                                .map( next -> next.getSingleValuedTimeSeries() )
-                                                .collect( Collectors.toList() );
+                                                .map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                .toList();
 
         assertEquals( 24, actual.size() );
     }

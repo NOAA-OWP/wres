@@ -526,7 +526,7 @@ public class AnalysisRetrieverTest
                                          .get( 0 );
         }
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo( ANALYSIS_START_TIME );
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo();
         IngestResult ingestResultTwo;
         try ( DatabaseTimeSeriesIngester ingesterTwo =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -541,7 +541,7 @@ public class AnalysisRetrieverTest
                                          .get( 0 );
         }
 
-        TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree( ANALYSIS_START_TIME );
+        TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree();
         IngestResult ingestResultThree;
         try ( DatabaseTimeSeriesIngester ingesterThree =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

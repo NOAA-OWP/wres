@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.PairConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.csv.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
@@ -52,7 +52,7 @@ public class TimeSeriesReaderFactory
     private static final WrdsNwmJsonReader WRDS_NWM_JSON_READER = WrdsNwmJsonReader.of();
 
     /** Pair declaration, which is used to build some readers. */
-    private final PairConfig pairConfig;
+    private final EvaluationDeclaration declaration;
 
     /** The system settings. */
     private final SystemSettings systemSettings;
@@ -61,17 +61,17 @@ public class TimeSeriesReaderFactory
     private final GriddedFeatures.Builder features;
 
     /**
-     * @param pairConfig the pair declaration, which is used to assist in chunking requests from web services, optional
+     * @param declaration the pair declaration, which is used to assist in chunking requests from web services, optional
      * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
      * @param features the gridded features cache used to read gridded data
      * @return an instance
      */
 
-    public static TimeSeriesReaderFactory of( PairConfig pairConfig,
+    public static TimeSeriesReaderFactory of( EvaluationDeclaration declaration,
                                               SystemSettings systemSettings,
                                               GriddedFeatures.Builder features )
     {
-        return new TimeSeriesReaderFactory( pairConfig, systemSettings, features );
+        return new TimeSeriesReaderFactory( declaration, systemSettings, features );
     }
 
     /**
@@ -108,7 +108,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from USGS NWIS.",
                                   dataSource );
-                    return NwisReader.of( this.pairConfig, this.systemSettings );
+                    return NwisReader.of( this.getDeclaration(), this.systemSettings );
                 }
                 // A reader for USGS-formatted WaterML, but not from a NWIS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as USGS-formatted WaterML from a "
@@ -123,7 +123,7 @@ public class TimeSeriesReaderFactory
                 {
                     LOGGER.debug( "Discovered a data source {}, which was identified as originating from WRDS.",
                                   dataSource );
-                    return WrdsAhpsReader.of( this.pairConfig, this.systemSettings );
+                    return WrdsAhpsReader.of( this.getDeclaration(), this.systemSettings );
                 }
                 // A reader for WRDS-formatted JSON from AHPS, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
@@ -136,7 +136,7 @@ public class TimeSeriesReaderFactory
                 // A web source? If so, assume a WRDS instance.
                 if ( ReaderUtilities.isWebSource( dataSource ) )
                 {
-                    return WrdsNwmReader.of( this.pairConfig, this.systemSettings );
+                    return WrdsNwmReader.of( this.getDeclaration(), this.systemSettings );
                 }
                 // A reader for WRDS-formatted JSON from the NWM, but not from a WRDS instance
                 LOGGER.debug( "Discovered a data source {}, which was identified as WRDS-formatted JSON containing "
@@ -154,11 +154,11 @@ public class TimeSeriesReaderFactory
             }
             case NETCDF_GRIDDED ->
             {
-                return NwmGridReader.of( this.pairConfig, this.features );
+                return NwmGridReader.of( this.getDeclaration(), this.features );
             }
             case NETCDF_VECTOR ->
             {
-                return NwmVectorReader.of( this.pairConfig );
+                return NwmVectorReader.of( this.getDeclaration() );
             }
             case UNKNOWN ->
                     throw new IllegalArgumentException( "The data source could not be read because the format of the "
@@ -176,25 +176,33 @@ public class TimeSeriesReaderFactory
     }
 
     /**
+     * @return the declaration
+     */
+    private EvaluationDeclaration getDeclaration()
+    {
+        return this.declaration;
+    }
+
+    /**
      * Create an instance.
-     * @param pairConfig the pair declaration, which is used to assist in reading some sources
+     * @param declaration the declaration, which is used to assist in reading some sources
      * @param systemSettings the system settings, which are required by some readers to instantiate thread pools
      * @param features the gridded features cache, which is used to read gridded data
      */
 
-    private TimeSeriesReaderFactory( PairConfig pairConfig,
+    private TimeSeriesReaderFactory( EvaluationDeclaration declaration,
                                      SystemSettings systemSettings,
                                      GriddedFeatures.Builder features )
     {
         // Defer validation until it is established as required
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
         this.systemSettings = systemSettings;
         this.features = features;
 
-        if ( LOGGER.isWarnEnabled() && Objects.isNull( pairConfig ) )
+        if ( LOGGER.isWarnEnabled() && Objects.isNull( declaration ) )
         {
-            LOGGER.warn( "Creating a reader factory with missing pair declaration. If a reader is subsequently "
-                         + "requested that depends on pair declaration, you can expect an error at that time." );
+            LOGGER.warn( "Creating a reader factory with missing declaration. If a reader is subsequently "
+                         + "requested that depends on this declaration, you can expect an error at that time." );
         }
     }
 

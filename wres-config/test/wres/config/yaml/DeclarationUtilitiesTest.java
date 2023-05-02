@@ -65,6 +65,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
@@ -2056,5 +2057,18 @@ class DeclarationUtilitiesTest
         assertAll( () -> assertTrue( DeclarationUtilities.isForecast( left ) ),
                    () -> assertTrue( DeclarationUtilities.isForecast( right ) ),
                    () -> assertFalse( DeclarationUtilities.isForecast( baseline ) ) );
+    }
+
+    @Test
+    void testGetReferenceTimeType()
+    {
+        assertAll( () -> assertEquals( ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME,
+                                       DeclarationUtilities.getReferenceTimeType( DataType.OBSERVATIONS ) ),
+                   () -> assertEquals( ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME,
+                                       DeclarationUtilities.getReferenceTimeType( DataType.ANALYSES ) ),
+                   () -> assertEquals( ReferenceTime.ReferenceTimeType.T0,
+                                       DeclarationUtilities.getReferenceTimeType( DataType.ENSEMBLE_FORECASTS ) ),
+                   () -> assertEquals( ReferenceTime.ReferenceTimeType.T0,
+                                       DeclarationUtilities.getReferenceTimeType( DataType.SINGLE_VALUED_FORECASTS ) ) );
     }
 }

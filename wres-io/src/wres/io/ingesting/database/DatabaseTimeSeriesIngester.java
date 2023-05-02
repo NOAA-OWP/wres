@@ -681,7 +681,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         {
             String hash = Netcdf.getGriddedUniqueIdentifier( dataSource.getUri(),
                                                              dataSource.getVariable()
-                                                                       .getValue() );
+                                                                       .name() );
             DataSources dataSources = this.getCaches()
                                           .getDataSourcesCache();
             SourceDetails sourceDetails = dataSources.getSource( hash );

@@ -20,7 +20,6 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.Dataset;
@@ -375,20 +374,20 @@ public class InMemoryProject implements Project
     {
         this.leftUsesGriddedData = ingestResults.stream()
                                                 .map( IngestResult::getDataSource )
-                                                .filter( next -> next.getLeftOrRightOrBaseline()
-                                                                 == LeftOrRightOrBaseline.LEFT )
+                                                .filter( next -> next.getDatasetOrientation()
+                                                                 == DatasetOrientation.LEFT )
                                                 .anyMatch( next -> next.getDisposition()
                                                                    == DataDisposition.NETCDF_GRIDDED );
         this.rightUsesGriddedData = ingestResults.stream()
                                                  .map( IngestResult::getDataSource )
-                                                 .filter( next -> next.getLeftOrRightOrBaseline()
-                                                                  == LeftOrRightOrBaseline.RIGHT )
+                                                 .filter( next -> next.getDatasetOrientation()
+                                                                  == DatasetOrientation.RIGHT )
                                                  .anyMatch( next -> next.getDisposition()
                                                                     == DataDisposition.NETCDF_GRIDDED );
         this.baselineUsesGriddedData = ingestResults.stream()
                                                     .map( IngestResult::getDataSource )
-                                                    .filter( next -> next.getLeftOrRightOrBaseline()
-                                                                     == LeftOrRightOrBaseline.BASELINE )
+                                                    .filter( next -> next.getDatasetOrientation()
+                                                                     == DatasetOrientation.BASELINE )
                                                     .anyMatch( next -> next.getDisposition()
                                                                        == DataDisposition.NETCDF_GRIDDED );
 

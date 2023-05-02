@@ -21,24 +21,25 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.SourceInterface;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
-import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Reads forecasts and simulations/analyses from the National Water Model (NWM) in a Netcdf vector format.
- * 
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -57,31 +58,26 @@ public class NwmVectorReader implements TimeSeriesReader
     private static final int FEATURE_BLOCK_SIZE = 100;
 
     /** Dates error message used repeatedly. */
-    private static final String DATES_ERROR_MESSAGE =
-            "One must specify issued datetimes with both earliest and latest "
-                                                      + "(e.g. <issuedDates earliest=\"2019-10-25T00:00:00Z\" "
-                                                      + "latest=\"2019-11-25T00:00:00Z\" />) when using NWM forecast "
-                                                      + "data as a source, which will be interpreted as reference "
-                                                      + "datetimes. The earliest datetime specified must be a valid "
-                                                      + "reference time for the NWM data specified, or no data will be "
-                                                      + "found. One must specify valid datetimes with both earliest "
-                                                      + "and latest (e.g. <dates earliest=\"2019-12-11T00:00:00Z\" "
-                                                      + "latest=\"2019-12-12T00:00:00Z\" />) when using NWM analysis "
-                                                      + "data as a source, which will be used to find data falling "
-                                                      + "within those valid datetimes.";
+    private static final String DATES_ERROR_MESSAGE = "One must declare 'reference_dates' with both a 'minimum' and a "
+                                                      + "'maximum' when using NWM forecast data as a source. The "
+                                                      + "'minimum' datetime must be a valid reference time for the NWM "
+                                                      + "data specified, or no data will be found. One must declare "
+                                                      + "'valid_dates' with both 'minimum' and 'maximum' when using "
+                                                      + "NWM analysis data as a source, which will be used to find "
+                                                      + "data falling within those valid datetimes.";
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
-    private final PairConfig pairConfig;
+    private final EvaluationDeclaration declaration;
 
     /**
-     * @param pairConfig the pair declaration, required
+     * @param declaration the declaration, required
      * @return an instance
-     * @throws NullPointerException if the pairConfig is null
+     * @throws NullPointerException if the declaration is null
      */
 
-    public static NwmVectorReader of( PairConfig pairConfig )
+    public static NwmVectorReader of( EvaluationDeclaration declaration )
     {
-        return new NwmVectorReader( pairConfig );
+        return new NwmVectorReader( declaration );
     }
 
     @Override
@@ -91,10 +87,10 @@ public class NwmVectorReader implements TimeSeriesReader
         this.validateDataSource( dataSource );
 
         // Get the feature blocks
-        List<List<Integer>> featureBlocks = this.getFeatureBlocks( dataSource, this.getPairConfig() );
+        List<List<Integer>> featureBlocks = this.getFeatureBlocks( dataSource, this.getDeclaration() );
 
         // Get the reference times
-        Set<Instant> referenceTimes = this.getReferenceTimes( dataSource, this.getPairConfig() );
+        Set<Instant> referenceTimes = this.getReferenceTimes( dataSource, this.getDeclaration() );
 
         LOGGER.debug( "Chunking the time-series for reading by these feature blocks: {} and these reference times: {}.",
                       featureBlocks,
@@ -126,7 +122,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
     /**
      * Validates the data source for required elements.
-     * 
+     *
      * @throws NullPointerException if a required element of the source is missing
      * @throws ReadException if the data source is invalid
      */
@@ -135,8 +131,8 @@ public class NwmVectorReader implements TimeSeriesReader
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getSource() );
-        Objects.requireNonNull( dataSource.getSource().getInterface() );
-        Objects.requireNonNull( dataSource.getSource().getValue() );
+        Objects.requireNonNull( dataSource.getSource().sourceInterface() );
+        Objects.requireNonNull( dataSource.getSource().uri() );
         Objects.requireNonNull( dataSource.getContext() );
 
         // Validate the disposition of the data source
@@ -151,7 +147,7 @@ public class NwmVectorReader implements TimeSeriesReader
         // Could be an NPE, but the data source is not null and the nullity of the variable is an effect, not a cause
         if ( Objects.isNull( dataSource.getVariable() ) )
         {
-            LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
+            DatasetOrientation lrb = dataSource.getDatasetOrientation();
 
             throw new ReadException( "A variable must be declared for an NWM source but no "
                                      + "variable was found for the "
@@ -163,39 +159,39 @@ public class NwmVectorReader implements TimeSeriesReader
                                      + " NWM sources." );
         }
 
-        InterfaceShortHand interfaceShortHand = dataSource.getSource()
-                                                          .getInterface();
+        SourceInterface interfaceShortHand = dataSource.getSource()
+                                                       .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
         if ( nwmProfile.getTimeLabel()
                        .equals( NwmProfile.TimeLabel.F ) )
         {
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getIssuedDates(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .referenceDates(),
                                     DATES_ERROR_MESSAGE );
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getIssuedDates()
-                                        .getEarliest(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .referenceDates()
+                                        .minimum(),
                                     DATES_ERROR_MESSAGE );
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getIssuedDates()
-                                        .getLatest(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .referenceDates()
+                                        .maximum(),
                                     DATES_ERROR_MESSAGE );
         }
         else if ( nwmProfile.getTimeLabel()
                             .equals( NwmProfile.TimeLabel.TM ) )
         {
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getDates(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .validDates(),
                                     DATES_ERROR_MESSAGE );
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getDates()
-                                        .getEarliest(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .validDates()
+                                        .minimum(),
                                     DATES_ERROR_MESSAGE );
-            Objects.requireNonNull( this.getPairConfig()
-                                        .getDates()
-                                        .getLatest(),
+            Objects.requireNonNull( this.getDeclaration()
+                                        .validDates()
+                                        .maximum(),
                                     DATES_ERROR_MESSAGE );
         }
         else
@@ -204,31 +200,27 @@ public class NwmVectorReader implements TimeSeriesReader
                                      + nwmProfile.getTimeLabel() );
         }
 
-        if ( !interfaceShortHand.toString()
-                                .toLowerCase()
-                                .startsWith( "nwm_" ) )
+        if ( !interfaceShortHand.isNwmInterface() )
         {
-            throw new ReadException( "The data source passed does "
-                                     + "not appear to be a NWM "
-                                     + "source because the interface"
-                                     + " shorthand "
+            throw new ReadException( "The data source passed does not appear to be a NWM source because the "
+                                     + "'source_interface' value of '"
                                      + interfaceShortHand
-                                     + " did not start with 'nwm_'" );
+                                     + "' was not recognized as a NWM source interface." );
         }
 
     }
 
     /**
-     * @return the pair declaration
+     * @return the declaration
      */
-    private PairConfig getPairConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.pairConfig;
+        return this.declaration;
     }
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param referenceTimes the reference times to read
      * @param featureBlocks the feature blocks to read
@@ -239,13 +231,13 @@ public class NwmVectorReader implements TimeSeriesReader
                                                              Set<Instant> referenceTimes,
                                                              List<List<Integer>> featureBlocks )
     {
-        InterfaceShortHand interfaceShortHand = dataSource.getSource()
-                                                          .getInterface();
+        SourceInterface interfaceShortHand = dataSource.getSource()
+                                                       .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
-        ReferenceTimeType referenceTimeType = ConfigHelper.getReferenceTimeType( dataSource.getContext()
-                                                                                           .getType() );
+        ReferenceTimeType referenceTimeType = DeclarationUtilities.getReferenceTimeType( dataSource.getContext()
+                                                                                                   .type() );
 
         // Create the smaller suppliers, one per reference time
         List<Supplier<TimeSeriesTuple>> suppliers = this.getTimeSeriesSuppliers( nwmProfile,
@@ -342,7 +334,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param nwmProfile the NWM profile or data shape
      * @param dataSource the data source
      * @param referenceTime the reference time to read
@@ -424,21 +416,31 @@ public class NwmVectorReader implements TimeSeriesReader
             }
 
             // Close the time-series
-            if ( Objects.nonNull( nwmTimeSeries.get() ) )
-            {
-                nwmTimeSeries.get()
-                             .close();
-
-                LOGGER.debug( "Closed {}.", nwmTimeSeries.get() );
-
-                nwmTimeSeries.set( null );
-            }
+            this.closeTimeSeries( nwmTimeSeries );
 
             LOGGER.debug( "Exiting the time-series supplier for reference time {}.", referenceTime );
 
             // Null sentinel
             return null;
         };
+    }
+
+    /**
+     * Closes the supplied time-series if needed.
+     * @param nwmTimeSeries the time-series
+     */
+    private void closeTimeSeries( AtomicReference<NwmTimeSeries> nwmTimeSeries )
+    {
+        // Close the time-series
+        if ( Objects.nonNull( nwmTimeSeries.get() ) )
+        {
+            nwmTimeSeries.get()
+                         .close();
+
+            LOGGER.debug( "Closed {}.", nwmTimeSeries.get() );
+
+            nwmTimeSeries.set( null );
+        }
     }
 
     /**
@@ -465,7 +467,7 @@ public class NwmVectorReader implements TimeSeriesReader
     /**
      * Reads a NWM time-series for one reference time and multiple geospatial chunks from one or more underlying Netcdf
      * blobs.
-     * 
+     *
      * @param dataSource the data source
      * @param featureBlock the feature block
      * @param nwmTimeSeries the NWM time-series
@@ -486,7 +488,7 @@ public class NwmVectorReader implements TimeSeriesReader
         }
 
         String variableName = dataSource.getVariable()
-                                        .getValue()
+                                        .name()
                                         .strip();
         String unitName = nwmTimeSeries.readAttributeAsString( variableName,
                                                                "units" );
@@ -548,16 +550,16 @@ public class NwmVectorReader implements TimeSeriesReader
     /**
      * Returns the feature block chunks from the inputs.
      * @param dataSource the data source
-     * @param pairConfig the pair declaration
+     * @param declaration the declaration
      * @return the feature block chunks
      */
 
-    private List<List<Integer>> getFeatureBlocks( DataSource dataSource, PairConfig pairConfig )
+    private List<List<Integer>> getFeatureBlocks( DataSource dataSource, EvaluationDeclaration declaration )
     {
         // Get the feature set
-        Set<String> features = ConfigHelper.getFeatureNamesForSource( pairConfig,
-                                                                      dataSource.getContext(),
-                                                                      dataSource.getLeftOrRightOrBaseline() );
+        Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
+        Set<String> features = DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                                        dataSource.getDatasetOrientation() );
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.
@@ -596,15 +598,15 @@ public class NwmVectorReader implements TimeSeriesReader
     /**
      * Returns the reference times from the inputs.
      * @param dataSource the data source
-     * @param pairConfig the pair declaration
+     * @param declaration the declaration
      * @return the reference times
      */
 
-    private Set<Instant> getReferenceTimes( DataSource dataSource, PairConfig pairConfig )
+    private Set<Instant> getReferenceTimes( DataSource dataSource, EvaluationDeclaration declaration )
     {
 
-        InterfaceShortHand interfaceShortHand = dataSource.getSource()
-                                                          .getInterface();
+        SourceInterface interfaceShortHand = dataSource.getSource()
+                                                       .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
 
@@ -615,20 +617,18 @@ public class NwmVectorReader implements TimeSeriesReader
         if ( nwmProfile.getTimeLabel()
                        .equals( NwmProfile.TimeLabel.F ) )
         {
-            earliest = Instant.parse( pairConfig.getIssuedDates()
-                                                .getEarliest() );
-            latest = Instant.parse( pairConfig.getIssuedDates()
-                                              .getLatest() );
+            earliest = declaration.referenceDates()
+                                  .minimum();
+            latest = declaration.referenceDates()
+                                .maximum();
         }
         else if ( nwmProfile.getTimeLabel()
                             .equals( NwmProfile.TimeLabel.TM ) )
         {
-            Instant earliestValidDatetime =
-                    Instant.parse( pairConfig.getDates()
-                                             .getEarliest() );
-            Instant latestValidDatetime =
-                    Instant.parse( pairConfig.getDates()
-                                             .getLatest() );
+            Instant earliestValidDatetime = declaration.validDates()
+                                                       .minimum();
+            Instant latestValidDatetime = declaration.validDates()
+                                                     .maximum();
             Pair<Instant, Instant> referenceBounds =
                     this.getReferenceBoundsByValidBounds( nwmProfile,
                                                           earliestValidDatetime,
@@ -748,49 +748,45 @@ public class NwmVectorReader implements TimeSeriesReader
 
     /**
      * Hidden constructor.
-     * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
-     * @throws ProjectConfigException if the project declaration is invalid for this source type
-     * @throws NullPointerException if either input is null
+     * @param declaration the optional pair declaration, which is used to perform chunking of a data source
+     * @throws NullPointerException if the declaration is null
+     * @throws DeclarationException if the declaration is invalid
      */
 
-    private NwmVectorReader( PairConfig pairConfig )
+    private NwmVectorReader( EvaluationDeclaration declaration )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
 
         // Verify as much as possible upfront, i.e., either dates or issued dates and both components defined
-        if ( Objects.isNull( pairConfig.getDates() ) && Objects.isNull( pairConfig.getIssuedDates() ) )
+        if ( Objects.isNull( declaration.validDates() ) && Objects.isNull( declaration.referenceDates() ) )
         {
-            throw new ProjectConfigException( pairConfig,
-                                              WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
-                                                          + "either the dates or issuedDates." );
+            throw new DeclarationException( WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
+                                            + "either the 'valid_dates' or 'reference_dates'." );
         }
 
-        if ( Objects.nonNull( pairConfig.getDates() ) && ( Objects.isNull( pairConfig.getDates().getEarliest() )
-                                                           || Objects.isNull( pairConfig.getDates()
-                                                                                        .getLatest() ) ) )
+        if ( Objects.nonNull( declaration.validDates() )
+             && ( Objects.isNull( declaration.validDates()
+                                             .minimum() )
+                  || Objects.isNull( declaration.validDates()
+                                                .maximum() ) ) )
         {
-            throw new ProjectConfigException( pairConfig,
-                                              WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
-                                                          + "both the earliest and latest dates (e.g. "
-                                                          + "<dates earliest=\"2019-08-10T14:30:00Z\" "
-                                                          + "latest=\"2019-08-15T18:00:00Z\" />)." );
+            throw new DeclarationException( WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
+                                            + "both the 'minimum' and 'maximum' for the 'valid_dates'." );
         }
 
-        if ( Objects.nonNull( pairConfig.getIssuedDates() )
-             && ( Objects.isNull( pairConfig.getIssuedDates().getEarliest() )
-                  || Objects.isNull( pairConfig.getIssuedDates()
-                                               .getLatest() ) ) )
+        if ( Objects.nonNull( declaration.referenceDates() )
+             && ( Objects.isNull( declaration.referenceDates()
+                                             .minimum() )
+                  || Objects.isNull( declaration.referenceDates()
+                                                .maximum() ) ) )
         {
-            throw new ProjectConfigException( pairConfig,
-                                              WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
-                                                          + "both the earliest and latest issued dates (e.g. "
-                                                          + "<issuedDates earliest=\"2019-08-10T14:30:00Z\" "
-                                                          + "latest=\"2019-08-15T18:00:00Z\" />)." );
+            throw new DeclarationException( WHEN_READING_TIME_SERIES_DATA_FROM_THE_NATIONAL_WATER_MODEL_YOU_MUST_DECLARE
+                                            + "both the 'minimum' and 'maximum' for the 'reference_dates'." );
         }
 
-        LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete pair "
+        LOGGER.debug( "When building a reader for NWM time-series data from the WRDS, received a complete project "
                       + "declaration, which will be used to chunk requests by feature and time range." );
     }
 

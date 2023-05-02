@@ -37,9 +37,11 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Source;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderUtilities;
@@ -91,13 +93,13 @@ public class SourceLoader
     private final TimeSeriesReaderFactory timeSeriesReaderFactory;
 
     /** The project declaration. */
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
 
     /**
      * Reads and ingests time-series data and returns ingest results.
      * @param timeSeriesIngester the time-series ingester
      * @param systemSettings the system settings
-     * @param projectConfig the projectConfig for the evaluation
+     * @param declaration the projectConfig for the evaluation
      * @param griddedFeatures the gridded features cache to populate
      * @return the ingest results
      * @throws NullPointerException if any required input is null
@@ -106,11 +108,11 @@ public class SourceLoader
 
     public static List<IngestResult> load( TimeSeriesIngester timeSeriesIngester,
                                            SystemSettings systemSettings,
-                                           ProjectConfig projectConfig,
+                                           EvaluationDeclaration declaration,
                                            GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( timeSeriesIngester );
 
         // Create a thread factory for reading. Inner readers may create additional thread factories (e.g., archives).
@@ -134,7 +136,7 @@ public class SourceLoader
         SourceLoader loader = new SourceLoader( timeSeriesIngester,
                                                 systemSettings,
                                                 readingExecutor,
-                                                projectConfig,
+                                                declaration,
                                                 griddedFeatures );
 
         try
@@ -258,7 +260,7 @@ public class SourceLoader
         // connection between a data source and a context or LeftOrRightOrBaseline. A link is required for each context 
         // in which the source appears within a project.
         Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.getSystemSettings(),
-                                                                           this.getProjectConfig() );
+                                                                           this.getDeclaration() );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
@@ -341,7 +343,7 @@ public class SourceLoader
      * <p>Loads a web-like source.
      *
      * <p>TODO: create links for a non-file source when it appears in more than one context, i.e.
-     * {@link LeftOrRightOrBaseline}.
+     * {@link DatasetOrientation}.
      *
      * <p>See {@link #loadFileSource(DataSource)} for how this is done with a file source.
      *
@@ -426,59 +428,59 @@ public class SourceLoader
     }
 
     /**
-     * <p>Evaluates a project and creates a {@link DataSource} for each distinct source within the project that needs to
-     * be loaded, together with any additional links required. A link is required for each additional context, i.e. 
-     * {@link LeftOrRightOrBaseline}, in which the source appears. The links are returned by 
+     * <p>Evaluates a project and creates a {@link DataSource} for each distinct source within the project that needs
+     * to be loaded, together with any additional links required. A link is required for each additional context, i.e.
+     * {@link DatasetOrientation}, in which the source appears. The links are returned by
      * {@link DataSource#getLinks()}. Here, a "link" means a separate entry in <code>wres.ProjectSource</code>.
      *
-     * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link DataSourceConfig.Source}
-     * points to a directory of files, the tree is walked and a {@link DataSource} is returned for each one within the 
-     * tree that meets any prescribed filters.
+     * <p>A {@link DataSource} is returned for each discrete source. When the declared {@link Source} points to a
+     * directory of files, the tree is walked and a {@link DataSource} is returned for each one within the tree that
+     * meets any prescribed filters.
      *
      * @param systemSettings the system settings
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @return the set of distinct sources to load and any additional links to create
      */
 
     private static Set<DataSource> createSourcesToLoadAndLink( SystemSettings systemSettings,
-                                                               ProjectConfig projectConfig )
+                                                               EvaluationDeclaration declaration )
     {
         // Somewhat convoluted structure that will be turned into a simple one.
         // The key is the distinct source, and the paired value is the context in
         // which the source appears and the set of additional links to create, if any.
         // Note that all project declaration overrides hashCode and equals (~ key in a HashMap)
-        Map<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> sources = new HashMap<>();
+        Map<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> sources = new HashMap<>();
 
         // Must have one or more left sources to load and link
         SourceLoader.mutateSourcesToLoadAndLink( sources,
-                                                 projectConfig,
-                                                 projectConfig.getInputs()
-                                                              .getLeft(),
-                                                 LeftOrRightOrBaseline.LEFT );
+                                                 declaration,
+                                                 declaration.left(),
+                                                 DatasetOrientation.LEFT );
 
         // Must have one or more right sources to load and link
-        SourceLoader.mutateSourcesToLoadAndLink( sources, projectConfig, projectConfig.getInputs()
-                                                                                      .getRight(),
-                                                 LeftOrRightOrBaseline.RIGHT );
+        SourceLoader.mutateSourcesToLoadAndLink( sources,
+                                                 declaration,
+                                                 declaration.right(),
+                                                 DatasetOrientation.RIGHT );
 
         // May have one or more baseline sources to load and link
-        if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             SourceLoader.mutateSourcesToLoadAndLink( sources,
-                                                     projectConfig,
-                                                     projectConfig.getInputs()
-                                                                  .getBaseline(),
-                                                     LeftOrRightOrBaseline.BASELINE );
+                                                     declaration,
+                                                     declaration.baseline()
+                                                                .dataset(),
+                                                     DatasetOrientation.BASELINE );
         }
 
         // Create a simple entry (DataSource) for each complex entry
         Set<DataSource> returnMe = new HashSet<>();
 
         // Expand any file sources that represent directories and filter any that are not required
-        for ( Map.Entry<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> nextSource : sources.entrySet() )
+        for ( Map.Entry<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> nextSource : sources.entrySet() )
         {
             // Allow GC of new empty sets by letting the links ref empty set.
-            List<LeftOrRightOrBaseline> links = Collections.emptyList();
+            List<DatasetOrientation> links = Collections.emptyList();
 
             if ( !nextSource.getValue()
                             .getRight()
@@ -490,8 +492,8 @@ public class SourceLoader
 
             OrientedDataSource dataSource = nextSource.getValue()
                                                       .getLeft();
-            DataSourceConfig dataSourceConfig = dataSource.source();
-            LeftOrRightOrBaseline lrb = dataSource.orientation();
+            Dataset dataset = dataSource.dataset();
+            DatasetOrientation orientation = dataSource.orientation();
 
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
@@ -502,10 +504,10 @@ public class SourceLoader
                 // Currently unknown disposition, to be unpacked/determined
                 DataSource source = DataSource.of( DataDisposition.UNKNOWN,
                                                    nextSource.getKey(),
-                                                   dataSourceConfig,
+                                                   dataset,
                                                    links,
                                                    path.toUri(),
-                                                   lrb );
+                                                   orientation );
 
                 Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
                 returnMe.addAll( filesources );
@@ -516,20 +518,20 @@ public class SourceLoader
                 // Create a source with unknown disposition as the basis for detection
                 DataSource sourceToEvaluate = DataSource.of( DataDisposition.UNKNOWN,
                                                              nextSource.getKey(),
-                                                             dataSourceConfig,
+                                                             dataset,
                                                              links,
                                                              nextSource.getKey()
-                                                                       .getValue(),
-                                                             lrb );
+                                                                       .uri(),
+                                                             orientation );
 
                 DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
                 DataSource evaluatedSource = DataSource.of( disposition,
                                                             nextSource.getKey(),
-                                                            dataSourceConfig,
+                                                            dataset,
                                                             links,
                                                             nextSource.getKey()
-                                                                      .getValue(),
-                                                            lrb );
+                                                                      .uri(),
+                                                            orientation );
 
                 returnMe.add( evaluatedSource );
             }
@@ -575,7 +577,7 @@ public class SourceLoader
             String append = "";
 
             if ( Objects.isNull( dataSource.getSource()
-                                           .getInterface() ) )
+                                           .sourceInterface() ) )
             {
                 append = " Please declare the interface for the source and try again.";
             }
@@ -619,7 +621,7 @@ public class SourceLoader
                                                     dataSource.getContext(),
                                                     dataSource.getLinks(),
                                                     dataSource.getUri(),
-                                                    dataSource.getLeftOrRightOrBaseline() );
+                                                    dataSource.getDatasetOrientation() );
             return Set.of( innerSource );
         }
 
@@ -637,7 +639,7 @@ public class SourceLoader
                                                         dataSource.getContext(),
                                                         dataSource.getLinks(),
                                                         dataSource.getUri(),
-                                                        dataSource.getLeftOrRightOrBaseline() );
+                                                        dataSource.getDatasetOrientation() );
             return Set.of( withDisposition );
         }
     }
@@ -659,12 +661,12 @@ public class SourceLoader
 
         Set<DataSource> returnMe = new HashSet<>();
 
-        DataSourceConfig.Source source = dataSource.getSource();
+        Source source = dataSource.getSource();
 
         //Define path matcher based on the source's pattern, if provided.
         final PathMatcher matcher;
 
-        String pattern = source.getPattern();
+        String pattern = source.pattern();
 
         if ( !( pattern == null || pattern.isEmpty() ) )
         {
@@ -694,7 +696,7 @@ public class SourceLoader
                                                      dataSource.getContext(),
                                                      dataSource.getLinks(),
                                                      path.toUri(),
-                                                     dataSource.getLeftOrRightOrBaseline() ) );
+                                                     dataSource.getDatasetOrientation() ) );
                     }
                     else
                     {
@@ -732,16 +734,16 @@ public class SourceLoader
     }
 
     /**
-     * Evaluate a path from a {@link DataSourceConfig.Source}.
+     * Evaluate a path from a {@link Source}.
      * @param source the source
      * @return the path of a file-like source or null
      */
 
     private static Path evaluatePath( SystemSettings systemSettings,
-                                      DataSourceConfig.Source source )
+                                      Source source )
     {
         LOGGER.trace( "Called evaluatePath with source {}", source );
-        URI uri = source.getValue();
+        URI uri = source.uri();
 
         // Is there a source path to evaluate? Only if the source is file-like
         if ( uri.toString()
@@ -779,34 +781,32 @@ public class SourceLoader
 
         LOGGER.debug( "Returning source path {} from source {}",
                       sourcePath,
-                      source.getValue() );
+                      source.uri() );
         return sourcePath;
     }
 
     /**
-     * Mutates the input map of sources, adding additional sources to load or link
-     * from the input {@link DataSourceConfig}.
+     * Mutates the input map of sources, adding additional sources to load or link from the input {@link Dataset}.
      *
      * @param sources the map of sources to mutate
-     * @param projectConfig the project configuration
-     * @param dataSourceConfig the data source configuration for which sources to load or link are required
+     * @param declaration the project configuration
+     * @param dataset the dataset for which sources to load or link are required
      * @param orientation the orientation of the source
      * @throws NullPointerException if any input is null
      */
 
-    private static void
-    mutateSourcesToLoadAndLink( Map<DataSourceConfig.Source, Pair<OrientedDataSource, List<LeftOrRightOrBaseline>>> sources,
-                                ProjectConfig projectConfig,
-                                DataSourceConfig dataSourceConfig,
-                                LeftOrRightOrBaseline orientation )
+    private static void mutateSourcesToLoadAndLink( Map<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> sources,
+                                                    EvaluationDeclaration declaration,
+                                                    Dataset dataset,
+                                                    DatasetOrientation orientation )
     {
         Objects.requireNonNull( sources );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( dataSourceConfig );
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataset );
         Objects.requireNonNull( orientation );
 
         // Must have one or more right sources
-        for ( DataSourceConfig.Source source : dataSourceConfig.getSource() )
+        for ( Source source : dataset.sources() )
         {
             // Link or load?
             // NOTE: there are some paired contexts in which it would be wrong for
@@ -823,8 +823,8 @@ public class SourceLoader
             // Load
             else
             {
-                OrientedDataSource orientedSource = new OrientedDataSource( dataSourceConfig, orientation );
-                Pair<OrientedDataSource, List<LeftOrRightOrBaseline>> sourcePair
+                OrientedDataSource orientedSource = new OrientedDataSource( dataset, orientation );
+                Pair<OrientedDataSource, List<DatasetOrientation>> sourcePair
                         = Pair.of( orientedSource, new ArrayList<>() );
                 sources.put( source, sourcePair );
             }
@@ -866,9 +866,9 @@ public class SourceLoader
      * @return the project declaration
      */
 
-    private ProjectConfig getProjectConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.projectConfig;
+        return this.declaration;
     }
 
     /**
@@ -893,7 +893,7 @@ public class SourceLoader
      * @param timeSeriesIngester the time-series ingester, required
      * @param systemSettings the system settings, required
      * @param readingExecutor the executor for reading, required
-     * @param projectConfig the project declaration, required along with the pair element
+     * @param declaration the project declaration
      * @param griddedFeatures the gridded features cache to populate, only required for a gridded evaluation
      * @throws NullPointerException if any required input is null
      */
@@ -901,31 +901,30 @@ public class SourceLoader
     private SourceLoader( TimeSeriesIngester timeSeriesIngester,
                           SystemSettings systemSettings,
                           ExecutorService readingExecutor,
-                          ProjectConfig projectConfig,
+                          EvaluationDeclaration declaration,
                           GriddedFeatures.Builder griddedFeatures )
     {
         Objects.requireNonNull( timeSeriesIngester );
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( readingExecutor );
-        Objects.requireNonNull( projectConfig );
-        Objects.requireNonNull( projectConfig.getPair() );
+        Objects.requireNonNull( declaration );
 
         this.systemSettings = systemSettings;
         this.readingExecutor = readingExecutor;
-        this.projectConfig = projectConfig;
+        this.declaration = declaration;
         this.timeSeriesIngester = timeSeriesIngester;
         this.griddedFeatures = griddedFeatures;
-        this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( projectConfig.getPair(),
+        this.timeSeriesReaderFactory = TimeSeriesReaderFactory.of( declaration,
                                                                    systemSettings,
                                                                    griddedFeatures );
     }
 
     /**
-     * An oriented data source.
+     * An oriented dataset.
      *
-     * @param source the data source
+     * @param dataset the dataset
      * @param orientation the orientation
      */
-    private record OrientedDataSource( DataSourceConfig source, LeftOrRightOrBaseline orientation ) {}
+    private record OrientedDataSource( Dataset dataset, DatasetOrientation orientation ) {}
 
 }

@@ -407,7 +407,7 @@ public class SingleValuedForecastRetrieverTest
                                          .get( 0 );
         }
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour( T0 );
+        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour();
         IngestResult ingestResultTwo;
         try ( DatabaseTimeSeriesIngester ingesterTwo =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

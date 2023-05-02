@@ -32,9 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.xml.ProjectConfigException;
-import wres.config.generated.PairConfig;
-import wres.config.generated.UrlParameter;
-import wres.io.config.ConfigHelper;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
@@ -42,6 +42,7 @@ import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
 import wres.io.reading.web.WebClient;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 
 /**
@@ -79,13 +80,13 @@ public class NwisReader implements TimeSeriesReader
     private static final String USGS_NWIS = "USGS NWIS";
 
     /** Pair declaration, which is used to chunk requests. Null if no chunking is required. */
-    private final PairConfig pairConfig;
+    private final EvaluationDeclaration declaration;
 
     /** A thread pool to process web requests. */
     private final ThreadPoolExecutor executor;
 
     /**
-     * @see #of(PairConfig, SystemSettings)
+     * @see #of(EvaluationDeclaration, SystemSettings)
      * @param systemSettings the system settings
      * @return an instance that does not performing any chunking of the time-series data
      * @throws NullPointerException if the systemSettings is null
@@ -97,17 +98,17 @@ public class NwisReader implements TimeSeriesReader
     }
 
     /**
-     * @param pairConfig the pair declaration, which is used to perform chunking of a data source
+     * @param declaration the declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @return an instance
      * @throws NullPointerException if either input is null
      */
 
-    public static NwisReader of( PairConfig pairConfig, SystemSettings systemSettings )
+    public static NwisReader of( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
-        return new NwisReader( pairConfig, systemSettings );
+        return new NwisReader( declaration, systemSettings );
     }
 
     @Override
@@ -116,11 +117,11 @@ public class NwisReader implements TimeSeriesReader
         Objects.requireNonNull( dataSource );
 
         // Chunk the requests if needed
-        if ( Objects.nonNull( this.getPairConfig() ) )
+        if ( Objects.nonNull( this.getDeclaration() ) )
         {
             LOGGER.debug( "Preparing requests for the USGS NWIS that chunk the time-series data by feature and "
                           + "time range." );
-            return this.read( dataSource, this.getPairConfig() );
+            return this.read( dataSource, this.getDeclaration() );
         }
 
         LOGGER.debug( "Preparing a request to NWIS for USGS time-series without any chunking of the data." );
@@ -151,9 +152,9 @@ public class NwisReader implements TimeSeriesReader
      * @return the pair declaration, possibly null
      */
 
-    private PairConfig getPairConfig()
+    private EvaluationDeclaration getDeclaration()
     {
-        return this.pairConfig;
+        return this.declaration;
     }
 
     /**
@@ -169,22 +170,22 @@ public class NwisReader implements TimeSeriesReader
      * Reads the data source by forming separate requests by feature and time range.
      * 
      * @param dataSource the data source
-     * @param pairConfig the pair declaration used for chunking
+     * @param declaration the declaration used for chunking
      * @throws NullPointerException if either input is null
      */
 
-    private Stream<TimeSeriesTuple> read( DataSource dataSource, PairConfig pairConfig )
+    private Stream<TimeSeriesTuple> read( DataSource dataSource, EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( dataSource );
-        Objects.requireNonNull( pairConfig );
+        Objects.requireNonNull( declaration );
 
         // The features
-        Set<String> features = ConfigHelper.getFeatureNamesForSource( pairConfig,
-                                                                      dataSource.getContext(),
-                                                                      dataSource.getLeftOrRightOrBaseline() );
+        Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
+        Set<String> features = DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                                        dataSource.getDatasetOrientation() );
 
         // Date ranges
-        Set<Pair<Instant, Instant>> dateRanges = ReaderUtilities.getYearRanges( pairConfig, dataSource );
+        Set<Pair<Instant, Instant>> dateRanges = ReaderUtilities.getYearRanges( declaration, dataSource );
 
         // Combine the features and date ranges to form the chunk boundaries
         Set<Pair<String, Pair<Instant, Instant>>> chunks = new HashSet<>();
@@ -268,7 +269,7 @@ public class NwisReader implements TimeSeriesReader
 
                     // Create the inner data source for the chunk
                     URI nextUri = this.getUriForChunk( dataSource.getSource()
-                                                                 .getValue(),
+                                                                 .uri(),
                                                        dataSource,
                                                        nextChunk.getRight(),
                                                        nextChunk.getLeft() );
@@ -279,7 +280,7 @@ public class NwisReader implements TimeSeriesReader
                                            dataSource.getContext(),
                                            dataSource.getLinks(),
                                            nextUri,
-                                           dataSource.getLeftOrRightOrBaseline() );
+                                           dataSource.getDatasetOrientation() );
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 
@@ -412,7 +413,7 @@ public class NwisReader implements TimeSeriesReader
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
         Objects.requireNonNull( dataSource.getVariable() );
-        Objects.requireNonNull( dataSource.getVariable().getValue() );
+        Objects.requireNonNull( dataSource.getVariable().name() );
 
         StringJoiner siteJoiner = new StringJoiner( "," );
 
@@ -427,19 +428,13 @@ public class NwisReader implements TimeSeriesReader
         // For some reason, 1 to 999 milliseconds are not enough.
         Instant startDateTime = range.getLeft()
                                      .plusSeconds( 1 );
-        Map<String, String> urlParameters = new HashMap<>( 5 );
-
-        // Caller-supplied additional parameters are lower precedence, put first
-        for ( UrlParameter parameter : dataSource.getContext()
-                                                 .getUrlParameter() )
-        {
-            urlParameters.put( parameter.getName(), parameter.getValue() );
-        }
+        Map<String, String> urlParameters = new HashMap<>( dataSource.getSource()
+                                                                     .parameters() );
 
         urlParameters.put( "format", "json" );
         urlParameters.put( "parameterCd",
                            dataSource.getVariable()
-                                     .getValue() );
+                                     .name() );
         urlParameters.put( "startDT", startDateTime.toString() );
         urlParameters.put( "endDT", range.getRight().toString() );
         urlParameters.put( "sites", siteJoiner.toString() );
@@ -505,34 +500,33 @@ public class NwisReader implements TimeSeriesReader
 
     /**
      * Hidden constructor.
-     * @param pairConfig the optional pair declaration, which is used to perform chunking of a data source
+     * @param declaration the optional declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
      * @throws ProjectConfigException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 
-    private NwisReader( PairConfig pairConfig, SystemSettings systemSettings )
+    private NwisReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
         Objects.requireNonNull( systemSettings );
 
-        if ( Objects.nonNull( pairConfig ) )
+        if ( Objects.nonNull( declaration ) )
         {
-            if ( Objects.isNull( pairConfig.getDates() ) || Objects.isNull( pairConfig.getDates().getEarliest() )
-                 || Objects.isNull( pairConfig.getDates().getLatest() ) )
+            if ( Objects.isNull( declaration.validDates() )
+                 || Objects.isNull( declaration.validDates()
+                                               .minimum() )
+                 || Objects.isNull( declaration.validDates().maximum() ) )
             {
-                throw new ProjectConfigException( pairConfig,
-                                                  "One must specify dates with both "
-                                                              + "earliest and latest (e.g. "
-                                                              + "<dates earliest=\"2019-08-10T14:30:00Z\" "
-                                                              + "latest=\"2019-08-15T18:00:00Z\" />) "
-                                                              + "when using a web API as a source for observations." );
+                throw new DeclarationException( "One must specify 'valid_dates' with both 'minimum' and 'maximum' "
+                                                + "when using a web API, such as the USGS NWIS, as a source for "
+                                                + "observations." );
             }
 
             LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a complete "
                           + "pair declaration, which will be used to chunk requests by feature and time range." );
         }
 
-        this.pairConfig = pairConfig;
+        this.declaration = declaration;
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "USGS NWIS Reading Thread %d" )
                                                                          .build();

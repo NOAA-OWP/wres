@@ -51,6 +51,7 @@ import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.MessageFactory;
@@ -747,6 +748,24 @@ public class DeclarationUtilities
             }
             return false;
         }
+    }
+
+    /**
+     * Makes a best guess at the type of reference time from the data source type.
+     * @param dataType the data type
+     * @return the reference time type
+     * @throws NullPointerException if the input is null
+     */
+
+    public static ReferenceTime.ReferenceTimeType getReferenceTimeType( DataType dataType )
+    {
+        Objects.requireNonNull( dataType );
+
+        return switch ( dataType )
+                {
+                    case ANALYSES, SIMULATIONS, OBSERVATIONS -> ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME;
+                    case ENSEMBLE_FORECASTS, SINGLE_VALUED_FORECASTS -> ReferenceTime.ReferenceTimeType.T0;
+                };
     }
 
     /**
