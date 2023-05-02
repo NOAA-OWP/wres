@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestConstants.*;
 
 import java.io.IOException;
@@ -341,7 +340,7 @@ public class EnsembleForecastRetrieverTest
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
+        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
         IngestResult ingestResultOne;
         try ( DatabaseTimeSeriesIngester ingesterOne =
                       new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

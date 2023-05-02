@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import wres.config.generated.DataSourceConfig.Source;
+import wres.config.yaml.components.Source;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
@@ -16,7 +16,7 @@ import wres.io.reading.TimeSeriesTuple;
 /**
  * A class that applies a consistent missing value identifier for any missing values that are identified within the 
  * project declaration, rather than handled in-band to readers.
- * 
+ *
  * @author James Brown
  */
 
@@ -28,7 +28,7 @@ class MissingValueOperator implements UnaryOperator<Stream<TimeSeriesTuple>>
 
     /**
      * Creates an instance.
-     * 
+     *
      * @return an instance of this class
      */
 
@@ -47,7 +47,7 @@ class MissingValueOperator implements UnaryOperator<Stream<TimeSeriesTuple>>
 
     /**
      * Creates a missing value transformer.
-     * 
+     *
      * @return a missing value transformer
      */
     private static UnaryOperator<TimeSeriesTuple> getMissingValueTransformer()
@@ -75,7 +75,7 @@ class MissingValueOperator implements UnaryOperator<Stream<TimeSeriesTuple>>
     /**
      * Returns an operator that replaces a missing value declared alongside the data source with the 
      * {@link MissingValues#DOUBLE}.
-     * 
+     *
      * @param dataSource the data source
      * @return the missing value transformer
      */
@@ -87,14 +87,9 @@ class MissingValueOperator implements UnaryOperator<Stream<TimeSeriesTuple>>
         // Parse the missings once per source, not once per call of the transformer
         double[] missingDoubles = new double[0];
         Source source = dataSource.getSource();
-        if ( Objects.nonNull( source ) && Objects.nonNull( source.getMissingValue() ) )
+        if ( Objects.nonNull( source ) && Objects.nonNull( source.missingValue() ) )
         {
-            String missingValueString = source.getMissingValue();
-            String[] missingValueStrings = missingValueString.split( "," );
-            missingDoubles = Arrays.stream( missingValueStrings )
-                                   .mapToDouble( Double::parseDouble )
-                                   .sorted()
-                                   .toArray();
+            missingDoubles = new double[] { source.missingValue() };
         }
 
         // No missings to check

@@ -35,7 +35,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
+import wres.config.yaml.components.Source;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.system.SystemSettings;
 
@@ -322,7 +322,7 @@ public class TarredReader implements TimeSeriesReader
             return Stream.of();
         }
 
-        DataSourceConfig.Source originalSource = dataSource.getSource();
+        Source originalSource = dataSource.getSource();
 
         if ( Objects.isNull( originalSource ) )
         {
@@ -340,7 +340,7 @@ public class TarredReader implements TimeSeriesReader
                                                     dataSource.getContext(),
                                                     dataSource.getLinks(),
                                                     archivedFileName,
-                                                    dataSource.getLeftOrRightOrBaseline() );
+                                                    dataSource.getDatasetOrientation() );
 
         LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
 

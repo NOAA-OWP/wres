@@ -3,7 +3,7 @@ package wres.io.ingesting;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.io.reading.DataSource;
 
 /**
@@ -27,7 +27,7 @@ public interface IngestResult
      * @return Whether Left or Right or Baseline when retrying ingest.
      * @throws UnsupportedOperationException when requiresRetry() is false.
      */
-    LeftOrRightOrBaseline getLeftOrRightOrBaseline();
+    DatasetOrientation getDatasetOrientation();
 
     /**
      * Whether the data source existed already.

@@ -16,17 +16,17 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.reading.DataSource.DataDisposition;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -41,92 +41,87 @@ class WrdsNwmJsonReaderTest
     private String jsonString;
 
     @BeforeEach
-    void setup() throws JsonProcessingException
+    void setup()
     {
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( null,
-                                             null,
-                                             null,
-                                             null,
-                                             null );
-        this.fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+        // Use a fake URI with an NWIS-like string as this is used to trigger the
+        // identification of an instantaneous timescale
+        URI fakeUri = URI.create( "https://fake.wrds.gov/" );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .build();
+
+        this.fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
                                          fakeDeclarationSource,
-                                         new DataSourceConfig( null,
-                                                               List.of( fakeDeclarationSource ),
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null,
-                                                               null ),
+                                         dataset,
                                          Collections.emptyList(),
-                                         // Use a fake URI with an NWIS-like string as this is used to trigger the 
-                                         // identification of an instantaneous time-scale 
-                                         URI.create( "https://fake.wrds.gov/" ),
-                                         LeftOrRightOrBaseline.LEFT );
+                                         fakeUri,
+                                         DatasetOrientation.LEFT );
+
         this.jsonString =
-                "{\n"
-                          + "  \"_documentation\": \"https://somewhere/docs/v1/nwm/swagger/\",\n"
-                          + "  \"_metrics\": {\n"
-                          + "    \"location_api_call\": 0.08287358283996582,\n"
-                          + "    \"forming_location_data\": 0.0002918243408203125,\n"
-                          + "    \"usgs_feature_id_count\": 1,\n"
-                          + "    \"other_feature_id_count\": 0,\n"
-                          + "    \"validate_thredds_vars\": 1.2268075942993164,\n"
-                          + "    \"thredds_call\": 0.1791837215423584,\n"
-                          + "    \"thredds_data_forming\": 0.0000045299530029296875,\n"
-                          + "    \"response_forming\": 0.000018358230590820312,\n"
-                          + "    \"total_request_time\": 1.85443115234375\n"
-                          + "  },\n"
-                          + "  \"_warnings\": [],\n"
-                          + "  \"variable\": {\n"
-                          + "    \"name\": \"streamflow\",\n"
-                          + "    \"unit\": \"meter^3 / sec\"\n"
-                          + "  },\n"
-                          + "  \"forecasts\": [\n"
-                          + "    {\n"
-                          + "      \"reference_time\": \"20200112T00Z\",\n"
-                          + "      \"features\": [\n"
-                          + "        {\n"
-                          + "          \"location\": {\n"
-                          + "            \"names\": {\n"
-                          + "              \"nws_lid\": \"\",\n"
-                          + "              \"usgs_site_code\": \"07049000\",\n"
-                          + "              \"nwm_feature_id\": \"8588002\",\n"
-                          + "              \"name\": \"War Eagle Creek near Hindsville  AR\"\n"
-                          + "            },\n"
-                          + "            \"coordinates\": {\n"
-                          + "              \"latitude\": \"36.2\",\n"
-                          + "              \"longitude\": \"-93.855\"\n"
-                          + "            }\n"
-                          + "          },\n"
-                          + "          \"members\": [\n"
-                          + "            {\n"
-                          + "              \"identifier\": \"1\",\n"
-                          + "              \"data_points\": [\n"
-                          + "                {\n"
-                          + "                  \"time\": \"20200112T03Z\",\n"
-                          + "                  \"value\": \"270.9899939429015\"\n"
-                          + "                },\n"
-                          + "                {\n"
-                          + "                  \"time\": \"20200112T02Z\",\n"
-                          + "                  \"value\": \"334.139992531389\"\n"
-                          + "                },\n"
-                          + "                {\n"
-                          + "                  \"time\": \"20200112T01Z\",\n"
-                          + "                  \"value\": \"382.27999145537615\"\n"
-                          + "                }\n"
-                          + "              ]\n"
-                          + "            }\n"
-                          + "          ]\n"
-                          + "        }\n"
-                          + "      ]\n"
-                          + "    }\n"
-                          + "  ]\n"
-                          + "}";
+                """
+                        {
+                          "_documentation": "https://somewhere/docs/v1/nwm/swagger/",
+                          "_metrics": {
+                            "location_api_call": 0.08287358283996582,
+                            "forming_location_data": 0.0002918243408203125,
+                            "usgs_feature_id_count": 1,
+                            "other_feature_id_count": 0,
+                            "validate_thredds_vars": 1.2268075942993164,
+                            "thredds_call": 0.1791837215423584,
+                            "thredds_data_forming": 0.0000045299530029296875,
+                            "response_forming": 0.000018358230590820312,
+                            "total_request_time": 1.85443115234375
+                          },
+                          "_warnings": [],
+                          "variable": {
+                            "name": "streamflow",
+                            "unit": "meter^3 / sec"
+                          },
+                          "forecasts": [
+                            {
+                              "reference_time": "20200112T00Z",
+                              "features": [
+                                {
+                                  "location": {
+                                    "names": {
+                                      "nws_lid": "",
+                                      "usgs_site_code": "07049000",
+                                      "nwm_feature_id": "8588002",
+                                      "name": "War Eagle Creek near Hindsville  AR"
+                                    },
+                                    "coordinates": {
+                                      "latitude": "36.2",
+                                      "longitude": "-93.855"
+                                    }
+                                  },
+                                  "members": [
+                                    {
+                                      "identifier": "1",
+                                      "data_points": [
+                                        {
+                                          "time": "20200112T03Z",
+                                          "value": "270.9899939429015"
+                                        },
+                                        {
+                                          "time": "20200112T02Z",
+                                          "value": "334.139992531389"
+                                        },
+                                        {
+                                          "time": "20200112T01Z",
+                                          "value": "382.27999145537615"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }""";
     }
 
     @Test

@@ -105,8 +105,8 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
             Instant referenceTime = Netcdf.getReferenceTime( this.getFile() );
             Duration lead = Netcdf.getLeadTime( this.getFile() );
             String variable = this.dataSource.getContext()
-                                             .getVariable()
-                                             .getValue();
+                                             .variable()
+                                             .name();
             Variable ncVariable = this.getFile()
                                       .findVariable( variable );
 

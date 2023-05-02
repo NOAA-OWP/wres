@@ -26,15 +26,14 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DataSourceConfig;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.Source;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.config.ConfigHelper;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
@@ -164,7 +163,7 @@ public class DatacardReader implements TimeSeriesReader
                 // Null sentinel to stop iterating
                 return null;
             }
-            catch ( ProjectConfigException | IOException e )
+            catch ( DeclarationException | IOException e )
             {
                 throw new ReadException( "While reading a Datacard file from " + dataSource.getUri(), e );
             }
@@ -478,27 +477,27 @@ public class DatacardReader implements TimeSeriesReader
      * Acquires the zone offset from the data source, which is required.
      * @param dataSource the data source
      * @return the zone offset
-     * @throws ProjectConfigException if the zone offset is not defined
+     * @throws DeclarationException if the zone offset is not defined
      */
 
     private ZoneOffset getZoneOffset( DataSource dataSource )
     {
-        DataSourceConfig.Source source = dataSource.getSource();
+        Source source = dataSource.getSource();
 
         // Zone offset is required configuration since datacard does not specify
         // its time zone.  Process it.
-        ZoneOffset offset = ConfigHelper.getZoneOffset( source );
+        ZoneOffset offset = source.timeZoneOffset();
         LOGGER.debug( "The configured time zone offset is {}.", offset );
 
         if ( offset == null )
         {
-            String message = "While reading Datacard source "
+            String message = "While reading a Datacard source from '"
                              + dataSource.getUri()
-                             + ", failed to discover a zoneOffset in the project declaration. Unfortunately, Datacard "
-                             + "requires that the project declaration includes a zoneOffset such as "
-                             + "zoneOffset=\"-0500\" or zoneOffset=\"EST\" or zoneOffset=\"Z\". Please add a correct "
-                             + "zoneOffset for this Datacard file.";
-            throw new ProjectConfigException( source, message );
+                             + "', failed to discover a 'time_zone_offset' in the project declaration. Datacard "
+                             + "requires a 'time_zone_offset' such as 'time_zone_offset=-0500' or "
+                             + "'time_zone_offset=EST' or 'time_zone_offset=Z'. Please add a correct "
+                             + "'time_zone_offset' for this Datacard source and try again.";
+            throw new DeclarationException( message );
         }
 
         return offset;

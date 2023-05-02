@@ -35,6 +35,7 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.UnnamedFeature;
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -369,6 +370,8 @@ class EvaluationUtilities
             // Look up any needed feature correlations, generate a new declaration.
             ProjectConfig featurefulProjectConfig = WrdsFeatureFinder.fillFeatures( projectConfig );
             EvaluationDeclaration declaration = DeclarationFactory.from( featurefulProjectConfig );
+            declaration = DeclarationInterpolator.interpolate( declaration, true );
+
             LOGGER.debug( "Filled out features for project. Before: {} After: {}",
                           projectConfig,
                           featurefulProjectConfig );
@@ -400,7 +403,7 @@ class EvaluationUtilities
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.systemSettings(),
-                                                                          featurefulProjectConfig,
+                                                                          declaration,
                                                                           griddedFeaturesBuilder );
 
                     // Create the gridded features cache if needed
@@ -430,7 +433,7 @@ class EvaluationUtilities
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      featurefulProjectConfig,
+                                                                      declaration,
                                                                       griddedFeaturesBuilder );
 
                 // The immutable collection of in-memory time-series

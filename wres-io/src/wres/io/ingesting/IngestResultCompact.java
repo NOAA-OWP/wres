@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.lang.Short.MAX_VALUE;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.io.reading.DataSource;
 
 /**
@@ -46,28 +46,28 @@ class IngestResultCompact implements IngestResult
         }
 
         this.surrogateKey = surrogateKey;
-        LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
+        DatasetOrientation lrb = dataSource.getDatasetOrientation();
 
         short leftCountInner = 0;
         short rightCountInner = 0;
         short baselineCountInner = 0;
 
-        if ( lrb == LeftOrRightOrBaseline.LEFT )
+        if ( lrb == DatasetOrientation.LEFT )
         {
             leftCountInner++;
         }
-        else if ( lrb == LeftOrRightOrBaseline.RIGHT )
+        else if ( lrb == DatasetOrientation.RIGHT )
         {
             rightCountInner++;
         }
-        else if ( lrb == LeftOrRightOrBaseline.BASELINE )
+        else if ( lrb == DatasetOrientation.BASELINE )
         {
             baselineCountInner++;
         }
 
-        for ( LeftOrRightOrBaseline lrbn : dataSource.getLinks() )
+        for ( DatasetOrientation lrbn : dataSource.getLinks() )
         {
-            if ( lrbn.equals( LeftOrRightOrBaseline.LEFT ) )
+            if ( lrbn.equals( DatasetOrientation.LEFT ) )
             {
                 if ( leftCountInner == MAX_VALUE )
                 {
@@ -79,7 +79,7 @@ class IngestResultCompact implements IngestResult
 
                 leftCountInner++;
             }
-            else if ( lrbn.equals( LeftOrRightOrBaseline.RIGHT ) )
+            else if ( lrbn.equals( DatasetOrientation.RIGHT ) )
             {
                 if ( rightCountInner == MAX_VALUE )
                 {
@@ -91,7 +91,7 @@ class IngestResultCompact implements IngestResult
 
                 rightCountInner++;
             }
-            else if ( lrbn.equals( LeftOrRightOrBaseline.BASELINE ) )
+            else if ( lrbn.equals( DatasetOrientation.BASELINE ) )
             {
                 if ( baselineCountInner == MAX_VALUE )
                 {
@@ -124,9 +124,9 @@ class IngestResultCompact implements IngestResult
      * @throws UnsupportedOperationException Every time.
      */
     @Override
-    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    public DatasetOrientation getDatasetOrientation()
     {
-        throw new UnsupportedOperationException( "Primary LRB is unavailable in compact form." );
+        throw new UnsupportedOperationException( "Primary dataset orientation is unavailable in compact form." );
     }
 
     @Override

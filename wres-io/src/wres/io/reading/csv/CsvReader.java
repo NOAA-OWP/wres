@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -194,7 +194,7 @@ public class CsvReader implements TimeSeriesReader
                 // Print information about any undeclared variables discovered in the source
                 if ( !unconfiguredVariableNames.isEmpty() && LOGGER.isWarnEnabled() )
                 {
-                    LeftOrRightOrBaseline lrb = dataSource.getLeftOrRightOrBaseline();
+                    DatasetOrientation lrb = dataSource.getDatasetOrientation();
 
                     LOGGER.warn( "The following variable names were encountered in a {} forecast csv data source with "
                                  + "URI {} that were not declared in the project: {}",
@@ -510,7 +510,7 @@ public class CsvReader implements TimeSeriesReader
         else if ( Objects.isNull( dataSource.getVariable() )
                   || !dataProvider.getString( VARIABLE_NAME )
                                   .equalsIgnoreCase( dataSource.getVariable()
-                                                               .getValue() ) )
+                                                               .name() ) )
         {
             String foundVariable = dataProvider.getString( VARIABLE_NAME );
             unconfiguredVariableNames.add( foundVariable );

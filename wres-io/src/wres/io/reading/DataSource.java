@@ -31,7 +31,10 @@ import org.slf4j.LoggerFactory;
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.Variable;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 
@@ -102,20 +105,20 @@ public class DataSource
      * The context in which this source is declared.
      */
 
-    private final DataSourceConfig context;
+    private final Dataset context;
 
     /**
      * The source to load and link.
      */
 
-    private final DataSourceConfig.Source source;
+    private final Source source;
 
     /**
      * Additional links; may be empty, in which case, link only to
      * its own {@link #context}.
      */
 
-    private final List<LeftOrRightOrBaseline> links;
+    private final List<DatasetOrientation> links;
 
     /**
      * URI of the source. Required when ingesting, but null when this object is
@@ -129,7 +132,7 @@ public class DataSource
      * Whether the source originates from the left, right or baseline side of the evaluation.
      */
 
-    private final LeftOrRightOrBaseline lrb;
+    private final DatasetOrientation orientation;
 
     /**
      * Create a data source to load into <code>wres.Source</code>, with optional links to
@@ -146,17 +149,17 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the optional links to create
      * @param uri the uri for the source
-     * @param lrb whether the data source originates from the left or right or baseline side of the evaluation
+     * @param orientation whether the data source originates from the left or right or baseline side of the evaluation
      * @throws NullPointerException if any input is null
      * @return The newly created DataSource.
      */
 
     public static DataSource of( DataDisposition disposition,
-                                 DataSourceConfig.Source source,
-                                 DataSourceConfig context,
-                                 List<LeftOrRightOrBaseline> links,
+                                 Source source,
+                                 Dataset context,
+                                 List<DatasetOrientation> links,
                                  URI uri,
-                                 LeftOrRightOrBaseline lrb )
+                                 DatasetOrientation orientation )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( uri );
@@ -165,7 +168,7 @@ public class DataSource
                                context,
                                links,
                                uri,
-                               lrb );
+                               orientation );
     }
 
     /**
@@ -175,15 +178,15 @@ public class DataSource
      * @param context the context in which the source appears
      * @param links the links
      * @param uri the uri
-     * @param lrb whether the data source originates from the left or right or baseline side of the evaluation
+     * @param orientation whether the data source originates from the left or right or baseline side of the evaluation
      */
 
     private DataSource( DataDisposition disposition,
-                        DataSourceConfig.Source source,
-                        DataSourceConfig context,
-                        List<LeftOrRightOrBaseline> links,
+                        Source source,
+                        Dataset context,
+                        List<DatasetOrientation> links,
                         URI uri,
-                        LeftOrRightOrBaseline lrb )
+                        DatasetOrientation orientation )
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( context );
@@ -203,7 +206,7 @@ public class DataSource
         }
 
         this.uri = uri;
-        this.lrb = lrb;
+        this.orientation = orientation;
     }
 
     /**
@@ -223,7 +226,7 @@ public class DataSource
      * @return the type of link
      */
 
-    public List<LeftOrRightOrBaseline> getLinks()
+    public List<DatasetOrientation> getLinks()
     {
         // Rendered immutable on construction
         return this.links;
@@ -235,7 +238,7 @@ public class DataSource
      * @return the source
      */
 
-    public DataSourceConfig.Source getSource()
+    public Source getSource()
     {
         return this.source;
     }
@@ -270,7 +273,7 @@ public class DataSource
      * @return the context
      */
 
-    public DataSourceConfig getContext()
+    public Dataset getContext()
     {
         return this.context;
     }
@@ -279,19 +282,19 @@ public class DataSource
      * @return whether the data source originates from the left, right or baseline side of the evaluation
      */
 
-    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    public DatasetOrientation getDatasetOrientation()
     {
-        return lrb;
+        return orientation;
     }
 
     /**
      * Returns the variable specified for this source, null if unspecified
      * @return the variable
      */
-    public DataSourceConfig.Variable getVariable()
+    public Variable getVariable()
     {
         return this.getContext()
-                   .getVariable();
+                   .variable();
     }
 
     /**
@@ -342,8 +345,9 @@ public class DataSource
 
         joiner.add( "Disposition: " + this.getDisposition() );
         joiner.add( " URI: " + this.getUri() );
-        joiner.add( " Type: " + this.getContext().getType() );
-        joiner.add( " Orientation: " + this.getLeftOrRightOrBaseline() );
+        joiner.add( " Type: " + this.getContext()
+                                    .type() );
+        joiner.add( " Orientation: " + this.getDatasetOrientation() );
 
         if ( !this.getLinks().isEmpty() )
         {

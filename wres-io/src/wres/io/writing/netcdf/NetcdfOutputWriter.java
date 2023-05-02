@@ -52,11 +52,9 @@ import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.nc2.write.NetcdfFormatWriter;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.Format;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
@@ -74,7 +72,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.generators.TimeWindowGenerator;
 import wres.io.NoDataException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -709,7 +706,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                                nextThresholdsByMetric,
                                                                                                units,
                                                                                                desiredTimeScale,
-                                                                                               LeftOrRightOrBaseline.BASELINE,
+                                                                                               DatasetOrientation.BASELINE,
                                                                                                true,
                                                                                                nextType );
 
@@ -738,7 +735,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholds,
                                                                            String units,
                                                                            TimeScaleOuter desiredTimeScale,
-                                                                           LeftOrRightOrBaseline context,
+                                                                           DatasetOrientation context,
                                                                            boolean hasBaseline,
                                                                            EnsembleAverageType ensembleAverageType )
     {
@@ -1344,7 +1341,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             String append = "";
             if ( sampleMetadata.getPool().getIsBaselinePool() )
             {
-                append = "_" + LeftOrRightOrBaseline.BASELINE.name();
+                append = "_" + DatasetOrientation.BASELINE.name();
             }
 
             // Add the ensemble average type where applicable

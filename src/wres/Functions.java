@@ -439,9 +439,11 @@ final class Functions
                     griddedFeatures = new GriddedFeatures.Builder( gridSelection );
                 }
 
+                EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
+
                 SourceLoader.load( timeSeriesIngester,
                                    sharedResources.systemSettings(),
-                                   projectConfig,
+                                   declaration,
                                    griddedFeatures );
 
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );

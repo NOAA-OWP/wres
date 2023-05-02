@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.ingesting.IngestResult;
@@ -48,7 +47,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             {
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
-                        DatasetOrientation.valueOf( innerSource.getLeftOrRightOrBaseline()
+                        DatasetOrientation.valueOf( innerSource.getDatasetOrientation()
                                                                .name() );
 
                 // Single-valued time-series?
@@ -58,7 +57,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                        innerOrientation );
 
                     // Add in all other contexts too
-                    for ( LeftOrRightOrBaseline lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.getLinks() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
@@ -73,7 +72,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                                                                    innerOrientation );
 
                     // Add in all other contexts too
-                    for ( LeftOrRightOrBaseline lrb : innerSource.getLinks() )
+                    for ( DatasetOrientation lrb : innerSource.getLinks() )
                     {
                         DatasetOrientation linkOrientation = DatasetOrientation.valueOf( lrb.name() );
                         this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),

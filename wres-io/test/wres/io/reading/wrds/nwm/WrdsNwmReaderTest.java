@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,24 +28,30 @@ import org.mockserver.verify.VerificationTimes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DataSourceConfig.Variable;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DateCondition;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.PairConfig;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.ReadException;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
 
@@ -229,29 +236,21 @@ class WrdsNwmReaderTest
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( fakeUri,
-                                             InterfaceShortHand.WRDS_NWM,
-                                             null,
-                                             null,
-                                             null );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( null,
-                                                                     List.of( fakeDeclarationSource ),
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
+                                               dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               LeftOrRightOrBaseline.LEFT );
+                                               DatasetOrientation.LEFT );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -315,29 +314,21 @@ class WrdsNwmReaderTest
                                   + ANALYSIS_PATH
                                   + ANALYSIS_PARAMS );
 
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( fakeUri,
-                                             InterfaceShortHand.WRDS_NWM,
-                                             null,
-                                             null,
-                                             null );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( null,
-                                                                     List.of( fakeDeclarationSource ),
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
+                                               dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               LeftOrRightOrBaseline.LEFT );
+                                               DatasetOrientation.LEFT );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -424,50 +415,43 @@ class WrdsNwmReaderTest
                                   + this.mockServer.getLocalPort()
                                   + "/api/v1/nwm/ops/short_range/" );
 
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( fakeUri,
-                                             InterfaceShortHand.WRDS_NWM,
-                                             null,
-                                             null,
-                                             null );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "streamflow" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     List.of( fakeDeclarationSource ),
-                                                                     new Variable( "streamflow", null ),
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
+                                               dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               LeftOrRightOrBaseline.RIGHT );
+                                               DatasetOrientation.RIGHT );
 
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( null,
-                                                                           Integer.toString( NWM_FEATURE_ID ),
-                                                                           null ) ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                new DateCondition( "2022-01-03T00:00:00Z", "2022-01-23T00:00:00Z" ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2022-01-23T00:00:00Z" ) )
+                                                         .build();
+
+        Set<GeometryTuple> geometries
+                = Set.of( GeometryTuple.newBuilder()
+                                       .setRight( Geometry.newBuilder()
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
+                                       .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .referenceDates( referenceDates )
+                                                                        .features( features )
+                                                                        .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -475,7 +459,7 @@ class WrdsNwmReaderTest
         Mockito.when( systemSettings.poolObjectLifespan() )
                .thenReturn( 30_000 );
 
-        WrdsNwmReader reader = WrdsNwmReader.of( pairConfig, systemSettings );
+        WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings );
 
         try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
         {
@@ -520,53 +504,47 @@ class WrdsNwmReaderTest
     {
         URI fakeUri = URI.create( "fake" );
 
-        DataSourceConfig.Source fakeDeclarationSource =
-                new DataSourceConfig.Source( fakeUri,
-                                             InterfaceShortHand.WRDS_NWM,
-                                             null,
-                                             null,
-                                             null );
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
 
-        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WRDS_NWM,
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "streamflow" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
                                                fakeDeclarationSource,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     List.of( fakeDeclarationSource ),
-                                                                     new Variable( "streamflow", null ),
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
+                                               dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               LeftOrRightOrBaseline.RIGHT );
+                                               DatasetOrientation.RIGHT );
 
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                List.of( new NamedFeature( null,
-                                                                           Integer.toString( NWM_FEATURE_ID ),
-                                                                           null ),
-                                                         new NamedFeature( null,
-                                                                           "234442421",
-                                                                           null ) ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                new DateCondition( "2022-01-03T00:00:00Z", "2022-01-23T00:00:00Z" ),
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
+                                                         .maximum( Instant.parse( "2022-01-23T00:00:00Z" ) )
+                                                         .build();
+
+        Set<GeometryTuple> geometries
+                = Set.of( GeometryTuple.newBuilder()
+                                       .setRight( Geometry.newBuilder()
+                                                          .setName( Integer.toString( NWM_FEATURE_ID ) ) )
+                                       .build(),
+                          GeometryTuple.newBuilder()
+                                       .setRight( Geometry.newBuilder()
+                                                          .setName( "234442421" ) )
+                                       .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .referenceDates( referenceDates )
+                                                                        .features( features )
+                                                                        .build();
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -575,7 +553,7 @@ class WrdsNwmReaderTest
                .thenReturn( 30_000 );
 
         // Feature chunk size of 1, with 2 features requested
-        WrdsNwmReader reader = WrdsNwmReader.of( pairConfig, systemSettings, 1 );
+        WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings, 1 );
 
         // Expect a ReadException due to the fake uri, not a ClassCastException as in #109238.
         assertThrows( ReadException.class, () -> {  // NOSONAR

@@ -20,9 +20,12 @@ import org.mockito.Mockito;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -51,28 +54,29 @@ class TarredReaderTest
     private static final Instant T1985_06_01T14_00_00Z = Instant.parse( "1985-06-01T14:00:00Z" );
     private static final Instant T1985_06_01T13_00_00Z = Instant.parse( "1985-06-01T13:00:00Z" );
 
-    private static final String PI_STRING_ONE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
-                                                "<TimeSeries xmlns=\"http://www.wldelft.nl/fews/PI\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd\" version=\"1.2\">\r\n"
-                                                + "    <timeZone>0.0</timeZone>\r\n"
-                                                + "    <series>\r\n"
-                                                + "        <header>\r\n"
-                                                + "            <type>instantaneous</type>\r\n"
-                                                + "            <locationId>DRRC2</locationId>\r\n"
-                                                + "            <parameterId>QINE</parameterId>\r\n"
-                                                + "            <timeStep unit=\"second\" multiplier=\"3600\"/>\r\n"
-                                                + "            <startDate date=\"1985-06-01\" time=\"13:00:00\"/>\r\n"
-                                                + "            <endDate date=\"1985-06-01\" time=\"15:00:00\"/>\r\n"
-                                                + "            <missVal>-999.0</missVal>\r\n"
-                                                + "            <stationName>DOLORES, CO</stationName>\r\n"
-                                                + "            <lat>37.4739</lat>\r\n"
-                                                + "            <lon>108.5045</lon>\r\n"
-                                                + "            <units>CFS</units>\r\n"
-                                                + "        </header>\r\n"
-                                                + "        <event date=\"1985-06-01\" time=\"13:00:00\" value=\"1\" flag=\"0\"/>\r\n"
-                                                + "        <event date=\"1985-06-01\" time=\"14:00:00\" value=\"2\" flag=\"0\"/>\r\n"
-                                                + "        <event date=\"1985-06-01\" time=\"15:00:00\" value=\"3\" flag=\"0\"/>\r\n"
-                                                + "    </series>\r\n"
-                                                + "</TimeSeries>";
+    private static final String PI_STRING_ONE = """
+            <?xml version="1.0" encoding="UTF-8"?>\r
+            <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">\r
+                <timeZone>0.0</timeZone>\r
+                <series>\r
+                    <header>\r
+                        <type>instantaneous</type>\r
+                        <locationId>DRRC2</locationId>\r
+                        <parameterId>QINE</parameterId>\r
+                        <timeStep unit="second" multiplier="3600"/>\r
+                        <startDate date="1985-06-01" time="13:00:00"/>\r
+                        <endDate date="1985-06-01" time="15:00:00"/>\r
+                        <missVal>-999.0</missVal>\r
+                        <stationName>DOLORES, CO</stationName>\r
+                        <lat>37.4739</lat>\r
+                        <lon>108.5045</lon>\r
+                        <units>CFS</units>\r
+                    </header>\r
+                    <event date="1985-06-01" time="13:00:00" value="1" flag="0"/>\r
+                    <event date="1985-06-01" time="14:00:00" value="2" flag="0"/>\r
+                    <event date="1985-06-01" time="15:00:00" value="3" flag="0"/>\r
+                </series>\r
+            </TimeSeries>""";
 
     @Test
     void testReadObservationsFromTwoArchiveEntriesWithTwoDifferentFormatsResultsInThreeTimeSeries() throws IOException
@@ -103,7 +107,7 @@ class TarredReaderTest
 
             // Write the content to each of two archive entries
             try ( TarArchiveOutputStream out =
-                    new TarArchiveOutputStream( new BufferedOutputStream( Files.newOutputStream( tarPath ) ) ) )
+                          new TarArchiveOutputStream( new BufferedOutputStream( Files.newOutputStream( tarPath ) ) ) )
             {
                 // Create two entries, the first one a PI-XML file, the second a CSV file
                 TarArchiveEntry archiveEntryOne = new TarArchiveEntry( "test/one.xml" );
@@ -119,29 +123,23 @@ class TarredReaderTest
                 out.closeArchiveEntry();
             }
 
-            DataSourceConfig.Source fakeDeclarationSource =
-                    new DataSourceConfig.Source( tarPath.toUri(),
-                                                 null,
-                                                 null,
-                                                 null,
-                                                 null );
+            Source fakeDeclarationSource = SourceBuilder.builder()
+                                                        .uri( tarPath.toUri() )
+                                                        .build();
+
+            Dataset dataset = DatasetBuilder.builder()
+                                            .sources( List.of( fakeDeclarationSource ) )
+                                            .variable( VariableBuilder.builder()
+                                                                      .name( QINE )
+                                                                      .build() )
+                                            .build();
 
             DataSource fakeSource = DataSource.of( DataDisposition.TARBALL,
                                                    fakeDeclarationSource,
-                                                   new DataSourceConfig( null,
-                                                                         List.of( fakeDeclarationSource ),
-                                                                         new Variable( QINE, null ),
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null,
-                                                                         null ),
+                                                   dataset,
                                                    Collections.emptyList(),
                                                    tarPath.toUri(),
-                                                   LeftOrRightOrBaseline.RIGHT );
+                                                   DatasetOrientation.RIGHT );
 
             SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
             Mockito.when( systemSettings.maximumArchiveThreads() )

@@ -9,7 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,9 +39,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DateCondition;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.PairConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.TimeInterval;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -54,7 +55,7 @@ import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
  * Utilities for file reading.
- * 
+ *
  * @author James Brown
  * @author Christopher Tubbs
  * @author Jesse Bickel
@@ -62,11 +63,14 @@ import wres.system.SSLStuffThatTrustsOneCertificate;
 
 public class ReaderUtilities
 {
-    /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
+    /** Time Zone ID for UTC. */
+    public static final ZoneId UTC = ZoneId.of( "UTC" );
 
     /** Default WRDS project name, required by the service. Yuck. */
     public static final String DEFAULT_WRDS_PROJ = "UNKNOWN_PROJECT_USING_WRES";
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
 
     /**
      * Transform a single trace into a {@link TimeSeries} of {@link Double} values
@@ -219,7 +223,7 @@ public class ReaderUtilities
      * A helper that tries to guess the time-scale information from the composition of the supplied URI. This works 
      * when particular time-series data services use fixed time-scales, such as the USGS NWIS Instantaneous Values 
      * Service.
-     * 
+     *
      * @param uri the uri
      * @return the time scale or null
      */
@@ -344,11 +348,11 @@ public class ReaderUtilities
         Objects.requireNonNull( source );
 
         URI uri = source.getUri();
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand.equals( InterfaceShortHand.USGS_NWIS );
+            return interfaceShortHand == SourceInterface.USGS_NWIS;
         }
 
         // Fallback for unspecified interface.
@@ -370,11 +374,11 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( source );
 
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand == InterfaceShortHand.WRDS_OBS;
+            return interfaceShortHand == SourceInterface.WRDS_OBS;
         }
 
         return false;
@@ -391,11 +395,11 @@ public class ReaderUtilities
         Objects.requireNonNull( source );
 
         URI uri = source.getUri();
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand == InterfaceShortHand.WRDS_AHPS;
+            return interfaceShortHand == SourceInterface.WRDS_AHPS;
         }
 
         // Fallback for unspecified interface.
@@ -419,11 +423,11 @@ public class ReaderUtilities
         Objects.requireNonNull( source );
 
         URI uri = source.getUri();
-        InterfaceShortHand interfaceShortHand = source.getSource()
-                                                      .getInterface();
+        SourceInterface interfaceShortHand = source.getSource()
+                                                   .sourceInterface();
         if ( Objects.nonNull( interfaceShortHand ) )
         {
-            return interfaceShortHand.equals( InterfaceShortHand.WRDS_NWM );
+            return interfaceShortHand == SourceInterface.WRDS_NWM;
         }
 
         // Fallback for unspecified interface.
@@ -439,8 +443,8 @@ public class ReaderUtilities
 
     public static boolean isNwmVectorSource( DataSource dataSource )
     {
-        InterfaceShortHand interfaceType = dataSource.getSource()
-                                                     .getInterface();
+        SourceInterface interfaceType = dataSource.getSource()
+                                                  .sourceInterface();
 
         if ( Objects.nonNull( interfaceType ) && interfaceType.name()
                                                               .toLowerCase()
@@ -450,9 +454,10 @@ public class ReaderUtilities
             return true;
         }
 
-        LOGGER.debug( "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
-                      + "begin with a case-insensitive \"NWM_\" designation.",
-                      dataSource );
+        LOGGER.debug(
+                "Failed to identify data source {} as a NWM vector source because the interface shorthand did not "
+                + "begin with a case-insensitive 'NWM_' designation.",
+                dataSource );
 
         return false;
     }
@@ -476,45 +481,45 @@ public class ReaderUtilities
 
     /**
      * Creates year ranges for requests.
-     * @param pairConfig the pair declaration
+     * @param declaration the pair declaration
      * @param dataSource the data source
      * @return year ranges
      */
-    public static Set<Pair<Instant, Instant>> getYearRanges( PairConfig pairConfig,
+    public static Set<Pair<Instant, Instant>> getYearRanges( EvaluationDeclaration declaration,
                                                              DataSource dataSource )
     {
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getContext() );
 
-        DateCondition dates = pairConfig.getDates();
+        TimeInterval dates = declaration.validDates();
 
         SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
 
-        String specifiedEarliest = dates.getEarliest();
-        OffsetDateTime earliest = OffsetDateTime.parse( specifiedEarliest )
-                                                .with( TemporalAdjusters.firstDayOfYear() )
-                                                .withHour( 0 )
-                                                .withMinute( 0 )
-                                                .withSecond( 0 )
-                                                .withNano( 0 );
+        Instant specifiedEarliest = dates.minimum();
+        ZonedDateTime earliest = specifiedEarliest.atZone( UTC )
+                                                  .with( TemporalAdjusters.firstDayOfYear() )
+                                                  .withHour( 0 )
+                                                  .withMinute( 0 )
+                                                  .withSecond( 0 )
+                                                  .withNano( 0 );
 
         LOGGER.debug( "Given {}, calculated {} for earliest.",
                       specifiedEarliest,
                       earliest );
 
-        String specifiedLatest = dates.getLatest();
+        Instant specifiedLatest = dates.maximum();
 
         // Intentionally keep this raw, un-next-year-ified.
-        OffsetDateTime latest = OffsetDateTime.parse( specifiedLatest );
+        ZonedDateTime latest = specifiedLatest.atZone( UTC );
 
-        OffsetDateTime nowDate = OffsetDateTime.now();
+        ZonedDateTime nowDate = ZonedDateTime.now( UTC );
 
         LOGGER.debug( "Given {}, parsed {} for latest.",
                       specifiedLatest,
                       latest );
 
-        OffsetDateTime left = earliest;
-        OffsetDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
+        ZonedDateTime left = earliest;
+        ZonedDateTime right = left.with( TemporalAdjusters.firstDayOfNextYear() );
 
         while ( left.isBefore( latest ) )
         {
@@ -677,7 +682,7 @@ public class ReaderUtilities
 
     /**
      * Get a URI based on prescribed URI and a parameter set.
-     * 
+     *
      * @param uri the uri to build upon
      * @param urlParameters the parameters to add to the uri
      * @return the uri with the urlParameters added, in repeatable/sorted order.

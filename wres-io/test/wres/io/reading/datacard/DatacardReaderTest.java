@@ -10,19 +10,23 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Source;
+import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -80,17 +84,24 @@ class DatacardReaderTest
                       .append( "DRRC2      8506  01   4.0" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( cardPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( new DataSourceConfig.Source( cardPath.toUri(), null, "UTC", null, null ) );
-            Mockito.when( dataSource.hasSourcePath() )
-                   .thenReturn( true );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.DATACARD );
+            Source fakeDeclarationSource =
+                    SourceBuilder.builder()
+                                 .uri( cardPath.toUri() )
+                                 .timeZoneOffset( ZoneOffset.UTC )
+                                 .build();
+
+            DataSource dataSource = DataSource.of( DataDisposition.DATACARD,
+                                                   fakeDeclarationSource,
+                                                   DatasetBuilder.builder()
+                                                                 .type( DataType.OBSERVATIONS )
+                                                                 .sources( List.of( fakeDeclarationSource ) )
+                                                                 .variable( VariableBuilder.builder()
+                                                                                           .name( QINE )
+                                                                                           .build() )
+                                                                 .build(),
+                                                   Collections.emptyList(),
+                                                   cardPath.toUri(),
+                                                   DatasetOrientation.LEFT );
 
             DatacardReader reader = DatacardReader.of();
 
@@ -167,15 +178,24 @@ class DatacardReaderTest
                       .append( "DRRC2      8506  01   4.0" );
             }
 
-            DataSource dataSource = Mockito.mock( DataSource.class );
-            Mockito.when( dataSource.getUri() )
-                   .thenReturn( cardPath.toUri() );
-            Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
-            Mockito.when( dataSource.getSource() )
-                   .thenReturn( new DataSourceConfig.Source( cardPath.toUri(), null, "UTC", null, null ) );
-            Mockito.when( dataSource.getDisposition() )
-                   .thenReturn( DataDisposition.DATACARD );
+            Source fakeDeclarationSource =
+                    SourceBuilder.builder()
+                                 .uri( cardPath.toUri() )
+                                 .timeZoneOffset( ZoneOffset.UTC )
+                                 .build();
+
+            DataSource dataSource = DataSource.of( DataDisposition.DATACARD,
+                                                   fakeDeclarationSource,
+                                                   DatasetBuilder.builder()
+                                                                 .type( DataType.OBSERVATIONS )
+                                                                 .sources( List.of( fakeDeclarationSource ) )
+                                                                 .variable( VariableBuilder.builder()
+                                                                                           .name( QINE )
+                                                                                           .build() )
+                                                                 .build(),
+                                                   Collections.emptyList(),
+                                                   cardPath.toUri(),
+                                                   DatasetOrientation.LEFT );
 
             DatacardReader reader = DatacardReader.of();
 

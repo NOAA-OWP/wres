@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-import wres.config.generated.InterfaceShortHand;
+import wres.config.yaml.components.SourceInterface;
 import wres.datamodel.Ensemble;
 import wres.datamodel.time.TimeSeries;
-import wres.system.SystemSettings;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class NwmTimeSeriesTest
@@ -51,8 +49,6 @@ public class NwmTimeSeriesTest
     private static final String STREAMFLOW = "streamflow";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( NwmTimeSeriesTest.class );
-
-    @Mock SystemSettings mockSystemSettings;
 
     @Test
     public void generateFakeNwmForecastNames()
@@ -203,7 +199,7 @@ public class NwmTimeSeriesTest
     public void generateFakeMediumRangeDeterministicForecastNamesForLegacyNwm1_2()
     {
         NwmProfile nwmProfile =
-                NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS );
+                NwmProfiles.getProfileFromShortHand( SourceInterface.NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_CONUS );
         Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2019-10-06T18:00:00Z" ),
                                                        URI.create( "file:///test/1.2/" ) );
@@ -254,7 +250,7 @@ public class NwmTimeSeriesTest
     @Test
     public void generateAnalysisAssimHawaiiNames()
     {
-        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( SourceInterface.NWM_ANALYSIS_ASSIM_CHANNEL_RT_HAWAII );
         Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-05T04:00:00Z"),
                                                        URI.create( "file:///test/" ) );
@@ -280,7 +276,7 @@ public class NwmTimeSeriesTest
     @Test
     public void generateAnalysisAssimNoDaPuertoRicoNames()
     {
-        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( SourceInterface.NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO );
         Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-05T05:00:00Z"),
                                                        URI.create( "file:///test/" ) );
@@ -295,7 +291,7 @@ public class NwmTimeSeriesTest
     @Test
     public void generateAnalysisAssimExtendNoDaConusNames()
     {
-        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( InterfaceShortHand.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS );
+        NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( SourceInterface.NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_CONUS );
         Set<URI> actual = NwmTimeSeries.getNetcdfUris( nwmProfile,
                                                        Instant.parse( "2020-08-04T16:00:00Z"),
                                                        URI.create( "file:///test/" ) );

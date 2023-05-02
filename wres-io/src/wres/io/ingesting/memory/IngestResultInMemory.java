@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultNeedingRetry;
 import wres.io.reading.DataSource;
@@ -37,9 +37,9 @@ public class IngestResultInMemory implements IngestResult
     }
 
     @Override
-    public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
+    public DatasetOrientation getDatasetOrientation()
     {
-        return this.innerResult.getLeftOrRightOrBaseline();
+        return this.innerResult.getDatasetOrientation();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class IngestResultInMemory implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getLeftOrRightOrBaseline() )
+        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getDatasetOrientation() )
                                           .append( "dataSource", this.getDataSource() )
                                           .toString();
     }

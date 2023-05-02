@@ -468,7 +468,7 @@ public class EnsembleRetrieverFactoryTest
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne( T0 );
+        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
         IngestResult ingestResultOne;
         try( DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )

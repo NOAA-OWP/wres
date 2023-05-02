@@ -21,7 +21,7 @@ import org.mockito.Mockito;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
