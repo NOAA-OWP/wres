@@ -148,7 +148,7 @@ public class TimeSeriesTest
     public void testEquals()
     {
         // Reflexive 
-        assertTrue( this.testSeries.equals( this.testSeries ) );
+        assertEquals( this.testSeries, this.testSeries );
 
         // Symmetric
         TimeSeries<Double> anotherTestSeries =
@@ -170,7 +170,7 @@ public class TimeSeriesTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.testSeries.equals( anotherTestSeries ) );
+            assertEquals( this.testSeries, anotherTestSeries );
         }
 
         // Nullity
@@ -252,9 +252,9 @@ public class TimeSeriesTest
         Builder<Double> builder = new Builder<>();
 
         builder.addEvent( Event.of( Instant.MIN, 1.0 ) );
-
+        Event<Double> event = Event.of( Instant.MIN, 2.0 );
         IllegalArgumentException exception =
-                assertThrows( IllegalArgumentException.class, () -> builder.addEvent( Event.of( Instant.MIN, 2.0 ) ) );
+                assertThrows( IllegalArgumentException.class, () -> builder.addEvent( event ) );
 
         assertTrue( exception.getMessage().startsWith( "While building a time-series, attempted to add an event" ) );
     }

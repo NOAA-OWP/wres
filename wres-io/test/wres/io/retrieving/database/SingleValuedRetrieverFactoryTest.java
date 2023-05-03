@@ -380,11 +380,11 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() )
                .thenReturn( true );
-        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+        Mockito.when( project.getDeclaredDataset( DatasetOrientation.LEFT ) )
                .thenReturn( left );
-        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+        Mockito.when( project.getDeclaredDataset( DatasetOrientation.RIGHT ) )
                .thenReturn( right );
-        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.BASELINE ) )
+        Mockito.when( project.getDeclaredDataset( DatasetOrientation.BASELINE ) )
                .thenReturn( right ); // Same as right
         Mockito.when( project.hasProbabilityThresholds() )
                .thenReturn( false );

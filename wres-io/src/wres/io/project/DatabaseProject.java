@@ -341,7 +341,7 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public Dataset getDeclaredDataSource( DatasetOrientation orientation )
+    public Dataset getDeclaredDataset( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );
 
@@ -373,19 +373,6 @@ public class DatabaseProject implements Project
                     case LEFT -> this.getLeftVariableName();
                     case RIGHT -> this.getRightVariableName();
                     case BASELINE -> this.getBaselineVariableName();
-                };
-    }
-
-    @Override
-    public String getDeclaredVariableName( DatasetOrientation orientation )
-    {
-        Objects.requireNonNull( orientation );
-
-        return switch ( orientation )
-                {
-                    case LEFT -> this.getDeclaredLeftVariableName();
-                    case RIGHT -> this.getDeclaredRightVariableName();
-                    case BASELINE -> this.getDeclaredBaselineVariableName();
                 };
     }
 
@@ -1352,6 +1339,22 @@ public class DatabaseProject implements Project
         }
 
         return this.baselineVariable;
+    }
+
+    /**
+     * @param orientation the orientation
+     * @return the declared variable name
+     */
+    private String getDeclaredVariableName( DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( orientation );
+
+        return switch ( orientation )
+                {
+                    case LEFT -> this.getDeclaredLeftVariableName();
+                    case RIGHT -> this.getDeclaredRightVariableName();
+                    case BASELINE -> this.getDeclaredBaselineVariableName();
+                };
     }
 
     /**

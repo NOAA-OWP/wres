@@ -199,6 +199,22 @@ class DatabaseProjectTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void saveProject() throws LiquibaseException
+    {
+        // Add the project table
+        this.testDatabase.createProjectTable( this.liquibaseDatabase );
+
+        Project project = new DatabaseProject( this.wresDatabase,
+                                               this.mockCaches,
+                                               null,
+                                               EvaluationDeclarationBuilder.builder()
+                                                                           .build(),
+                                               "321" );
+        boolean saved = project.save();
+        assertTrue( saved, "Expected project details to have performed insert." );
+    }
+
     /**
      * Adds the required tables for the tests presented here, which is a subset of all tables.
      * @throws LiquibaseException if the tables could not be created
@@ -414,21 +430,4 @@ class DatabaseProjectTest
                                            .label( "test_project" )
                                            .build();
     }
-
-    @Test
-    void saveProject() throws LiquibaseException
-    {
-        // Add the project table
-        this.testDatabase.createProjectTable( this.liquibaseDatabase );
-
-        Project project = new DatabaseProject( this.wresDatabase,
-                                               this.mockCaches,
-                                               null,
-                                               EvaluationDeclarationBuilder.builder()
-                                                                           .build(),
-                                               "321" );
-        boolean saved = project.save();
-        assertTrue( saved, "Expected project details to have performed insert." );
-    }
-
 }
