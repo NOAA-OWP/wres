@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -40,7 +41,7 @@ public record Source( @JsonProperty( "uri" ) URI uri,
                       @JsonSerialize( using = TimeScaleSerializer.class )
                       @JsonDeserialize( using = TimeScaleDeserializer.class )
                       @JsonProperty( "time_scale" ) TimeScale timeScale,
-                      @JsonProperty( "missing_value" ) Double missingValue )
+                      @JsonProperty( "missing_value" ) List<Double> missingValue )
 {
     /**
      * Creates an instance.
@@ -67,6 +68,11 @@ public record Source( @JsonProperty( "uri" ) URI uri,
         if ( Objects.nonNull( pattern ) && pattern.isBlank() )
         {
             pattern = null;
+        }
+
+        if( Objects.isNull( missingValue ) )
+        {
+            missingValue = Collections.emptyList();
         }
     }
 }

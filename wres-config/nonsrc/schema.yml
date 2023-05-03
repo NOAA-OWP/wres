@@ -285,7 +285,12 @@ definitions:
       time_scale:
         "$ref": "#/definitions/TimeScale"
       missing_value:
-        type: number
+        anyOf:
+          - type: array
+            items:
+              type: number
+            uniqueItems: true
+          - type: number
     required:
       - uri
     title: SourceElement

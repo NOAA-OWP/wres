@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.List;
 
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.io.IOContext;

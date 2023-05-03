@@ -308,7 +308,7 @@ class DeclarationFactoryTest
                     - uri: file:/some/directory
                       pattern: '**/*.csv*'
                       time_zone_offset: CST
-                      missing_value: -999.0
+                      missing_value: [ -998.0, -999.0 ]
                     - uri: https://foo.bar
                       interface: usgs nwis
                       parameters:
@@ -353,7 +353,7 @@ class DeclarationFactoryTest
                                                     .uri( anotherObservedUri )
                                                     .pattern( "**/*.csv*" )
                                                     .timeZoneOffset( ZoneOffset.of( "-0600" ) )
-                                                    .missingValue( -999.0 )
+                                                    .missingValue( List.of( -998.0, -999.0 ) )
                                                     .build();
 
         URI yetAnotherObservedUri = URI.create( "https://foo.bar" );
@@ -1391,11 +1391,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                   """;
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
@@ -1413,14 +1411,11 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 baseline:
-                  sources:
-                    - yet_another_file.csv
+                  sources: yet_another_file.csv
                   """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
@@ -1502,7 +1497,7 @@ class DeclarationFactoryTest
                                                     .uri( anotherObservedUri )
                                                     .pattern( "**/*.csv*" )
                                                     .timeZoneOffset( ZoneOffset.of( "-0600" ) )
-                                                    .missingValue( -999.0 )
+                                                    .missingValue( List.of( -999.0 ) )
                                                     .build();
 
         URI yetAnotherObservedUri = URI.create( "https://foo.bar" );
@@ -1579,18 +1574,16 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 minimum_sample_size: 23
                 metrics:
                   - name: mean square error skill score
-                    value_thresholds: [0.3]
+                    value_thresholds: 0.3
                   - name: pearson correlation coefficient
                     probability_thresholds:
-                      values: [0.1]
+                      values: 0.1
                       operator: greater equal
                   - name: time to peak error
                     summary_statistics:
@@ -1676,11 +1669,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 feature_groups:
                   - name: a group
                     features:
@@ -1725,11 +1716,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 feature_service:
                   uri: https://foo.service
                   group: RFC
@@ -1763,11 +1752,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 feature_service:
                   uri: https://foo.service
                   groups:
@@ -1813,11 +1800,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 spatial_mask:
                   name: a spatial mask!
                   wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))"
@@ -1844,11 +1829,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 reference_dates:
                   minimum: 2551-03-17T00:00:00Z
                   maximum: 2551-03-20T00:00:00Z
@@ -1923,11 +1906,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 time_scale:
                   function: mean
                   period: 1
@@ -1956,11 +1937,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 unit: m3/s
                 unit_aliases:
                   - alias: °F
@@ -1994,11 +1973,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 pair_frequency:
                   period: 12
                   unit: hours
@@ -2020,11 +1997,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 cross_pair: exact
                   """;
 
@@ -2044,11 +2019,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 ensemble_average: median
                   """;
 
@@ -2068,11 +2041,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 season:
                   minimum_day: 1
                   minimum_month: 4
@@ -2097,11 +2068,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 values:
                   minimum: 12.1
                   maximum: 23.2
@@ -2126,11 +2095,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 duration_format: hours
                 decimal_format: '#0.000'
                 output_formats:
@@ -2189,11 +2156,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 probability_thresholds: [0.1, 0.2, 0.9]
                 value_thresholds:
                   name: MAJOR FLOOD
@@ -2328,11 +2293,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 threshold_sets:
                   - probability_thresholds:
                       values: [0.1, 0.2]
@@ -2379,14 +2342,11 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 baseline:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                   separate_metrics: true
                   """;
 
@@ -2411,11 +2371,9 @@ class DeclarationFactoryTest
     {
         String expected = """
                 observed:
-                  sources:
-                    - some_file.csv
+                  sources: some_file.csv
                 predicted:
-                  sources:
-                    - another_file.csv
+                  sources: another_file.csv
                 threshold_service:
                   uri: https://foo
                   parameter: moon
