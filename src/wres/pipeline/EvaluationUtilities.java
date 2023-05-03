@@ -33,7 +33,6 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.UnnamedFeature;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.components.DataType;
@@ -382,8 +381,7 @@ class EvaluationUtilities
             SystemSettings systemSettings = evaluationDetails.systemSettings();
 
             // Gridded features cache, if required. See #51232.
-            GriddedFeatures.Builder griddedFeaturesBuilder =
-                    EvaluationUtilities.getGriddedFeaturesCache( projectConfig );
+            GriddedFeatures.Builder griddedFeaturesBuilder = EvaluationUtilities.getGriddedFeaturesCache( declaration );
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isInDatabase() )
@@ -1458,20 +1456,19 @@ class EvaluationUtilities
     }
 
     /**
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @return a gridded feature cache or null if none is required
      */
 
-    private static GriddedFeatures.Builder getGriddedFeaturesCache( ProjectConfig projectConfig )
+    private static GriddedFeatures.Builder getGriddedFeaturesCache( EvaluationDeclaration declaration )
     {
         GriddedFeatures.Builder griddedFeatures = null;
 
-        List<UnnamedFeature> gridSelection = projectConfig.getPair()
-                                                          .getGridSelection();
-
-        if ( !gridSelection.isEmpty() )
+        if ( Objects.nonNull( declaration.spatialMask() ) )
         {
-            griddedFeatures = new GriddedFeatures.Builder( gridSelection );
+            String mask = declaration.spatialMask()
+                                     .wkt();
+            griddedFeatures = new GriddedFeatures.Builder( mask );
         }
 
         return griddedFeatures;
