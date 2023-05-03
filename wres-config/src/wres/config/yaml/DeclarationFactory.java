@@ -1254,7 +1254,6 @@ public class DeclarationFactory
 
         ZoneOffset universalZoneOffset = DeclarationFactory.migrateTimeZoneOffset( dataSource.getSource() );
         List<Source> sources = DeclarationFactory.migrateSources( dataSource.getSource(),
-                                                                  dataSource.getExistingTimeScale(),
                                                                   dataSource.getUrlParameter(),
                                                                   Objects.nonNull( universalZoneOffset ) );
         EnsembleFilter filter = DeclarationFactory.migrateEnsembleFilter( dataSource.getEnsemble() );
@@ -1263,6 +1262,7 @@ public class DeclarationFactory
         Variable variable = DeclarationFactory.migrateVariable( dataSource.getVariable() );
         DataType type = DeclarationFactory.migrateDataType( dataSource.getType() );
         Duration timeShift = DeclarationFactory.migrateTimeShift( dataSource.getTimeShift() );
+        TimeScale timeScale = DeclarationFactory.migrateTimeScale( dataSource.getExistingTimeScale() );
 
         return DatasetBuilder.builder()
                              .sources( sources )
@@ -1273,6 +1273,7 @@ public class DeclarationFactory
                              .type( type )
                              .timeShift( timeShift )
                              .timeZoneOffset( universalZoneOffset )
+                             .timeScale( timeScale )
                              .build();
     }
 
@@ -1313,20 +1314,17 @@ public class DeclarationFactory
      * Migrates a collection of {@link DataSourceConfig.Source} to a collection of {@link Source}.
      *
      * @param sources the data sources
-     * @param timeScale the timescale
      * @param parameters the optional URL parameters
      * @param universalTimeZoneOffset whether there is a universal time zone offset. If so, do not migrate per source
      * @return the migrated sources
      */
 
     private static List<Source> migrateSources( List<DataSourceConfig.Source> sources,
-                                                TimeScaleConfig timeScale,
                                                 List<UrlParameter> parameters,
                                                 boolean universalTimeZoneOffset )
     {
         return sources.stream()
                       .map( next -> DeclarationFactory.migrateSource( next,
-                                                                      timeScale,
                                                                       parameters,
                                                                       universalTimeZoneOffset ) )
                       .toList();
@@ -1336,14 +1334,12 @@ public class DeclarationFactory
      * Migrates a {@link DataSourceConfig.Source} to a {@link Source}.
      *
      * @param source the data sources
-     * @param timeScale the timescale
      * @param parameters the optional URL parameters
      * @param universalTimeZoneOffset whether there is a universal time zone offset. If so, do not migrate per source
      * @return the migrated source
      */
 
     private static Source migrateSource( DataSourceConfig.Source source,
-                                         TimeScaleConfig timeScale,
                                          List<UrlParameter> parameters,
                                          boolean universalTimeZoneOffset )
     {
@@ -1383,12 +1379,6 @@ public class DeclarationFactory
                                 .collect( Collectors.toUnmodifiableMap( UrlParameter::getName,
                                                                         UrlParameter::getValue ) );
             builder.parameters( sourceParameters );
-        }
-
-        if ( Objects.nonNull( timeScale ) )
-        {
-            TimeScale timeScaleMigrated = DeclarationFactory.migrateTimeScale( timeScale );
-            builder.timeScale( timeScaleMigrated );
         }
 
         return builder.build();

@@ -178,6 +178,8 @@ definitions:
             minItems: 1
       time_shift:
         "$ref": "#/definitions/TimeShift"
+      time_scale:
+        "$ref": "#/definitions/TimeScale"
       # Workaround because the networknt validator sometimes sees these 
       # strings as integers, but both are interpreted properly post-validation.
       # This property is also defined per source.
@@ -230,6 +232,8 @@ definitions:
             minItems: 1
       time_shift:
         "$ref": "#/definitions/TimeShift"
+      time_scale:
+        "$ref": "#/definitions/TimeScale"
       persistence:
         type: integer
         minimum: 0
@@ -282,8 +286,6 @@ definitions:
         additionalProperties:
           type: string
         minItems: 1
-      time_scale:
-        "$ref": "#/definitions/TimeScale"
       missing_value:
         anyOf:
           - type: array

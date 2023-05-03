@@ -419,22 +419,19 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testSourceTimeScaleIsValidResultsinError()
+    void testDatasetTimeScaleIsValidResultsinError()
     {
         TimeScale timeScaleInner = TimeScale.newBuilder()
                                             .setStartDay( 1 )
                                             .setEndDay( 1 )
                                             .build();
         wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
-        Source source = SourceBuilder.builder()
-                                     .timeScale( timeScale )
-                                     .build();
 
         Dataset left = DatasetBuilder.builder()
-                                     .sources( List.of( source ) )
+                                     .timeScale( timeScale )
                                      .build();
         Dataset right = DatasetBuilder.builder()
-                                      .sources( List.of( source ) )
+                                      .timeScale( timeScale )
                                       .build();
         EvaluationDeclaration declaration
                 = EvaluationDeclarationBuilder.builder()
@@ -473,7 +470,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testEvaluationTimeScaleIsConsistentWithSourceTimeScalesResultsInErrors()
+    void testEvaluationTimeScaleIsConsistentWithDatasetTimeScalesResultsInErrors()
     {
         TimeScale timeScaleInnerSource = TimeScale.newBuilder()
                                                   .setPeriod( Duration.newBuilder()
@@ -484,15 +481,11 @@ class DeclarationValidatorTest
         wres.config.yaml.components.TimeScale timeScaleSource =
                 new wres.config.yaml.components.TimeScale( timeScaleInnerSource );
 
-        Source source = SourceBuilder.builder()
+        Dataset left = DatasetBuilder.builder()
                                      .timeScale( timeScaleSource )
                                      .build();
-
-        Dataset left = DatasetBuilder.builder()
-                                     .sources( List.of( source ) )
-                                     .build();
         Dataset right = DatasetBuilder.builder()
-                                      .sources( List.of( source ) )
+                                      .timeScale( timeScaleSource )
                                       .build();
 
         TimeScale timeScaleInner = TimeScale.newBuilder()

@@ -33,7 +33,6 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -172,12 +171,11 @@ public class NwmGridReader implements TimeSeriesReader
         TimeScaleOuter timeScale = null;
 
         Dataset dataset = dataSource.getContext();
-        Set<TimeScale> timeScales = DeclarationUtilities.getSourceTimeScales( dataset );
+        wres.config.yaml.components.TimeScale declaredTimeScale = dataset.timeScale();
 
-        if ( ! timeScales.isEmpty() )
+        if ( Objects.nonNull( declaredTimeScale ) )
         {
-            timeScale = TimeScaleOuter.of( timeScales.iterator()
-                                                     .next() );
+            timeScale = TimeScaleOuter.of( declaredTimeScale.timeScale() );
         }
 
         // Time window constrained only by the pair declaration
