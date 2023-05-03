@@ -162,9 +162,9 @@ class PoolFactoryTest
                .thenReturn( Set.of( groupOne, groupTwo ) );
         Mockito.when( project.getDeclaration() )
                .thenReturn( declaration );
-        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.LEFT ) )
+        Mockito.when( project.getDeclaredDataset( DatasetOrientation.LEFT ) )
                .thenReturn( left );
-        Mockito.when( project.getDeclaredDataSource( DatasetOrientation.RIGHT ) )
+        Mockito.when( project.getDeclaredDataset( DatasetOrientation.RIGHT ) )
                .thenReturn( right );
         Mockito.when( project.getMeasurementUnit() )
                .thenReturn( CFS );

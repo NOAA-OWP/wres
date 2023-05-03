@@ -1088,7 +1088,7 @@ class EvaluationUtilities
         CompletableFuture<Object> poolTasks;
 
         DataType type = evaluationDetails.project()
-                                         .getDeclaredDataSource( DatasetOrientation.RIGHT )
+                                         .getDeclaredDataset( DatasetOrientation.RIGHT )
                                          .type();
 
         SystemSettings settings = evaluationDetails.systemSettings();

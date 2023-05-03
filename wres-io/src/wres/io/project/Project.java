@@ -80,7 +80,7 @@ public interface Project
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    Dataset getDeclaredDataSource( DatasetOrientation orientation );
+    Dataset getDeclaredDataset( DatasetOrientation orientation );
 
     /**
      * @param orientation the side of data
@@ -99,15 +99,6 @@ public interface Project
      */
 
     String getVariableName( DatasetOrientation orientation );
-
-    /**
-     * @param orientation the side of data for which the variable is required
-     * @return the name of the declared variable for the specified side of data
-     * @throws NullPointerException if the lrb is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    String getDeclaredVariableName( DatasetOrientation orientation );
 
     /**
      * @return the earliest analysis duration, defaults to {@link TimeWindowOuter#DURATION_MIN}.

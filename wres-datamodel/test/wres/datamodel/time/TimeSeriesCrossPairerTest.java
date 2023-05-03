@@ -12,12 +12,12 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
+import wres.config.yaml.components.CrossPair;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;
-import wres.datamodel.time.TimeSeriesCrossPairer.MatchMode;
 
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -311,7 +311,7 @@ public final class TimeSeriesCrossPairerTest
     @Test
     public void testCrossPairTimeSeriesWithNoEqualReferenceTimesAndSomeEqualValidTimesWhenExactMatching()
     {
-        TimeSeriesCrossPairer<Integer, Integer> crossPairerExact = TimeSeriesCrossPairer.of( MatchMode.EXACT );
+        TimeSeriesCrossPairer<Integer, Integer> crossPairerExact = TimeSeriesCrossPairer.of( CrossPair.EXACT );
 
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 

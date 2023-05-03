@@ -45,7 +45,7 @@ import wres.io.reading.web.WebClient;
  * feature dimensions and retrieval of features from a supplied URI.
  *
  * <p>TODO: abstract an interface from this class if more than one feature service implementation arises. In that case,
- * the {@link WrdsFeatureFinder} API should be changed to accept an instance of the abstracted class. The objective would
+ * the {@link WrdsFeatureFiller} should be changed to accept an instance of the abstracted class. The objective would
  * be an improved separation of two concerns, namely filling out a sparse declaration with dense features on the one 
  * hand and acquiring named features from a feature service using partial or implicit declaration, on the other.
  *

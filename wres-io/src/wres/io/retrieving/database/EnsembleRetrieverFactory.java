@@ -290,8 +290,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.database = database;
         this.caches = caches;
 
-        this.rightDataset = project.getDeclaredDataSource( DatasetOrientation.RIGHT );
-        this.baselineDataset = project.getDeclaredDataSource( DatasetOrientation.BASELINE );
+        this.rightDataset = project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        this.baselineDataset = project.getDeclaredDataset( DatasetOrientation.BASELINE );
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();
