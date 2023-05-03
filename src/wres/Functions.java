@@ -1,6 +1,7 @@
 package wres;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,10 +26,9 @@ import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.GridDatatype;
 import ucar.nc2.dt.grid.GridDataset;
 
+import wres.config.MultiDeclarationFactory;
 import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.Validation;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.UnnamedFeature;
 import wres.config.xml.ProjectConfigs;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -394,13 +394,11 @@ final class Functions
         if ( !args.isEmpty() )
         {
             String projectPath = args.get( 0 );
-            ProjectConfig projectConfig;
+            EvaluationDeclaration declaration;
 
             try
             {
-                Path actualPath = Paths.get( projectPath );
-                ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
-                projectConfig = configPlus.getProjectConfig();
+                declaration = MultiDeclarationFactory.from( projectPath, FileSystems.getDefault(), true );
             }
             catch ( IOException ioe )
             {
@@ -428,18 +426,15 @@ final class Functions
                                                                 .setLockManager( lockManager )
                                                                 .build();
 
-                List<UnnamedFeature> gridSelection = projectConfig.getPair()
-                                                                  .getGridSelection();
-
                 // Gridded ingest is a special snowflake for now. See #51232
                 GriddedFeatures.Builder griddedFeatures = null;
 
-                if ( !gridSelection.isEmpty() )
+                if ( Objects.nonNull( declaration.spatialMask() ) )
                 {
-                    griddedFeatures = new GriddedFeatures.Builder( gridSelection );
+                    String mask = declaration.spatialMask()
+                                             .wkt();
+                    griddedFeatures = new GriddedFeatures.Builder( mask );
                 }
-
-                EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
 
                 SourceLoader.load( timeSeriesIngester,
                                    sharedResources.systemSettings(),
@@ -447,12 +442,12 @@ final class Functions
                                    griddedFeatures );
 
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                return ExecutionResult.success( projectConfig.getName() );
+                return ExecutionResult.success( declaration.label() );
             }
             catch ( RuntimeException | SQLException e )
             {
                 LOGGER.error( "Failed to ingest from {}", projectPath, e );
-                return ExecutionResult.failure( projectConfig.getName(), e );
+                return ExecutionResult.failure( declaration.label(), e );
             }
             finally
             {

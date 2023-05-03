@@ -3,7 +3,6 @@ package wres.io.database.caching;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -12,6 +11,12 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateXY;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +30,6 @@ import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.unidata.geoloc.LatLonPoint;
-import wres.config.generated.Circle;
-import wres.config.generated.Polygon;
-import wres.config.generated.Polygon.Point;
-import wres.config.generated.UnnamedFeature;
 import wres.datamodel.space.Feature;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
@@ -85,10 +86,10 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
         private final Set<Feature> features = ConcurrentHashMap.newKeySet();
 
         /**
-         * The filters.
+         * The spatial mask.
          */
 
-        private final List<UnnamedFeature> filters;
+        private final String wktMask;
 
         /**
          * Cache of metadatas to check, guarded by the {@link #metadataGuard}.
@@ -139,7 +140,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                 }
             }
 
-            Set<Feature> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.filters );
+            Set<Feature> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.wktMask );
             this.features.addAll( innerFeatures );
 
             return this;
@@ -147,41 +148,55 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
         /**
          * Creates an instance.
-         * @param filters the filters, not null and not empty
+         * @param wktMask the mask in Well Known Text (WKT) format
          * @throws NullPointerException if the filters is null
          * @throws IllegalArgumentException if there are no filters
          */
 
-        public Builder( List<UnnamedFeature> filters )
+        public Builder( String wktMask )
         {
-            Objects.requireNonNull( filters );
+            Objects.requireNonNull( wktMask );
 
-            if ( filters.isEmpty() )
+            if ( wktMask.isBlank() )
             {
                 throw new IllegalArgumentException( "Cannot determine gridded features without a grid selection. An "
                                                     + "unbounded selection is not currently supported. Please declare "
                                                     + "a grid selection and try again." );
             }
 
-            this.filters = List.copyOf( filters );
+            this.wktMask = wktMask;
         }
     }
 
     /**
      * @param source the grid
-     * @param filters the filters
+     * @param wktMask the wktMask
      * @return the features
      * @throws IOException if the source could not be read for any reason
      * @throws NullPointerException if any input is null
      */
 
-    private static Set<Feature> readFeaturesAndFilterThem( NetcdfFile source, List<UnnamedFeature> filters )
+    private static Set<Feature> readFeaturesAndFilterThem( NetcdfFile source, String wktMask )
             throws IOException
     {
         Objects.requireNonNull( source );
-        Objects.requireNonNull( filters );
+        Objects.requireNonNull( wktMask );
+
+        // Read the mask into a geometry
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry mask;
+        try
+        {
+            mask = reader.read( wktMask );
+        }
+        catch ( ParseException e )
+        {
+            throw new IllegalArgumentException( "Failed to parse the mask geometry: " + wktMask );
+        }
 
         Set<Feature> innerFeatures = new HashSet<>();
+
+        GeometryFactory geoFactory = new GeometryFactory();
 
         try ( NetcdfDataset ncd = NetcdfDatasets.openDataset( source.getLocation() );
               GridDataset grid = new GridDataset( ncd ) )
@@ -196,14 +211,15 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                 for ( int yIndex = 0; yIndex < yCoordinates.getSize(); ++yIndex )
                 {
                     LatLonPoint point = coordinateSystem.getLatLon( xIndex, yIndex );
+                    Coordinate coordinate = new CoordinateXY( point.getLongitude(), point.getLatitude() );
+                    Point geoPoint = geoFactory.createPoint( coordinate );
 
                     // Within the filter boundaries?
-                    if ( GriddedFeatures.isContained( point, filters ) )
+                    if ( mask.contains( geoPoint ) )
                     {
                         Feature tuple = GriddedFeatures.getFeatureFromCoordinate( point );
                         innerFeatures.add( tuple );
                     }
-
                 }
             }
         }
@@ -303,86 +319,6 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
             throw new IllegalArgumentException( "Expected latitude y between -90.0 and 90.0, got "
                                                 + y );
         }
-    }
-
-    /**
-     * @param point the point
-     * @param filters the filters
-     * @return true if the point is contained within the requested selection, otherwise false
-     */
-    private static boolean isContained( LatLonPoint point, List<UnnamedFeature> filters )
-    {
-        boolean contained = !filters.isEmpty();
-        for ( UnnamedFeature feature : filters )
-        {
-            if ( Objects.nonNull( feature.getPolygon() ) )
-            {
-                contained = contained && GriddedFeatures.isContained( point, feature.getPolygon() );
-            }
-
-            if ( Objects.nonNull( feature.getCircle() ) )
-            {
-                contained = contained && GriddedFeatures.isContained( point, feature.getCircle() );
-            }
-
-            if ( Objects.nonNull( feature.getCoordinate() ) )
-            {
-                // #90061-42
-                throw new UnsupportedOperationException( "Coordinate selection of gridded features is not currently "
-                                                         + "supported. Please use a polygon selection instead and try "
-                                                         + "again." );
-            }
-        }
-
-        return contained;
-    }
-
-    /**
-     * TODO: support concave polygons by making a library call.
-     * @param point the point
-     * @param convexPolygon the convex polygon filter
-     * @return true if the point is contained within the convex polygon, otherwise false
-     */
-    private static boolean isContained( LatLonPoint point, Polygon convexPolygon )
-    {
-        double x = point.getLongitude();
-        double y = point.getLatitude();
-
-        List<Point> points = convexPolygon.getPoint();
-
-        int i;
-        int j;
-        boolean result = false;
-        for ( i = 0, j = points.size() - 1; i < points.size(); j = i++ )
-        {
-            if ( ( points.get( i ).getLatitude() > y ) != ( points.get( j ).getLatitude() > y ) &&
-                 ( x < ( points.get( j ).getLongitude() - points.get( i ).getLongitude() )
-                       * ( y - points.get( i ).getLatitude() )
-                       / ( points.get( j ).getLatitude() - points.get( i ).getLatitude() )
-                       + points.get( i ).getLongitude() ) )
-            {
-                result = !result;
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * @param point the point
-     * @param circle the circle filter
-     * @return true if the point is contained within the circle, otherwise false
-     */
-    private static boolean isContained( LatLonPoint point, Circle circle )
-    {
-        double x = point.getLongitude();
-        double y = point.getLatitude();
-
-        double x2 = circle.getLongitude();
-        double y2 = circle.getLatitude();
-        double diameter = circle.getDiameter();
-
-        return ( Math.pow( x - x2, 2 ) + Math.pow( y - y2, 2 ) ) < Math.pow( diameter / 2.0, 2 );
     }
 
     /**
