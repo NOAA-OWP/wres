@@ -1741,7 +1741,7 @@ class DeclarationUtilitiesTest
                                       .build();
         Source baselineOne = SourceBuilder.builder()
                                           .uri( URI.create( "baz.csv" ) )
-                                          .missingValue( -999.0 )
+                                          .missingValue( List.of( -999.0 ) )
                                           .build();
         List<wres.config.yaml.components.Source> baselineSources = List.of( baselineOne );
         BaselineDataset baseline =

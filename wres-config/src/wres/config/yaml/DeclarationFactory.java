@@ -234,6 +234,7 @@ public class DeclarationFactory
     /** Mapper for deserialization. */
     private static final ObjectMapper DESERIALIZER = YAMLMapper.builder()
                                                                .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
+                                                               .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
                                                                .build()
                                                                .registerModule( new ProtobufModule() )
                                                                .registerModule( new JavaTimeModule() )
@@ -249,9 +250,10 @@ public class DeclarationFactory
                                                                   .configure( YAMLGenerator.Feature.INDENT_ARRAYS_WITH_INDICATOR,
                                                                               true ) )
                     .registerModule( new JavaTimeModule() )
-                    .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true )
-                    .configure( SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true )
-                    .configure( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false )
+                    .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES )
+                    .enable( SerializationFeature.WRITE_ENUMS_USING_TO_STRING )
+                    .disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS )
+                    .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
                     .setSerializationInclusion( JsonInclude.Include.NON_NULL )
                     .setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
 
@@ -1353,8 +1355,12 @@ public class DeclarationFactory
         if ( Objects.nonNull( source.getMissingValue() )
              && !DEFAULT_MISSING_STRING_OLD.equals( source.getMissingValue() ) )
         {
-            double missingValue = Double.parseDouble( source.getMissingValue() );
-            builder.missingValue( missingValue );
+            String[] split = source.getMissingValue()
+                                   .split( "," );
+            List<Double> missing = Arrays.stream( split )
+                                         .map( Double::parseDouble )
+                                         .toList();
+            builder.missingValue( missing );
         }
 
         if ( Objects.nonNull( source.getInterface() ) )
