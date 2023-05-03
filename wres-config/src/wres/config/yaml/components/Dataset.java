@@ -11,8 +11,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.DatasetDeserializer;
+import wres.config.yaml.deserializers.TimeScaleDeserializer;
 import wres.config.yaml.serializers.DurationSerializer;
 import wres.config.yaml.serializers.EnsembleFilterSerializer;
+import wres.config.yaml.serializers.TimeScaleSerializer;
 import wres.config.yaml.serializers.VariableSerializer;
 import wres.config.yaml.serializers.ZoneOffsetSerializer;
 
@@ -26,6 +28,7 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
  * @param ensembleFilter the ensemble filter
  * @param timeShift the time shift
  * @param timeZoneOffset the time zone offset
+ * @param timeScale the timescale
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
@@ -40,7 +43,10 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
                        @JsonSerialize( using = DurationSerializer.class )
                        @JsonProperty( "time_shift" ) Duration timeShift,
                        @JsonSerialize( using = ZoneOffsetSerializer.class )
-                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset )
+                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
+                       @JsonSerialize( using = TimeScaleSerializer.class )
+                       @JsonDeserialize( using = TimeScaleDeserializer.class )
+                       @JsonProperty( "time_scale" ) TimeScale timeScale )
 {
     /**
      * Set the defaults.
@@ -52,6 +58,7 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
      * @param ensembleFilter the ensemble filter
      * @param timeShift the time shift
      * @param timeZoneOffset the time zone offset
+     * @param timeScale the timescale
      */
     public Dataset
     {

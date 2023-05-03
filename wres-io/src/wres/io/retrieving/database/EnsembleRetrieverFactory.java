@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -26,7 +25,6 @@ import wres.io.database.Database;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
-import wres.statistics.generated.TimeScale;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -241,8 +239,8 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     /**
-     * Returns the declared existing timescale associated with a data source, if any.
-     * 
+     * Returns the declared existing timescale associated with a dataset, if any.
+     *
      * @param dataset the dataset declaration
      * @return a declared existing time scale, or null
      */
@@ -250,20 +248,12 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     private TimeScaleOuter getDeclaredExistingTimeScale( Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
-        Set<TimeScale> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( dataset );
-
+        wres.config.yaml.components.TimeScale declaredExistingTimeScaleInner = dataset.timeScale();
         TimeScaleOuter declaredExistingTimeScale = null;
 
-        if( declaredExistingTimeScales.size() > 1 )
+        if ( Objects.nonNull( declaredExistingTimeScaleInner ) )
         {
-            throw new UnsupportedOperationException( "Currently, only one timescale is supported for each side of "
-                                                     + "data in an evaluation, not one per source." );
-        }
-
-        if ( !declaredExistingTimeScales.isEmpty() )
-        {
-            declaredExistingTimeScale = TimeScaleOuter.of( declaredExistingTimeScales.iterator()
-                                                                                     .next() );
+            declaredExistingTimeScale = TimeScaleOuter.of( declaredExistingTimeScaleInner.timeScale() );
         }
 
         return declaredExistingTimeScale;

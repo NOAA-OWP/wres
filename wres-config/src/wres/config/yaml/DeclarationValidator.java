@@ -91,8 +91,6 @@ public class DeclarationValidator
     /** Re-used string. */
     private static final String REFERENCE_DATES = "'reference_dates'";
     /** Re-used string. */
-    private static final String SOURCE = " source '";
-    /** Re-used string. */
     private static final String AGAIN = "again.";
     /** Re-used string. */
     private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
@@ -111,7 +109,7 @@ public class DeclarationValidator
     {
         List<EvaluationStatus.EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        if( ! notify )
+        if ( !notify )
         {
             LOGGER.debug( "Encountered {} validation events, which will not be notified.", events.size() );
             return events;
@@ -163,7 +161,7 @@ public class DeclarationValidator
     /**
      * Validates the declaration. The validation events are returned in the order they were discovered, reading from
      * the top of the declaration to the bottom. Delegates to the caller to notify about any validation events
-     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration,boolean)}.
+     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration, boolean)}.
      *
      * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration
@@ -638,59 +636,62 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        // Left sources
-        for ( Source nextSource : declaration.left()
-                                             .sources() )
+        // Left dataset
+        if ( Objects.nonNull( declaration.left()
+                                         .timeScale() ) )
         {
-            String orientation = OBSERVED + SOURCE + nextSource.uri() + "'";
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( nextSource.timeScale(),
-                                                                                      orientation );
+            TimeScale timeScale = declaration.left()
+                                             .timeScale();
+            String orientation = "'" + OBSERVED + "'";
+            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale, orientation );
             events.addAll( next );
 
             // Source timescale must be consistent with desired/evaluation timescale
             List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.sourceTimeScaleConsistentWithEvaluationTimeScale( nextSource.timeScale(),
-                                                                                           declaration.timeScale(),
-                                                                                           orientation );
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
+                                                                                            declaration.timeScale(),
+                                                                                            orientation );
             events.addAll( scaleEvents );
         }
 
-        // Right sources
-        for ( Source nextSource : declaration.right()
-                                             .sources() )
+        // Right dataset
+        if ( Objects.nonNull( declaration.right()
+                                         .timeScale() ) )
         {
-            String orientation = PREDICTED + SOURCE + nextSource.uri() + "'";
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( nextSource.timeScale(),
-                                                                                      orientation );
+            TimeScale timeScale = declaration.right()
+                                             .timeScale();
+            String orientation = "'" + PREDICTED + "'";
+            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale, orientation );
             events.addAll( next );
 
             // Source timescale must be consistent with desired/evaluation timescale
             List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.sourceTimeScaleConsistentWithEvaluationTimeScale( nextSource.timeScale(),
-                                                                                           declaration.timeScale(),
-                                                                                           orientation );
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
+                                                                                            declaration.timeScale(),
+                                                                                            orientation );
             events.addAll( scaleEvents );
         }
 
         // Baseline sources, if needed
-        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && Objects.nonNull( declaration.baseline()
+                                            .dataset()
+                                            .timeScale() ) )
         {
-            for ( Source nextSource : declaration.baseline()
-                                                 .dataset()
-                                                 .sources() )
-            {
-                String orientation = BASELINE + SOURCE + nextSource.uri() + "'";
-                List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( nextSource.timeScale(),
-                                                                                          orientation );
-                events.addAll( next );
+            TimeScale timeScale = declaration.baseline()
+                                             .dataset()
+                                             .timeScale();
+            String orientation = "'" + BASELINE + "'";
+            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale,
+                                                                                      orientation );
+            events.addAll( next );
 
-                // Source timescale must be consistent with desired/evaluation timescale
-                List<EvaluationStatusEvent> scaleEvents =
-                        DeclarationValidator.sourceTimeScaleConsistentWithEvaluationTimeScale( nextSource.timeScale(),
-                                                                                               declaration.timeScale(),
-                                                                                               orientation );
-                events.addAll( scaleEvents );
-            }
+            // Source timescale must be consistent with desired/evaluation timescale
+            List<EvaluationStatusEvent> scaleEvents =
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
+                                                                                            declaration.timeScale(),
+                                                                                            orientation );
+            events.addAll( scaleEvents );
         }
 
         // There are extra constraints on the evaluation timescale, so check those
@@ -2005,22 +2006,22 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that the source timescale is consistent with the evaluation timescale.
+     * Checks that the dataset timescale is consistent with the evaluation timescale.
      * @param sourceScale the source timescale
      * @param evaluationScale the desired timescale
-     * @param context the source context to help with  messaging
+     * @param orientation the dataset context to help with messaging
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> sourceTimeScaleConsistentWithEvaluationTimeScale( TimeScale sourceScale,
-                                                                                                 TimeScale evaluationScale,
-                                                                                                 String context )
+    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithEvaluationTimeScale( TimeScale sourceScale,
+                                                                                                  TimeScale evaluationScale,
+                                                                                                  String orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         if ( Objects.isNull( sourceScale ) || Objects.isNull( evaluationScale ) )
         {
-            LOGGER.debug( "Not checking the consistency of the source time scale and the evaluation time scale for {} "
-                          + "because one or both of the time scales were missing.", context );
+            LOGGER.debug( "Not checking the consistency of the dataset time scale and the evaluation time scale for "
+                          + "the {} dataset because one or both of the time scales were missing.", orientation );
 
             return Collections.emptyList();
         }
@@ -2029,7 +2030,8 @@ public class DeclarationValidator
         wres.statistics.generated.TimeScale evaluationScaleInner = evaluationScale.timeScale();
 
         // If the desired scale is a sum, the existing scale must be instantaneous or the function must be a sum or mean
-        if ( evaluationScale.timeScale().getFunction() == TimeScaleFunction.TOTAL
+        if ( evaluationScale.timeScale()
+                            .getFunction() == TimeScaleFunction.TOTAL
              && !DeclarationValidator.isInstantaneous( sourceScaleInner )
              && sourceScaleInner.getFunction() != TimeScaleFunction.MEAN
              && sourceScaleInner.getFunction() != TimeScaleFunction.TOTAL )
@@ -2039,10 +2041,10 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The evaluation 'time_scale' requires a total, but the "
                                                              + "time scale associated with the "
-                                                             + context
-                                                             + " does not have a supported time scale function from "
-                                                             + "which to compute this total. Please change the "
-                                                             + "evaluation 'time_scale' and try again." )
+                                                             + orientation
+                                                             + " dataset does not have a supported time scale "
+                                                             + "function from  which to compute this total. Please "
+                                                             + "change the evaluation 'time_scale' and try again." )
                                            .build();
             events.add( event );
         }
@@ -2068,10 +2070,10 @@ public class DeclarationValidator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
                                                .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                                 + context
-                                                                 + " is smaller than the evaluation 'time_scale', "
-                                                                 + "which is not allowed. Please increase the "
-                                                                 + "evaluation 'time_scale' and try again." )
+                                                                 + orientation
+                                                                 + " dataset is smaller than the evaluation "
+                                                                 + "'time_scale', which is not allowed. Please "
+                                                                 + "increase the evaluation 'time_scale' and try again." )
                                                .build();
                 events.add( event );
             }
@@ -2083,11 +2085,11 @@ public class DeclarationValidator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
                                                .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                                 + context
-                                                                 + " is not exactly divisible by the evaluation "
-                                                                 + "'time_scale', which is not allowed. Please change "
-                                                                 + "the evaluation 'time_scale' to an integer multiple "
-                                                                 + "of every source time scale." )
+                                                                 + orientation
+                                                                 + " dataset is not exactly divisible by the "
+                                                                 + "evaluation 'time_scale', which is not allowed. "
+                                                                 + "Please change the evaluation 'time_scale' to an "
+                                                                 + "integer multiple of every source time scale." )
                                                .build();
                 events.add( event );
             }
@@ -2137,7 +2139,7 @@ public class DeclarationValidator
             return Collections.emptyList();
         }
 
-        LOGGER.debug( "Discovered a timescale to validate for '{}': {}.", orientation, timeScale );
+        LOGGER.debug( "Discovered a timescale to validate for {}: {}.", orientation, timeScale );
         wres.statistics.generated.TimeScale timeScaleInner = timeScale.timeScale();
 
         // Function must be present

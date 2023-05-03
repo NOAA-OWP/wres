@@ -10,7 +10,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -1858,7 +1857,6 @@ class DeclarationUtilitiesTest
                                       .build();
         wres.config.yaml.components.TimeScale scaleOneWrapped = new wres.config.yaml.components.TimeScale( scaleOne );
         Source leftSourceOne = SourceBuilder.builder()
-                                            .timeScale( scaleOneWrapped )
                                             .build();
         TimeScale scaleTwo = TimeScale.newBuilder()
                                       .setFunction( TimeScale.TimeScaleFunction.TOTAL )
@@ -1868,7 +1866,6 @@ class DeclarationUtilitiesTest
                                       .build();
         wres.config.yaml.components.TimeScale scaleTwoWrapped = new wres.config.yaml.components.TimeScale( scaleTwo );
         Source rightSourceOne = SourceBuilder.builder()
-                                             .timeScale( scaleTwoWrapped )
                                              .build();
         TimeScale scaleThree = TimeScale.newBuilder()
                                         .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
@@ -1879,19 +1876,21 @@ class DeclarationUtilitiesTest
         wres.config.yaml.components.TimeScale scaleThreeWrapped =
                 new wres.config.yaml.components.TimeScale( scaleThree );
         Source baselineSourceOne = SourceBuilder.builder()
-                                                .timeScale( scaleThreeWrapped )
                                                 .build();
         List<Source> leftSources = List.of( leftSourceOne );
         Dataset left = DatasetBuilder.builder()
                                      .sources( leftSources )
+                                     .timeScale( scaleOneWrapped )
                                      .build();
         List<Source> rightSources = List.of( rightSourceOne );
         Dataset right = DatasetBuilder.builder()
                                       .sources( rightSources )
+                                      .timeScale( scaleTwoWrapped )
                                       .build();
         List<Source> baselineSources = List.of( baselineSourceOne );
         Dataset baselineDataset = DatasetBuilder.builder()
                                                 .sources( baselineSources )
+                                                .timeScale( scaleThreeWrapped )
                                                 .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineDataset )
@@ -1906,14 +1905,6 @@ class DeclarationUtilitiesTest
         Set<TimeScale> actual = DeclarationUtilities.getSourceTimeScales( evaluation );
         Set<TimeScale> expected = Set.of( scaleOne, scaleTwo, scaleThree );
         assertEquals( expected, actual );
-    }
-
-    @Test
-    void testGetSourceTimeScalesWithNoTimeScalesPresent()
-    {
-        Dataset dataset = DatasetBuilder.builder()
-                                        .build();
-        assertEquals( Collections.emptySet(), DeclarationUtilities.getSourceTimeScales( dataset ) );
     }
 
     @Test

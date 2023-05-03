@@ -296,36 +296,42 @@ public class DeclarationUtilities
     {
         Objects.requireNonNull( declaration );
 
-        Set<TimeScale> left = DeclarationUtilities.getSourceTimeScales( declaration.left() );
-        Set<TimeScale> timeScales = new HashSet<>( left );
-        Set<TimeScale> right = DeclarationUtilities.getSourceTimeScales( declaration.right() );
-        timeScales.addAll( right );
-        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        Set<TimeScale> timeScales = new HashSet<>();
+
+        // Left timescale?
+        if ( Objects.nonNull( declaration.left()
+                                         .timeScale() ) )
         {
-            Set<TimeScale> baseline = DeclarationUtilities.getSourceTimeScales( declaration.baseline()
-                                                                                           .dataset() );
-            timeScales.addAll( baseline );
+            TimeScale left = declaration.left()
+                                        .timeScale()
+                                        .timeScale();
+            timeScales.add( left );
+        }
+
+        // Right timescale?
+        if ( Objects.nonNull( declaration.right()
+                                         .timeScale() ) )
+        {
+            TimeScale right = declaration.right()
+                                         .timeScale()
+                                         .timeScale();
+            timeScales.add( right );
+        }
+
+        // Baseline timescale?
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && Objects.nonNull( declaration.baseline()
+                                            .dataset()
+                                            .timeScale() ) )
+        {
+            TimeScale baseline = declaration.baseline()
+                                         .dataset()
+                                         .timeScale()
+                                         .timeScale();
+            timeScales.add( baseline );
         }
 
         return Collections.unmodifiableSet( timeScales );
-    }
-
-    /**
-     * Adds the timescales associated with the input dataset to the supplied set of timescales.
-     * @param dataset the dataset
-     * @return the source timescales
-     * @throws NullPointerException if the dataset is null
-     */
-
-    public static Set<TimeScale> getSourceTimeScales( Dataset dataset )
-    {
-        Objects.requireNonNull( dataset );
-        return dataset.sources()
-                      .stream()
-                      .map( Source::timeScale )
-                      .filter( Objects::nonNull )
-                      .map( wres.config.yaml.components.TimeScale::timeScale )
-                      .collect( Collectors.toSet() );
     }
 
     /**

@@ -18,7 +18,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -28,7 +27,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageFactory;
-import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -139,18 +137,11 @@ public class RetrieverUtilities
                                                       Dataset dataset )
     {
         // Declared existing scale, which can be used to augment a source
-        Set<TimeScale> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( dataset );
+        wres.config.yaml.components.TimeScale declaredExistingTimeScale = dataset.timeScale();
 
-        if( declaredExistingTimeScales.size() > 1 )
+        if ( Objects.nonNull( declaredExistingTimeScale ) )
         {
-            throw new UnsupportedOperationException( "Currently, only one timescale is supported for each side of "
-                                                     + "data in an evaluation, not one per source." );
-        }
-
-        if ( !declaredExistingTimeScales.isEmpty() )
-        {
-            TimeScaleOuter existingTimeScaleOuter = TimeScaleOuter.of( declaredExistingTimeScales.iterator()
-                                                                                                 .next() );
+            TimeScaleOuter existingTimeScaleOuter = TimeScaleOuter.of( declaredExistingTimeScale.timeScale() );
             LOGGER.debug( "Discovered a declared existing time-scale of {} for the {} time-series data. Using this "
                           + "to augment the ingested time time-series.",
                           existingTimeScaleOuter,

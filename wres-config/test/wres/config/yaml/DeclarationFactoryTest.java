@@ -314,13 +314,13 @@ class DeclarationFactoryTest
                       parameters:
                         foo: bar
                         baz: qux
-                      time_scale:
-                        function: mean
-                        period: 1
-                        unit: hours
                   type: observations
                   variable: foo
                   time_zone_offset: CST
+                  time_scale:
+                    function: mean
+                    period: 1
+                    unit: hours
                 predicted:
                   sources:
                     - forecasts_with_NWS_feature_authority.csv
@@ -329,11 +329,11 @@ class DeclarationFactoryTest
                       time_zone_offset: -06:00
                     - uri: https://qux.quux
                       interface: wrds ahps
-                      time_scale:
-                        function: mean
-                        period: 2
-                        unit: hours
                   type: ensemble forecasts
+                  time_scale:
+                    function: mean
+                    period: 2
+                    unit: hours
                 reference_dates:
                   minimum: 2551-03-17T00:00:00Z
                   maximum: 2551-03-20T00:00:00Z
@@ -366,7 +366,6 @@ class DeclarationFactoryTest
                                                        .uri( yetAnotherObservedUri )
                                                        .sourceInterface( SourceInterface.USGS_NWIS )
                                                        .parameters( Map.of( "foo", "bar", "baz", "qux" ) )
-                                                       .timeScale( outerTimeScale )
                                                        .build();
 
         List<Source> observedSources =
@@ -376,6 +375,7 @@ class DeclarationFactoryTest
                                                 .type( DataType.OBSERVATIONS )
                                                 .variable( new Variable( "foo", null ) )
                                                 .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
+                                                .timeScale( outerTimeScale )
                                                 .build();
 
         URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
@@ -400,8 +400,6 @@ class DeclarationFactoryTest
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
                                                         .sourceInterface( SourceInterface.WRDS_AHPS )
-                                                        .timeScale(
-                                                                outerTimeScalePredicted )
                                                         .build();
 
         List<Source> predictedSources =
@@ -409,6 +407,7 @@ class DeclarationFactoryTest
         Dataset predictedDataset = DatasetBuilder.builder()
                                                  .sources( predictedSources )
                                                  .type( DataType.ENSEMBLE_FORECASTS )
+                                                 .timeScale( outerTimeScalePredicted )
                                                  .build();
 
         assertAll( () -> assertEquals( observedDataset, actual.left() ),
@@ -1458,12 +1457,12 @@ class DeclarationFactoryTest
                       interface: usgs nwis
                       parameters:
                         foo: bar
-                      time_scale:
-                        function: mean
-                        period: 1
-                        unit: hours
                   variable: foo
                   type: observations
+                  time_scale:
+                    function: mean
+                    period: 1
+                    unit: hours
                 predicted:
                   sources:
                     - forecasts_with_NWS_feature_authority.csv
@@ -1472,13 +1471,13 @@ class DeclarationFactoryTest
                       time_zone_offset: "-0600"
                     - uri: https://qux.quux
                       interface: wrds ahps
-                      time_scale:
-                        function: mean
-                        period: 2
-                        unit: hours
                   type: ensemble forecasts
                   time_shift:
                     period: -2
+                    unit: hours
+                  time_scale:
+                    function: mean
+                    period: 2
                     unit: hours
                 reference_dates:
                   minimum: 2551-03-17T00:00:00Z
@@ -1510,7 +1509,6 @@ class DeclarationFactoryTest
                                                        .uri( yetAnotherObservedUri )
                                                        .sourceInterface( SourceInterface.USGS_NWIS )
                                                        .parameters( Map.of( "foo", "bar" ) )
-                                                       .timeScale( outerTimeScale )
                                                        .build();
 
         List<Source> observedSources =
@@ -1519,6 +1517,7 @@ class DeclarationFactoryTest
                                                 .sources( observedSources )
                                                 .type( DataType.OBSERVATIONS )
                                                 .variable( new Variable( "foo", null ) )
+                                                .timeScale( outerTimeScale )
                                                 .build();
 
         URI predictedUri = URI.create( "forecasts_with_NWS_feature_authority.csv" );
@@ -1543,7 +1542,6 @@ class DeclarationFactoryTest
         Source yetAnotherPredictedSource = SourceBuilder.builder()
                                                         .uri( yetAnotherPredictedUri )
                                                         .sourceInterface( SourceInterface.WRDS_AHPS )
-                                                        .timeScale( outerTimeScalePredicted )
                                                         .build();
 
         List<Source> predictedSources =
@@ -1552,6 +1550,7 @@ class DeclarationFactoryTest
                                                  .sources( predictedSources )
                                                  .type( DataType.ENSEMBLE_FORECASTS )
                                                  .timeShift( java.time.Duration.ofHours( -2 ) )
+                                                 .timeScale( outerTimeScalePredicted )
                                                  .build();
 
         TimeInterval timeInterval = new TimeInterval( Instant.parse( "2551-03-17T00:00:00Z" ),
@@ -2498,9 +2497,6 @@ class DeclarationFactoryTest
                                        .build();
 
         Source predictedSourceLong = SourceBuilder.builder( this.predictedSource )
-                                                  .timeScale( TimeScaleBuilder.builder()
-                                                                              .timeScale( timeScale )
-                                                                              .build() )
                                                   .parameters( Map.of( "moon", "bat" ) )
                                                   .build();
 
@@ -2508,6 +2504,9 @@ class DeclarationFactoryTest
                                               .sources( List.of( predictedSourceLong ) )
                                               .timeShift( java.time.Duration.ofHours( 2 ) )
                                               .featureAuthority( FeatureAuthority.NWS_LID )
+                                              .timeScale( TimeScaleBuilder.builder()
+                                                                          .timeScale( timeScale )
+                                                                          .build() )
                                               .build();
 
         BaselineDataset baselineLong = BaselineDatasetBuilder.builder()

@@ -30,6 +30,7 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
+import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.Variable;
 
 /**
@@ -50,6 +51,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
 
     /** Time zone offset deserializer. **/
     private static final ZoneOffsetDeserializer ZONE_OFFSET_DESERIALIZER = new ZoneOffsetDeserializer();
+
+    /** Time scale deserializer. **/
+    private static final TimeScaleDeserializer TIME_SCALE_DESERIALIZER = new TimeScaleDeserializer();
 
     @Override
     public Dataset deserialize( JsonParser jp, DeserializationContext context ) throws IOException
@@ -74,6 +78,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             EnsembleFilter ensembleFilter = this.getEnsembleFilter( reader, node );
             Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
             ZoneOffset zoneOffset = this.getTimeZoneOffset( node.get( "time_zone_offset" ), reader, context );
+            TimeScale timeScale = this.getTimeScale( node.get( "time_scale" ), reader, context );
             return DatasetBuilder.builder()
                                  .sources( sources )
                                  .variable( variable )
@@ -83,6 +88,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
                                  .ensembleFilter( ensembleFilter )
                                  .timeShift( timeShift )
                                  .timeZoneOffset( zoneOffset )
+                                 .timeScale( timeScale )
                                  .build();
         }
         // Plain array of sources
@@ -300,6 +306,24 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         }
 
         return ZONE_OFFSET_DESERIALIZER.deserialize( node.traverse( reader ), context );
+    }
+
+    /**
+     * @param node the node
+     * @param reader the reader
+     * @param context the context
+     * @return the time shift or null
+     */
+
+    private TimeScale getTimeScale( JsonNode node, ObjectReader reader, DeserializationContext context )
+            throws IOException
+    {
+        if ( Objects.isNull( node ) )
+        {
+            return null;
+        }
+
+        return TIME_SCALE_DESERIALIZER.deserialize( node.traverse( reader ), context );
     }
 
     /**
