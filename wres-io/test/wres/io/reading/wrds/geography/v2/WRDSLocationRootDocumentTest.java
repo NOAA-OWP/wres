@@ -6,6 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import wres.io.NoDataException;
 
 class WRDSLocationRootDocumentTest
 {
@@ -70,6 +74,19 @@ class WRDSLocationRootDocumentTest
                     }\r
                 ]\r
             }""";
+
+    private static final String NO_LOCATION_DATA_TEST_CASE = """
+            {\r
+                "_metrics": {\r
+                    "location_count": 1,\r
+                    "model_tracing_api_call": 0.009302377700805664,\r
+                    "total_request_time": 17.214682817459106\r
+                },\r
+                "_warnings": [],\r
+                "_documentation": "redacted/docs/prod/v2/location/swagger/",\r
+                "locations": [\r
+                ]\r
+            }""";
     
     @Test
     void readGoodTestCase() throws IOException
@@ -78,5 +95,17 @@ class WRDSLocationRootDocumentTest
         assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
+    }
+
+    @Test
+    void readBadTestCaseNoLocationData() throws IOException
+    {
+        WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue(NO_LOCATION_DATA_TEST_CASE.getBytes(), WrdsLocationRootDocument.class);
+        Exception exception = assertThrows( NoDataException.class, dataPoint::getLocations );
+
+        String expectedErrorMessage = "Unable to get wrds location data. Check that the URL is formed correctly";
+        String actualErrorMessage = exception.getMessage();
+
+        assertTrue( actualErrorMessage.contains( expectedErrorMessage ) );
     }
 }
