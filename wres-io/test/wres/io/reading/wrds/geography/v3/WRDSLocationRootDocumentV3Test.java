@@ -9,6 +9,12 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import wres.io.NoDataException;
+import wres.io.reading.wrds.geography.v2.WrdsLocationRootDocument;
+
 public class WRDSLocationRootDocumentV3Test
 {
 
@@ -183,6 +189,43 @@ public class WRDSLocationRootDocumentV3Test
             "        }\r\n" + 
             "    ]\r\n" + 
             "}";
+
+    private static final String NO_LOCATION_DATA_TEST_CASE_V3 = "{\r\n" +
+                                                    "    \"_metrics\": {\r\n" +
+                                                    "        \"location_count\": 1,\r\n" +
+                                                    "        \"model_tracing_api_call\": 0.008093118667602539,\r\n" +
+                                                    "        \"total_request_time\": 1.7286653518676758\r\n" +
+                                                    "    },\r\n" +
+                                                    "    \"_warnings\": [],\r\n" +
+                                                    "    \"_documentation\": {\r\n" +
+                                                    "        \"swagger URL\": \"http://redacted/docs/location/v3.0/swagger/\"\r\n" +
+                                                    "    },\r\n" +
+                                                    "    \"deployment\": {\r\n" +
+                                                    "        \"api_url\": \"https://redacted/api/location/v3.0/metadata/nws_lid/OGCN2/\",\r\n" +
+                                                    "        \"stack\": \"prod\",\r\n" +
+                                                    "        \"version\": \"v3.1.0\"\r\n" +
+                                                    "    },\r\n" +
+                                                    "    \"data_sources\": {\r\n" +
+                                                    "        \"metadata_sources\": [\r\n" +
+                                                    "            \"NWS data: NRLDB - Last updated: 2021-05-20 19:04:57 UTC\",\r\n" +
+                                                    "            \"USGS data: USGS NWIS - Last updated: 2021-05-20 18:04:20 UTC\"\r\n" +
+                                                    "        ],\r\n" +
+                                                    "        \"crosswalk_datasets\": {\r\n" +
+                                                    "            \"location_nwm_crosswalk_dataset\": {\r\n" +
+                                                    "                \"location_nwm_crosswalk_dataset_id\": \"1.1\",\r\n" +
+                                                    "                \"name\": \"Location NWM Crosswalk v1.1\",\r\n" +
+                                                    "                \"description\": \"Created 20201106.  Source 1) NWM Routelink File v2.1   2) NHDPlus v2.1   3) GID\"\r\n" +
+                                                    "            },\r\n" +
+                                                    "            \"nws_usgs_crosswalk_dataset\": {\r\n" +
+                                                    "                \"nws_usgs_crosswalk_dataset_id\": \"1.0\",\r\n" +
+                                                    "                \"name\": \"NWS Station to USGS Gages 1.0\",\r\n" +
+                                                    "                \"description\": \"Authoritative 1.0 dataset mapping NWS Stations to USGS Gages\"\r\n" +
+                                                    "            }\r\n" +
+                                                    "        }\r\n" +
+                                                    "    },\r\n" +
+                                                    "    \"locations\": [\r\n" +
+                                                    "    ]\r\n" +
+                                                    "}";
     
     @Test
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
@@ -200,5 +243,17 @@ public class WRDSLocationRootDocumentV3Test
         Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
+    }
+
+    @Test
+    public void readBadTestCaseNoLocationData() throws IOException
+    {
+        WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue( NO_LOCATION_DATA_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
+        Exception exception = assertThrows( NoDataException.class, dataPoint::getLocations );
+
+        String expectedErrorMessage = "Unable to get wrds location data. Check that the URL is formed correctly";
+        String actualErrorMessage = exception.getMessage();
+
+        assertTrue( actualErrorMessage.contains( expectedErrorMessage ) );
     }
 }

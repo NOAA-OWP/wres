@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import wres.io.NoDataException;
 import wres.io.reading.wrds.geography.WrdsLocation;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -217,6 +218,10 @@ public class WrdsLocationRootDocumentV3
         for ( WrdsLocationInformation info : this.locationInfos )
         {
             locations.add( info.getLocations() );
+        }
+
+        if ( locations.isEmpty() ) {
+            throw new NoDataException( "Unable to get wrds location data. Check that the URL is formed correctly" );
         }
         return locations;
     }
