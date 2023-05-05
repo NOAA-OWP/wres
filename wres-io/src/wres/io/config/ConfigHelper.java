@@ -59,29 +59,41 @@ public class ConfigHelper
     private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
 
     /**
-     * Resolves any implicit declaration of features and thresholds that require service calls to external web
-     * services. Currently, the only supported web services are those within the umbrella of the Water Resources Data
-     * Service (WRDS), which contains a collection of U.S. National Weather Service APIs. This step may be viewed as
-     * an extension of the {@link wres.config.yaml.DeclarationInterpolator}, which focuses on the interpolation of
-     * implicit declaration that does not require service calls (e.g., deciding on which metrics to compute when none
-     * are declared). Again, this method focuses on the interpolation of declaration that requires external service
-     * calls.
+     * Resolves any implicit declaration of features that require service calls to external web services. Currently,
+     * the only supported web services are those within the umbrella of the Water Resources Data Service (WRDS), which
+     * contains a collection of U.S. National Weather Service APIs.
      *
      * @param declaration the evaluation declaration
-     * @param unitMapper the unit mapper
-     * @return the declaration with any implicit features or thresholds rendered explicit
+     * @return the declaration with any implicit features rendered explicit
      * @throws NullPointerException if the input is null
      */
 
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration, UnitMapper unitMapper )
+    public static EvaluationDeclaration fillFeatures( EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( declaration );
 
-        // Complete the features, if they require a WRDS service call
-        EvaluationDeclaration featureful = WrdsFeatureFiller.fillFeatures( declaration );
+        // Currently, there is only one feature service supported
+        return WrdsFeatureFiller.fillFeatures( declaration );
+    }
 
-        // Next, complete the thresholds if they require a WRDS service call
-        return WrdsThresholdFiller.fillThresholds( featureful, unitMapper );
+    /**
+     * Resolves any implicit declaration of thresholds that require service calls to external web services. Currently,
+     * the only supported web services are those within the umbrella of the Water Resources Data Service (WRDS), which
+     * contains a collection of U.S. National Weather Service APIs.
+     *
+     * @param declaration the evaluation declaration
+     * @param unitMapper the unit mapper
+     * @return the declaration with any implicit thresholds rendered explicit
+     * @throws NullPointerException if either input is null
+     */
+
+    public static EvaluationDeclaration fillThresholds( EvaluationDeclaration declaration, UnitMapper unitMapper )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( unitMapper );
+
+        // Currently, there is only one threshold service supported
+        return WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
     }
 
     /**

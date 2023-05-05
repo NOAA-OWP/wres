@@ -24,7 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -45,7 +44,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Factory class for generating test datasets for metric calculations.
- * 
+ *
  * @author James Brown
  */
 public final class TestDataFactory
@@ -113,7 +112,7 @@ public final class TestDataFactory
     /** Unit name for boilerplate metadata */
     private static final String UNIT = "CMS";
 
-    private static final Geometry NWS_FEATURE = wres.statistics.MessageFactory.getGeometry( "DRRC2",
+    private static final Geometry NWS_FEATURE = wres.statistics.MessageFactory.getGeometry( DRRC2,
                                                                                             null,
                                                                                             null,
                                                                                             null );
@@ -125,10 +124,10 @@ public final class TestDataFactory
                                                                                             null,
                                                                                             null,
                                                                                             null );
-    private static final FeatureTuple FEATURE_TUPLE = FeatureTuple.of(
-            wres.statistics.MessageFactory.getGeometryTuple( USGS_FEATURE,
-                                                             NWS_FEATURE,
-                                                             NWM_FEATURE ) );
+    private static final FeatureTuple FEATURE_TUPLE
+            = FeatureTuple.of( wres.statistics.MessageFactory.getGeometryTuple( USGS_FEATURE,
+                                                                                NWS_FEATURE,
+                                                                                NWM_FEATURE ) );
     private static final FeatureGroup FEATURE_GROUP =
             FeatureGroup.of( MessageFactory.getGeometryGroup( FEATURE_TUPLE ) );
 
@@ -151,44 +150,13 @@ public final class TestDataFactory
     }
 
     /**
-     * @return some pool metadata
-     */
-
-    static PoolMetadata getPoolMetadata()
-    {
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                          .build();
-
-        Pool pool = MessageFactory.getPool( TestDataFactory.FEATURE_GROUP,
-                                            null,
-                                            null,
-                                            null,
-                                            false );
-
-        return PoolMetadata.of( evaluation, pool );
-    }
-
-    /**
      * @param featureId the feature name
-     * @param baseline is true to include a baseline
      * @return a singleton feature group containing the named feature
      */
 
-    static FeatureGroup getFeatureGroup( final String featureId, boolean baseline )
+    static FeatureGroup getFeatureGroup( final String featureId )
     {
         Geometry geometry = wres.statistics.MessageFactory.getGeometry( featureId, null, null, null );
-
-        if ( baseline )
-        {
-            GeometryTuple geometryTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
-            FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
-            GeometryGroup geoGroup = MessageFactory.getGeometryGroup( featureTuple );
-            return FeatureGroup.of( geoGroup );
-        }
-
         GeometryTuple geometryTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
         FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
         GeometryGroup geoGroup = MessageFactory.getGeometryGroup( featureTuple );
@@ -197,7 +165,7 @@ public final class TestDataFactory
 
     /**
      * Returns a {@link Pool} with single-valued pairs containing fake data.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -245,7 +213,7 @@ public final class TestDataFactory
 
     /**
      * Returns a {@link Pool} with single-valued pairs containing fake data.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -296,7 +264,7 @@ public final class TestDataFactory
 
     /**
      * Returns a {@link Pool} with single-valued pairs containing no data.
-     * 
+     *
      * @return a time-series of single-valued pairs
      */
 
@@ -335,7 +303,7 @@ public final class TestDataFactory
      * Returns a moderately-sized test dataset of single-valued pairs without a baseline. The data are partitioned by
      * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}. The data
      * are returned with a nominal lead time of 1.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -385,7 +353,7 @@ public final class TestDataFactory
 
     /**
      * Returns a set of single-valued pairs with a baseline, both empty.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -423,7 +391,7 @@ public final class TestDataFactory
 
     /**
      * Returns a set of single-valued pairs without a baseline and with some missing values.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -477,7 +445,7 @@ public final class TestDataFactory
     /**
      * Returns a set of single-valued pairs with a single pair and no baseline. This is useful for checking exceptional
      * behavior due to an inadequate sample size.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -486,8 +454,7 @@ public final class TestDataFactory
         //Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
-        List<Event<Pair<Double, Double>>> values = new ArrayList<>();
-        values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
+        events.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
         TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                          Instant.parse( SECOND_TIME ),
                                                                          Duration.ofHours( 24 ) );
@@ -517,7 +484,7 @@ public final class TestDataFactory
 
     /**
      * Returns a set of single-valued pairs without a baseline and with some missing values.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -555,8 +522,8 @@ public final class TestDataFactory
                                           .setMeasurementUnit( "CMS" )
                                           .build();
 
-        FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2, false );
-        FeatureGroup groupTwo = TestDataFactory.getFeatureGroup( "DRRC3", false );
+        FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup groupTwo = TestDataFactory.getFeatureGroup( "DRRC3" );
         Set<FeatureTuple> features = new HashSet<>();
         features.addAll( groupOne.getFeatures() );
         features.addAll( groupTwo.getFeatures() );
@@ -577,7 +544,7 @@ public final class TestDataFactory
     /**
      * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
      * from testinput/sharedinput/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
-     * 
+     *
      * @return ensemble pairs
      * @throws IOException if the read fails
      */
@@ -591,11 +558,12 @@ public final class TestDataFactory
         File file = new File( "testinput/sharedinput/getEnsemblePairsOne.asc" );
         List<Double> climatology = new ArrayList<>();
         try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+                      new BufferedReader( new InputStreamReader( new FileInputStream( file ),
+                                                                 StandardCharsets.UTF_8 ) ) )
         {
 
             Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
-            String line = null;
+            String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
@@ -663,13 +631,13 @@ public final class TestDataFactory
      * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
      * testinput/sharedinput/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours. Adds some
      * missing values to the dataset, namely {@link Double#NaN}.
-     * 
+     *
      * @return ensemble pairs
      * @throws IOException if the read fails
      */
 
     public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>>
-            getTimeSeriesOfEnsemblePairsOneWithMissings() throws IOException
+    getTimeSeriesOfEnsemblePairsOneWithMissings() throws IOException
     {
         //Construct some ensemble pairs
         final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
@@ -680,9 +648,10 @@ public final class TestDataFactory
         Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
 
         try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+                      new BufferedReader( new InputStreamReader( new FileInputStream( file ),
+                                                                 StandardCharsets.UTF_8 ) ) )
         {
-            String line = null;
+            String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
@@ -754,7 +723,7 @@ public final class TestDataFactory
     /**
      * Returns a small test dataset of ensemble pairs without a baseline. Reads the pairs from
      * testinput/sharedinput/getEnsemblePairsTwo.asc. The inputs have a lead time of 24 hours.
-     * 
+     *
      * @return ensemble pairs
      * @throws IOException if the read fails
      */
@@ -771,9 +740,10 @@ public final class TestDataFactory
         Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
 
         try ( BufferedReader in =
-                new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
+                      new BufferedReader( new InputStreamReader( new FileInputStream( file ),
+                                                                 StandardCharsets.UTF_8 ) ) )
         {
-            String line = null;
+            String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
@@ -827,7 +797,7 @@ public final class TestDataFactory
 
     /**
      * Returns a set of ensemble pairs with a single pair and no baseline. 
-     * 
+     *
      * @return ensemble pairs
      */
 
@@ -866,7 +836,7 @@ public final class TestDataFactory
 
     /**
      * Returns a set of ensemble pairs with no data in the main input or baseline. 
-     * 
+     *
      * @return ensemble pairs
      */
 

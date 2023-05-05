@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.Season;
@@ -325,9 +327,9 @@ public class DeclarationUtilities
                                             .timeScale() ) )
         {
             TimeScale baseline = declaration.baseline()
-                                         .dataset()
-                                         .timeScale()
-                                         .timeScale();
+                                            .dataset()
+                                            .timeScale()
+                                            .timeScale();
             timeScales.add( baseline );
         }
 
@@ -630,12 +632,15 @@ public class DeclarationUtilities
     }
 
     /**
-     * Groups the metrics by their common parameters. Only considers parameters that are involved in slicing or
+     * <p>Groups the metrics by their common parameters. Only considers parameters that are involved in slicing or
      * transforming pairs, such as thresholds or the type of ensemble average to calculate. In short, the metrics
      * that belong to a single group represent an atomic set for processing because they require common pairs.
      *
+     * <p>In addition, expands any time-series summary statistics into their equivalent, top-level metrics, ready
+     * to process.
+     *
      * @param metrics the metrics to group
-     * @return the metrics grouped by common parameters (that are used for slicing or transforming)
+     * @return the fully expanded metrics, grouped by common parameters (that are used for slicing or transforming)
      */
 
     public static Set<Set<Metric>> getMetricGroupsForProcessing( Set<Metric> metrics )
@@ -667,7 +672,9 @@ public class DeclarationUtilities
                       grouped.size(),
                       grouped );
 
-        return Set.copyOf( grouped.values() );
+        Set<Set<Metric>> toExpand = Set.copyOf( grouped.values() );
+
+        return DeclarationUtilities.expand( toExpand );
     }
 
     /**
@@ -1668,6 +1675,75 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( timeWindows );
+    }
+
+    /**
+     * Expands the supplied metrics, replacing any timing error summary statistics with equivalent top-level metrics.
+     * @param metrics the metrics
+     * @return the expanded metrics
+     */
+
+    private static Set<Set<Metric>> expand( Set<Set<Metric>> metrics )
+    {
+        // Expand any time-series summary statistics into top-level metrics
+        Set<Set<Metric>> expanded = new HashSet<>();
+
+        for ( Set<Metric> nextMetrics : metrics )
+        {
+            Set<Metric> innerMetrics = new HashSet<>( nextMetrics );
+            for ( Metric metric : nextMetrics )
+            {
+                if( Objects.nonNull( metric.parameters() )
+                    && ! metric.parameters()
+                               .summaryStatistics()
+                               .isEmpty() )
+                {
+                    Set<MetricConstants> nextSummaryStats = metric.parameters()
+                                                                  .summaryStatistics();
+                    MetricConstants parent = metric.name();
+                    Set<Metric> summaryExpanded =
+                            nextSummaryStats.stream()
+                                            .map( n -> DeclarationUtilities.expand( n, parent ) )
+                                            .collect( Collectors.toSet() );
+                    innerMetrics.addAll( summaryExpanded );
+                }
+            }
+            innerMetrics = Collections.unmodifiableSet( innerMetrics );
+            expanded.add( innerMetrics );
+        }
+
+        LOGGER.debug( "Expanded these metrics: {}. The expanded metrics are: {}.", metrics, expanded );
+
+        return Collections.unmodifiableSet( expanded );
+    }
+
+    /**
+     * Expands a time-series summary statistic into a top-level metric.
+     * @param summaryStatistic the summary statistic
+     * @return the corresponding top-level metric
+     */
+    private static Metric expand( MetricConstants summaryStatistic, MetricConstants parent )
+    {
+        Optional<Metric> metric = parent.getChildren()
+                                        .stream()
+                                        .filter( next -> next.getChild() == summaryStatistic )
+                                        .map( n -> MetricBuilder.builder()
+                                                                .name( n )
+                                                                .build() )
+                                        .findFirst();
+        if ( metric.isEmpty() )
+        {
+            throw new DeclarationException( "Could not correlate the '"
+                                            + DeclarationUtilities.fromEnumName( summaryStatistic.name() )
+                                            + "' with a top-level metric that belongs to the '"
+                                            + DeclarationUtilities.fromEnumName( parent.name() )
+                                            + "'. Please use a summary statistic that is valid in this context. "
+                                            + "The valid summary statistics are: "
+                                            + parent.getChildren()
+                                            + "." );
+        }
+
+        return metric.get();
     }
 
     /**

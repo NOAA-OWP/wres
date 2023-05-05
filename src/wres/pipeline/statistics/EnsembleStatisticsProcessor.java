@@ -20,8 +20,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.MetricConfigException;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
@@ -56,10 +55,9 @@ import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
- * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
- * ensemble pairs and configured transformations of ensemble pairs. For example, metrics that consume single-valued
- * pairs may be processed after transforming the ensemble pairs with an appropriate mapping
- * function, such as an ensemble mean.
+ * Builds and processes all {@link MetricCollection} associated with an evaluation for metrics that consume ensemble
+ * pairs and configured transformations of ensemble pairs. For example, metrics that consume single-valued pairs may be
+ * processed after transforming the ensemble pairs with an appropriate mapping function, such as an ensemble mean.
  *
  * @author James Brown
  */
@@ -155,7 +153,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * @param metricsAndThresholds the metrics and thresholds
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @throws MetricConfigException if the metrics are configured incorrectly
+     * @throws DeclarationException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
      */
@@ -289,15 +287,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Create a single-valued processor for computing single-valued measures, but first eliminate any metrics that
         // relate to ensemble or probabilistic pairs.
-        Set<MetricConstants> singleValuedMetrics = this.getSingleValuedMetrics( metricsAndThresholds.metrics() );
-        MetricsAndThresholds singleValuedMetricsAndThresholds =
-                new MetricsAndThresholds( singleValuedMetrics,
-                                          metricsAndThresholds.thresholds(),
-                                          metricsAndThresholds.minimumSampleSize(),
-                                          null );
-        this.singleValuedProcessor = new SingleValuedStatisticsProcessor( singleValuedMetricsAndThresholds,
-                                                                          thresholdExecutor,
-                                                                          metricExecutor );
+        this.singleValuedProcessor = this.getSingleValuedProcessor( metricsAndThresholds,
+                                                                    thresholdExecutor,
+                                                                    metricExecutor);
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -339,6 +331,10 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         Pool<Pair<Double, Ensemble>> inputNoMissing =
                 PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ) );
 
+        LOGGER.debug( "Computing ensemble statistics from {} pairs.",
+                      inputNoMissing.get()
+                                    .size() );
+
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
@@ -372,6 +368,10 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             Function<TimeSeries<Pair<Double, Ensemble>>, TimeSeries<Pair<Double, Double>>> mapper =
                     in -> TimeSeriesSlicer.transform( in, this.toSingleValues, null );
             Pool<TimeSeries<Pair<Double, Double>>> singleValued = PoolSlicer.transform( adjustedPool, mapper );
+
+            LOGGER.debug( "Computing single-valued statistics for an ensemble forecast from {} time-series.",
+                          singleValued.get()
+                                      .size() );
 
             // Compute the results and merge with the ensemble statistics
             StatisticsStore statistics = this.singleValuedProcessor.apply( singleValued );
@@ -535,6 +535,16 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                              featureGroup,
                                              ThresholdType.PROBABILITY,
                                              ThresholdType.VALUE );
+
+        if ( filteredThresholds.isEmpty() )
+        {
+            throw new MetricCalculationException( "Could not find any thresholds for feature tuples within feature "
+                                                  + "group "
+                                                  + featureGroup
+                                                  + ". Thresholds were available for these feature tuples: "
+                                                  + thresholdsByFeature.keySet()
+                                                  + "." );
+        }
 
         // Add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( filteredThresholds,
@@ -1022,7 +1032,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     {
         Objects.requireNonNull( ensembleAverageType );
 
-        if( ensembleAverageType == EnsembleAverageType.MEDIAN )
+        if ( ensembleAverageType == EnsembleAverageType.MEDIAN )
         {
             return ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
         }
@@ -1060,14 +1070,47 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                              .noneMatch( threshold -> threshold.getType() == ThresholdType.VALUE
                                                       || threshold.getType() == ThresholdType.PROBABILITY ) )
                 {
-                    throw new MetricConfigException( "Cannot configure '" + next
-                                                     + "' without thresholds to define the events: "
-                                                     + "add one or more thresholds to the configuration "
-                                                     + "for each instance of '"
-                                                     + next
-                                                     + "'." );
+                    throw new DeclarationException( "Cannot configure '" + next
+                                                    + "' without thresholds to define the events: "
+                                                    + "add one or more thresholds to the configuration "
+                                                    + "for the '"
+                                                    + next
+                                                    + "'." );
                 }
             }
+        }
+    }
+
+    /**
+     * Creates and returns a processor for single-valued statistics, where needed.
+     * @param metricsAndThresholds the metrics and thresholds
+     * @param thresholdExecutor the thresholds executor
+     * @param metricExecutor the metric executor
+     * @return the single-valued processor or null
+     */
+
+    private SingleValuedStatisticsProcessor getSingleValuedProcessor( MetricsAndThresholds metricsAndThresholds,
+                                                                      ExecutorService thresholdExecutor,
+                                                                      ExecutorService metricExecutor )
+    {
+        Set<MetricConstants> singleValuedMetrics = this.getSingleValuedMetrics( metricsAndThresholds.metrics() );
+        if( ! singleValuedMetrics.isEmpty() )
+        {
+            LOGGER.debug( "Discovered the following single-valued metrics for processing: {}.",
+                          singleValuedMetrics );
+            MetricsAndThresholds singleValuedMetricsAndThresholds =
+                    new MetricsAndThresholds( singleValuedMetrics,
+                                              metricsAndThresholds.thresholds(),
+                                              metricsAndThresholds.minimumSampleSize(),
+                                              null );
+            return new SingleValuedStatisticsProcessor( singleValuedMetricsAndThresholds,
+                                                                              thresholdExecutor,
+                                                                              metricExecutor );
+        }
+        else
+        {
+            LOGGER.debug( "Discovered no single-valued metrics for processing." );
+            return null;
         }
     }
 

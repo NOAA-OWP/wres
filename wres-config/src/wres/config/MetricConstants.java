@@ -181,61 +181,71 @@ public enum MetricConstants
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Time to peak error, mean across all instances. */
-    TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                             StatisticType.DURATION_SCORE,
                              MetricConstants.TIME_TO_PEAK_ERROR,
                              MetricConstants.MEAN,
                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak error, median across all instances. */
-    TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                               StatisticType.DURATION_SCORE,
                                MetricConstants.TIME_TO_PEAK_ERROR,
                                MetricConstants.MEDIAN,
                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak error, minimum across all instances. */
-    TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                StatisticType.DURATION_SCORE,
                                 MetricConstants.TIME_TO_PEAK_ERROR,
                                 MetricConstants.MINIMUM,
                                 MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak error, maximum across all instances. */
-    TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                StatisticType.DURATION_SCORE,
                                 MetricConstants.TIME_TO_PEAK_ERROR,
                                 MetricConstants.MAXIMUM,
                                 MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak error, standard deviation across all instances. */
-    TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                           StatisticType.DURATION_SCORE,
                                            MetricConstants.TIME_TO_PEAK_ERROR,
                                            MetricConstants.STANDARD_DEVIATION,
                                            MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak error, mean absolute value across all instances. */
-    TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                      StatisticType.DURATION_SCORE,
                                       MetricConstants.TIME_TO_PEAK_ERROR,
                                       MetricConstants.MEAN_ABSOLUTE,
                                       MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
 
     /** Time to peak relative error, mean across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                      StatisticType.DURATION_SCORE,
                                       MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                       MetricConstants.MEAN,
                                       MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
 
     /** Time to peak relative error, median across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                        StatisticType.DURATION_SCORE,
                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                         MetricConstants.MEDIAN,
                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
 
     /** Time to peak relative error, minimum across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                         StatisticType.DURATION_SCORE,
                                          MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                          MetricConstants.MINIMUM,
                                          MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
 
     /** Time to peak relative error, maximum across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                         StatisticType.DURATION_SCORE,
                                          MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                          MetricConstants.MAXIMUM,
                                          MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
@@ -248,7 +258,8 @@ public enum MetricConstants
                                                     MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
 
     /** Time to peak relative error, mean absolute value across all instances. */
-    TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE,
+    TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
+                                               StatisticType.DURATION_SCORE,
                                                MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
                                                MetricConstants.MEAN_ABSOLUTE,
                                                MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),

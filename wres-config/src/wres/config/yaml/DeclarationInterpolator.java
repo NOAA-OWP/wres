@@ -113,7 +113,7 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateGraphicsFormatsFromMetricParameters( adjustedDeclarationBuilder );
         // Interpolate the measurement units for value thresholds when they have not been declared explicitly
         DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedDeclarationBuilder );
-        // Interpolate thresholds for individual metrics without thresholds, adding an "all data" threshold as needed
+        // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
         DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );

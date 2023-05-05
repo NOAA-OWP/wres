@@ -19,7 +19,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.MetricConfigException;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -39,6 +38,7 @@ import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.metrics.Metric;
+import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
@@ -198,18 +198,14 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
                 // Remove the filtered metrics
                 all.removeAll( filteredInner );
-
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug(
-                            "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
-                            + "the minimum sample size of {} pairs. The following metrics will not be computed for "
-                            + "this pool: {}.",
-                            pairs.getBaselineData().getMetadata(),
-                            actualBaselineSampleSize,
-                            minimumSampleSizeInner,
-                            filteredInner );
-                }
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
+                              + "the minimum sample size of {} pairs. The following metrics will not be computed for "
+                              + "this pool: {}.",
+                              pairs.getBaselineData()
+                                   .getMetadata(),
+                              actualBaselineSampleSize,
+                              minimumSampleSizeInner,
+                              filteredInner );
             }
         }
 
@@ -245,7 +241,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         LOGGER.debug( "Computing these metrics: {}.", all );
 
         // All metrics skipped for this pool?
-        if( all.isEmpty() )
+        if ( all.isEmpty() )
         {
             LOGGER.debug( "None of the supplied metrics are required for this pool. The (skipped) metrics are: {}. "
                           + "The pool is: {}.", all, pairs.getMetadata() );
@@ -496,7 +492,6 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * @param metricsAndThresholds the metrics and thresholds
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
      */
@@ -513,10 +508,17 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         Objects.requireNonNull( metricsAndThresholds.thresholds(),
                                 "Specify a non-null collection of thresholds to process." );
 
+        if ( metricsAndThresholds.metrics().isEmpty() )
+        {
+            throw new MetricCalculationException( "Cannot build a statistics processor without metrics." );
+        }
+
         this.metrics = metricsAndThresholds.metrics();
         this.thresholds = metricsAndThresholds.thresholds();
         this.thresholdsWithoutAllData = this.copyWithoutAllDataThreshold( this.thresholds );
         this.minimumSampleSize = metricsAndThresholds.minimumSampleSize();
+
+        LOGGER.debug( "Received the following metrics and threshold to compute: {}.", metricsAndThresholds );
 
         if ( this.minimumSampleSize < 0 )
         {
