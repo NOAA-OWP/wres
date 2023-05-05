@@ -567,7 +567,8 @@ public class ThresholdSlicer
         for ( Set<Metric> nextGroup : atomicGroups )
         {
             // Gather the metric names
-            Set<MetricConstants> names = nextGroup.stream().map( Metric::name )
+            Set<MetricConstants> names = nextGroup.stream()
+                                                  .map( Metric::name )
                                                   .collect( Collectors.toUnmodifiableSet() );
 
             // Gather/wrap the thresholds and correlate them with feature tuples
@@ -597,7 +598,7 @@ public class ThresholdSlicer
                                                    features );
 
                     // Metric-specific ensemble average type?
-                    if( Objects.nonNull( nextParameters.ensembleAverageType() ) )
+                    if ( Objects.nonNull( nextParameters.ensembleAverageType() ) )
                     {
                         ensembleAverageType = nextParameters.ensembleAverageType();
                     }
@@ -615,7 +616,7 @@ public class ThresholdSlicer
     }
 
     /**
-     * Adds the supplied thresholds to the map, correlating the features as needed.
+     * Adds the supplied thresholds to the input map, correlating the features as needed.
      * @param thresholds the thresholds
      * @param type the threshold type
      * @param thresholdsToIncrement the threshold map to update
@@ -650,9 +651,39 @@ public class ThresholdSlicer
         // Increment the thresholds
         for ( wres.config.yaml.components.Threshold nextThreshold : thresholds )
         {
-            Geometry nextGeometry = nextThreshold.feature();
-            DatasetOrientation orientation = nextThreshold.featureNameFrom();
-            GeometryTuple nextTuple = mapper.apply( nextGeometry, orientation );
+            Geometry nextFeature = nextThreshold.feature();
+
+            // If there is no geometry associated with the threshold, then add it for all geometries
+            if ( Objects.isNull( nextFeature ) )
+            {
+                ThresholdSlicer.addThresholdForAllFeatures( nextThreshold, geometries, type, thresholdsToIncrement );
+            }
+            else
+            {
+                ThresholdSlicer.addThresholdForOneFeature( nextThreshold,
+                                                           nextFeature,
+                                                           mapper,
+                                                           type,
+                                                           thresholdsToIncrement );
+            }
+        }
+    }
+
+    /**
+     * Adds the threshold to the supplied map for all available features.
+     * @param nextThreshold the threshold to add
+     * @param features the features to which the threshold applies
+     * @param type the type of threshold
+     * @param thresholdsToIncrement the thresholds to increment
+     */
+
+    private static void addThresholdForAllFeatures( wres.config.yaml.components.Threshold nextThreshold,
+                                                    Set<GeometryTuple> features,
+                                                    ThresholdType type,
+                                                    Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement )
+    {
+        for( GeometryTuple nextTuple : features )
+        {
             if ( Objects.nonNull( nextTuple ) )
             {
                 FeatureTuple nextFeatureTuple = FeatureTuple.of( nextTuple );
@@ -668,6 +699,53 @@ public class ThresholdSlicer
                     newSet.add( threshold );
                     thresholdsToIncrement.put( nextFeatureTuple, newSet );
                 }
+            }
+        }
+    }
+
+    /**
+     * Adds the threshold to the supplied map for the feature provided.
+     * @param nextThreshold the threshold to add
+     * @param nextFeature the feature to which the threshold applies
+     * @param mapper the mapper to find a feature tuple for the feature
+     * @param type the type of threshold
+     * @param thresholdsToIncrement the thresholds to increment
+     */
+
+    private static void addThresholdForOneFeature( wres.config.yaml.components.Threshold nextThreshold,
+                                                   Geometry nextFeature,
+                                                   BiFunction<Geometry, DatasetOrientation, GeometryTuple> mapper,
+                                                   ThresholdType type,
+                                                   Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement )
+    {
+        DatasetOrientation orientation = nextThreshold.featureNameFrom();
+
+        if ( Objects.isNull( orientation ) )
+        {
+            throw new ThresholdException( "Failed to correlate a threshold with a feature tuple because the "
+                                          + "threshold does not specify the orientation of the feature provided to "
+                                          + "determine its tuple. The threshold is: "
+                                          + nextThreshold
+                                          + ". The feature name is: "
+                                          + nextFeature.getName()
+                                          + "." );
+        }
+
+        GeometryTuple nextTuple = mapper.apply( nextFeature, orientation );
+        if ( Objects.nonNull( nextTuple ) )
+        {
+            FeatureTuple nextFeatureTuple = FeatureTuple.of( nextTuple );
+            ThresholdOuter threshold = ThresholdOuter.of( nextThreshold.threshold(), type );
+            if ( thresholdsToIncrement.containsKey( nextFeatureTuple ) )
+            {
+                thresholdsToIncrement.get( nextFeatureTuple )
+                                     .add( threshold );
+            }
+            else
+            {
+                Set<ThresholdOuter> newSet = new HashSet<>();
+                newSet.add( threshold );
+                thresholdsToIncrement.put( nextFeatureTuple, newSet );
             }
         }
     }

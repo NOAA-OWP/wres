@@ -3,7 +3,9 @@ package wres.pipeline.statistics;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,22 +17,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import wres.config.MetricConstants;
-import wres.config.generated.ProjectConfig;
-import wres.config.xml.MetricConstantsFactory;
+import wres.config.yaml.DeclarationInterpolator;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.thresholds.ThresholdsGenerator;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeSeries;
 import wres.metrics.MetricParameterException;
-import wres.statistics.MessageFactory;
-import wres.statistics.generated.GeometryTuple;
 
 /**
  * Tests the {@link StatisticsProcessor}.
@@ -39,9 +40,6 @@ import wres.statistics.generated.GeometryTuple;
  */
 public final class StatisticsProcessorTest
 {
-
-    private static final String DRRC2 = "DRRC2";
-
     /**
      * Threshold executor service.
      */
@@ -64,49 +62,64 @@ public final class StatisticsProcessorTest
     @Test
     public void testHasMetricsForMetricInputGroup() throws MetricParameterException
     {
-        ProjectConfig config =
+        EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
         //Check for existence of metrics
-        assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED ) );
+        assertTrue( processors.stream()
+                              .anyMatch( next -> next.hasMetrics( SampleDataGroup.SINGLE_VALUED ) ) );
     }
 
     @Test
     public void testHasMetricsForMetricOutputGroup() throws MetricParameterException
     {
-        ProjectConfig config =
+        EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
         //Check for existence of metrics
-        assertTrue( processor.hasDoubleScoreMetrics() );
+        assertTrue( processors.stream().anyMatch( StatisticsProcessor::hasDoubleScoreMetrics ) );
     }
 
     @Test
     public void testHasMetricsForMetricInputGroupAndMetricOutputGroup() throws MetricParameterException
     {
-        ProjectConfig config =
+        EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetricsAndIssuedDatePools();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processor =
+                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
         //Check for existence of metrics
-        assertTrue( processor.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) );
+        assertTrue( processor.stream()
+                             .anyMatch( next -> next.hasMetrics( SampleDataGroup.SINGLE_VALUED,
+                                                                 StatisticType.DOUBLE_SCORE ) ) );
     }
 
     @Test
     public void testGetAllDataThreshold()
             throws MetricParameterException
     {
-        ProjectConfig config = new ProjectConfig( null, null, null, null, null, null );
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForEnsembleForecastsWithAllValidMetricsAndIssuedDatePools();
+
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ERROR, null ) );
+
+        EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder( declaration )
+                                                                                  .valueThresholds( Set.of() )
+                                                                                  .metrics( metrics )
+                                                                                  .build();
+        evaluationDeclaration = DeclarationInterpolator.interpolate( evaluationDeclaration, true );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( evaluationDeclaration );
 
         ThresholdOuter expected = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                      ThresholdOperator.GREATER,
                                                      ThresholdOrientation.LEFT_AND_RIGHT );
 
-        assertEquals( expected, processor.getAllDataThreshold() );
+        assertEquals( expected, processors.get( 0 )
+                                          .getAllDataThreshold() );
     }
 
     @After
@@ -117,27 +130,26 @@ public final class StatisticsProcessorTest
     }
 
     /**
-     * @param config project declaration
-     * @return a single-valued processor instance
+     * @param declaration the declaration
+     * @return the processors
      */
 
-    private static StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-    ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
+    ofMetricProcessorForSingleValuedPairs( EvaluationDeclaration declaration )
     {
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
-        Set<ThresholdOuter> thresholds= ThresholdsGenerator.getThresholdsFromConfig( config );
-        GeometryTuple geometryTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( DRRC2 ),
-                                                                                       MessageFactory.getGeometry( DRRC2 ),
-                                                                                       null );
-        FeatureTuple featureTuple = FeatureTuple.of( geometryTuple );
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
-        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                              thresholdsByFeature,
-                                                                              0,
-                                                                              null );
-        return new SingleValuedStatisticsProcessor( metricsAndThresholds,
-                                                    ForkJoinPool.commonPool(),
-                                                    ForkJoinPool.commonPool() );
+        Set<MetricsAndThresholds> metricsAndThresholdsSet =
+                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
+        for ( MetricsAndThresholds metricsAndThresholds : metricsAndThresholdsSet )
+        {
+            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor
+                    = new SingleValuedStatisticsProcessor( metricsAndThresholds,
+                                                           ForkJoinPool.commonPool(),
+                                                           ForkJoinPool.commonPool() );
+            processors.add( processor );
+        }
+
+        return Collections.unmodifiableList( processors );
     }
 
 }

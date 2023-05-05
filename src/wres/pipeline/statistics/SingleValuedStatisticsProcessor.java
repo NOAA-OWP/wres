@@ -17,11 +17,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.MetricConfigException;
-import wres.config.generated.ProjectConfig;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -53,7 +52,7 @@ import wres.metrics.MetricParameterException;
 import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 
 /**
- * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
+ * Builds and processes all {@link MetricCollection} associated with an evaluation for metrics that consume
  * single-valued pairs and configured transformations thereof. For example, metrics that consume dichotomous pairs may 
  * be processed after transforming the single-valued pairs with an appropriate mapping function.
  *
@@ -113,7 +112,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      * @param metricsAndThresholds the metrics and thresholds
      * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
-     * @throws MetricConfigException if the metrics are configured incorrectly
+     * @throws DeclarationException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
      */
@@ -197,6 +196,20 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         LOGGER.debug( "Computing single-valued statistics for pool: {}.", pool.getMetadata() );
 
+        // Metrics to compute?
+        if ( !this.hasMetrics( SampleDataGroup.SINGLE_VALUED )
+             && !this.hasMetrics( SampleDataGroup.DICHOTOMOUS )
+             && !this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
+        {
+            LOGGER.debug( "There were no single-valued or dichotomous statistics to compute." );
+
+            return new StatisticsStore.Builder().build();
+        }
+
+        LOGGER.debug( "Computing single-valued statistics from {} time-series.",
+                      pool.get()
+                          .size() );
+
         //Remove missing values from pairs that do not preserver time order
         Pool<Pair<Double, Double>> unpackedNoMissing = null;
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
@@ -208,6 +221,10 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             unpackedNoMissing = PoolSlicer.filter( unpacked,
                                                    Slicer.leftAndRight( MissingValues::isNotMissingValue ),
                                                    null );
+
+            LOGGER.debug( "Computing single-valued statistics from {} pairs.",
+                          unpackedNoMissing.get()
+                                           .size() );
         }
 
         //Metric futures 
@@ -327,9 +344,19 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                         .getFeatureGroup();
         Map<FeatureTuple, Set<ThresholdOuter>> filteredThresholds =
                 super.getFilteredThresholds( thresholdsByFeature,
-                                            featureGroup,
-                                            ThresholdType.PROBABILITY,
-                                            ThresholdType.VALUE );
+                                             featureGroup,
+                                             ThresholdType.PROBABILITY,
+                                             ThresholdType.VALUE );
+
+        if ( filteredThresholds.isEmpty() )
+        {
+            throw new MetricCalculationException( "Could not find any thresholds for feature tuples within feature "
+                                                  + "group "
+                                                  + featureGroup
+                                                  + ". Thresholds were available for these feature tuples: "
+                                                  + thresholdsByFeature.keySet()
+                                                  + "." );
+        }
 
         // Add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( filteredThresholds,
@@ -492,9 +519,9 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                         .getFeatureGroup();
         Map<FeatureTuple, Set<ThresholdOuter>> filteredThresholds =
                 super.getFilteredThresholds( thresholdsByFeature,
-                                            featureGroup,
-                                            ThresholdType.PROBABILITY,
-                                            ThresholdType.VALUE );
+                                             featureGroup,
+                                             ThresholdType.PROBABILITY,
+                                             ThresholdType.VALUE );
 
         // Add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( filteredThresholds,
@@ -558,9 +585,9 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                         .getFeatureGroup();
         Map<FeatureTuple, Set<ThresholdOuter>> filteredThresholds =
                 super.getFilteredThresholds( thresholdsByFeature,
-                                            featureGroup,
-                                            ThresholdType.PROBABILITY,
-                                            ThresholdType.VALUE );
+                                             featureGroup,
+                                             ThresholdType.PROBABILITY,
+                                             ThresholdType.VALUE );
 
         // Add the quantiles
         Map<FeatureTuple, Set<ThresholdOuter>> withQuantiles = ThresholdSlicer.addQuantiles( filteredThresholds,
@@ -710,8 +737,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
                 if ( Objects.isNull( parent ) )
                 {
-                    throw new MetricConfigException( "The timing error summary statistic '" + next
-                                                     + "' does not have a parent metric set, which is not allowed." );
+                    throw new DeclarationException( "The timing error summary statistic '" + next
+                                                    + "' does not have a parent metric set, which is not allowed." );
                 }
 
                 Set<MetricConstants> nextStats = localStatistics.get( parent );
@@ -733,7 +760,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
     /**
      * Validates the state of the processor.
-     * @throws MetricConfigException if the state is invalid for any reason
+     * @throws DeclarationException if the state is invalid for any reason
      */
 
     private void validate()
@@ -748,16 +775,16 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                          .stream()
                          .flatMap( Set::stream )
                          // Ignore the "all data" threshold in this check
-                         .filter( t -> ! ThresholdOuter.ALL_DATA.equals( t ) )
+                         .filter( t -> !ThresholdOuter.ALL_DATA.equals( t ) )
                          .noneMatch( threshold -> threshold.getType() == ThresholdType.VALUE
                                                   || threshold.getType() == ThresholdType.PROBABILITY ) )
             {
-                throw new MetricConfigException( "Cannot configure '"
-                                                 + next
-                                                 + "' without thresholds to define the events: add one "
-                                                 + "or more thresholds to the configuration for each instance of '"
-                                                 + next
-                                                 + "'." );
+                throw new DeclarationException( "Cannot configure '"
+                                                + next
+                                                + "' without thresholds to define the events: add one "
+                                                + "or more thresholds to the configuration for the '"
+                                                + next
+                                                + "'." );
             }
         }
     }

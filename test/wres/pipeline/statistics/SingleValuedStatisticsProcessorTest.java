@@ -10,30 +10,32 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.xml.MetricConfigException;
-import wres.config.generated.EnsembleAverageType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeSeriesMetricConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.config.xml.MetricConstantsFactory;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationInterpolator;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.Metric;
+import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
@@ -102,32 +104,17 @@ public final class SingleValuedStatisticsProcessorTest
 
     private static final Instant SECOND_DATE = Instant.parse( "1985-01-02T00:00:00Z" );
 
-    /**
-     * Test thresholds.
-     */
-
-    private static final String TEST_THRESHOLDS = "0.1,0.2,0.3";
-
     @Test
     public void testApplyWithoutThresholds() throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithoutThresholds();
-        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithoutThresholds();
 
-        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
-        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                              thresholdsByFeature,
-                                                                              0,
-                                                                              null );
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor( metricsAndThresholds,
-                                                     Executors.newSingleThreadExecutor(),
-                                                     Executors.newSingleThreadExecutor() );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
 
-        StatisticsStore results = processor.apply( pairs );
+        StatisticsStore results = this.getAndCombineStatistics( processors, pairs );
 
         List<DoubleScoreStatisticOuter> bias =
                 Slicer.filter( results.getDoubleScoreStatistics(), MetricConstants.BIAS_FRACTION );
@@ -177,9 +164,11 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testApplyWithThresholds() throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
 
         Evaluation evaluation = Evaluation.newBuilder()
@@ -211,7 +200,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .setMetadata( meta )
                                                                         .build();
 
-            StatisticsStore statistics = processor.apply( next );
+            StatisticsStore statistics = this.getAndCombineStatistics( processors, next );
             scores.addAll( statistics.getDoubleScoreStatistics() );
         }
 
@@ -282,16 +271,19 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testForExpectedMetricsWhenAllValidConfigured() throws MetricParameterException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetrics();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithAllValidMetrics();
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
 
-        //Check for the expected number of metrics
-        int expected = SampleDataGroup.SINGLE_VALUED.getMetrics().size()
-                       + SampleDataGroup.DICHOTOMOUS.getMetrics().size()
-                       - MetricConstants.CONTINGENCY_TABLE.getAllComponents().size();
-        int actual = processor.getMetrics()
-                              .size();
+        Set<MetricConstants> actual = processors.stream()
+                                                .flatMap( next -> next.getMetrics().stream() )
+                                                .collect( Collectors.toSet() );
+
+        // Check for the expected metrics
+        Set<MetricConstants> expected = new HashSet<>();
+        expected.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
+        expected.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
 
         assertEquals( expected, actual );
     }
@@ -299,41 +291,47 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testApplyTimeSeriesMetrics() throws MetricParameterException, InterruptedException
     {
-        // Mock some metrics
-        List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
+        // Create declaration
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
 
-        // Check discrete probability metric
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   List.of( new MetricsConfig( null,
-                                                               0,
-                                                               null,
-                                                               metrics,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null ) );
 
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( mockedConfig );
+        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
+        GeometryTuple geometryTuple = featureTuple.getGeometryTuple();
+        Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
+                                           .build();
 
-        //Break into two time-series to test sequential calls
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .features( features )
+                                                                        .metrics( metrics )
+                                                                        .build();
+        declaration = DeclarationInterpolator.interpolate( declaration, true );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
+        // Break into two time-series to test sequential calls
         Pool<TimeSeries<Pair<Double, Double>>> first = TestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
         Pool<TimeSeries<Pair<Double, Double>>> second = TestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
-        //Compute the metrics
+        // Compute the metrics
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
-        StatisticsStore some = processor.apply( first );
-        StatisticsStore more = processor.apply( second );
+        StatisticsStore some = this.getAndCombineStatistics( processors, first );
+        StatisticsStore more = this.getAndCombineStatistics( processors, second );
         actual.addAll( some.getInstantDurationPairStatistics() );
         actual.addAll( more.getInstantDurationPairStatistics() );
 
-        //Validate the outputs
-        //Compare the errors against the benchmark
+        // Validate the outputs
+        // Compare the errors against the benchmark
 
-        //Build the expected output
+        // Build the expected output
         // Metadata for the output
         TimeWindow innerFirst = wres.statistics.MessageFactory.getTimeWindow( FIRST_DATE,
                                                                               FIRST_DATE,
@@ -412,32 +410,43 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testApplyTimeSeriesMetricsWithThresholds() throws MetricParameterException, InterruptedException
     {
-        // Mock some metrics
-        List<TimeSeriesMetricConfig> metrics = new ArrayList<>();
-        metrics.add( new TimeSeriesMetricConfig( null, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR, null ) );
+        // Create declaration
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
 
-        // Mock some thresholds
-        List<ThresholdsConfig> thresholds = new ArrayList<>();
-        thresholds.add( new ThresholdsConfig( ThresholdType.VALUE,
-                                              wres.config.generated.ThresholdDataType.LEFT_AND_RIGHT,
-                                              "5.0",
-                                              ThresholdOperator.GREATER_THAN ) );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.TIME_TO_PEAK_ERROR, null ) );
 
-        // Check discrete probability metric
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   List.of( new MetricsConfig( thresholds,
-                                                               0,
-                                                               null,
-                                                               metrics,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
+        GeometryTuple geometryTuple = featureTuple.getGeometryTuple();
+        Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
+                                           .build();
 
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( mockedConfig );
+        wres.statistics.generated.Threshold thresholdOne =
+                wres.statistics.generated.Threshold.newBuilder()
+                                                   .setLeftThresholdValue( DoubleValue.of( 5.0 ) )
+                                                   .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                                   .build();
+        wres.config.yaml.components.Threshold thresholdOneOuter = ThresholdBuilder.builder()
+                                                                                  .threshold( thresholdOne )
+                                                                                  .type( ThresholdType.VALUE )
+                                                                                  .build();
+        Set<Threshold> thresholds = Set.of( thresholdOneOuter );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .features( features )
+                                                                        .valueThresholds( thresholds )
+                                                                        .metrics( metrics ) // All valid
+                                                                        .build();
+        declaration = DeclarationInterpolator.interpolate( declaration, true );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
 
         //Break into two time-series to test sequential calls
         Pool<TimeSeries<Pair<Double, Double>>> first = TestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
@@ -445,8 +454,8 @@ public final class SingleValuedStatisticsProcessorTest
 
         //Compute the metrics
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
-        StatisticsStore some = processor.apply( first );
-        StatisticsStore more = processor.apply( second );
+        StatisticsStore some = this.getAndCombineStatistics( processors, first );
+        StatisticsStore more = this.getAndCombineStatistics( processors, second );
         actual.addAll( some.getInstantDurationPairStatistics() );
         actual.addAll( more.getInstantDurationPairStatistics() );
 
@@ -547,14 +556,14 @@ public final class SingleValuedStatisticsProcessorTest
     public void testApplyTimeSeriesSummaryStats()
             throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config =
+        EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithTimeSeriesSummaryStatistics();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
 
-        //Break into two time-series to test sequential calls
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
+        // Break into two time-series to test sequential calls
         Pool<TimeSeries<Pair<Double, Double>>> first = TestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
-
         Pool<TimeSeries<Pair<Double, Double>>> second = TestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
 
         Pool<TimeSeries<Pair<Double, Double>>> aggPool =
@@ -564,19 +573,19 @@ public final class SingleValuedStatisticsProcessorTest
                                                                                                                second.getMetadata() ) ) )
                                                                     .build();
 
-        //Compute the metrics
-        StatisticsStore project = processor.apply( aggPool );
+        // Compute the metrics
+        StatisticsStore project = this.getAndCombineStatistics( processors, aggPool );
 
-        //Validate the outputs
-        //Compare the errors against the benchmark
+        // Validate the outputs
+        // Compare the errors against the benchmark
         List<DurationScoreStatisticOuter> actualScores = project.getDurationScoreStatistics();
 
-        //Metadata
+        // Metadata
         TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( FIRST_DATE,
                                                                          SECOND_DATE,
                                                                          Duration.ofHours( 6 ),
                                                                          Duration.ofHours( 18 ) );
-        final TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
 
         OneOrTwoThresholds thresholds =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
@@ -690,151 +699,15 @@ public final class SingleValuedStatisticsProcessorTest
         assertEquals( expectedScores, actualScores );
     }
 
-
-    @Test
-    public void testApplyWithThresholdsFromSource()
-            throws MetricParameterException, InterruptedException
-    {
-        Set<ThresholdOuter> thresholds =
-                new HashSet<>( Collections.singletonList( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                                             wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
-                                                                             ThresholdOrientation.LEFT ) ) );
-
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
-
-        // Ensure that the entire set of thresholds is assembled to be passed to the processor
-        Set<ThresholdOuter> thresholdsFromConfig = ThresholdsGenerator.getThresholdsFromConfig( config );
-
-        Set<ThresholdOuter> combinedThresholds = new HashSet<>( thresholds );
-        combinedThresholds.addAll( thresholdsFromConfig );
-
-        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, combinedThresholds );
-        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                              thresholdsByFeature,
-                                                                              0,
-                                                                              null );
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor( metricsAndThresholds,
-                                                     ForkJoinPool.commonPool(),
-                                                     ForkJoinPool.commonPool() );
-
-        Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsSix();
-
-        // Generate results for 20 nominal lead times
-        List<DoubleScoreStatisticOuter> statistics = new ArrayList<>();
-        for ( int i = 1; i < 11; i++ )
-        {
-            TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                             Instant.MAX,
-                                                                             Duration.ofHours( i ) );
-            TimeWindowOuter window = TimeWindowOuter.of( inner );
-
-            FeatureGroup featureGroup = TestDataFactory.getFeatureGroup();
-
-            Evaluation evaluation = Evaluation.newBuilder()
-                                              .setRightVariableName( "SQIN" )
-                                              .setMeasurementUnit( "CMS" )
-                                              .setRightDataName( "HEFS" )
-                                              .build();
-
-            wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
-                                                                          window,
-                                                                          null,
-                                                                          null,
-                                                                          false );
-
-            PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-            Pool<TimeSeries<Pair<Double, Double>>> next =
-                    new Pool.Builder<TimeSeries<Pair<Double, Double>>>().addPool( pairs )
-                                                                        .setMetadata( meta )
-                                                                        .build();
-
-            StatisticsStore some = processor.apply( next );
-            statistics.addAll( some.getDoubleScoreStatistics() );
-        }
-
-        // Validate a subset of the data       
-        assertEquals( 20,
-                      Slicer.filter( statistics,
-                                     MetricConstants.THREAT_SCORE )
-                            .size() );
-
-        assertEquals( 30 * 8 + 20,
-                      Slicer.filter( statistics,
-                                     metric -> metric.getMetricName() != MetricConstants.THREAT_SCORE )
-                            .size() );
-
-        // Expected result
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
-                                                                         Instant.MAX,
-                                                                         Instant.MIN,
-                                                                         Instant.MAX,
-                                                                         Duration.ofHours( 1 ),
-                                                                         Duration.ofHours( 1 ) );
-        TimeWindowOuter expectedWindow = TimeWindowOuter.of( inner );
-
-        OneOrTwoThresholds expectedThreshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 0.5 ),
-                                                          wres.config.yaml.components.ThresholdOperator.GREATER_EQUAL,
-                                                          ThresholdOrientation.LEFT ) );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        wres.statistics.generated.Pool pool = MessageFactory.getPool( TestDataFactory.getFeatureGroup(),
-                                                                      expectedWindow,
-                                                                      null,
-                                                                      expectedThreshold,
-                                                                      false );
-
-        PoolMetadata expectedMeta = PoolMetadata.of( evaluation, pool );
-
-        DoubleScoreStatistic table =
-                DoubleScoreStatistic.newBuilder()
-                                    .setMetric( ContingencyTable.BASIC_METRIC )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.TRUE_POSITIVES )
-                                                                                 .setValue( 500 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.FALSE_POSITIVES )
-                                                                                 .setValue( 0 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.FALSE_NEGATIVES )
-                                                                                 .setValue( 0 ) )
-                                    .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( ContingencyTable.TRUE_NEGATIVES )
-                                                                                 .setValue( 0 ) )
-                                    .build();
-
-
-        DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
-
-        DoubleScoreStatisticOuter actual = Slicer.filter( statistics,
-                                                          meta -> meta.getMetadata()
-                                                                      .getThresholds()
-                                                                      .equals( expectedThreshold )
-                                                                  && meta.getMetadata()
-                                                                         .getTimeWindow()
-                                                                         .equals( expectedWindow )
-                                                                  && meta.getMetricName()
-                                                                     == MetricConstants.CONTINGENCY_TABLE )
-                                                 .get( 0 );
-
-        assertEquals( expected, actual );
-    }
-
     @Test
     public void testApplyWithThresholdsAndNoData() throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsSeven();
 
         // Generate results for 10 nominal lead times
@@ -866,7 +739,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .setMetadata( meta )
                                                                         .build();
 
-            StatisticsStore statistics = processor.apply( next );
+            StatisticsStore statistics = this.getAndCombineStatistics( processors, next );
             assertTrue( statistics.getDoubleScoreStatistics().isEmpty() );
         }
     }
@@ -875,17 +748,17 @@ public final class SingleValuedStatisticsProcessorTest
     public void testApplyTimeSeriesSummaryStatsWithNoData()
             throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config =
+        EvaluationDeclaration declaration =
                 TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithTimeSeriesSummaryStatistics();
 
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
 
         Pool<TimeSeries<Pair<Double, Double>>> pairs =
                 TestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
 
         //Compute the metrics
-        StatisticsStore statistics = processor.apply( pairs );
+        StatisticsStore statistics = this.getAndCombineStatistics( processors, pairs );
 
         //Validate the outputs
         List<DurationScoreStatisticOuter> actualScores = statistics.getDurationScoreStatistics();
@@ -930,9 +803,12 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testApplyWithMissingPairsForRemoval() throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config );
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsEight();
 
         // Generate results
@@ -962,7 +838,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                     .setMetadata( meta )
                                                                     .build();
 
-        StatisticsStore statistics = processor.apply( next );
+        StatisticsStore statistics = this.getAndCombineStatistics( processors, next );
 
         // Check the sample size
         double size = Slicer.filter( statistics.getDoubleScoreStatistics(),
@@ -982,13 +858,26 @@ public final class SingleValuedStatisticsProcessorTest
     @Test
     public void testApplyThrowsExceptionOnNullInput() throws MetricParameterException
     {
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( new ProjectConfig( null,
-                                                                                                              null,
-                                                                                                              null,
-                                                                                                              null,
-                                                                                                              null,
-                                                                                                              null ) );
+        // Create declaration
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ERROR, null ) );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .metrics( metrics ) // All valid
+                                                                        .build();
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
+        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor = processors.get( 0 );
 
         NullPointerException actual = assertThrows( NullPointerException.class, () -> processor.apply( null ) );
 
@@ -999,66 +888,81 @@ public final class SingleValuedStatisticsProcessorTest
     public void testApplyThrowsExceptionWhenThresholdMetricIsConfiguredWithoutThresholds()
             throws MetricParameterException
     {
-        MetricsConfig metrics =
-                new MetricsConfig( null,
-                                   0,
-                                   List.of( new MetricConfig( null, MetricConfigName.FREQUENCY_BIAS ) ),
-                                   null,
-                                   EnsembleAverageType.MEAN );
+        // Create declaration
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
 
-        ProjectConfig config = new ProjectConfig( null,
-                                                  null,
-                                                  List.of( metrics ),
-                                                  null,
-                                                  null,
-                                                  null );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.FREQUENCY_BIAS, null ) );
 
-        MetricConfigException actual =
-                assertThrows( MetricConfigException.class,
-                              () -> SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( config ) );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .metrics( metrics ) // All valid
+                                                                        .build();
 
-        assertEquals( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the "
-                      + "events: add one or more thresholds to the configuration for each instance of "
-                      + "'FREQUENCY BIAS'.",
+        DeclarationException actual =
+                assertThrows( DeclarationException.class,
+                              () -> SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs(
+                                      declaration ) );
+
+        assertEquals( "Cannot configure 'FREQUENCY BIAS' without thresholds to define the events: "
+                      + "add one or more thresholds to the configuration for the 'FREQUENCY BIAS'.",
                       actual.getMessage() );
-
     }
 
     @Test
     public void testApplyThrowsExceptionWhenClimatologicalObservationsAreMissing()
             throws MetricParameterException
     {
-        // Mock some metrics
-        List<MetricConfig> metrics = new ArrayList<>();
-        metrics.add( new MetricConfig( null, MetricConfigName.THREAT_SCORE ) );
+        // Create declaration
+        Dataset left = DatasetBuilder.builder()
+                                     .type( DataType.OBSERVATIONS )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
 
-        // Mock some thresholds
-        List<ThresholdsConfig> thresholds = new ArrayList<>();
-        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                              wres.config.generated.ThresholdDataType.LEFT,
-                                              TEST_THRESHOLDS,
-                                              ThresholdOperator.GREATER_THAN ) );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.THREAT_SCORE, null ) );
 
-        // Check discrete probability metric
-        ProjectConfig mockedConfig =
-                new ProjectConfig( null,
-                                   null,
-                                   List.of( new MetricsConfig( thresholds,
-                                                               0,
-                                                               metrics,
-                                                               null,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
+        GeometryTuple geometryTuple = featureTuple.getGeometryTuple();
+        Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
+                                           .build();
 
+        wres.statistics.generated.Threshold one =
+                wres.statistics.generated.Threshold.newBuilder()
+                                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                                   .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
+                                                   .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
+                                                   .build();
+        wres.config.yaml.components.Threshold oneOuter = ThresholdBuilder.builder()
+                                                                         .threshold( one )
+                                                                         .type( wres.config.yaml.components.ThresholdType.PROBABILITY )
+                                                                         .build();
 
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( mockedConfig );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .features( features )
+                                                                        .probabilityThresholds( Set.of( oneOuter ) )
+                                                                        .metrics( metrics ) // All valid
+                                                                        .build();
+
+        declaration = DeclarationInterpolator.interpolate( declaration, true );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
+
+        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor = processors.get( 0 );
 
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsTen();
 
-        ThresholdException actual = assertThrows( ThresholdException.class, () -> processor.apply( pairs ) );
+        ThresholdException actual = assertThrows( ThresholdException.class,
+                                                  () -> processor.apply( pairs ) );
 
         assertTrue( actual.getMessage()
                           .startsWith( "Quantiles were required for feature tuple" ) );
@@ -1068,7 +972,14 @@ public final class SingleValuedStatisticsProcessorTest
     public void testApplyWithThresholdsAndFeatureGroupWithTwoFeatures()
             throws MetricParameterException, InterruptedException
     {
-        ProjectConfig config = TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+        EvaluationDeclaration declaration =
+                TestDeclarationGenerator.getDeclarationForSingleValuedForecastsWithThresholds();
+
+        // Remove the parameters because they will be re-interpolated
+        Set<Metric> metrics = declaration.metrics()
+                                         .stream()
+                                         .map( next -> new Metric( next.name(), null ) )
+                                         .collect( Collectors.toSet() );
 
         GeometryTuple drrc2 = GeometryTuple.newBuilder()
                                            .setLeft( Geometry.newBuilder().setName( DRRC2 ) )
@@ -1080,21 +991,18 @@ public final class SingleValuedStatisticsProcessorTest
                                            .setRight( Geometry.newBuilder().setName( DRRC3 ) )
                                            .build();
 
-        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( FeatureTuple.of( drrc2 ),
-                                                                             thresholds,
-                                                                             FeatureTuple.of( drrc3 ),
-                                                                             thresholds );
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
-        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                              thresholdsByFeature,
-                                                                              0,
-                                                                              null );
-        StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor =
-                new SingleValuedStatisticsProcessor(
-                        metricsAndThresholds,
-                        ForkJoinPool.commonPool(),
-                        ForkJoinPool.commonPool() );
+        Set<GeometryTuple> geometries = Set.of( drrc2, drrc3 );
+        Features f = FeaturesBuilder.builder()
+                                    .geometries( geometries )
+                                    .build();
+        EvaluationDeclaration finalDeclaration = EvaluationDeclarationBuilder.builder( declaration )
+                                                                             .metrics( metrics )
+                                                                             .features( f )
+                                                                             .build();
+        finalDeclaration = DeclarationInterpolator.interpolate( finalDeclaration, true );
+
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
+                SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( finalDeclaration );
 
         Pool<TimeSeries<Pair<Double, Double>>> pairs = TestDataFactory.getTimeSeriesOfSingleValuedPairsEleven();
 
@@ -1149,7 +1057,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                     .addPool( poolTwo )
                                                                     .build();
 
-        StatisticsStore statistics = processor.apply( combinedPool );
+        StatisticsStore statistics = this.getAndCombineStatistics( processors, combinedPool );
         List<DoubleScoreStatisticOuter> scores = new ArrayList<>( statistics.getDoubleScoreStatistics() );
 
         // Validate a subset of the data 
@@ -1175,8 +1083,8 @@ public final class SingleValuedStatisticsProcessorTest
                                                           ThresholdOrientation.LEFT,
                                                           MeasurementUnit.of( "CMS" ) ) );
 
-        FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2, false );
-        FeatureGroup groupTwo = TestDataFactory.getFeatureGroup( DRRC3, false );
+        FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2 );
+        FeatureGroup groupTwo = TestDataFactory.getFeatureGroup( DRRC3 );
         Set<FeatureTuple> features = new HashSet<>();
         features.addAll( groupOne.getFeatures() );
         features.addAll( groupTwo.getFeatures() );
@@ -1225,24 +1133,51 @@ public final class SingleValuedStatisticsProcessorTest
     }
 
     /**
-     * @param config project declaration
-     * @return a single-valued processor instance
+     * @param declaration the declaration
+     * @return the processors
      */
 
-    private static StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>
-    ofMetricProcessorForSingleValuedPairs( ProjectConfig config )
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
+    ofMetricProcessorForSingleValuedPairs( EvaluationDeclaration declaration )
     {
-        Set<ThresholdOuter> thresholds = ThresholdsGenerator.getThresholdsFromConfig( config );
-        Set<MetricConstants> metrics = MetricConstantsFactory.getMetricsFromConfig( config );
-        FeatureTuple featureTuple = TestDataFactory.getFeatureTuple();
-        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = Map.of( featureTuple, thresholds );
-        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                              thresholdsByFeature,
-                                                                              0,
-                                                                              null );
-        return new SingleValuedStatisticsProcessor( metricsAndThresholds,
-                                                    ForkJoinPool.commonPool(),
-                                                    ForkJoinPool.commonPool() );
+        Set<MetricsAndThresholds> metricsAndThresholdsSet =
+                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration );
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
+        for ( MetricsAndThresholds metricsAndThresholds : metricsAndThresholdsSet )
+        {
+            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor
+                    = new SingleValuedStatisticsProcessor( metricsAndThresholds,
+                                                           ForkJoinPool.commonPool(),
+                                                           ForkJoinPool.commonPool() );
+            processors.add( processor );
+        }
+
+        return Collections.unmodifiableList( processors );
     }
 
+    /**
+     * Computes and combines the statistics for the supplied processors.
+     * @param processors the processors
+     * @param pairs the pairs
+     * @return the statistics
+     */
+
+    private StatisticsStore getAndCombineStatistics( List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors,
+                                                     Pool<TimeSeries<Pair<Double, Double>>> pairs )
+    {
+        StatisticsStore results = null;
+        for ( StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> processor : processors )
+        {
+            StatisticsStore nextResults = processor.apply( pairs );
+            if ( Objects.nonNull( results ) )
+            {
+                results = results.combine( nextResults );
+            }
+            else
+            {
+                results = nextResults;
+            }
+        }
+        return results;
+    }
 }

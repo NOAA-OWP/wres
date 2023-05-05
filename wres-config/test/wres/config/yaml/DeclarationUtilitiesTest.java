@@ -45,6 +45,7 @@ import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
+import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.MetricParametersBuilder;
 import wres.config.yaml.components.SeasonBuilder;
 import wres.config.yaml.components.Source;
@@ -1714,6 +1715,45 @@ class DeclarationUtilitiesTest
         Set<Set<Metric>> actual = DeclarationUtilities.getMetricGroupsForProcessing( metrics );
 
         Set<Set<Metric>> expected = Set.of( Set.of( three, four ), Set.of( one, two ) );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetMetricGroupsForProcessingWithTimingErrorSummaryStatistics()
+    {
+        Set<MetricConstants> summaryStatisticsOne = Set.of( MetricConstants.MEAN,
+                                                            MetricConstants.MEDIAN,
+                                                            MetricConstants.MEAN_ABSOLUTE );
+        MetricParameters parametersOne = MetricParametersBuilder.builder()
+                                                                .summaryStatistics( summaryStatisticsOne )
+                                                                .build();
+        Metric metricOne = MetricBuilder.builder()
+                                        .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                        .parameters( parametersOne )
+                                        .build();
+
+        Set<MetricConstants> summaryStatisticsTwo = Set.of( MetricConstants.STANDARD_DEVIATION,
+                                                            MetricConstants.MINIMUM,
+                                                            MetricConstants.MAXIMUM );
+        MetricParameters parametersTwo = MetricParametersBuilder.builder()
+                                                                .summaryStatistics( summaryStatisticsTwo )
+                                                                .build();
+        Metric metricTwo = MetricBuilder.builder()
+                                        .name( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
+                                        .parameters( parametersTwo )
+                                        .build();
+        Set<Set<Metric>> actual = DeclarationUtilities.getMetricGroupsForProcessing( Set.of( metricOne, metricTwo ) );
+
+        Set<Set<Metric>> expected =
+                Set.of( Set.of( metricOne,
+                                metricTwo,
+                                new Metric( MetricConstants.TIME_TO_PEAK_ERROR_MEAN, null ),
+                                new Metric( MetricConstants.TIME_TO_PEAK_ERROR_MEDIAN, null ),
+                                new Metric( MetricConstants.TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE, null ),
+                                new Metric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM, null ),
+                                new Metric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM, null ),
+                                new Metric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION, null ) ) );
 
         assertEquals( expected, actual );
     }
