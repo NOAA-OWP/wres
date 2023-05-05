@@ -27,6 +27,7 @@ import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
@@ -356,7 +357,6 @@ class DeclarationInterpolatorTest
                                                                             false );
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
-        ;
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -378,7 +378,6 @@ class DeclarationInterpolatorTest
                                                                             true );
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
-        ;
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -400,7 +399,6 @@ class DeclarationInterpolatorTest
                                                                             true );
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
-        ;
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -422,7 +420,6 @@ class DeclarationInterpolatorTest
                                                                             true );
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
-        ;
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -445,7 +442,6 @@ class DeclarationInterpolatorTest
                                                                             true );
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
-        ;
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -744,6 +740,106 @@ class DeclarationInterpolatorTest
                              .build();
 
         Set<Metric> expected = Set.of( firstExpected, secondExpected );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateAddsFeatureFulThresholdsToMetrics()
+    {
+        Set<GeometryTuple> singletons = Set.of( LEFT_NAME_ONE_DECLARED_FEATURE );
+        String groupName = "A group";
+        GeometryGroup featureGroup = GeometryGroup.newBuilder()
+                                                  .addAllGeometryTuples( Set.of( LEFT_NAME_TWO_DECLARED_FEATURE ) )
+                                                  .setRegionName( groupName )
+                                                  .build();
+
+        EvaluationDeclaration evaluation
+                = DeclarationInterpolatorTest.getBoilerplateEvaluationWith( singletons,
+                                                                            Set.of( featureGroup ),
+                                                                            false );
+
+        EvaluationDeclarationBuilder builder =
+                EvaluationDeclarationBuilder.builder( evaluation )
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) );
+
+        // Create some metric-specific thresholds, one with a feature, one without
+        wres.config.yaml.components.Threshold one =
+                ThresholdBuilder.builder()
+                                .feature( LEFT_NAME_ONE_DECLARED_FEATURE.getLeft() )
+                                .threshold( Threshold.newBuilder()
+                                                     .setLeftThresholdValue( DoubleValue.of( 1.0 ) ).build() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold two =
+                ThresholdBuilder.builder()
+                                .threshold( Threshold.newBuilder()
+                                                     .setLeftThresholdValue( DoubleValue.of( 2.0 ) ).build() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        // Add some metrics
+        Metric first =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .valueThresholds( Set.of( one, two ) )
+                                                                 .build() )
+                             .build();
+        Metric second =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_ERROR )
+                             .build();
+        Set<Metric> metrics = Set.of( first, second );
+        builder.metrics( metrics );
+
+        EvaluationDeclaration declarationToInterpolate = builder.build();
+        EvaluationDeclaration actualDeclaration =
+                DeclarationInterpolator.interpolate( declarationToInterpolate, true );
+
+        wres.config.yaml.components.Threshold expectedOne =
+                ThresholdBuilder.builder( ALL_DATA_THRESHOLD )
+                                .feature( LEFT_NAME_ONE_DECLARED_FEATURE.getLeft() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold expectedTwo =
+                ThresholdBuilder.builder( ALL_DATA_THRESHOLD )
+                                .feature( LEFT_NAME_TWO_DECLARED_FEATURE.getLeft() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold expectedThree =
+                ThresholdBuilder.builder( two )
+                                .feature( LEFT_NAME_ONE_DECLARED_FEATURE.getLeft() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold expectedFour =
+                ThresholdBuilder.builder( two )
+                                .feature( LEFT_NAME_TWO_DECLARED_FEATURE.getLeft() )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+
+        Metric expectedFirst =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .valueThresholds( Set.of( expectedOne,
+                                                                                           expectedTwo,
+                                                                                           one,
+                                                                                           expectedThree,
+                                                                                           expectedFour ) )
+                                                                 .build() )
+                             .build();
+        Metric expectedSecond =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_ERROR )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .valueThresholds( Set.of( expectedOne,
+                                                                                           expectedTwo ) )
+                                                                 .build() )
+                             .build();
+        Set<Metric> expected = Set.of( expectedFirst, expectedSecond );
+        Set<Metric> actual = actualDeclaration.metrics();
 
         assertEquals( expected, actual );
     }

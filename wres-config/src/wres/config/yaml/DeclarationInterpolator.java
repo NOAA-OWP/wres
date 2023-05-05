@@ -648,7 +648,9 @@ public class DeclarationInterpolator
         // Adjust the metrics
         for ( Metric next : metrics )
         {
-            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( thresholdsByType, next );
+            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( thresholdsByType,
+                                                                                   next,
+                                                                                   builder );
             adjustedMetrics.add( adjustedMetric );
         }
 
@@ -862,14 +864,18 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Associates the specified thresholds with the specified metric and adds an "all data" threshold as needed.
+     * Associates the specified thresholds with the specified metric and adds an "all data" threshold as needed. Also
+     * adds featureful thresholds where possible.
      *
      * @param thresholdsByType the mapped thresholds
+     * @param metric the metric
+     * @param builder the builder
      * @return the adjusted metric
      */
 
     private static Metric addThresholdsToMetric( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
-                                                 Metric metric )
+                                                 Metric metric,
+                                                 EvaluationDeclarationBuilder builder )
     {
         MetricConstants name = metric.name();
 
@@ -885,34 +891,33 @@ public class DeclarationInterpolator
         }
 
         // Value thresholds
-        if ( Objects.isNull( parametersBuilder.valueThresholds() ) || parametersBuilder.valueThresholds()
-                                                                                       .isEmpty() )
-        {
-            Set<Threshold> valueThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.VALUE );
-            parametersBuilder.valueThresholds( valueThresholds );
-        }
+        Set<Threshold> valByType =
+                thresholdsByType.get( ThresholdType.VALUE );
+        Set<Threshold> valueThresholds =
+                DeclarationInterpolator.getCombinedThresholds( valByType,
+                                                               parametersBuilder.valueThresholds( ) );
 
         // Add "all data" thresholds?
         if ( name.isContinuous() )
         {
-            Set<Threshold> valueThresholds = new LinkedHashSet<>();
-            if ( Objects.nonNull( parametersBuilder.valueThresholds() ) )
-            {
-                valueThresholds.addAll( parametersBuilder.valueThresholds() );
-            }
             valueThresholds.add( ALL_DATA_THRESHOLD );
-            parametersBuilder.valueThresholds( valueThresholds );
         }
 
+        // Render the value thresholds featureful, if possible
+        valueThresholds = DeclarationInterpolator.getFeatureFulThresholds( valueThresholds, builder );
+
+        // Set them
+        parametersBuilder.valueThresholds( valueThresholds );
+
         // Probability thresholds
-        if ( Objects.isNull( parametersBuilder.probabilityThresholds() ) || parametersBuilder.probabilityThresholds()
-                                                                                             .isEmpty() )
-        {
-            Set<Threshold> probThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.PROBABILITY );
-            parametersBuilder.probabilityThresholds( probThresholds );
-        }
+        Set<Threshold> probByType =
+                thresholdsByType.get( ThresholdType.PROBABILITY );
+        Set<Threshold> probabilityThresholds =
+                DeclarationInterpolator.getCombinedThresholds( probByType,
+                                                               parametersBuilder.probabilityThresholds() );
+        // Render the probability thresholds featureful, if possible
+        probabilityThresholds = DeclarationInterpolator.getFeatureFulThresholds( probabilityThresholds, builder );
+        parametersBuilder.probabilityThresholds( probabilityThresholds );
 
         // Classifier thresholds, which only apply to categorical measures
         if ( ( Objects.isNull( parametersBuilder.classifierThresholds() )
@@ -921,9 +926,14 @@ public class DeclarationInterpolator
              && ( name.isInGroup( MetricConstants.SampleDataGroup.DICHOTOMOUS )
                   || name.isInGroup( MetricConstants.SampleDataGroup.MULTICATEGORY ) ) )
         {
-            Set<Threshold> classThresholds =
-                    thresholdsByType.get( wres.config.yaml.components.ThresholdType.PROBABILITY_CLASSIFIER );
-            parametersBuilder.classifierThresholds( classThresholds );
+            Set<Threshold> classByType =
+                    thresholdsByType.get( ThresholdType.PROBABILITY_CLASSIFIER );
+            Set<Threshold> classifierThresholds =
+                    DeclarationInterpolator.getCombinedThresholds( classByType,
+                                                                   parametersBuilder.classifierThresholds() );
+            // Render the classifier thresholds featureful, if possible
+            classifierThresholds = DeclarationInterpolator.getFeatureFulThresholds( classifierThresholds, builder );
+            parametersBuilder.classifierThresholds( classifierThresholds );
         }
 
         Metric adjustedMetric = metric;
@@ -933,7 +943,8 @@ public class DeclarationInterpolator
 
         // Something changed, which resulted in non-default parameters?
         if ( !newParameters.equals( nextParameters ) &&
-             !newParameters.equals( MetricParametersBuilder.builder().build() ) )
+             !newParameters.equals( MetricParametersBuilder.builder()
+                                                           .build() ) )
         {
             adjustedMetric = MetricBuilder.builder( metric )
                                           .parameters( newParameters )
@@ -944,6 +955,110 @@ public class DeclarationInterpolator
         }
 
         return adjustedMetric;
+    }
+
+    /**
+     * Combines the input thresholds
+     * @param thresholds the thresholds
+     * @param moreThresholds more thresholds to combine
+     * @return the combined thresholds
+     */
+    private static Set<Threshold> getCombinedThresholds( Set<Threshold> thresholds, Set<Threshold> moreThresholds )
+    {
+        Set<Threshold> combined = new HashSet<>();
+
+        if( Objects.nonNull( thresholds ) )
+        {
+            combined.addAll( thresholds );
+        }
+
+        if( Objects.nonNull( moreThresholds ) )
+        {
+            combined.addAll( moreThresholds );
+        }
+
+        // Mutable
+        return combined ;
+    }
+
+
+    /**
+     * Interpolates featureful thresholds from the supplied thresholds. Each threshold that is not currently associated
+     * with a feature is repeated as many times as features and assigned the feature as an index.
+     *
+     * @param thresholds the thresholds
+     * @return the featureful thresholds
+     */
+
+    private static Set<Threshold> getFeatureFulThresholds( Set<Threshold> thresholds,
+                                                           EvaluationDeclarationBuilder declaration )
+    {
+        // Get all features associated with the embryonic declaration
+        Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration.build() );
+
+        // No features, return the thresholds as-is
+        if( features.isEmpty() )
+        {
+            return thresholds;
+        }
+
+        Set<Threshold> featurefulThresholds = new HashSet<>();
+        for( Threshold next : thresholds )
+        {
+            // Already featureful
+            if( Objects.nonNull( next.feature() ) )
+            {
+                featurefulThresholds.add( next );
+            }
+            // Add the threshold for each feature
+            else
+            {
+                Set<Threshold> featureful = DeclarationInterpolator.getThresholdForEachFeature( next, features );
+                featurefulThresholds.addAll( featureful );
+            }
+        }
+
+        return Collections.unmodifiableSet( featurefulThresholds );
+    }
+
+    /**
+     * Creates a threshold from the base threshold for each feature in the supplied set of features.
+     * @param baseThreshold the base threshold
+     * @param features the features
+     * @return the thresholds
+     */
+    private static Set<Threshold> getThresholdForEachFeature( Threshold baseThreshold, Set<GeometryTuple> features )
+    {
+        Set<Threshold> thresholds = new HashSet<>();
+        for( GeometryTuple next : features )
+        {
+            Geometry feature = null;
+            DatasetOrientation orientation = null;
+
+            // Find a feature and associated orientation, beginning with the left, then right, then baseline
+            if( next.hasLeft() )
+            {
+                feature = next.getLeft();
+                orientation = DatasetOrientation.LEFT;
+            }
+            else if( next.hasRight() )
+            {
+                feature = next.getRight();
+                orientation = DatasetOrientation.RIGHT;
+            }
+            else if( next.hasBaseline() )
+            {
+                feature = next.getBaseline();
+                orientation = DatasetOrientation.BASELINE;
+            }
+            Threshold newThreshold = ThresholdBuilder.builder( baseThreshold )
+                                                     .feature( feature )
+                                                     .featureNameFrom( orientation )
+                                                     .build();
+            thresholds.add( newThreshold );
+        }
+
+        return Collections.unmodifiableSet( thresholds );
     }
 
     /**
