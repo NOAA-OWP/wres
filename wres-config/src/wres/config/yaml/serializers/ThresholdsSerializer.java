@@ -34,6 +34,9 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdsSerializer.class );
 
+    /** Re-used string. */
+    private static final String VALUE = "value";
+
     @Override
     public void serialize( Set<Threshold> thresholds,
                            JsonGenerator writer,
@@ -139,9 +142,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             // Start the array
             writer.writeStartArray();
 
+            // Get the featureful thresholds and write those
+            Set<Threshold> featureful = thresholds.stream()
+                                                  .filter( next -> Objects.nonNull( next.feature() ) )
+                                                  .collect( Collectors.toCollection( LinkedHashSet::new ) );
             // Preserve insertion order
             Map<Geometry, List<Threshold>> groupedByFeature
-                    = thresholds.stream()
+                    = featureful.stream()
                                 .collect( Collectors.groupingBy( Threshold::feature,
                                                                  LinkedHashMap::new,
                                                                  Collectors.toList() ) );
@@ -154,10 +161,22 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                 for ( double nextValue : values )
                 {
                     writer.writeStartObject();
-                    writer.writeNumberField( "value", nextValue );
+                    writer.writeNumberField( VALUE, nextValue );
                     writer.writeStringField( "feature", geometry.getName() );
                     writer.writeEndObject();
                 }
+            }
+
+            // Get the featureless thresholds and write those
+            Set<Threshold> featureless = thresholds.stream()
+                                                   .filter( next -> Objects.isNull( next.feature() ) )
+                                                   .collect( Collectors.toCollection( LinkedHashSet::new ) );
+            double[] values = this.getThresholdValues( context, featureless );
+            for ( double nextValue : values )
+            {
+                writer.writeStartObject();
+                writer.writeNumberField( VALUE, nextValue );
+                writer.writeEndObject();
             }
 
             // End the array
@@ -210,7 +229,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     private double[] getThresholdValues( String context, Collection<Threshold> thresholds )
     {
         double[] values;
-        if ( context.startsWith( "value" ) )
+        if ( context.startsWith( VALUE ) )
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()

@@ -1,5 +1,6 @@
 package wres.config.yaml;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -15,6 +16,9 @@ import java.util.StringJoiner;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.ValidationMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,18 +56,18 @@ import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.geom.Geometry;
 
 /**
- * <p>Performs high-level validation of an {@link EvaluationDeclaration}. This represents the highest of three levels
- * of validation, namely:
+ * <p>Validates a declared evaluation. In general, there are three levels of validation, namely:
  *
  * <ol>
- * <li>1. Validation that the YAML string is valid YAML, which is performed by
- * {@link DeclarationFactory#from(String)}.</li>
- * <li>2. Validation that the declaration is compatible with the declaration schema, which is performed by
- * {@link DeclarationFactory#from(String)}; and</li>
- * <li>3. Validation that the declaration is internally consistent and reasonable (i.e., "business logic", here).</li>
+ * <li>1. Validation that the declaration string is a valid string in the expected serialization format (YAML), which
+ *        is performed by {@link DeclarationFactory#from(String)}.</li>
+ * <li>2. Validation that the declaration is compatible with the declaration schema, which is performed here using
+ *        {@link DeclarationValidator#validate(JsonNode, JsonSchema)}; and</li>
+ * <li>3. Validation that the declaration is internally consistent and reasonable (i.e., "business logic"), which is
+ *        also performed here using {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}.</li>
  * </ol>
  *
- * <p>Unlike lower levels of validation, which are concerned with "well-posed" declaration, this class validates
+ * <p>In summary, this class performs two levels of validation, namely validation against the schema and validation of
  * the "business logic" of an evaluation, i.e., that the evaluation instructions are coherent (e.g., that different
  * pieces of declaration are mutually consistent) and that the declaration as a whole appears to form a reasonable
  * evaluation.
@@ -96,8 +100,72 @@ public class DeclarationValidator
     private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
 
     /**
-     * Validates the declaration and, optionally, notifies any events discovered by logging warnings and aggregating
-     * errors into an exception. For raw validation, see {@link #validate(EvaluationDeclaration)}.
+     * Performs validation against the schema, followed by "business-logic" validation. First, reads the declaration
+     * string, then calls {@link #validate(JsonNode, JsonSchema)}, then finally calls
+     * {@link #validate(EvaluationDeclaration, boolean)}. This method is intended for a caller that wants to validate
+     * the declaration without performing any subsequent activities, such as executing an evaluation.
+     *
+     * @param yaml a declaration string
+     * @return any validation events encountered
+     * @throws NullPointerException if the input string is null
+     * @throws IOException if the declaration or schema could not be read
+     */
+
+    public static Set<EvaluationStatusEvent> validate( String yaml ) throws IOException
+    {
+        Objects.requireNonNull( yaml );
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "Encountered the following declaration string:{}{}{}{}",
+                         System.lineSeparator(),
+                         "---",
+                         System.lineSeparator(),
+                         yaml.trim() );
+        }
+
+        // Get the declaration node
+        JsonNode declaration = DeclarationFactory.deserialize( yaml );
+
+        // Get the schema
+        JsonSchema schema = DeclarationFactory.getSchema();
+
+        // Validate against the schema
+        return DeclarationValidator.validate( declaration, schema );
+    }
+
+    /**
+     * Performs validation of a declaration node against the schema.
+     * @param declaration the declaration
+     * @param schema the schema
+     * @return any validation errors encountered
+     * @throws NullPointerException if either input is null
+     */
+
+    public static Set<EvaluationStatusEvent> validate( JsonNode declaration,
+                                                       JsonSchema schema )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( schema );
+
+        Set<ValidationMessage> errors = schema.validate( declaration );
+
+        LOGGER.debug( "Validated a declaration string against the schema, which produced {} errors.",
+                      errors.size() );
+
+        // Map the errors to evaluation status events
+        return errors.stream()
+                     .map( next -> EvaluationStatusEvent.newBuilder()
+                                                        .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                                        .setEventMessage( next.getMessage() )
+                                                        .build() )
+                     .collect( Collectors.toUnmodifiableSet() );
+    }
+
+    /**
+     * Performs business-logic validation and, optionally, notifies any events discovered by logging warnings and
+     * aggregating errors into an exception. For raw business-logic validation, see
+     * {@link #validate(EvaluationDeclaration)}.
      *
      * @see #validate(EvaluationDeclaration)
      * @param declaration the declaration to validate
@@ -368,7 +436,7 @@ public class DeclarationValidator
                                                                        + ", but some of the declaration is "
                                                                        + "designed for this data type: "
                                                                        + "analysis_durations. Please remove this "
-                                                                       + "ensemble declaration or correct the data "
+                                                                       + "declaration or correct the data "
                                                                        + "types." )
                                                                .build();
             events.add( event );
@@ -980,7 +1048,7 @@ public class DeclarationValidator
                 Geometry geometry = reader.read( wkt );
                 LOGGER.debug( "Read the wkt string {} into a geometry, {}.", wkt, geometry );
             }
-            catch ( ParseException e )
+            catch ( ParseException | IllegalArgumentException e )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()

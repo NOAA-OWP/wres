@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,9 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
 import org.apache.commons.lang3.tuple.Pair;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
@@ -51,10 +55,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -153,6 +153,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 
 /**
  * <p>Factory class for generating POJOs from a YAML-formatted declaration string that is consistent with the WRES 
@@ -231,6 +232,9 @@ public class DeclarationFactory
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationFactory.class );
 
+    /** Schema file name on the classpath. */
+    private static final String SCHEMA = "schema.yml";
+
     /** Mapper for deserialization. */
     private static final ObjectMapper DESERIALIZER = YAMLMapper.builder()
                                                                .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
@@ -256,9 +260,6 @@ public class DeclarationFactory
                     .enable( SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED )
                     .setSerializationInclusion( JsonInclude.Include.NON_NULL )
                     .setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
-
-    /** Schema file name on the classpath. */
-    private static final String SCHEMA = "schema.yml";
 
     /** String representation of the default missing value in the old declaration language. */
     private static final String DEFAULT_MISSING_STRING_OLD = "-999.0";
@@ -371,66 +372,35 @@ public class DeclarationFactory
                          yaml.trim() );
         }
 
-        // Get the schema from the classpath
-        URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
+        // Get the declaration node
+        JsonNode declaration = DeclarationFactory.deserialize( yaml );
 
-        LOGGER.debug( "Read the declaration schema from classpath resource '{}'.", SCHEMA );
+        // Get the schema
+        JsonSchema schema = DeclarationFactory.getSchema();
 
-        if ( Objects.isNull( schema ) )
+        // Validate against the schema
+        Set<EvaluationStatusEvent> errors = DeclarationValidator.validate( declaration, schema );
+
+        if ( !errors.isEmpty() )
         {
-            throw new IllegalStateException(
-                    "Could not find the project declaration schema " + SCHEMA + "on the classpath." );
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            String spacer = "    - ";
+            errors.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+            throw new DeclarationException( "When comparing the declared evaluation to the schema, encountered "
+                                            + errors.size()
+                                            + " errors, which must be fixed. Hint: some of these errors may have the "
+                                            + "same origin, so look for the most precise/informative error(s) among "
+                                            + "them. The errors are:"
+                                            + System.lineSeparator() +
+                                            message );
         }
 
-        try ( InputStream stream = schema.openStream() )
-        {
-            String schemaString = new String( stream.readAllBytes(), StandardCharsets.UTF_8 );
+        LOGGER.debug( "Deserializing a declaration string into POJOs." );
 
-            // Map the schema to a json node
-            JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
-
-            // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
-            // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
-            // because it means  that the declaration string is being read twice
-            // TODO: use Jackson to read the raw YAML string once it can handle anchors/references properly
-            Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
-                                       new Representer( new DumperOptions() ),
-                                       new DumperOptions(),
-                                       new CustomResolver() );
-            Object resolvedYaml = snakeYaml.load( yaml );
-            String resolvedYamlString =
-                    DESERIALIZER.writerWithDefaultPrettyPrinter().writeValueAsString( resolvedYaml );
-
-            // Use Jackson to (re-)read the declaration string once any anchors/references are resolved
-            JsonNode declaration = DESERIALIZER.readTree( resolvedYamlString );
-
-            JsonSchemaFactory factory =
-                    JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .objectMapper( DESERIALIZER )
-                                     .build();
-
-            // Validate the declaration against the schema
-            JsonSchema validator = factory.getSchema( schemaNode );
-
-            Set<ValidationMessage> errors = validator.validate( declaration );
-
-            LOGGER.debug( "Validated a declaration string against the schema, which produced {} errors.",
-                          errors.size() );
-
-            if ( !errors.isEmpty() )
-            {
-                throw new DeclarationSchemaException( "Encountered an error while attempting to validate a project "
-                                                      + "declaration string against the schema. Please check your "
-                                                      + "declaration and fix any errors. The errors encountered were: "
-                                                      + errors );
-            }
-
-            LOGGER.debug( "Deserializing a declaration string into POJOs." );
-
-            // Deserialize
-            return DESERIALIZER.reader()
-                               .readValue( declaration, EvaluationDeclaration.class );
-        }
+        // Deserialize
+        return DESERIALIZER.reader()
+                           .readValue( declaration, EvaluationDeclaration.class );
     }
 
     /**
@@ -515,6 +485,68 @@ public class DeclarationFactory
         DeclarationFactory.migrateOutputFormats( projectConfig.getOutputs(), builder );
 
         return builder.build();
+    }
+
+    /**
+     * Deserializes a YAML string into a {@link JsonNode} for further processing.
+     * @param yaml the yaml string
+     * @return the node
+     * @throws JsonProcessingException if the string could not be deserialized
+     */
+
+    static JsonNode deserialize( String yaml ) throws JsonProcessingException
+    {
+        // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
+        // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
+        // because it means  that the declaration string is being read twice
+        // TODO: use Jackson to read the raw YAML string once it can handle anchors/references properly
+        Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
+                                   new Representer( new DumperOptions() ),
+                                   new DumperOptions(),
+                                   new CustomResolver() );
+        Object resolvedYaml = snakeYaml.load( yaml );
+        String resolvedYamlString =
+                DESERIALIZER.writerWithDefaultPrettyPrinter()
+                            .writeValueAsString( resolvedYaml );
+
+        // Use Jackson to (re-)read the declaration string once any anchors/references are resolved
+        return DESERIALIZER.readTree( resolvedYamlString );
+    }
+
+    /**
+     * Looks for the schema on the classpath and deserializes it.
+     * @return the schema
+     * @throws IOException if the schema could not be found or read for any reason
+     */
+
+    static JsonSchema getSchema() throws IOException
+    {
+        // Get the schema from the classpath
+        URL schema = DeclarationFactory.class.getClassLoader().getResource( SCHEMA );
+
+        LOGGER.debug( "Read the declaration schema from classpath resource '{}'.", SCHEMA );
+
+        if ( Objects.isNull( schema ) )
+        {
+            throw new IOException( "Could not find the project declaration schema "
+                                   + SCHEMA
+                                   + "on the classpath." );
+        }
+
+        try ( InputStream stream = schema.openStream() )
+        {
+            String schemaString = new String( stream.readAllBytes(), StandardCharsets.UTF_8 );
+
+            // Map the schema to a json node
+            JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
+
+            JsonSchemaFactory factory =
+                    JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
+                                     .objectMapper( DESERIALIZER )
+                                     .build();
+
+            return factory.getSchema( schemaNode );
+        }
     }
 
     /**
