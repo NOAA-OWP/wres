@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -1084,25 +1085,26 @@ class DeclarationInterpolatorTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
 
-        assertAll( () -> assertEquals( "foo", actualInterpolated.valueThresholds()
-                                                                .iterator()
-                                                                .next()
-                                                                .threshold()
-                                                                .getThresholdValueUnits() ),
-                   () -> assertEquals( "foo", actualInterpolated.thresholdSets()
-                                                                .iterator()
-                                                                .next()
-                                                                .threshold()
-                                                                .getThresholdValueUnits() ),
-                   () -> assertEquals( "foo", actualInterpolated.metrics()
-                                                                .iterator()
-                                                                .next()
-                                                                .parameters()
-                                                                .valueThresholds()
-                                                                .iterator()
-                                                                .next()
-                                                                .threshold()
-                                                                .getThresholdValueUnits() )
+        assertAll( () -> assertTrue( actualInterpolated.valueThresholds()
+                                                       .stream()
+                                                       .filter( next -> next
+                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                       .allMatch( next -> "foo".equals( next.threshold()
+                                                                                            .getThresholdValueUnits() ) ) ),
+                   () -> assertTrue( actualInterpolated.thresholdSets()
+                                                       .stream()
+                                                       .filter( next -> next
+                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                       .allMatch( next -> "foo".equals( next.threshold()
+                                                                                            .getThresholdValueUnits() ) ) ),
+                   () -> assertTrue( actualInterpolated.metrics()
+                                                       .stream()
+                                                       .map( Metric::parameters )
+                                                       .flatMap( next -> next.valueThresholds().stream() )
+                                                       .filter( next -> next
+                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                       .allMatch( next -> "foo".equals( next.threshold()
+                                                                                            .getThresholdValueUnits() ) ) )
         );
     }
 
