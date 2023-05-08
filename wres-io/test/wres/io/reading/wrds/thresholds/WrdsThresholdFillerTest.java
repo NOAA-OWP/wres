@@ -2,6 +2,7 @@ package wres.io.reading.wrds.thresholds;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,7 +12,12 @@ import java.util.Set;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.protobuf.DoubleValue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +39,6 @@ import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.units.UnitMapper;
-import wres.io.reading.wrds.thresholds.WrdsThresholdFiller;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -51,6 +56,9 @@ class WrdsThresholdFillerTest
 
     /** Re-used string. */
     private static final String TEST = "test";
+
+    /** Mocker server instance. */
+    private ClientAndServer mockServer;
 
     /** Unit string. */
     private static final String FT = "FT";
@@ -618,6 +626,18 @@ class WrdsThresholdFillerTest
                 ]
             }
             """;
+
+    @BeforeEach
+    void startServer()
+    {
+        this.mockServer = ClientAndServer.startClientAndServer( 0 );
+    }
+
+    @AfterEach
+    void stopServer()
+    {
+        this.mockServer.stop();
+    }
 
     @Test
     void testReadThresholdsFromFileSystemAndFillDeclaration() throws IOException
@@ -1200,5 +1220,76 @@ class WrdsThresholdFillerTest
                 Files.delete( jsonPath );
             }
         }
+    }
+
+    @Test
+    void testFillThresholdsUsesHandbook5IdentifiersForNwsFeatureAuthority() throws IOException
+    {
+        // Path expectation includes handbook 5 identifiers
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( "/nws_lid/BLOF1,CEDG1,MNTG1,PTSA1,SMAF1/" )
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort() );
+
+        ThresholdService service
+                = ThresholdServiceBuilder.builder()
+                                         .uri( fakeUri )
+                                         .featureNameFrom( DatasetOrientation.LEFT )
+                                         .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                         .parameter( "stage" )
+                                         .provider( "NWS-NRLDB" )
+                                         .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                         .build();
+
+        Dataset left = DatasetBuilder.builder()
+                                     .featureAuthority( FeatureAuthority.NWS_LID )
+                                     .build();
+
+        GeometryTuple first = GeometryTuple.newBuilder()
+                                           .setLeft( Geometry.newBuilder()
+                                                             .setName( "PTSA1FOO" ) )
+                                           .build();
+        GeometryTuple second = GeometryTuple.newBuilder()
+                                            .setLeft( Geometry.newBuilder()
+                                                              .setName( "MNTG1FOO" ) )
+                                            .build();
+        GeometryTuple third = GeometryTuple.newBuilder()
+                                           .setLeft( Geometry.newBuilder()
+                                                             .setName( "BLOF1FOO" ) )
+                                           .build();
+        GeometryTuple fourth = GeometryTuple.newBuilder()
+                                            .setLeft( Geometry.newBuilder()
+                                                              .setName( "CEDG1FOO" ) )
+                                            .build();
+        GeometryTuple fifth = GeometryTuple.newBuilder()
+                                           .setLeft( Geometry.newBuilder()
+                                                             .setName( "SMAF1FOO" ) )
+                                           .build();
+        Set<GeometryTuple> geometries = Set.of( first, second, third, fourth, fifth );
+        Features features = new Features( geometries );
+
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ) );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .features( features )
+                                                                        .thresholdService( service )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        UnitMapper unitMapper = UnitMapper.of( FT );
+
+        EvaluationDeclaration actual = WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+
+        Set<GeometryTuple> actualSingletons = actual.features()
+                                                    .geometries();
+
+        Set<GeometryTuple> expected = Set.of( first, second, third, fourth, fifth );
+
+        // Assert equality
+        assertEquals( expected, actualSingletons );
     }
 }

@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.generated.FeatureDimension;
 import wres.config.generated.FeatureService;
 import wres.config.generated.ProjectConfig;
@@ -105,7 +104,7 @@ class WrdsFeatureService
      * @param to The unknown feature dimension, the dimension to search in.
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
-     * @throws ProjectConfigException When a feature service was needed but null
+     * @throws DeclarationException When a feature service was needed but null
      * @throws PreIngestException When the count of features in response differs
      *                            from the count of feature names requested, or
      *                            when the requested "to" was not found in the
@@ -151,39 +150,37 @@ class WrdsFeatureService
 
         if ( Objects.isNull( featureService ) )
         {
-            throw new ProjectConfigException( projectConfig.getPair(),
-                                              "Attempted to look up features "
-                                              + "with "
-                                              + from.value()
-                                              + AND_MISSING
-                                              + to.value()
-                                              + ", but could not because the "
-                                              + "'featureService' declaration "
-                                              + "was either missing. "
-                                              + "Add a <featureService><baseUrl>..."
-                                              + "</baseUrl></featureService> with "
-                                              + "the non-varying part of the "
-                                              + "URL of the feature service to "
-                                              + "have WRES ask it for features." );
+            throw new DeclarationException( "Attempted to look up features "
+                                            + "with "
+                                            + from.value()
+                                            + AND_MISSING
+                                            + to.value()
+                                            + ", but could not because the "
+                                            + "'featureService' declaration "
+                                            + "was either missing. "
+                                            + "Add a <featureService><baseUrl>..."
+                                            + "</baseUrl></featureService> with "
+                                            + "the non-varying part of the "
+                                            + "URL of the feature service to "
+                                            + "have WRES ask it for features." );
         }
 
         if ( Objects.isNull( featureService.getBaseUrl() ) )
         {
-            throw new ProjectConfigException( featureService,
-                                              "Attempted to look up features "
-                                              + "with "
-                                              + from.value()
-                                              + AND_MISSING
-                                              + to.value()
-                                              + ", but could not because the "
-                                              + "'featureService' declaration "
-                                              + "was missing a 'baseUrl' tag. "
-                                              + "Add a <baseUrl>...</baseUrl> with "
-                                              + "the non-varying part of the "
-                                              + "URL of the feature service ("
-                                              + "inside the <featureService>) "
-                                              + "to have WRES ask it for"
-                                              + " features." );
+            throw new DeclarationException( "Attempted to look up features "
+                                            + "with "
+                                            + from.value()
+                                            + AND_MISSING
+                                            + to.value()
+                                            + ", but could not because the "
+                                            + "'featureService' declaration "
+                                            + "was missing a 'baseUrl' tag. "
+                                            + "Add a <baseUrl>...</baseUrl> with "
+                                            + "the non-varying part of the "
+                                            + "URL of the feature service ("
+                                            + "inside the <featureService>) "
+                                            + "to have WRES ask it for"
+                                            + " features." );
         }
 
         URI featureServiceBaseUri = featureService.getBaseUrl();

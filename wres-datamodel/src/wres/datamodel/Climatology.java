@@ -221,6 +221,7 @@ public class Climatology
          * Adds the climatology for a specific feature.
          * @param feature the feature
          * @param climatology the climatology
+         * @param measurementUnit the measurement unit
          * @return the builder
          */
 

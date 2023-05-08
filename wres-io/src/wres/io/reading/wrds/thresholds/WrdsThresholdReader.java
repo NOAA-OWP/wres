@@ -235,12 +235,8 @@ public class WrdsThresholdReader
                                                        ThresholdService thresholdService,
                                                        UnitMapper desiredUnitMapper )
     {
-        ThresholdOrientation rawSide = thresholdService.applyTo();
-        ThresholdOperator rawOperator = thresholdService.operator();
-
-        // TODO: remove these duplicate enumerations
-        ThresholdOrientation side = ThresholdOrientation.valueOf( rawSide.name() );
-        ThresholdOperator operator = ThresholdOperator.valueOf( rawOperator.name() );
+        ThresholdOrientation side = thresholdService.applyTo();
+        ThresholdOperator operator = thresholdService.operator();
 
         try
         {
