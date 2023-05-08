@@ -201,9 +201,7 @@ public final class GeneralWRDSReader
         URI fullSourceAddress = GeneralWRDSReader.getAbsoluteUri( source.getValue() );
 
         // Web service
-        if ( fullSourceAddress.getScheme()
-                              .toLowerCase()
-                              .startsWith( "http" ) )
+        if ( ReaderUtilities.isWebSource( fullSourceAddress ) )
         {
             //Build the location groups to use.            
             Set<String> locationGroups = groupLocations( features );
@@ -444,9 +442,7 @@ public final class GeneralWRDSReader
         {
             URI fullAddress = GeneralWRDSReader.getAbsoluteUri( address );
 
-            if ( fullAddress.getScheme()
-                            .toLowerCase()
-                            .startsWith( "http" ) )
+            if ( ReaderUtilities.isWebSource( fullAddress ) )
             {
                 return getRemoteResponse( fullAddress );
             }

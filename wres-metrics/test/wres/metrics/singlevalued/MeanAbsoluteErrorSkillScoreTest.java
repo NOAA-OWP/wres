@@ -98,7 +98,7 @@ final class MeanAbsoluteErrorSkillScoreTest
     @Test
     void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.toString(), this.maess.getName() );
+        assertEquals( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.toString(), this.maess.getMetricNameString() );
     }
 
     @Test
@@ -143,6 +143,6 @@ final class MeanAbsoluteErrorSkillScoreTest
                                                           () -> this.maess.aggregate( (DoubleScoreStatisticOuter) null,
                                                                                     null ) );
 
-        assertEquals( "Specify a non-null statistic for the '" + this.maess.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify a non-null statistic for the '" + this.maess.getMetricNameString() + "'.", actual.getMessage() );
     }
 }

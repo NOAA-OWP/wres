@@ -232,7 +232,7 @@ class NetcdfOutputWriterTest
                                                                                   0,
                                                                                   Pool.EnsembleAverageType.MEAN );
 
-            List<MetricsAndThresholds> metricsAndThresholdsList = List.of( metricsAndThresholds );
+            Set<MetricsAndThresholds> metricsAndThresholdsList = Set.of( metricsAndThresholds );
 
             // Create the blobs to write
             writer.createBlobsForWriting( featureGroups, metricsAndThresholdsList );

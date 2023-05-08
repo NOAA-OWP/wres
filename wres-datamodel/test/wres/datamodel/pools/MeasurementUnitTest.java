@@ -1,10 +1,8 @@
 package wres.datamodel.pools;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -24,31 +22,31 @@ public class MeasurementUnitTest
     @Test
     public void testEquals()
     {
-        assertTrue( MeasurementUnit.of().equals( MeasurementUnit.of() ) );
+        assertEquals( MeasurementUnit.of(), MeasurementUnit.of() );
         MeasurementUnit m1 = MeasurementUnit.of( "A" );
         // Reflexive
-        assertTrue( m1.equals( m1 ) );
+        assertEquals( m1, m1 );
         MeasurementUnit m2 = MeasurementUnit.of( "A" );
         // Symmetric
-        assertTrue( m1.equals( m2 ) );
-        assertTrue( m2.equals( m1 ) );
+        assertEquals( m1, m2 );
+        assertEquals( m2, m1 );
         MeasurementUnit m3 = MeasurementUnit.of( "A" );
         // Transitive
-        assertTrue( m1.equals( m2 ) );
-        assertTrue( m2.equals( m3 ) );
-        assertTrue( m1.equals( m3 ) );
+        assertEquals( m1, m2 );
+        assertEquals( m2, m3 );
+        assertEquals( m1, m3 );
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( "Unexpected inequality between two dimension instances.", m1.equals( m2 ) );
+            assertEquals( "Unexpected inequality between two dimension instances.", m1, m2 );
         }
         // Unequal
         MeasurementUnit m4 = MeasurementUnit.of( "B" );
-        assertFalse( m1.equals( m4 ) );
+        assertNotEquals( m1, m4 );
         // Null check
         assertNotEquals(null, m1 );
         // Other type check
-        assertNotEquals( Double.valueOf( 2 ), m1 );
+        assertNotEquals( 2.0, m1 );
     }
 
     /**
@@ -59,24 +57,24 @@ public class MeasurementUnitTest
     public void testHashcode()
     {
         // Equal
-        assertTrue( MeasurementUnit.of().equals( MeasurementUnit.of() ) );
+        assertEquals( MeasurementUnit.of(), MeasurementUnit.of() );
         MeasurementUnit m1 = MeasurementUnit.of( "A" );
         assertEquals( m1, m1 );
         MeasurementUnit m2 = MeasurementUnit.of( "A" );
         MeasurementUnit m3 = MeasurementUnit.of( "A" );
-        assertTrue( m1.hashCode() == m2.hashCode() );
-        assertTrue( m2.equals( m3 ) );
-        assertTrue( m1.equals( m3 ) );
+        assertEquals( m1.hashCode(), m2.hashCode() );
+        assertEquals( m2, m3 );
+        assertEquals( m1, m3 );
         // Consistent
         for ( int i = 0; i < 20; i++ )
         {
-            assertTrue( m1.hashCode() == m2.hashCode() );
+            assertEquals( m1.hashCode(), m2.hashCode() );
         }
         // Unequal
         MeasurementUnit m4 = MeasurementUnit.of( "B" );
-        assertFalse( m1.hashCode() == m4.hashCode() );
+        assertNotEquals( m1.hashCode(), m4.hashCode() );
         // Other type check
-        assertFalse( m1.hashCode() == Double.valueOf( 2 ).hashCode() );
+        assertNotEquals( m1.hashCode(), Double.valueOf( 2 ).hashCode() );
     }
 
     @Test 

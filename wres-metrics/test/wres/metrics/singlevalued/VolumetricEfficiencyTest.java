@@ -79,7 +79,7 @@ public final class VolumetricEfficiencyTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString(), this.ve.getName() );
+        assertEquals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString(), this.ve.getMetricNameString() );
     }
 
     @Test

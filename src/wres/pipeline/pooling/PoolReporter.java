@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigPlus;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
@@ -51,7 +51,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
     private final int totalPools;
 
     /** The project configuration.*/
-    private final ProjectConfigPlus projectConfigPlus;
+    private final EvaluationDeclaration declaration;
 
     /** The number of pools processed so far. */
     private final AtomicInteger processed;
@@ -68,18 +68,18 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
     /**
      * Build a {@link PoolReporter}.
      *
-     * @param projectConfigPlus the project configuration
+     * @param declaration the project configuration
      * @param totalPools the total number of pools to process
      * @param printDetailedReport is true to print a detailed report on completion, false to summarize
      * @throws NullPointerException if the project configuration is null
      */
 
-    public PoolReporter( ProjectConfigPlus projectConfigPlus, int totalPools, boolean printDetailedReport )
+    public PoolReporter( EvaluationDeclaration declaration, int totalPools, boolean printDetailedReport )
     {
-        Objects.requireNonNull( projectConfigPlus,
+        Objects.requireNonNull( declaration,
                                 "Specify non-null project configuration when building the feature report." );
 
-        this.projectConfigPlus = projectConfigPlus;
+        this.declaration = declaration;
         this.totalPools = totalPools;
         this.printDetailedReport = printDetailedReport;
         this.successfulPools = new ConcurrentLinkedQueue<>();
@@ -195,7 +195,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
             {
                 LOGGER.info( "Finished creating statistics for all {} pools in project {}.",
                              this.totalPools,
-                             this.projectConfigPlus );
+                             this.declaration.label() );
             }
             else
             {
@@ -203,7 +203,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
                              + "produce statistics.",
                              successfulPoolsToReport.size(),
                              this.totalPools,
-                             this.projectConfigPlus,
+                             this.declaration.label(),
                              this.totalPools - successfulPoolsToReport.size(),
                              this.totalPools );
             }

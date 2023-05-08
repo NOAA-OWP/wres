@@ -294,7 +294,7 @@ public final class BoxPlotErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS.toString(), this.boxPlotError.getName() );
+        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS.toString(), this.boxPlotError.getMetricNameString() );
     }
 
     @Test

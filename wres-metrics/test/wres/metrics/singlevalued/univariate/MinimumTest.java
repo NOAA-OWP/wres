@@ -116,7 +116,7 @@ public final class MinimumTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MINIMUM.toString(), this.minimum.getName() );
+        assertEquals( MetricConstants.MINIMUM.toString(), this.minimum.getMetricNameString() );
     }
 
     @Test
@@ -143,7 +143,7 @@ public final class MinimumTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.minimum.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.minimum.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.minimum.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

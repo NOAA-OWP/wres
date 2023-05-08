@@ -92,7 +92,7 @@ public final class TimeToPeakErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.TIME_TO_PEAK_ERROR.toString(), this.ttp.getName() );
+        assertEquals( MetricConstants.TIME_TO_PEAK_ERROR.toString(), this.ttp.getMetricNameString() );
     }
 
     @Test

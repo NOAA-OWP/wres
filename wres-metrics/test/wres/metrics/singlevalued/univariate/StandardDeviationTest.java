@@ -116,7 +116,7 @@ public final class StandardDeviationTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.STANDARD_DEVIATION.toString(), this.stdev.getName() );
+        assertEquals( MetricConstants.STANDARD_DEVIATION.toString(), this.stdev.getMetricNameString() );
     }
 
     @Test
@@ -143,7 +143,7 @@ public final class StandardDeviationTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.stdev.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.stdev.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.stdev.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

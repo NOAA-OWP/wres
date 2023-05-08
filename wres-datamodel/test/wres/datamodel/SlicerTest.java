@@ -56,6 +56,8 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 class SlicerTest
 {
+    /** A measurement unit. */
+    private static final String UNIT = "bar";
 
     @Test
     void testGetLeftSideSingleValued()
@@ -274,11 +276,11 @@ class SlicerTest
         Feature feature = Feature.of( geometry );
 
         Climatology climatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN }, UNIT )
                                          .build();
 
         Climatology climatologyExpected =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 }, UNIT )
                                          .build();
         PoolMetadata meta =
                 PoolMetadata.of( Evaluation.newBuilder()
@@ -334,7 +336,7 @@ class SlicerTest
         Feature feature = Feature.of( geometry );
 
         Climatology climatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 }, UNIT )
                                          .build();
 
         PoolMetadata meta = PoolMetadata.of();
@@ -363,15 +365,18 @@ class SlicerTest
 
         TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 1 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 2 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                         Instant.MAX,
-                                                                                                        Duration.ofHours( 3 ) ) );
+                                                                                                        Duration.ofHours(
+                                                                                                                3 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -463,15 +468,18 @@ class SlicerTest
 
         TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 1 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 2 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                         Instant.MAX,
-                                                                                                        Duration.ofHours( 2 ) ) );
+                                                                                                        Duration.ofHours(
+                                                                                                                2 ) ) );
 
         OneOrTwoThresholds thresholdOne =
                 OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
@@ -585,11 +593,12 @@ class SlicerTest
         Feature feature = Feature.of( geometry );
 
         Climatology climatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, 6, 7 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, 6, 7 }, UNIT )
                                          .build();
 
-        Climatology expectedOutput = new Climatology.Builder().addClimatology( feature, new double[] { 1, 3, 5, 7 } )
-                                                              .build();
+        Climatology expectedOutput =
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 3, 5, 7 }, UNIT )
+                                         .build();
         DoublePredicate predicate = d -> ( d == 1 || d == 3 || d == 5 || d == 7 );
         Climatology actualOutput = Slicer.filter( climatology, predicate );
 
@@ -623,11 +632,13 @@ class SlicerTest
 
         TimeWindowOuter windowOne = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 1 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              1 ) ) );
 
         TimeWindowOuter windowTwo = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.MIN,
                                                                                                       Instant.MAX,
-                                                                                                      Duration.ofHours( 2 ) ) );
+                                                                                                      Duration.ofHours(
+                                                                                                              2 ) ) );
 
         TimeWindowOuter windowThree = TimeWindowOuter.of( MessageFactory.getTimeWindow( Instant.MIN,
                                                                                         Instant.MAX,
@@ -765,7 +776,7 @@ class SlicerTest
         assertThrows( NullPointerException.class,
                       () -> Slicer.discover( list, ( Function<Statistic<?>, ?> ) null ) );
     }
-    
+
     @Test
     void testRounderProducesInputValueWhenInputIsNotFinite()
     {

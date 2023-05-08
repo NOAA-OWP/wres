@@ -123,7 +123,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.toString(), this.msessn.getName() );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.toString(), this.msessn.getMetricNameString() );
     }
 
     @Test

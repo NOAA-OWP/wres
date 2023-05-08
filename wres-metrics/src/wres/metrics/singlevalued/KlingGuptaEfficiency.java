@@ -123,9 +123,9 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -135,9 +135,9 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
 
         double result = Double.NaN;
         // Compute the components
-        VectorOfDoubles leftValues = VectorOfDoubles.of( Slicer.getLeftSide( s ) );
-        VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( s ) );
-        double rhoVal = rho.apply( s )
+        VectorOfDoubles leftValues = VectorOfDoubles.of( Slicer.getLeftSide( pool ) );
+        VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( pool ) );
+        double rhoVal = rho.apply( pool )
                            .getComponent( MetricConstants.MAIN )
                            .getData()
                            .getValue();
@@ -168,7 +168,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

@@ -156,7 +156,7 @@ public final class MedianErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEDIAN_ERROR.toString(), this.medianError.getName() );
+        assertEquals( MetricConstants.MEDIAN_ERROR.toString(), this.medianError.getMetricNameString() );
     }
 
     @Test
@@ -183,7 +183,7 @@ public final class MedianErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.medianError.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.medianError.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.medianError.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

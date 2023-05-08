@@ -21,11 +21,8 @@ public final class PoolExceptionTest
 
     @Test
     public void testException()
-    {       
+    {
         PoolException e = new PoolException();
-        
-        assertNotNull( new PoolException() );
-        
         PoolException f = new PoolException( TEST_EXCEPTION_MESSAGE );
         
         assertNotNull( f );

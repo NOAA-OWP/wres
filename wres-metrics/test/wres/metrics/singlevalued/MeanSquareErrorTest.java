@@ -86,7 +86,7 @@ public final class MeanSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR.toString(), this.mse.getName() );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR.toString(), this.mse.getMetricNameString() );
     }
 
 
@@ -114,7 +114,7 @@ public final class MeanSquareErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.mse.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.mse.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.mse.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     @Test
@@ -123,7 +123,7 @@ public final class MeanSquareErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> mse.aggregate( null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.mse.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.mse.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

@@ -98,13 +98,13 @@ public final class PeirceSkillScoreTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.PEIRCE_SKILL_SCORE.toString(), this.pss.getName() );
+        assertEquals( MetricConstants.PEIRCE_SKILL_SCORE.toString(), this.pss.getMetricNameString() );
     }
 
     /**
@@ -154,7 +154,7 @@ public final class PeirceSkillScoreTest
                 assertThrows( PoolException.class,
                               () -> this.pss.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
-        String expectedMessage = "Specify non-null input to the '" + this.pss.getName() + "'.";
+        String expectedMessage = "Specify non-null input to the '" + this.pss.getMetricNameString() + "'.";
 
         assertEquals( expectedMessage, exception.getMessage() );
     }
@@ -182,7 +182,7 @@ public final class PeirceSkillScoreTest
 
         String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
                                  + "the '"
-                                 + this.pss.getName()
+                                 + this.pss.getMetricNameString()
                                  + "': [3].";
 
         assertEquals( expectedMessage, exception.getMessage() );

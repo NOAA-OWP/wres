@@ -980,6 +980,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             List<MetricName> ignore = outputs.getPng()
                                              .getOptions()
                                              .getIgnoreList();
+
             Set<MetricConstants> mapped = ignore.stream()
                                                 .map( next -> MetricConstants.valueOf( next.name() ) )
                                                 .collect( Collectors.toUnmodifiableSet() );

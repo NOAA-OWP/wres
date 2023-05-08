@@ -69,9 +69,9 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( pairs ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -80,7 +80,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         double leftSum = 0.0;
         double errorSum = 0.0;
         DoubleErrorFunction error = FunctionFactory.error();
-        for ( Pair<Double, Double> pair : pairs.get() )
+        for ( Pair<Double, Double> pair : pool.get() )
         {
             leftSum += pair.getLeft();
             errorSum += error.applyAsDouble( pair );
@@ -103,7 +103,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, pairs.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

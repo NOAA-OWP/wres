@@ -7,17 +7,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.temporal.ChronoUnit;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.DestinationType;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -37,35 +34,26 @@ public class CommaSeparatedScoreWriterTest
 
     /**
      * Tests the writing of {@link DoubleScoreStatisticOuter} to file.
-     * 
-     * @throws ProjectConfigException if the project configuration is incorrect
+     *
      * @throws IOException if the output could not be written
-     * @throws InterruptedException if the process is interrupted
      */
 
     @Test
-    public void writeDoubleScores()
-            throws IOException, InterruptedException
+    public void writeDoubleScores() throws IOException
     {
-
-        // location id
-        String LID = "DRRC2";
-
-        // Construct a fake configuration file.
-        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
-        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
+        EvaluationDeclaration declaration =
+                WriterTestHelper.getMockedDeclaration( new DecimalFormat( "0.000000" ) );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> writer =
-                CommaSeparatedScoreWriter.of( projectConfig,
-                                              ChronoUnit.SECONDS,
+                CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
                                               next -> Double.toString( next.getData().getValue() ) );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForOnePool() );
 
         // Check the expected number of paths: #61841
-        assertTrue( pathsToFile.size() == 3 );
+        assertEquals( 3, pathsToFile.size() );
 
         Optional<Path> pathToFirstFile =
                 pathsToFile.stream()
@@ -96,10 +84,9 @@ public class CommaSeparatedScoreWriterTest
 
         assertTrue( secondResult.get( 0 ).contains( "," ) );
         assertTrue( secondResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( secondResult.get( 1 )
-                                .equals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                         + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
-                                         + "2.0" ) );
+        assertEquals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
+                      + "2.0", secondResult.get( 1 ) );
 
         Optional<Path> pathToThirdFile =
                 pathsToFile.stream()
@@ -113,10 +100,9 @@ public class CommaSeparatedScoreWriterTest
 
         assertTrue( thirdResult.get( 0 ).contains( "," ) );
         assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
-        assertTrue( thirdResult.get( 1 )
-                               .equals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
-                                        + "1.0" ) );
+        assertEquals( "DRRC2,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,3600,3600,"
+                      + "1.0", thirdResult.get( 1 ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToThirdFile.get() );
@@ -126,41 +112,32 @@ public class CommaSeparatedScoreWriterTest
 
     /**
      * Tests the writing of {@link DurationScoreStatisticOuter} to file.
-     * 
-     * @throws ProjectConfigException if the project configuration is incorrect
+     *
      * @throws IOException if the output could not be written
-     * @throws InterruptedException if the process is interrupted
      */
 
     @Test
-    public void writeDurationScores()
-            throws IOException, InterruptedException
+    public void writeDurationScores() throws IOException
     {
-
-        // location id
-        String LID = "DOLC2";
-
-        // Construct a fake configuration file.
-        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
-        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
+        EvaluationDeclaration declaration =
+                WriterTestHelper.getMockedDeclaration( new DecimalFormat( "0.000000" ) );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> writer =
-                CommaSeparatedScoreWriter.of( projectConfig,
-                                              ChronoUnit.SECONDS,
+                CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
                                               next -> MessageFactory.parse( next.getData().getValue() ).toString() );
-        
+
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
 
         // Check the expected number of paths: #61841
-        assertTrue( pathsToFile.size() == 1 );
+        assertEquals( 1, pathsToFile.size() );
 
         Path pathToFile = pathsToFile.iterator().next();
 
         // Check the expected path: #61841
         assertEquals( "DOLC2_DOLC2_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv", pathToFile.toFile().getName() );
-        
+
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
@@ -176,60 +153,59 @@ public class CommaSeparatedScoreWriterTest
     /**
      * Tests the writing of {@link DoubleScoreStatisticOuter} to file where the output is not square (i.e. contains missing
      * data).
-     * 
-     * @throws ProjectConfigException if the project configuration is incorrect
+     *
      * @throws IOException if the output could not be written
-     * @throws InterruptedException if the process is interrupted
      */
 
     @Test
-    public void writeDoubleScoresWithMissingData()
-            throws IOException, InterruptedException
+    public void writeDoubleScoresWithMissingData() throws IOException
     {
-
-        // location id
-        String LID = "FTSC1";
-
-        // Construct a fake configuration file.
-        NamedFeature feature = WriterTestHelper.getMockedFeature( LID );
-        ProjectConfig projectConfig = WriterTestHelper.getMockedProjectConfig( feature, DestinationType.NUMERIC );
+        EvaluationDeclaration declaration =
+                WriterTestHelper.getMockedDeclaration( new DecimalFormat( "0.000000" ) );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> writer =
-                CommaSeparatedScoreWriter.of( projectConfig,
-                                              ChronoUnit.SECONDS,
+                CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
                                               next -> Double.toString( next.getData().getValue() ) );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
-        
-        // Check the expected number of paths: #61841
-        assertTrue( pathsToFile.size() == 1 );
 
-        Path pathToFile = pathsToFile.iterator().next();
-        
-        // Check the expected path: #61841
-        assertEquals( "FTSC1_FTSC1_HEFS_MEAN_SQUARE_ERROR.csv", pathToFile.toFile().getName() );
+        try
+        {
+            // Check the expected number of paths: #61841
+            assertEquals( 1, pathsToFile.size() );
 
-        List<String> firstResult = Files.readAllLines( pathToFile );
+            Path pathToFile = pathsToFile.iterator().next();
 
-        assertEquals( "FEATURE DESCRIPTION,EARLIEST ISSUE TIME,LATEST ISSUE TIME,"
-                      + "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
-                      + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
-                      + "MEAN SQUARE ERROR > 23.0",
-                      firstResult.get( 0 ) );
-        assertEquals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                      + "3600,3600,1.0,1.0",
-                      firstResult.get( 1 ) );
-        assertEquals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
-                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,7200,"
-                      + "7200,1.0,NA",
-                      firstResult.get( 2 ) );
+            // Check the expected path: #61841
+            assertEquals( "FTSC1_FTSC1_HEFS_MEAN_SQUARE_ERROR.csv", pathToFile.toFile().getName() );
 
-        // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToFile );
+            List<String> firstResult = Files.readAllLines( pathToFile );
+
+            assertEquals( "FEATURE DESCRIPTION,EARLIEST ISSUE TIME,LATEST ISSUE TIME,"
+                          + "EARLIEST VALID TIME,LATEST VALID TIME,EARLIEST LEAD TIME IN SECONDS,"
+                          + "LATEST LEAD TIME IN SECONDS,MEAN SQUARE ERROR All data,"
+                          + "MEAN SQUARE ERROR > 23.0",
+                          firstResult.get( 0 ) );
+            assertEquals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                          + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                          + "3600,3600,1.0,1.0",
+                          firstResult.get( 1 ) );
+            assertEquals( "FTSC1,-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
+                          + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,7200,"
+                          + "7200,1.0,NA",
+                          firstResult.get( 2 ) );
+        }
+        // Clean-up
+        finally
+        {
+            // If all succeeded, remove the file, otherwise leave to help debugging.
+            for ( Path path : pathsToFile )
+            {
+                Files.deleteIfExists( path );
+            }
+        }
     }
-
 
 }

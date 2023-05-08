@@ -61,11 +61,11 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( this.getIntermediateStatistic( s ), s );
+        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
     }
 
     @Override

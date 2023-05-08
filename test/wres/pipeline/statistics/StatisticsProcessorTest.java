@@ -138,7 +138,7 @@ public final class StatisticsProcessorTest
     ofMetricProcessorForSingleValuedPairs( EvaluationDeclaration declaration )
     {
         Set<MetricsAndThresholds> metricsAndThresholdsSet =
-                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration );
+                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration, Set.of()  );
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
         for ( MetricsAndThresholds metricsAndThresholds : metricsAndThresholdsSet )
         {

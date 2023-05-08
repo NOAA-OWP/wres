@@ -102,9 +102,9 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -139,7 +139,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
         };
 
         // Increment the count in a serial stream as the lambda is stateful
-        s.get().forEach( f );
+        pool.get().forEach( f );
 
         // Name the outcomes for a 2x2 contingency table
         DoubleScoreStatistic table =
@@ -159,7 +159,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                                                                                  .setValue( returnMe[1][1] ) )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( table, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( table, pool.getMetadata() );
     }
 
     @Override

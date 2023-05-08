@@ -116,9 +116,9 @@ public class RelativeOperatingCharacteristicDiagram
     }
 
     @Override
-    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -135,7 +135,7 @@ public class RelativeOperatingCharacteristicDiagram
         Arrays.fill( pOFD, MissingValues.DOUBLE );
 
         // Some data to process        
-        if ( !s.get().isEmpty() )
+        if ( !pool.get().isEmpty() )
         {
             for ( int i = 1; i < this.points; i++ )
             {
@@ -150,7 +150,7 @@ public class RelativeOperatingCharacteristicDiagram
                                        in.getRight().getProbability() > prob );
 
                 // Transformed pairs
-                Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( s, transformer );
+                Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool, transformer );
                 List<DoubleScoreStatisticOuter> out = this.roc.apply( transformed );
 
                 //Store
@@ -191,7 +191,7 @@ public class RelativeOperatingCharacteristicDiagram
                                                       .setMetric( RelativeOperatingCharacteristicDiagram.BASIC_METRIC )
                                                       .build();
 
-        return DiagramStatisticOuter.of( rocDiagram, s.getMetadata() );
+        return DiagramStatisticOuter.of( rocDiagram, pool.getMetadata() );
     }
 
     @Override

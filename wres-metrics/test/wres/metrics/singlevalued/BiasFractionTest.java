@@ -76,7 +76,7 @@ public final class BiasFractionTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.BIAS_FRACTION.toString(), this.biasFraction.getName() );
+        assertEquals( MetricConstants.BIAS_FRACTION.toString(), this.biasFraction.getMetricNameString() );
     }
 
     @Test
@@ -103,7 +103,7 @@ public final class BiasFractionTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.biasFraction.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.biasFraction.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.biasFraction.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

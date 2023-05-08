@@ -393,9 +393,19 @@ public class ThresholdSlicer
 
                 // Quantile mapper
                 UnaryOperator<ThresholdOuter> quantileMapper =
-                        probThreshold -> Slicer.getQuantileFromProbability( probThreshold,
-                                                                            sorted,
-                                                                            ThresholdSlicer.DECIMALS );
+                        probThreshold ->
+                        {
+                            // Add the unit for the quantile
+                            wres.statistics.generated.Threshold probThresholdWithUnit =
+                                    probThreshold.getThreshold()
+                                                 .toBuilder()
+                                                 .setThresholdValueUnits( climatology.getMeasurementUnit() )
+                                                 .build();
+                            ThresholdOuter threshold = ThresholdOuter.of( probThresholdWithUnit );
+                            return Slicer.getQuantileFromProbability( threshold,
+                                                                      sorted,
+                                                                      ThresholdSlicer.DECIMALS );
+                        };
                 // Quantiles
                 Set<ThresholdOuter> quantiles = nextThresholdSet.stream()
                                                                 .filter( ThresholdOuter::hasProbabilities )
@@ -546,18 +556,27 @@ public class ThresholdSlicer
 
     /**
      * Creates one {@link MetricsAndThresholds} for each group of {@link Metric} in the supplied declaration that can
-     * be processed together as an atomic unit (i.e., they all consume the same pool of pairs).
+     * be processed together as an atomic unit (i.e., they all consume the same pool of pairs). Optionally, supply the
+     * features by which to index the results. If no features are supplied, the results will be indexed by the declared
+     * features.
      *
      * @param evaluation the evaluation declaration
+     * @param features the features to use
      * @return one {@link MetricsAndThresholds} for each atomic group of metrics
      */
 
-    public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )
+    public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation,
+                                                                                  Set<GeometryTuple> features )
     {
         Objects.requireNonNull( evaluation );
 
         // Get the atomic groups
         Set<Set<Metric>> atomicGroups = DeclarationUtilities.getMetricGroupsForProcessing( evaluation.metrics() );
+
+        if ( Objects.isNull( features ) || features.isEmpty() )
+        {
+            features = DeclarationUtilities.getFeatures( evaluation );
+        }
 
         // Obtain the minimum sample size
         int minimumSampleSize = evaluation.minimumSampleSize();
@@ -573,7 +592,6 @@ public class ThresholdSlicer
 
             // Gather/wrap the thresholds and correlate them with feature tuples
             Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
-            Set<GeometryTuple> features = DeclarationUtilities.getFeatures( evaluation );
 
             // Default to the evaluation type, but override by metric group setting
             Pool.EnsembleAverageType ensembleAverageType = evaluation.ensembleAverageType();
@@ -627,25 +645,28 @@ public class ThresholdSlicer
                                        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement,
                                        Set<GeometryTuple> geometries )
     {
-        Map<Geometry, GeometryTuple> leftGeometries = geometries.stream()
-                                                                .filter( GeometryTuple::hasLeft )
-                                                                .collect( Collectors.toMap( GeometryTuple::getLeft,
-                                                                                            Function.identity() ) );
-        Map<Geometry, GeometryTuple> rightGeometries = geometries.stream()
-                                                                 .filter( GeometryTuple::hasRight )
-                                                                 .collect( Collectors.toMap( GeometryTuple::getRight,
-                                                                                             Function.identity() ) );
-        Map<Geometry, GeometryTuple> baselineGeometries = geometries.stream()
-                                                                    .filter( GeometryTuple::hasBaseline )
-                                                                    .collect( Collectors.toMap( GeometryTuple::getBaseline,
-                                                                                                Function.identity() ) );
+        Map<String, GeometryTuple> leftGeometries = geometries.stream()
+                                                              .filter( GeometryTuple::hasLeft )
+                                                              .collect( Collectors.toMap( n -> n.getLeft()
+                                                                                                .getName(),
+                                                                                          Function.identity() ) );
+        Map<String, GeometryTuple> rightGeometries = geometries.stream()
+                                                               .filter( GeometryTuple::hasRight )
+                                                               .collect( Collectors.toMap( n -> n.getRight()
+                                                                                                 .getName(),
+                                                                                           Function.identity() ) );
+        Map<String, GeometryTuple> baselineGeometries = geometries.stream()
+                                                                  .filter( GeometryTuple::hasBaseline )
+                                                                  .collect( Collectors.toMap( n -> n.getBaseline()
+                                                                                                    .getName(),
+                                                                                              Function.identity() ) );
 
         BiFunction<Geometry, DatasetOrientation, GeometryTuple> mapper = ( g, d ) ->
                 switch ( d )
                         {
-                            case LEFT -> leftGeometries.get( g );
-                            case RIGHT -> rightGeometries.get( g );
-                            case BASELINE -> baselineGeometries.get( g );
+                            case LEFT -> leftGeometries.get( g.getName() );
+                            case RIGHT -> rightGeometries.get( g.getName() );
+                            case BASELINE -> baselineGeometries.get( g.getName() );
                         };
 
         // Increment the thresholds
@@ -682,7 +703,7 @@ public class ThresholdSlicer
                                                     ThresholdType type,
                                                     Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement )
     {
-        for( GeometryTuple nextTuple : features )
+        for ( GeometryTuple nextTuple : features )
         {
             if ( Objects.nonNull( nextTuple ) )
             {

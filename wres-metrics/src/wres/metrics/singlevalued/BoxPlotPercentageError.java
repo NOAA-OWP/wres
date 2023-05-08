@@ -71,9 +71,9 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
     }
 
     @Override
-    public BoxplotStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public BoxplotStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -82,22 +82,22 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
                                                            .setMetric( this.getMetric() );
 
         // Empty output for empty input
-        if ( s.get().isEmpty() )
+        if ( pool.get().isEmpty() )
         {
             // Add an empty box: #62863
             builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotPercentageError.EMPTY_BOX ) );
 
-            return BoxplotStatisticOuter.of( builder.build(), s.getMetadata() );
+            return BoxplotStatisticOuter.of( builder.build(), pool.getMetadata() );
         }
 
         // Get the sorted errors
         List<Double> probs = this.getMetric().getQuantilesList();
         double[] sortedPercentageErrors =
-                s.get()
-                 .stream()
-                 .mapToDouble( a -> ( ( a.getRight() - a.getLeft() ) / a.getLeft() ) * 100 )
-                 .sorted()
-                 .toArray();
+                pool.get()
+                    .stream()
+                    .mapToDouble( a -> ( ( a.getRight() - a.getLeft() ) / a.getLeft() ) * 100 )
+                    .sorted()
+                    .toArray();
 
         // Compute the quantiles of the errors at a rounded precision
         List<Double> box = probs.stream()
@@ -112,7 +112,7 @@ public class BoxPlotPercentageError extends Diagram<Pool<Pair<Double, Double>>, 
                                                      .addStatistics( Box.newBuilder().addAllQuantiles( box ) )
                                                      .build();
 
-        return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
+        return BoxplotStatisticOuter.of( statistic, pool.getMetadata() );
     }
 
     @Override

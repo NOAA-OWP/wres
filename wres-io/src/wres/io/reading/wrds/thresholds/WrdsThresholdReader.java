@@ -122,9 +122,7 @@ public class WrdsThresholdReader
         URI uri = thresholdService.uri();
 
         // Web service
-        if ( uri.getScheme()
-                .toLowerCase()
-                .startsWith( "http" ) )
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
             // Build the location groups to use.
             Set<String> locationGroups = this.chunkFeatures( featureNames );
@@ -290,7 +288,7 @@ public class WrdsThresholdReader
             {
                 ThresholdResponse response = JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
                 ThresholdExtractor extractor = new ThresholdExtractor( response )
-                        .from(thresholdService.provider() )
+                        .from( thresholdService.provider() )
                         .operatesBy( operator )
                         .onSide( side );
 
@@ -364,9 +362,7 @@ public class WrdsThresholdReader
         {
             URI fullAddress = WrdsThresholdReader.getAbsoluteUri( address );
 
-            if ( fullAddress.getScheme()
-                            .toLowerCase()
-                            .startsWith( "http" ) )
+            if ( ReaderUtilities.isWebSource( fullAddress ) )
             {
                 return getRemoteResponse( fullAddress );
             }

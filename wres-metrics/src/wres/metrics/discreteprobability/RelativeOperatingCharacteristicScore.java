@@ -92,24 +92,24 @@ public class RelativeOperatingCharacteristicScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Probability, Probability>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         //Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
 
-        if ( s.hasBaseline() )
+        if ( pool.hasBaseline() )
         {
-            double rocMain = getAUCMasonGraham( s );
-            double rocBase = getAUCMasonGraham( s.getBaselineData() );
+            double rocMain = getAUCMasonGraham( pool );
+            double rocBase = getAUCMasonGraham( pool.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
         }
         else
         {
-            rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
+            rocScore = 2.0 * getAUCMasonGraham( pool ) - 1.0;
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
@@ -122,7 +122,7 @@ public class RelativeOperatingCharacteristicScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

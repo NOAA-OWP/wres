@@ -81,14 +81,14 @@ public class TimingErrorDurationStatistics
     }
 
     @Override
-    public DurationScoreStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> pairs )
+    public DurationScoreStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
     {
-        if ( Objects.isNull( pairs ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        DurationDiagramStatisticOuter statisticsInner = this.timingError.apply( pairs );
+        DurationDiagramStatisticOuter statisticsInner = this.timingError.apply( pool );
 
         // Map of outputs
         DurationScoreMetric.Builder metricBuilder =

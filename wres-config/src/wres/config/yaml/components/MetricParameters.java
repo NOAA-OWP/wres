@@ -95,15 +95,5 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
             // Immutable copy, preserving insertion order
             summaryStatistics = Collections.unmodifiableSet( new LinkedHashSet<>( summaryStatistics ) );
         }
-
-        if ( Objects.isNull( png ) )
-        {
-            png = true;
-        }
-
-        if ( Objects.isNull( svg ) )
-        {
-            svg = true;
-        }
     }
 }

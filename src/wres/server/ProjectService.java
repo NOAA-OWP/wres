@@ -2,6 +2,7 @@ package wres.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -26,7 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.xml.ProjectConfigPlus;
+import wres.config.MultiDeclarationFactory;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
@@ -80,14 +82,14 @@ public class ProjectService
                                                                                 .build();
 
     /**
-     * @param rawProjectConfig the evaluation project declaration string
+     * @param rawDeclaration the evaluation project declaration string
      * @return the state of the evaluation
      */
 
     @POST
     @Consumes( MediaType.TEXT_XML )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response postProjectConfig( String rawProjectConfig )
+    public Response postProjectConfig( String rawDeclaration )
     {
         long projectId;
 
@@ -113,16 +115,15 @@ public class ProjectService
                                                  ProjectService.DATABASE,
                                                  brokerConnections );
 
-            ProjectConfigPlus projectPlus =
-                    ProjectConfigPlus.from( rawProjectConfig,
-                                            "a web request" );
+            EvaluationDeclaration declaration =
+                    MultiDeclarationFactory.from( rawDeclaration, FileSystems.getDefault(), true );
 
             // Guarantee a positive number. Using Math.abs would open up failure
             // in edge cases. A while loop seems complex. Thanks to Ted Hopp
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            ExecutionResult result = evaluator.evaluate( projectPlus );
+            ExecutionResult result = evaluator.evaluate( declaration );
             Set<java.nio.file.Path> outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }

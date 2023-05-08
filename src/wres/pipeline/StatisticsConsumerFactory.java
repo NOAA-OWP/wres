@@ -15,13 +15,10 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.events.subscribe.ConsumerFactory;
-import wres.io.config.ConfigHelper;
 import wres.io.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.csv.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
@@ -55,7 +52,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     private final Consumer consumerDescription;
 
     /** Project declaration. */
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
 
     /** The netcdf writer. */
     private final List<NetcdfOutputWriter> netcdfWriters;
@@ -70,19 +67,14 @@ class StatisticsConsumerFactory implements ConsumerFactory
         Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
+
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
 
         LOGGER.debug( "Creating a statistics consumer for these formats: {}.", formats );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
-
-        String durationUnitsString = this.projectConfig.getOutputs()
-                                                       .getDurationFormat()
-                                                       .value()
-                                                       .toUpperCase();
-
-        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+        ChronoUnit durationUnits = this.declaration.durationFormat();
 
         // Netcdf and protobuf are incremental formats, plus box plots per pair where graphics are required
 
@@ -103,8 +95,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             Path fullPath = path.resolve( CsvStatisticsWriter.DEFAULT_FILE_NAME );
 
-            DoubleFunction<String> formatter = this.getDecimalFormatter( this.projectConfig,
-                                                                         Set.of( DestinationType.CSV2 ) );
+            DoubleFunction<String> formatter = this.getDecimalFormatter( this.declaration );
             CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
                                                                  fullPath,
                                                                  true,
@@ -141,8 +132,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         if ( formats.contains( Format.CSV ) )
         {
             builder.addBoxplotConsumerPerPair( wres.config.yaml.components.Format.CSV,
-                                               CommaSeparatedBoxPlotWriter.of( this.projectConfig,
-                                                                               durationUnits,
+                                               CommaSeparatedBoxPlotWriter.of( this.declaration,
                                                                                path ) );
         }
 
@@ -170,43 +160,28 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // CSV
         if ( formats.contains( Format.CSV ) )
         {
-            String durationUnitsString = this.projectConfig.getOutputs()
-                                                           .getDurationFormat()
-                                                           .value()
-                                                           .toUpperCase();
-
             // Formatted doubles to write
-            DoubleFunction<String> formatter =
-                    this.getDecimalFormatter( this.projectConfig,
-                                              Set.of( DestinationType.CSV, DestinationType.NUMERIC ) );
+            DoubleFunction<String> formatter = this.getDecimalFormatter( this.declaration );
             Function<DoubleScoreComponentOuter, String> doubleMapper =
                     format -> formatter.apply( format.getData().getValue() );
 
-            ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
-
-
             builder.addDiagramConsumer( wres.config.yaml.components.Format.CSV,
-                                        CommaSeparatedDiagramWriter.of( this.projectConfig,
-                                                                        durationUnits,
+                                        CommaSeparatedDiagramWriter.of( this.declaration,
                                                                         path ) )
                    .addBoxplotConsumerPerPool( wres.config.yaml.components.Format.CSV,
-                                               CommaSeparatedBoxPlotWriter.of( this.projectConfig,
-                                                                               durationUnits,
+                                               CommaSeparatedBoxPlotWriter.of( this.declaration,
                                                                                path ) )
                    .addDurationDiagramConsumer( wres.config.yaml.components.Format.CSV,
-                                                CommaSeparatedDurationDiagramWriter.of( this.projectConfig,
-                                                                                        durationUnits,
+                                                CommaSeparatedDurationDiagramWriter.of( this.declaration,
                                                                                         path ) )
                    .addDurationScoreConsumer( wres.config.yaml.components.Format.CSV,
-                                              CommaSeparatedScoreWriter.of( this.projectConfig,
-                                                                            durationUnits,
+                                              CommaSeparatedScoreWriter.of( this.declaration,
                                                                             path,
                                                                             next -> MessageFactory.parse( next.getData()
                                                                                                               .getValue() )
                                                                                                   .toString() ) )
                    .addDoubleScoreConsumer( wres.config.yaml.components.Format.CSV,
-                                            CommaSeparatedScoreWriter.of( this.projectConfig,
-                                                                          durationUnits,
+                                            CommaSeparatedScoreWriter.of( this.declaration,
                                                                           path,
                                                                           doubleMapper ) );
         }
@@ -279,7 +254,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
      * @param consumerId the consumer identifier
      * @param formats the formats to be delivered
      * @param netcdfWriters The netcdf writers, if any.
-     * @param projectConfig the project declaration for netcdf writing
+     * @param declaration the project declaration for netcdf writing
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if no formats are declared
      */
@@ -287,11 +262,11 @@ class StatisticsConsumerFactory implements ConsumerFactory
     StatisticsConsumerFactory( String consumerId,
                                Set<Format> formats,
                                List<NetcdfOutputWriter> netcdfWriters,
-                               ProjectConfig projectConfig )
+                               EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( consumerId );
         Objects.requireNonNull( formats );
-        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( declaration );
 
         if ( formats.contains( Format.NETCDF ) )
         {
@@ -308,7 +283,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                            .addAllFormats( formats )
                                            .build();
 
-        this.projectConfig = projectConfig;
+        this.declaration = declaration;
         this.resources = new ArrayList<>();
         // Do not add the netcdf writers to the list of resources, only the resources created here. Better to destroy
         // resources where they are created.
@@ -318,23 +293,13 @@ class StatisticsConsumerFactory implements ConsumerFactory
     /**
      * Returns a formatter for decimal values as strings, null if none is defined.
      * 
-     * @param projectConfig the project declaration
-     * @param destinationTypes the destination types
+     * @param declaration the project declaration
      * @return a formatter
      */
 
-    private DoubleFunction<String> getDecimalFormatter( ProjectConfig projectConfig,
-                                                        Set<DestinationType> destinationTypes )
+    private DoubleFunction<String> getDecimalFormatter( EvaluationDeclaration declaration )
     {
-        // Find the relevant config
-        DestinationConfig config = projectConfig.getOutputs()
-                                                .getDestination()
-                                                .stream()
-                                                .filter( next -> destinationTypes.contains( next.getType() ) )
-                                                .findAny()
-                                                .orElse( null );
-
-        java.text.Format formatter = ConfigHelper.getDecimalFormatter( config );
+        java.text.Format formatter = declaration.decimalFormat();
 
         return doubleValue -> {
             if ( Objects.nonNull( formatter ) )

@@ -45,17 +45,17 @@ public class Maximum extends DecomposableScore<Pool<Pair<Double, Double>>>
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( pairs ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         DoubleScoreStatistic scoreStatistic = this.getScore()
-                                         .apply( pairs );
+                                         .apply( pool );
 
-        return DoubleScoreStatisticOuter.of( scoreStatistic, pairs.getMetadata() );
+        return DoubleScoreStatisticOuter.of( scoreStatistic, pool.getMetadata() );
     }
 
     @Override

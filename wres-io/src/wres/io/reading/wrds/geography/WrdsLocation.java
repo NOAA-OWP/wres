@@ -51,10 +51,14 @@ public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nws
      */
     public static String getNameForAuthority( FeatureAuthority featureAuthority, WrdsLocation wrdsLocation )
     {
-        if ( Objects.isNull( featureAuthority ) )
+        if ( Objects.isNull( featureAuthority ) || featureAuthority == FeatureAuthority.CUSTOM )
         {
-            LOGGER.debug( "While inspecting WRDS location {}, discovered a null feature authority.", wrdsLocation );
-            return null;
+            // Probably not safe, in general, but maintaining this assumption in migrating from the old to the new
+            // declaration language: #113677
+            LOGGER.debug( "While inspecting WRDS location {}, discovered a feature authority of '{}' from which to "
+                          + "determine the location name. Assuming that the NWS LID is required. This may not be a "
+                          + "safe assumption!", wrdsLocation, featureAuthority );
+            return wrdsLocation.nwsLid();
         }
 
         return switch ( featureAuthority )

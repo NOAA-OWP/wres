@@ -3,6 +3,7 @@ package wres.io.ingesting;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,9 +103,10 @@ public class SourceLoader
      * @param systemSettings the system settings
      * @param declaration the projectConfig for the evaluation
      * @param griddedFeatures the gridded features cache to populate
-     * @return the ingest results
+     * @return ingest results
      * @throws NullPointerException if any required input is null
-     * @throws IngestException when anything else goes wrong
+     * @throws ReadException if the source could not be read
+     * @throws IngestException if the time-series could not be ingested
      */
 
     public static List<IngestResult> load( TimeSeriesIngester timeSeriesIngester,
@@ -745,7 +748,7 @@ public class SourceLoader
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.uri();
 
-        // Is there a source path to evaluate? Only if the source is file-like
+        // Empty URI, cannot create a path
         if ( uri.toString()
                 .isEmpty() )
         {
@@ -753,12 +756,11 @@ public class SourceLoader
             return null;
         }
 
-        String scheme = uri.getScheme();
-
-        if ( scheme != null
-             && !scheme.equalsIgnoreCase( "file" ) )
+        // Web source, cannot create a path
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
-            LOGGER.debug( "Scheme '{}' indicates non-file.", scheme );
+            LOGGER.debug( "Inspected the URI '{}' and discovered a web source.", uri );
+
             return null;
         }
 
@@ -776,6 +778,18 @@ public class SourceLoader
         }
         else
         {
+            try
+            {
+                URIBuilder uriBuilder = new URIBuilder( uri );
+                uriBuilder.setScheme( "file" );
+                uri = uriBuilder.build();
+            }
+            catch( URISyntaxException e )
+            {
+                throw new ReadException( "While attempting to evaluate a path to a source, failed to add the file scheme "
+                                         + "to a file-like URI: " + uri );
+            }
+
             sourcePath = Paths.get( uri );
         }
 

@@ -21,12 +21,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.ProjectConfig;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
@@ -52,19 +48,16 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
     /**
      * Returns an instance of a writer.
      * 
-     * @param projectConfig the project configuration
-     * @param durationUnits the time units for durations
+     * @param declaration the project declaration
      * @param outputDirectory the directory into which to write
      * @return a writer
-     * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if either input is null
      */
 
-    public static CommaSeparatedDurationDiagramWriter of( ProjectConfig projectConfig,
-                                                          ChronoUnit durationUnits,
+    public static CommaSeparatedDurationDiagramWriter of( EvaluationDeclaration declaration,
                                                           Path outputDirectory )
     {
-        return new CommaSeparatedDurationDiagramWriter( projectConfig, durationUnits, outputDirectory );
+        return new CommaSeparatedDurationDiagramWriter( declaration, outputDirectory );
     }
 
     /**
@@ -84,15 +77,9 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
         if ( LOGGER.isDebugEnabled() )
         {
-            List<DestinationConfig> numericalDestinations =
-                    ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
-                                                          DestinationType.NUMERIC,
-                                                          DestinationType.CSV );
-
-            LOGGER.debug( "Writer {} received {} duration diagram statistics to write to the destination types {}.",
+            LOGGER.debug( "Writer {} received {} duration diagram statistics to write to CSV.",
                           this,
-                          output.size(),
-                          numericalDestinations );
+                          output.size() );
         }
 
         // Write per time-window
@@ -251,18 +238,16 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
     /**
      * Hidden constructor.
      * 
-     * @param projectConfig the project configuration
-     * @param durationUnits the time units for durations
+     * @param declaration the project configuration
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedDurationDiagramWriter( ProjectConfig projectConfig,
-                                                 ChronoUnit durationUnits,
+    private CommaSeparatedDurationDiagramWriter( EvaluationDeclaration declaration,
                                                  Path outputDirectory )
     {
-        super( projectConfig, durationUnits, outputDirectory );
+        super( declaration, outputDirectory );
     }
 
 }

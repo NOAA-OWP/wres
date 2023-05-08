@@ -68,9 +68,9 @@ public class ThreatScore extends ContingencyTableScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> pool )
     {
-        return aggregate( getIntermediateStatistic( s ), s );
+        return aggregate( getIntermediateStatistic( pool ), pool );
     }
 
     @Override

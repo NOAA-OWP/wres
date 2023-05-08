@@ -24,17 +24,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.MetricConstants;
-import wres.config.xml.MetricConstantsFactory;
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigPlus;
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.DeclarationInterpolator;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -44,8 +35,8 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.MetricsAndThresholds;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
@@ -58,7 +49,6 @@ import wres.events.subscribe.SubscriberApprover;
 import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
-import wres.io.reading.wrds.geography.WrdsFeatureFinder;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -74,7 +64,6 @@ import wres.io.retrieving.database.EnsembleRetrieverFactory;
 import wres.io.retrieving.database.SingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleRetrieverFactoryInMemory;
 import wres.io.retrieving.memory.SingleValuedRetrieverFactoryInMemory;
-import wres.io.thresholds.ThresholdReader;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.csv.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
@@ -88,11 +77,12 @@ import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.Outputs;
 import wres.system.SystemSettings;
 
 /**
- * <p>Utility class with functions to help generate evaluation results.
+ * Utility class with functions to help execute an evaluation.
  *
  * @author James Brown
  * @author Jesse Bickel
@@ -119,30 +109,31 @@ class EvaluationUtilities
             EvaluationUtilities.getSingleValuedTraceCountEstimator();
 
     /**
-     * Processes an evaluation. Assumes that a shared lock for evaluation has already been obtained.
+     * Executes an evaluation.
+     *
      * @param systemSettings the system settings
      * @param databaseServices the database services
-     * @param projectConfigPlus the project configuration
+     * @param declaration the project declaration
      * @param executors the executors
      * @param connections broker connections
      * @param monitor an event that monitors the life cycle of the evaluation, not null
      * @return the resources written and the hash of the project data
      * @throws WresProcessingException if the evaluation processing fails
-     * @throws ProjectConfigException if the declaration is incorrect
+     * @throws DeclarationException if the declaration is incorrect
      * @throws NullPointerException if any input is null
      * @throws IOException if the creation of outputs fails
      */
 
     static Pair<Set<Path>, String> evaluate( SystemSettings systemSettings,
                                              DatabaseServices databaseServices,
-                                             ProjectConfigPlus projectConfigPlus,
+                                             EvaluationDeclaration declaration,
                                              Executors executors,
                                              BrokerConnectionFactory connections,
                                              EvaluationEvent monitor )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( declaration );
         Objects.requireNonNull( executors );
         Objects.requireNonNull( connections );
         Objects.requireNonNull( monitor );
@@ -162,14 +153,9 @@ class EvaluationUtilities
         // Create output directory
         Path outputDirectory = EvaluationUtilities.createTempOutputDirectory( evaluationId );
 
-        ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        // Create a description of the evaluation
-        Evaluation evaluationDescription = MessageFactory.parse( projectConfig );
-
         // Create netCDF writers
         List<NetcdfOutputWriter> netcdfWriters =
-                EvaluationUtilities.getNetcdfWriters( projectConfig,
+                EvaluationUtilities.getNetcdfWriters( declaration,
                                                       systemSettings,
                                                       outputDirectory );
 
@@ -179,8 +165,8 @@ class EvaluationUtilities
         LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
 
         // Formats delivered by within-process subscribers, in a mutable list
-        Set<Format> internalFormats =
-                wres.statistics.MessageFactory.getDeclaredFormats( evaluationDescription.getOutputs() );
+        Set<Format> internalFormats = wres.statistics.MessageFactory.getDeclaredFormats( declaration.formats()
+                                                                                                    .outputs() );
 
         internalFormats = new HashSet<>( internalFormats );
         internalFormats.removeAll( externalFormats );
@@ -189,20 +175,20 @@ class EvaluationUtilities
 
         String consumerId = EvaluationEventUtilities.getId();
 
-        // Moving this into the try-with-resources would require a different approach than notifying the evaluation to 
+        // Moving this into the try-with-resources would require a different approach than notifying the evaluation to
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
         EvaluationMessager evaluation = null;
 
-        try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( projectConfig,
+        try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( declaration,
                                                                                   outputDirectory );
               // Create a subscriber for the format writers that are within-process. The subscriber is built for this
               // evaluation only, and should not serve other evaluations, else there is a risk that short-running
-              // subscribers die without managing to serve the evaluations they promised to serve. This complexity 
+              // subscribers die without managing to serve the evaluations they promised to serve. This complexity
               // disappears when all subscribers are moved to separate, long-running, processes: #89868
               ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
                                                                                new HashSet<>( internalFormats ),
                                                                                netcdfWriters,
-                                                                               projectConfig );
+                                                                               declaration );
               // Out-of-band statistics format subscriber/writer, ignored locally
               EvaluationSubscriber ignoredFormatsSubscriber = EvaluationSubscriber.of( consumerFactory,
                                                                                        executors.productExecutor(),
@@ -223,8 +209,7 @@ class EvaluationUtilities
             EvaluationDetails evaluationDetails =
                     EvaluationUtilitiesEvaluationDetailsBuilder.builder()
                                                                .systemSettings( systemSettings )
-                                                               .projectConfigPlus( projectConfigPlus )
-                                                               .evaluationDescription( evaluationDescription )
+                                                               .declaration( declaration )
                                                                .evaluationId( evaluationId )
                                                                .subscriberApprover( subscriberApprover )
                                                                .monitor( monitor )
@@ -274,7 +259,7 @@ class EvaluationUtilities
             return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
         }
         // Allow a user-error to be distinguished separately
-        catch ( ProjectConfigException userError )
+        catch ( DeclarationException userError )
         {
             EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
 
@@ -336,10 +321,8 @@ class EvaluationUtilities
     }
 
     /**
-     * <p>Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs,
-     * thresholds and metrics.
+     * Executes and evaluation.
      *
-     * <p>Assumes that a shared lock for evaluation has already been obtained.
      * @param evaluationDetails the evaluation details
      * @param databaseServices the database services
      * @param executors the executors
@@ -348,7 +331,7 @@ class EvaluationUtilities
      * @param sharedWriters for writing
      * @throws WresProcessingException if the processing failed for any reason
      * @return the evaluation and the hash of the project data
-     * @throws IOException if an attempt was made to close the evaluation and it failed
+     * @throws IOException if the evaluation could not be closed
      */
 
     private static Pair<EvaluationMessager, String> evaluate( EvaluationDetails evaluationDetails,
@@ -363,25 +346,23 @@ class EvaluationUtilities
         String projectHash;
         try
         {
-            ProjectConfigPlus projectConfigPlus = evaluationDetails.projectConfigPlus();
-            ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+            EvaluationDeclaration declaration = evaluationDetails.declaration();
 
-            // Look up any needed feature correlations, generate a new declaration.
-            ProjectConfig featurefulProjectConfig = WrdsFeatureFinder.fillFeatures( projectConfig );
-            EvaluationDeclaration declaration = DeclarationFactory.from( featurefulProjectConfig );
-            declaration = DeclarationInterpolator.interpolate( declaration, true );
+            // Look up any needed feature correlations and thresholds, generate a new declaration.
+            EvaluationDeclaration declarationWithFeatures = ConfigHelper.fillFeatures( declaration );
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .declaration( declarationWithFeatures )
+                                                                           .build();
 
-            LOGGER.debug( "Filled out features for project. Before: {} After: {}",
-                          projectConfig,
-                          featurefulProjectConfig );
-
-            LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
+            LOGGER.debug( "Beginning ingest of time-series data..." );
 
             Project project;
             SystemSettings systemSettings = evaluationDetails.systemSettings();
 
             // Gridded features cache, if required. See #51232.
-            GriddedFeatures.Builder griddedFeaturesBuilder = EvaluationUtilities.getGriddedFeaturesCache( declaration );
+            GriddedFeatures.Builder griddedFeaturesBuilder =
+                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isInDatabase() )
@@ -401,7 +382,7 @@ class EvaluationUtilities
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.systemSettings(),
-                                                                          declaration,
+                                                                          declarationWithFeatures,
                                                                           griddedFeaturesBuilder );
 
                     // Create the gridded features cache if needed
@@ -413,7 +394,7 @@ class EvaluationUtilities
 
                     // Get the project, which provides an interface to the underlying store of time-series data
                     project = Projects.getProject( databaseServices.database(),
-                                                   declaration,
+                                                   declarationWithFeatures,
                                                    caches,
                                                    griddedFeatures,
                                                    ingestResults );
@@ -431,7 +412,7 @@ class EvaluationUtilities
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      declaration,
+                                                                      declarationWithFeatures,
                                                                       griddedFeaturesBuilder );
 
                 // The immutable collection of in-memory time-series
@@ -440,12 +421,12 @@ class EvaluationUtilities
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .timeSeriesStore( timeSeriesStore )
                                                                                .build();
-                project = Projects.getProject( declaration,
+                project = Projects.getProject( declarationWithFeatures,
                                                timeSeriesStore,
                                                ingestResults );
             }
 
-            LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
+            LOGGER.debug( "Finished ingest of time-series data." );
 
             // Set the project hash for identification
             projectHash = project.getHash();
@@ -455,54 +436,35 @@ class EvaluationUtilities
             UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                                    declaration.unitAliases() );
 
-            // Acquire the individual feature tuples to correlate with thresholds
+            // Read external thresholds into the declaration
+            EvaluationDeclaration declarationWithFeaturesAndThresholds =
+                    ConfigHelper.fillThresholds( declarationWithFeatures, unitMapper );
+
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .declaration( declarationWithFeatures )
+                                                                           .build();
+            // Get the features. These are the features as described in the ingested time-series data, which may differ
+            // in some details from the declared features
             Set<FeatureTuple> features = project.getFeatures();
+            Set<GeometryTuple> unwrappedFeatures = features.stream()
+                                                           .map( FeatureTuple::getGeometryTuple )
+                                                           .collect( Collectors.toUnmodifiableSet() );
 
-            // Read external thresholds from the configuration, per feature
-            List<MetricsAndThresholds> metricsAndThresholds = new ArrayList<>();
-            Set<FeatureTuple> featuresWithExplicitThresholds = new TreeSet<>();
-            for ( MetricsConfig metricsConfig : projectConfig.getMetrics() )
-            {
-                ThresholdReader thresholdReader = new ThresholdReader( projectConfig,
-                                                                       metricsConfig,
-                                                                       unitMapper,
-                                                                       features );
-
-                Map<FeatureTuple, Set<ThresholdOuter>> nextThresholds = thresholdReader.read();
-                Set<MetricConstants> metrics =
-                        MetricConstantsFactory.getMetricsFromConfig( metricsConfig, projectConfig );
-
-                Set<FeatureTuple> innerFeaturesWithExplicitThresholds = thresholdReader.getEvaluatableFeatures();
-
-                int minimumSampleSize =
-                        EvaluationUtilities.getMinimumSampleSize( metricsConfig.getMinimumSampleSize() );
-                EnsembleAverageType averageType = EnsembleAverageType.MEAN;
-                if ( Objects.nonNull( metricsConfig.getEnsembleAverage() ) )
-                {
-                    averageType = EnsembleAverageType.valueOf( metricsConfig.getEnsembleAverage()
-                                                                            .name() );
-                }
-                MetricsAndThresholds nextMetricsAndThresholds = new MetricsAndThresholds( metrics,
-                                                                                          nextThresholds,
-                                                                                          minimumSampleSize,
-                                                                                          averageType );
-                metricsAndThresholds.add( nextMetricsAndThresholds );
-                featuresWithExplicitThresholds.addAll( innerFeaturesWithExplicitThresholds );
-            }
-
-            // Render the bags of thresholds and features immutable
-            metricsAndThresholds = Collections.unmodifiableList( metricsAndThresholds );
-            featuresWithExplicitThresholds = Collections.unmodifiableSet( featuresWithExplicitThresholds );
+            // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
+            // Ensure that named features correspond to the features associated with the data rather than declaration
+            Set<MetricsAndThresholds> metricsAndThresholds =
+                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds,
+                                                                          unwrappedFeatures );
 
             // Create the feature groups
-            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project,
-                                                                                    featuresWithExplicitThresholds );
+            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
 
             // Create any netcdf blobs for writing. See #80267-137.
             if ( !netcdfWriters.isEmpty() )
             {
                 // TODO: eliminate these log messages when legacy netcdf is removed
-                LOGGER.info( "Creating Netcdf blobs for statistics. This may take some time..." );
+                LOGGER.info( "Creating Netcdf blobs for statistics. This can take a while..." );
 
                 for ( NetcdfOutputWriter writer : netcdfWriters )
                 {
@@ -513,19 +475,19 @@ class EvaluationUtilities
                 LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
             }
 
-            // Update the evaluation description with any analyzed units and variable names that happen post-ingest
+            // Create the evaluation description with any analyzed units and variable names that happen post-ingest
             // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
             // interpolation include interpolation of missing declaration and service calls to interpolate features and
             // thresholds. This is the latest step in that process of combining the declaration and data
-            Evaluation evaluationDescription =
-                    EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDetails.evaluationDescription(),
-                                                                          project );
+            Evaluation evaluationDescription = MessageFactory.parse( declaration );
+            evaluationDescription = EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDescription,
+                                                                                          project );
 
             // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
             // description prior to ingest, in order to message the status of ingest to client applications. In order
             // to build an evaluation description before ingest, those parts of the evaluation description that depend
             // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
-            // the time scale is part of the pool description for this reason.
+            // the time-scale is part of the pool description for this reason.
             evaluation = EvaluationMessager.of( evaluationDescription,
                                                 connections,
                                                 EvaluationUtilities.CLIENT_ID,
@@ -534,7 +496,6 @@ class EvaluationUtilities
 
             // Set the project and evaluation, metrics and thresholds
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .evaluationDescription( evaluationDescription )
                                                                            .project( project )
                                                                            .evaluation( evaluation )
                                                                            .metricsAndThresholds( metricsAndThresholds )
@@ -548,7 +509,9 @@ class EvaluationUtilities
             monitor.setPoolCount( poolCount );
 
             // Report on the completion state of all pools
-            PoolReporter poolReporter = new PoolReporter( projectConfigPlus, poolCount, true );
+            PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
+                                                          poolCount,
+                                                          true );
 
             // Get a message group tracker to notify the completion of groups that encompass several pools. Currently, 
             // this is feature-group shaped, but additional shapes may be desired in future
@@ -664,8 +627,8 @@ class EvaluationUtilities
                                            PoolGroupTracker poolGroupTracker )
     {
 
-        LOGGER.info( "Submitting {} pool tasks for execution, which are awaiting completion. This may take some "
-                     + "time...",
+        LOGGER.info( "Submitting {} pool tasks for execution, which are awaiting completion. This can take a "
+                     + "while...",
                      poolRequests.size() );
 
         // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
@@ -686,43 +649,32 @@ class EvaluationUtilities
     /**
      * Returns an instance of {@link SharedWriters} for shared writing.
      *
-     * @param projectConfig the project declaration
+     * @param declaration the project declaration
      * @param outputDirectory the output directory for writing
      * @return the shared writer instance
      */
 
-    private static SharedWriters getSharedWriters( ProjectConfig projectConfig,
+    private static SharedWriters getSharedWriters( EvaluationDeclaration declaration,
                                                    Path outputDirectory )
     {
         // Obtain the duration units for outputs: #55441
-        String durationUnitsString = projectConfig.getOutputs()
-                                                  .getDurationFormat()
-                                                  .value()
-                                                  .toUpperCase();
-        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+        ChronoUnit durationUnits = declaration.durationFormat();
 
         SharedSampleDataWriters sharedSampleWriters = null;
         SharedSampleDataWriters sharedBaselineSampleWriters = null;
 
-        // If there are multiple destinations for pairs, ignore these. The system chooses the destination.
-        // Writing the same pairs, more than once, to that single destination does not make sense.
-        // See #55948-12 and #55948-13. Ultimate solution is to improve the schema to prevent multiple occurrences.
-        List<DestinationConfig> pairDestinations = ProjectConfigs.getDestinationsOfType( projectConfig,
-                                                                                         DestinationType.PAIRS );
-        if ( !pairDestinations.isEmpty() )
+        Outputs outputs = declaration.formats()
+                                     .outputs();
+        if ( outputs.hasPairs() )
         {
-            DecimalFormat decimalFormatter = null;
-            if ( Objects.nonNull( pairDestinations.get( 0 ).getDecimalFormat() ) )
-            {
-                decimalFormatter = ConfigHelper.getDecimalFormatter( pairDestinations.get( 0 ) );
-            }
+            DecimalFormat decimalFormatter = declaration.decimalFormat();
 
             sharedSampleWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
                                                 durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
-            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                                                      PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
@@ -738,63 +690,39 @@ class EvaluationUtilities
     /**
      * Get the netCDF writers requested by this project declaration.
      *
-     * @param projectConfig The declaration
-     * @param systemSettings The system settings
-     * @param outputDirectory The output directory into which to write
-     * @return A list of netCDF writers, zero to two
+     * @param declaration the declaration
+     * @param systemSettings the system settings
+     * @param outputDirectory the output directory into which to write
+     * @return a list of netCDF writers, zero to two
      */
 
-    private static List<NetcdfOutputWriter> getNetcdfWriters( ProjectConfig projectConfig,
+    private static List<NetcdfOutputWriter> getNetcdfWriters( EvaluationDeclaration declaration,
                                                               SystemSettings systemSettings,
                                                               Path outputDirectory )
     {
         List<NetcdfOutputWriter> writers = new ArrayList<>( 2 );
 
         // Obtain the duration units for outputs: #55441
-        String durationUnitsString = projectConfig.getOutputs()
-                                                  .getDurationFormat()
-                                                  .value()
-                                                  .toUpperCase();
-        ChronoUnit durationUnits = ChronoUnit.valueOf( durationUnitsString );
+        ChronoUnit durationUnits = declaration.durationFormat();
 
-        DestinationConfig firstDeprecatedNetcdf = null;
-        DestinationConfig firstNetcdf2 = null;
+        Outputs outputs = declaration.formats()
+                                     .outputs();
 
-        for ( DestinationConfig destination : projectConfig.getOutputs()
-                                                           .getDestination() )
-        {
-            if ( destination.getType()
-                            .equals( DestinationType.NETCDF )
-                 && Objects.isNull( firstDeprecatedNetcdf ) )
-            {
-                firstDeprecatedNetcdf = destination;
-            }
-
-            if ( destination.getType()
-                            .equals( DestinationType.NETCDF_2 )
-                 && Objects.isNull( firstNetcdf2 ) )
-            {
-                firstNetcdf2 = destination;
-            }
-        }
-
-        if ( Objects.nonNull( firstDeprecatedNetcdf ) )
+        if ( outputs.hasNetcdf() )
         {
             // Use the template-based netcdf writer.
-            EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
             NetcdfOutputWriter netcdfWriterDeprecated = NetcdfOutputWriter.of( systemSettings,
                                                                                declaration,
                                                                                durationUnits,
                                                                                outputDirectory );
             writers.add( netcdfWriterDeprecated );
-            LOGGER.warn( "Added a deprecated netcdf writer for statistics to the evaluation. Please update your "
-                         + "declaration to use the newer netCDF output." );
+            LOGGER.warn(
+                    "Added a deprecated netcdf writer for statistics to the evaluation. Please update your declaration to use the newer netCDF output." );
         }
 
-        if ( Objects.nonNull( firstNetcdf2 ) )
+        if ( outputs.hasNetcdf2() )
         {
             // Use the newer from-scratch netcdf writer.
-            EvaluationDeclaration declaration = DeclarationFactory.from( projectConfig );
             NetcdfOutputWriter netcdfWriter = NetcdfOutputWriter.of( systemSettings,
                                                                      declaration,
                                                                      durationUnits,
@@ -942,25 +870,6 @@ class EvaluationUtilities
     }
 
     /**
-     * Obtain the minimum sample size from a possibly null input. If null, return zero.
-     *
-     * @param minimumSampleSize the minimum sample size, which is nullable and defaults to zero
-     */
-    private static int getMinimumSampleSize( Integer minimumSampleSize )
-    {
-        // Defaults to zero
-        if ( Objects.isNull( minimumSampleSize ) )
-        {
-            LOGGER.debug( "Setting the minimum sample size to zero. " );
-            return 0;
-        }
-        else
-        {
-            return minimumSampleSize;
-        }
-    }
-
-    /**
      * @param evaluation the evaluation description
      * @param project the project
      * @return an evaluation description with analyzed measurement units and variables, as needed
@@ -974,15 +883,19 @@ class EvaluationUtilities
                                                .setMeasurementUnit( desiredMeasurementUnit );
 
         // Only set the names with analyzed names if the existing names are empty
-        if ( "".equals( evaluation.getLeftVariableName() ) )
+        if ( evaluation.getLeftVariableName()
+                       .isBlank() )
         {
             builder.setLeftVariableName( project.getVariableName( DatasetOrientation.LEFT ) );
         }
-        if ( "".equals( evaluation.getRightVariableName() ) )
+        if ( evaluation.getRightVariableName()
+                .isBlank() )
         {
             builder.setRightVariableName( project.getVariableName( DatasetOrientation.RIGHT ) );
         }
-        if ( project.hasBaseline() && "".equals( evaluation.getBaselineVariableName() ) )
+        if ( project.hasBaseline()
+             && evaluation.getBaselineVariableName()
+                          .isBlank() )
         {
             builder.setBaselineVariableName( project.getVariableName( DatasetOrientation.BASELINE ) );
         }
@@ -1014,10 +927,8 @@ class EvaluationUtilities
                 FeatureGroup nextFeature = nextRequest.getMetadata()
                                                       .getFeatureGroup();
                 features.add( nextFeature );
-
                 TimeWindowOuter nextTimeWindow = nextRequest.getMetadata()
                                                             .getTimeWindow();
-
                 timeWindows.add( nextTimeWindow );
             }
 
@@ -1366,7 +1277,7 @@ class EvaluationUtilities
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
-    getSingleValuedProcessors( List<MetricsAndThresholds> metricsAndThresholds,
+    getSingleValuedProcessors( Set<MetricsAndThresholds> metricsAndThresholds,
                                ExecutorService thresholdExecutor,
                                ExecutorService metricExecutor )
     {
@@ -1392,7 +1303,7 @@ class EvaluationUtilities
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-    getEnsembleProcessors( List<MetricsAndThresholds> metricsAndThresholds,
+    getEnsembleProcessors( Set<MetricsAndThresholds> metricsAndThresholds,
                            ExecutorService thresholdExecutor,
                            ExecutorService metricExecutor )
     {
@@ -1478,8 +1389,7 @@ class EvaluationUtilities
      * Small value class to collect together variables needed to instantiate an evaluation.
      *
      * @param systemSettings the system settings
-     * @param projectConfigPlus the project declaration
-     * @param evaluationDescription the evaluation description
+     * @param declaration the project declaration
      * @param evaluationId the evaluation identifier
      * @param subscriberApprover the subscriber approver
      * @param monitor the evaluation event monitor
@@ -1493,14 +1403,13 @@ class EvaluationUtilities
 
     @RecordBuilder
     record EvaluationDetails( SystemSettings systemSettings,
-                              ProjectConfigPlus projectConfigPlus,
-                              Evaluation evaluationDescription,
+                              EvaluationDeclaration declaration,
                               String evaluationId,
                               SubscriberApprover subscriberApprover,
                               EvaluationEvent monitor,
                               DatabaseServices databaseServices,
                               DatabaseCaches caches,
-                              List<MetricsAndThresholds> metricsAndThresholds,
+                              Set<MetricsAndThresholds> metricsAndThresholds,
                               Project project,
                               EvaluationMessager evaluation,
                               TimeSeriesStore timeSeriesStore )

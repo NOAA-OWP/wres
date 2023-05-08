@@ -97,13 +97,13 @@ public final class EquitableThreatScoreTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.EQUITABLE_THREAT_SCORE.toString(), this.ets.getName() );
+        assertEquals( MetricConstants.EQUITABLE_THREAT_SCORE.toString(), this.ets.getMetricNameString() );
     }
 
     /**
@@ -153,7 +153,7 @@ public final class EquitableThreatScoreTest
                                                           () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null,
                                                                                     null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.ets.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.ets.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

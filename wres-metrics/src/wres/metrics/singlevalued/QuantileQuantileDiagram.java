@@ -120,20 +120,20 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
     }
 
     @Override
-    public DiagramStatisticOuter apply( Pool<Pair<Double, Double>> pairs )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
-        Objects.requireNonNull( pairs, "Specify non-null input to the '" + this.getName() + "'." );
+        Objects.requireNonNull( pool, "Specify non-null input to the '" + this.getMetricNameString() + "'." );
 
         int quantileCount = this.probCount;
 
         // Use the smaller of the number of pairs and the default: no value in more quantiles than order statistics
-        int orderStatistics = pairs.get()
-                                   .size();
+        int orderStatistics = pool.get()
+                                  .size();
         if ( orderStatistics < quantileCount )
         {
             LOGGER.debug( "While building a quantile-quantile diagram for {}, discovered a smaller number of order "
                           + "statistics ({}) than probabilities requested ({}). Using the number of order statistics.",
-                          pairs.getMetadata(),
+                          pool.getMetadata(),
                           orderStatistics,
                           quantileCount );
 
@@ -145,8 +145,8 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
         double[] predictedQ = new double[quantileCount];
 
         // Remove non-finite
-        double[] sortedLeft = Slicer.getLeftSide( pairs );
-        double[] sortedRight = Slicer.getRightSide( pairs );
+        double[] sortedLeft = Slicer.getLeftSide( pool );
+        double[] sortedRight = Slicer.getRightSide( pool );
         sortedLeft = Arrays.stream( sortedLeft )
                            .filter( Double::isFinite )
                            .toArray();
@@ -171,15 +171,15 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
 
         // Add the units to the quantiles
         DiagramMetricComponent obsWithUnits = QuantileQuantileDiagram.OBSERVED_QUANTILES.toBuilder()
-                                                                                        .setUnits( pairs.getMetadata()
-                                                                                                        .getMeasurementUnit()
-                                                                                                        .toString() )
+                                                                                        .setUnits( pool.getMetadata()
+                                                                                                       .getMeasurementUnit()
+                                                                                                       .toString() )
                                                                                         .build();
 
         DiagramMetricComponent predWithUnits = QuantileQuantileDiagram.PREDICTED_QUANTILES.toBuilder()
-                                                                                          .setUnits( pairs.getMetadata()
-                                                                                                          .getMeasurementUnit()
-                                                                                                          .toString() )
+                                                                                          .setUnits( pool.getMetadata()
+                                                                                                         .getMeasurementUnit()
+                                                                                                         .toString() )
                                                                                           .build();
 
         DiagramStatisticComponent oqs =
@@ -204,7 +204,7 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
                                                      .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                      .build();
 
-        return DiagramStatisticOuter.of( qqDiagram, pairs.getMetadata() );
+        return DiagramStatisticOuter.of( qqDiagram, pool.getMetadata() );
     }
 
     @Override

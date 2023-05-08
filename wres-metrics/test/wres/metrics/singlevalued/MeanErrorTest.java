@@ -89,7 +89,7 @@ public final class MeanErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN_ERROR.toString(), this.meanError.getName() );
+        assertEquals( MetricConstants.MEAN_ERROR.toString(), this.meanError.getMetricNameString() );
     }
 
     @Test
@@ -116,7 +116,7 @@ public final class MeanErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.meanError.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.meanError.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.meanError.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

@@ -82,7 +82,7 @@ final class FalseAlarmRatioTest
     @Test
     void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.FALSE_ALARM_RATIO.toString(), this.far.getName() );
+        assertEquals( MetricConstants.FALSE_ALARM_RATIO.toString(), this.far.getMetricNameString() );
     }
 
     @Test
@@ -125,6 +125,6 @@ final class FalseAlarmRatioTest
                                                           () -> this.far.aggregate( (DoubleScoreStatisticOuter) null,
                                                                                     null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.far.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.far.getMetricNameString() + "'.", actual.getMessage() );
     }
 }

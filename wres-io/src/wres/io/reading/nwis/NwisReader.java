@@ -457,7 +457,7 @@ public class NwisReader implements TimeSeriesReader
 
         try
         {
-            if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
+            if ( ReaderUtilities.isWebSource( uri ) )
             {
                 // Stream is closed at a higher level
                 WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri );

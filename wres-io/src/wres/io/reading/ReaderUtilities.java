@@ -474,9 +474,19 @@ public class ReaderUtilities
 
         URI uri = source.getUri();
 
-        return Objects.nonNull( uri )
-               && Objects.nonNull( uri.getScheme() )
-               && uri.getScheme().startsWith( "http" );
+        return ReaderUtilities.isWebSource( uri );
+    }
+
+    /**
+     * @param uri the uri
+     * @return whether the URI scheme starts with http
+     */
+    public static boolean isWebSource( URI uri )
+    {
+        return Objects.nonNull( uri.getScheme() )
+        && uri.getScheme()
+              .toLowerCase()
+              .startsWith( "http" );
     }
 
     /**

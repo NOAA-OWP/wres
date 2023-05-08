@@ -181,7 +181,7 @@ public final class DoubleErrorScoreTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.score.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.score.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.score.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

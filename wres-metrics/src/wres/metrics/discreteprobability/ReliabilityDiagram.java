@@ -121,9 +121,9 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
     }
 
     @Override
-    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> s )
+    public DiagramStatisticOuter apply( final Pool<Pair<Probability, Probability>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -134,12 +134,12 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
         double[] samples = new double[bins];
 
         // Some data available
-        if ( !s.get().isEmpty() )
+        if ( !pool.get().isEmpty() )
         {
             // Compute the average probabilities for samples > 0
 
             // Increment the reliability 
-            s.get().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            pool.get().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
 
             // Compute the average reliability
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
@@ -202,7 +202,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
                                                      .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                      .build();
 
-        return DiagramStatisticOuter.of( statistic, s.getMetadata() );
+        return DiagramStatisticOuter.of( statistic, pool.getMetadata() );
     }
 
     @Override

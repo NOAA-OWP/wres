@@ -142,7 +142,7 @@ public final class EvaluationStatusMessageTest
                                                                          EvaluationStage.POOLING,
                                                                          "A warning" );
 
-        assertTrue( this.event.compareTo( otherEvent ) == 0 );
+        assertEquals( 0, this.event.compareTo( otherEvent ) );
 
         EvaluationStatusMessage anError = EvaluationStatusMessage.of( StatusLevel.ERROR,
                                                                       EvaluationStage.POOLING,

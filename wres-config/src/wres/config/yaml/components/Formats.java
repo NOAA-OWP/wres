@@ -20,19 +20,14 @@ import wres.statistics.generated.Outputs;
 @JsonDeserialize( using = FormatsDeserializer.class )
 public record Formats( Outputs outputs )
 {
-    /** A value that is re-used several times. */
-    private static final String ZERO = "#0.000000";
-
     /** Defaukt numeric format options. */
     public static Outputs.NumericFormat DEFAULT_NUMERIC_FORMAT = Outputs.NumericFormat.newBuilder()
-                                                                                      .setDecimalFormat( ZERO )
                                                                                       .build();
 
     /** Default PNG format. **/
     public static final Outputs.PngFormat PNG_FORMAT =
             Outputs.PngFormat.newBuilder()
                              .setOptions( Outputs.GraphicFormat.newBuilder()
-                                                               .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
                                                                .setHeight( 600 )
                                                                .setWidth( 800 ) )
                              .build();
@@ -41,7 +36,6 @@ public record Formats( Outputs outputs )
     public static final Outputs.SvgFormat SVG_FORMAT =
             Outputs.SvgFormat.newBuilder()
                              .setOptions( Outputs.GraphicFormat.newBuilder()
-                                                               .setShape( Outputs.GraphicFormat.GraphicShape.LEAD_THRESHOLD )
                                                                .setHeight( 600 )
                                                                .setWidth( 800 ) )
                              .build();

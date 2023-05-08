@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,7 +21,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
-import wres.metrics.MetricParameterException;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -116,7 +114,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString(), this.crpss.getName() );
+        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString(), this.crpss.getMetricNameString() );
     }
 
     /**
@@ -198,7 +196,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.crpss.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.crpss.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     /**

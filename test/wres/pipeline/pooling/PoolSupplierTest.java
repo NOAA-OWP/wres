@@ -748,7 +748,7 @@ class PoolSupplierTest
                                                      .mapToDouble( Event::getValue )
                                                      .toArray();
 
-        Climatology expectedClimatology = new Climatology.Builder().addClimatology( FEATURE, climatologyArray )
+        Climatology expectedClimatology = new Climatology.Builder().addClimatology( FEATURE, climatologyArray, UNIT )
                                                                    .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneExpected =

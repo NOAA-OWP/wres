@@ -32,7 +32,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class TimeSeriesTest
 {
-
     private static final String VARIABLE_NAME = "Chickens";
     private static final Feature FEATURE_NAME = Feature.of(
             MessageFactory.getGeometry( "Georgia" ) );

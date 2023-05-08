@@ -73,11 +73,11 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -85,11 +85,11 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
         double returnMe = Double.NaN;
 
         // Minimum sample size of 1
-        if ( s.get().size() > 1 )
+        if ( pool.get().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
-                                      .applyAsDouble( this.correlation.correlation( Slicer.getLeftSide( s ),
-                                                                                    Slicer.getRightSide( s ) ) );
+                                      .applyAsDouble( this.correlation.correlation( Slicer.getLeftSide( pool ),
+                                                                                    Slicer.getRightSide( pool ) ) );
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
@@ -103,7 +103,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

@@ -1,6 +1,7 @@
 package wres.datamodel.pools;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -78,14 +79,14 @@ class PoolSlicerTest
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Double>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Double>> sliced =
-                PoolSlicer.filter( pairs, Slicer.left( threshold::test ), threshold::test );
+                PoolSlicer.filter( pairs, Slicer.left( threshold ), threshold );
         //Test with baseline
-        assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
+        assertArrayEquals( Slicer.getLeftSide( sliced.getBaselineData() ), expected );
         //Test without baseline
         Pool<Pair<Double, Double>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Double>> slicedNoBase =
-                PoolSlicer.filter( pairsNoBase, Slicer.left( threshold::test ), threshold::test );
-        assertTrue( Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
+                PoolSlicer.filter( pairsNoBase, Slicer.left( threshold ), threshold );
+        assertArrayEquals( Slicer.getLeftSide( slicedNoBase ), expected );
     }
 
     @Test
@@ -105,17 +106,17 @@ class PoolSlicerTest
         PoolMetadata meta = PoolMetadata.of();
         Pool<Pair<Double, Ensemble>> pairs = Pool.of( values, meta, values, PoolMetadata.of( true ), null );
         Pool<Pair<Double, Ensemble>> sliced =
-                PoolSlicer.filter( pairs, Slicer.leftVector( threshold::test ), threshold::test );
+                PoolSlicer.filter( pairs, Slicer.leftVector( threshold ), threshold );
 
         //Test with baseline
-        assertTrue( Arrays.equals( Slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
+        assertArrayEquals( Slicer.getLeftSide( sliced.getBaselineData() ), expected );
 
         //Test without baseline
         Pool<Pair<Double, Ensemble>> pairsNoBase = Pool.of( values, meta );
         Pool<Pair<Double, Ensemble>> slicedNoBase =
-                PoolSlicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), threshold::test );
+                PoolSlicer.filter( pairsNoBase, Slicer.leftVector( threshold ), threshold );
 
-        assertTrue( Arrays.equals( Slicer.getLeftSide( slicedNoBase ), expected ) );
+        assertArrayEquals( Slicer.getLeftSide( slicedNoBase ), expected );
     }
 
     @Test
@@ -132,15 +133,17 @@ class PoolSlicerTest
                 Pool.of( values, PoolMetadata.of(), values, PoolMetadata.of( true ), null );
         Function<Pair<Double, Ensemble>, Pair<Double, Double>> mapper =
                 in -> Pair.of( in.getLeft(),
-                               Arrays.stream( in.getRight().getMembers() ).average().getAsDouble() );
+                               Arrays.stream( in.getRight().getMembers() )
+                                     .average()
+                                     .orElseThrow() );
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
                 Slicer.getRightSide( PoolSlicer.transform( Pool.of( values, PoolMetadata.of() ), mapper ) );
-        assertTrue( Arrays.equals( actualNoBase, expected ) );
+        assertArrayEquals( actualNoBase, expected );
         //Test baseline
         double[] actualBase = Slicer.getRightSide( PoolSlicer.transform( input, mapper ).getBaselineData() );
-        assertTrue( Arrays.equals( actualBase, expected ) );
+        assertArrayEquals( actualBase, expected );
     }
 
     @Test
@@ -233,10 +236,10 @@ class PoolSlicerTest
 
 
         SortedSet<Event<Boolean>> eventsOne = new TreeSet<>();
-        eventsOne.add( Event.of( Instant.MIN, Boolean.valueOf( false ) ) );
+        eventsOne.add( Event.of( Instant.MIN, Boolean.FALSE ) );
         SortedSet<Event<Boolean>> eventsTwo = new TreeSet<>();
-        eventsTwo.add( Event.of( Instant.MIN, Boolean.valueOf( false ) ) );
-        eventsTwo.add( Event.of( Instant.MAX, Boolean.valueOf( true ) ) );
+        eventsTwo.add( Event.of( Instant.MIN, Boolean.FALSE ) );
+        eventsTwo.add( Event.of( Instant.MAX, Boolean.TRUE ) );
 
         Pool<TimeSeries<Boolean>> anotherPool =
                 Pool.of( List.of( TimeSeries.of( TimeSeriesMetadata.of( Collections.emptyMap(),
@@ -432,7 +435,7 @@ class PoolSlicerTest
     @Test
     void testUnionOfThrowsExceptionWithOneNullInput()
     {
-        List<PoolMetadata> nullInput = Arrays.asList( (PoolMetadata) null );
+        List<PoolMetadata> nullInput = Collections.singletonList( null );
         NullPointerException actual = assertThrows( NullPointerException.class,
                                                     () -> PoolSlicer.unionOf( nullInput ) );
 

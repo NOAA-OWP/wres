@@ -92,13 +92,12 @@ class MultiDeclarationFactoryTest
                     </outputs>
                 </project>""";
 
-        EvaluationDeclaration actual = MultiDeclarationFactory.from( oldLanguageString, null, true );
+        EvaluationDeclaration actual = MultiDeclarationFactory.from( oldLanguageString, null, false );
 
         Metric metric = MetricBuilder.builder()
                                      .name( MetricConstants.SAMPLE_SIZE )
                                      .build();
         Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
-                                                                   .setDecimalFormat( "#0.000000" )
                                                                    .build();
         Outputs formatsInner = Outputs.newBuilder()
                                       .setPairs( Outputs.PairFormat.newBuilder()

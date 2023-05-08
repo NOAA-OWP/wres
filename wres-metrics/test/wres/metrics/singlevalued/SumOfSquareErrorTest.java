@@ -87,7 +87,7 @@ public final class SumOfSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR.toString(), this.sse.getName() );
+        assertEquals( MetricConstants.SUM_OF_SQUARE_ERROR.toString(), this.sse.getMetricNameString() );
     }
 
     @Test
@@ -120,7 +120,7 @@ public final class SumOfSquareErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.sse.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.sse.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     @Test
@@ -129,7 +129,7 @@ public final class SumOfSquareErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.sse.aggregate( null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.sse.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.sse.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

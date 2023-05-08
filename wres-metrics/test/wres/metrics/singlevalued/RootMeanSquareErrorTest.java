@@ -86,7 +86,7 @@ public final class RootMeanSquareErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString(), this.rmse.getName() );
+        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString(), this.rmse.getMetricNameString() );
     }
 
     @Test
@@ -125,7 +125,7 @@ public final class RootMeanSquareErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.rmse.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rmse.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rmse.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

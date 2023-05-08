@@ -85,7 +85,7 @@ public final class CorrelationPearsonsTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString(), this.rho.getName() );
+        assertEquals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString(), this.rho.getMetricNameString() );
     }
 
     @Test
@@ -124,7 +124,7 @@ public final class CorrelationPearsonsTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.rho.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rho.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rho.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     @Test
@@ -133,7 +133,7 @@ public final class CorrelationPearsonsTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.rho.aggregate( null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rho.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rho.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

@@ -116,7 +116,7 @@ public final class MaximumTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MAXIMUM.toString(), this.maximum.getName() );
+        assertEquals( MetricConstants.MAXIMUM.toString(), this.maximum.getMetricNameString() );
     }
 
     @Test
@@ -143,7 +143,7 @@ public final class MaximumTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.maximum.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.maximum.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.maximum.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

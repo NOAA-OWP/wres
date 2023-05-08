@@ -32,6 +32,7 @@ import wres.io.database.Database;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
+import wres.io.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
@@ -213,8 +214,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
     {
         Path path = Paths.get( this.fileName );
 
-        if ( this.fileName.getScheme() != null &&
-             this.fileName.getScheme().startsWith( "http" ) )
+        if ( ReaderUtilities.isWebSource( this.fileName ) )
         {
             URL url = this.fileName.toURL();
             HttpURLConnection huc = ( HttpURLConnection ) url.openConnection();

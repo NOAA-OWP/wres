@@ -96,13 +96,13 @@ public final class ProbabilityOfDetectionTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.PROBABILITY_OF_DETECTION.toString(), this.pod.getName() );
+        assertEquals( MetricConstants.PROBABILITY_OF_DETECTION.toString(), this.pod.getMetricNameString() );
     }
 
     /**
@@ -151,7 +151,7 @@ public final class ProbabilityOfDetectionTest
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
                                                    () -> this.pod.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.pod.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.pod.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

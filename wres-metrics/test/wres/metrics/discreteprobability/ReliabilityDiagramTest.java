@@ -278,14 +278,14 @@ public final class ReliabilityDiagramTest
     }
 
     /**
-     * Checks that the {@link ReliabilityDiagram#getName()} returns 
+     * Checks that the {@link ReliabilityDiagram#getMetricNameString()} returns
      * {@link MetricConstants.RELIABILITY_DIAGRAM.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RELIABILITY_DIAGRAM.toString(), this.rel.getName() );
+        assertEquals( MetricConstants.RELIABILITY_DIAGRAM.toString(), this.rel.getMetricNameString() );
     }
 
     /**
@@ -299,7 +299,7 @@ public final class ReliabilityDiagramTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.rel.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rel.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rel.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 

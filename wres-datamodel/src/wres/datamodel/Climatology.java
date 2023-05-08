@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
+
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -23,7 +24,7 @@ import wres.datamodel.time.TimeSeries;
 /**
  * Abstraction of a climatological dataset for one or more geographic features. The climatological data is sorted on 
  * construction in order of increasing size.
- * 
+ *
  * @author James Brown
  */
 
@@ -35,6 +36,9 @@ public class Climatology
 
     /** The climatological data, mapped by feature. */
     private final Map<Feature, double[]> climateData;
+
+    /** The measurement unit. */
+    private final String measurementUnit;
 
     /**
      * Returns an instance.
@@ -52,7 +56,7 @@ public class Climatology
 
     /**
      * Returns a cloned copy of the climatology for a named feature.
-     * 
+     *
      * @param feature the feature
      * @return a cloned copy of the climatology or null if the prescribed feature does not exist
      * @throws NullPointerException if the feature is null
@@ -70,6 +74,14 @@ public class Climatology
 
         return this.climateData.get( feature )
                                .clone();
+    }
+
+    /**
+     * @return the measurement unit
+     */
+    public String getMeasurementUnit()
+    {
+        return this.measurementUnit;
     }
 
     /**
@@ -94,7 +106,7 @@ public class Climatology
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof Climatology in ) )
+        if ( !( o instanceof Climatology in ) )
         {
             return false;
         }
@@ -106,6 +118,12 @@ public class Climatology
 
         // Check the mapped items
         if ( in.climateData.size() != this.climateData.size() )
+        {
+            return false;
+        }
+
+        if( ! in.getMeasurementUnit()
+                .equals( this.getMeasurementUnit() ) )
         {
             return false;
         }
@@ -132,6 +150,9 @@ public class Climatology
             hash = 31 * hash + Arrays.hashCode( nextEntry.getValue() );
         }
 
+        hash = 31 * hash + this.getMeasurementUnit()
+                               .hashCode();
+
         return hash;
     }
 
@@ -157,9 +178,12 @@ public class Climatology
         /** The climatological data. */
         private final Map<Feature, double[]> climateData = new HashMap<>();
 
+        /** The measurement unit. */
+        private String measurementUnit;
+
         /**
          * Adds a list of time-series to the climatology.
-         * 
+         *
          * @param timeSeries the time-series
          * @return this builder
          */
@@ -185,6 +209,9 @@ public class Climatology
                     // No need to clone the above array is created anew
                     this.climateData.put( nextFeature, nextSeriesDoubles );
                 }
+
+                this.measurementUnit = nextSeries.getMetadata()
+                                                 .getUnit();
             }
 
             return this;
@@ -197,7 +224,7 @@ public class Climatology
          * @return the builder
          */
 
-        public Builder addClimatology( Feature feature, double[] climatology )
+        public Builder addClimatology( Feature feature, double[] climatology, String measurementUnit )
         {
             if ( Objects.nonNull( feature ) && Objects.nonNull( climatology ) )
             {
@@ -211,6 +238,8 @@ public class Climatology
                     double[] cloned = climatology.clone();
                     this.climateData.put( feature, cloned );
                 }
+
+                this.measurementUnit = measurementUnit;
             }
 
             return this;
@@ -218,7 +247,7 @@ public class Climatology
 
         /**
          * Builds an instance
-         * 
+         *
          * @return a climatology
          */
 
@@ -250,7 +279,7 @@ public class Climatology
 
     /**
      * Creates an instance.
-     * 
+     *
      * @param builder the builder
      * @throws NullPointerException if the input is null
      */
@@ -273,20 +302,23 @@ public class Climatology
         }
 
         this.climateData = Collections.unmodifiableMap( climatologyInner );
+        this.measurementUnit = builder.measurementUnit;
 
         // Validate
-        this.validate( this.climateData );
+        this.validate( this.climateData, this.measurementUnit );
 
         LOGGER.debug( "Created a climatological data source for features {}.", this.climateData.keySet() );
     }
 
     /**
      * Validates the climatological input.
-     * 
+     *
+     * @param climatology the climatology
+     * @param measurementUnit the measurement unit
      * @throws IllegalArgumentException if the climatology is missing for any feature
      */
 
-    private void validate( Map<Feature, double[]> climatology )
+    private void validate( Map<Feature, double[]> climatology, String measurementUnit )
     {
         Set<Feature> invalid = climatology.entrySet()
                                           .stream()
@@ -302,6 +334,11 @@ public class Climatology
                                                 + "is not allowed: "
                                                 + invalid
                                                 + "." );
+        }
+
+        if( Objects.isNull( measurementUnit ) )
+        {
+            throw new IllegalArgumentException( "Cannot build a climatology without a measurement unit. " );
         }
     }
 

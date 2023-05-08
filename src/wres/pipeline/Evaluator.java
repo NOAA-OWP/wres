@@ -1,6 +1,7 @@
 package wres.pipeline;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -23,11 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigPlus;
-import wres.config.xml.ProjectConfigs;
+import wres.config.MultiDeclarationFactory;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
-import wres.config.xml.Validation;
 import wres.io.database.Database;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -97,70 +97,42 @@ public class Evaluator
         EvaluationEvent failure = EvaluationEvent.of();
         failure.begin();
 
-        ProjectConfigPlus projectConfigPlus;
+        EvaluationDeclaration declaration;
         try
         {
-            projectConfigPlus = ProjectConfigs.readDeclaration( declarationOrPath );
+            declaration = MultiDeclarationFactory.from( declarationOrPath,
+                                                        FileSystems.getDefault(),
+                                                        true );
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Failed to unmarshal project configuration from command line argument.", e );
-            UserInputException translated = new UserInputException( "The project declaration was invalid.", e );
+            LOGGER.error( "Failed to unmarshal  evaluation declaration from command line argument.", e );
+            UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();
             return ExecutionResult.failure( translated );
         }
 
-        // Display the raw configuration in logs. Issue #56900.
-        LOGGER.info( "{}", projectConfigPlus.getRawConfig() );
-        LOGGER.info( "Successfully unmarshalled project configuration from {}"
-                     + ", validating further...",
-                     projectConfigPlus );
-
         SystemSettings innerSystemSettings = this.getSystemSettings();
 
         if ( innerSystemSettings.isInMemory() )
         {
-            LOGGER.info( "Running project {} in memory.", projectConfigPlus );
+            LOGGER.info( "Running evaluation in memory." );
         }
 
-        // Validate unmarshalled configurations
-        final boolean validated = Validation.isProjectValid( innerSystemSettings.getDataDirectory(),
-                                                             projectConfigPlus );
-
-        if ( validated )
-        {
-            LOGGER.info( "Successfully validated project configuration from {}. "
-                         + "Beginning execution...",
-                         projectConfigPlus );
-        }
-        else
-        {
-            String message = "Validation failed for project configuration from "
-                             + projectConfigPlus;
-            LOGGER.error( message );
-            UserInputException e = new UserInputException( message );
-            failure.setFailed();
-            failure.commit();
-            // #108090
-            return ExecutionResult.failure( projectConfigPlus.getProjectConfig()
-                                                             .getName(),
-                                            e );
-        }
-
-        return this.evaluate( projectConfigPlus );
+        return this.evaluate( declaration );
     }
 
     /**
-     * Runs a WRES project.
-     * @param projectConfigPlus the project configuration to run
+     * Executes an evaluation.
+     * @param declaration the declaration
      * @return the result of the execution
      * @throws NullPointerException if the projectConfigPlus is null
      */
 
-    public ExecutionResult evaluate( ProjectConfigPlus projectConfigPlus )
+    public ExecutionResult evaluate( EvaluationDeclaration declaration )
     {
-        Objects.requireNonNull( projectConfigPlus );
+        Objects.requireNonNull( declaration );
 
         EvaluationEvent monitor = EvaluationEvent.of();
         monitor.begin();
@@ -281,7 +253,7 @@ public class Evaluator
             Pair<Set<Path>, String> innerPathsAndProjectHash =
                     EvaluationUtilities.evaluate( innerSystemSettings,
                                                   databaseServices,
-                                                  projectConfigPlus,
+                                                  declaration,
                                                   executors,
                                                   this.getBrokerConnectionFactory(),
                                                   monitor );
@@ -292,13 +264,13 @@ public class Evaluator
 
             lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
         }
-        catch ( ProjectConfigException userException )
+        catch ( DeclarationException userException )
         {
             String message = "Please correct the project configuration.";
             UserInputException userInputException = new UserInputException( message, userException );
             monitor.setFailed();
             monitor.commit();
-            return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
+            return ExecutionResult.failure( declaration.label(),
                                             userInputException );
         }
         catch ( RuntimeException | IOException | SQLException internalException )
@@ -307,7 +279,7 @@ public class Evaluator
             InternalWresException internalWresException = new InternalWresException( message, internalException );
             monitor.setFailed();
             monitor.commit();
-            return ExecutionResult.failure( projectConfigPlus.getProjectConfig().getName(),
+            return ExecutionResult.failure( declaration.label(),
                                             internalWresException );
         }
         // Shutdown
@@ -326,8 +298,7 @@ public class Evaluator
 
         monitor.setSucceeded();
         monitor.commit();
-        return ExecutionResult.success( projectConfigPlus.getProjectConfig()
-                                                         .getName(),
+        return ExecutionResult.success( declaration.label(),
                                         projectHash,
                                         pathsWrittenTo );
     }
@@ -340,10 +311,13 @@ public class Evaluator
     private static void shutDownGracefully( final ExecutorService executor )
     {
         Objects.requireNonNull( executor );
+
+        // Shutdown
         executor.shutdown();
 
         try
         {
+            // Await termination after shutdown
             boolean died = executor.awaitTermination( 5, TimeUnit.SECONDS );
 
             if ( !died )

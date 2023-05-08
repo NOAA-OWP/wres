@@ -79,6 +79,12 @@ public class MessageFactory
             formats.add( Format.NETCDF );
         }
 
+        if ( outputs.hasNetcdf2() )
+        {
+            // Only one style of NetCDF in the format options because a single writer writes both
+            formats.add( Format.NETCDF );
+        }
+
         if ( outputs.hasProtobuf() )
         {
             formats.add( Format.PROTOBUF );

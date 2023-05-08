@@ -100,7 +100,7 @@ public final class KlingGuptaEfficiencyTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString(), this.kge.getName() );
+        assertEquals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString(), this.kge.getMetricNameString() );
     }
 
     @Test
@@ -133,7 +133,7 @@ public final class KlingGuptaEfficiencyTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.kge.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.kge.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.kge.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

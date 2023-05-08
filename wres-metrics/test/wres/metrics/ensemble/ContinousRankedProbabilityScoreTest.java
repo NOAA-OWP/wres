@@ -219,7 +219,7 @@ public final class ContinousRankedProbabilityScoreTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString(), crps.getName() );
+        assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString(), crps.getMetricNameString() );
     }
 
     /**
@@ -283,6 +283,6 @@ public final class ContinousRankedProbabilityScoreTest
     {
         PoolException actual = assertThrows( PoolException.class, () -> this.crps.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.crps.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.crps.getMetricNameString() + "'.", actual.getMessage() );
     }
 }

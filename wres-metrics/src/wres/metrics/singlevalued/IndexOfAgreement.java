@@ -83,9 +83,9 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
     final double exponent;
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -93,20 +93,20 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
         double returnMe = MissingValues.DOUBLE;
 
         // Data available
-        if ( !s.get().isEmpty() )
+        if ( !pool.get().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.get()
-                           .stream()
-                           .mapToDouble( Pair::getLeft )
-                           .average().orElse( Double.NaN );
+            double oBar = pool.get()
+                              .stream()
+                              .mapToDouble( Pair::getLeft )
+                              .average().orElse( Double.NaN );
 
             if( ! Double.isNaN( oBar ) )
             {
                 //Compute the score
                 double numerator = 0.0;
                 double denominator = 0.0;
-                for ( Pair<Double, Double> nextPair : s.get() )
+                for ( Pair<Double, Double> nextPair : pool.get() )
                 {
                     numerator += Math.pow( Math.abs( nextPair.getLeft() - nextPair.getRight() ), exponent );
                     denominator += ( Math.abs( nextPair.getRight() - oBar )
@@ -128,7 +128,7 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

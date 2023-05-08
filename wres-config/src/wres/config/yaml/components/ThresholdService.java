@@ -76,5 +76,10 @@ public record ThresholdService( @JsonProperty( "uri" ) URI uri,
         {
             featureNameFrom = DeclarationFactory.DEFAULT_THRESHOLD_DATASET_ORIENTATION;
         }
+
+        if( Objects.isNull( missingValue ) )
+        {
+            missingValue = -999.0;
+        }
     }
 }

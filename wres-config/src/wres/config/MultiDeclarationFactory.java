@@ -119,7 +119,8 @@ public class MultiDeclarationFactory
             throw new IOException( "Failed to detect the MIME type of the declaration string: " + declarationString );
         }
 
-        if ( "application".equals( detectedMediaType.getType() ) && "xml".equals( detectedMediaType.getSubtype() ) )
+        if ( "application".equals( detectedMediaType.getType() )
+             && "xml".equals( detectedMediaType.getSubtype() ) )
         {
             return MultiDeclarationFactory.fromOld( declarationString, interpolateAndValidate, origin );
         }
@@ -184,6 +185,12 @@ public class MultiDeclarationFactory
                          "---",
                          System.lineSeparator(),
                          migratedString );
+        }
+
+        // Finally, interpolate any missing declaration for internal use
+        if( interpolateAndValidate )
+        {
+            migrated = DeclarationInterpolator.interpolate( migrated, true );
         }
 
         return migrated;

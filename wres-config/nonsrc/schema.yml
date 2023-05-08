@@ -130,7 +130,7 @@ definitions:
           anyOf:   
             - "$ref": "#/definitions/FormatEnum"
             - "$ref": "#/definitions/GraphicFormatEnum"
-            - "$ref": "#/definitions/FormatWithParameters"
+            - "$ref": "#/definitions/FormatWithoutParameters"
             - "$ref": "#/definitions/GraphicFormatWithParameters"
             - "$ref": "#/definitions/NetcdfFormatWithParameters"
         minItems: 1
@@ -991,9 +991,9 @@ definitions:
       - name
     title: TimeSeriesMetricWithParameters
 
-  # Format. A facade to allow the same declaration across
-  # all types of format. For example, format: csv2
-  FormatWithParameters:
+  # Format. A facade that supports a parameterized declaration 
+  # of a format without parameters. Reduces friction for users.
+  FormatWithoutParameters:
     type: object
     additionalProperties: false
     properties:
@@ -1001,7 +1001,7 @@ definitions:
         "$ref": "#/definitions/FormatEnum"
     required:
       - format
-    title: FormatWithParameters
+    title: FormatWithoutParameters
 
   # Graphic format.
   GraphicFormatWithParameters:

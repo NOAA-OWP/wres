@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationInterpolator;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -85,12 +86,12 @@ public class WrdsFeatureFiller
         // gridded evaluations.
         if ( !requiresFeatureRequests )
         {
-            if ( evaluation.features()
-                           .geometries()
-                           .isEmpty()
-                 && evaluation.featureGroups()
-                              .geometryGroups()
-                              .isEmpty() )
+            if ( ( Objects.isNull( evaluation.features() ) || evaluation.features()
+                                                                        .geometries()
+                                                                        .isEmpty() )
+                 && ( Objects.isNull( evaluation.featureGroups() ) || evaluation.featureGroups()
+                                                                                .geometryGroups()
+                                                                                .isEmpty() ) )
             {
                 LOGGER.debug( "No need to fill features: empty features and no requests required." );
                 return evaluation;
@@ -203,6 +204,8 @@ public class WrdsFeatureFiller
         {
             LOGGER.debug( "Discovered implicitly declared singleton features." );
 
+            boolean hasBaseline = DeclarationUtilities.hasBaseline( evaluation );
+
             // Combine all the features from groups that are not to be pooled
             Set<GeometryTuple> fromGroups =
                     featureService.featureGroups()
@@ -212,7 +215,8 @@ public class WrdsFeatureFiller
                                                                                             nextGroup,
                                                                                             leftAuthority,
                                                                                             rightAuthority,
-                                                                                            baselineAuthority )
+                                                                                            baselineAuthority,
+                                                                                            hasBaseline )
                                                                           .stream() )
                                   .collect( Collectors.toSet() );
 
@@ -294,6 +298,8 @@ public class WrdsFeatureFiller
         {
             LOGGER.debug( "Discovered implicitly declared grouped features." );
 
+            boolean hasBaseline = DeclarationUtilities.hasBaseline( evaluation );
+
             // Combine all the features from groups that are not to be pooled
             for ( FeatureServiceGroup nextGroup : featureService.featureGroups() )
             {
@@ -303,7 +309,8 @@ public class WrdsFeatureFiller
                                                                                             nextGroup,
                                                                                             leftAuthority,
                                                                                             rightAuthority,
-                                                                                            baselineAuthority );
+                                                                                            baselineAuthority,
+                                                                                            hasBaseline );
 
                     GeometryGroup group = GeometryGroup.newBuilder()
                                                        .addAllGeometryTuples( featuresToGroup )
@@ -1006,13 +1013,15 @@ public class WrdsFeatureFiller
      * @param leftAuthority The left dimension discovered, required.
      * @param rightAuthority The right dimension discovered, required.
      * @param baselineAuthority The baseline dimension discovered, null if none.
+     * @param hasBaseline whether the evaluation has a baseline dataset
      * @return A list of fully populated features.
      */
     private static Set<GeometryTuple> getFeatureGroup( FeatureService featureService,
                                                        FeatureServiceGroup featureGroup,
                                                        FeatureAuthority leftAuthority,
                                                        FeatureAuthority rightAuthority,
-                                                       FeatureAuthority baselineAuthority )
+                                                       FeatureAuthority baselineAuthority,
+                                                       boolean hasBaseline )
     {
         Objects.requireNonNull( featureGroup );
         Objects.requireNonNull( featureService, "Cannot declare a feature service group without a feature service." );
@@ -1058,7 +1067,11 @@ public class WrdsFeatureFiller
                                             + "type or group value." );
         }
 
-        return WrdsFeatureFiller.readWrdsFeatures( uri, leftAuthority, rightAuthority, baselineAuthority );
+        return WrdsFeatureFiller.readWrdsFeatures( uri,
+                                                   leftAuthority,
+                                                   rightAuthority,
+                                                   baselineAuthority,
+                                                   hasBaseline );
     }
 
     /**
@@ -1067,12 +1080,14 @@ public class WrdsFeatureFiller
      * @param leftAuthority the left feature authority
      * @param rightAuthority the right feature authority
      * @param baselineAuthority the baseline feature authority
+     * @param hasBaseline whether the evaluation has a baseline dataset
      * @return the features read from WRDS
      */
     private static Set<GeometryTuple> readWrdsFeatures( URI uri,
                                                         FeatureAuthority leftAuthority,
                                                         FeatureAuthority rightAuthority,
-                                                        FeatureAuthority baselineAuthority )
+                                                        FeatureAuthority baselineAuthority,
+                                                        boolean hasBaseline )
     {
         Set<GeometryTuple> features = new HashSet<>();
 
@@ -1095,7 +1110,7 @@ public class WrdsFeatureFiller
                                                                                          .setName( rightName ) );
 
                 // Baseline?
-                if ( WrdsFeatureFiller.isValidFeatureName( baselineName ) )
+                if ( hasBaseline && WrdsFeatureFiller.isValidFeatureName( baselineName ) )
                 {
                     featureFromGroup.setBaseline( Geometry.newBuilder()
                                                           .setName( baselineName ) );

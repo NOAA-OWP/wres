@@ -1,11 +1,11 @@
 package wres.datamodel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
@@ -13,7 +13,7 @@ import org.junit.Test;
  * 
  * @author James Brown
  */
-public final class ProbabilityTest
+final class ProbabilityTest
 {
 
     /**
@@ -23,16 +23,16 @@ public final class ProbabilityTest
     private final Probability testInstance = Probability.of( 0.33 );
 
     @Test
-    public void testProbabilityReturnsExpectedProbability()
+    void testProbabilityReturnsExpectedProbability()
     {
         assertEquals( 0.33, this.testInstance.getProbability(), 0.0001 );
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         // Reflexive 
-        assertTrue( this.testInstance.equals( this.testInstance ) );
+        assertEquals( this.testInstance, this.testInstance );
 
         // Symmetric
         Probability anotherInstance = Probability.of( 0.33 );
@@ -48,7 +48,7 @@ public final class ProbabilityTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.testInstance.equals( anotherInstance ) );
+            assertEquals( this.testInstance, anotherInstance );
         }
 
         // Nullity
@@ -62,7 +62,7 @@ public final class ProbabilityTest
     }
 
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
         // Equal objects have the same hashcode
         assertEquals( this.testInstance.hashCode(), this.testInstance.hashCode() );
@@ -77,11 +77,11 @@ public final class ProbabilityTest
     }
 
     @Test
-    public void testCompareTo()
+    void testCompareTo()
     {
         //Equal
-        Probability anotherInstance = Probability.of( 0.33 );       
-        assertTrue( this.testInstance.compareTo( anotherInstance ) == 0 );
+        Probability anotherInstance = Probability.of( 0.33 );
+        assertEquals( 0, this.testInstance.compareTo( anotherInstance ) );
 
 
         Probability less = Probability.of( 0.32 );
@@ -100,7 +100,7 @@ public final class ProbabilityTest
     }
 
     @Test
-    public void testToString()
+    void testToString()
     {
         String expected = "0.33";
 
@@ -110,7 +110,7 @@ public final class ProbabilityTest
     }
 
     @Test
-    public void checkForExpectedExceptionOnConstructionWhenProbabilityIsOOB()
+    void checkForExpectedExceptionOnConstructionWhenProbabilityIsOOB()
     {
         // Above upper bound
         IllegalArgumentException expected = assertThrows( IllegalArgumentException.class, () -> Probability.of( 1.01 ) );

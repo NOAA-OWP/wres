@@ -614,11 +614,15 @@ public class DeclarationUtilities
      * @param evaluation the evaluation
      * @param orientation the data orientation
      * @return the feature authority or null if none was discovered
+     * @throws NullPointerException if either input is null
      */
 
     public static FeatureAuthority getFeatureAuthorityFor( EvaluationDeclaration evaluation,
                                                            DatasetOrientation orientation )
     {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( orientation );
+
         return switch ( orientation )
                 {
                     case LEFT -> evaluation.left()
@@ -1693,8 +1697,8 @@ public class DeclarationUtilities
             Set<Metric> innerMetrics = new HashSet<>( nextMetrics );
             for ( Metric metric : nextMetrics )
             {
-                if( Objects.nonNull( metric.parameters() )
-                    && ! metric.parameters()
+                if ( Objects.nonNull( metric.parameters() )
+                     && !metric.parameters()
                                .summaryStatistics()
                                .isEmpty() )
                 {

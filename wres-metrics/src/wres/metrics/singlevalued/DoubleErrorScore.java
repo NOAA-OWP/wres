@@ -169,7 +169,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
 
         Objects.requireNonNull( metric );
         Objects.requireNonNull( function,
-                                NULL_INPUT_STRING + this.getName()
+                                NULL_INPUT_STRING + this.getMetricNameString()
                                           + "' with a null error function." );
 
         this.errorFunction = function;
@@ -194,11 +194,11 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
 
         Objects.requireNonNull( metric );
         Objects.requireNonNull( function,
-                                NULL_INPUT_STRING + this.getName()
+                                NULL_INPUT_STRING + this.getMetricNameString()
                                           + "' with a null error function." );
 
         Objects.requireNonNull( errorAccumulator,
-                                NULL_INPUT_STRING + this.getName()
+                                NULL_INPUT_STRING + this.getMetricNameString()
                                                   + "' with a null accumulator function." );
 
         this.errorFunction = function;

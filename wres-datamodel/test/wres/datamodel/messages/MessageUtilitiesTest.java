@@ -492,7 +492,7 @@ class MessageUtilitiesTest
                             .setTimeScale( TimeScale.newBuilder()
                                                     .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
                                                     .setPeriod( Duration.newBuilder()
-                                                                        .setSeconds( 01234 ) ) )
+                                                                        .setSeconds( 1234 ) ) )
                             .build();
 
         Pool twelfth = Pool.newBuilder()

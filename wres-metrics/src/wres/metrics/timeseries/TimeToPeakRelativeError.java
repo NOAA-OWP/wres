@@ -93,9 +93,9 @@ public class TimeToPeakRelativeError extends TimingError
     }
 
     @Override
-    public DurationDiagramStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> s )
+    public DurationDiagramStatisticOuter apply( Pool<TimeSeries<Pair<Double, Double>>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -104,7 +104,7 @@ public class TimeToPeakRelativeError extends TimingError
         DurationDiagramStatistic.Builder builder = DurationDiagramStatistic.newBuilder()
                                                                            .setMetric( TimeToPeakRelativeError.METRIC );
 
-        for ( TimeSeries<Pair<Double, Double>> next : s.get() )
+        for ( TimeSeries<Pair<Double, Double>> next : pool.get() )
         {
             // Some events?
             if ( !next.getEvents().isEmpty() )
@@ -121,7 +121,7 @@ public class TimeToPeakRelativeError extends TimingError
                                   referenceTime,
                                   referenceTimeType,
                                   TimeToPeakRelativeError.class,
-                                  s.hashCode() );
+                                  pool.hashCode() );
                 }
 
                 Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
@@ -170,7 +170,7 @@ public class TimeToPeakRelativeError extends TimingError
             }
         }
 
-        return DurationDiagramStatisticOuter.of( builder.build(), s.getMetadata() );
+        return DurationDiagramStatisticOuter.of( builder.build(), pool.getMetadata() );
     }
 
     @Override

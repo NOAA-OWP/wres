@@ -1,5 +1,6 @@
 package wres.io.reading.wrds.thresholds;
 
+import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.units.UnitMapper;
+import wres.io.reading.ReaderUtilities;
 import wres.io.reading.wrds.geography.WrdsLocation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -70,6 +72,14 @@ public class WrdsThresholdFiller
         // Acquire the feature names for which thresholds are required
         DatasetOrientation orientation = service.featureNameFrom();
 
+        if ( Objects.isNull( orientation ) )
+        {
+            throw new ThresholdReadingException( "The 'feature_name_from' is missing from the 'threshold_service' "
+                                                 + "declaration, which is not allowed because the feature service "
+                                                 + "request must use feature names with a prescribed feature "
+                                                 + "authority." );
+        }
+
         // If the orientation for service thresholds is 'BASELINE', then a baseline must be present
         if ( orientation == DatasetOrientation.BASELINE && !DeclarationUtilities.hasBaseline( evaluation ) )
         {
@@ -85,7 +95,10 @@ public class WrdsThresholdFiller
         // Get the feature authority for this data orientation
         FeatureAuthority featureAuthority = DeclarationUtilities.getFeatureAuthorityFor( evaluation, orientation );
 
-        if ( Objects.isNull( featureAuthority ) )
+        // Feature authority must be present if the URI is web-like and not a local file
+        URI serviceUri = service.uri();
+        if ( ReaderUtilities.isWebSource( serviceUri )
+             && Objects.isNull( featureAuthority ) )
         {
             throw new ThresholdReadingException( "When attempting to request thresholds from the WRDS, could not "
                                                  + "determine the feature authority to use for the feature names "

@@ -78,16 +78,16 @@ public class BrierSkillScore extends BrierScore
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Probability, Probability>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Probability, Probability>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Transform probabilities to double values
         Pool<Pair<Double, Double>> transformed =
-                PoolSlicer.transform( s,
+                PoolSlicer.transform( pool,
                                   pair -> Pair.of( pair.getLeft().getProbability(),
                                                    pair.getRight().getProbability() ) );
 
@@ -106,7 +106,7 @@ public class BrierSkillScore extends BrierScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override
