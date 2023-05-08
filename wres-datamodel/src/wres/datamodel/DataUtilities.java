@@ -298,6 +298,22 @@ public final class DataUtilities
     }
 
     /**
+     * Takes a rawString and removes reserved characters, encodes, and replaces " " with "_"
+     * Removes any non-alphanumeric symbols except for "-"
+     *
+     * @param rawString the potentially unsafe file string
+     * @return sanitized string
+     */
+    public static String sanitizeFileName( String rawString )
+    {
+        String noSpaceString = rawString.replace( " ", "_" );
+        String sanitized = noSpaceString.replaceAll( "[^a-zA-Z0-9\\-_.]", "" );
+        String safeName = URLEncoder.encode( sanitized, StandardCharsets.UTF_8 );
+
+        return safeName;
+    }
+
+    /**
      * Returns a path to write from the inputs.
      *
      * @param outputDirectory the directory into which to write
@@ -408,11 +424,8 @@ public final class DataUtilities
 
         // Derive a sanitized name
         String rawString = joinElements.toString();
-        String sanitized = rawString.replace( " ", "_" );
-        String safeName = URLEncoder.encode( sanitized, StandardCharsets.UTF_8 );
-
         return Paths.get( outputDirectory.toUri() )
-                    .resolve( safeName );
+                    .resolve( DataUtilities.sanitizeFileName( rawString ) );
     }
 
     /**
