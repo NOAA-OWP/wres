@@ -393,7 +393,6 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         return this.minimumSampleSize;
     }
 
-
     /**
      * Filters the prescribed thresholds using the inputs.
      * @param thresholds the thresholds

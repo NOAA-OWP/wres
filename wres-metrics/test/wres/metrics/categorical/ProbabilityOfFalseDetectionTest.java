@@ -96,13 +96,13 @@ public final class ProbabilityOfFalseDetectionTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString(), this.pofd.getName() );
+        assertEquals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString(), this.pofd.getMetricNameString() );
     }
 
     /**
@@ -151,7 +151,7 @@ public final class ProbabilityOfFalseDetectionTest
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
                                                           () -> this.pofd.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.pofd.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.pofd.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

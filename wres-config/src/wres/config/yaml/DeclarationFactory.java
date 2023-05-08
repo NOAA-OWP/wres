@@ -1936,6 +1936,7 @@ public class DeclarationFactory
                                                                 MetricParameters parameters )
     {
         Set<Metric> returnMe = new LinkedHashSet<>();
+
         // Iterate through the metrics, increment the parameters and set them
         for ( MetricConstants next : metricNames )
         {
@@ -1955,7 +1956,15 @@ public class DeclarationFactory
                                      .map( MetricConstants::getChild )
                                      .collect( Collectors.toSet() );
                 builder.summaryStatistics( durationScores );
-                returnMe.add( new Metric( next, builder.build() ) );
+
+                // Do not add parameters that match the defaults
+                MetricParameters durationDiagramPars = builder.build();
+                if ( DEFAULT_METRIC_PARAMETERS.equals( durationDiagramPars ) )
+                {
+                    durationDiagramPars = null;
+                }
+
+                returnMe.add( new Metric( next, durationDiagramPars ) );
 
                 LOGGER.debug( "Migrated these summary statistics for the {}: {}.",
                               next,

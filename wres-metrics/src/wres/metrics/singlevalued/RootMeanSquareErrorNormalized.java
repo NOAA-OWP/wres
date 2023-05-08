@@ -74,12 +74,12 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> t )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        DoubleScoreStatisticOuter statistic = this.getIntermediateStatistic( t );
-        return this.aggregate( statistic, t );
+        DoubleScoreStatisticOuter statistic = this.getIntermediateStatistic( pool );
+        return this.aggregate( statistic, pool );
     }
 
     @Override

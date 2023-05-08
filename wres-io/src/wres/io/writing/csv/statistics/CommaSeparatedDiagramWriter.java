@@ -22,13 +22,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.ProjectConfig;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
@@ -38,7 +33,6 @@ import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.io.config.ConfigHelper;
 import wres.io.writing.csv.CommaSeparatedUtilities;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -54,25 +48,21 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         implements Function<List<DiagramStatisticOuter>, Set<Path>>
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger( CommaSeparatedDiagramWriter.class );
 
     /**
      * Returns an instance of a writer.
      *
-     * @param projectConfig the project configuration
-     * @param durationUnits the time units for durations
+     * @param declaration the project declaration
      * @param outputDirectory the directory into which to write
      * @return a writer
-     * @throws NullPointerException if the input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if the input is null
      */
 
-    public static CommaSeparatedDiagramWriter of( ProjectConfig projectConfig,
-                                                  ChronoUnit durationUnits,
+    public static CommaSeparatedDiagramWriter of( EvaluationDeclaration declaration,
                                                   Path outputDirectory )
     {
-        return new CommaSeparatedDiagramWriter( projectConfig, durationUnits, outputDirectory );
+        return new CommaSeparatedDiagramWriter( declaration, outputDirectory );
     }
 
     /**
@@ -88,7 +78,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
-        if ( ProjectConfigs.hasPoolingWindows( super.getProjectConfig() ) )
+        EvaluationDeclaration declaration = super.getDeclaration();
+        if ( Objects.nonNull( declaration.validDatePools() )
+             || Objects.nonNull( declaration.referenceDatePools() ) )
         {
             LOGGER.warn( "The legacy CSV format does not support diagram metrics alongside pooling window declaration. "
                          + "As such, {} diagram statistics will not be written to the legacy CSV format. Please "
@@ -100,56 +92,42 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         Set<Path> paths = new HashSet<>();
 
-        // Write output
-        // In principle, each destination could have a different formatter, so 
-        // the output must be generated separately for each destination
-        // #89191
-        List<DestinationConfig> numericalDestinations = ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
-                                                                                              DestinationType.NUMERIC,
-                                                                                              DestinationType.CSV );
-
-        LOGGER.debug( "Writer {} received {} diagram statistics to write to the destination types {}.",
+        LOGGER.debug( "Writer {} received {} diagram statistics to write to CSV.",
                       this,
-                      output.size(),
-                      numericalDestinations );
+                      output.size() );
 
-        for ( DestinationConfig destinationConfig : numericalDestinations )
+        // Formatter
+        Format formatter = declaration.decimalFormat();
+
+        // Default, per time-window
+        try
         {
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for
+            // each window with LeftOrRightOrBaseline.BASELINE data): #48287
+            Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( output );
 
-            // Formatter
-            Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
-
-            // Default, per time-window
-            try
+            for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
-                // each window with LeftOrRightOrBaseline.BASELINE data): #48287
-                Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( output );
-
-                for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
+                // Slice by ensemble averaging type
+                List<List<DiagramStatisticOuter>> sliced =
+                        CommaSeparatedDiagramWriter.getSlicedStatistics( nextGroup );
+                for ( List<DiagramStatisticOuter> nextSlice : sliced )
                 {
-                    // Slice by ensemble averaging type
-                    List<List<DiagramStatisticOuter>> sliced =
-                            CommaSeparatedDiagramWriter.getSlicedStatistics( nextGroup );
-                    for ( List<DiagramStatisticOuter> nextSlice : sliced )
-                    {
-                        Set<Path> innerPathsWrittenTo =
-                                CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
-                                                                                       super.getProjectConfig(),
-                                                                                       destinationConfig,
-                                                                                       nextSlice,
-                                                                                       formatter,
-                                                                                       super.getDurationUnits() );
-                        paths.addAll( innerPathsWrittenTo );
-                    }
+                    Set<Path> innerPathsWrittenTo =
+                            CommaSeparatedDiagramWriter.writeOneDiagramOutputType( super.getOutputDirectory(),
+                                                                                   super.getDeclaration(),
+                                                                                   nextSlice,
+                                                                                   formatter,
+                                                                                   super.getDurationUnits() );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
-            catch ( IOException e )
-            {
-                throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
-            }
+        }
+        catch ( IOException e )
+        {
+            throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
         }
 
         return Collections.unmodifiableSet( paths );
@@ -159,7 +137,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * Writes all output for one diagram type.
      *
      * @param outputDirectory the directory into which to write
-     * @param projectConfig the project configuration
+     * @param declaration the project declaration
      * @param destinationConfig the destination configuration    
      * @param output the diagram output
      * @param formatter optional formatter, can be null
@@ -168,17 +146,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static Set<Path> writeOneDiagramOutputType( Path outputDirectory,
-                                                        ProjectConfig projectConfig,
-                                                        DestinationConfig destinationConfig,
+                                                        EvaluationDeclaration declaration,
                                                         List<DiagramStatisticOuter> output,
                                                         Format formatter,
                                                         ChronoUnit durationUnits )
             throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
-
-        // Obtain the output type configuration
-        OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
         // Loop across diagrams
         SortedSet<MetricConstants> metrics = Slicer.discover( output, DiagramStatisticOuter::getMetricName );
@@ -192,25 +166,12 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
 
             // Default, per time-window
-            if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
-            {
-                innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( outputDirectory,
-                                                                                            Slicer.filter( output, m ),
-                                                                                            headerRow,
-                                                                                            formatter,
-                                                                                            durationUnits );
-            }
-            // Per threshold
-            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
-            {
-                innerPathsWrittenTo =
-                        CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( outputDirectory,
-                                                                                           Slicer.filter( output, m ),
-                                                                                           headerRow,
-                                                                                           formatter,
-                                                                                           durationUnits );
-            }
+            innerPathsWrittenTo =
+                    CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( outputDirectory,
+                                                                                        Slicer.filter( output, m ),
+                                                                                        headerRow,
+                                                                                        formatter,
+                                                                                        durationUnits );
 
             pathsWrittenTo.addAll( innerPathsWrittenTo );
 
@@ -252,7 +213,8 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             MetricConstants metricName = next.get( 0 ).getMetricName();
             PoolMetadata meta = next.get( 0 ).getMetadata();
 
-            List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter, durationUnits );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
@@ -592,10 +554,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         // Qualify all windows with the latest lead duration
         return DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                              leadUnits )
-                        + "_"
-                        + leadUnits.name().toUpperCase()
-                        + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
+                                                     leadUnits )
+               + "_"
+               + leadUnits.name().toUpperCase()
+               + CommaSeparatedDiagramWriter.getEnsembleAverageQualifierString( statistics );
     }
 
     /**
@@ -645,18 +607,16 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     /**
      * Hidden constructor.
      *
-     * @param projectConfig the project configuration
-     * @param durationUnits the time units for durations
+     * @param declaration the project configuration
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
      * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
-    private CommaSeparatedDiagramWriter( ProjectConfig projectConfig,
-                                         ChronoUnit durationUnits,
+    private CommaSeparatedDiagramWriter( EvaluationDeclaration declaration,
                                          Path outputDirectory )
     {
-        super( projectConfig, durationUnits, outputDirectory );
+        super( declaration, outputDirectory );
     }
 
 }

@@ -218,11 +218,6 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
             thresholdSets = Collections.unmodifiableSet( new LinkedHashSet<>( thresholdSets ) );
         }
 
-        if ( Objects.isNull( decimalFormat ) )
-        {
-            decimalFormat = new DecimalFormatPretty( "0.000000" );
-        }
-
         if ( Objects.isNull( durationFormat ) )
         {
             durationFormat = ChronoUnit.SECONDS;

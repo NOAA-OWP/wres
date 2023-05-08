@@ -216,14 +216,14 @@ public final class RankHistogramTest
     }
 
     /**
-     * Checks that the {@link RankHistogram#getName()} returns 
+     * Checks that the {@link RankHistogram#getMetricNameString()} returns
      * {@link MetricConstants.RANK_HISTOGRAM.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RANK_HISTOGRAM.toString(), this.rh.getName() );
+        assertEquals( MetricConstants.RANK_HISTOGRAM.toString(), this.rh.getMetricNameString() );
     }
 
     /**
@@ -237,7 +237,7 @@ public final class RankHistogramTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.rh.apply( (Pool<Pair<Double, Ensemble>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rh.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rh.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     /**

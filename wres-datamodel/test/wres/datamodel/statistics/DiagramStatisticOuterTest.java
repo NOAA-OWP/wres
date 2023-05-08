@@ -185,7 +185,7 @@ class DiagramStatisticOuterTest
 
         assertEquals( s, t );
         assertNotEquals( null, s );
-        assertNotEquals( Double.valueOf( 1.0 ), s );
+        assertNotEquals( 1.0, s );
         assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata ) );
         assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2 ) );
         DiagramStatisticOuter q = DiagramStatisticOuter.of( s.getData(), m2 );

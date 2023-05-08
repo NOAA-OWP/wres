@@ -29,7 +29,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 public class TimeSeriesPairerByExactTimeTest
 {
-
     private static final Instant T2551_03_19T09_00_00Z = Instant.parse( "2551-03-19T09:00:00Z" );
     private static final Instant T2551_03_19T06_00_00Z = Instant.parse( "2551-03-19T06:00:00Z" );
     private static final Instant T2551_03_19T03_00_00Z = Instant.parse( "2551-03-19T03:00:00Z" );

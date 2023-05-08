@@ -89,7 +89,7 @@ public final class MeanAbsoluteErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString(), this.mae.getName() );
+        assertEquals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString(), this.mae.getMetricNameString() );
     }
 
     @Test
@@ -116,7 +116,7 @@ public final class MeanAbsoluteErrorTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.mae.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.mae.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.mae.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

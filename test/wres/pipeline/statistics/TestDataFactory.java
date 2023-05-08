@@ -109,8 +109,11 @@ public final class TestDataFactory
     /** Feature name for boilerplate metadata */
     private static final String FEATURE_NAME = DRRC2;
 
+    /** Unit of CMS. */
+    private static final String CMS = "CMS";
+
     /** Unit name for boilerplate metadata */
-    private static final String UNIT = "CMS";
+    private static final String UNIT = CMS;
 
     private static final Geometry NWS_FEATURE = wres.statistics.MessageFactory.getGeometry( DRRC2,
                                                                                             null,
@@ -193,7 +196,7 @@ public final class TestDataFactory
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -244,7 +247,7 @@ public final class TestDataFactory
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -284,7 +287,7 @@ public final class TestDataFactory
 
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( STREAMFLOW )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -333,7 +336,7 @@ public final class TestDataFactory
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( TestDataFactory.getFeatureGroup(),
@@ -363,7 +366,7 @@ public final class TestDataFactory
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         PoolMetadata main = PoolMetadata.of( evaluation, Pool.getDefaultInstance() );
@@ -374,7 +377,7 @@ public final class TestDataFactory
         Evaluation evaluationTwo = Evaluation.newBuilder()
                                              .setRightVariableName( "SQIN" )
                                              .setRightDataName( "ESP" )
-                                             .setMeasurementUnit( "CMS" )
+                                             .setMeasurementUnit( CMS )
                                              .build();
 
         PoolMetadata base = PoolMetadata.of( evaluationTwo, pool );
@@ -428,7 +431,7 @@ public final class TestDataFactory
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "AHPS" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -519,7 +522,7 @@ public final class TestDataFactory
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "AHPS" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         FeatureGroup groupOne = TestDataFactory.getFeatureGroup( DRRC2 );
@@ -589,7 +592,7 @@ public final class TestDataFactory
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -612,7 +615,7 @@ public final class TestDataFactory
                                              .mapToDouble( Double::valueOf )
                                              .toArray();
 
-        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology, CMS )
                                                     .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
@@ -682,7 +685,7 @@ public final class TestDataFactory
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
                                           .setBaselineDataName( "ESP" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -705,7 +708,7 @@ public final class TestDataFactory
                                              .mapToDouble( Double::valueOf )
                                              .toArray();
 
-        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology, CMS )
                                                     .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();
@@ -768,7 +771,7 @@ public final class TestDataFactory
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightVariableName( "SQIN" )
                                           .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
+                                          .setMeasurementUnit( CMS )
                                           .build();
 
         Pool pool = MessageFactory.getPool( featureGroup,
@@ -783,7 +786,7 @@ public final class TestDataFactory
                                              .mapToDouble( Double::valueOf )
                                              .toArray();
 
-        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology )
+        Climatology clim = new Climatology.Builder().addClimatology( Feature.of( USGS_FEATURE ), rawClimatology, CMS )
                                                     .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();

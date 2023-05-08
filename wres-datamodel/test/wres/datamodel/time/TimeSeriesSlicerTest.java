@@ -84,7 +84,6 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> second = new TreeSet<>();
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
 
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
         first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
@@ -92,13 +91,12 @@ public final class TimeSeriesSlicerTest
         second.add( Event.of( T1985_01_02T01_00_00Z, Pair.of( 4.0, 4.0 ) ) );
         second.add( Event.of( T1985_01_02T02_00_00Z, Pair.of( 5.0, 5.0 ) ) );
         second.add( Event.of( T1985_01_02T03_00_00Z, Pair.of( 6.0, 6.0 ) ) );
-        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 7.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 8.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 9.0 ) ) );
 
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
-                                                                        firstBasisTime ),
+                                                                        T1985_01_01T00_00_00Z ),
                                                                 TimeScaleOuter
                                                                               .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
@@ -121,7 +119,7 @@ public final class TimeSeriesSlicerTest
                                                                 CFS );
 
         TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
-                                                                          thirdBasisTime ),
+                                                                          T1985_01_03T00_00_00Z ),
                                                                   TimeScaleOuter
                                                                                 .of( Duration.ofHours( 1 ) ),
                                                                   STREAMFLOW,
@@ -169,7 +167,7 @@ public final class TimeSeriesSlicerTest
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filter( (TimeSeries<Object>) null, (TimeWindowOuter) null ) );
+                      () -> TimeSeriesSlicer.filter( null, (TimeWindowOuter) null ) );
         assertThrows( NullPointerException.class,
                       () -> TimeSeriesSlicer.filter( one, (TimeWindowOuter) null ) );
     }
@@ -180,8 +178,7 @@ public final class TimeSeriesSlicerTest
 
         // Create the series to filter
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
-        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
@@ -211,18 +208,15 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         Pool.Builder<TimeSeries<Pair<Double, Double>>> b = new Pool.Builder<>();
 
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
-        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
-        Instant secondBasisTime = T1985_01_02T00_00_00Z;
-        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( secondBasisTime );
+        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( T1985_01_02T00_00_00Z );
         second.add( Event.of( T1985_01_02T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         second.add( Event.of( T1985_01_02T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         second.add( Event.of( T1985_01_02T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
-        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
-        TimeSeriesMetadata thirdMetadata = getBoilerplateMetadataWithT0( thirdBasisTime );
+        TimeSeriesMetadata thirdMetadata = getBoilerplateMetadataWithT0( T1985_01_03T00_00_00Z );
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
@@ -289,8 +283,7 @@ public final class TimeSeriesSlicerTest
 
         // Create the series to filter
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
-        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 1.0 ) ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 2.0 ) ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 3.0 ) ) );
@@ -498,7 +491,7 @@ public final class TimeSeriesSlicerTest
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
 
-        Labels labels = Labels.of( new String[] { "a", "b", "c", "d" } );
+        Labels labels = Labels.of( "a", "b", "c", "d" );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> ensemble =
                 new TimeSeries.Builder<Ensemble>()
@@ -600,7 +593,7 @@ public final class TimeSeriesSlicerTest
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
 
-        Labels labels = Labels.of( new String[] { "a", "b", "c", "d" } );
+        Labels labels = Labels.of( "a", "b", "c", "d" );
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> expected =
                 new TimeSeries.Builder<Ensemble>()
@@ -637,14 +630,12 @@ public final class TimeSeriesSlicerTest
         SortedSet<Event<Pair<Double, Double>>> third = new TreeSet<>();
         Pool.Builder<TimeSeries<Pair<Double, Double>>> b = new Pool.Builder<>();
 
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
-        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         first.add( Event.of( T1985_01_01T01_00_00Z, Pair.of( 1.0, 10.0 ) ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, Pair.of( 2.0, 11.0 ) ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, Pair.of( 3.0, 12.0 ) ) );
 
-        Instant secondBasisTime = T1985_01_02T00_00_00Z;
-        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( secondBasisTime );
+        TimeSeriesMetadata secondMetadata = getBoilerplateMetadataWithT0( T1985_01_02T00_00_00Z );
         second.add( Event.of( T1985_01_02T01_00_00Z,
                               Pair.of( 4.0, 13.0 ) ) );
         second.add( Event.of( T1985_01_02T02_00_00Z,
@@ -652,8 +643,7 @@ public final class TimeSeriesSlicerTest
         second.add( Event.of( T1985_01_02T03_00_00Z,
                               Pair.of( 6.0, 15.0 ) ) );
 
-        Instant thirdBasisTime = T1985_01_03T00_00_00Z;
-        TimeSeriesMetadata thirdMetadata = getBoilerplateMetadataWithT0( thirdBasisTime );
+        TimeSeriesMetadata thirdMetadata = getBoilerplateMetadataWithT0( T1985_01_03T00_00_00Z );
         third.add( Event.of( T1985_01_03T01_00_00Z, Pair.of( 7.0, 16.0 ) ) );
         third.add( Event.of( T1985_01_03T02_00_00Z, Pair.of( 8.0, 17.0 ) ) );
         third.add( Event.of( T1985_01_03T03_00_00Z, Pair.of( 9.0, 18.0 ) ) );
@@ -699,7 +689,7 @@ public final class TimeSeriesSlicerTest
                                          clim -> clim > 0 );
 
         List<Event<Pair<Double, Double>>> secondData = new ArrayList<>();
-        secondResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( secondData::add ) );
+        secondResult.get().forEach( nextSeries -> secondData.addAll( nextSeries.getEvents() ) );
         List<Event<Pair<Double, Double>>> secondBenchmark = new ArrayList<>();
         secondBenchmark.addAll( second );
         secondBenchmark.addAll( third );
@@ -708,10 +698,10 @@ public final class TimeSeriesSlicerTest
 
         // Add climatology for later
         Climatology climatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5, Double.NaN }, "bar" )
                                          .build();
         Climatology climatologyExpected =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3, 4, 5 }, "bar" )
                                          .build();
 
         b.setClimatology( climatology );
@@ -723,9 +713,8 @@ public final class TimeSeriesSlicerTest
                                          null );
 
         List<Event<Pair<Double, Double>>> thirdData = new ArrayList<>();
-        thirdResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( thirdData::add ) );
-        List<Event<Pair<Double, Double>>> thirdBenchmark = new ArrayList<>();
-        thirdBenchmark.addAll( third );
+        thirdResult.get().forEach( nextSeries -> thirdData.addAll( nextSeries.getEvents() ) );
+        List<Event<Pair<Double, Double>>> thirdBenchmark = new ArrayList<>( third );
 
         assertEquals( thirdBenchmark, thirdData );
 
@@ -750,7 +739,7 @@ public final class TimeSeriesSlicerTest
                                          clim -> clim > 0 );
 
         List<Event<Pair<Double, Double>>> fifthData = new ArrayList<>();
-        fifthResult.get().forEach( nextSeries -> nextSeries.getEvents().forEach( fifthData::add ) );
+        fifthResult.get().forEach( nextSeries -> fifthData.addAll( nextSeries.getEvents() ) );
 
         // Same as second benchmark for main data
         assertEquals( secondBenchmark, fifthData );
@@ -759,9 +748,8 @@ public final class TimeSeriesSlicerTest
         List<Event<Pair<Double, Double>>> fifthDataBase = new ArrayList<>();
         fifthResult.getBaselineData()
                    .get()
-                   .forEach( nextSeries -> nextSeries.getEvents().forEach( fifthDataBase::add ) );
-        List<Event<Pair<Double, Double>>> fifthBenchmarkBase = new ArrayList<>();
-        fifthBenchmarkBase.addAll( second );
+                   .forEach( nextSeries -> fifthDataBase.addAll( nextSeries.getEvents() ) );
+        List<Event<Pair<Double, Double>>> fifthBenchmarkBase = new ArrayList<>( second );
 
         assertEquals( fifthBenchmarkBase, fifthDataBase );
     }
@@ -772,8 +760,7 @@ public final class TimeSeriesSlicerTest
         //Build a time-series with three basis times 
         SortedSet<Event<Double>> first = new TreeSet<>();
 
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
-        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( firstBasisTime );
+        TimeSeriesMetadata firstMetadata = getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         first.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
@@ -860,14 +847,13 @@ public final class TimeSeriesSlicerTest
     {
         // Build a time-series to adjust
         SortedSet<Event<Double>> first = new TreeSet<>();
-        Instant firstBasisTime = T1985_01_01T00_00_00Z;
         first.add( Event.of( T1985_01_01T01_00_00Z, 1.0 ) );
         first.add( Event.of( T1985_01_01T02_00_00Z, 2.0 ) );
         first.add( Event.of( T1985_01_01T03_00_00Z, 3.0 ) );
 
         //Add the time-series
         TimeSeriesMetadata metadata =
-                getBoilerplateMetadataWithT0( firstBasisTime );
+                getBoilerplateMetadataWithT0( T1985_01_01T00_00_00Z );
         TimeSeries<Double> one = TimeSeries.of( metadata, first );
 
         // Create the expected mapping

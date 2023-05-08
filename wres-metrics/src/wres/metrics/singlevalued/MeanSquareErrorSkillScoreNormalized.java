@@ -72,16 +72,16 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return this.aggregate( this.getIntermediateStatistic( s ), s );
+        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
     }
 
     @Override

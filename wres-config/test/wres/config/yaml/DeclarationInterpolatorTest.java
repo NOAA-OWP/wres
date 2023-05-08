@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -218,6 +217,29 @@ class DeclarationInterpolatorTest
         Formats actual = interpolate.formats();
         Outputs outputs = Outputs.newBuilder()
                                  .setCsv2( Formats.CSV2_FORMAT )
+                                 .build();
+        Formats expected = new Formats( outputs );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolatePngWithoutSvgWhenMetricParametersIncludePngOnly()
+    {
+        Metric metric = new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, MetricParametersBuilder.builder()
+                                                                                                .png( true )
+                                                                                                .build() );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .metrics( Set.of( metric ) )
+                                                                        .build();
+
+        EvaluationDeclaration interpolate = DeclarationInterpolator.interpolate( declaration, false );
+
+        Formats actual = interpolate.formats();
+        Outputs outputs = Outputs.newBuilder()
+                                 .setPng( Formats.PNG_FORMAT )
                                  .build();
         Formats expected = new Formats( outputs );
         assertEquals( expected, actual );

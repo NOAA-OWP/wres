@@ -674,9 +674,7 @@ public class WrdsNwmReader implements TimeSeriesReader
     {
         Objects.requireNonNull( uri );
 
-        if ( Objects.nonNull( uri.getScheme() ) && uri.getScheme()
-                                                      .toLowerCase()
-                                                      .startsWith( "http" ) )
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
             try
             {

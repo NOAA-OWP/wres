@@ -43,7 +43,7 @@ import static tech.units.indriya.unit.Units.SECOND;
  * critical tests to verify unit parsing and unit conversion functionality.
  */
 
-public class UnitsTest
+class UnitsTest
 {
     private static final String M3 = "m3";
     private static final String KG = "kg";
@@ -117,9 +117,9 @@ public class UnitsTest
                      "cm",
                      "celsius",
                      "fahrenheit",
-                     "\u2103",
-                     "\u2109",
-                     "\u00b0F",
+                     "℃",
+                     "℉",
+                     "°F",
                      "GALLON",
                      "gi.us",
                      "METRE",
@@ -174,7 +174,7 @@ public class UnitsTest
                      "m[gal_us]/d" );
 
     @Test
-    public void testConvertFlow()
+    void testConvertFlow()
     {
         double someCubicMetersPerSecondNoUnits = 947.0;
         Quantity<VolumetricFlowRate> someCubicMetersPerSecond =
@@ -196,9 +196,8 @@ public class UnitsTest
                                                                                      + someCubicMetersPerSecondNoUnits );
     }
 
-
     @Test
-    public void exploreConvertFlowToVolume()
+    void exploreConvertFlowToVolume()
     {
         double someCubicMetersPerSecondNoUnits = 953.0;
         Quantity<VolumetricFlowRate> someCubicMetersPerSecond =
@@ -240,7 +239,7 @@ public class UnitsTest
 
 
     @Test
-    public void exploreUnitNamesAndSymbols()
+    void exploreUnitNamesAndSymbols()
     {
         LOGGER.debug( "Name of tech.units.indriya.unit.Units.METRE: {}",
                       tech.units.indriya.unit.Units.METRE.getName() );
@@ -261,7 +260,7 @@ public class UnitsTest
     }
 
     @Test
-    public void exploreIndriyaUnitParsing()
+    void exploreIndriyaUnitParsing()
     {
         // When using USCustomary instead of UCUM, uncomment, import this:
         //Unit<Length> foot = FOOT;
@@ -296,7 +295,7 @@ public class UnitsTest
     }
 
     @Test
-    public void exploreUCUMUnitParsing()
+    void exploreUCUMUnitParsing()
     {
         UnitFormat unitFormat = UCUMFormat.getInstance( CASE_SENSITIVE );
 
@@ -304,7 +303,7 @@ public class UnitsTest
         {
             try
             {
-                // Apparently identical to the implementation gotten from SPI.
+                // Apparently identical to the implementation returned from SPI.
                 Unit<?> unit = unitFormat.parse( stringToParse );
                 LOGGER.debug(
                               "Indriya/UCUM parsed '{}' into '{}', name='{}', symbol='{}', dimension='{}'",
@@ -324,21 +323,21 @@ public class UnitsTest
     }
 
     @Test
-    public void getCfsUnit()
+    void getCfsUnit()
     {
         Unit<?> cfs = Units.getUnit( CFS );
         assertNotNull( cfs );
     }
 
     @Test
-    public void getCmsUnit()
+    void getCmsUnit()
     {
         Unit<?> cfs = Units.getUnit( CMS );
         assertNotNull( cfs );
     }
 
     @Test
-    public void getPairsPerParsecUnitThrowsException()
+    void getPairsPerParsecUnitThrowsException()
     {
         assertThrows( Units.UnrecognizedUnitException.class,
                       () -> Units.getUnit( "pears/parsec" ) );
@@ -353,7 +352,7 @@ public class UnitsTest
      */
 
     @Test
-    public void verifyAllConvenienceUnitsCanBeParsed()
+    void verifyAllConvenienceUnitsCanBeParsed()
     {
         UnitFormat unitFormat = UCUMFormat.getInstance( CASE_SENSITIVE );
 
@@ -364,11 +363,12 @@ public class UnitsTest
             LOGGER.debug( "Successfully parsed unit {} from string {}",
                           unit,
                           stringToParse );
+            assertNotNull( unit );
         }
     }
 
     @Test
-    public void testIsConvertingFromVolumetricFlowToVolume()
+    void testIsConvertingFromVolumetricFlowToVolume()
     {
         Unit<?> flowUnit = Units.getUnit( CMS );
         Unit<?> volumeUnit = Units.getUnit( M3 );
@@ -377,7 +377,7 @@ public class UnitsTest
     }
 
     @Test
-    public void testIsConvertingFromSpeedToDistance()
+    void testIsConvertingFromSpeedToDistance()
     {
         Unit<?> speedUnit = Units.getUnit( KM_H );
         Unit<?> distanceUnit = Units.getUnit( KM );
@@ -386,7 +386,7 @@ public class UnitsTest
     }
 
     @Test
-    public void testIsConvertingFromMassFlowToMass()
+    void testIsConvertingFromMassFlowToMass()
     {
         Unit<?> speedUnit = Units.getUnit( KG_H );
         Unit<?> distanceUnit = Units.getUnit( KG );
@@ -395,7 +395,7 @@ public class UnitsTest
     }
 
     @Test
-    public void testGetVolumetricFlowToVolumeConverter()
+    void testGetVolumetricFlowToVolumeConverter()
     {
         Unit<?> flowUnit = Units.getUnit( CMS );
         Unit<?> volumeUnit = Units.getUnit( M3 );
@@ -408,7 +408,7 @@ public class UnitsTest
     }
 
     @Test
-    public void testGetSpeedToDistanceConverter()
+    void testGetSpeedToDistanceConverter()
     {
         Unit<?> speedUnit = Units.getUnit( KM_H );
         Unit<?> distanceUnit = Units.getUnit( KM );
@@ -421,7 +421,7 @@ public class UnitsTest
     }
 
     @Test
-    public void testGetMassFlowToMassConverter()
+    void testGetMassFlowToMassConverter()
     {
         Unit<?> massFlowUnit = Units.getUnit( KG_H );
         Unit<?> massUnit = Units.getUnit( KG );

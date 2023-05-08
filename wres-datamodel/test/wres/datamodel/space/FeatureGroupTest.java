@@ -1,9 +1,9 @@
 package wres.datamodel.space;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
@@ -73,7 +73,7 @@ class FeatureGroupTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( aGroup.equals( anotherGroup ) );
+            assertEquals( aGroup, anotherGroup );
         }
 
         // Nullity
@@ -162,10 +162,10 @@ class FeatureGroupTest
     @Test
     void testFeatureGroupThrowsExpectedExceptionWhenNameTooLong()
     {
+        GeometryGroup geoGroup = MessageFactory.getGeometryGroup( new String( new char[99] ), this.aTuple );
         IllegalArgumentException exception =
                 assertThrows( IllegalArgumentException.class,
-                              () -> FeatureGroup.of( MessageFactory.getGeometryGroup( new String( new char[99] ),
-                                                                                      this.aTuple ) ) );
+                              () -> FeatureGroup.of( geoGroup ) );
 
         String actualMessage = exception.getMessage();
         String expectedMessageStartsWith = "A feature group name cannot be longer than";

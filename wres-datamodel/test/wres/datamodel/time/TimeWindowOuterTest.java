@@ -25,7 +25,6 @@ import wres.statistics.generated.TimeWindow;
  */
 public final class TimeWindowOuterTest
 {
-
     private static final Instant SEVENTH_TIME = Instant.parse( "2017-12-31T11:59:59Z" );
     private static final Instant SIXTH_TIME = Instant.parse( "2015-12-31T11:59:59Z" );
     private static final Instant FIFTH_TIME = Instant.parse( "2010-12-31T11:59:59Z" );
@@ -77,7 +76,7 @@ public final class TimeWindowOuterTest
 
         TimeWindowOuter equalWindow = TimeWindowOuter.of( innerEqual );
         assertEquals( window, equalWindow );
-        assertNotEquals( Double.valueOf( 1.0 ), window );
+        assertNotEquals( 1.0, window );
         assertNotEquals( window,
                          TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:01Z" ),
                                                                                            FIFTH_TIME ) ) );
@@ -494,10 +493,6 @@ public final class TimeWindowOuterTest
         assertEquals( expectedTwo, actualTwo );
     }
 
-    /**
-     * Tests that {@link TimeWindowOuter#unionWith(TimeWindowOuter)} throws an {@link IllegalArgumentException} on empty input.
-     */
-
     @Test
     public void testUnionWithThrowsExceptionOnEmptyInput()
     {
@@ -508,11 +503,6 @@ public final class TimeWindowOuterTest
 
         assertEquals( "Cannot determine the union of time windows for empty input.", thrown.getMessage() );
     }
-
-    /**
-     * Tests that {@link TimeWindowOuter#unionWith(TimeWindowOuter)} throws an {@link IllegalArgumentException} on empty that
-     * contains a <code>null</code>.
-     */
 
     @Test
     public void testUnionWithThrowsExceptionOnInputWithNull()
@@ -529,10 +519,6 @@ public final class TimeWindowOuterTest
                       + "null time windows.",
                       thrown.getMessage() );
     }
-
-    /**
-     * Tests that {@link TimeWindowOuter#unionWith(TimeWindowOuter)} throws an {@link NullPointerException} on null input.
-     */
 
     @Test
     public void testUnionWithThrowsExceptionOnNullInput()

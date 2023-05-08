@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,7 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.xml.ProjectConfigException;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.PoolMetadata;
@@ -68,10 +70,10 @@ abstract class CommaSeparatedStatisticsWriter
     private final ChronoUnit durationUnits;
 
     /**
-     * The project configuration to write.
+     * The project declaration.
      */
 
-    private final ProjectConfig projectConfig;
+    private final EvaluationDeclaration declaration;
 
     /**
      * The directory to write to.
@@ -96,9 +98,9 @@ abstract class CommaSeparatedStatisticsWriter
      * @return the project declaration
      */
 
-    ProjectConfig getProjectConfig()
+    EvaluationDeclaration getDeclaration()
     {
-        return this.projectConfig;
+        return this.declaration;
     }
 
     /**
@@ -113,17 +115,16 @@ abstract class CommaSeparatedStatisticsWriter
     /**
      * Writes the raw tabular output to file.
      *
-     * @param rows the tabular data to write (non null, not empty!)
+     * @param rows the tabular data to write (noot null, not empty!)
      * @param outputPath the path to which the file should be written
      * @return the path actually written
-     * @throws IOException if the output cannot be written
-     * @throws IllegalArgumentException when any arg is null
+     * @throws NullPointerException when any arg is null
      * @throws IllegalArgumentException when rows is empty
+     * @throws CommaSeparatedWriteException when the data could not be written for any other reason
      */
 
     static Path writeTabularOutputToFile( List<RowCompareByLeft> rows,
                                           Path outputPath )
-            throws IOException
     {
         Objects.requireNonNull( rows );
         Objects.requireNonNull( outputPath );
@@ -142,7 +143,6 @@ abstract class CommaSeparatedStatisticsWriter
         // Write if the path has not already been written
         if ( CommaSeparatedStatisticsWriter.validatePath( extendedPath ) )
         {
-
             try ( BufferedWriter w = Files.newBufferedWriter( extendedPath,
                                                               StandardCharsets.UTF_8,
                                                               StandardOpenOption.CREATE,
@@ -150,7 +150,8 @@ abstract class CommaSeparatedStatisticsWriter
             {
                 for ( RowCompareByLeft row : rows )
                 {
-                    w.write( row.getRight().toString() );
+                    w.write( row.getRight()
+                                .toString() );
                     w.write( System.lineSeparator() );
                 }
             }
@@ -238,23 +239,21 @@ abstract class CommaSeparatedStatisticsWriter
                                    String... additionalComparators )
     {
         Objects.requireNonNull( rows, "Specify one or more rows to mutate." );
-
         Objects.requireNonNull( sampleMetadata, "Specify the sample metadata." );
 
         TimeWindowOuter timeWindow = sampleMetadata.getTimeWindow();
 
         Objects.requireNonNull( timeWindow, "The sample metadata must have a time window." );
-
         Objects.requireNonNull( values, "Specify one or more values to add." );
-
         Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
 
-        StringJoiner row = null;
+        StringJoiner row;
         int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null, additionalComparators ) );
         // Set the row to append if it exists and appending is required
         if ( rowIndex > -1 && append )
         {
-            row = rows.get( rowIndex ).getRight();
+            row = rows.get( rowIndex )
+                      .getRight();
         }
         // Otherwise, start a new row
         else
@@ -293,7 +292,8 @@ abstract class CommaSeparatedStatisticsWriter
                 toWrite = nextColumn.toString();
 
                 if ( nextColumn instanceof Double && formatter != null
-                     && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
+                     && !Double.valueOf( Double.NaN )
+                               .equals( nextColumn ) )
                 {
                     toWrite = formatter.format( nextColumn );
                 }
@@ -406,8 +406,6 @@ abstract class CommaSeparatedStatisticsWriter
         @Override
         public int compareTo( RowCompareByLeft compareTo )
         {
-            Objects.requireNonNull( compareTo, "Specify a non-null input row for comparison." );
-
             int returnMe = this.getLeft().compareTo( compareTo.getLeft() );
             if ( returnMe != 0 )
             {
@@ -451,12 +449,10 @@ abstract class CommaSeparatedStatisticsWriter
         @Override
         public boolean equals( Object o )
         {
-            if ( !( o instanceof RowCompareByLeft ) )
+            if ( !( o instanceof RowCompareByLeft in ) )
             {
                 return false;
             }
-
-            RowCompareByLeft in = ( RowCompareByLeft ) o;
 
             return Objects.equals( in.getLeft(), this.getLeft() )
                    && Arrays.equals( in.getLeftOptions(), this.getLeftOptions() );
@@ -465,7 +461,7 @@ abstract class CommaSeparatedStatisticsWriter
         @Override
         public int hashCode()
         {
-            return Objects.hash( this.getLeft(), this.getLeftOptions() );
+            return Objects.hash( this.getLeft(), Arrays.hashCode( this.getLeftOptions() ) );
         }
 
         /**
@@ -502,7 +498,7 @@ abstract class CommaSeparatedStatisticsWriter
         Pool pool = metadata.getPool();
 
         GeometryGroup geoGroup = pool.getGeometryGroup();
-        if ( Objects.nonNull( pool ) && geoGroup.getGeometryTuplesCount() > 0 )
+        if ( geoGroup.getGeometryTuplesCount() > 0 )
         {
             List<GeometryTuple> geometries = geoGroup.getGeometryTuplesList();
 
@@ -526,21 +522,27 @@ abstract class CommaSeparatedStatisticsWriter
     /**
      * Constructor.
      *
-     * @param projectConfig the project configuration that will drive the writer logic
-     * @param durationUnits the time units for lead durations
+     * @param declaration the project declaration that will drive the writer logic
      * @param outputDirectory the directory into which to write
      * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws NullPointerException if the durationUnits are null
      * @throws IllegalArgumentException if the output directory is not a writable directory
      */
 
-    CommaSeparatedStatisticsWriter( ProjectConfig projectConfig, ChronoUnit durationUnits, Path outputDirectory )
+    CommaSeparatedStatisticsWriter( EvaluationDeclaration declaration, Path outputDirectory )
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
-        Objects.requireNonNull( durationUnits, "Specify non-null duration units." );
+        Objects.requireNonNull( declaration, "Specify non-null project configuration." );
         Objects.requireNonNull( outputDirectory, "Specify non-null output directory." );
 
         // Validate
+        if ( !declaration.formats()
+                         .outputs()
+                         .hasCsv() )
+        {
+            throw new DeclarationException( "Cannot instantiate a CSV writer for an evaluation that does not require "
+                                            + "CSV." );
+        }
+
         File directory = outputDirectory.toFile();
         if ( !directory.isDirectory() || !directory.exists() || !directory.canWrite() )
         {
@@ -548,9 +550,9 @@ abstract class CommaSeparatedStatisticsWriter
                                                 + "' is not a writable directory." );
         }
 
-        this.projectConfig = projectConfig;
+        this.declaration = declaration;
         this.outputDirectory = outputDirectory;
-        this.durationUnits = durationUnits;
+        this.durationUnits = declaration.durationFormat();
     }
 
 }

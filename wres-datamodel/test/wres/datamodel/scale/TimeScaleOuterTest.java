@@ -120,11 +120,11 @@ final class TimeScaleOuterTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.timeScale.equals( otherTimeScale ) );
+            assertEquals( this.timeScale, otherTimeScale );
         }
 
         // Object unequal to null
-        assertNotEquals( this.timeScale, null );
+        assertNotEquals( null, this.timeScale );
 
         // Unequal on period
         TimeScaleOuter unequalOnPeriod = TimeScaleOuter.of( Duration.ofDays( 3 ), TimeScaleFunction.MEAN );
@@ -216,8 +216,9 @@ final class TimeScaleOuterTest
     @Test
     void testConstructionThrowsExceptionWhenPeriodIsNegative()
     {
+        Duration duration = Duration.ofSeconds( -100 );
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeScaleOuter.of( Duration.ofSeconds( -100 ) ) );
+                                                        () -> TimeScaleOuter.of( duration ) );
 
         assertEquals( "Cannot build a time scale with a negative period.", actual.getMessage() );
     }
@@ -234,7 +235,7 @@ final class TimeScaleOuterTest
         TimeScaleOuter largestScale = TimeScaleOuter.of( Duration.ofSeconds( 180 ), TimeScaleFunction.MEAN );
 
         //Equal returns 0
-        assertTrue( scale.compareTo( TimeScaleOuter.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MEAN ) ) == 0 );
+        assertEquals( 0, scale.compareTo( TimeScaleOuter.of( Duration.ofSeconds( 60 ), TimeScaleFunction.MEAN ) ) );
 
         //Transitive
         //x.compareTo(y) > 0
@@ -275,8 +276,9 @@ final class TimeScaleOuterTest
     @Test
     void testGetLeastCommonScaleThrowsExceptionWithEmptyInput()
     {
+        Set<TimeScaleOuter> emptySet = Collections.emptySet();
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeScaleOuter.getLeastCommonTimeScale( Collections.emptySet() ) );
+                                                        () -> TimeScaleOuter.getLeastCommonTimeScale( emptySet ) );
 
         assertEquals( "Cannot compute the Least Common Scale from empty input.", actual.getMessage() );
     }
@@ -398,10 +400,10 @@ final class TimeScaleOuterTest
     }
 
     /**
-     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonTimeScale(java.util.Set) returns the expected
+     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonTimeScale(Set) returns the expected
      * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
-     * 
-     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     *
+     * <p><a href="https://en.wikipedia.org/wiki/Least_common_multiple">...</a>
      */
     @Test
     void testGetLeastCommonScaleReturnsExpectedResultFromThreeInputs()
@@ -418,10 +420,10 @@ final class TimeScaleOuterTest
     }
 
     /**
-     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonTimeScale(java.util.Set) returns the expected
+     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonTimeScale(Set) returns the expected
      * LCS from an input containing three different time scales. Takes the example of (8,9,21) from:</p>
-     * 
-     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     *
+     * <p><a href="https://en.wikipedia.org/wiki/Least_common_multiple">...</a>
      */
     @Test
     void testGetLeastCommonScaleReturnsExpectedResultFromTwoInputs()
@@ -443,8 +445,9 @@ final class TimeScaleOuterTest
     @Test
     void testGetLeastCommonDurationThrowsExceptionWithEmptyInput()
     {
+        Set<Duration> emptySet = Collections.emptySet();
         IllegalArgumentException actual = assertThrows( IllegalArgumentException.class,
-                                                        () -> TimeScaleOuter.getLeastCommonDuration( Collections.emptySet() ) );
+                                                        () -> TimeScaleOuter.getLeastCommonDuration( emptySet ) );
 
         assertEquals( "Cannot compute the Least Common Duration from empty input.", actual.getMessage() );
     }
@@ -474,10 +477,10 @@ final class TimeScaleOuterTest
     }
 
     /**
-     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonDuration(java.util.Set) returns the expected
+     * <p>Tests that the {@link TimeScaleOuter#getLeastCommonDuration(Set) returns the expected
      * LCM from an input containing three different time durations. Takes the example of (8,9,21) from:</p>
-     * 
-     * <p>https://en.wikipedia.org/wiki/Least_common_multiple
+     *
+     * <p><a href="https://en.wikipedia.org/wiki/Least_common_multiple">...</a>
      */
     @Test
     void testGetLeastCommonDurationReturnsExpectedResultFromThreeInputs()

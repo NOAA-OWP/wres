@@ -116,7 +116,7 @@ public final class MeanTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN.toString(), this.mean.getName() );
+        assertEquals( MetricConstants.MEAN.toString(), this.mean.getMetricNameString() );
     }
 
     @Test
@@ -143,7 +143,7 @@ public final class MeanTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.mean.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.mean.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.mean.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

@@ -130,26 +130,30 @@ public class Database
         LOGGER.info( "Shutting down the database..." );
         try
         {
-            if ( !sqlTasks.isShutdown() )
+            if ( !this.sqlTasks.isShutdown() )
             {
-                boolean died = sqlTasks.awaitTermination( 5, TimeUnit.SECONDS );
+                // Shutdown
+                this.sqlTasks.shutdown();
+
+                // Await termination
+                boolean died = this.sqlTasks.awaitTermination( 5, TimeUnit.SECONDS );
 
                 if ( !died )
                 {
-                    List<Runnable> tasks = sqlTasks.shutdownNow();
+                    List<Runnable> tasks = this.sqlTasks.shutdownNow();
 
                     if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
                     {
                         LOGGER.info( "Abandoned {} tasks from {}.",
                                      tasks.size(),
-                                     sqlTasks );
+                                     this.sqlTasks );
                     }
                 }
             }
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Interrupted while shutting down {}.", sqlTasks, ie );
+            LOGGER.warn( "Interrupted while shutting down {}.", this.sqlTasks, ie );
             Thread.currentThread().interrupt();
         }
 

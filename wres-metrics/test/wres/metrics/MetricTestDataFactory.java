@@ -301,7 +301,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -338,7 +338,7 @@ public final class MetricTestDataFactory
      * Returns a moderately-sized test dataset of single-valued pairs without a baseline. The data are partitioned by
      * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}. The data
      * are returned with a nominal lead time of 1.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -382,18 +382,18 @@ public final class MetricTestDataFactory
 
     /**
      * <p>Returns a small test dataset with predictions and corresponding observations from location "103.1" from
-     * https://github.com/NVE/RunoffTestData:
-     * 
-     * https://github.com/NVE/RunoffTestData/blob/master/24h/qobs_calib/103.1.txt
+     * <a href="https://github.com/NVE/RunoffTestData">...</a>:
+     *
+     * <p>https://github.com/NVE/RunoffTestData/blob/master/24h/qobs_calib/103.1.txt
      * https://github.com/NVE/RunoffTestData/blob/master/Example/calib_txt/103_1_station.txt
      * </p>
-     * 
+     *
      * <p>The data are stored in:</p>
-     *  
+     *
      * <p>testinput/metricTestDataFactory/getSingleValuedPairsFive.asc</p>
-     * 
+     *
      * <p>The observations are in the first column and the predictions are in the second column.</p>
-     * 
+     *
      * @return single-valued pairs
      * @throws IOException if the read fails
      */
@@ -443,7 +443,7 @@ public final class MetricTestDataFactory
     /**
      * Returns a set of single-valued pairs with a single pair and no baseline. This is useful for checking exceptional
      * behaviour due to an inadequate sample size.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -453,7 +453,7 @@ public final class MetricTestDataFactory
         List<Pair<Double, Double>> pairs = new ArrayList<>();
 
         List<Event<Pair<Double, Double>>> values = new ArrayList<>();
-        values.add( Event.of( Instant.parse( "1985-01-01T00:00:00Z" ), Pair.of( 22.9, 22.8 ) ) );
+        pairs.add( Pair.of( 22.9, 22.8 ) );
         TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
                                                                          Instant.parse( SECOND_TIME ),
                                                                          Duration.ofHours( 24 ) );
@@ -482,7 +482,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of single-valued pairs with a baseline, both empty.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -518,7 +518,7 @@ public final class MetricTestDataFactory
 
     /**
      * Returns a set of single-valued pairs without a baseline and with some missing values.
-     * 
+     *
      * @return single-valued pairs
      */
 
@@ -564,9 +564,10 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
+     * Returns a set of dichotomous pairs based on
+     * <a href="http://www.cawcr.gov.au/projects/verification/#Contingency_table">...</a>. The
      * test data comprises 83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365.
-     * 
+     *
      * @return a set of dichotomous pairs
      */
 
@@ -733,14 +734,10 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * <p>
-     * Returns a set of discrete probability pairs that comprises probability of precipitation forecasts from the
+     * <p>Returns a set of discrete probability pairs that comprises probability of precipitation forecasts from the
      * Finnish Meteorological Institute for a 24h lead time, and corresponding observations, available here:
-     * </p>
-     * <p>
-     * http://www.cawcr.gov.au/projects/verification/POP3/POP_3cat_2003.txt
-     * </p>
-     * 
+     * <p><a href="http://www.cawcr.gov.au/projects/verification/POP3/POP_3cat_2003.txt">...</a>
+     *
      * @return a set of discrete probability pairs
      */
 
@@ -1122,7 +1119,7 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a {@link PoolOf} with single-valued pairs containing fake data.
+     * Returns a pool of single-valued pairs containing fake data.
      * 
      * @return a time-series of single-valued pairs
      */
@@ -1495,7 +1492,7 @@ public final class MetricTestDataFactory
 
         Climatology clim = new Climatology.Builder().addClimatology( Boilerplate.getFeatureTuple()
                                                                                 .getLeft(),
-                                                                     rawClimatology )
+                                                                     rawClimatology, "CMS" )
                                                     .build();
 
         Builder<TimeSeries<Pair<Double, Ensemble>>> builder = new Builder<>();

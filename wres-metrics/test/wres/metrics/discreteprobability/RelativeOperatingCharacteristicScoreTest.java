@@ -239,14 +239,14 @@ public final class RelativeOperatingCharacteristicScoreTest
     }
 
     /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#getName()} returns 
+     * Checks that the {@link RelativeOperatingCharacteristicScore#getMetricNameString()} returns
      * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString(), this.rocScore.getName() );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString(), this.rocScore.getMetricNameString() );
     }
 
     /**
@@ -337,7 +337,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         PoolException actual = assertThrows( PoolException.class,
                                              () -> this.rocScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rocScore.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rocScore.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

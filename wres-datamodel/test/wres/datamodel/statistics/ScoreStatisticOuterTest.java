@@ -2,7 +2,6 @@ package wres.datamodel.statistics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -125,9 +124,9 @@ public final class ScoreStatisticOuterTest
                 DoubleScoreStatisticOuter.of( this.one, m1 );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> t =
                 DoubleScoreStatisticOuter.of( this.one, m1 );
-        assertTrue( s.equals( t ) );
+        assertEquals( s, t );
         assertNotEquals( null, s );
-        assertNotEquals( Double.valueOf( 1.0 ), s );
+        assertNotEquals( 1.0, s );
 
         DoubleScoreStatistic two =
                 DoubleScoreStatistic.newBuilder()

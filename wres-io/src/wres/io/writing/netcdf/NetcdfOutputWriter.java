@@ -174,6 +174,94 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                        outputDirectory );
     }
 
+    @Override
+    public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
+    {
+        if ( !this.getIsReadyToWrite().get() )
+        {
+            throw new NetcdfWriteException( "This netcdf output writer is not ready for writing. The blobs must be "
+                                            + "created first. The caller has made an error by asking the writer to "
+                                            + "accept statistics before calling createBlobsForWriting." );
+        }
+
+        LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
+
+        Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow =
+                output.stream()
+                      .collect( Collectors.groupingBy( next -> next.getMetadata().getTimeWindow() ) );
+
+        Set<Path> pathsWritten = new HashSet<>();
+
+        for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatisticOuter>> entries : outputByTimeWindow.entrySet() )
+        {
+            TimeWindowOuter timeWindow = entries.getKey();
+            List<DoubleScoreStatisticOuter> scores = entries.getValue();
+
+            // All writers have been created by now, as asserted above
+            TimeWindowWriter writer = this.writersMap.get( timeWindow );
+            try
+            {
+                writer.write( scores );
+            }
+            catch ( CoordinateNotFoundException | IOException | InvalidRangeException e )
+            {
+                throw new NetcdfWriteException( "Encountered an error while writing statistics to Netcdf.", e );
+            }
+            Path pathWritten = Paths.get( writer.outputPath );
+            pathsWritten.add( pathWritten );
+        }
+
+        // Add the blobs created too, which is the superset. Ideally, only those blobs that receive statistics would
+        // be created, but this cannot be resolved until netcdf writing is one-stage rather than two stage.
+        // TODO: eliminate this step when writing is one stage, thereby returning the paths with actual statistics
+        Set<Path> pathsToBlobsCreated = this.getPathsToBlobsCreated();
+        pathsWritten.addAll( pathsToBlobsCreated );
+
+        return Collections.unmodifiableSet( pathsWritten );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        LOGGER.debug( "About to wait for writing tasks to finish from {}.", this );
+
+        synchronized ( this.windowLock )
+        {
+            LOGGER.debug( "About to close writers from {}", this );
+
+            if ( this.writersMap.isEmpty() )
+            {
+                return;
+            }
+
+            // Make an attempt to close each writer before excepting
+            List<String> failedToClose = new ArrayList<>();
+            IOException lastException = null;
+            for ( TimeWindowWriter writer : this.writersMap.values() )
+            {
+                try
+                {
+                    LOGGER.debug( "Calling writer.close on {}.", writer );
+                    writer.close();
+                }
+                catch ( IOException ioe )
+                {
+                    failedToClose.add( writer.toString() );
+                    lastException = ioe;
+                }
+            }
+
+            if ( !failedToClose.isEmpty() )
+            {
+                throw new IOException( "The following writers could not be closed: " + failedToClose + ".",
+                                       lastException );
+            }
+
+        }
+
+        LOGGER.debug( "Closed writers from {}.", this );
+    }
+
     /**
      * Returns the duration units for writing lead durations.
      *
@@ -236,7 +324,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      */
 
     public void createBlobsForWriting( Set<FeatureGroup> featureGroups,
-                                       List<MetricsAndThresholds> metricsAndThresholds )
+                                       Set<MetricsAndThresholds> metricsAndThresholds )
             throws IOException
     {
         Objects.requireNonNull( metricsAndThresholds );
@@ -866,94 +954,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private Path getOutputDirectory()
     {
         return this.outputDirectory;
-    }
-
-    @Override
-    public Set<Path> apply( List<DoubleScoreStatisticOuter> output )
-    {
-        if ( !this.getIsReadyToWrite().get() )
-        {
-            throw new NetcdfWriteException( "This netcdf output writer is not ready for writing. The blobs must be "
-                                            + "created first. The caller has made an error by asking the writer to "
-                                            + "accept statistics before calling createBlobsForWriting." );
-        }
-
-        LOGGER.debug( "NetcdfOutputWriter {} accepted output {}.", this, output );
-
-        Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow =
-                output.stream()
-                      .collect( Collectors.groupingBy( next -> next.getMetadata().getTimeWindow() ) );
-
-        Set<Path> pathsWritten = new HashSet<>();
-
-        for ( Map.Entry<TimeWindowOuter, List<DoubleScoreStatisticOuter>> entries : outputByTimeWindow.entrySet() )
-        {
-            TimeWindowOuter timeWindow = entries.getKey();
-            List<DoubleScoreStatisticOuter> scores = entries.getValue();
-
-            // All writers have been created by now, as asserted above
-            TimeWindowWriter writer = this.writersMap.get( timeWindow );
-            try
-            {
-                writer.write( scores );
-            }
-            catch ( CoordinateNotFoundException | IOException | InvalidRangeException e )
-            {
-                throw new NetcdfWriteException( "Encountered an error while writing statistics to Netcdf.", e );
-            }
-            Path pathWritten = Paths.get( writer.outputPath );
-            pathsWritten.add( pathWritten );
-        }
-
-        // Add the blobs created too, which is the superset. Ideally, only those blobs that receive statistics would
-        // be created, but this cannot be resolved until netcdf writing is one-stage rather than two stage.
-        // TODO: eliminate this step when writing is one stage, thereby returning the paths with actual statistics
-        Set<Path> pathsToBlobsCreated = this.getPathsToBlobsCreated();
-        pathsWritten.addAll( pathsToBlobsCreated );
-
-        return Collections.unmodifiableSet( pathsWritten );
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        LOGGER.debug( "About to wait for writing tasks to finish from {}.", this );
-
-        synchronized ( this.windowLock )
-        {
-            LOGGER.debug( "About to close writers from {}", this );
-
-            if ( this.writersMap.isEmpty() )
-            {
-                return;
-            }
-
-            // Make an attempt to close each writer before excepting
-            List<String> failedToClose = new ArrayList<>();
-            IOException lastException = null;
-            for ( TimeWindowWriter writer : this.writersMap.values() )
-            {
-                try
-                {
-                    LOGGER.debug( "Calling writer.close on {}.", writer );
-                    writer.close();
-                }
-                catch ( IOException ioe )
-                {
-                    failedToClose.add( writer.toString() );
-                    lastException = ioe;
-                }
-            }
-
-            if ( !failedToClose.isEmpty() )
-            {
-                throw new IOException( "The following writers could not be closed: " + failedToClose + ".",
-                                       lastException );
-            }
-
-        }
-
-        LOGGER.debug( "Closed writers from {}.", this );
     }
 
     /**

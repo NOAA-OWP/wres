@@ -128,7 +128,17 @@ class WrdsFeatureFillerTest
     }
 
     @Test
-    void fillOutImplicitFeatureGroupUsingMockedFeatureService() throws URISyntaxException
+    void testEvaluationWithoutExplicitFeaturesOrFeatureGroupsPassesThrough()
+    {
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .label( "no features" )
+                                                                        .build();
+
+        assertEquals( declaration, WrdsFeatureFiller.fillFeatures( declaration ) );
+    }
+
+    @Test
+    void testFillOutImplicitFeatureGroupUsingMockedFeatureService() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
         FeatureServiceGroup featureGroup = new FeatureServiceGroup( "state", "AL", true );

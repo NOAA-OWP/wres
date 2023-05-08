@@ -269,7 +269,7 @@ public final class BoxPlotStatisticOuterTest
         // Compare
         assertThat( s, is( t ) );
         assertThat( null, not( s ) );
-        assertThat( s, not( Double.valueOf( 1.0 ) ) );
+        assertThat( s, not( 1.0 ) );
         assertThat( s, not( u ) );
         assertThat( s, not( v ) );
         assertThat( v, not( w ) );
@@ -338,7 +338,7 @@ public final class BoxPlotStatisticOuterTest
         // Consistency
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( basicOne.hashCode() == basicTwo.hashCode() );
+            assertEquals( basicOne.hashCode(), basicTwo.hashCode() );
         }
 
     }

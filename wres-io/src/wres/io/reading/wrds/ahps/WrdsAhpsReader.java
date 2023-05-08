@@ -404,7 +404,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     {
         Objects.requireNonNull( uri );
 
-        if ( uri.getScheme().toLowerCase().startsWith( "http" ) )
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
             try
             {

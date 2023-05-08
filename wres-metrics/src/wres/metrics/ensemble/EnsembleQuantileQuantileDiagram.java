@@ -110,13 +110,13 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
     }
 
     @Override
-    public DiagramStatisticOuter apply( Pool<Pair<Double, Ensemble>> pairs )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Ensemble>> pool )
     {
-        Objects.requireNonNull( pairs );
+        Objects.requireNonNull( pool );
 
         // Find the unique labels across ensemble members
         Set<String> labels = new TreeSet<>();
-        for ( Pair<Double, Ensemble> pair : pairs.get() )
+        for ( Pair<Double, Ensemble> pair : pool.get() )
         {
             String[] nextLabels = pair.getRight()
                                       .getLabels()
@@ -135,7 +135,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
             Function<Pair<Double, Ensemble>, Pair<Double, Double>> transformer = this.getTransformer( ensembleName );
 
             // Create the pool of pairs for the relevant member
-            Pool<Pair<Double, Double>> transformed = PoolSlicer.transform( pairs, transformer );
+            Pool<Pair<Double, Double>> transformed = PoolSlicer.transform( pool, transformer );
 
             // Create the qq diagram
             DiagramStatisticOuter qq = this.qqDiagram.apply( transformed );
@@ -151,7 +151,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
             }
         }
 
-        return DiagramStatisticOuter.of( qqBuilder.build(), pairs.getMetadata() );
+        return DiagramStatisticOuter.of( qqBuilder.build(), pool.getMetadata() );
     }
 
     @Override

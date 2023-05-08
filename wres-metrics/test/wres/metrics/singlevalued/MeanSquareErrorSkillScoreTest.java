@@ -246,7 +246,7 @@ public final class MeanSquareErrorSkillScoreTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString(), this.msess.getName() );
+        assertEquals( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.toString(), this.msess.getMetricNameString() );
     }
 
     @Test

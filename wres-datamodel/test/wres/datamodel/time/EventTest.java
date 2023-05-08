@@ -1,7 +1,6 @@
 package wres.datamodel.time;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -25,32 +24,19 @@ public final class EventTest
     private static final String SECOND_TIME = "1985-01-02T00:00:00Z";
     private static final String FIRST_TIME = "1985-01-01T00:00:00Z";
 
-    /**
-     * Constructs an {@link Event} and confirms that the {@link Event#getTime()} returns the expected result.
-     */
-
     @Test
     public void testGetTime()
     {
         Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
-        assertTrue( "The event has an unexpected time.",
-                    Instant.parse( FIFTH_TIME ).equals( event.getTime() ) );
+        assertEquals( "The event has an unexpected time.", Instant.parse( FIFTH_TIME ), event.getTime() );
     }
-
-    /**
-     * Constructs an {@link Event} and confirms that the {@link Event#getValue()} returns the expected result.
-     */
 
     @Test
     public void testGetValue()
     {
         Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
-        assertTrue( "The event has an unexpected time.", EVENT_VALUE.equals( event.getValue() ) );
+        assertEquals( "The event has an unexpected time.", EVENT_VALUE, event.getValue() );
     }
-
-    /**
-     * Constructs an {@link Event} and tests {@link Event#equals(Object)} against other instances.
-     */
 
     @Test
     public void testEquals()
@@ -58,7 +44,7 @@ public final class EventTest
         // Reflexive 
         Event<String> event = Event.of( Instant.parse( FIFTH_TIME ),
                                         EVENT_VALUE );
-        assertTrue( "The event does not meet the equals contract for reflexivity.", event.equals( event ) );
+        assertEquals( "The event does not meet the equals contract for reflexivity.", event, event );
 
         // Symmetric
         Event<String> otherEvent = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
@@ -73,7 +59,7 @@ public final class EventTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( "The event does not meet the equals contract for consistency.", event.equals( otherEvent ) );
+            assertEquals( "The event does not meet the equals contract for consistency.", event, otherEvent );
         }
 
         // Nullity
@@ -81,15 +67,11 @@ public final class EventTest
 
         // Check unequal cases for time and value
         Event<String> unequalOnTime = Event.of( Instant.parse( "1985-01-06T12:00:00Z" ), EVENT_VALUE );
-        assertFalse( "Expected the event to differ on time.", event.equals( unequalOnTime ) );
+        assertNotEquals( "Expected the event to differ on time.", event, unequalOnTime );
 
         Event<String> unequalOnValue = Event.of( Instant.parse( FIFTH_TIME ), "otherValue" );
-        assertFalse( "Expected the event to differ on value.", event.equals( unequalOnValue ) );
+        assertNotEquals( "Expected the event to differ on value.", event, unequalOnValue );
     }
-
-    /**
-     * Constructs an {@link Event} and tests {@link Event#hashCode()} against the hashes of other instances.
-     */
 
     @Test
     public void testHashCode()
@@ -102,14 +84,11 @@ public final class EventTest
         // Consistent when called repeatedly
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( "The event does not meet the hashcode contract for consistency.",
-                        event.hashCode() == otherEvent.hashCode() );
+            assertEquals( "The event does not meet the hashcode contract for consistency.",
+                          event.hashCode(),
+                          otherEvent.hashCode() );
         }
     }
-
-    /**
-     * Constructs an {@link Event} and tests {@link Event#toString()} against other instances.
-     */
 
     @Test
     public void testToString()
@@ -117,10 +96,6 @@ public final class EventTest
         Event<String> event = Event.of( Instant.parse( FIFTH_TIME ), EVENT_VALUE );
         assertEquals( "(1985-01-05T12:00:00Z,someValue)", event.toString() );
     }
-
-    /**
-     * Tests {@link Event#compareTo(Event)} against other instances.
-     */
 
     @Test
     public void testCompareTo()
@@ -130,7 +105,7 @@ public final class EventTest
         Event<String> isLess = Event.of( Instant.parse( SECOND_TIME ), EVENT_VALUE );
         Event<String> isGreater = Event.of( Instant.parse( THIRD_TIME ), EVENT_VALUE );
 
-        assertTrue( event.compareTo( isEqual ) == 0 );
+        assertEquals( 0, event.compareTo( isEqual ) );
         assertTrue( event.compareTo( isLess ) < 0 );
         assertTrue( event.compareTo( isGreater ) > 0 );
 
@@ -139,7 +114,7 @@ public final class EventTest
         Event<String> isLessTwo = Event.of( Instant.parse( SECOND_TIME ), EVENT_VALUE );
         Event<String> isGreaterTwo = Event.of( Instant.parse( THIRD_TIME ), EVENT_VALUE );
 
-        assertTrue( eventTwo.compareTo( isEqualTwo ) == 0 );
+        assertEquals( 0, eventTwo.compareTo( isEqualTwo ) );
         assertTrue( eventTwo.compareTo( isLessTwo ) < 0 );
         assertTrue( eventTwo.compareTo( isGreaterTwo ) > 0 );
 
@@ -162,25 +137,19 @@ public final class EventTest
         assertThrows( NullPointerException.class, () -> Event.of( null, EVENT_VALUE ) );
     }
 
-    /**
-     * Constructs an {@link Event} and tests for an exception when the event is null.
-     */
-
     @Test
     public void testExceptionOnNullEvent()
     {
-        assertThrows( NullPointerException.class, () -> Event.of( Instant.parse( FOURTH_TIME ), null ) );
+        Instant time = Instant.parse( FOURTH_TIME );
+        assertThrows( NullPointerException.class, () -> Event.of( time, null ) );
     }
-
-    /**
-     * Constructs an {@link Event} and tests for an exception when the input to {@link Event#compareTo(Event)} is null.
-     */
 
     @Test
     public void testExceptionOnNullInputForComparison()
     {
+        Event<String> event = Event.of( Instant.parse( FOURTH_TIME ), "someEvent" );
         assertThrows( NullPointerException.class,
-                      () -> Event.of( Instant.parse( FOURTH_TIME ), "someEvent" ).compareTo( null ) );
+                      () -> event.compareTo( null ) );
     }
 
 }

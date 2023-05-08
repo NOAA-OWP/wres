@@ -78,7 +78,7 @@ public final class IndexOfAgreementTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.INDEX_OF_AGREEMENT.toString(), this.ioa.getName() );
+        assertEquals( MetricConstants.INDEX_OF_AGREEMENT.toString(), this.ioa.getMetricNameString() );
     }
 
     @Test

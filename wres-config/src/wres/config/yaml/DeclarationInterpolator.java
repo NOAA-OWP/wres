@@ -109,8 +109,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateDecimalFormatforNumericFormats( adjustedDeclarationBuilder );
         // Interpolate the metrics to ignore for each graphics format
         DeclarationInterpolator.interpolateMetricsToOmitFromGraphicsFormats( adjustedDeclarationBuilder );
-        // Interpolate the graphics formats from the metric parameters that declare them
-        DeclarationInterpolator.interpolateGraphicsFormatsFromMetricParameters( adjustedDeclarationBuilder );
+        // Interpolate the graphics formats from the other declaration present
+        DeclarationInterpolator.interpolateGraphicsFormats( adjustedDeclarationBuilder );
         // Interpolate the measurement units for value thresholds when they have not been declared explicitly
         DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedDeclarationBuilder );
         // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
@@ -118,7 +118,7 @@ public class DeclarationInterpolator
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
-        DeclarationInterpolator.interpolateOutputFormats( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedDeclarationBuilder );
 
         // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( notify && LOGGER.isWarnEnabled() )
@@ -342,8 +342,11 @@ public class DeclarationInterpolator
         {
             Outputs.Csv2Format.Builder csv2Builder = formatsBuilder.getCsv2Builder();
             Outputs.NumericFormat.Builder numericBuilder = csv2Builder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
+            if ( Objects.nonNull( builder.decimalFormat() ) )
+            {
+                numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                        .toPattern() );
+            }
             csv2Builder.setOptions( numericBuilder );
             formatsBuilder.setCsv2( csv2Builder );
         }
@@ -352,8 +355,11 @@ public class DeclarationInterpolator
         {
             Outputs.CsvFormat.Builder csvBuilder = formatsBuilder.getCsvBuilder();
             Outputs.NumericFormat.Builder numericBuilder = csvBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
+            if ( Objects.nonNull( builder.decimalFormat() ) )
+            {
+                numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                        .toPattern() );
+            }
             csvBuilder.setOptions( numericBuilder );
             formatsBuilder.setCsv( csvBuilder );
         }
@@ -362,8 +368,11 @@ public class DeclarationInterpolator
         {
             Outputs.PairFormat.Builder pairsBuilder = formatsBuilder.getPairsBuilder();
             Outputs.NumericFormat.Builder numericBuilder = pairsBuilder.getOptionsBuilder();
-            numericBuilder.setDecimalFormat( builder.decimalFormat()
-                                                    .toPattern() );
+            if ( Objects.nonNull( builder.decimalFormat() ) )
+            {
+                numericBuilder.setDecimalFormat( builder.decimalFormat()
+                                                        .toPattern() );
+            }
             pairsBuilder.setOptions( numericBuilder );
             formatsBuilder.setPairs( pairsBuilder );
         }
@@ -396,7 +405,8 @@ public class DeclarationInterpolator
             List<MetricName> pngAvoid = builder.metrics()
                                                .stream()
                                                .filter( next -> Objects.nonNull( next.parameters() )
-                                                                && !next.parameters().png() )
+                                                                && Boolean.FALSE.equals( next.parameters()
+                                                                                             .png() ) )
                                                .map( Metric::name )
                                                .map( next -> MetricName.valueOf( next.name() ) )
                                                .toList();
@@ -416,7 +426,8 @@ public class DeclarationInterpolator
             List<MetricName> svgAvoid = builder.metrics()
                                                .stream()
                                                .filter( next -> Objects.nonNull( next.parameters() )
-                                                                && !next.parameters().png() )
+                                                                && Boolean.FALSE.equals( next.parameters()
+                                                                                             .svg() ) )
                                                .map( Metric::name )
                                                .map( next -> MetricName.valueOf( next.name() ) )
                                                .toList();
@@ -433,7 +444,21 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Adds the metrics for which graphics are not required to each geaphics format.
+     * Interpolates graphics format information from other declaration.
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void interpolateGraphicsFormats( EvaluationDeclarationBuilder builder )
+    {
+        // Interpolate graphics formats from metric parameters
+        DeclarationInterpolator.interpolateGraphicsFormatsFromMetricParameters( builder );
+
+        // Interpolate graphics shapes from pooling window declaration
+        DeclarationInterpolator.interpolateGraphicsOptions( builder );
+    }
+
+    /**
+     * Adds the metrics for which graphics are not required to each graphics format.
      *
      * @param builder the declaration builder to adjust
      */
@@ -451,8 +476,9 @@ public class DeclarationInterpolator
         {
             boolean png = builder.metrics()
                                  .stream()
-                                 .anyMatch( next -> Objects.nonNull( next.parameters() ) && next.parameters()
-                                                                                                .png() );
+                                 .anyMatch( next -> Objects.nonNull( next.parameters() )
+                                                    && Boolean.TRUE.equals( next.parameters()
+                                                                                .png() ) );
             if ( png )
             {
                 LOGGER.debug( "Discovered metrics that require PNG graphics, but the PNG format was not declared in "
@@ -466,8 +492,9 @@ public class DeclarationInterpolator
         {
             boolean svg = builder.metrics()
                                  .stream()
-                                 .anyMatch( next -> Objects.nonNull( next.parameters() ) && next.parameters()
-                                                                                                .svg() );
+                                 .anyMatch( next -> Objects.nonNull( next.parameters() )
+                                                    && Boolean.TRUE.equals( next.parameters()
+                                                                                .svg() ) );
             if ( svg )
             {
                 LOGGER.debug( "Discovered metrics that require SVG graphics, but the SVG format was not declared in "
@@ -478,6 +505,79 @@ public class DeclarationInterpolator
 
         // Set the new format info
         builder.formats( new Formats( formatsBuilder.build() ) );
+    }
+
+    /**
+     * Interpolates the graphics shapes from other declaration present
+     *
+     * @param builder the declaration builder to adjust
+     */
+    private static void interpolateGraphicsOptions( EvaluationDeclarationBuilder builder )
+    {
+        Outputs.Builder formatsBuilder = Outputs.newBuilder();
+        if ( Objects.nonNull( builder.formats() ) )
+        {
+            formatsBuilder.mergeFrom( builder.formats()
+                                             .outputs() );
+        }
+
+        // PNG format
+        if ( formatsBuilder.hasPng() )
+        {
+            Outputs.PngFormat.Builder pngFormat = formatsBuilder.getPng()
+                                                                .toBuilder();
+            Outputs.GraphicFormat options = DeclarationInterpolator.getGraphicsFormatOptions( pngFormat.getOptions(),
+                                                                                              builder );
+            pngFormat.setOptions( options );
+            formatsBuilder.setPng( pngFormat );
+        }
+
+        // SVG format
+        if ( formatsBuilder.hasSvg() )
+        {
+            Outputs.SvgFormat.Builder svgFormat = formatsBuilder.getSvg()
+                                                                .toBuilder();
+            Outputs.GraphicFormat options = DeclarationInterpolator.getGraphicsFormatOptions( svgFormat.getOptions(),
+                                                                                              builder );
+            svgFormat.setOptions( options );
+            formatsBuilder.setSvg( svgFormat );
+        }
+
+        // Set the new format info
+        builder.formats( new Formats( formatsBuilder.build() ) );
+    }
+
+    /**
+     * Creates the graphics format options from the input.
+     * @param options the existing options
+     * @param builder the declaration builder
+     * @return the graphics options
+     */
+    private static Outputs.GraphicFormat getGraphicsFormatOptions( Outputs.GraphicFormat options,
+                                                                   EvaluationDeclarationBuilder builder )
+    {
+        Outputs.GraphicFormat.Builder newOptions = options.toBuilder();
+
+        // Reference date pools?
+        if ( Objects.nonNull( builder.referenceDatePools() )
+             && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
+        {
+            newOptions.setShape( Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS );
+        }
+        // Valid date pools?
+        else if ( Objects.nonNull( builder.validDatePools() )
+                  && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
+        {
+            newOptions.setShape( Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS );
+        }
+
+        // Duration format?
+        if( Objects.nonNull( builder.durationFormat() ) )
+        {
+            newOptions.setLeadUnit( Outputs.GraphicFormat.DurationUnit.valueOf( builder.durationFormat().name() ) );
+        }
+
+        return newOptions.build();
     }
 
     /**
@@ -617,10 +717,11 @@ public class DeclarationInterpolator
      *
      * @param builder the builder to mutate
      */
-    private static void interpolateOutputFormats( EvaluationDeclarationBuilder builder )
+    private static void interpolateOutputFormatsWhenNoneDeclared( EvaluationDeclarationBuilder builder )
     {
         if ( Objects.isNull( builder.formats() )
-             || Objects.equals( builder.formats().outputs(), Outputs.getDefaultInstance() ) )
+             || Objects.equals( builder.formats()
+                                       .outputs(), Outputs.getDefaultInstance() ) )
         {
             LOGGER.debug( "Adding a default output format of CSV2 because no output formats were declared." );
             Outputs.Builder formatsBuilder = Outputs.newBuilder()
@@ -895,7 +996,7 @@ public class DeclarationInterpolator
                 thresholdsByType.get( ThresholdType.VALUE );
         Set<Threshold> valueThresholds =
                 DeclarationInterpolator.getCombinedThresholds( valByType,
-                                                               parametersBuilder.valueThresholds( ) );
+                                                               parametersBuilder.valueThresholds() );
 
         // Add "all data" thresholds?
         if ( name.isContinuous() )
@@ -967,18 +1068,18 @@ public class DeclarationInterpolator
     {
         Set<Threshold> combined = new HashSet<>();
 
-        if( Objects.nonNull( thresholds ) )
+        if ( Objects.nonNull( thresholds ) )
         {
             combined.addAll( thresholds );
         }
 
-        if( Objects.nonNull( moreThresholds ) )
+        if ( Objects.nonNull( moreThresholds ) )
         {
             combined.addAll( moreThresholds );
         }
 
         // Mutable
-        return combined ;
+        return combined;
     }
 
 
@@ -997,16 +1098,16 @@ public class DeclarationInterpolator
         Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration.build() );
 
         // No features, return the thresholds as-is
-        if( features.isEmpty() )
+        if ( features.isEmpty() )
         {
             return thresholds;
         }
 
         Set<Threshold> featurefulThresholds = new HashSet<>();
-        for( Threshold next : thresholds )
+        for ( Threshold next : thresholds )
         {
             // Already featureful
-            if( Objects.nonNull( next.feature() ) )
+            if ( Objects.nonNull( next.feature() ) )
             {
                 featurefulThresholds.add( next );
             }
@@ -1030,23 +1131,23 @@ public class DeclarationInterpolator
     private static Set<Threshold> getThresholdForEachFeature( Threshold baseThreshold, Set<GeometryTuple> features )
     {
         Set<Threshold> thresholds = new HashSet<>();
-        for( GeometryTuple next : features )
+        for ( GeometryTuple next : features )
         {
             Geometry feature = null;
             DatasetOrientation orientation = null;
 
             // Find a feature and associated orientation, beginning with the left, then right, then baseline
-            if( next.hasLeft() )
+            if ( next.hasLeft() )
             {
                 feature = next.getLeft();
                 orientation = DatasetOrientation.LEFT;
             }
-            else if( next.hasRight() )
+            else if ( next.hasRight() )
             {
                 feature = next.getRight();
                 orientation = DatasetOrientation.RIGHT;
             }
-            else if( next.hasBaseline() )
+            else if ( next.hasBaseline() )
             {
                 feature = next.getBaseline();
                 orientation = DatasetOrientation.BASELINE;
@@ -1075,8 +1176,7 @@ public class DeclarationInterpolator
         // Resolve the left or observed data type
         if ( Objects.isNull( observed.type() ) )
         {
-            String defaultStartMessage = "While reading the project declaration, discovered that the 'observed' "
-                                         + "dataset had no declared data 'type'.";
+            String defaultStartMessage = "Discovered that the 'observed' dataset has no declared data 'type'.";
             String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
 
             // Analysis durations present? If so, assume analyses
@@ -1135,8 +1235,7 @@ public class DeclarationInterpolator
         // Resolve the right or predicted data type
         if ( Objects.isNull( predicted.type() ) )
         {
-            String defaultStartMessage = "While reading the project declaration, discovered that the 'predicted' "
-                                         + "dataset had no declared data 'type'. ";
+            String defaultStartMessage = "Discovered that the 'predicted' dataset has no declared data 'type'. ";
             String defaultEndMessage = " If this is incorrect, please declare the 'type' explicitly.";
 
             String reasonMessage;
@@ -1244,9 +1343,8 @@ public class DeclarationInterpolator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( "While reading the project declaration, discovered "
-                                                                 + "that the 'baseline' dataset had no declared data "
-                                                                 + "'type'. "
+                                               .setEventMessage( "Discovered that the 'baseline' dataset has no "
+                                                                 + "declared data 'type'. "
                                                                  + reason
                                                                  + " If this is incorrect, please declare the 'type'"
                                                                  + "explicitly." )

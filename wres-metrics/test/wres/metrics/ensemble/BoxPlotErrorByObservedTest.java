@@ -117,14 +117,14 @@ public final class BoxPlotErrorByObservedTest
     }
 
     /**
-     * Checks that the {@link BoxPlotErrorByObserved#getName()} returns 
+     * Checks that the {@link BoxPlotErrorByObserved#getMetricNameString()} returns
      * {@link MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString(), this.bpe.getName() );
+        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString(), this.bpe.getMetricNameString() );
     }
 
     /**

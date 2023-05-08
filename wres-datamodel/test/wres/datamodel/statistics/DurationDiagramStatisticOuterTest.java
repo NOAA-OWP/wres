@@ -134,7 +134,7 @@ public final class DurationDiagramStatisticOuterTest
 
         assertNotEquals( null, one );
 
-        assertNotEquals( Double.valueOf( 1.0 ), one );
+        assertNotEquals( 1.0, one );
 
         DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )

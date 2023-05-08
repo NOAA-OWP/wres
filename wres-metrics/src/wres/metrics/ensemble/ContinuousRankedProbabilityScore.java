@@ -104,7 +104,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
                       pool.get().size(),
-                      this.getName(),
+                      this.getMetricNameString(),
                       pool.getMetadata() );
 
         // Slice the data into groups with an equal number of ensemble members
@@ -126,7 +126,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
         {
             LOGGER.trace( "Found a non-finite value of {} for the {} at '{}'.",
                           crps[0],
-                          this.getName(),
+                          this.getMetricNameString(),
                           pool.getMetadata() );
         }
 

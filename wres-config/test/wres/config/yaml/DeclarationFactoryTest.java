@@ -952,7 +952,6 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
-                                                                   .setDecimalFormat( "#0.000000" )
                                                                    .build();
         Outputs.GraphicFormat graphicFormat = Outputs.GraphicFormat.newBuilder()
                                                                    .setWidth( 800 )

@@ -1,20 +1,18 @@
 package wres.io.writing;
 
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import com.google.protobuf.Timestamp;
 
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.GraphicalType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
@@ -43,6 +41,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
@@ -65,79 +64,31 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 
 public class WriterTestHelper
 {
-
     /**
      * Returns a fake project configuration for a specified feature.
-     * 
-     * @param feature the feature
-     * @param destinationType the destination type
+     *
      * @return fake project configuration
      */
 
-    public static ProjectConfig getMockedProjectConfig( NamedFeature feature, DestinationType destinationType )
+    public static EvaluationDeclaration getMockedDeclaration( DecimalFormat formatter )
     {
-        // Use the system temp directory so that checks for writeability pass.
-        GraphicalType graphics = new GraphicalType( null, 800, 600 );
-        DestinationConfig destinationConfig =
-                new DestinationConfig( null,
-                                       graphics,
-                                       null,
-                                       destinationType,
-                                       null );
-
-        List<DestinationConfig> destinations = new ArrayList<>();
-        destinations.add( destinationConfig );
-
-        ProjectConfig.Outputs outputsConfig =
-                new ProjectConfig.Outputs( destinations, null );
-
-        List<NamedFeature> features = new ArrayList<>();
-        features.add( feature );
-
-        PairConfig pairConfig = new PairConfig( null,
-                                                null,
-                                                null,
-                                                features,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null,
-                                                null );
-
-        ProjectConfig projectConfig = new ProjectConfig( null,
-                                                         pairConfig,
-                                                         null,
-                                                         outputsConfig,
-                                                         null,
-                                                         "test" );
-        return projectConfig;
-    }
-
-    /**
-     * Returns a fake feature for a specified location identifier.
-     * 
-     * @param locationId the location identifier
-     */
-
-    public static NamedFeature getMockedFeature( String locationId )
-    {
-        return new NamedFeature( locationId,
-                            locationId,
-                            null );
+        Outputs outputs = Outputs.newBuilder()
+                                 .setCsv( Outputs.CsvFormat.newBuilder()
+                                                           .setOptions( Outputs.NumericFormat.newBuilder()
+                                                                                             .setDecimalFormat( "0.0" )
+                                                                                             .build() ) )
+                                 .build();
+        Formats formats = new Formats( outputs );
+        return EvaluationDeclarationBuilder.builder()
+                                           .formats( formats )
+                                           .decimalFormat( formatter )
+                                           .durationFormat( ChronoUnit.SECONDS )
+                                           .build();
     }
 
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
-     * 
+     *
      * @return a box plot per pool for two pools
      */
 
@@ -229,7 +180,7 @@ public class WriterTestHelper
 
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for several pairs.
-     * 
+     *
      * @return a box plot per pair
      */
 
@@ -309,7 +260,7 @@ public class WriterTestHelper
     /**
      * Returns a {@link List} containing a {@link DiagramStatisticOuter} that
      * represents the output of a reliability diagram for one pool.
-     * 
+     *
      * @return a reliability diagram for one pool
      */
 
@@ -396,16 +347,13 @@ public class WriterTestHelper
                                                      .build();
 
         // Fake output wrapper.
-        List<DiagramStatisticOuter> fakeOutputData =
-                Collections.singletonList( DiagramStatisticOuter.of( statistic, fakeMetadata ) );
-
-        return fakeOutputData;
+        return Collections.singletonList( DiagramStatisticOuter.of( statistic, fakeMetadata ) );
     }
 
     /**
      * Returns a {@link List} containing a {@link DurationDiagramStatisticOuter} that
      * represents the output of time-to-peak error for each pair in a pool.
-     * 
+     *
      * @return time time-to-peak errors for one pool
      */
 
@@ -456,7 +404,8 @@ public class WriterTestHelper
                                                                                                      .setSeconds( Long.MIN_VALUE ) )
                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
                                                                                                      .setSeconds( Long.MIN_VALUE )
-                                                                                                     .setNanos( 999_999_999 ) )
+                                                                                                     .setNanos(
+                                                                                                             999_999_999 ) )
                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
                                                                                                      .setSeconds( 0 ) )
                                                             .build();
@@ -467,7 +416,8 @@ public class WriterTestHelper
                                                                                   .setSeconds( firstInstant.getEpochSecond() )
                                                                                   .setNanos( firstInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 3600 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 3600 ) )
                                                                .build();
 
         PairOfInstantAndDuration two = PairOfInstantAndDuration.newBuilder()
@@ -475,7 +425,8 @@ public class WriterTestHelper
                                                                                   .setSeconds( secondInstant.getEpochSecond() )
                                                                                   .setNanos( secondInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 7200 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 7200 ) )
                                                                .build();
 
         PairOfInstantAndDuration three = PairOfInstantAndDuration.newBuilder()
@@ -483,7 +434,8 @@ public class WriterTestHelper
                                                                                     .setSeconds( thirdInstant.getEpochSecond() )
                                                                                     .setNanos( thirdInstant.getNano() ) )
                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( 10800 ) )
+                                                                                                           .setSeconds(
+                                                                                                                   10800 ) )
                                                                  .build();
 
         DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
@@ -499,7 +451,7 @@ public class WriterTestHelper
     /**
      * Returns a {@link List} containing a {@link DoubleScoreStatisticOuter} that
      * represents the output of several score statistics for one pool.
-     * 
+     *
      * @return several score statistics for one pool
      */
 
@@ -509,7 +461,8 @@ public class WriterTestHelper
         // location id
         Geometry geometry = wres.statistics.MessageFactory.getGeometry( "DRRC2" );
 
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindow innerOne =
+                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds threshold =
@@ -544,10 +497,14 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setMinimum( 0 )
-                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                                                       .setOptimum( 0.0 ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setMinimum(
+                                                                                                                               0 )
+                                                                                                                       .setMaximum(
+                                                                                                                               Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum(
+                                                                                                                               0.0 ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -556,10 +513,14 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                                                       .setOptimum( 0.0 ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setMinimum(
+                                                                                                                               Double.NEGATIVE_INFINITY )
+                                                                                                                       .setMaximum(
+                                                                                                                               Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum(
+                                                                                                                               0.0 ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -569,24 +530,25 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setMinimum( 0 )
-                                                                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                                                       .setOptimum( 0.0 ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setMinimum(
+                                                                                                                               0 )
+                                                                                                                       .setMaximum(
+                                                                                                                               Double.POSITIVE_INFINITY )
+                                                                                                                       .setOptimum(
+                                                                                                                               0.0 ) ) )
                                     .build();
 
-        List<DoubleScoreStatisticOuter> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( one, fakeMetadata ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( two, fakeMetadata ) );
-        fakeOutputs.add( DoubleScoreStatisticOuter.of( three, fakeMetadata ) );
-
-        return Collections.unmodifiableList( fakeOutputs );
+        return List.of( DoubleScoreStatisticOuter.of( one, fakeMetadata ),
+                        DoubleScoreStatisticOuter.of( two, fakeMetadata ),
+                        DoubleScoreStatisticOuter.of( three, fakeMetadata ) );
     }
 
     /**
      * Returns a {@link List} containing a {@link DurationScoreStatisticOuter} that
      * represents the summary statistics of the time-to-peak-errors for one pool.
-     * 
+     *
      * @return the summary statistics of time-to-peak errors for one pool
      */
 
@@ -637,23 +599,32 @@ public class WriterTestHelper
                 DurationScoreStatistic.newBuilder()
                                       .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 3_600 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    3_600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEDIAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 7_200 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    7_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 10_800 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    10_800 ) ) )
                                       .build();
 
         // Fake output wrapper.
@@ -664,7 +635,7 @@ public class WriterTestHelper
      * Returns a {@link List} containing a {@link DoubleScoreStatisticOuter} that
      * represents the output of one score statistic for several pools of data, including
      * missing values for some pools.
-     * 
+     *
      * @return one score statistics for several pools
      */
 
@@ -674,7 +645,8 @@ public class WriterTestHelper
         // location id
         Geometry geometry = wres.statistics.MessageFactory.getGeometry( "FTSC1" );
 
-        TimeWindow innerOne = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
+        TimeWindow innerOne =
+                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 1 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
         OneOrTwoThresholds thresholdOne = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
@@ -706,7 +678,8 @@ public class WriterTestHelper
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatisticOuter fakeOutputA = DoubleScoreStatisticOuter.of( one, fakeMetadataA );
@@ -729,7 +702,8 @@ public class WriterTestHelper
         DoubleScoreStatisticOuter fakeOutputB = DoubleScoreStatisticOuter.of( one, fakeMetadataB );
 
         // Add data for another time, and one threshold only
-        TimeWindow innerTwo = wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
+        TimeWindow innerTwo =
+                wres.statistics.MessageFactory.getTimeWindow( Instant.MIN, Instant.MAX, Duration.ofHours( 2 ) );
         TimeWindowOuter timeTwo = TimeWindowOuter.of( innerTwo );
 
         Pool poolThree = MessageFactory.getPool( featureGroup,

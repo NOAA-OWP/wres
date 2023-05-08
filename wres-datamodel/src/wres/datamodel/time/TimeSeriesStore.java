@@ -340,9 +340,9 @@ public class TimeSeriesStore
                        + this.baselineEnsembleSeries.size();
 
             LOGGER.info( "Created an in-memory time-series store that contains {} time-series. The {} time-series "
-                         + "include {} single-valued time-series with a {} orientation, {} single-valued time-series "
+                         + "include {} single-valued time-series with an {} orientation, {} single-valued time-series "
                          + "with a {} orientation, {} single-valued time-series with a {} orientation, {} ensemble "
-                         + "time-series with a {} orientation, {} ensemble time-series with a {} orientation and {} "
+                         + "time-series with an {} orientation, {} ensemble time-series with a {} orientation and {} "
                          + "ensemble time-series with a {} orientation. ",
                          size,
                          size,

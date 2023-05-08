@@ -96,13 +96,13 @@ public final class FrequencyBiasTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.FREQUENCY_BIAS.toString(), fb.getName() );
+        assertEquals( MetricConstants.FREQUENCY_BIAS.toString(), fb.getMetricNameString() );
     }
 
     /**
@@ -151,7 +151,7 @@ public final class FrequencyBiasTest
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
                                                    () -> this.fb.aggregate( (DoubleScoreStatisticOuter) null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.fb.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.fb.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

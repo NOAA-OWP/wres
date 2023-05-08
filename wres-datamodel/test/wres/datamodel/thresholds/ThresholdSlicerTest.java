@@ -54,6 +54,7 @@ class ThresholdSlicerTest
 
     private static final String CMS = "CMS";
     private static final String FLOOD = "FLOOD";
+    private static final String UNIT = "bar";
 
     private FeatureTuple featureTuple;
     private FeatureTuple anotherFeatureTuple;
@@ -139,7 +140,8 @@ class ThresholdSlicerTest
         Climatology climatology =
                 new Climatology.Builder().addClimatology( feature,
                                                           new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8,
-                                                                  7001.4, 12038.5, 17897.2 } )
+                                                                  7001.4, 12038.5, 17897.2 },
+                                                          UNIT )
                                          .build();
 
         wres.statistics.generated.Pool.Builder builder = wres.statistics.generated.Pool.newBuilder();
@@ -174,19 +176,27 @@ class ThresholdSlicerTest
                         Set.of( ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1.5 ),
                                                                     OneOrTwoDoubles.of( 0.0 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT ),
+                                                                    ThresholdOrientation.LEFT,
+                                                                    null,
+                                                                    MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 17897.2 ),
                                                                     OneOrTwoDoubles.of( 1.0 ),
                                                                     ThresholdOperator.GREATER_EQUAL,
-                                                                    ThresholdOrientation.LEFT ),
+                                                                    ThresholdOrientation.LEFT,
+                                                                    null,
+                                                                    MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 1647.18182 ),
                                                                     OneOrTwoDoubles.of( 7.0 / 11.0 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT ),
+                                                                    ThresholdOrientation.LEFT,
+                                                                    null,
+                                                                    MeasurementUnit.of( UNIT ) ),
                                 ThresholdOuter.ofQuantileThreshold( OneOrTwoDoubles.of( 433.9 ),
                                                                     OneOrTwoDoubles.of( 0.5 ),
                                                                     ThresholdOperator.GREATER,
-                                                                    ThresholdOrientation.LEFT ) ) );
+                                                                    ThresholdOrientation.LEFT,
+                                                                    null,
+                                                                    MeasurementUnit.of( UNIT ) ) ) );
 
         assertEquals( expected, actual );
     }
@@ -418,7 +428,7 @@ class ThresholdSlicerTest
                                    .setName( "foo" )
                                    .build();
         Geometry twoLeft = Geometry.newBuilder()
-                                   .setName( "bar" )
+                                   .setName( UNIT )
                                    .build();
         Geometry oneRight = Geometry.newBuilder()
                                     .setName( "baz" )
@@ -517,7 +527,8 @@ class ThresholdSlicerTest
                                                                        .features( features )
                                                                        .build();
 
-        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation );
+        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation,
+                                                                                                 Set.of() );
 
         FeatureTuple tupleOne = FeatureTuple.of( singletonOne );
         FeatureTuple tupleTwo = FeatureTuple.of( singletonTwo );

@@ -122,7 +122,7 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString(), this.qqd.getName() );
+        assertEquals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString(), this.qqd.getMetricNameString() );
     }
 
     @Test

@@ -78,7 +78,7 @@ public final class RootMeanSquareErrorNormalizedTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.toString(), this.rmsen.getName() );
+        assertEquals( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.toString(), this.rmsen.getMetricNameString() );
     }
 
     @Test

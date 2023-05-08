@@ -88,7 +88,7 @@ public final class TimeToPeakRelativeErrorTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR.toString(), this.ttp.getName() );
+        assertEquals( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR.toString(), this.ttp.getMetricNameString() );
     }
 
     @Test

@@ -59,7 +59,7 @@ public final class SampleSizeTest
         assertEquals( expected, actual );
 
         //Check the parameters
-        assertEquals( MetricConstants.SAMPLE_SIZE.toString(), ss.getName() );
+        assertEquals( MetricConstants.SAMPLE_SIZE.toString(), ss.getMetricNameString() );
         assertFalse( ss.isDecomposable() );
         assertFalse( ss.isSkillScore() );
         assertSame( MetricGroup.NONE, ss.getScoreOutputGroup() );

@@ -71,24 +71,24 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Ensemble>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
-        if ( !s.hasBaseline() )
+        if ( !pool.hasBaseline() )
         {
             throw new PoolException( "Specify a non-null baseline for the '" + this + "'." );
         }
         // CRPSS, currently without decomposition
         // TODO: implement the decomposition
-        double numerator = super.apply( s ).getComponent( MetricConstants.MAIN )
-                                           .getData()
-                                           .getValue();
-        double denominator = super.apply( s.getBaselineData() ).getComponent( MetricConstants.MAIN )
-                                                               .getData()
-                                                               .getValue();
+        double numerator = super.apply( pool ).getComponent( MetricConstants.MAIN )
+                                .getData()
+                                .getValue();
+        double denominator = super.apply( pool.getBaselineData() ).getComponent( MetricConstants.MAIN )
+                                  .getData()
+                                  .getValue();
 
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
 
@@ -102,7 +102,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

@@ -90,13 +90,13 @@ public final class BrierScoreTest
     }
 
     /**
-     * Checks that the {@link BrierScore#getName()} returns {@link MetricConstants.BRIER_SCORE.toString()}
+     * Checks that the {@link BrierScore#getMetricNameString()} returns {@link MetricConstants.BRIER_SCORE.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.BRIER_SCORE.toString(), this.brierScore.getName() );
+        assertEquals( MetricConstants.BRIER_SCORE.toString(), this.brierScore.getMetricNameString() );
     }
 
     /**
@@ -160,7 +160,7 @@ public final class BrierScoreTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.brierScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.brierScore.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.brierScore.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

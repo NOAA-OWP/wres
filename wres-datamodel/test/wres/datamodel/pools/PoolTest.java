@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,11 +46,11 @@ class PoolTest
         Feature feature = Feature.of( geometry );
 
         this.climatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3 }, "bar" )
                                          .build();
 
         this.anotherClimatology =
-                new Climatology.Builder().addClimatology( feature, new double[] { 4, 5, 6 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 4, 5, 6 }, "bar" )
                                          .build();
 
         this.testPool = builder.addData( List.of( "a", "b", "c" ) )
@@ -124,7 +123,7 @@ class PoolTest
         Feature feature = Feature.of( geometry );
 
         Climatology expected =
-                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3 } )
+                new Climatology.Builder().addClimatology( feature, new double[] { 1, 2, 3 }, "bar" )
                                          .build();
 
         assertEquals( expected, this.testPool.getClimatology() );
@@ -140,7 +139,7 @@ class PoolTest
     void testEquals()
     {
         // Reflexive 
-        assertTrue( this.testPool.equals( this.testPool ) );
+        assertEquals( this.testPool, this.testPool );
 
         // Symmetric
         Pool<String> another =
@@ -170,12 +169,12 @@ class PoolTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.testPool.equals( another ) );
+            assertEquals( this.testPool, another );
         }
 
         // Nullity
         assertNotEquals( null, another );
-        assertNotEquals( another, null );
+        assertNotEquals( null, another );
 
         // Check unequal cases
         Pool<String> unequalOnData =
@@ -362,9 +361,9 @@ class PoolTest
     {
         Builder<String> builder = new Builder<>();
 
-        builder.addData( Arrays.asList( (String) null ) ).setMetadata( PoolMetadata.of() );
+        builder.addData( Collections.singletonList( null ) ).setMetadata( PoolMetadata.of() );
 
-        assertThrows( NullPointerException.class, () -> builder.build() );
+        assertThrows( NullPointerException.class, builder::build );
     }
 
     @Test
@@ -372,16 +371,18 @@ class PoolTest
     {
         Builder<String> builder = new Builder<String>().addData( "Foo" )
                                                        .setMetadata( PoolMetadata.of() )
-                                                       .addDataForBaseline( Arrays.asList( (String) null ) )
+                                                       .addDataForBaseline( Collections.singletonList( null ) )
                                                        .setMetadataForBaseline( PoolMetadata.of() );
 
-        assertThrows( NullPointerException.class, () -> builder.build() );
+        assertThrows( NullPointerException.class, builder::build );
     }
 
     @Test
     void testExceptionOnConstructionWithoutMetadata()
     {
-        assertThrows( PoolException.class, () -> new Builder<String>().addData( List.of( "OK" ) ).build() );
+        List<String> list = List.of( "OK" );
+        Builder<String> builder = new Builder<String>().addData( list );
+        assertThrows( PoolException.class, builder::build );
     }
 
     @Test
@@ -391,6 +392,6 @@ class PoolTest
                                                        .setMetadata( PoolMetadata.of() )
                                                        .addDataForBaseline( "Bar" );
 
-        assertThrows( PoolException.class, () -> builder.build() );
+        assertThrows( PoolException.class, builder::build );
     }
 }

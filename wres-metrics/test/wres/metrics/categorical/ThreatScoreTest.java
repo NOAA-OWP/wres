@@ -96,13 +96,13 @@ public final class ThreatScoreTest
     }
 
     /**
-     * Verifies that {@link Metric#getName()} returns the expected result.
+     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
      */
 
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.THREAT_SCORE.toString(), this.ts.getName() );
+        assertEquals( MetricConstants.THREAT_SCORE.toString(), this.ts.getMetricNameString() );
     }
 
     /**
@@ -152,7 +152,7 @@ public final class ThreatScoreTest
                                                           () -> this.ts.aggregate( (DoubleScoreStatisticOuter) null,
                                                                                    null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.ts.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.ts.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

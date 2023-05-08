@@ -160,14 +160,14 @@ public final class BoxPlotErrorByForecastTest
     }
 
     /**
-     * Checks that the {@link BoxPlotErrorByForecast#getName()} returns 
+     * Checks that the {@link BoxPlotErrorByForecast#getMetricNameString()} returns
      * {@link MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString(), this.bpe.getName() );
+        assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString(), this.bpe.getMetricNameString() );
     }
 
     /**

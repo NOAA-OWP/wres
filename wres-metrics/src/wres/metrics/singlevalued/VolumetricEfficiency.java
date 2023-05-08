@@ -69,15 +69,15 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( final Pool<Pair<Double, Double>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         Double vO = 0.0;
         double vP = 0.0;
-        for ( Pair<Double, Double> nextPair : s.get() )
+        for ( Pair<Double, Double> nextPair : pool.get() )
         {
             vO += Math.abs( nextPair.getLeft() );
             vP += Math.abs( nextPair.getLeft() - nextPair.getRight() );
@@ -102,7 +102,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

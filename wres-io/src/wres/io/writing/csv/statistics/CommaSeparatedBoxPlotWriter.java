@@ -2,6 +2,7 @@ package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -19,12 +20,9 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.ProjectConfig;
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
@@ -42,7 +40,7 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * Helps write box plots comprising {@link BoxplotStatisticOuter} to a file of Comma Separated Values (CSV).
- * 
+ *
  * @author James Brown
  * @deprecated since v5.8. Use the {@link CsvStatisticsWriter} instead.
  */
@@ -56,20 +54,17 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Returns an instance of a writer.
-     * 
-     * @param projectConfig the project configuration
-     * @param durationUnits the time units for durations
+     *
+     * @param declaration the project declaration
      * @param outputDirectory the directory into which to write
      * @return a writer
-     * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws NullPointerException if either input is null
      */
 
-    public static CommaSeparatedBoxPlotWriter of( ProjectConfig projectConfig,
-                                                  ChronoUnit durationUnits,
+    public static CommaSeparatedBoxPlotWriter of( EvaluationDeclaration declaration,
                                                   Path outputDirectory )
     {
-        return new CommaSeparatedBoxPlotWriter( projectConfig, durationUnits, outputDirectory );
+        return new CommaSeparatedBoxPlotWriter( declaration, outputDirectory );
     }
 
     /**
@@ -85,7 +80,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
-        if ( ProjectConfigs.hasPoolingWindows( super.getProjectConfig() ) )
+        EvaluationDeclaration declaration = super.getDeclaration();
+        if ( Objects.nonNull( declaration.validDatePools() )
+             || Objects.nonNull( declaration.referenceDatePools() ) )
         {
             LOGGER.warn( "The legacy CSV format does not support box plot metrics alongside pooling window "
                          + "declaration. As such, {} diagram statistics will not be written to the legacy CSV format. "
@@ -97,53 +94,41 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         Set<Path> paths = new HashSet<>();
 
-        // Write output
-        // In principle, each destination could have a different formatter, so 
-        // the output must be generated separately for each destination
-        // #89191
-        List<DestinationConfig> numericalDestinations = ProjectConfigs.getDestinationsOfType( super.getProjectConfig(),
-                                                                                              DestinationType.NUMERIC,
-                                                                                              DestinationType.CSV );
-
-        LOGGER.debug( "Writer {} received {} box plot statistics to write to the destination types {}.",
+        LOGGER.debug( "Writer {} received {} box plot statistics to write as CSV.",
                       this,
-                      output.size(),
-                      numericalDestinations );
+                      output.size() );
 
-        for ( DestinationConfig destinationConfig : numericalDestinations )
+        // Formatter
+        Format formatter = declaration.decimalFormat();
+
+        // Write the output
+        try
         {
-            // Formatter
-            Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
+            // Group the statistics by the LRB context in which they appear. There will be one path written
+            // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
+            // each window with DatasetOrientation.BASELINE data): #48287
+            Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
+                    Slicer.getStatisticsGroupedByContext( output );
 
-            // Write the output
-            try
+            for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
-                // Group the statistics by the LRB context in which they appear. There will be one path written
-                // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
-                // each window with DatasetOrientation.BASELINE data): #48287
-                Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( output );
-
-                for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
+                // Slice by ensemble averaging type
+                List<List<BoxplotStatisticOuter>> sliced =
+                        CommaSeparatedBoxPlotWriter.getSlicedStatistics( nextGroup );
+                for ( List<BoxplotStatisticOuter> nextSlice : sliced )
                 {
-                    // Slice by ensemble averaging type
-                    List<List<BoxplotStatisticOuter>> sliced =
-                            CommaSeparatedBoxPlotWriter.getSlicedStatistics( nextGroup );
-                    for ( List<BoxplotStatisticOuter> nextSlice : sliced )
-                    {
-                        Set<Path> innerPathsWrittenTo =
-                                CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
-                                                                                       nextSlice,
-                                                                                       formatter,
-                                                                                       super.getDurationUnits() );
-                        paths.addAll( innerPathsWrittenTo );
-                    }
+                    Set<Path> innerPathsWrittenTo =
+                            CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( super.getOutputDirectory(),
+                                                                                   nextSlice,
+                                                                                   formatter,
+                                                                                   super.getDurationUnits() );
+                    paths.addAll( innerPathsWrittenTo );
                 }
             }
-            catch ( IOException e )
-            {
-                throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
-            }
+        }
+        catch ( IOException e )
+        {
+            throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
         }
 
         return Collections.unmodifiableSet( paths );
@@ -326,9 +311,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
      */
 
     private static List<RowCompareByLeft>
-            getRowsForOneBoxPlot( List<BoxplotStatisticOuter> output,
-                                  Format formatter,
-                                  ChronoUnit durationUnits )
+    getRowsForOneBoxPlot( List<BoxplotStatisticOuter> output,
+                          Format formatter,
+                          ChronoUnit durationUnits )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
@@ -384,7 +369,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Helper that mutates the header for box plots based on the input.
-     * 
+     *
      * @param output the box plot output
      * @param headerRow the header row
      * @return the mutated header
@@ -441,7 +426,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
-     * 
+     *
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
@@ -500,19 +485,17 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
     /**
      * Hidden constructor.
-     * 
-     * @param projectConfig the project configuration
-     * @param durationUnits the duration units
+     *
+     * @param declaration the project declaration
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
+     * @throws DeclarationException if the project configuration is not valid for writing
      */
 
-    private CommaSeparatedBoxPlotWriter( ProjectConfig projectConfig,
-                                         ChronoUnit durationUnits,
+    private CommaSeparatedBoxPlotWriter( EvaluationDeclaration declaration,
                                          Path outputDirectory )
     {
-        super( projectConfig, durationUnits, outputDirectory );
+        super( declaration, outputDirectory );
     }
 
 }

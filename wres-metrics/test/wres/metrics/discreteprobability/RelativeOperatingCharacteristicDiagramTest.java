@@ -152,14 +152,14 @@ public final class RelativeOperatingCharacteristicDiagramTest
     }
 
     /**
-     * Checks that the {@link RelativeOperatingCharacteristicDiagram#getName()} returns 
+     * Checks that the {@link RelativeOperatingCharacteristicDiagram#getMetricNameString()} returns
      * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString()}
      */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString(), this.roc.getName() );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString(), this.roc.getMetricNameString() );
     }
 
     /**
@@ -173,7 +173,7 @@ public final class RelativeOperatingCharacteristicDiagramTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.roc.apply( (Pool<Pair<Probability, Probability>>) null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.roc.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.roc.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 

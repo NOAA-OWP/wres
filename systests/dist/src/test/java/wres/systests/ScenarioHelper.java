@@ -116,7 +116,8 @@ public class ScenarioHelper
     protected static Set<Path> executeScenario( ScenarioInformation scenarioInfo )
     {
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
-        Path config = scenarioInfo.getScenarioDirectory().resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
+        Path config = scenarioInfo.getScenarioDirectory()
+                                  .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
         Set<Path> paths = Collections.emptySet();
 
         // Create the broker connections for statistics messaging

@@ -61,11 +61,11 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> s )
+    public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( getIntermediateStatistic( s ), s );
+        return this.aggregate( getIntermediateStatistic( pool ), pool );
     }
 
     @Override

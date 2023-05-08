@@ -194,9 +194,9 @@ public class TimeSeriesOfDoubleUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eleven forecast
-     * values and then pairs them with observations. This integration test is similar to system test scenario103 as of
-     * commit 1a93f88202ae98cee85528a51893dd1521db2a29, but uses fake data.
+     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, SortedSet, String)} to upscale
+     * eleven forecast values and then pairs them with observations. This integration test is similar to system test
+     * scenario103 as of commit 1a93f88202ae98cee85528a51893dd1521db2a29, but uses fake data.
      */
 
     @Test
@@ -307,8 +307,8 @@ public class TimeSeriesOfDoubleUpscalerTest
     }
 
     /**
-     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, Set)} to upscale eighteen 
-     * values into a maximum value that spans PT96H and ends at 2017-01-08T18:00:00Z.
+     * Tests the {@link TimeSeriesOfDoubleUpscaler#upscale(TimeSeries, TimeScaleOuter, SortedSet, String)} to upscale
+     * eighteen values into a maximum value that spans PT96H and ends at 2017-01-08T18:00:00Z.
      */
 
     @Test

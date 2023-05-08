@@ -1,9 +1,9 @@
 package wres.datamodel.pools;
 
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -20,6 +20,12 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
+
+/**
+ * Tests the {@link PoolRequest}.
+ *
+ * @author James Brown
+ */
 
 class PoolRequestTest
 {
@@ -96,7 +102,7 @@ class PoolRequestTest
         // Consistent
         for ( int i = 0; i < 100; i++ )
         {
-            assertTrue( this.poolRequest.equals( anotherPoolRequest ) );
+            assertEquals( this.poolRequest, anotherPoolRequest );
         }
 
         // Nullity

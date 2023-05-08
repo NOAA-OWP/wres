@@ -73,17 +73,17 @@ public final class ContingencyTableTest
         assertEquals( expected, actual );
 
         //Check the parameters
-        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(), this.table.getName() );
+        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(), this.table.getMetricNameString() );
     }
 
     /**
-     * Checks that the {@link ContingencyTable#getName()} returns {@link MetricConstants.CONTINGENCY_TABLE.toString()} 
+     * Checks that the {@link ContingencyTable#getMetricNameString()} returns {@link MetricConstants.CONTINGENCY_TABLE.toString()}
      */
 
     @Test
     public void testContingencyTableIsNamedCorrectly()
     {
-        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(),  this.table.getName() );
+        assertEquals( MetricConstants.CONTINGENCY_TABLE.toString(),  this.table.getMetricNameString() );
     }
 
     /**

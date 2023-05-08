@@ -71,28 +71,28 @@ class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOute
     }
 
     @Override
-    public DoubleScoreStatisticOuter apply( S s )
+    public DoubleScoreStatisticOuter apply( S pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         LOGGER.trace( "Found {} pairs in the input to the {} for '{}'.",
-                      s.get().size(),
-                      this.getName(),
-                      s.getMetadata() );
+                      pool.get().size(),
+                      this.getMetricNameString(),
+                      pool.getMetadata() );
 
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( SampleSize.BASIC_METRIC )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setMetric( SampleSize.MAIN )
-                                                                                 .setValue( s.get()
-                                                                                             .size() ) )
+                                                                                 .setValue( pool.get()
+                                                                                                .size() ) )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, s.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, pool.getMetadata() );
     }
 
     @Override

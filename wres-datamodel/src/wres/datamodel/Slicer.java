@@ -729,7 +729,7 @@ public final class Slicer
             double[] filtered = Arrays.stream( climatology )
                                       .filter( condition )
                                       .toArray();
-            builder.addClimatology( nextFeature, filtered );
+            builder.addClimatology( nextFeature, filtered, input.getMeasurementUnit() );
         }
 
         return builder.build();

@@ -66,9 +66,7 @@
         <metric><name>relative operating characteristic diagram</name></metric>     
     </metrics>
     <outputs>
-        <destination type="numeric" decimalFormat="0.000000">
-	        <outputType>threshold lead</outputType>
-        </destination>
+        <destination type="numeric" decimalFormat="0.000000" />
         <destination type="pairs" decimalFormat="0.000000" />
         <destination type="graphic">
             <outputType>threshold lead</outputType>

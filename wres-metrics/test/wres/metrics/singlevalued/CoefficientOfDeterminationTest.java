@@ -77,7 +77,7 @@ public final class CoefficientOfDeterminationTest
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString(), this.cod.getName() );
+        assertEquals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString(), this.cod.getMetricNameString() );
     }
 
     @Test
@@ -110,7 +110,7 @@ public final class CoefficientOfDeterminationTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.cod.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.cod.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.cod.getMetricNameString() + "'.", actual.getMessage() );
     }
 
     @Test
@@ -120,7 +120,7 @@ public final class CoefficientOfDeterminationTest
         PoolException actual = assertThrows( PoolException.class,
                                                    () -> this.cod.aggregate( null, null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.cod.getName() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.cod.getMetricNameString() + "'.", actual.getMessage() );
     }
 
 }

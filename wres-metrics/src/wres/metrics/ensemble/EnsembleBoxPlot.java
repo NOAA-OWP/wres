@@ -66,9 +66,9 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
     abstract BoxplotMetric getMetric();
 
     @Override
-    public BoxplotStatisticOuter apply( final Pool<Pair<Double, Ensemble>> s )
+    public BoxplotStatisticOuter apply( final Pool<Pair<Double, Ensemble>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
@@ -76,7 +76,7 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
         List<Box> boxes = new ArrayList<>();
 
         // Create each box
-        for ( Pair<Double, Ensemble> next : s.get() )
+        for ( Pair<Double, Ensemble> next : pool.get() )
         {
             boxes.add( this.getBox( next ) );
         }
@@ -87,13 +87,13 @@ abstract class EnsembleBoxPlot extends Diagram<Pool<Pair<Double, Ensemble>>, Box
         BoxplotStatistic statistic = BoxplotStatistic.newBuilder()
                                                      .setMetric( this.getMetric()
                                                                      .toBuilder()
-                                                                     .setUnits( s.getMetadata()
-                                                                                 .getMeasurementUnit()
-                                                                                 .toString() ) )
+                                                                     .setUnits( pool.getMetadata()
+                                                                                    .getMeasurementUnit()
+                                                                                    .toString() ) )
                                                      .addAllStatistics( boxes )
                                                      .build();
 
-        return BoxplotStatisticOuter.of( statistic, s.getMetadata() );
+        return BoxplotStatisticOuter.of( statistic, pool.getMetadata() );
     }
 
     @Override

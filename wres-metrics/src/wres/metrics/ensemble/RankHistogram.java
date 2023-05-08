@@ -117,15 +117,15 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
     }
 
     @Override
-    public DiagramStatisticOuter apply( Pool<Pair<Double, Ensemble>> s )
+    public DiagramStatisticOuter apply( Pool<Pair<Double, Ensemble>> pool )
     {
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         // Empty diagram
-        if ( s.get().isEmpty() )
+        if ( pool.get().isEmpty() )
         {
             DiagramStatisticComponent ro =
                     DiagramStatisticComponent.newBuilder()
@@ -143,7 +143,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                                          .setMetric( RankHistogram.BASIC_METRIC )
                                                          .build();
 
-            return DiagramStatisticOuter.of( histogram, s.getMetadata() );
+            return DiagramStatisticOuter.of( histogram, pool.getMetadata() );
         }
 
         double[] ranks = new double[] { MissingValues.DOUBLE };
@@ -151,7 +151,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
         //Acquire subsets in case of missing data
         Map<Integer, List<Pair<Double, Ensemble>>> sliced =
-                Slicer.filterByRightSize( s.get() );
+                Slicer.filterByRightSize( pool.get() );
         //Find the subset with the most elements
         Optional<List<Pair<Double, Ensemble>>> useMe =
                 sliced.values().stream().max( Comparator.comparingInt( List::size ) );
@@ -192,7 +192,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
                                                      .setMetric( RankHistogram.BASIC_METRIC )
                                                      .build();
 
-        return DiagramStatisticOuter.of( histogram, s.getMetadata() );
+        return DiagramStatisticOuter.of( histogram, pool.getMetadata() );
     }
 
     @Override
