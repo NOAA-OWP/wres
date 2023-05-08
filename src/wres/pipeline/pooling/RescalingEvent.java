@@ -7,7 +7,7 @@ import jdk.jfr.Description;
 import jdk.jfr.Event;
 import jdk.jfr.Label;
 import jdk.jfr.Name;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeriesMetadata;
 
 /**
@@ -50,7 +50,7 @@ class RescalingEvent extends Event
      * @throws NullPointerException if any input is null
      */
 
-    static RescalingEvent of( RescalingType type, LeftOrRightOrBaseline lrb, TimeSeriesMetadata seriesMetadata )
+    static RescalingEvent of( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
     {
         return new RescalingEvent( type, lrb, seriesMetadata );
     }
@@ -63,7 +63,7 @@ class RescalingEvent extends Event
      * @throws NullPointerException if any input is null
      */
 
-    private RescalingEvent( RescalingType type, LeftOrRightOrBaseline lrb, TimeSeriesMetadata seriesMetadata )
+    private RescalingEvent( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
     {
         Objects.requireNonNull( type );
         Objects.requireNonNull( lrb );

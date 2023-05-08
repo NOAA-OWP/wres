@@ -8,11 +8,7 @@ option java_multiple_files = true;
 
 enum MetricName
 {
-    /*An enumeration of metric names. Would be preferable to alias the 
-    wres.config.generated.MetricConfigName, rather than have two generated 
-    enumerations. Also coordinated with the wres.datamodel.MetricConstants, 
-    but that is a more complex enumeration with several additional
-    behaviors.*/
+    /*An enumeration of metric names.*/
       
     UNDEFINED = 0;
     BIAS_FRACTION = 1;

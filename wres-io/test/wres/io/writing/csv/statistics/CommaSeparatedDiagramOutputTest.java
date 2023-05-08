@@ -13,9 +13,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.datamodel.statistics.DiagramStatisticOuter;
 
 import wres.io.writing.WriterTestHelper;
 
@@ -28,13 +26,6 @@ import wres.io.writing.WriterTestHelper;
 public class CommaSeparatedDiagramOutputTest
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
-
-    /**
-     * Tests the writing of {@link DiagramStatisticOuter} to file.
-     *
-     * @throws ProjectConfigException if the project configuration is incorrect
-     * @throws IOException if the output could not be written
-     */
 
     @Test
     public void writeDiagramOutput() throws IOException

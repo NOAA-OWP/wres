@@ -46,7 +46,6 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
-import wres.io.config.ConfigHelper;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.GriddedFeatures;
 import wres.io.ingesting.IngestResult;
@@ -55,6 +54,7 @@ import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
 import wres.io.project.Projects;
+import wres.io.reading.ReaderUtilities;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
 import wres.datamodel.units.UnitMapper;
@@ -349,7 +349,7 @@ class EvaluationUtilities
             EvaluationDeclaration declaration = evaluationDetails.declaration();
 
             // Look up any needed feature correlations and thresholds, generate a new declaration.
-            EvaluationDeclaration declarationWithFeatures = ConfigHelper.fillFeatures( declaration );
+            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
             // Update the small bag-o-state
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                            .declaration( declarationWithFeatures )
@@ -438,7 +438,7 @@ class EvaluationUtilities
 
             // Read external thresholds into the declaration
             EvaluationDeclaration declarationWithFeaturesAndThresholds =
-                    ConfigHelper.fillThresholds( declarationWithFeatures, unitMapper );
+                    ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
 
             // Update the small bag-o-state
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )

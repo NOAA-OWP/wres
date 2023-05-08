@@ -1,23 +1,22 @@
 package wres.datamodel.pools;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
+import java.util.Set;
 
-import org.junit.Test;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.EnsembleAverageType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import wres.config.MetricConstants;
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
+import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
@@ -40,9 +39,8 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  * @author James Brown
  */
 
-public class PoolMetadataTest
+class PoolMetadataTest
 {
-
     private static final String HEFS = "HEFS";
     private static final String SQIN = "SQIN";
     private static final String TEST_DIMENSION = "SOME_DIM";
@@ -57,7 +55,7 @@ public class PoolMetadataTest
      */
 
     @Test
-    public void testBuildProducesNonNullInstances()
+    void testBuildProducesNonNullInstances()
     {
         assertNotNull( PoolMetadata.of() );
 
@@ -114,7 +112,7 @@ public class PoolMetadataTest
      */
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         assertEquals( PoolMetadata.of(), PoolMetadata.of() );
 
@@ -281,92 +279,25 @@ public class PoolMetadataTest
 
         assertEquals( m9, m10 );
 
-        // Add a project configuration
-        ProjectConfig mockConfigOne =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   new PairConfig( "CMS",
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null ),
-                                   List.of( new MetricsConfig( null,
-                                                               0,
-                                                               List.of( new MetricConfig( null,
-                                                                                          MetricConfigName.BIAS_FRACTION ) ),
-                                                               null,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        // Add a project declaration
+        Dataset observedDataset = DatasetBuilder.builder()
+                .type( DataType.OBSERVATIONS )
+                                                .build();
 
-        ProjectConfig mockConfigTwo =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   new PairConfig( "CMS",
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null ),
-                                   List.of( new MetricsConfig( null,
-                                                               0,
-                                                               List.of( new MetricConfig( null,
-                                                                                          MetricConfigName.BIAS_FRACTION ) ),
-                                                               null,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                 .build();
 
-        Evaluation evaluationSix = MessageFactory.parse( mockConfigOne );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.BIAS_FRACTION, null ) );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                       .left( observedDataset )
+                                                                       .right( predictedDataset )
+                                                                       .unit( "CMS" )
+                                                                       .metrics( metrics )
+                                                                       .build();
+
+        Evaluation evaluationSix = MessageFactory.parse( declaration );
 
         Pool poolEleven = MessageFactory.getPool( featureGroupTwo,
                                                   thirdWindow,
@@ -377,7 +308,7 @@ public class PoolMetadataTest
 
         PoolMetadata m11 = PoolMetadata.of( evaluationSix, poolEleven );
 
-        Evaluation evaluationSeven = MessageFactory.parse( mockConfigTwo );
+        Evaluation evaluationSeven = MessageFactory.parse( declaration );
 
         Pool poolTwelve = MessageFactory.getPool( featureGroupTwo,
                                                   thirdWindow,
@@ -421,7 +352,7 @@ public class PoolMetadataTest
         assertNotEquals( null, m6 );
 
         // Other type check
-        assertNotEquals( m6, 2.0 );
+        assertNotEquals( 2.0, m6 );
     }
 
     /**
@@ -429,7 +360,7 @@ public class PoolMetadataTest
      */
 
     @Test
-    public void testHashcode()
+    void testHashcode()
     {
         // Equal
         assertEquals( PoolMetadata.of().hashCode(), PoolMetadata.of().hashCode() );
@@ -555,92 +486,25 @@ public class PoolMetadataTest
 
         assertEquals( m9.hashCode(), m10.hashCode() );
 
-        // Add a project configuration
-        ProjectConfig mockConfigOne =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   new PairConfig( "CMS",
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null ),
-                                   List.of( new MetricsConfig( null,
-                                                               0,
-                                                               List.of( new MetricConfig( null,
-                                                                                          MetricConfigName.BIAS_FRACTION ) ),
-                                                               null,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        // Add a project declaration
+        Dataset observedDataset = DatasetBuilder.builder()
+                                                .type( DataType.OBSERVATIONS )
+                                                .build();
 
-        ProjectConfig mockConfigTwo =
-                new ProjectConfig( new Inputs( null,
-                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null,
-                                                                     null ),
-                                               null ),
-                                   new PairConfig( "CMS",
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null,
-                                                   null ),
-                                   List.of( new MetricsConfig( null,
-                                                               0,
-                                                               List.of( new MetricConfig( null,
-                                                                                          MetricConfigName.BIAS_FRACTION ) ),
-                                                               null,
-                                                               EnsembleAverageType.MEAN ) ),
-                                   null,
-                                   null,
-                                   null );
+        Dataset predictedDataset = DatasetBuilder.builder()
+                                                 .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                 .build();
 
-        Evaluation evaluationFour = MessageFactory.parse( mockConfigOne );
+        Set<Metric> metrics = Set.of( new Metric( MetricConstants.BIAS_FRACTION, null ) );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( observedDataset )
+                                                                        .right( predictedDataset )
+                                                                        .unit( "CMS" )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        Evaluation evaluationFour = MessageFactory.parse( declaration );
 
         Pool poolNine = MessageFactory.getPool( featureGroupTwo,
                                                 thirdWindow,
@@ -651,7 +515,7 @@ public class PoolMetadataTest
 
         PoolMetadata m11 = PoolMetadata.of( evaluationFour, poolNine );
 
-        Evaluation evaluationFive = MessageFactory.parse( mockConfigTwo );
+        Evaluation evaluationFive = MessageFactory.parse( declaration );
 
         Pool poolTen = MessageFactory.getPool( featureGroupTwo,
                                                thirdWindow,
@@ -666,7 +530,7 @@ public class PoolMetadataTest
     }
 
     @Test
-    public void testGetMetadata()
+    void testGetMetadata()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setMeasurementUnit( SQIN )

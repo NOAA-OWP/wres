@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,7 +20,6 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
@@ -524,7 +522,7 @@ abstract class CommaSeparatedStatisticsWriter
      *
      * @param declaration the project declaration that will drive the writer logic
      * @param outputDirectory the directory into which to write
-     * @throws ProjectConfigException if the project configuration is not valid for writing
+     * @throws DeclarationException if the project configuration is not valid for writing
      * @throws NullPointerException if the durationUnits are null
      * @throws IllegalArgumentException if the output directory is not a writable directory
      */

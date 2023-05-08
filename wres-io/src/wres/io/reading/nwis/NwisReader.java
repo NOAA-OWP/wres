@@ -31,7 +31,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -502,7 +501,7 @@ public class NwisReader implements TimeSeriesReader
      * Hidden constructor.
      * @param declaration the optional declaration, which is used to perform chunking of a data source
      * @param systemSettings the system settings
-     * @throws ProjectConfigException if the project declaration is invalid for this source type
+     * @throws DeclarationException if the project declaration is invalid for this source type
      * @throws NullPointerException if the systemSettings is null
      */
 

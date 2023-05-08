@@ -33,8 +33,6 @@ import org.junit.jupiter.api.Test;
 import com.google.protobuf.Timestamp;
 
 import wres.config.MetricConstants;
-import wres.config.xml.ProjectConfigPlus;
-import wres.config.generated.DestinationType;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -85,11 +83,6 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
-import wres.statistics.generated.Outputs.CsvFormat;
-import wres.statistics.generated.Outputs.GraphicFormat;
-import wres.statistics.generated.Outputs.NumericFormat;
-import wres.statistics.generated.Outputs.PngFormat;
-import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
@@ -99,7 +92,6 @@ import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.BoxplotStatistic.Box;
-import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
@@ -424,90 +416,6 @@ class MessageFactoryTest
     }
 
     @Test
-    void testParseProjectToEvaluation() throws IOException
-    {
-        // Project from system test scenario007 with simplified override for drawing parameters
-        String projectString = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <project label="ExampleProject" name="scenario007">
-                                
-                    <inputs>
-                        <left label="">
-                            <type>observations</type>
-                            <source format="PI-XML">data/DRRC2QINE.xml</source>
-                            <variable label="discharge1">QINE</variable>
-                        </left>
-                        <right label="HEFS">
-                            <type>ensemble forecasts</type>
-                            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
-                            <variable label="discharge2">SQIN</variable>
-                        </right>
-                    </inputs>
-                                
-                    <pair label="Pairs by location and lead time">
-                        <unit>CMS</unit>
-                        <feature left="DRRC2HSF" right="DRRC2HSF" />
-                        <leadHours minimum="1" maximum="24" />
-                        <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-06-15T00:00:00Z"/>
-                        <leadTimesPoolingWindow>
-                            <period>0</period>
-                            <frequency>1</frequency>
-                            <unit>hours</unit>
-                        </leadTimesPoolingWindow>
-                    </pair>
-                                
-                    <metrics>
-                        <thresholds>
-                            <applyTo>left</applyTo>
-                            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
-                            <operator>greater than or equal to</operator>
-                        </thresholds>
-                        <metric><name>mean error</name></metric>
-                        <metric><name>sample size</name></metric>
-                    </metrics>
-                    <outputs>
-                        <destination type="numeric" decimalFormat="0.000000" />
-                        <destination type="pairs" decimalFormat="0.000000" />
-                        <destination type="graphic">
-                            <graphical width="800" height="600">
-                                <!-- Test the supression of graphical output for one metric -->
-                                <suppressMetric>sample size</suppressMetric>
-                            </graphical>
-                        </destination>
-                    </outputs>
-                                
-                </project>
-                """;
-
-        ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
-        Evaluation actual = MessageFactory.parse( projectConfigPlus.getProjectConfig() );
-
-        // Create the expected evaluation
-        Outputs.Builder outputs = Outputs.newBuilder();
-        outputs.setCsv( CsvFormat.newBuilder()
-                                 .setOptions( NumericFormat.newBuilder()
-                                                           .setDecimalFormat( "0.000000" ) ) )
-               .setPng( PngFormat.newBuilder()
-                                 .setOptions( GraphicFormat.newBuilder()
-                                                           .setHeight( 600 )
-                                                           .setWidth( 800 )
-                                                           .addIgnore( MetricName.SAMPLE_SIZE )
-                                                           .setShape( GraphicShape.LEAD_THRESHOLD ) ) );
-
-        Evaluation expected = Evaluation.newBuilder()
-                                        .setRightDataName( "HEFS" )
-                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
-                                        .setLeftVariableName( "discharge1" )
-                                        .setRightVariableName( "discharge2" )
-                                        .setMeasurementUnit( "CMS" )
-                                        .setMetricCount( 2 )
-                                        .setOutputs( outputs )
-                                        .build();
-
-        assertEquals( expected, actual );
-    }
-
-    @Test
     void testParseEvaluationDeclarationToEvaluationMessage()
     {
         Dataset observedDataset = DatasetBuilder.builder()
@@ -667,86 +575,6 @@ class MessageFactoryTest
                                         .build();
 
         assertEquals( expected, actual );
-    }
-
-    /**
-     * Redmine issue #97372.
-     * @throws IOException if the test failed to parse a declaration string
-     */
-
-    @Test
-    void testParseOutputsCapturesGraphicsShape() throws IOException
-    {
-        String projectString = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <project label="ExampleProject" name="scenario007">
-                    <inputs>
-                        <left label="">
-                            <type>observations</type>
-                            <source format="PI-XML">data/DRRC2QINE.xml</source>
-                            <variable label="discharge1">QINE</variable>
-                        </left>
-                        <right label="HEFS">
-                            <type>ensemble forecasts</type>
-                            <source format="PI-XML">data/drrc2ForecastsOneMonth/</source>
-                            <variable label="discharge2">SQIN</variable>
-                        </right>
-                    </inputs>
-                    
-                    <pair label="Pairs by location and lead time">
-                        <unit>CMS</unit>
-                        <feature left="DRRC2HSF" right="DRRC2HSF" />
-                    </pair>
-                                
-                    <metrics>
-                        <thresholds>
-                            <applyTo>left</applyTo>
-                            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
-                            <operator>greater than or equal to</operator>
-                        </thresholds>
-                        <metric><name>mean error</name></metric>
-                        <metric><name>sample size</name></metric>
-                    </metrics>
-                    <outputs>
-                        <destination type="graphic">
-                            <outputType>threshold lead</outputType>
-                        </destination>
-                    </outputs>
-                </project>
-                """;
-
-
-        ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from( projectString, "unitTest" );
-        Evaluation actual = MessageFactory.parse( projectConfigPlus.getProjectConfig() );
-
-        Outputs.Builder outputs = Outputs.newBuilder()
-                                         .setPng( PngFormat.newBuilder()
-                                                           .setOptions( GraphicFormat.newBuilder()
-                                                                                     .setShape( GraphicShape.THRESHOLD_LEAD ) ) );
-
-        Evaluation expected = Evaluation.newBuilder()
-                                        .setRightDataName( "HEFS" )
-                                        .setDefaultBaseline( DefaultData.OBSERVED_CLIMATOLOGY )
-                                        .setLeftVariableName( "discharge1" )
-                                        .setRightVariableName( "discharge2" )
-                                        .setMeasurementUnit( "CMS" )
-                                        .setMetricCount( 2 )
-                                        .setOutputs( outputs )
-                                        .build();
-
-        assertEquals( expected, actual );
-    }
-
-    @Test
-    void testParseFormatFromDestinationType()
-    {
-        assertEquals( Format.PNG, MessageFactory.parse( DestinationType.GRAPHIC ) );
-        assertEquals( Format.PNG, MessageFactory.parse( DestinationType.PNG ) );
-        assertEquals( Format.SVG, MessageFactory.parse( DestinationType.SVG ) );
-        assertEquals( Format.NETCDF, MessageFactory.parse( DestinationType.NETCDF ) );
-        assertEquals( Format.PROTOBUF, MessageFactory.parse( DestinationType.PROTOBUF ) );
-        assertEquals( Format.CSV, MessageFactory.parse( DestinationType.NUMERIC ) );
-        assertEquals( Format.CSV, MessageFactory.parse( DestinationType.CSV ) );
     }
 
     @Test

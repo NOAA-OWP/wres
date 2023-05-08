@@ -8,16 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
 
-import wres.config.xml.ProjectConfigException;
-
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 
 import wres.io.writing.WriterTestHelper;
 
@@ -30,14 +26,6 @@ import wres.io.writing.WriterTestHelper;
 public class CommaSeparatedDurationDiagramWriterTest
 {
     private final Path outputDirectory = Paths.get( System.getProperty( "java.io.tmpdir" ) );
-
-    /**
-     * Tests the writing of {@link DurationDiagramStatisticOuter} to file, where the left pair comprises an {@link Instant} and the
-     * right pair comprises an (@link Duration).
-     *
-     * @throws ProjectConfigException if the project configuration is incorrect
-     * @throws IOException if the output could not be written
-     */
 
     @Test
     public void writePairedOutputForTimeSeriesMetrics() throws IOException

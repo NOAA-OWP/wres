@@ -538,7 +538,7 @@ class DeclarationValidatorTest
         TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
         LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofHours( 3 ),
                                                               java.time.Duration.ofHours( 1 ) );
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ofHours( 1 ) ,
+        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ofHours( 1 ),
                                                                      java.time.Duration.ZERO );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -1039,6 +1039,38 @@ class DeclarationValidatorTest
                                                        + "will retain that type. The following metrics will not be "
                                                        + "adjusted: [MEAN SQUARE ERROR SKILL SCORE]",
                                                        StatusLevel.WARN ) );
+    }
+
+    @Test
+    void noDataSourcesDeclaredForAnyDatasetResultsInErrors()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                     .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( left )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( left )
+                                            .baseline( baseline )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "No data sources were declared for the "
+                                                                        + "'observed' dataset, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "No data sources were declared for the "
+                                                                        + "'predicted' dataset, which is not allowed",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "No data sources were declared for the "
+                                                                        + "'baseline' dataset, which is not allowed",
+                                                                        StatusLevel.ERROR ) )
+        );
     }
 
     /**

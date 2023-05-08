@@ -18,11 +18,7 @@ import org.apache.commons.math3.util.ArithmeticUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.messages.MessageUtilities;
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
@@ -123,67 +119,6 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
                          .build();
 
         return new TimeScaleOuter( timeScaleInner );
-    }
-
-    /**
-     * Constructs a {@link TimeScaleOuter} from a {@link TimeScaleConfig}. If the {@link TimeScaleConfig#getFunction()}
-     * is null, the {@link TimeScaleFunction} is set to {@link TimeScaleFunction#UNKNOWN}.
-     *
-     * @param config the configuration
-     * @return a time scale
-     * @throws NullPointerException if either input is null or expected contents is null
-     * @throws IllegalArgumentException if the enum that describes the function associated with the input is non-null 
-     *            and its name does not match the name of a {@link TimeScaleFunction}
-     */
-
-    public static TimeScaleOuter of( TimeScaleConfig config )
-    {
-        Objects.requireNonNull( config, "Specify non-null time-series configuration" );
-
-        TimeScale.Builder timeScaleInner = TimeScale.newBuilder();
-
-        if ( Objects.nonNull( config.getPeriod() ) )
-        {
-            Duration period = ProjectConfigs.getDurationFromTimeScale( config );
-            com.google.protobuf.Duration canonicalPeriod = MessageFactory.parse( period );
-            timeScaleInner.setPeriod( canonicalPeriod );
-        }
-
-        if ( Objects.isNull( config.getFunction() ) )
-        {
-            timeScaleInner.setFunction( TimeScaleFunction.UNKNOWN );
-        }
-        else
-        {
-            wres.statistics.generated.TimeScale.TimeScaleFunction innerFunction =
-                    wres.statistics.generated.TimeScale.TimeScaleFunction.valueOf( config.getFunction().name() );
-            timeScaleInner.setFunction( innerFunction );
-        }
-
-        if ( config instanceof DesiredTimeScaleConfig desiredConfig )
-        {
-            if ( Objects.nonNull( desiredConfig.getEarliestDay() ) )
-            {
-                timeScaleInner.setStartDay( desiredConfig.getEarliestDay() );
-            }
-
-            if ( Objects.nonNull( desiredConfig.getEarliestMonth() ) )
-            {
-                timeScaleInner.setStartMonth( desiredConfig.getEarliestMonth() );
-            }
-
-            if ( Objects.nonNull( desiredConfig.getLatestDay() ) )
-            {
-                timeScaleInner.setEndDay( desiredConfig.getLatestDay() );
-            }
-
-            if ( Objects.nonNull( desiredConfig.getLatestMonth() ) )
-            {
-                timeScaleInner.setEndMonth( desiredConfig.getLatestMonth() );
-            }
-        }
-
-        return new TimeScaleOuter( timeScaleInner.build() );
     }
 
     /**
@@ -641,8 +576,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
      */
     private void validateMonthDays( TimeScale timeScale )
     {
-        MonthDay earliestMonthDay = null;
-        MonthDay latestMonthDay = null;
+        MonthDay earliestMonthDay;
+        MonthDay latestMonthDay;
 
         if ( timeScale.getStartMonth() != 0 || timeScale.getStartDay() != 0 )
         {

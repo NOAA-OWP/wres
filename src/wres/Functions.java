@@ -3,7 +3,6 @@ package wres;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.ZonedDateTime;
@@ -28,8 +27,8 @@ import ucar.nc2.dt.grid.GridDataset;
 
 import wres.config.MultiDeclarationFactory;
 import wres.config.xml.ProjectConfigPlus;
-import wres.config.xml.Validation;
 import wres.config.xml.ProjectConfigs;
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
@@ -477,51 +476,28 @@ final class Functions
 
         if ( !args.isEmpty() )
         {
-            Path configPath = Paths.get( args.get( 0 ) );
-            ProjectConfigPlus projectConfigPlus;
-
-            String fullPath = configPath.toAbsolutePath().toString();
+            String pathOrDeclaration = args.get( 0 );
 
             try
             {
                 // Unmarshal the configuration
-                projectConfigPlus = ProjectConfigPlus.from( configPath );
-            }
-            catch ( IOException ioe )
-            {
-                String message = "Failed to unmarshal the project configuration at '" + fullPath + "'";
-                UserInputException e = new UserInputException( message, ioe );
-                LOGGER.error( "validate failed.", e );
-                return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
-            }
+                MultiDeclarationFactory.from( pathOrDeclaration,
+                                              FileSystems.getDefault(),
+                                              true );
 
-            SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
-
-            // Validate unmarshalled configurations
-            final boolean validated = Validation.isProjectValid( systemSettings.getDataDirectory(),
-                                                                 projectConfigPlus );
-
-            if ( validated )
-            {
-                LOGGER.info( "'{}' is a valid project config.", fullPath );
+                LOGGER.info( "The supplied declaration is valid: '{}'.", pathOrDeclaration );
                 return ExecutionResult.success();
             }
-            else
+            catch ( IOException | DeclarationException error )
             {
-                // Even though the application performed its job, we still want
-                // to return a failure so that the return code may be used to
-                // determine the validity
-                String message = "'" + fullPath + "' is not a valid config.";
-                LOGGER.info( message );
-                UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e );
+                String message = "Failed to unmarshal the project declaration at '" + pathOrDeclaration + "'";
+                UserInputException e = new UserInputException( message, error );
+                return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
             }
         }
         else
         {
-            String message = "A project path was not passed in"
-                             + System.lineSeparator()
-                             + "usage: validate <path to project>";
+            String message = "Could not find a project declaration to validate. Usage: validate <path to project>";
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e );
         }
@@ -544,16 +520,23 @@ final class Functions
             try
             {
                 ProjectConfigPlus projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
-                EvaluationDeclaration newDeclaration = DeclarationFactory.from( projectConfigPlus.getProjectConfig() );
+                EvaluationDeclaration newDeclaration =
+                        DeclarationFactory.from( projectConfigPlus.getProjectConfig() );
                 LOGGER.debug( "Migrated the supplied declaration to: {}.", newDeclaration );
                 String yaml = DeclarationFactory.from( newDeclaration );
                 String announce = "Here is your migrated declaration:";
-                String start = "---"; // Start of a YAML document. Not needed or returned, in general, but clean here
+                String start =
+                        "---"; // Start of a YAML document. Not needed or returned, in general, but clean here
 
                 // Log if possible
                 if ( LOGGER.isInfoEnabled() )
                 {
-                    LOGGER.info( "{}{}{}{}{}", announce, System.lineSeparator(), start, System.lineSeparator(), yaml );
+                    LOGGER.info( "{}{}{}{}{}",
+                                 announce,
+                                 System.lineSeparator(),
+                                 start,
+                                 System.lineSeparator(),
+                                 yaml );
                 }
                 else
                 {
