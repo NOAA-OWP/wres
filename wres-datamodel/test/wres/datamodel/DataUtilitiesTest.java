@@ -52,6 +52,15 @@ final class DataUtilitiesTest
     }
 
     @Test
+    void testSanitizeFileName()
+    {
+        String testAllBad = "NWM_Many test-stuff allthe bad#%^*&!(@^$)\\|'\";:/?>,<+ (04/24/2020)";
+        String sanitizedOutput = "NWM_Many_test-stuff_allthe_bad_04242020";
+
+        assertEquals( sanitizedOutput, DataUtilities.sanitizeFileName( testAllBad ) );
+    }
+
+    @Test
     void testParsePointFromPointWktNonStrict()
     {
         String wkt = "POINT ( 3.141592654 5.1 )";
