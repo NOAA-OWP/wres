@@ -57,7 +57,6 @@ public class ProjectConfigs
         ProjectConfigPlus projectConfigPlus;
 
         // Declaration passed directly as an argument
-        // TODO: use Tika to detect
         if ( declarationStringOrPath.startsWith( "<?xml " ) )
         {
             // Successfully detected a project passed directly as an argument.

@@ -151,10 +151,10 @@ definitions:
     additionalProperties: false
     properties:
       sources:
+        # No minimum array size because data posting allows for zero declared sources.
         type: array
         items:
           "$ref": "#/definitions/Source"
-        minItems: 1
       variable:
         anyOf:
           - "$ref": "#/definitions/Variable"
@@ -205,10 +205,10 @@ definitions:
     additionalProperties: false
     properties:
       sources:
+        # No minimum array size because data posting allows for zero declared sources.
         type: array
         items:
           "$ref": "#/definitions/Source"
-        minItems: 1
       feature_authority:
         "$ref": "#/definitions/FeatureAuthorityEnum"
       variable:

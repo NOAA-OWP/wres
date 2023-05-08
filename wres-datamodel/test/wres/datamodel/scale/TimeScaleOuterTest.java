@@ -15,8 +15,6 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.config.generated.DurationUnit;
-import wres.config.generated.TimeScaleConfig;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
@@ -70,32 +68,6 @@ final class TimeScaleOuterTest
     void testConstructionProducesExpectedTimeScale()
     {
         assertEquals( TimeScaleOuter.of(), TimeScaleOuter.of( Duration.ofMillis( 1 ), TimeScaleFunction.UNKNOWN ) );
-    }
-
-    /**
-     * Confirms that {@link TimeScaleOuter#of(wres.config.generated.TimeScaleConfig)} produces expected instances.
-     */
-
-    @Test
-    void testConstructionWithConfigProducesExpectedTimeScale()
-    {
-        TimeScaleConfig first =
-                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MEAN, 1, DurationUnit.DAYS, null );
-
-        assertEquals( TimeScaleOuter.of( first ), TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN ) );
-
-        TimeScaleConfig second =
-                new TimeScaleConfig( wres.config.generated.TimeScaleFunction.MAXIMUM, 1, DurationUnit.HOURS, null );
-
-        assertEquals( TimeScaleOuter.of( second ),
-                      TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.MAXIMUM ) );
-
-        // Null function produces TimeScaleFunction.UNKNOWN
-        TimeScaleConfig third =
-                new TimeScaleConfig( null, 1, DurationUnit.SECONDS, null );
-
-        assertEquals( TimeScaleOuter.of( third ),
-                      TimeScaleOuter.of( Duration.ofSeconds( 1 ), TimeScaleFunction.UNKNOWN ) );
     }
 
     /**

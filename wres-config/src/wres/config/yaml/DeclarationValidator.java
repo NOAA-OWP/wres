@@ -2387,10 +2387,27 @@ public class DeclarationValidator
                                                                 String orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
-        if ( Objects.nonNull( sources ) )
+
+        // No sources? Not allowed.
+        if ( Objects.isNull( sources ) || sources.isEmpty() )
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "No data sources were declared for the '"
+                                                           + orientation
+                                                           + "' dataset, which is not allowed. Please declare at least "
+                                                           + "one data source for the '"
+                                                           + orientation
+                                                           + "' dataset and try again." )
+                                         .build();
+            events.add( event );
+        }
+        else
         {
             // Warn about time zone offset
-            if ( sources.stream().anyMatch( next -> Objects.nonNull( next.timeZoneOffset() ) ) )
+            if ( sources.stream()
+                        .anyMatch( next -> Objects.nonNull( next.timeZoneOffset() ) ) )
             {
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()

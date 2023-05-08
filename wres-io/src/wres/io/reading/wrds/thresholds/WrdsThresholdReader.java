@@ -189,25 +189,16 @@ public class WrdsThresholdReader
     {
         Map<WrdsLocation, Set<Threshold>> thresholdMapping;
 
-        try
-        {
-            //Get the non-null responses for the addresses, extract the thresholds,
-            //and collect them into a map.
-            thresholdMapping = addresses.parallelStream()
-                                        .map( this::getResponse )
-                                        .filter( Objects::nonNull )
-                                        .map( thresholdResponse -> this.extract( thresholdResponse,
-                                                                                 thresholdService,
-                                                                                 unitMapper ) )
-                                        .flatMap( featurePlusSetMap -> featurePlusSetMap.entrySet().stream() )
-                                        .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-
-        }
-        catch ( StreamIOException streamReadingException )
-        {
-            throw new ThresholdReadingException( "Encountered an error while reading thresholds from WRDS.",
-                                                 streamReadingException );
-        }
+        //Get the non-null responses for the addresses, extract the thresholds,
+        //and collect them into a map.
+        thresholdMapping = addresses.parallelStream()
+                                    .map( this::getResponse )
+                                    .filter( Objects::nonNull )
+                                    .map( thresholdResponse -> this.extract( thresholdResponse,
+                                                                             thresholdService,
+                                                                             unitMapper ) )
+                                    .flatMap( featurePlusSetMap -> featurePlusSetMap.entrySet().stream() )
+                                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
         // Filter out locations that only have all data
         thresholdMapping = thresholdMapping
@@ -349,9 +340,10 @@ public class WrdsThresholdReader
     /**
      * This is protected to support testing.
      * @param address the address
-     * @return The response in byte[], where the URI can point to a file or a website.
+     * @return The response in byte[], where the URI can point to a file or a website
+     * @throws ThresholdReadingException if the thresholds could not be read
      */
-    byte[] getResponse( final URI address ) throws StreamIOException
+    byte[] getResponse( final URI address )
     {
         LOGGER.debug( "Opening URI {}", address );
         try
@@ -372,7 +364,7 @@ public class WrdsThresholdReader
         }
         catch ( IOException ioe )
         {
-            throw new StreamIOException( "Error encountered while requesting WRDS threshold data", ioe );
+            throw new ThresholdReadingException( "Error encountered while requesting WRDS threshold data", ioe );
         }
     }
 

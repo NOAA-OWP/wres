@@ -19,9 +19,8 @@ import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.MetricConstants;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -362,7 +361,6 @@ public final class DataUtilities
      * @return a path to write, without a file type extension
      * @throws NullPointerException if any required input is null, including the identifier associated 
      *            with the sample metadata
-     * @throws ProjectConfigException when the destination configuration is invalid
      */
 
     public static Path getPathFromPoolMetadata( Path outputDirectory,
@@ -600,11 +598,11 @@ public final class DataUtilities
         {
             if ( pool.getIsBaselinePool() )
             {
-                name = LeftOrRightOrBaseline.BASELINE.toString();
+                name = DatasetOrientation.BASELINE.name();
             }
             else
             {
-                name = LeftOrRightOrBaseline.RIGHT.toString();
+                name = DatasetOrientation.RIGHT.name();
             }
         }
 

@@ -49,8 +49,11 @@ import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.units.UnitMapper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource.DataDisposition;
+import wres.io.reading.wrds.geography.WrdsFeatureFiller;
+import wres.io.reading.wrds.thresholds.WrdsThresholdFiller;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -71,6 +74,45 @@ public class ReaderUtilities
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ReaderUtilities.class );
+
+    /**
+     * Resolves any implicit declaration of features that require service calls to external web services. Currently,
+     * the only supported web services are those within the umbrella of the Water Resources Data Service (WRDS), which
+     * contains a collection of U.S. National Weather Service APIs.
+     *
+     * @param declaration the evaluation declaration
+     * @return the declaration with any implicit features rendered explicit
+     * @throws NullPointerException if the input is null
+     */
+
+    public static EvaluationDeclaration readAndFillFeatures( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        // Currently, there is only one feature service supported
+        return WrdsFeatureFiller.fillFeatures( declaration );
+    }
+
+    /**
+     * Resolves any implicit declaration of thresholds that require service calls to external web services. Currently,
+     * the only supported web services are those within the umbrella of the Water Resources Data Service (WRDS), which
+     * contains a collection of U.S. National Weather Service APIs.
+     *
+     * @param declaration the evaluation declaration
+     * @param unitMapper the unit mapper
+     * @return the declaration with any implicit thresholds rendered explicit
+     * @throws NullPointerException if either input is null
+     */
+
+    public static EvaluationDeclaration readAndFillThresholds( EvaluationDeclaration declaration,
+                                                               UnitMapper unitMapper )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( unitMapper );
+
+        // Currently, there is only one threshold service supported
+        return WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+    }
 
     /**
      * Transform a single trace into a {@link TimeSeries} of {@link Double} values

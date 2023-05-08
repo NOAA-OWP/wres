@@ -3,18 +3,16 @@ package wres.tasker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-
-import javax.xml.bind.JAXBException;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.ws.rs.Consumes;
@@ -34,9 +32,11 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import wres.config.xml.ProjectConfigException;
-import wres.config.xml.ProjectConfigs;
-import wres.config.generated.DataSourceConfig;
+import wres.config.MultiDeclarationFactory;
+import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.EvaluationDeclaration;
 import wres.messages.generated.Job;
 
 @Path( "/job/{jobId}/input" )
@@ -176,12 +176,12 @@ public class WresJobInput
 
 
     /**
-     * Indicates all inputs have been posted when postInputDone is set to true.
+     * <p>Indicates all inputs have been posted when postInputDone is set to true.
      * Causes the job to be submitted to a worker for processing. When HTTP 503
      * is returned, do retry with backoff (wait a few seconds, try again, if 503
      * is still returned, wait a few more seconds, try again, and so forth).
      *
-     * No-op when postInputDone is not set to true.
+     * <p>No-op when postInputDone is not set to true.
      *
      * @param jobId The job identifier for which to indicate inputs posted.
      * @param postInputDone True when all inputs have been posted.
@@ -252,54 +252,28 @@ public class WresJobInput
         List<URI> leftUris = sharedJobResults.getLeftInputs( jobId );
         List<URI> rightUris = sharedJobResults.getRightInputs( jobId );
         List<URI> baselineUris = sharedJobResults.getBaselineInputs( jobId );
-        List<DataSourceConfig.Source> leftDataset = new ArrayList<>( leftUris.size() );
-        List<DataSourceConfig.Source> rightDataset = new ArrayList<>( rightUris.size() );
-        List<DataSourceConfig.Source> baselineDataset = new ArrayList<>( baselineUris.size() );
-
-        for ( URI uri : leftUris )
-        {
-            DataSourceConfig.Source source = new DataSourceConfig.Source( uri,
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
-            leftDataset.add( source );
-        }
-
-        for ( URI uri : rightUris )
-        {
-            DataSourceConfig.Source source = new DataSourceConfig.Source( uri,
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
-            rightDataset.add( source );
-        }
-
-        for ( URI uri : baselineUris )
-        {
-            DataSourceConfig.Source source = new DataSourceConfig.Source( uri,
-                                                                          null,
-                                                                          null,
-                                                                          null,
-                                                                          null );
-            baselineDataset.add( source );
-        }
-
         String newDeclaration;
 
         try
         {
-            // Add the sources
-            newDeclaration = ProjectConfigs.addSources( declaration,
-                                                        "web post",
-                                                        leftDataset,
-                                                        rightDataset,
-                                                        baselineDataset );
+            // Parse the declaration
+            EvaluationDeclaration oldDeclaration = MultiDeclarationFactory.from( declaration,
+                                                                                 FileSystems.getDefault(),
+                                                                                 false );
+
+            // Add the data sources
+            EvaluationDeclaration adjusted = DeclarationUtilities.addDataSources( oldDeclaration,
+                                                                         leftUris,
+                                                                         rightUris,
+                                                                         baselineUris );
+
+            // Serialize the adjusted declaration
+            newDeclaration = DeclarationFactory.from( adjusted );
+
             LOGGER.debug( "Created new project declaration:\n{}",
                           newDeclaration );
         }
-        catch ( ProjectConfigException | JAXBException e )
+        catch ( DeclarationException e )
         {
             LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
                          jobId, declaration,"\n", e );
