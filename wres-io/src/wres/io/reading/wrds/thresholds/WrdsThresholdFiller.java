@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -141,12 +142,16 @@ public class WrdsThresholdFiller
                                                  + "' dataset." );
         }
 
-        Set<String> featureNames = DeclarationUtilities.getFeatureNamesFor( tuples, orientation );
+        // Get the adjusted feature names mapped to the original names
+        Map<String, String> featureNames = WrdsThresholdFiller.getFeatureNames( tuples,
+                                                                                orientation,
+                                                                                featureAuthority,
+                                                                                serviceUri );
 
         // Continue to read the thresholds
         Map<WrdsLocation, Set<Threshold>> thresholds = READER.readThresholds( service,
                                                                               unitMapper,
-                                                                              featureNames,
+                                                                              featureNames.keySet(),
                                                                               featureAuthority );
 
         LOGGER.trace( "Read the following thresholds from WRDS: {}.", thresholds );
@@ -155,7 +160,43 @@ public class WrdsThresholdFiller
         return WrdsThresholdFiller.getAdjustedDeclaration( evaluation,
                                                            thresholds,
                                                            featureAuthority,
-                                                           orientation );
+                                                           orientation,
+                                                           featureNames );
+    }
+
+    /**
+     * Returns the requested feature names mapped against the original names. The requested names will differ in some
+     * cases. For example, when requesting names with the {@link FeatureAuthority#NWS_LID}, the names must be
+     * "Handbook 5" names, which contain up to five characters.
+     *
+     * @param tuples the feature tuples
+     * @param orientation the dataset orientation
+     * @param featureAuthority the feature authority
+     * @param serviceUri the service URI
+     * @return the feature names to use when forming a request to a web service
+     */
+
+    private static Map<String, String> getFeatureNames( Set<GeometryTuple> tuples,
+                                                        DatasetOrientation orientation,
+                                                        FeatureAuthority featureAuthority,
+                                                        URI serviceUri )
+    {
+        Set<String> oneSided = DeclarationUtilities.getFeatureNamesFor( tuples, orientation );
+        Map<String, String> names;
+        // Only handbook 5 names are allowed in this context, so use up to the first 5 characters of an NWS LID only
+        if ( featureAuthority == FeatureAuthority.NWS_LID && ReaderUtilities.isWebSource( serviceUri ) )
+        {
+            names = oneSided.stream()
+                            .collect( Collectors.toUnmodifiableMap( n -> n.substring( 0, Math.min( n.length(), 5 ) ),
+                                                                    Function.identity() ) );
+        }
+        else
+        {
+            names = oneSided.stream()
+                            .collect( Collectors.toUnmodifiableMap( Function.identity(), Function.identity() ) );
+        }
+
+        return names;
     }
 
     /**
@@ -164,12 +205,14 @@ public class WrdsThresholdFiller
      * @param thresholds the thresholds
      * @param featureAuthority the feature authority to help with feature naming
      * @param orientation the orientation of the dataset to which the feature names apply
+     * @param featureNames the feature names
      * @return the adjusted declaration
      */
     private static EvaluationDeclaration getAdjustedDeclaration( EvaluationDeclaration evaluation,
                                                                  Map<WrdsLocation, Set<Threshold>> thresholds,
                                                                  FeatureAuthority featureAuthority,
-                                                                 DatasetOrientation orientation )
+                                                                 DatasetOrientation orientation,
+                                                                 Map<String, String> featureNames )
     {
         // Ordered, mapped thresholds
         Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
@@ -181,8 +224,10 @@ public class WrdsThresholdFiller
             Set<Threshold> nextThresholds = nextEntry.getValue();
 
             String featureName = WrdsLocation.getNameForAuthority( featureAuthority, location );
+            String originalFeatureName = featureNames.get( featureName );
+
             Geometry feature = Geometry.newBuilder()
-                                       .setName( featureName )
+                                       .setName( originalFeatureName )
                                        .build();
             featuresWithThresholds.add( feature );
             Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
