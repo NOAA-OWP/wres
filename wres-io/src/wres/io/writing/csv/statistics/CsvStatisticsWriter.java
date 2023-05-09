@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
@@ -361,7 +361,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                         .map( GeometryTuple::getLeft )
                                         .toList();
 
-        StringJoiner leftJoiner = this.getGeometryDescription( left, LeftOrRightOrBaseline.LEFT, featureGroupName );
+        StringJoiner leftJoiner = this.getGeometryDescription( left, DatasetOrientation.LEFT, featureGroupName );
 
         joiner = joiner.merge( leftJoiner );
 
@@ -370,7 +370,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                          .map( GeometryTuple::getRight )
                                          .toList();
 
-        StringJoiner rightJoiner = this.getGeometryDescription( right, LeftOrRightOrBaseline.RIGHT, featureGroupName );
+        StringJoiner rightJoiner = this.getGeometryDescription( right, DatasetOrientation.RIGHT, featureGroupName );
 
         joiner = joiner.merge( rightJoiner );
 
@@ -385,7 +385,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                                 .toList();
 
             StringJoiner baselineJoiner =
-                    this.getGeometryDescription( baseline, LeftOrRightOrBaseline.BASELINE, featureGroupName );
+                    this.getGeometryDescription( baseline, DatasetOrientation.BASELINE, featureGroupName );
 
             joiner = joiner.merge( baselineJoiner );
         }
@@ -409,7 +409,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     private StringJoiner getGeometryDescription( List<Geometry> geometries,
-                                                 LeftOrRightOrBaseline lrb,
+                                                 DatasetOrientation lrb,
                                                  String groupName )
     {
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );

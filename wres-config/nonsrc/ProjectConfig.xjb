@@ -22,7 +22,7 @@
     </jxb:bindings>
 
     <!--The following binding injects a delegated implementation of java.lang.Comparable by
-        wres.config.generated.ProjectConfig. Implementations of equals and hashCode were 
+        wres.config.xml.generated.ProjectConfig. Implementations of equals and hashCode were 
         achieved much more cleanly using plug-ins for JAXB2 Basics. Unfortunately, this 
         was not possible for java.lang.Comparable.-->
 

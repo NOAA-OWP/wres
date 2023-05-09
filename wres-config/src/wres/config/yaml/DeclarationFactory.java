@@ -3,6 +3,7 @@ package wres.config.yaml;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -30,8 +31,13 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.fasterxml.jackson.dataformat.yaml.util.StringQuotingChecker;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
@@ -64,41 +70,41 @@ import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
 import wres.config.MetricConstants;
-import wres.config.generated.ThresholdFormat;
+import wres.config.xml.generated.ThresholdFormat;
 import wres.config.xml.CsvThresholdReader;
 import wres.config.xml.MetricConstantsFactory;
 import wres.config.xml.ProjectConfigs;
-import wres.config.generated.Circle;
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DateCondition;
-import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.DurationBoundsType;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.FeatureDimension;
-import wres.config.generated.FeatureGroup;
-import wres.config.generated.FeaturePool;
-import wres.config.generated.GraphicalType;
-import wres.config.generated.IntBoundsType;
-import wres.config.generated.LenienceType;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.PairConfig;
-import wres.config.generated.Polygon;
-import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeScaleConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.config.generated.UnnamedFeature;
-import wres.config.generated.UrlParameter;
+import wres.config.xml.generated.Circle;
+import wres.config.xml.generated.DataSourceBaselineConfig;
+import wres.config.xml.generated.DataSourceConfig;
+import wres.config.xml.generated.DatasourceType;
+import wres.config.xml.generated.DateCondition;
+import wres.config.xml.generated.DesiredTimeScaleConfig;
+import wres.config.xml.generated.DestinationConfig;
+import wres.config.xml.generated.DoubleBoundsType;
+import wres.config.xml.generated.DurationBoundsType;
+import wres.config.xml.generated.DurationUnit;
+import wres.config.xml.generated.EnsembleCondition;
+import wres.config.xml.generated.FeatureDimension;
+import wres.config.xml.generated.FeatureGroup;
+import wres.config.xml.generated.FeaturePool;
+import wres.config.xml.generated.GraphicalType;
+import wres.config.xml.generated.IntBoundsType;
+import wres.config.xml.generated.LenienceType;
+import wres.config.xml.generated.MetricConfigName;
+import wres.config.xml.generated.MetricsConfig;
+import wres.config.xml.generated.NamedFeature;
+import wres.config.xml.generated.OutputTypeSelection;
+import wres.config.xml.generated.PairConfig;
+import wres.config.xml.generated.Polygon;
+import wres.config.xml.generated.PoolingWindowConfig;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.ThresholdDataType;
+import wres.config.xml.generated.ThresholdsConfig;
+import wres.config.xml.generated.TimeScaleConfig;
+import wres.config.xml.generated.TimeSeriesMetricConfigName;
+import wres.config.xml.generated.UnnamedFeature;
+import wres.config.xml.generated.UrlParameter;
 import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
@@ -247,7 +253,7 @@ public class DeclarationFactory
 
     /** Mapper for serialization. */
     private static final ObjectMapper SERIALIZER =
-            new ObjectMapper( new YAMLFactoryWithCustomGenerator().disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
+            new ObjectMapper( new YamlFactoryWithCustomGenerator().disable( YAMLGenerator.Feature.WRITE_DOC_START_MARKER )
                                                                   .disable( YAMLGenerator.Feature.SPLIT_LINES )
                                                                   .enable( YAMLGenerator.Feature.MINIMIZE_QUOTES )
                                                                   .enable( YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS )
@@ -656,7 +662,7 @@ public class DeclarationFactory
      * @param builder the new declaration builder
      */
 
-    private static void migrateFeatureService( wres.config.generated.FeatureService featureService,
+    private static void migrateFeatureService( wres.config.xml.generated.FeatureService featureService,
                                                EvaluationDeclarationBuilder builder )
     {
         if ( Objects.nonNull( featureService ) )
@@ -864,7 +870,7 @@ public class DeclarationFactory
      * @param unitAliases the unit aliases
      * @param builder the new declaration builder
      */
-    private static void migrateUnitAliases( List<wres.config.generated.UnitAlias> unitAliases,
+    private static void migrateUnitAliases( List<wres.config.xml.generated.UnitAlias> unitAliases,
                                             EvaluationDeclarationBuilder builder )
     {
         if ( Objects.nonNull( unitAliases ) && !unitAliases.isEmpty() )
@@ -886,7 +892,7 @@ public class DeclarationFactory
      * @param crossPair the cross pairing
      * @param builder the new declaration builder
      */
-    private static void migrateCrossPairing( wres.config.generated.CrossPair crossPair,
+    private static void migrateCrossPairing( wres.config.xml.generated.CrossPair crossPair,
                                              EvaluationDeclarationBuilder builder )
     {
         if ( Objects.nonNull( crossPair ) )
@@ -938,7 +944,7 @@ public class DeclarationFactory
             LOGGER.debug( "Encountered {} groups of metrics to migrate.", metrics.size() );
 
             // Is there a single set of thresholds? If so, migrate to top-level thresholds
-            Map<wres.config.generated.ThresholdType, ThresholdsConfig> globalThresholds =
+            Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> globalThresholds =
                     DeclarationFactory.getGlobalThresholds( metrics );
             boolean addThresholdsPerMetric = true;
             if ( !globalThresholds.isEmpty() )
@@ -1227,7 +1233,7 @@ public class DeclarationFactory
      * @param unitAlias the unit alias to migrate
      * @return the migrated unit alias
      */
-    private static UnitAlias migrateUnitAlias( wres.config.generated.UnitAlias unitAlias )
+    private static UnitAlias migrateUnitAlias( wres.config.xml.generated.UnitAlias unitAlias )
     {
         return new UnitAlias( unitAlias.getAlias(), unitAlias.getUnit() );
     }
@@ -1827,14 +1833,14 @@ public class DeclarationFactory
      * @param builder the declaration builder
      */
 
-    private static void migrateGlobalThresholds( Map<wres.config.generated.ThresholdType, ThresholdsConfig> thresholds,
+    private static void migrateGlobalThresholds( Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> thresholds,
                                                  EvaluationDeclarationBuilder builder )
     {
         // Probability thresholds
-        if ( thresholds.containsKey( wres.config.generated.ThresholdType.PROBABILITY ) )
+        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.PROBABILITY ) )
         {
             ThresholdsConfig probabilityThresholdsConfig =
-                    thresholds.get( wres.config.generated.ThresholdType.PROBABILITY );
+                    thresholds.get( wres.config.xml.generated.ThresholdType.PROBABILITY );
             Set<Threshold> probabilityThresholds = DeclarationFactory.migrateThresholds( probabilityThresholdsConfig,
                                                                                          builder );
             builder.probabilityThresholds( probabilityThresholds );
@@ -1842,10 +1848,10 @@ public class DeclarationFactory
         }
 
         // Value thresholds
-        if ( thresholds.containsKey( wres.config.generated.ThresholdType.VALUE ) )
+        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.VALUE ) )
         {
             ThresholdsConfig valueThresholdsConfig =
-                    thresholds.get( wres.config.generated.ThresholdType.VALUE );
+                    thresholds.get( wres.config.xml.generated.ThresholdType.VALUE );
             Set<Threshold> valueThresholds = DeclarationFactory.migrateThresholds( valueThresholdsConfig,
                                                                                    builder );
             builder.valueThresholds( valueThresholds );
@@ -1853,10 +1859,10 @@ public class DeclarationFactory
         }
 
         // Probability classifier thresholds
-        if ( thresholds.containsKey( wres.config.generated.ThresholdType.PROBABILITY_CLASSIFIER ) )
+        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER ) )
         {
             ThresholdsConfig classifierThresholdsConfig =
-                    thresholds.get( wres.config.generated.ThresholdType.PROBABILITY_CLASSIFIER );
+                    thresholds.get( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER );
             Set<Threshold> classifierThresholds = DeclarationFactory.migrateThresholds( classifierThresholdsConfig,
                                                                                         builder );
             builder.classifierThresholds( classifierThresholds );
@@ -2137,12 +2143,12 @@ public class DeclarationFactory
         wres.statistics.generated.Threshold.Builder builder = DEFAULT_CANONICAL_THRESHOLD.toBuilder();
 
         // Need to map enums
-        wres.config.generated.ThresholdType type = DeclarationFactory.getThresholdType( metadata );
+        wres.config.xml.generated.ThresholdType type = DeclarationFactory.getThresholdType( metadata );
         ThresholdType newType = ThresholdType.valueOf( type.name() );
 
         if ( Objects.nonNull( metadata.getOperator() ) )
         {
-            wres.config.generated.ThresholdOperator operator = metadata.getOperator();
+            wres.config.xml.generated.ThresholdOperator operator = metadata.getOperator();
             wres.statistics.generated.Threshold.ThresholdOperator canonicalOperator =
                     ProjectConfigs.getThresholdOperator( operator );
             builder.setOperator( canonicalOperator );
@@ -2209,7 +2215,7 @@ public class DeclarationFactory
     {
         LOGGER.debug( "Discovered an external source of thresholds to migrate: {}.", thresholds );
 
-        wres.config.generated.ThresholdType thresholdType = DeclarationFactory.getThresholdType( thresholds );
+        wres.config.xml.generated.ThresholdType thresholdType = DeclarationFactory.getThresholdType( thresholds );
         ThresholdType canonicalType = ThresholdType.valueOf( thresholdType.name() );
 
         // Web service?
@@ -2306,16 +2312,16 @@ public class DeclarationFactory
      * @return the global thresholds, if available
      */
 
-    private static Map<wres.config.generated.ThresholdType, ThresholdsConfig> getGlobalThresholds( List<MetricsConfig> metrics )
+    private static Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> getGlobalThresholds( List<MetricsConfig> metrics )
     {
-        Map<wres.config.generated.ThresholdType, ThresholdsConfig> thresholdsMap =
-                new EnumMap<>( wres.config.generated.ThresholdType.class );
+        Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> thresholdsMap =
+                new EnumMap<>( wres.config.xml.generated.ThresholdType.class );
         for ( MetricsConfig nextMetrics : metrics )
         {
             List<ThresholdsConfig> thresholds = nextMetrics.getThresholds();
             for ( ThresholdsConfig nextThresholds : thresholds )
             {
-                wres.config.generated.ThresholdType nextType = DeclarationFactory.getThresholdType( nextThresholds );
+                wres.config.xml.generated.ThresholdType nextType = DeclarationFactory.getThresholdType( nextThresholds );
                 if ( thresholdsMap.containsKey( nextType )
                      && !thresholdsMap.get( nextType )
                                       .equals( nextThresholds ) )
@@ -2336,10 +2342,10 @@ public class DeclarationFactory
      * @param thresholds the thresholds
      * @return the threshold type
      */
-    private static wres.config.generated.ThresholdType getThresholdType( ThresholdsConfig thresholds )
+    private static wres.config.xml.generated.ThresholdType getThresholdType( ThresholdsConfig thresholds )
     {
         // Defaults to probability
-        wres.config.generated.ThresholdType thresholdType = wres.config.generated.ThresholdType.PROBABILITY;
+        wres.config.xml.generated.ThresholdType thresholdType = wres.config.xml.generated.ThresholdType.PROBABILITY;
         if ( Objects.nonNull( thresholds.getType() ) )
         {
             thresholdType = thresholds.getType();
@@ -2374,4 +2380,87 @@ public class DeclarationFactory
     private DeclarationFactory()
     {
     }
+
+    /**
+     * See the explanation in {@link YamlGeneratorWithCustomStyle}. This is a workaround to expose the SnakeYAML
+     * serialization options that Jackson can see, but fails to expose to configuration.
+     *
+     * @author James Brown
+     */
+    private static class YamlFactoryWithCustomGenerator extends YAMLFactory
+    {
+        @Override
+        protected YAMLGenerator _createGenerator( Writer out, IOContext ctxt) throws IOException
+        {
+            return new YamlGeneratorWithCustomStyle( ctxt, _generatorFeatures, _yamlGeneratorFeatures,
+                                                     _quotingChecker, _objectCodec, out, _version );
+        }
+    }
+
+    /**
+     * <p>Implements an {@link YAMLGenerator} with custom styling.
+     *
+     * <p>This is not a preferred approach to achieve custom styling, but the default implementation of the
+     * {@link YAMLGenerator} does not expose the SnakeYAML {@link DumperOptions} to runtime configuration. If the
+     * default implementation exposed these options, they would be accessibleto runtime configuration  via the
+     * {@link SerializerProvider#getGenerator()}. If a future version of Jackson exposes these low-level implementation
+     * options, remove this custom generator and the associated {@link YamlFactoryWithCustomGenerator} that creates it.
+     * For further discussion, see:
+     * <a href="https://github.com/FasterXML/jackson-dataformats-text/issues/4">https://github.com/FasterXML/jackson-dataformats-text/issues/4</a>.
+     *
+     * <p>Currently, the only custom serialization performed by this class is to use the flow style when serializing
+     * array types.
+     *
+     * @author James Brown
+     */
+    private static class YamlGeneratorWithCustomStyle extends YAMLGenerator
+    {
+        /**
+         * Creates an instance.
+         * @param ctxt the IO context
+         * @param jsonFeatures the json feature count
+         * @param yamlFeatures the yaml feature count
+         * @param quotingChecker the quoting checker
+         * @param codec the codec
+         * @param out the writer
+         * @param version the dumper option version
+         * @throws IOException if the instance could not be created for any reason
+         */
+        public YamlGeneratorWithCustomStyle( IOContext ctxt,
+                                             int jsonFeatures,
+                                             int yamlFeatures,
+                                             StringQuotingChecker quotingChecker,
+                                             ObjectCodec codec,
+                                             Writer out,
+                                             DumperOptions.Version version ) throws IOException
+        {
+            super( ctxt, jsonFeatures, yamlFeatures, quotingChecker, codec, out, version );
+        }
+
+        @Override
+        public void writeObject( Object object ) throws IOException
+        {
+            // Use the flow style for arrays
+            if ( object.getClass()
+                       .isArray() )
+            {
+                DumperOptions.FlowStyle existing = _outputOptions.getDefaultFlowStyle();
+
+                // Set
+                _outputOptions.setDefaultFlowStyle( DumperOptions.FlowStyle.FLOW );
+
+                // Write
+                super.writeObject( object );
+
+                // Reset
+                _outputOptions.setDefaultFlowStyle( existing );
+            }
+            // Use the existing style for anything else
+            else
+            {
+                super.writeObject( object );
+            }
+        }
+    }
+
 }

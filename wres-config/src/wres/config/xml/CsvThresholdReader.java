@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
-import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
+import wres.config.xml.generated.ThresholdFormat;
+import wres.config.xml.generated.ThresholdType;
+import wres.config.xml.generated.ThresholdsConfig;
 import wres.config.yaml.DeclarationFactory;
 import wres.statistics.generated.Threshold;
 

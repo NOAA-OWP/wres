@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import wres.config.generated.ObjectFactory;
-import wres.config.generated.ProjectConfig;
+import wres.config.xml.generated.ObjectFactory;
+import wres.config.xml.generated.ProjectConfig;
 
 /**
  * <p>Associates a project configuration object with its graphgen xml string.

@@ -30,7 +30,8 @@ import wres.config.yaml.components.EvaluationDeclaration;
 /**
  * A transition class that accepts a declaration string formatted in either the old (XML) or new (YAML) declaration
  * language and produces an immutable binding for the new declaration language. In other words, migrates the old
- * declaration as needed.
+ * declaration as needed. This class should be removed and the {@link DeclarationFactory} used directly once the old
+ * (XML) declaration language has been removed.
  *
  * @author James Brown
  */

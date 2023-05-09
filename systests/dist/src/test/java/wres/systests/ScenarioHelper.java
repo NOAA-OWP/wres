@@ -46,9 +46,9 @@ import wres.system.SystemSettings;
  *
  * It then passes through environment variables to  already-unset Java system
  * properties before running the WRES.
- * @author Raymond.Chui
- * @author Hank.Herr
- * @author jesse.bickel
+ * @author Raymond Chui
+ * @author Hank Herr
+ * @author Jesse Bickel
  */
 
 public class ScenarioHelper

@@ -14,20 +14,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.xml.sax.Locator;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DataSourceConfig.Variable;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.LenienceType;
-import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.xml.generated.DataSourceConfig;
+import wres.config.xml.generated.DataSourceConfig.Variable;
+import wres.config.xml.generated.DatasourceType;
+import wres.config.xml.generated.DesiredTimeScaleConfig;
+import wres.config.xml.generated.DestinationConfig;
+import wres.config.xml.generated.DestinationType;
+import wres.config.xml.generated.DurationUnit;
+import wres.config.xml.generated.InterfaceShortHand;
+import wres.config.xml.generated.NamedFeature;
+import wres.config.xml.generated.LenienceType;
+import wres.config.xml.generated.PairConfig;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.ProjectConfig.Inputs;
+import wres.config.xml.generated.ProjectConfig.Outputs;
 
 class ValidationTest
 {

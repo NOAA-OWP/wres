@@ -17,21 +17,21 @@ import javax.xml.bind.JAXBException;
 
 import org.junit.jupiter.api.Test;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.EnsembleAverageType;
-import wres.config.generated.InterfaceShortHand;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.generated.DataSourceConfig;
+import wres.config.xml.generated.DatasourceType;
+import wres.config.xml.generated.EnsembleAverageType;
+import wres.config.xml.generated.InterfaceShortHand;
+import wres.config.xml.generated.MetricConfig;
+import wres.config.xml.generated.MetricConfigName;
+import wres.config.xml.generated.MetricsConfig;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.ProjectConfig.Inputs;
 import wres.config.xml.ProjectConfigs;
 
 public class ProjectConfigsTest
 {
     /**
-     * Tests the {@link ProjectConfigs#compare(wres.config.generated.ProjectConfig, wres.config.generated.ProjectConfig)}.
+     * Tests the {@link ProjectConfigs#compare(wres.config.xml.generated.ProjectConfig, wres.config.xml.generated.ProjectConfig)}.
      */
 
     private static final String EXAMPLE_DECLARATION =
@@ -184,8 +184,8 @@ public class ProjectConfigsTest
     }
     
     /**
-     * Tests for an expected exception from {@link ProjectConfigs#compare(wres.config.generated.ProjectConfig, 
-     * wres.config.generated.ProjectConfig)} when the first input is null.
+     * Tests for an expected exception from {@link ProjectConfigs#compare(wres.config.xml.generated.ProjectConfig, 
+     * wres.config.xml.generated.ProjectConfig)} when the first input is null.
      */
 
     @Test
@@ -198,8 +198,8 @@ public class ProjectConfigsTest
     }
     
     /**
-     * Tests for an expected exception from {@link ProjectConfigs#compare(wres.config.generated.ProjectConfig, 
-     * wres.config.generated.ProjectConfig)} when the second input is null.
+     * Tests for an expected exception from {@link ProjectConfigs#compare(wres.config.xml.generated.ProjectConfig, 
+     * wres.config.xml.generated.ProjectConfig)} when the second input is null.
      */
 
     @Test

@@ -892,14 +892,14 @@ project(':wres-config')
         xjc
         {
             taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
-            generatePackage = 'wres.config.generated'
+            generatePackage = 'wres.config.xml.generated'
             destinationDir = "${project.buildDir}/generated/"
             // For location information to be in classes, -Xlocator is needed
             // here. For location information to be in instances at runtime, the
             // eclipselink moxy library is required at runtime (see runtime dep)
 
             // JBr: added -Xequals and -XhashCode implementations. Also added 
-            // -Xinject-code to allow for wres.config.generated.ProjectConfig 
+            // -Xinject-code to allow for wres.config.xml.generated.ProjectConfig 
             // to implement java.lang.Comparable. See discussion in #44996
 
             args = [ '-Xinject-code', '-Xinheritance', '-Xannotate',
@@ -928,9 +928,9 @@ project(':wres-config')
     // the latest version (this seems to happen on each build)
     task copyGenerated(type:Copy, dependsOn: xjc, group: 'Parse') {
         description = 'Ensures generated code is created and available in src.'
-        destinationDir = file("${project.projectDir}/src/wres/config/generated")
+        destinationDir = file("${project.projectDir}/src/wres/config/xml/generated")
         delete fileTree(dir: destinationDir).include('**/generated/*.java')
-        from fileTree("${project.buildDir}/generated/wres/config/generated")
+        from fileTree("${project.buildDir}/generated/wres/config/xml/generated")
         into destinationDir
     }
 
