@@ -401,8 +401,9 @@ public class Units
 
         if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.info( "Treating measurement unit name '{}' as UCUM "
-                         + "unit '{}' along dimension '{}'",
+            LOGGER.debug( "Treating measurement unit name '{}' as UCUM "
+                         + "unit '{}' along dimension '{}'. "
+                         + "This message may be repeated (up to) as many times as pooling threads.",
                          unitName,
                          officialName,
                          unit.getDimension() );
