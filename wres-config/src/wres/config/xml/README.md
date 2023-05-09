@@ -9,5 +9,5 @@ two requirements:
 1. The eclipselink moxy library on the classpath at runtime (see build.gradle)
 2. A jaxb.properties file in the package directory of generated classes
 
-For the second, see nonsrc/wres/config/generated for this file. It refers to the
-class that will be used for JAXBContext at runtime.
+For the second, see nonsrc/wres/config/xml/generated for this file. It refers to 
+the class that will be used for JAXBContext at runtime.
