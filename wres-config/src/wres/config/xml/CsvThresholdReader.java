@@ -10,7 +10,6 @@ import com.opencsv.exceptions.CsvValidationException;
 import wres.config.xml.generated.ThresholdFormat;
 import wres.config.xml.generated.ThresholdType;
 import wres.config.xml.generated.ThresholdsConfig;
-import wres.config.yaml.DeclarationFactory;
 import wres.statistics.generated.Threshold;
 
 import java.io.IOException;
@@ -36,8 +35,9 @@ import java.util.stream.Collectors;
  * Helps read files of Comma Separated Values (CSV).
  *
  * @author James Brown
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public class CsvThresholdReader
 {
     /** Logger. */

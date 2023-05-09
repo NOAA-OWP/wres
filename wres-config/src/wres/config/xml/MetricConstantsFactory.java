@@ -31,8 +31,9 @@ import wres.config.MetricConstants.StatisticType;
  * Factory class for creating {@link MetricConstants} from project declaration.
  * 
  * @author James Brown
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public class MetricConstantsFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( MetricConstantsFactory.class );

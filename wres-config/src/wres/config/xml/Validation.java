@@ -73,8 +73,9 @@ import wres.config.MetricConstants.StatisticType;
 /**
  * Helps validate project declarations at a higher level than parser, with
  * detailed messaging.
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public class Validation
 {
     private static final String TRY_AGAIN = "try again.";
