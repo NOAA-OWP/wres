@@ -8,8 +8,9 @@ import com.sun.xml.bind.Locatable;
  * An unchecked exception associated with metric configuration.
  * 
  * @author James Brown
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public final class MetricConfigException extends ProjectConfigException
 {
     /**

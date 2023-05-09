@@ -37,8 +37,9 @@ import wres.config.xml.generated.ProjectConfig.Inputs;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public class ProjectConfigs
 {
 

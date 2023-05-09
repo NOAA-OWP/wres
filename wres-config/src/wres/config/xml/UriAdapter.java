@@ -20,8 +20,9 @@ import org.slf4j.LoggerFactory;
  * somewhat less human-written code, and therefore simpler, but the convenience
  * of replacing backslashes with slashes may make this class worthwhile. If it
  * is not worthwhile, feel free to remove this class.
+ * @deprecated
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 public class UriAdapter extends XmlAdapter<String,URI>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( UriAdapter.class );

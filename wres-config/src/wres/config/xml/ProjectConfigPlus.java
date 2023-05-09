@@ -50,7 +50,9 @@ import wres.config.xml.generated.ProjectConfig;
  *
  * <p>Intended to be Thread-safe, and the object is. Performs one read then uses
  * and keeps the resulting file in a string.
+ * @deprecated
  */
+@Deprecated( since = "6.14", forRemoval = true )
 public class ProjectConfigPlus
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectConfigPlus.class );

@@ -19,7 +19,9 @@ import com.sun.xml.bind.Locatable;
  *
  * <p>The thrower does not need to print the location in the message, it is
  * inserted automatically at the beginning of the exception message.
+ * @deprecated
  */
+@Deprecated( since = "6.14", forRemoval = true )
 public class ProjectConfigException extends RuntimeException
 {
     /**
