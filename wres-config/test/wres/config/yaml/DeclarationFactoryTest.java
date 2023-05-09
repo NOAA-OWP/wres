@@ -28,38 +28,38 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DateCondition;
-import wres.config.generated.DesiredTimeScaleConfig;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.DoubleBoundsType;
-import wres.config.generated.DurationBoundsType;
-import wres.config.generated.DurationUnit;
-import wres.config.generated.EnsembleCondition;
-import wres.config.generated.FeatureDimension;
-import wres.config.generated.FeatureGroup;
-import wres.config.generated.FeaturePool;
-import wres.config.generated.GraphicalType;
-import wres.config.generated.IntBoundsType;
-import wres.config.generated.LenienceType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.NamedFeature;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.PairConfig;
-import wres.config.generated.Polygon;
-import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeScaleConfig;
-import wres.config.generated.TimeScaleFunction;
-import wres.config.generated.UnnamedFeature;
-import wres.config.generated.UrlParameter;
+import wres.config.xml.generated.DataSourceBaselineConfig;
+import wres.config.xml.generated.DataSourceConfig;
+import wres.config.xml.generated.DateCondition;
+import wres.config.xml.generated.DesiredTimeScaleConfig;
+import wres.config.xml.generated.DestinationConfig;
+import wres.config.xml.generated.DestinationType;
+import wres.config.xml.generated.DoubleBoundsType;
+import wres.config.xml.generated.DurationBoundsType;
+import wres.config.xml.generated.DurationUnit;
+import wres.config.xml.generated.EnsembleCondition;
+import wres.config.xml.generated.FeatureDimension;
+import wres.config.xml.generated.FeatureGroup;
+import wres.config.xml.generated.FeaturePool;
+import wres.config.xml.generated.GraphicalType;
+import wres.config.xml.generated.IntBoundsType;
+import wres.config.xml.generated.LenienceType;
+import wres.config.xml.generated.MetricConfig;
+import wres.config.xml.generated.MetricConfigName;
+import wres.config.xml.generated.MetricsConfig;
+import wres.config.xml.generated.NamedFeature;
+import wres.config.xml.generated.OutputTypeSelection;
+import wres.config.xml.generated.PairConfig;
+import wres.config.xml.generated.Polygon;
+import wres.config.xml.generated.PoolingWindowConfig;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.ThresholdDataType;
+import wres.config.xml.generated.ThresholdOperator;
+import wres.config.xml.generated.ThresholdsConfig;
+import wres.config.xml.generated.TimeScaleConfig;
+import wres.config.xml.generated.TimeScaleFunction;
+import wres.config.xml.generated.UnnamedFeature;
+import wres.config.xml.generated.UrlParameter;
 import wres.config.yaml.components.AnalysisDurations;
 import wres.config.yaml.components.AnalysisDurationsBuilder;
 import wres.config.yaml.components.BaselineDataset;
@@ -2525,11 +2525,11 @@ class DeclarationFactoryTest
     @Test
     void testMigrateProjectWithPairOptions()
     {
-        wres.config.generated.FeatureService featureService =
-                new wres.config.generated.FeatureService( URI.create( "https://moo" ),
+        wres.config.xml.generated.FeatureService featureService =
+                new wres.config.xml.generated.FeatureService( URI.create( "https://moo" ),
                                                           List.of( new FeatureGroup( "small", "ball", false ) ) );
-        List<wres.config.generated.UnitAlias> aliases =
-                List.of( new wres.config.generated.UnitAlias( "banana", "pear" ) );
+        List<wres.config.xml.generated.UnitAlias> aliases =
+                List.of( new wres.config.xml.generated.UnitAlias( "banana", "pear" ) );
         List<NamedFeature> features = List.of( new NamedFeature( "red", "blue", "green" ) );
         List<FeaturePool> featureGroup = List.of( new FeaturePool( features, "groupish" ) );
         Polygon polygon = new Polygon( List.of( new Polygon.Point( 2.0F, 1.0F ),
@@ -2573,7 +2573,7 @@ class DeclarationFactoryTest
                                                  issuedDatesPoolingWindowConfig,
                                                  validDatesPoolingWindowConfig,
                                                  leadTimesPoolingWindowConfig,
-                                                 new wres.config.generated.CrossPair( false ),
+                                                 new wres.config.xml.generated.CrossPair( false ),
                                                  null );
 
         ProjectConfig project = new ProjectConfig( this.inputs,
@@ -2703,7 +2703,7 @@ class DeclarationFactoryTest
     {
         // First group of metrics with thresholds
         List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ) );
-        ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.generated.ThresholdType.PROBABILITY,
+        ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
                                                                 ThresholdDataType.LEFT, "0.1",
                                                                 ThresholdOperator.GREATER_THAN );
         List<ThresholdsConfig> thresholdSets = List.of( someThresholds );
@@ -2711,7 +2711,7 @@ class DeclarationFactoryTest
 
         // Second group of metrics with thresholds
         List<MetricConfig> moreMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ERROR ) );
-        ThresholdsConfig moreThresholds = new ThresholdsConfig( wres.config.generated.ThresholdType.PROBABILITY,
+        ThresholdsConfig moreThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
                                                                 ThresholdDataType.LEFT, "0.2",
                                                                 ThresholdOperator.GREATER_THAN );
         List<ThresholdsConfig> moreThresholdsSets = List.of( moreThresholds );

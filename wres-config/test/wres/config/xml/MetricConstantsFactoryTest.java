@@ -18,20 +18,20 @@ import org.junit.jupiter.api.Test;
 import wres.config.MetricConstants;
 import wres.config.xml.MetricConfigException;
 import wres.config.xml.MetricConstantsFactory;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.EnsembleAverageType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
-import wres.config.generated.OutputTypeSelection;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.SummaryStatisticsName;
-import wres.config.generated.ThresholdDataType;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
-import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.xml.generated.DestinationConfig;
+import wres.config.xml.generated.EnsembleAverageType;
+import wres.config.xml.generated.MetricConfig;
+import wres.config.xml.generated.MetricConfigName;
+import wres.config.xml.generated.MetricsConfig;
+import wres.config.xml.generated.OutputTypeSelection;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.SummaryStatisticsName;
+import wres.config.xml.generated.ThresholdDataType;
+import wres.config.xml.generated.ThresholdOperator;
+import wres.config.xml.generated.ThresholdType;
+import wres.config.xml.generated.ThresholdsConfig;
+import wres.config.xml.generated.TimeSeriesMetricConfigName;
+import wres.config.xml.generated.ProjectConfig.Outputs;
 import wres.config.MetricConstants.StatisticType;
 
 /**
@@ -50,7 +50,7 @@ class MetricConstantsFactoryTest
     private ProjectConfig defaultMockedConfig;
 
     /**
-     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.MetricConfigName)}.
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.xml.generated.MetricConfigName)}.
      */
 
     @Test
@@ -70,7 +70,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.MetricConfigName)} throws an 
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.xml.generated.MetricConfigName)} throws an 
      * expected exception when the input is null.
      */
 
@@ -82,7 +82,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)}.
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.xml.generated.TimeSeriesMetricConfigName)}.
      */
 
     @Test
@@ -102,7 +102,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.generated.TimeSeriesMetricConfigName)} throws an 
+     * Tests the {@link MetricConstantsFactory#getMetricName(wres.config.xml.generated.TimeSeriesMetricConfigName)} throws an 
      * expected exception when the input is null.
      */
 
@@ -148,7 +148,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#from(wres.config.generated.MetricConfigName)}.
+     * Tests the {@link MetricConstantsFactory#from(wres.config.xml.generated.MetricConfigName)}.
      * @throws MetricConfigException if a mapping could not be created
      */
 
@@ -184,7 +184,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#from(wres.config.generated.SummaryStatisticsName)}.
+     * Tests the {@link MetricConstantsFactory#from(wres.config.xml.generated.SummaryStatisticsName)}.
      * @throws MetricConfigException if a mapping could not be created
      */
 
@@ -219,7 +219,7 @@ class MetricConstantsFactoryTest
     }
 
     /**
-     * Tests the {@link MetricConstantsFactory#getMetricsFromConfig(wres.config.generated.ProjectConfig)} by comparing
+     * Tests the {@link MetricConstantsFactory#getMetricsFromConfig(wres.config.xml.generated.ProjectConfig)} by comparing
      * actual results to expected results.
      * @throws MetricConfigException if an unexpected exception is encountered
      */

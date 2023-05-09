@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; //NOSONAR
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Source;
@@ -135,21 +134,19 @@ public class DataSource
     private final DatasetOrientation orientation;
 
     /**
-     * Create a data source to load into <code>wres.Source</code>, with optional links to
-     * create in <code>wres.ProjectSource</code>. If the source is used only once in the
-     * declaration, there will be no additional links and the set of links should be empty.
-     * The evaluated path to the source may not match the URI within the source, because
-     * the path has been evaluated. For example, evaluation means to decompose a
-     * source directory into separate paths to each file that must be loaded. Each
-     * file has a separate {@link DataSource}. For each of those decomposed paths, there
-     * is only one {@link DataSourceConfig.Source}.
+     * Create a data source to load, with optional links to the multiple other contexts in which it appears. If the
+     * source is used only once in the declaration, there will be no additional links and the set of links should be
+     * empty. The evaluated path to the source may not match the URI within the source, because the path has been
+     * evaluated. For example, evaluation means to decompose a source directory into separate paths to each file that
+     * must be loaded. Each file has a separate {@link DataSource}. For each of those decomposed paths, there is only
+     * one {@link Source}.
      *
      * @param disposition the disposition of the data source or data inside
      * @param source the source to load
      * @param context the context in which the source appears
-     * @param links the optional links to create
+     * @param links the optional links to other contexts in which the same source appears
      * @param uri the uri for the source
-     * @param orientation whether the data source originates from the left or right or baseline side of the evaluation
+     * @param orientation the orientation of the dataset to which the source belongs
      * @throws NullPointerException if any input is null
      * @return The newly created DataSource.
      */

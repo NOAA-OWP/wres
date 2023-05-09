@@ -20,20 +20,20 @@ import javax.xml.namespace.QName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.config.generated.LeftOrRightOrBaseline.BASELINE;
-import static wres.config.generated.LeftOrRightOrBaseline.LEFT;
-import static wres.config.generated.LeftOrRightOrBaseline.RIGHT;
+import static wres.config.xml.generated.LeftOrRightOrBaseline.BASELINE;
+import static wres.config.xml.generated.LeftOrRightOrBaseline.LEFT;
+import static wres.config.xml.generated.LeftOrRightOrBaseline.RIGHT;
 
-import wres.config.generated.DataSourceBaselineConfig;
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.TimeScaleConfig;
-import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.xml.generated.DataSourceBaselineConfig;
+import wres.config.xml.generated.DataSourceConfig;
+import wres.config.xml.generated.DatasourceType;
+import wres.config.xml.generated.DestinationConfig;
+import wres.config.xml.generated.DestinationType;
+import wres.config.xml.generated.LeftOrRightOrBaseline;
+import wres.config.xml.generated.ProjectConfig;
+import wres.config.xml.generated.ThresholdOperator;
+import wres.config.xml.generated.TimeScaleConfig;
+import wres.config.xml.generated.ProjectConfig.Inputs;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.

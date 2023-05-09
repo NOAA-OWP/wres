@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
+import wres.config.xml.generated.ThresholdFormat;
+import wres.config.xml.generated.ThresholdOperator;
+import wres.config.xml.generated.ThresholdType;
+import wres.config.xml.generated.ThresholdsConfig;
 import wres.statistics.generated.Threshold;
 
 import java.io.BufferedWriter;
@@ -64,7 +64,7 @@ class CsvThresholdReaderTest
                                                                           null,
                                                                           null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
@@ -173,7 +173,7 @@ class CsvThresholdReaderTest
                     null,
                     null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
@@ -281,7 +281,7 @@ class CsvThresholdReaderTest
                     null,
                     null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
@@ -383,7 +383,7 @@ class CsvThresholdReaderTest
                     null,
                     null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
@@ -485,7 +485,7 @@ class CsvThresholdReaderTest
                     null,
                     null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.VALUE,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
             Map<String, Set<Threshold>> actual =
@@ -580,7 +580,7 @@ class CsvThresholdReaderTest
                                                                           null,
                                                                           null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
@@ -641,7 +641,7 @@ class CsvThresholdReaderTest
                                                                           null,
                                                                           null );
             ThresholdsConfig thresholdConfig = new ThresholdsConfig( ThresholdType.PROBABILITY,
-                                                                     wres.config.generated.ThresholdDataType.LEFT,
+                                                                     wres.config.xml.generated.ThresholdDataType.LEFT,
                                                                      source,
                                                                      ThresholdOperator.GREATER_THAN );
 
