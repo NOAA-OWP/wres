@@ -929,8 +929,6 @@ project(':wres-config')
     task copyGenerated(type:Copy, dependsOn: xjc, group: 'Parse') {
         description = 'Ensures generated code is created and available in src.'
         destinationDir = file("${project.projectDir}/src/wres/config/xml/generated")
-        var oldDestinationDir = file("${project.projectDir}/src/wres/config/generated")
-        delete fileTree(dir: oldDestinationDir).include('**/generated/*.java')
         delete fileTree(dir: destinationDir).include('**/generated/*.java')
         from fileTree("${project.buildDir}/generated/wres/config/xml/generated")
         into destinationDir
