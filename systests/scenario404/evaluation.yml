@@ -1,7 +1,7 @@
 observed:
   sources:
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+  time_zone_offset: '-0600'
   variable: QINE
   label: Observations
 predicted:
@@ -35,6 +35,7 @@ metrics:
   - mean square error skill score
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

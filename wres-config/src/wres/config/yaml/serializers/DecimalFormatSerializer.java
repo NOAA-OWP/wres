@@ -2,6 +2,7 @@ package wres.config.yaml.serializers;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -19,12 +20,5 @@ public class DecimalFormatSerializer extends JsonSerializer<DecimalFormat>
     public void serialize( DecimalFormat value, JsonGenerator writer, SerializerProvider serializers ) throws IOException
     {
         writer.writeString( value.toPattern() );
-    }
-
-    @Override
-    public boolean isEmpty( SerializerProvider serializers, DecimalFormat value  )
-    {
-        // Do not serialize the default
-        return DecimalFormatPretty.DEFAULT_FORMAT.equals( value.toPattern() );
     }
 }

@@ -10,6 +10,7 @@ predicted:
   variable:
     name: SQIN
     label: discharge2
+  type: ensemble forecasts
   label: HEFS
 features:
   - DRRC2HSF
@@ -32,6 +33,7 @@ metrics:
   - name: sample size
     png: false
   - mean error
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

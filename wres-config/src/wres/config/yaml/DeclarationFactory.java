@@ -315,6 +315,17 @@ public class DeclarationFactory
             declarationString = Files.readString( path );
             LOGGER.info( "Discovered a path to a declaration string: {}", path );
         }
+        // Probably a file path, but not a valid one
+        else if( declarationString.split( System.lineSeparator() ).length <= 1
+                 && !declarationString.contains( "observed" )
+                 && !declarationString.contains( "predicted" ) )
+        {
+            throw new FileNotFoundException( "The following declaration string appears to be a path, but the file "
+                                             + "cannot be found on the default file system: "
+                                             + declarationString
+                                             +". Please check that the "
+                                             + "file exists and try again with a valid path or declaration string." );
+        }
 
         if ( LOGGER.isDebugEnabled() )
         {

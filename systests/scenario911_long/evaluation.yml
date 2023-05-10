@@ -1,13 +1,13 @@
 observed:
-  sources:
-    - uri: data/archive/baselineValidationExample/AMCK1_QME.xml
-      time_scale:
-        function: mean
-        period: 24
-        unit: hours
+  sources: 
+    - data/archive/baselineValidationExample/AMCK1_QME.xml
   variable: QME
+  time_scale:
+    function: mean
+    period: 24
+    unit: hours
 predicted:
-  sources:
+  sources: 
     - data/archive/baselineValidationExample/AMCK1_Streamflow_hefs-mefp_Baseline_Validation.tgz
   variable: QINE
   type: ensemble forecasts

@@ -1,31 +1,31 @@
 observed:
   sources:
-    - uri: data/abrfcExample/LGNN5_QME.xml
-      time_scale:
-        function: mean
-        period: 86400
-        unit: seconds
+    - data/abrfcExample/LGNN5_QME.xml
+  time_scale:
+    function: mean
+    period: 86400
+    unit: seconds
   variable:
     name: QME
     label: STREAMFLOW
 predicted:
   sources:
-    - uri: data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable:
     name: QINE
     label: STREAMFLOW
   label: HEFS
 baseline:
   sources:
-    - uri: data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable:
     name: QINE
     label: STREAMFLOW
@@ -39,7 +39,6 @@ lead_times:
   unit: hours
 lead_time_pools:
   period: 0
-  frequency: 0
   unit: hours
 time_scale:
   function: mean
@@ -54,6 +53,7 @@ metrics:
   - contingency table
   - probability of detection
   - relative operating characteristic diagram
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

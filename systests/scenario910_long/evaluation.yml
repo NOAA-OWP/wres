@@ -1,10 +1,10 @@
 observed:
-  sources:
-    - uri: data/archive/baselineValidationExample/AMCK1_QME.xml
-      time_scale:
-        function: mean
-        period: 24
-        unit: hours
+  sources: 
+    - data/archive/baselineValidationExample/AMCK1_QME.xml
+  time_scale:
+    function: mean
+    period: 24
+    unit: hours
   variable: QME
 predicted:
   sources:

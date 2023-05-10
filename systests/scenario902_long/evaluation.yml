@@ -1,13 +1,13 @@
 observed:
-  sources:
-    - uri: data/abrfcExample/LGNN5_QME.xml
-      time_scale:
-        function: mean
-        period: 24
-        unit: hours
+  sources: 
+    - data/abrfcExample/LGNN5_QME.xml
+  time_scale:
+    function: mean
+    period: 24
+    unit: hours
   variable: QME
 predicted:
-  sources:
+  sources: 
     - data/archive/baselineValidationExample/LGNN5_Streamflow_hefs-mefp_Baseline_Validation_19850101_20160106.tgz
   variable: QINE
   type: ensemble forecasts

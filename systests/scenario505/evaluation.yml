@@ -34,6 +34,7 @@ time_scale:
 metrics:
   - sample size
   - mean error
+decimal_format: '#0.000000'
 duration_format: hours
 output_formats:
   - csv

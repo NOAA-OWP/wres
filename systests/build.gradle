@@ -29,6 +29,7 @@ distributions
             {
                 include '*.sh'
                 include 'scenario*/*.xml'
+                include 'scenario*/*.yml'
                 include 'scenario*/*.csv'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'

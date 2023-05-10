@@ -36,11 +36,12 @@ lead_time_pools:
   unit: hours
 time_scale:
   function: mean
-  period: 4
+  period: 3
   unit: hours
 metrics:
   - sample size
   - mean error
+decimal_format: '#0.000000'
 duration_format: hours
 output_formats:
   - pairs

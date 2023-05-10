@@ -8,7 +8,7 @@ observed:
   variable: QINE
   label: Observations
 predicted:
-  sources:
+  sources: 
     - data/singleValuedEx_ABRFC_ARCFUL_QINE
   variable: QINE
   label: Operational Single-Valued Forecasts
@@ -38,6 +38,7 @@ probability_thresholds:
 metrics:
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

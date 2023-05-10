@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.yaml.components.AnalysisDurations;
-import wres.config.yaml.components.LeadTimeInterval;
 
 /**
  * Custom deserializer for a {@link AnalysisDurations}.

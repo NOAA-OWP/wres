@@ -1,20 +1,20 @@
 observed:
   sources:
-    - uri: data/griddedExamples/land_snow_ellicott_city/analysis_assim/
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/griddedExamples/land_snow_ellicott_city/analysis_assim/
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: SNOWH
   label: NWM Analysis
 predicted:
   sources:
     - uri: data/griddedExamples/land_snow_ellicott_city/short_range/20180526/
       pattern: '**/*nwm.t*0[0-9]z*'
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: SNOWH
   label: NWM Short Range
 spatial_mask:
@@ -37,6 +37,7 @@ metrics:
   - mean error
   - pearson correlation coefficient
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - netcdf2
   - csv
